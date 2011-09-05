@@ -1,0 +1,230 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.IO;
+using System.IO.Compression;
+using Linnarsson.Dna;
+using Linnarsson.Utilities;
+
+namespace Linnarsson.Strt
+{
+    public class UCSCGenomeDownloader
+    {
+        string goldenPathGenomes = "ftp://hgdownload.cse.ucsc.edu/goldenPath";
+        string loginName = "anonymous";
+        string password = Props.props.FailureReportEmail;
+
+        /// <summary>
+        /// Downloads the most up-to-date chromosomes, refFlat and repeat mask files for a 
+        /// species into the proper subfolder under GenomesFolder.
+        /// </summary>
+        /// <param name="latinSpeciesName">UCSC latin directory name, e.g. "Mus musculus", or a UCSC abbreviation, e.g. "mm"</param>
+        public void DownloadGenome(string latinSpeciesName)
+        {
+            string abbrev, threeName;
+            ParseSpecies(latinSpeciesName, out threeName, out abbrev);
+            List<string> matches = new List<string>();
+            List<string> allSpecies = ListFiles(goldenPathGenomes);
+            if (threeName != "")
+                foreach (string speciesSubdir in allSpecies)
+                    if (speciesSubdir.StartsWith(threeName))
+                        matches.Add(speciesSubdir);
+            if (matches.Count == 0)
+                foreach (string speciesSubdir in allSpecies)
+                    if (speciesSubdir.Length <= 5 & speciesSubdir.StartsWith(abbrev))
+                        matches.Add(speciesSubdir);
+            if (matches.Count == 0)
+                throw new FileNotFoundException("Could not find a genome for " + abbrev + "/" + threeName + " at UCSC.");
+            matches.Sort();
+            matches.Reverse();
+            foreach (string buildName in matches)
+            {
+                string subDir = buildName;
+                if (buildName.Length > 5)
+                    subDir = buildName.Substring(0, 1) + buildName.Substring(3, 1).ToLower() + buildName.Substring(6);
+                string speciesURL = goldenPathGenomes + "/" + buildName;
+                string destDir = Path.Combine(Path.Combine(Props.props.GenomesFolder, buildName), "genome");
+                if (!Directory.Exists(destDir))
+                    Directory.CreateDirectory(destDir);
+                try
+                {
+                    DownloadSpeciesGenome(speciesURL, buildName, destDir);
+                    Console.WriteLine("Downloaded build " + buildName + " from UCSC.");
+                    DownloadMartAnnotations(abbrev, destDir);
+                    return;
+                }
+                catch (Exception e) {
+                    Console.WriteLine("Error: " + e);
+                    Console.WriteLine("- Looking for an older build.");
+                }
+            }
+            Console.WriteLine("ERROR: Could not find a build at UCSC with the needed data!");
+        }
+
+        public void ParseSpecies(string latinSpeciesName, out string threeName, out string abbrev)
+        {
+            abbrev = latinSpeciesName.ToLower();
+            threeName = "";
+            int spaceIdx = latinSpeciesName.IndexOf(" ");
+            if (spaceIdx == -1)
+                spaceIdx = latinSpeciesName.IndexOf("_");
+            if (spaceIdx > 0)
+            {
+                threeName = abbrev.Substring(0, 3) + abbrev.Substring(spaceIdx + 1, 1).ToUpper() + abbrev.Substring(spaceIdx + 2, 2);
+                abbrev = abbrev.Substring(0, 1) + abbrev.Substring(spaceIdx + 1, 1);
+            }
+        }
+
+        private void DownloadSpeciesGenome(string speciesURL, string buildName, string destDir)
+        {
+            string databaseURL = speciesURL + "/database";
+            List<string> downloadFilenames = new List<string>();
+            foreach (string file in ListFiles(databaseURL))
+                if (file.Contains("refFlat.txt") || file.Contains("rmsk.txt") || file.Contains("README"))
+                    downloadFilenames.Add(file);
+            if (downloadFilenames.Count == 0)
+                throw new FileNotFoundException("Can not find required database files at UCSC: " + speciesURL);
+            DownloadFiles(databaseURL, destDir, downloadFilenames);
+            string refFilePath = Path.Combine(destDir, "refFlat.txt.gz");
+            if (File.Exists(refFilePath))
+                GunzipFile(refFilePath);
+            string chrURL = speciesURL + "/chromosomes";
+            downloadFilenames.Clear();
+            foreach (string chrFile in ListFiles(chrURL))
+                if (chrFile.StartsWith("chr") && !chrFile.Contains("random") && !chrFile.Contains("Un"))
+                    downloadFilenames.Add(chrFile);
+            if (downloadFilenames.Count == 0)
+                throw new FileNotFoundException("Can not find any chromosome files at UCSC: " + chrURL);
+            DownloadFiles(chrURL, destDir, downloadFilenames);
+            foreach (string file in downloadFilenames)
+                if (file.EndsWith("gz"))
+                    GunzipFile(Path.Combine(destDir, file));
+        }
+
+        private static void GunzipFile(string inFilePath)
+        {
+            Console.WriteLine("Decompressing " + inFilePath);
+            string outFilePath = inFilePath.Substring(0, inFilePath.Length - 3);
+            byte[] buffer = new byte[1024 * 1024];
+            using (FileStream inFile = new FileInfo(inFilePath).OpenRead())
+            {
+                using (FileStream outFile = File.Create(outFilePath))
+                {
+                    using (GZipStream decompress = new GZipStream(inFile, CompressionMode.Decompress))
+                    {
+                        int numRead;
+                        while ((numRead = decompress.Read(buffer, 0, buffer.Length)) != 0)
+                        {
+                            outFile.Write(buffer, 0, numRead);
+                        }
+                    }
+                }
+            }
+            File.Delete(inFilePath);
+        }
+
+        private List<string> ListFiles(string FTPAddress)
+        {
+            if (!FTPAddress.EndsWith("/"))
+                FTPAddress = FTPAddress + "/";
+            FtpWebRequest request = FtpWebRequest.Create(FTPAddress) as FtpWebRequest;
+            request.Method = WebRequestMethods.Ftp.ListDirectory;
+            request.Credentials = new NetworkCredential(loginName, password);
+            request.UsePassive = true;
+            request.UseBinary = true;
+            FtpWebResponse response = request.GetResponse() as FtpWebResponse;
+            Stream responseStream = response.GetResponseStream();
+            List<string> files = new List<string>();
+            StreamReader reader = new StreamReader(responseStream);
+            while (!reader.EndOfStream)
+            {
+                files.Add(reader.ReadLine());
+            }
+            reader.Close();
+            responseStream.Close();
+            response.Close();
+            return files;
+        }
+
+        public void DownloadMartAnnotations(string abbrev, string downloadFolder)
+        {
+            Dictionary<string, string> threeNameToMartName = new Dictionary<string,string>() {
+                {"gg", "ggallus"}, {"bt", "btaurus"}, {"hs", "hsapiens"}, {"mm", "mmusculus"}, 
+                {"ce", "celegans"}, {"dm", "dmelanogaster"}, {"dr", "drerio"}, {"xl", "xlaevis"},
+                {"cf", "cfamiliaris"}, {"xt", "xtropicalis"}, {"sc", "scerevisiae"}, {"pt", "ptroglodytes"} };
+
+            string queryPattern = "http://www.biomart.org/biomart/martservice?query=" +
+                                  "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                                  "<!DOCTYPE Query>" +
+                                  "<Query virtualSchemaName = \"default\" formatter = \"TSV\" header = \"1\" uniqueRows = \"0\" count = \"\" datasetConfigVersion = \"0.6\" >" +
+                                  "<Dataset name = \"{0}_gene_{1}\" interface = \"default\" >" +
+                                  "<Attribute name = \"{1}_gene_id\" />" +
+                                  "<Attribute name = \"{1}_transcript_id\" />" +
+                                  "<Attribute name = \"exon_chrom_start\" />" +
+                                  "<Attribute name = \"exon_chrom_end\" />" +
+                                  "<Attribute name = \"rank\" />" +
+                                  "<Attribute name = \"start_position\" />" +
+                                  "<Attribute name = \"end_position\" />" +
+                                  "<Attribute name = \"chromosome_name\" />" +
+                                  "<Attribute name = \"strand\" />" +
+                                  "<Attribute name = \"external_gene_id\" />" +
+                                  "<Attribute name = \"gene_biotype\" />" +
+                                  "</Dataset>" +
+                                  "</Query>";
+            if (!threeNameToMartName.ContainsKey(abbrev)) return;
+            string speciesId = threeNameToMartName[abbrev];
+            WebClient webClient = new WebClient();
+            foreach (string db in new string[] { "vega", "ensembl" })
+            {
+                string source = string.Format(queryPattern, speciesId, db);
+                string dest = Path.Combine(downloadFolder, db.ToUpper() + "_mart_export.txt");
+                for (int tryNo = 1; tryNo <= 5; tryNo++)
+                {
+                    try
+                    {
+                        webClient.DownloadFile(source, dest);
+                        break;
+                    }
+                    catch (Exception)
+                    { }
+                }
+                if (!File.Exists(dest) || new FileInfo(dest).Length < 1000)
+                {
+                    Console.WriteLine("Could not download BioMart annotations for " + db);
+                    if (File.Exists(dest)) File.Delete(dest);
+                }
+                else
+                {
+                    Console.WriteLine("Downloaded BioMart annotations for " + db);
+                }
+            }
+        }
+
+        private void DownloadFiles(string FTPAddress, string downloadFolder, List<string> filenames)
+        {
+            WebClient webClient = new WebClient();
+            foreach (string fileName in filenames)
+            {
+                string source = FTPAddress + "/" + fileName;
+                string dest = Path.Combine(downloadFolder, fileName);
+                Console.WriteLine("Reading " + source + " to " + dest);
+                for (int tryNo = 1; tryNo <= 5; tryNo++)
+                {
+                    try
+                    {
+                        webClient.DownloadFile(source, dest);
+                        break;
+                    }
+                    catch (Exception e)
+                    {
+                        if (tryNo == 5)
+                            throw e;
+                    }
+                }
+            }
+        }
+    }
+}

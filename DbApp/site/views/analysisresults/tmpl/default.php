@@ -19,12 +19,13 @@ defined('_JEXEC') or die('Restricted access');
          </legend>
          <table>
          <tr>
+          <th>&nbsp;</th>
           <th>SampleId&nbsp;</th>
           <th>Status&nbsp;</th>
           <th>Path<br />" . JHTML::tooltip('Not displayed until results are ready') . "&nbsp;</th>
-          <th>#Lanes<br />" . JHTML::tooltip('Total no. of lanes included in analysis') . "&nbsp;</th>
-          <th>ExtrVer<br />" . JHTML::tooltip('Version of read filter and barcoded extraction software') . "&nbsp;</th>
-          <th>AnnotVer<br />" . JHTML::tooltip('Version of feature annotation software') . "&nbsp;</th>
+          <th>Lanes<br />" . JHTML::tooltip('Total no. of lanes included in analysis') . "&nbsp;</th>
+          <th>Extr<br />" . JHTML::tooltip('Version of read filter and barcoded extraction software') . "&nbsp;</th>
+          <th>Annot<br />" . JHTML::tooltip('Version of feature annotation software') . "&nbsp;</th>
           <th>Genome<br />" . JHTML::tooltip('Not displayed until results are ready') . "&nbsp;</th>
           <th>DBVer<br />" . JHTML::tooltip('Source and creation date of genome and annotation database. Note that source may have changed if the requested build was not available at processing time.') . "&nbsp;</th>
           <th>Type<br />" . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "&nbsp;</th>
@@ -42,14 +43,21 @@ defined('_JEXEC') or die('Restricted access');
   }
 
   foreach ($this->items as $result) {
-    echo "<tr>";
-    $projectlink = "&nbsp;  <a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid="
-           . $result->projectid . "&Itemid=" . $itemid . ">" . $result->project . "</a>&nbsp;";
+    $rpath = $result->resultspath;
+    if (!file_exists($rpath) && $result->status == "ready") {
+      $rpath = "<i> $rpath - missing! </i>"; 
+    }
+    $viewlink = "";
+    if (file_exists($rpath) && $result->status == "ready") {
+      $viewlink = "&nbsp;<a href=index.php?option=com_dbapp&view=project&controller=project&layout=analysis&searchid="
+                  . $result->id . "&Itemid=" . $itemid . ">view</a>";
+    }
+    $projectlink = "&nbsp;<a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid="
+           . $result->projectid . "&Itemid=" . $itemid . ">" . $result->project . "</a>";
+    echo "\n    <tr>";
+    echo "<td>" . $viewlink . "&nbsp;</td>";
     echo "<td>" . $projectlink . "&nbsp;</td>"; 
     echo "<td>" . $result->status . "</td>";
-    $rpath = $result->resultspath;
-    if (!file_exists($rpath) && $result->status == "ready")
-      $rpath = "<i> $rpath - missing! </i>"; 
     echo "<td>" . $rpath . "&nbsp;</td>";
     echo "<td>" . $result->lanecount . "&nbsp;</td>";
     echo "<td>" . $result->extraction_version . "&nbsp;</td>";

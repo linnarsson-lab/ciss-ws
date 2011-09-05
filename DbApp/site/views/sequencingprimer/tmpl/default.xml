@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<metadata>
+	<layout title="DbApp Sequencing Primer">
+		<message>Primer used in the Illumina</message>
+	</layout>
+	<fields
+		name="request"
+		addfieldpath="/administrator/components/com_dbapp/models/fields"
+	>
+		<fieldset name="request">
+			<field
+				name="id"
+				type="sequencingprimer"
+				label="DbApp Sequencing primer ID"
+				description="DbApp Sequencing Primer ID"
+			/>
+		</fieldset>
+	</fields>
+</metadata>
+

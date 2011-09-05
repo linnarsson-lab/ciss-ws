@@ -1,0 +1,42 @@
+<?php
+defined('_JEXEC') or die('Restricted access');
+?>
+<?php 
+  echo "<H1>Illumina runs - summary list VIEW</H1>";
+  $menus = &JSite::getMenu();
+  $menu  = $menus->getActive();
+  $itemid = $menu->id;
+  $newlink = "<a href=index.php?option=com_dbapp&view=illuminarun&layout=edit&controller=illuminarun&searchid=0&Itemid=" . $itemid . " >&nbsp;Add&nbsp;new&nbsp;Illumina&nbsp;run&nbsp;</a>";
+  echo "<div class='illuminarun'><fieldset><legend><nobr>List of Illumina runs &nbsp; &nbsp; &nbsp; &nbsp; $newlink</nobr></legend><br /><table>";
+//  echo "<tr><th>View</th><th>Edit</th><th></th><th>$newlink</th></tr>";
+  echo "<tr><th>&nbsp;View&nbsp;</th><th>&nbsp;Edit&nbsp;</th>
+            <th>&nbsp;Illumina&nbsp;run&nbsp;id&nbsp;</th>
+            <th>&nbsp;Run date&nbsp;</th>
+            <th>&nbsp;Run document&nbsp;</th>
+            <th>&nbsp;Seq Batches&nbsp;</th>
+           
+</tr>"; 
+//<th>&nbsp;Latest&nbsp;edit&nbsp;</th>
+  foreach ($this->illuminaruns as $run) {
+    echo "<tr>";
+    $runlink = "&nbsp;  <a href=index.php?option=com_dbapp&view=illuminarun&layout=illuminarun&controller=illuminarun&searchid=" 
+           . $run->id . "&Itemid=" . $itemid . ">v</a>&nbsp;";
+    $editlink = "&nbsp;  <a href=index.php?option=com_dbapp&view=illuminarun&layout=edit&controller=illuminarun&searchid=" 
+           . $run->id . "&Itemid=" . $itemid . ">e</a>&nbsp;";
+    echo "<td>" . $runlink . "</td><td>" . $editlink . "</td>";
+    echo "<td><nobr>" . $run->illuminarunid . "</nobr></td>";
+    echo "<td><nobr>" . $run->rundate . "</nobr></td>";
+    $RUNDOC = "";
+    if ($run->rundocument != "") {
+      $RUNDOC = "<nobr><a href='../../../../../../uploads/" . $run->rundocument . "' >" . $run->rundocument . "</a></nobr>";
+    }
+    echo "<td>" . $RUNDOC . "</td>";
+    echo "<td>" . $run->plateids . "</td>";
+//    echo "<td><nobr>&nbsp;" . $run->user . "&nbsp; " ;
+//    echo $run->time . "</nobr></td>";
+    echo "</tr>";
+  }
+  echo "</table></fieldset></div><br />";
+
+?>
+

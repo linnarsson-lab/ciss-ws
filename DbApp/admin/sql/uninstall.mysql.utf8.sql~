@@ -1,0 +1,15 @@
+SET foreign_key_checks = 0;
+
+DROP TABLE IF EXISTS `#__aaalane`;
+DROP TABLE IF EXISTS `#__aaasequencingbatch`;
+DROP TABLE IF EXISTS `#__aaasequenceplate`;
+DROP TABLE IF EXISTS `#__aaaproject`;
+DROP TABLE IF EXISTS `#__aaaclient`;
+DROP TABLE IF EXISTS `#__aaacontact`;
+DROP TABLE IF EXISTS `#__aaamanager`;
+DROP TABLE IF EXISTS `#__aaailluminarun`;
+DROP TABLE IF EXISTS `#__aaasequencingprimer`;
+
+SET foreign_key_checks = 1;
+
+DELETE FROM `#__categories` WHERE `extension` = 'com_dbapp';

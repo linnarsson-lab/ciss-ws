@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<extension type="component" version="1.6.0" method="upgrade">
+
+	<name>DbApp</name>
+
+	<creationDate>2011-03-03</creationDate>
+	<author>Rikard Erlandsson</author>
+	<authorEmail>rikard.erlandsson@ki.se</authorEmail>
+	<authorUrl>http://192.168.1.2</authorUrl>
+	<copyright>Copyright Info</copyright>
+	<license>License Info</license>
+	<version>0.0.2</version>
+	<description>DbApp a database interface</description>
+
+<scriptfile>script.php</scriptfile>
+
+	<install>
+		<sql>
+			<file driver="mysql" charset="utf8">sql/install.mysql.utf8.sql</file>
+		</sql>
+	</install>
+	<uninstall>
+		<sql>
+			<file driver="mysql" charset="utf8">sql/uninstall.mysql.utf8.sql</file>
+		</sql>
+	</uninstall>
+
+	<files folder="site">
+		<filename>index.html</filename>
+		<filename>dbapp.php</filename>
+		<filename>controller.php</filename>
+		<folder>controllers</folder>
+    <folder>views</folder>
+		<folder>models</folder>
+<!--    <folder>language</folder>  -->
+	</files>
+
+<!--	<media destination="com_dbapp" folder="media">
+		<filename>index.html</filename>
+		<folder>images</folder>
+  </media>    -->
+
+	<administration>
+		<menu>DbAppMenu</menu>
+		<files folder="admin">
+			<filename>index.html</filename>
+			<filename>config.txt</filename>
+			<filename>config.xml</filename>
+			<filename>access.xml</filename>
+			<filename>dbapp.php</filename>
+			<filename>controller.php</filename>
+      <folder>controllers</folder>
+      <folder>helpers</folder>
+      <folder>models</folder>
+			<folder>sql</folder>
+			<folder>tables</folder>
+			<folder>views</folder>
+		</files>
+
+<!--    <languages folder="admin">
+      <language tag="en-GB">language/en-GB/en-GB.com_dbapp.ini</language>
+    </languages>   -->
+	</administration>
+
+</extension>
+

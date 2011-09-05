@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<metadata>
+	<layout title="DbApp SequencingBatches">
+		<message>List the seuencing batches</message>
+	</layout>
+	<fields
+		name="projectlist"
+		addfieldpath="/administrator/components/com_dbapp/models/fields"
+	>
+		<fieldset name="sequencingbatchlist">
+			<field
+				name="id"
+				type="sequencingbatch"
+				label="DbApp sequencingbatch"
+				description="DbApp sequencingbatch ID"
+			/>
+		</fieldset>
+	</fields>
+</metadata>
+

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+	<layout title="DbApp Analysis Results">
+		<message>Available STRT analysis results</message>
+	</layout>
+	<fieldset name="analysisresults">
+			<field
+				name="id"
+				type="analysisresult"
+				label="DbApp Analysis result "
+				description="DbApp Analysis result ID"
+			/>
+	</fieldset>
+</metadata>
+

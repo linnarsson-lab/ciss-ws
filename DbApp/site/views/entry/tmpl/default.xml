@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<metadata>
+	<layout title="DbApp Entry">
+		<message>The suggested entry point for the Database Application</message>
+	</layout>
+	<fields
+		name="entrylist"
+		addfieldpath="/administrator/components/com_dbapp/models/fields"
+	>
+		<fieldset name="entrylist">
+			<field
+				name="id"
+				type="entry"
+				label="DbApp Entry"
+				description="DbApp Entry"
+			/>
+		</fieldset>
+	</fields>
+</metadata>
+

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<metadata>
+	<layout title="DbApp Contact">
+		<message>Contact is the peson appointed by the client</message>
+	</layout>
+	<fields
+		name="request"
+		addfieldpath="/administrator/components/com_dbapp/models/fields"
+	>
+		<fieldset name="request">
+			<field
+				name="id"
+				type="contact"
+				label="DbApp Contact ID"
+				description="DbApp Contact ID"
+			/>
+		</fieldset>
+	</fields>
+</metadata>
+

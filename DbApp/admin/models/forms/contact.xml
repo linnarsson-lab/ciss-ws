@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form
+	addrulepath="/administrator/components/com_dbapp/models/rules"
+>
+	<fieldset name="contactdetails">
+		<field
+			name="id"
+			type="hidden"
+		/>
+		<field
+			name="contactperson"
+			type="text"
+			label="Contact"
+			description="Person appointed by the client to keep contact with our manager"
+      class="inputbox"
+			size="40"
+			required="true"
+			default=""
+		/>
+    <field
+      name="contactemail"
+      type="text"
+      label="Email"
+      description="Should be a valid email address"
+      class="inputbox"
+      size="40"
+      required="false"
+      default=""
+    />
+    <field
+      name="contactphone"
+      type="text"
+      label="Phone"
+      description="Telephone number"
+      required="false"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="comment"
+      type="text"
+      label="Comment"
+      description="DbApp Contact comment DESC"
+      required="false"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="user"
+      type="text"
+      label="User"
+      description="DbApp Contact user DESC"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="time"
+      type="text"
+      label="Time"
+      description="DbApp Contact time DESC"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+	</fieldset>
+  
+</form>
+

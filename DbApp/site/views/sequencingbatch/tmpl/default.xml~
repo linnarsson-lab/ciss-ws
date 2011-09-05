@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<metadata>
+	<layout title="DbApp SequencingBatch">
+		<message>The sequencing batch is run when it is signed</message>
+	</layout>
+</metadata>
+

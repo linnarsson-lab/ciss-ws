@@ -1,0 +1,84 @@
+<?php
+
+defined('_JEXEC') or die('Restricted access');
+jimport('joomla.application.component.model');
+
+class DbAppModelIlluminaRun extends JModel {
+
+  protected $item;
+
+  public function getItems() {
+
+
+    $db =& JFactory::getDBO();
+    $searchid = JRequest::getVar('searchid') ;
+//    echo $searchid;
+    $query = " SELECT #__aaailluminarun.id AS id, illuminarunid, #__aaailluminarun.comment, rundate, #__aaailluminarun.user AS user, #__aaailluminarun.time AS time, #__aaailluminarun.title AS title, #__aaailluminarun.labbookpage AS labbookpage, cycles, plateid, rundocument,
+      #__aaalane.id AS Lid, laneno, #__aaalane.molarconcentration AS molarconcentration, yield, #__aaalane.comment AS Lcomment, #__aaalane.user AS Luser,  #__aaalane.time AS Ltime, #__aaasequencingbatch.id AS Sid
+               FROM #__aaailluminarun     
+               LEFT JOIN #__aaalane ON #__aaalane.#__aaailluminarunid = #__aaailluminarun.id 
+               LEFT JOIN #__aaasequencingbatch ON #__aaalane.#__aaasequencingbatchid = #__aaasequencingbatch.id 
+               LEFT JOIN #__aaaproject ON #__aaasequencingbatch.#__aaaprojectid = #__aaaproject.id
+               WHERE #__aaailluminarun.id = '" . $searchid . "' 
+               ORDER BY laneno ASC               ";
+    $db->setQuery($query);
+//    echo $query;
+    $item = $db->loadObjectList();
+    return $item;  
+  }
+
+  public function getItem() {
+
+#######       READ in directory inof from cofig file    ######################################
+    $xmlfile = JPATH_COMPONENT_ADMINISTRATOR.DS.'config.txt';
+    $string = rtrim(file_get_contents($xmlfile));
+    $words = preg_split("/\s/", $string);
+    $xmlstring = file_get_contents($words[1]);
+    preg_match("/<RunsFolder\>(.*)<\/RunsFolder>/", $xmlstring, $matches);
+    $runsfolder = $matches[1];
+    preg_match("/<ProjectsFolder\>(.*)<\/ProjectsFolder>/", $xmlstring, $matches);
+    $projectsfolder = $matches[1];
+    preg_match("/<UploadsFolder>(.*)<\/UploadsFolder>/", $xmlstring, $matches);
+    $uploadsfolder = $matches[1];
+##############################################################################################
+
+
+    $db =& JFactory::getDBO();
+    $searchid = JRequest::getVar('searchid') ;
+//    echo $searchid;
+    $query = " SELECT id, illuminarunid, title, labbookpage, rundocument, comment, rundate, user, time
+               FROM #__aaailluminarun     
+               WHERE id = '" . $searchid . "'    ";
+//               LEFT JOIN #__aaalane ON #__aaalane.#__aaailluminarunid = #__aaailluminarun.id 
+
+    $db->setQuery($query);
+//    echo $query;
+    $item = $db->loadObject();
+//    $target_path = "/srv/www/htdocs/uploads/";
+    if (!empty($item->rundocument)) {
+      $target_path = $uploadsfolder . "/" . $item->rundocument; 
+    } else {
+      $target_path = $uploadsfolder . "ingenfil"; 
+    }
+    if (file_exists($target_path)) {
+      $item->fileupload = 1;
+    } else {
+      $item->fileupload = -1;
+    }
+    return $item;  
+  }
+
+
+
+	protected function populateState() {
+		$app = JFactory::getApplication();
+		// Get the message id
+		$id = JRequest::getInt('id');
+		$this->setState('message.id', $id);
+
+		parent::populateState();
+	}
+
+
+
+}

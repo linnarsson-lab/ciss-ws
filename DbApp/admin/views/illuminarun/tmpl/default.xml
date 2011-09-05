@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<metadata>
+	<layout title="DbApp IllRun">
+		<message>DbApp IlluminaRun_DESC</message>
+	</layout>
+	<fields
+		name="request"
+		addfieldpath="/administrator/components/com_dbapp/models/fields"
+	>
+		<fieldset name="request">
+			<field
+				name="id"
+				type="illuminarun"
+				label="DbApp IlluminaRun ID"
+				description="DbApp IlluminaRun description"
+			/>
+		</fieldset>
+	</fields>
+</metadata>
+

@@ -1,0 +1,44 @@
+<?php
+defined('_JEXEC') or die('Restricted access');
+?>
+<?php 
+  echo "<H1>Sequencing projects Database - Project summary list</H1>";
+  $menus = &JSite::getMenu();
+  $menu  = $menus->getActive();
+  $itemid = $menu->id;
+  $newlink = "<a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=0&Itemid=" . $itemid . " >&nbsp;Add&nbsp;new&nbsp;project&nbsp;</a>";
+  echo "<div class='project'><fieldset><legend><nobr>List of projects &nbsp; &nbsp; &nbsp; &nbsp; $newlink</nobr></legend><br /><table>";
+//  echo "<tr><th>View</th><th>Edit</th><th colspan='3'>$newlink</th><th></th><th></th></tr>";
+  echo "<tr><th>View</th><th>Edit</th>
+            <th>&nbsp;Plate&nbsp;id&nbsp;</th>
+            <th>&nbsp;Species&nbsp;</th>
+            <th>&nbsp;P.I.&nbsp;</th>
+            <th>&nbsp;Contact&nbsp;</th>
+            <th>&nbsp;Manager&nbsp;</th>
+            
+            <th>&nbsp;Sample&nbsp;layout&nbsp;</th>";
+//            <th>&nbsp;Latest&nbsp;edit&nbsp;</th></tr>
+  foreach ($this->projects as $project) {
+    echo "<tr>";
+    $projectlink = "&nbsp;  <a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
+           . $project->id . "&Itemid=" . $itemid . ">view</a>&nbsp;";
+    $editlink = "&nbsp;  <a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=" 
+           . $project->id . "&Itemid=" . $itemid . ">edit</a>&nbsp;";
+    echo "<td>" . $projectlink . "</td><td>" . $editlink . "</td>";
+    echo "<td>" . $project->plateid . "</td>";
+    echo "<td>" . $project->species . "</td>";
+    echo "<td><nobr>" . $project->principalinvestigator . "</nobr></td>";
+    echo "<td><nobr>" . $project->contactperson . "</nobr></td>";
+    echo "<td><nobr>" . $project->person . "</nobr></td>";
+//    echo "<td>" . $project->tissue . "</td>";
+
+    echo "<td><nobr><a href='/uploads/" . $project->layoutfile . "' target='_blank' >" . $project->layoutfile . "</a></nobr></td>";
+
+//    echo "<td> &nbsp; " . $project->user . " &nbsp; &nbsp; &nbsp; " ;
+//    echo $project->time . "</td>";
+    echo "</tr>";
+  }
+  echo "</table></fieldset></div><br />";
+
+?>
+

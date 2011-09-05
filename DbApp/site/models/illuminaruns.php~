@@ -1,0 +1,42 @@
+<?php
+
+defined('_JEXEC') or die('Restricted access');
+jimport('joomla.application.component.model');
+
+class DbAppModelIlluminaRuns extends JModel {
+
+	protected $item;
+
+	protected function populateState() {
+		$app = JFactory::getApplication();
+		// Get the message id
+		$id = JRequest::getInt('id');
+		$this->setState('message.id', $id);
+
+		// Load the parameters.
+		$params = $app->getParams();
+		$this->setState('params', $params);
+		parent::populateState();
+	}
+
+  public function getItems() {
+
+    $db =& JFactory::getDBO();
+    $query = ' SELECT #__aaailluminarun.id AS id, illuminarunid, #__aaailluminarun.comment, rundate, 
+           #__aaailluminarun.user AS user, #__aaailluminarun.time AS time,
+           GROUP_CONCAT(DISTINCT(plateid)) AS plateids
+               FROM #__aaailluminarun     
+               LEFT JOIN #__aaalane ON #__aaalane.#__aaailluminarunid = #__aaailluminarun.id 
+               LEFT JOIN #__aaasequencingbatch ON #__aaalane.#__aaasequencingbatchid = #__aaasequencingbatch.id 
+               LEFT JOIN #__aaaproject ON #__aaaproject.id = #__aaasequencingbatch.#__aaaprojectid 
+               GROUP BY #__aaailluminarun.id 
+               ORDER BY illuminarunid DESC   
+      ';
+    $db->setQuery($query);
+//    $statement = $db->loadResult();
+    $item = $db->loadObjectList();
+    return $item;  
+
+  }
+
+}

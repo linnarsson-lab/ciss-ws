@@ -1,0 +1,45 @@
+<?php // no direct access
+defined('_JEXEC') or die('Restricted access'); ?>
+<?php 
+  $menus = &JSite::getMenu();
+  $menu  = $menus->getActive();
+  $itemid = $menu->id;
+  $searchid = JRequest::getVar('searchid') ;
+  $seqbatch = $this->sequencingbatch;
+  $editlink = "<a href=index.php?option=com_dbapp&view=sequencingbatch&layout=edit&controller=sequencingbatch&searchid=" 
+           . $seqbatch->id . "&Itemid=" . $itemid . ">Edit this record</a>";
+  $projlink = "<a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
+           . $seqbatch->aaaprojectid . "&Itemid=" . $itemid . ">" . $seqbatch->title . "</a>";
+    echo "<H1>Sequencing batch - single record VIEW</H1>";
+    echo "<div class='sequencingbatch'><fieldset><legend> Project '" . $projlink . "' &nbsp; [PI: '" . $seqbatch->principalinvestigator . "'] &nbsp; &nbsp; &nbsp; Sequencing batch id: '" . $seqbatch->id . "' &nbsp; &nbsp; &nbsp; " . $editlink . "</legend>";
+    echo "<table><tr><td>Batch&nbsp;no:&nbsp;</td><td>" . $seqbatch->title . "</td></tr>";
+    echo "<tr><td>Lab&nbsp;book (page):</td><td>" . $seqbatch->labbookpage . "</td></tr>";
+    echo "<tr><td>Planned no of lanes:&nbsp;</td><td>" . $seqbatch->plannednumberoflanes . "</td></tr>";
+    echo "<tr><td>Planned no of cycles:&nbsp;</td><td>" . $seqbatch->plannednumberofcycles . "</td></tr>";
+    echo "<tr><td>Sequencing primer:&nbsp;</td><td>" . $seqbatch->primer . "</td></tr>";
+    echo "<tr><td>Planned no of cycles:&nbsp;</td><td>" . $seqbatch->plannedindexcycles . "</td></tr>";
+    echo "<tr><td>Index primer:&nbsp;</td><td>" . $seqbatch->indexprimer . "</td></tr>";
+    echo "<tr><td>Cost:</td><td>" . $seqbatch->cost . "</td></tr>";
+    echo "<tr><td>Signed:</td><td>" . $seqbatch->signed . "</td></tr>";
+    echo "<tr><td>Comment:&nbsp;</td><td>" . $seqbatch->comment . "</td></tr>";
+    echo "<tr><td>User:&nbsp;</td><td>" . $seqbatch->user . "</td></tr>";
+    echo "<tr><td>Latest&nbsp;edit:&nbsp;</td><td>" . $seqbatch->time . "</td></tr></table></fieldset></div>";
+    echo "<br />";
+
+    echo "<div class='illuminarun'><fieldset><legend>Associated Illumina run lanes</legend>";
+if (count($this->illuminaruns) > 0) {
+    echo "<table><tr><th> Associated Illumina Runs ".count($this->illuminaruns)."</th></tr>";
+    foreach ($this->illuminaruns as $ills) {
+      echo "<tr><td><a href=index.php?option=com_dbapp&view=illuminarun&layout=illuminarun&controller=illuminarun&searchid=" 
+           . $ills->id . "&Itemid=" . $itemid . ">[RunNo:" . $ills->RunNo . " Lane:" . $ills->laneno . "]</a>&nbsp;</td></tr>";
+    }
+    echo "</table><br />";
+
+} else {
+    echo "No Illumina runs defined<br />";
+}
+    echo "</fieldset></div><br /><a href=index.php?option=com_dbapp&view=sequencingbatches&Itemid=" . $itemid . ">Return to sequencing batches list</a>";
+
+
+?>
+

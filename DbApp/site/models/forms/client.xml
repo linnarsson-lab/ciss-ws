@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form
+	addrulepath="/administrator/components/com_dbapp/models/rules"
+>
+	<fieldset name="details">
+		<field
+			name="id"
+			type="hidden"
+		/>
+		<field
+			name="principalinvestigator"
+			type="text"
+			label="DbApp Client P.I."
+			description="DbApp Client Principal Investigator DESC"
+      class="inputbox"
+			size="40"
+			required="true"
+			default=""
+		/>
+    <field
+      name="catid"
+      type="category"
+      extension="com_dbapp"
+      class="inputbox"
+      default=""
+      label="DbApp Category"
+      description="This value is used for billing"
+      required="true"
+        >     
+      <option value="0">JOPTION_SELECT_CATEGORY</option>
+    </field>
+    <field
+      name="department"
+      type="text"
+      label="DbApp Client department"
+      description="DbApp Client department DESC"
+      class="inputbox"
+      size="40"
+      required="false"
+      default=""
+    />
+    <field
+      name="address"
+      type="text"
+      label="DbApp Client address"
+      description="DbApp Client address DESC"
+      required="false"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="vatno"
+      type="text"
+      label="DbApp Client vatno"
+      description="DbApp Client vatno DESC"
+      required="false"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="comment"
+      type="text"
+      label="DbApp Client comment"
+      description="DbApp Client comment DESC"
+      required="false"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="user"
+      type="text"
+      label="DbApp Client user"
+      description="DbApp Client user DESC"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="time"
+      type="text"
+      label="DbApp Client time"
+      description="DbApp Client time DESC"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+	</fieldset>
+  
+<!--	<fields name="params">
+		<fieldset
+			name="params"
+			label="JGLOBAL_FIELDSET_DISPLAY_OPTIONS"
+		>
+			<field
+				name="show_category"
+				type="list"
+				label="DbApp Client Category"
+				description="Do you want to show billing options"
+				default=""
+			>
+				<option value="">JGLOBAL_USE_GLOBAL</option>
+				<option value="0">JHIDE</option>
+				<option value="1">JSHOW</option>
+			</field>
+		</fieldset>
+  </fields>  -->
+</form>
+

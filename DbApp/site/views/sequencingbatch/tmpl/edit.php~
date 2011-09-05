@@ -1,0 +1,127 @@
+<?php
+defined('_JEXEC') or die('Restricted access');
+JHtml::_('behavior.tooltip');
+JHtml::_('behavior.formvalidation');
+  $searchid = JRequest::getVar('searchid') ;
+  $item = $this->sequencingbatch;
+
+?>
+
+<form  enctype="multipart/form-data" action="<?php echo JText::_('?option=com_dbapp&view=sequencingbatch&layout=save&id='.(int) $searchid); ?>" method="post" name="adminForm" id="admin-form" class="form-validate">
+<H1>Sequencing batch - Edit VIEW</H1>
+<div class='sequencingbatch'><fieldset><legend>
+<?php
+  if ($searchid > 0) {
+    echo " Edit sequencing batch &nbsp; &nbsp; &nbsp; &nbsp; DB id: '" . $item->id . "' ";
+  } else {
+    echo " Add new sequencing batch &nbsp; &nbsp; &nbsp;";
+  }
+  $db =& JFactory::getDBO();
+  $query = " SELECT #__aaaproject.id AS id, title, principalinvestigator FROM #__aaaproject LEFT JOIN #__aaaclient ON #__aaaproject.#__aaaclientid = #__aaaclient.id ";
+  $db->setQuery($query);
+  $projects = $db->loadObjectList();
+  $query = " SELECT id, primername FROM #__aaasequencingprimer ";
+  $db->setQuery($query);
+  $primers = $db->loadObjectList();
+
+?>
+</legend>
+<table>
+
+<tr><th>PROJECT&nbsp;</th><td>
+<select name="#__aaaprojectid" id="#__aaaprojectid" ><option value="0">Choose a Project</option>
+<?php foreach ($projects as $pi) : ?>
+    <option value="<?php echo $pi->id; ?>" <?php if ($searchid > 0)  { if ($pi->id == $item->aaaprojectid) echo ' selected = "selected" '; } ?> ><?php echo $pi->principalinvestigator . JText::_(' - ') . $pi->title; ?></option>
+<?php endforeach; ?>
+</select></td></tr>
+
+<tr><th>Title&nbsp;</th><td>
+<input type="text" name="title" id="title" value="<?php if ($searchid > 0) echo $item->title; ?>" class="inputbox" size="40"/></td></tr>
+<tr><th>Lab&nbsp;book page</th><td>
+<input type="text" name="labbookpage" id="labbookpage" value="<?php if ($searchid > 0) echo $item->labbookpage; ?>" class="inputbox" size="40"/></td></tr>
+<tr><th>Planned&nbsp;number of cycles&nbsp;</th><td>
+<input type="text" name="plannednumberofcycles" id="plannednumberofcycles" value="<?php if ($searchid > 0) echo $item->plannednumberofcycles; ?>" class="inputbox" size="40"/></td></tr>
+
+<tr><th>Sequencing Primer&nbsp;</th><td>
+<select name="#__aaasequencingprimerid" id="#__aaasequencingprimerid" ><option value="0">Choose a Primer</option>
+<?php foreach ($primers as $pi) : ?>
+    <option value="<?php echo $pi->id; ?>" <?php if ($searchid > 0)  { if ($pi->id == $item->aaasequencingprimerid) echo ' selected = "selected" '; } ?> ><?php echo $pi->primername; ?></option>
+<?php endforeach; ?>
+</select></td></tr>
+
+<tr><th>&nbsp;Number of index cycles&nbsp;</th><td>
+<input type="text" name="plannedindexcycles" id="plannedindexcycles" value="<?php if ($searchid > 0) echo $item->plannedindexcycles; ?>" class="inputbox" size="40"/></td></tr>
+
+<tr><th>Index primer&nbsp;</th><td>
+<select name="indexprimerid" id="indexprimerid" ><option value="0">Choose an index Primer</option>
+<?php foreach ($primers as $pi) : ?>
+    <option value="<?php echo $pi->id; ?>" <?php if ($searchid > 0)  { if ($pi->id == $item->indexprimerid) echo ' selected = "selected" '; } ?> ><?php echo $pi->primername; ?></option>
+<?php endforeach; ?>
+</select></td></tr>
+
+<tr><th>Planned&nbsp;number of lanes&nbsp;</th><td>
+<input type="text" name="plannednumberoflanes" id="plannednumberoflanes" value="<?php if ($searchid > 0) echo $item->plannednumberoflanes; ?>" class="inputbox required" size="40"/></td></tr>
+<tr><th>Cost&nbsp;</th><td>
+<input type="text" name="cost" id="cost" value="<?php if ($searchid > 0) echo $item->cost; ?>" class="inputbox" size="40"/></td></tr>
+
+<tr><th>Invoice&nbsp;</th><td>
+<select name="invoice" id="invoice" ><option value="0">Is the invoice sent?</option>
+  <option value="sent" <?php if ($searchid > 0)  { if ('sent' == $item->invoice) echo ' selected = "selected" '; } ?> ><?php echo JText::_('sent'); ?></option>
+  <option value="not sent" <?php if ($searchid > 0)  { if ('not sent' == $item->invoice) echo ' selected = "selected" '; } ?> ><?php echo JText::_('not sent'); ?></option>
+</select></td></tr>
+
+<tr><th>Signed&nbsp;</th><td>
+<select name="signed" id="signed" ><option value="0">Has the P.I. signed the costs?</option>
+  <option value="yes" <?php if ($searchid > 0)  { if ('yes' == $item->signed) echo ' selected = "selected" '; } ?> ><?php echo JText::_('yes'); ?></option>
+  <option value="no" <?php if ($searchid > 0)  { if ('no' == $item->signed) echo ' selected = "selected" '; } ?> ><?php echo JText::_('no'); ?></option>
+</select></td></tr>
+
+<tr><th>Comment&nbsp;</th><td>
+<input type="text" name="comment" id="comment" value="<?php if ($searchid > 0) echo $item->comment; ?>" class="inputbox" size="40"/></td></tr>
+
+
+<?php
+    $user =& JFactory::getUser();
+    date_default_timezone_set('Europe/Stockholm');
+    $today = date("Y-m-d H:i:s");
+ if ($searchid > 0) {
+    echo "<tr><td>User: " . $item->user . "</td><td>";
+    echo "Creation&nbsp;date: " . $item->time . "</td></tr>";
+    echo "<tr><td colspan='2'>Will be replaced by</td></tr>";
+    echo "<tr><td>User: " . $user->username . "</td><td>";
+    echo "Creation&nbsp;date: " . $today . "</td></tr>";
+ } else {
+    echo "<tr><td>User: " . $user->username . "</td><td>";
+    echo "Creation&nbsp;date: " . $today . "</td></tr>";
+
+ }
+?>
+</table>
+</fieldset></div>
+<br/>
+<input type="Submit" name="Submit" value="Save">
+<input type="Submit" name="Submit" value="Cancel" >
+<?php
+    $menus = &JSite::getMenu();
+    $menu  = $menus->getActive();
+    $itemid = $menu->id;
+    echo "<a href=index.php?option=com_dbapp&view=sequencingbatches&Itemid=" . $itemid . ">Return to list of sequencing batches</a><br/>&nbsp;<br/>";
+
+    echo '<input type="hidden" name="user" value="' . $user->username . '" />';
+    echo '<input type="hidden" name="time" value="' . $today . '" />';
+    if ($searchid == 0) {
+    } else {
+      echo '<input type="hidden" name="id" value="' . $item->id . '" />';
+    }
+
+
+?>
+		<input type="hidden" name="task" value="save" />
+		<?php echo JHtml::_('form.token'); ?>
+</form>
+
+
+
+
+
+

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<metadata>
+	<layout title="DbApp Contacts">
+		<message>The external contacts handling our projects</message>
+	</layout>
+	<fields
+		name="contactlist"
+		addfieldpath="/administrator/components/com_dbapp/models/fields"
+	>
+		<fieldset name="contactlist">
+			<field
+				name="id"
+				type="contact"
+				label="DbApp Contact "
+				description="DbApp Contact ID"
+			/>
+		</fieldset>
+	</fields>
+</metadata>
+

@@ -1,0 +1,69 @@
+<?php // no direct access
+defined('_JEXEC') or die('Restricted access'); ?>
+<?php 
+  $menus = &JSite::getMenu();
+  $menu  = $menus->getActive();
+  $itemid = $menu->id;
+  $searchid = JRequest::getVar('searchid') ;
+//  $illuminaruns = $this->illuminaruns;
+  foreach ($this->illuminaruns as $lane) {
+    $irilluminarunid = $lane->illuminarunid;
+    $irdbid = $lane->id;
+    $irrundate = $lane->rundate;
+    $irtitle = $lane->title;
+    $irlabbookpage = $lane->labbookpage;
+    $irrundocument = $lane->rundocument;
+    $ircomment = $lane->comment;
+    $iruser = $lane->user;
+    $irtime = $lane->time;
+  }
+
+#######       READ in directory inof from cofig file    ######################################
+    $xmlfile = JPATH_COMPONENT_ADMINISTRATOR.DS.'config.txt';
+    $string = rtrim(file_get_contents($xmlfile));
+    $words = preg_split("/\s/", $string);
+    $xmlstring = file_get_contents($words[1]);
+    preg_match("/<RunsFolder\>(.*)<\/RunsFolder>/", $xmlstring, $matches);
+    $runsfolder = $matches[1];
+    preg_match("/<ProjectsFolder\>(.*)<\/ProjectsFolder>/", $xmlstring, $matches);
+    $projectsfolder = $matches[1];
+    preg_match("/<UploadsFolder>(.*)<\/UploadsFolder>/", $xmlstring, $matches);
+    $uploadsfolder = $matches[1];
+    $uploadslinkfolder = "/uploads/" ;#. $uploadsfolder;
+##############################################################################################
+
+
+  if ($irrundocument != "") {
+    $irrundocument = "<a href='" . $uploadslinkfolder . $irrundocument . "' target='_blank'>$irrundocument</a>";
+  }
+  $editlink = "<a href=index.php?option=com_dbapp&view=illuminarun&layout=edit&controller=illuminarun&searchid=" 
+           . $irdbid . "&Itemid=" . $itemid . ">Edit this record</a>";
+  $editlane = "<a href=index.php?option=com_dbapp&view=illuminarun&layout=editlanes&controller=illuminarun&searchid=" 
+           . $irdbid . "&Itemid=" . $itemid . ">Edit these lanes</a>";
+    echo "<H1>Illumina run - single run and lanes VIEW</H1>";
+    echo "<div class='illuminarun'><fieldset>   <legend>View Illumina run '" . $irilluminarunid . "' &nbsp; &nbsp; DB id: '" . $irdbid . "' &nbsp; &nbsp; " . $editlink . "</legend>";
+    echo "<table>";
+    echo "<tr><td>Run date:</td><td>" . $irrundate . "</td><td rowspan='6'> &nbsp; Run&nbsp;document &nbsp; <br/> &nbsp; $irrundocument  &nbsp; &nbsp;  </td></tr>";
+    echo "<tr><td>Title:&nbsp;</td><td>" . $irtitle . "</td></tr>";
+    echo "<tr><td>Lab book/page:</td><td>" . $irlabbookpage . "</td></tr>";
+    echo "<tr><td>Comment:&nbsp;</td><td>" . $ircomment . "</td></tr>";
+    echo "<tr><td>User:&nbsp;</td><td>" . $iruser . "";
+    echo "<tr><td>Latest&nbsp;edit:&nbsp;</td><td>" . $irtime . "</td></tr></table>";
+//    echo "<hr />";
+//    echo "<br />";
+    echo "</fieldset></div>";
+    echo "<div class='lanes'><fieldset>   <legend>Lanes in the Illumina run</legend>";
+    echo "<table>";
+    echo "<tr><th>PlateID</th><th>Laneno</th><th>Cycles</th><th>Conc</th><th>Yield</th><th>Comment</th><th>user</th><th>time</th><tr>";
+  foreach ($this->illuminaruns as $lane) {
+    echo "<tr><td><center><b><a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
+           . $lane->projectid . "&Itemid=" . $itemid . ">" . $lane->plateid . "</a></b></center></td><td><center><b>" . $lane->laneno . "</b></center></td><td>" . $lane->cycles . "</td><td>" . $lane->molarconcentration . "</td><td>" . $lane->yield . "</td>";
+    echo "<td>" . $lane->Lcomment . "</td><td>" . $lane->Luser . "</td><td>" . $lane->Ltime . "</td></tr>";
+  }
+    echo "<tr><td colspan='7'>$editlane</td></tr>";
+    echo "</table></fieldset></div>";
+    echo "<br />";
+    echo "<a href=index.php?option=com_dbapp&view=illuminaruns&Itemid=" . $itemid . ">Return to Illumina runs list</a>";
+//<tr><td>Lanes&nbsp;in&nbsp;Database:&nbsp;</td><td>" . $illuminarun->lanecount . "</td></tr>
+?>
+

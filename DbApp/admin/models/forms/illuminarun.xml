@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form
+	addrulepath="/administrator/components/com_dbapp/models/rules"
+>
+	<fieldset name="illuminarundetails">
+		<field
+			name="id"
+			type="hidden"
+		/>
+		<field
+			name="illuminarunid"
+			type="text"
+			label="Illumina run id"
+			description="unique identifier"
+      class="inputbox"
+			size="40"
+			required="true"
+			default=""
+		/>
+    <field
+      name="rundate"
+      type="text"
+      label="Run date"
+      description="The actual time it was started"
+      class="inputbox"
+      size="40"
+      required="false"
+      default=""
+    />
+    <field
+      name="comment"
+      type="text"
+      label="Comment"
+      description="DbApp seq run comment DESC"
+      required="false"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="user"
+      type="text"
+      label="User"
+      description="DbApp seqrun user DESC"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="time"
+      type="text"
+      label="Time"
+      description="Last edit"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+	</fieldset>
+  
+</form>
+

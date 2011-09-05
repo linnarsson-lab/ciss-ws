@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form
+	addrulepath="/administrator/components/com_dbapp/models/rules"
+>
+	<fieldset name="managerdetails">
+		<field
+			name="id"
+			type="hidden"
+		/>
+		<field
+			name="person"
+			type="text"
+			label="Manager"
+			description="The person carries out the experiment"
+      class="inputbox"
+			size="40"
+			required="true"
+			default=""
+		/>
+    <field
+      name="email"
+      type="text"
+      label="Email"
+      description="Should be a valid email address"
+      class="inputbox"
+      size="40"
+      required="false"
+      default=""
+    />
+    <field
+      name="phone"
+      type="text"
+      label="Phone"
+      description="Telephone number"
+      required="false"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="comment"
+      type="text"
+      label="Comment"
+      description="DbApp Manager comment DESC"
+      required="false"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="user"
+      type="text"
+      label="User"
+      description="DbApp Manager user DESC"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="time"
+      type="text"
+      label="Time"
+      description="Last edit"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+	</fieldset>
+  
+</form>
+

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form
+  addrulepath="/administrator/components/com_dbapp/models/rules"
+>
+  <fieldset name="sequencingprimerdetails">
+    <field
+      name="id"
+      type="hidden"
+    />
+    <field
+      name="primername"
+      type="text"
+      label="Primer Name"
+      description="Primer to be used for the sequencing step"
+      class="inputbox"
+      size="40"
+      required="true"
+      default=""
+    />
+    <field
+      name="sequence"
+      type="text"
+      label="Sequence"
+      description="Oligo sequence of sequence primer"
+      class="inputbox"
+      size="40"
+      required="false"
+      default=""
+    />
+    <field
+      name="comment"
+      type="text"
+      label="Comment"
+      description="DbApp Contact comment DESC"
+      required="false"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="user"
+      type="text"
+      label="User"
+      description="DbApp Contact user DESC"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="time"
+      type="text"
+      label="Time"
+      description="DbApp Contact time DESC"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+  </fieldset>
+  
+</form>
+

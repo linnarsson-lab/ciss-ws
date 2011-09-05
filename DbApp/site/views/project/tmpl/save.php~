@@ -1,0 +1,184 @@
+<?php
+defined('_JEXEC') or die('Restricted access');
+//JHtml::_('behavior.tooltip');
+//JHtml::_('behavior.formvalidation');
+  $searchid = JRequest::getVar('searchid') ;
+  $afteredit = $this->afteredit;
+  $ae_keys = array_keys($afteredit);
+
+  $db =& JFactory::getDBO();
+
+    $columns = "";
+    $vcolumn = "";
+
+$fileresult = "";
+//   file upload and move to specific place
+$target_path = "/srv/www/htdocs/uploads/";
+if (!empty($_FILES['uploadedfile']['name'])) {
+  $target_path = $target_path . basename($_FILES['uploadedfile']['name']); 
+} else {
+  $target_path = $target_path . "ingenfil"; 
+  $fileresult = "No file name given";
+}
+
+
+$addtoquery = " ";
+if (file_exists($target_path)) {
+  $fileresult = "The file ".  basename($_FILES['uploadedfile']['name']) . " has already been uploaded.";
+} else {
+  if(move_uploaded_file($_FILES['uploadedfile']['tmp_name'], $target_path)) {
+    $fileok = checkFormat(file($target_path));
+//        JError::raiseWarning('Message', JText::_(' record! ' . $fileok));
+    if ($fileok == "OK") {
+      $uploadok = 1;
+      $fileresult = "The file ".  basename($_FILES['uploadedfile']['name']) . " has been uploaded";
+      $addtoquery = " , layoutfile = " . $db->Quote(basename( $_FILES['uploadedfile']['name'])) . " ";
+      $columns .= " layoutfile, ";
+      $vcolumn .= $db->Quote(basename($_FILES['uploadedfile']['name'])) . ", ";
+    } else {
+      unlink($target_path);
+      JError::raiseWarning('Message', JText::_("An error was detected in the file, please correct and upload again!<br/>" . $fileok));
+    }
+  } else {
+    $uploadok = -1;
+    if (empty($_FILES['uploadedfile']['name'])) {
+      $fileresult = "No file name given";
+    } else {
+      $fileresult = "There was an error uploading the file, please try again!";
+    }
+  }
+}
+
+  if ($searchid == 0) {
+    $newquery = " INSERT INTO #__aaaproject ( ";
+
+    $query = " UPDATE #__aaaproject SET ";
+    
+  echo "<table>";
+  foreach ($afteredit as $key => $value) {
+    echo "<tr><td>" . $key . "</td><td>" . $value . "</td></tr>";
+    if (($key == 'title') || ($key == 'plateid') || ($key == 'platereference') || ($key == 'barcodeset') || ($key == 'species') || ($key == 'tissue') || ($key == 'sampletype') || ($key == 'collectionmethod') || ($key == 'weightconcentration') || ($key == 'fragmentlength') || ($key == 'molarconcentration') || ($key == 'labbookpage') || ($key == 'protocol') || ($key == 'comment') || ($key == 'user') || ($key == 'time') || ($key == '#__aaamanagerid') || ($key == '#__aaacontactid') || ($key == '#__aaaclientid')) {
+      $columns .= $key . ", ";
+      $vcolumn .= $db->Quote($value) . ", ";
+      $query .= $key . " = " . $db->Quote($value) . ", ";
+    }
+    if ($key == 'id') {
+      $searchid = $value;
+    }
+    if ($key == 'Submit') {
+      $submit = $value;
+    }
+#    if ($key == 'fragmentlength') {
+#      $nts = $value;
+#    }
+#    if ($key == 'weightconcentration') {
+#      $wgt = $value;
+#    }
+  }
+  echo "</table>";
+//  M.W. of dsDNA = (# nucleotides x 607.4) + 157.9
+#    $MW = ($nts * 607.4) + 157.9;
+#    $mlc = $wgt * 1000000 / $MW;
+//  echo "<H1>" . $afteredit->principalinvestigator . " &nbsp; &nbsp; &nbsp; &nbsp; id:" . $afteredit->id . "</H1><BR />";
+
+    $query .= " hits = '1' $addtoquery WHERE id = '" . $searchid . "' ";
+    $newquery .= $columns .  " hits ) VALUES ( " . $vcolumn . " '1' ) "; 
+    
+     if ($searchid == 0) {
+       $db->setQuery($newquery);
+     } else {
+       $db->setQuery($query);
+     }
+
+       if ($submit == 'Save') {
+         if ($db->query()) {
+           JError::raiseNotice('Message', JText::_('The record was saved! '));
+//          echo JText::_('<br/>query ok<br/>');
+         } else {
+           JError::raiseWarning('Message', JText::_('Could not save record! ' . $fileresult));
+         }
+       } else {
+         JError::raiseNotice('Message', JText::_('Cancel - no actions! ' . $fileresult));
+       }
+    }
+//    $aearr = array($afteredit);
+  //  $db->updateObject('#__aaaclient', &$aearr, 'id');
+    echo $db->getErrorMsg();
+
+    $menus = &JSite::getMenu();
+    $menu  = $menus->getActive();
+    $itemid = $menu->id;
+    echo "<br /><a href=index.php?option=com_dbapp&view=projects&Itemid=" . $itemid . ">Return to project list</a><br />&nbsp;<br />";
+?>
+<?php
+
+// Returns an array of all valid genome designations.
+// $genomesLocation is the path to the folder where the genomes directory is located.
+function getValidBuilds($genomesLocation) {
+     $genomesDir = rtrim($genomesLocation, "/");
+     $buildsGlob = $genomesDir . DS . "genomes" . DS . "*" . DS . "genome" . DS . "SilverBulletGenes_*.txt";
+     //$buildsGlob = $genomesDir . "\\" . "genomes\\*\\genome\\SilverBulletGenes_*.txt"; // Windows version
+     $annotPaths = glob($buildsGlob);
+     $matchPath = "/genomes.(.+).genome.SilverBulletGenes_(.+)\.txt/";
+     $validBuilds = array("empty" => 1);
+     foreach ($annotPaths as $annotPath) {
+         if (preg_match($matchPath, $annotPath, $matches)) {
+             $genome = $matches[1];
+             $annotation = $matches[2];
+             $validBuilds[$genome] = 1;
+             //$validBuilds[$genome . '_' .$annotation] = 1; // To allow to specify annotation versions.
+             if (preg_match("/^mm[0-9]+$/", $genome)) {
+                 $validBuilds["mm"] = 1;
+                 $validBuilds["mouse"] = 1;
+             }
+             if (preg_match("/^hg[0-9]+$/", $genome)) {
+                 $validBuilds["hs"] = 1;
+                 $validBuilds["human"] = 1;
+             }
+         }
+     }
+     $validBuilds = array_keys($validBuilds);
+     sort($validBuilds);
+     return $validBuilds;
+}
+
+
+
+// Will return "OK" if file content is correctly formatted, otherwise an error message string.
+// Use $validBuilds to allow additional builds (e.g. "dm3") apart from the standard species "mm", "hs", "gg", and "empty".
+function checkFormat($fileContent, $validBuilds = array()) {
+     $validSpecies = array();
+// OLD    $validSpecies = array("empty", "hs", "mm", "gg", "mouse", "human");
+     foreach (getValidBuilds("/data") as $validBuild)
+         $validSpecies[] = strtolower($validBuild);
+// OLD     foreach ($validBuilds as $validBuild)
+// OLD         $validSpecies[] = strtolower($validBuild);
+     if (stripos($fileContent[0], "SampleID", 0) != 0)
+         return "Layout file is not in correct format (tab-delimited text) or does not have a valid header";
+//      JError::raiseNotice('Message', JText::_(' FileCs ' . count($fileContent)));
+     $lines = $fileContent ;//explode("\n", trim($fileContent));
+//       JError::raiseNotice('Message', JText::_(' =lines ' . count($lines)));
+     $headers = explode("\t", $lines[0]);
+     if (strtolower($headers[1]) != "species")
+         return "Sample layout file does not have Species as second column of header";
+//       JError::raiseNotice('Message', JText::_(' Heads ' . count($headers)));
+     unset($lines[0]);
+//       JError::raiseNotice('Message', JText::_(' Lines ' . count($lines)));
+     $lineNo = 1;
+      foreach ($lines as $line) {
+         $fields = explode("\t", $line);
+         if (count($fields) < 2)
+             return "Sample layout has too few columns at line " . $lineNo;
+         $sp = strtolower(trim($fields[1]));
+//        JError::raiseWarning('Message', JText::_(' Spec! ' . $sp));
+         if (!in_array($sp, $validSpecies))
+         {
+             $spString = implode(",", $validSpecies);
+             return "Unknown species at line " . $lineNo . ": " . $fields[1] . " Allowed are: " . $spString;
+         }
+         $lineNo++;
+     }
+     return "OK";
+}
+
+?>

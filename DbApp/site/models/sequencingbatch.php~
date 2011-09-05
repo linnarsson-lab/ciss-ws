@@ -1,0 +1,89 @@
+<?php
+
+defined('_JEXEC') or die('Restricted access');
+jimport('joomla.application.component.model');
+
+class DbAppModelSequencingBatch extends JModel {
+
+//  protected $item;
+
+  public function getItem() {
+    $db =& JFactory::getDBO();
+    $searchid = JRequest::getVar('searchid') ;
+//    echo $searchid;
+    $query = " SELECT #__aaasequencingbatch.id AS id, #__aaaprojectid AS aaaprojectid, principalinvestigator, #__aaaproject.title AS title, #__aaasequencingprimerid, indexprimerid,
+plannednumberoflanes, plannednumberofcycles, cost, invoice, signed, #__aaasequencingbatch.labbookpage AS labbookpage, #__aaasequencingbatch.title AS sr_title, plannedindexcycles,
+#__aaasequencingbatch.comment AS comment, #__aaasequencingbatch.user AS user, #__aaasequencingbatch.time AS time, seqprim.primername AS primer, indprim.primername AS indexprimer
+ FROM #__aaasequencingbatch     
+               LEFT JOIN #__aaaproject ON #__aaasequencingbatch.#__aaaprojectid = #__aaaproject.id 
+               LEFT JOIN #__aaaclient ON #__aaaproject.#__aaaclientid = #__aaaclient.id
+               LEFT JOIN #__aaasequencingprimer seqprim ON #__aaasequencingbatch.#__aaasequencingprimerid = seqprim.id
+               LEFT JOIN #__aaasequencingprimer indprim ON #__aaasequencingbatch.#__aaasequencingprimerid = indprim.id
+               WHERE #__aaasequencingbatch.id = '" . $searchid . "' ";
+
+    $db->setQuery($query);
+//    echo $query;
+    $item = $db->loadObject();
+    return $item;  
+  }
+
+  public function getIlluminaRuns() {
+    $db =& JFactory::getDBO();
+    $searchid = JRequest::getVar('searchid') ;
+    $query = " SELECT #__aaailluminarun.id AS id, #__aaailluminarun.illuminarunid AS RunNo, laneno
+               FROM #__aaasequencingbatch     
+            LEFT JOIN #__aaaproject ON #__aaasequencingbatch.#__aaaprojectid = #__aaaproject.id
+            LEFT JOIN #__aaalane ON #__aaalane.#__aaasequencingbatchid = #__aaasequencingbatch.id
+            LEFT JOIN #__aaailluminarun ON #__aaalane.#__aaailluminarunid = #__aaailluminarun.id
+               WHERE #__aaasequencingbatch.id = '" . $searchid . "' ";
+
+    $db->setQuery($query);
+
+    $item = $db->loadObjectList();
+    return $item;  
+  }
+
+	protected function populateState() {
+		$app = JFactory::getApplication();
+		// Get the message id
+		$id = JRequest::getInt('id');
+		$this->setState('message.id', $id);
+
+		parent::populateState();
+	}
+
+	public function getTable($type = 'SequencingBatch', $prefix = 'DbAppTable', $config = array()) {
+		return JTable::getInstance($type, $prefix, $config);
+	}
+
+  public function getForm($data = array(), $loadData = true) {
+    // Get the form.
+    $form = $this->loadForm('com_dbapp.sequencingbatch', 'sequencingbatch', array('control' => 'jform', 'load_data' => $loadData));
+    if (empty($form)) {
+      return false;
+    }
+    return $form;
+  }
+
+  public function save($data = array()) {
+    $db =& JFactory::getDBO();
+JError::raiseWarning('500', JText::_('[from site/models/project.php]C ' . JRequest::getVar('c')));
+
+    $db->updateObject('#__aaasequencingbatch', &$data, 'id');
+    if ($this->setError($db->getErrorMsg())) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  protected function loadFormData() {
+    // Check the session for previously entered form data.
+    $data = JFactory::getApplication()->getUserState('com_dbapp.edit.sequencingbatch.data', array());
+    if (empty($data)) {
+      $data = $this->getItem();
+    }
+    return $data;
+  }
+
+}

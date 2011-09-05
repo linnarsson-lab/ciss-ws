@@ -1,0 +1,39 @@
+<?php
+defined('_JEXEC') or die('Restricted access');
+?>
+<?php 
+  echo "<H1>Sequencing batches - Summary list VIEW</H1>";
+  $menus = &JSite::getMenu();
+  $menu  = $menus->getActive();
+  $itemid = $menu->id;
+  $newlink = "<a href=index.php?option=com_dbapp&view=sequencingbatch&layout=edit&controller=sequencingbatch&searchid=0&Itemid=" . $itemid . " >&nbsp;Add&nbsp;new&nbsp;sequencing&nbsp;batch&nbsp;</a>";
+  echo "<div class='sequencingbatch'><fieldset><legend><nobr>List of sequencing batches &nbsp; &nbsp; &nbsp; &nbsp; $newlink</nobr></legend><br /><table>";
+//  echo "<tr><th>Edit</th><th></th><th></th></tr>";
+  echo "<tr><th colspan='2'></th>
+            <th>&nbsp;Plate id</th>
+            <th><nobr>Batch no+(DB&nbsp;id)&nbsp;</nobr></th>
+            <th>&nbsp;Lanes(planned)&nbsp;</th>
+            <th>&nbsp;IlluminaRuns&nbsp;</th>
+            <th>&nbsp;Signed&nbsp;</th>";
+//           <th>&nbsp;Latest&nbsp;edit&nbsp;</th></tr><th>&nbsp;Project&nbsp;title&nbsp;</th>
+  foreach ($this->sequencingbatches as $batch) {
+    echo "<tr>";
+    $batchlink = "&nbsp;  <a href=index.php?option=com_dbapp&view=sequencingbatch&layout=sequencingbatch&controller=sequencingbatch&searchid=" 
+           . $batch->id . "&Itemid=" . $itemid . ">view</a>&nbsp;";
+    $editlink = "&nbsp;  <a href=index.php?option=com_dbapp&view=sequencingbatch&layout=edit&controller=sequencingbatch&searchid=" 
+           . $batch->id . "&Itemid=" . $itemid . ">edit</a>&nbsp;";
+//    echo "<td>" . $batch->title . "</td>";
+    echo "<td>$batchlink</td><td>$editlink</td>";
+    echo "<td>" . $batch->plateid . "</td>";
+    echo "<td>" . $batch->batchno . " (" . $batch->id . ")</td>";
+    echo "<td>" . $batch->plannednumberoflanes . "</td>";
+    echo "<td>" . $batch->illids . "</td>";
+    echo "<td>" . $batch->signed . "</td>";
+//    echo "<td><nobr> ";# . $batch->user . " &nbsp; " ;
+//    echo $batch->time . " </nobr></td>";
+    echo "</tr>";
+  }
+  echo "</table></fieldset></div><br />";
+
+?>
+

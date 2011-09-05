@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<metadata>
+	<layout title="DbApp IlluminaRun">
+		<message>The Illumina run possibly L something</message>
+	</layout>
+	<fields
+		name="request"
+		addfieldpath="/administrator/components/com_dbapp/models/fields"
+	>
+		<fieldset name="request">
+			<field
+				name="id"
+				type="project"
+				label="DbApp Project ID"
+				description="DbApp Project ID"
+			/>
+		</fieldset>
+	</fields>
+</metadata>
+

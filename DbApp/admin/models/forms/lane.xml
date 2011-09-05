@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form
+	addrulepath="/administrator/components/com_dbapp/models/rules"
+>
+	<fieldset name="lanedetails">
+		<field
+			name="id"
+			type="hidden"
+		/>
+		<field
+			name="laneno"
+			type="text"
+			label="Lane no"
+			description="what lane is this"
+      class="inputbox"
+			size="40"
+			required="true"
+			default=""
+		/>
+    <field
+      name="cycles"
+      type="int"
+      label="No of cycles"
+      description="Cycle count"
+      class="inputbox"
+      size="40"
+      required="true"
+      default=""
+    />
+    <field
+      name="molarconcentration"
+      type="text"
+      label="Concentration"
+      description="molar"
+      class="inputbox"
+      size="40"
+      required="false"
+      default=""
+    />
+    <field
+      name="yield"
+      type="text"
+      label="Yield"
+      description="number of sequences"
+      class="inputbox"
+      size="40"
+      required="false"
+      default=""
+    />
+    <field
+      name="comment"
+      type="text"
+      label="Comment"
+      description="DbApp seq run comment DESC"
+      required="false"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="user"
+      type="text"
+      label="User"
+      description="DbApp seqrun user DESC"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="time"
+      type="text"
+      label="Time"
+      description="Last edit"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+	</fieldset>
+  
+</form>
+

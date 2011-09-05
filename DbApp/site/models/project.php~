@@ -1,0 +1,198 @@
+<?php
+
+defined('_JEXEC') or die('Restricted access');
+jimport('joomla.application.component.model');
+
+class DbAppModelProject extends JModel {
+
+	protected $item;
+
+  public function getProject() {
+
+#######       READ in directory inof from cofig file    ######################################
+    $xmlfile = JPATH_COMPONENT_ADMINISTRATOR.DS.'config.txt';
+    $string = rtrim(file_get_contents($xmlfile));
+    $words = preg_split("/\s/", $string);
+    $xmlstring = file_get_contents($words[1]);
+    preg_match("/<RunsFolder\>(.*)<\/RunsFolder>/", $xmlstring, $matches);
+    $runsfolder = $matches[1];
+    preg_match("/<ProjectsFolder\>(.*)<\/ProjectsFolder>/", $xmlstring, $matches);
+    $projectsfolder = $matches[1];
+    preg_match("/<UploadsFolder>(.*)<\/UploadsFolder>/", $xmlstring, $matches);
+    $uploadsfolder = $matches[1];
+##############################################################################################
+
+    $db =& JFactory::getDBO();
+    $searchid = JRequest::getVar('searchid') ;
+    $inqueue = JRequest::getVar('inqueue') ;
+//    JError::raiseNotice('Message', JText::_('INQUEUE [' . $inqueue . ']' . strcmp($inqueue, "yes") . "yes"));
+
+    if (strcmp($inqueue, "yes") == 0) {
+      $query = "   UPDATE #__aaaproject SET status = 'inqueue' WHERE #__aaaproject.id = '" . $searchid . "' ";
+      $db->setQuery($query);
+      if ($db->query()) {
+        JError::raiseNotice('Message', JText::_('Status -> \'inqueue\''));
+      } else {
+        JError::raiseWarning('Message', JText::_( "[ " . $db->getErrorMsg() . " ]"));
+//      echo $db->getErrorMsg();
+      }
+    }
+//    echo $searchid;
+    $query = " SELECT #__aaaproject.id as id, principalinvestigator, #__aaaclient.id as aaaclientid, person, #__aaamanager.id as aaamanagerid, contactperson, #__aaacontact.id as aaacontactid, title, plateid, status, platereference, barcodeset, species, tissue, sampletype, collectionmethod, weightconcentration, layoutfile, fragmentlength, molarconcentration, labbookpage, protocol, #__aaaproject.comment as comment, #__aaaproject.user as user, #__aaaproject.time as time, #__aaaanalysis.id AS analysisid
+               FROM #__aaaproject 
+               LEFT JOIN #__aaaclient ON #__aaaproject.#__aaaclientid = #__aaaclient.id
+               LEFT JOIN #__aaacontact ON #__aaaproject.#__aaacontactid = #__aaacontact.id
+               LEFT JOIN #__aaamanager ON #__aaaproject.#__aaamanagerid = #__aaamanager.id
+               LEFT JOIN #__aaaanalysis ON #__aaaproject.id = #__aaaanalysis.#__aaaprojectid
+               WHERE #__aaaproject.id = '" . $searchid . "' ";
+
+
+//print is_file($target_path);
+    $db->setQuery($query);
+//    echo $query;
+    $item = $db->loadObject();
+    if (!empty($item->layoutfile)) {
+      $target_path = $uploadsfolder . "/" . $item->layoutfile; 
+    } else {
+      $target_path = $uploadsfolder . "ingenfil"; 
+    }
+
+//JError::raiseNotice('Message', JText::_('runsfold:' . $runsfolder . '] projfold:' . $projectsfolder . '] uploadsfold:' . $uploadsfolder . ']'));
+    if (is_file($target_path)) {
+      $item->fileupload = 1;
+    } else {
+      $item->fileupload = -1;
+    }
+    return $item;  
+  }
+
+  public function getAnalysis() {
+  #######       READ in directory inof from cofig file    ######################################
+    $xmlfile = JPATH_COMPONENT_ADMINISTRATOR.DS.'config.txt';
+    $string = rtrim(file_get_contents($xmlfile));
+    $words = preg_split("/\s/", $string);
+    $xmlstring = file_get_contents($words[1]);
+    preg_match("/<RunsFolder\>(.*)<\/RunsFolder>/", $xmlstring, $matches);
+    $runsfolder = $matches[1];
+    preg_match("/<ProjectsFolder\>(.*)<\/ProjectsFolder>/", $xmlstring, $matches);
+    $projectsfolder = $matches[1];
+    preg_match("/<UploadsFolder>(.*)<\/UploadsFolder>/", $xmlstring, $matches);
+    $uploadsfolder = $matches[1];
+  ##############################################################################################
+
+    $db =& JFactory::getDBO();
+    $searchid = JRequest::getVar('searchid') ;
+    $query = " SELECT id, #__aaaprojectid, extraction_version, annotation_version,
+               genome, transcript_db_version, transcript_variant, comment, resultspath
+               FROM #__aaaanalysis
+               WHERE #__aaaprojectid = '" . $searchid . "'  
+                   ";
+
+    $db->setQuery($query);
+    $item = $db->loadObjectList();
+//    if (!empty($item->layoutfile)) {
+//      $target_path = $uploadsfolder . "/" . $item->layoutfile; 
+//    } else {
+//      $target_path = $uploadsfolder . "ingenfil"; 
+//    }
+//    if (is_file($target_path)) {
+//      $item->fileupload = 1;
+//    } else {
+//      $item->fileupload = -1;
+//    }
+    return $item;
+  }
+
+  public function getTheAnalysis() {
+
+    $db =& JFactory::getDBO();
+    $analysid = JRequest::getVar('searchid') ;
+    $query = " SELECT #__aaaanalysis.id AS id, #__aaaprojectid, extraction_version, annotation_version,
+               genome, transcript_db_version, transcript_variant, #__aaaanalysis.comment AS comment,
+               #__aaaproject.plateid AS plateid, barcodeset, resultspath
+               FROM #__aaaanalysis, #__aaaproject
+               WHERE #__aaaanalysis.#__aaaprojectid = #__aaaproject.id
+               AND #__aaaanalysis.id = '" . $analysid . "'  
+                ";
+    $db->setQuery($query);
+    $item = $db->loadObject();
+    return $item;
+  }
+
+  public function getSeqBatches() {
+    $db =& JFactory::getDBO();
+    $searchid = JRequest::getVar('searchid') ;
+    $query = " SELECT #__aaasequencingbatch.id AS id, #__aaaprojectid, #__aaaproject.title AS title, 
+     plannednumberoflanes, #__aaasequencingprimerid, indexprimerid, #__aaasequencingbatch.title AS batchno,
+     #__aaasequencingbatch.labbookpage AS labbookpage, plannednumberofcycles, cost, invoice, signed, plateid,
+     GROUP_CONCAT(DISTINCT(#__aaailluminarun.id), '-', #__aaailluminarun.illuminarunid) AS illids,
+     #__aaasequencingbatch.comment AS comment, #__aaasequencingbatch.user AS user, #__aaasequencingbatch.time AS time,
+     primer.primername AS primer,
+     indexp.primername AS indexprimer
+      FROM #__aaasequencingbatch
+      LEFT JOIN #__aaaproject ON #__aaasequencingbatch.#__aaaprojectid = #__aaaproject.id
+      LEFT JOIN #__aaalane ON #__aaalane.#__aaasequencingbatchid = #__aaasequencingbatch.id
+      LEFT JOIN #__aaailluminarun ON #__aaalane.#__aaailluminarunid = #__aaailluminarun.id
+      LEFT OUTER JOIN #__aaasequencingprimer primer ON #__aaasequencingbatch.#__aaasequencingprimerid = primer.id
+      LEFT OUTER JOIN #__aaasequencingprimer indexp ON #__aaasequencingbatch.indexprimerid = indexp.id
+           WHERE #__aaaprojectid = '$searchid'  
+               GROUP BY #__aaasequencingbatch.id
+               ORDER BY #__aaasequencingbatch.id  ASC  ";
+    $db->setQuery($query);
+    $item = $db->loadObjectList();
+    return $item;
+  }
+
+
+	protected function populateState() {
+		$app = JFactory::getApplication();
+		// Get the message id
+		$id = JRequest::getInt('id');
+		$this->setState('message.id', $id);
+
+		// Load the parameters.
+//		$params = $app->getParams();
+//		$this->setState('params', $params);
+		parent::populateState();
+	}
+
+	public function getTable($type = 'Project', $prefix = 'DbAppTable', $config = array()) {
+		return JTable::getInstance($type, $prefix, $config);
+	}
+
+  public function getForm($data = array(), $loadData = true) {
+    // Get the form.
+    $form = $this->loadForm('com_dbapp.project', 'project', array('control' => 'jform', 'load_data' => $loadData));
+    if (empty($form)) {
+      return false;
+    }
+    return $form;
+  }
+
+  public function save($data = array()) {
+    $db =& JFactory::getDBO();
+JError::raiseWarning('500', JText::_('[from site/models/project.php]C ' . JRequest::getVar('c')));
+
+    $db->updateObject('#__aaaproject', $data, 'id');
+    if ($this->setError($db->getErrorMsg())) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+//  public function getScript() {
+//    return 'administrator/components/com_dbapp/models/forms/tabone.js';
+//  }
+
+  protected function loadFormData() {
+    // Check the session for previously entered form data.
+    $data = JFactory::getApplication()->getUserState('com_dbapp.edit.project.data', array());
+    if (empty($data)) {
+      $data = $this->getItem();
+    }
+    return $data;
+  }
+
+
+
+}

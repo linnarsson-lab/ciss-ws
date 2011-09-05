@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<metadata>
+	<layout title="DbApp Client">
+		<message>DbApp Client_DEFAULT_DESC</message>
+	</layout>
+	<fields
+		name="request"
+		addfieldpath="/administrator/components/com_dbapp/models/fields"
+	>
+		<fieldset name="request">
+			<field
+				name="id"
+				type="client"
+				label="DbApp Client Principal Investigator"
+				description="DbApp Client PI, the person who's supposed to pay"
+			/>
+		</fieldset>
+	</fields>
+</metadata>
+

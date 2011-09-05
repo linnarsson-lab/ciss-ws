@@ -1,0 +1,47 @@
+<?php
+
+defined('_JEXEC') or die('Restricted access');
+jimport('joomla.application.component.model');
+
+class DbAppModelSequencingBatches extends JModel {
+
+	protected $item;
+
+	protected function populateState() {
+		$app = JFactory::getApplication();
+		// Get the message id
+		$id = JRequest::getInt('id');
+		$this->setState('message.id', $id);
+		// Load the parameters.
+		$params = $app->getParams();
+		$this->setState('params', $params);
+		parent::populateState();
+	}
+
+  public function getItems() {
+
+    $db =& JFactory::getDBO();
+    $query = ' SELECT #__aaasequencingbatch.id AS id, #__aaaprojectid, #__aaaproject.title AS title, plannednumberoflanes, #__aaasequencingprimerid, indexprimerid, #__aaasequencingbatch.title AS batchno
+     #__aaasequencingbatch.labbookpage AS labbookpage, plannednumberofcycles, cost, invoice, signed, plateid,
+     GROUP_CONCAT(DISTINCT(#__aaailluminarun.illuminarunid) ORDER BY #__aaailluminarun.illuminarunid ASC) AS illids,
+     #__aaasequencingbatch.comment AS comment, #__aaasequencingbatch.user AS user, #__aaasequencingbatch.time AS time,
+     primer.primername AS primer,
+     indexp.primername AS indexprimer
+      FROM #__aaasequencingbatch
+      LEFT JOIN #__aaaproject ON #__aaasequencingbatch.#__aaaprojectid = #__aaaproject.id
+      LEFT JOIN #__aaalane ON #__aaalane.#__aaasequencingbatchid = #__aaasequencingbatch.id
+      LEFT JOIN #__aaailluminarun ON #__aaalane.#__aaailluminarunid = #__aaailluminarun.id
+      LEFT OUTER JOIN #__aaasequencingprimer primer ON #__aaasequencingbatch.#__aaasequencingprimerid = primer.id
+      LEFT OUTER JOIN #__aaasequencingprimer indexp ON #__aaasequencingbatch.indexprimerid = indexp.id
+               GROUP BY #__aaasequencingbatch.id
+               ORDER BY plateid   DESC
+
+   ';
+    $db->setQuery($query);
+//    $statement = $db->loadResult();GROUP_CONCAT(DISTINCT(illuminarunid)) AS illuminaruns,
+    $item = $db->loadObjectList();
+    return $item;  
+
+  }
+
+}

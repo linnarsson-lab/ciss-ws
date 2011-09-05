@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form
+	addrulepath="/administrator/components/com_dbapp/models/rules"
+>
+	<fieldset name="sequencingbatchdetails">
+		<field
+			name="id"
+			type="hidden"
+		/>
+		<field
+			name="plannednumberoflanes"
+			type="int"
+			label="Planned no of lanes"
+			description="the plan"
+      class="inputbox"
+			size="40"
+			required="true"
+			default=""
+		/>
+    <field
+      name="plannednumberofcycles"
+      type="int"
+      label="Planned no of cycles"
+      description="the plan"
+      class="inputbox"
+      size="40"
+      required="true"
+      default=""
+    />
+    <field
+      name="cost"
+      type="text"
+      label="Cost"
+      description="how much"
+      class="inputbox"
+      size="40"
+      required="false"
+      default=""
+    />
+    <field
+      name="invoice"
+      type="text"
+      label="Invoice"
+      description="is it sent, yes or no"
+      class="inputbox"
+      size="40"
+      required="false"
+      default=""
+    />
+    <field
+      name="signed"
+      type="text"
+      label="Signed"
+      description="is the order signed"
+      class="inputbox"
+      size="40"
+      required="false"
+      default=""
+    />
+    <field
+      name="comment"
+      type="text"
+      label="Comment"
+      description="DbApp seq run comment DESC"
+      required="false"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="user"
+      type="text"
+      label="User"
+      description="DbApp seqrun user DESC"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+    <field
+      name="time"
+      type="text"
+      label="Time"
+      description="Last edit"
+      required="true"
+      class="inputbox"
+      size="40"
+      default=""
+    />
+	</fieldset>
+  
+</form>
+

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<metadata>
+	<layout title="DbApp Sequencing Primers">
+		<message>Primers used in the Illumina sequencer</message>
+	</layout>
+	<fieldset name="sequencingprimerlist">
+			<field
+				name="id"
+				type="sequencingprimer"
+				label="DbApp Sequencing primer "
+				description="DbApp Sequencing primer ID"
+			/>
+	</fieldset>
+</metadata>
+

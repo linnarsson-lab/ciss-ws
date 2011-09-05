@@ -1,0 +1,17 @@
+SCC = This is a source code control file
+
+[SilverBullet.sln]
+SCC_Aux_Path = "P4SCC#192.168.1.3:1666##stenl##workspace"
+SCC_Project_Name = Perforce Project
+
+[temp2.csproj]
+SCC_Aux_Path = "P4SCC#192.168.1.3:1666##stenl##workspace"
+SCC_Project_Name = Perforce Project
+
+[Annotate.csproj]
+SCC_Aux_Path = "P4SCC#192.168.1.3:1666##stenl##workspace"
+SCC_Project_Name = Perforce Project
+
+[SilverBullet.csproj]
+SCC_Aux_Path = "P4SCC#192.168.1.3:1666##stenl##workspace"
+SCC_Project_Name = Perforce Project

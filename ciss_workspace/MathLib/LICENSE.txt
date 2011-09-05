@@ -1,0 +1,67 @@
+﻿LICENSE - MathematicsLib
+
+Some files (listed below) were originally developed by Sten Linnarsson, Peter Lönnerberg and 
+Ellef Hersoug at Global Genomics AB and Genizon Svenska AB. Original versions copyright © 1999-2008 
+Genizon Biosciences. All Rights Reserved. All other files, and all revisions made after February 1, 
+2008 are © 2007-2008 Sten Linnarsson (sten.linnarsson@ki.se). All Rights Reserved. 
+
+Permission to use, copy, modify, and distribute this software and its documentation 
+for any purpose is hereby granted without fee, provided that the copyright, permission 
+and disclaimer notices appears in all copies and supporting documentation.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS 
+OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY 
+AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR 
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
+IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+\Core\DownhillSimplexMethod.cs
+\Core\Polynomial.cs
+\Core\SpecialFunctions.cs
+\Interpolation\CubicSpline.cs
+\Interpolation\IInterpolation.cs
+\Interpolation\IInterpolation2D.cs
+\Interpolation\InterpolatingPolynomial.cs
+\Interpolation\PolynomialInterpolation.cs
+\Interpolation\SurfaceInterpolation.cs
+\Matrix\EigenValueDecomposition.cs
+\Matrix\LuDecomposition.cs
+\Matrix\Matrix.cs
+\Matrix\MatrixFormatter.cs
+\Matrix\QrDecomposition.cs
+\Probability\BinomialDistribution.cs
+\Probability\ChiSquareDistribution.cs
+\Probability\ConitinuousMixtureDistribution.cs
+\Probability\DescriptiveStatistics.cs
+\Probability\DiscreteMixtureDistribution.cs
+\Probability\DiscreteUniformDistribution.cs
+\Probability\FDistribution.cs
+\Probability\GammaDistribution.cs
+\Probability\Histogram.cs
+\Probability\IContinuousDistribution.cs
+\Probability\IDiscreteDistribution.cs
+\Probability\IProbabilityDistribution.cs
+\Probability\IRandomNumberGenerator.cs
+\Probability\LogNormalDistribution.cs
+\Probability\MersenneTwister.cs
+\Probability\NormalDistribution.cs
+\Probability\PoissonDistribution.cs
+\Probability\StudentTDistribution.cs
+\Probability\UniformDistribution.cs
+\Signal\EconomyHistogramLogOdds.cs
+\Signal\HighResHistoLogOdds.cs
+\Signal\HistogramLogOdds.cs
+\Signal\LogOdds.cs
+\Signal\MovingAverageFilter.cs
+\Signal\PeakDetector.cs
+\Signal\SignalData.cs
+\Signal\SplineLogOdds.cs
+\Signal\StepLogOdds.cs
+\SortSearch\Cases.cs
+\SortSearch\Pair.cs
+\SortSearch\PriorityQueue.cs
+\SortSearch\ScoreTracker.cs
+\SortSearch\Sort.cs

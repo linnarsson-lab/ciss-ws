@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Props xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <GenomesFolder>C:\data\genomes</GenomesFolder>
+  <RunsFolder>C:\data\runs</RunsFolder>
+  <ProjectsFolder>C:\data\strt</ProjectsFolder>
+  <BowtieIndexFolder>\\192.168.1.12\sequtils\bowtie-0.12.7\indexes</BowtieIndexFolder>
+  <QueueFile>\\192.168.1.12\strt\SilverBulletQueue.txt</QueueFile>
+  <LogFile>\\192.168.1.12\strt\SilverBulletLog.txt</LogFile>
+  <QueueProjectsFolder>\\192.168.1.12\strt</QueueProjectsFolder>
+  <GenerateWiggle>true</GenerateWiggle>
+  <DetermineMotifs>false</DetermineMotifs>
+  <GenesToPaint></GenesToPaint>
+  <GenerateTranscriptProfiles>false</GenerateTranscriptProfiles>
+  <GenerateGeneLocusProfiles>false</GenerateGeneLocusProfiles>
+  <GenerateGeneProfilesByBarcode>false</GenerateGeneProfilesByBarcode>
+  <AnalyzeAllGeneVariants>true</AnalyzeAllGeneVariants>
+  <BarcodeSet>v2</BarcodeSet>
+  <LocusFlankLength>1000</LocusFlankLength>
+  <SpliceFlankLength>60</SpliceFlankLength>
+  <AnalyzeExtractionQualities>false</AnalyzeExtractionQualities>
+  <MinExtractionInsertLength>25</MinExtractionInsertLength>
+  <MinExtractionInsertNonAs>5</MinExtractionInsertNonAs>
+  <LargestPossibleReadLength>300</LargestPossibleReadLength>
+  <CapRegionSize>200</CapRegionSize>
+  <BowtieMultiOptions>--phred64-quals -a -v 3 -M 5 --best --strata</BowtieMultiOptions>
+  <BowtieSingleOptions>--phred64-quals</BowtieSingleOptions>
+  <SyntheticReadsRandomMutationProb>0.005</SyntheticReadsRandomMutationProb>
+  <SynthesizeReadsFromGeneVariants>false</SynthesizeReadsFromGeneVariants>
+  <TestAnalysisFileMarker>SYNT_READS</TestAnalysisFileMarker>
+  <MaxFeatureLength>2500000</MaxFeatureLength>
+  <NumberOfAlignmentThreadsDefault>16</NumberOfAlignmentThreadsDefault>
+  <ExtractionCounterWordLength>12</ExtractionCounterWordLength>
+  <SampleLayoutFileFolder></SampleLayoutFileFolder>
+  <SampleLayoutFileFormat>{0}_PlateLayout.tab</SampleLayoutFileFormat>
+</Props>

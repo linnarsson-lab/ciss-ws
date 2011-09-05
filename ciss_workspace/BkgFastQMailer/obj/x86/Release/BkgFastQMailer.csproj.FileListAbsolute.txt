@@ -1,0 +1,13 @@
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\bin\Release\BkgFastQMailer.exe
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\bin\Release\BkgFastQMailer.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\bin\Release\Linnarsson.Dna.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\bin\Release\Linnarsson.Strt.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\bin\Release\Linnarsson.Utilities.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\bin\Release\Linnarsson.Mathematics.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\bin\Release\Linnarsson.Dna.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\bin\Release\Linnarsson.Strt.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\bin\Release\Linnarsson.Utilities.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\bin\Release\Linnarsson.Mathematics.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\obj\x86\Release\ResolveAssemblyReference.cache
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\obj\x86\Release\BkgFastQMailer.exe
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\obj\x86\Release\BkgFastQMailer.pdb

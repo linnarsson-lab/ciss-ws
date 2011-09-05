@@ -1,0 +1,43 @@
+Starting BkgFastQMailer at 20110831_170016
+Starting BkgFastQMailer at 20110831_170118
+Starting BkgFastQMailer at 20110831_170215
+Starting BkgFastQMailer at 20110831_170341
+Starting BkgFastQMailer at 20110831_170514
+*** ERROR mailing peter.lonnerberg@ki.se:System.Net.Mail.SmtpException: Failure sending mail. ---> System.IO.IOException: Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host. ---> System.Net.Sockets.SocketException: An existing connection was forcibly closed by the remote host
+   at System.Net.Sockets.Socket.Receive(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags)
+   at System.Net.Sockets.NetworkStream.Read(Byte[] buffer, Int32 offset, Int32 size)
+   --- End of inner exception stack trace ---
+   at System.Net.Sockets.NetworkStream.Read(Byte[] buffer, Int32 offset, Int32 size)
+   at System.Net.DelegatedStream.Read(Byte[] buffer, Int32 offset, Int32 count)
+   at System.Net.BufferedReadStream.Read(Byte[] buffer, Int32 offset, Int32 count)
+   at System.Net.Mail.SmtpReplyReaderFactory.ReadLines(SmtpReplyReader caller, Boolean oneLine)
+   at System.Net.Mail.SmtpReplyReaderFactory.ReadLine(SmtpReplyReader caller)
+   at System.Net.Mail.SmtpConnection.GetConnection(String host, Int32 port)
+   at System.Net.Mail.SmtpTransport.GetConnection(String host, Int32 port)
+   at System.Net.Mail.SmtpClient.GetConnection()
+   at System.Net.Mail.SmtpClient.Send(MailMessage message)
+   --- End of inner exception stack trace ---
+   at System.Net.Mail.SmtpClient.Send(MailMessage message)
+   at BkgFastQMailer.ReadMailer.NotifyClient(String email, List`1 links) in C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\ReadMailer.cs:line 113
+   at BkgFastQMailer.ReadMailer.Scan() in C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\ReadMailer.cs:line 65
+Starting BkgFastQMailer at 20110831_171446
+Starting BkgFastQMailer at 20110831_171609
+*** ERROR mailing peter.lonnerberg@ki.se:System.Net.Mail.SmtpException: Failure sending mail. ---> System.IO.IOException: Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host. ---> System.Net.Sockets.SocketException: An existing connection was forcibly closed by the remote host
+   at System.Net.Sockets.Socket.Receive(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags)
+   at System.Net.Sockets.NetworkStream.Read(Byte[] buffer, Int32 offset, Int32 size)
+   --- End of inner exception stack trace ---
+   at System.Net.Sockets.NetworkStream.Read(Byte[] buffer, Int32 offset, Int32 size)
+   at System.Net.DelegatedStream.Read(Byte[] buffer, Int32 offset, Int32 count)
+   at System.Net.BufferedReadStream.Read(Byte[] buffer, Int32 offset, Int32 count)
+   at System.Net.Mail.SmtpReplyReaderFactory.ReadLines(SmtpReplyReader caller, Boolean oneLine)
+   at System.Net.Mail.SmtpReplyReaderFactory.ReadLine(SmtpReplyReader caller)
+   at System.Net.Mail.SmtpConnection.GetConnection(String host, Int32 port)
+   at System.Net.Mail.SmtpTransport.GetConnection(String host, Int32 port)
+   at System.Net.Mail.SmtpClient.GetConnection()
+   at System.Net.Mail.SmtpClient.Send(MailMessage message)
+   --- End of inner exception stack trace ---
+   at System.Net.Mail.SmtpClient.Send(MailMessage message)
+   at BkgFastQMailer.ReadMailer.NotifyClient(String email, List`1 links) in C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\ReadMailer.cs:line 114
+   at BkgFastQMailer.ReadMailer.Scan() in C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\BkgFastQMailer\ReadMailer.cs:line 65
+Starting BkgFastQMailer at 20110831_171656
+Starting BkgFastQMailer at 20110831_172021

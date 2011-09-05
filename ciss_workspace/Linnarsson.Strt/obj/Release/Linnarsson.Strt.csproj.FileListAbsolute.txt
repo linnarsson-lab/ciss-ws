@@ -1,0 +1,11 @@
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\Linnarsson.Strt\obj\Release\ResolveAssemblyReference.cache
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\Linnarsson.Strt\bin\Release\Linnarsson.Strt.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\Linnarsson.Strt\bin\Release\Linnarsson.Strt.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\Linnarsson.Strt\obj\Release\Linnarsson.Strt.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\Linnarsson.Strt\obj\Release\Linnarsson.Strt.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\Linnarsson.Strt\bin\Release\Linnarsson.Dna.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\Linnarsson.Strt\bin\Release\Linnarsson.Mathematics.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\Linnarsson.Strt\bin\Release\Linnarsson.Utilities.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\Linnarsson.Strt\bin\Release\Linnarsson.Dna.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\Linnarsson.Strt\bin\Release\Linnarsson.Mathematics.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\Linnarsson.Strt\bin\Release\Linnarsson.Utilities.pdb

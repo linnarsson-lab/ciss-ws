@@ -1,0 +1,14 @@
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\bin\Debug\Annotate.exe.config
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\bin\Debug\Annotate.exe
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\bin\Debug\Annotate.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\bin\Debug\Linnarsson.Dna.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\bin\Debug\Linnarsson.Mathematics.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\bin\Debug\Linnarsson.Strt.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\bin\Debug\Linnarsson.Utilities.dll
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\bin\Debug\Linnarsson.Dna.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\bin\Debug\Linnarsson.Strt.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\bin\Debug\Linnarsson.Mathematics.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\bin\Debug\Linnarsson.Utilities.pdb
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\obj\x86\Debug\Annotate.exe
+C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\SilverBullet\Annotate\obj\x86\Debug\Annotate.pdb

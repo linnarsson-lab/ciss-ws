@@ -8,12 +8,14 @@ defined('_JEXEC') or die('Restricted access');
   $managerId = JRequest::getVar('managerId', "");
   $contactId = JRequest::getVar('contactId', "");
   $cancelled = JRequest::getVar('cancelled', "no");
+  $strt = JRequest::getVar('strt', "all");
   $sortKey = JRequest::getVar('sortKey', "");
   $itemid = $menu->id;
   $newlink = "<a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=0&Itemid=" . $itemid . " >&nbsp;New&nbsp;sample&nbsp;</a>";
 
   $sorturlhead = "<a href=index.php?option=com_dbapp&view=projects&layout=default&Itemid="
-                  . $itemid . "&clientId=" . urlencode($clientId) . "&cancelled=" . urlencode($cancelled)
+                  . $itemid . "&clientId=" . urlencode($clientId) . "&cancelled=" . $cancelled
+                  . "&strt=" . $strt
                   . "&managerId=" . urlencode($managerId) . "&contactId=" . urlencode($contactId) . "&sortKey=";
   $newsorter = ($sortKey == "newest")? "Newest first" : ($sorturlhead . "newest>Newest first</a>");
   $platesorter = ($sortKey == "plate")? "SampleId" : ($sorturlhead . "plate>SampleId</a>");
@@ -30,17 +32,31 @@ defined('_JEXEC') or die('Restricted access');
     $cancelhead = str_replace("cancelled=no", "cancelled=yes", $sorturlhead);
   $cancelledfilter = $cancelhead . $sortKey . ">" . $cancelchange . " cancelled</a>";
 
+  if ($strt == "yes") {
+    $strtchange = "Only non-STRT";
+    $strthead = str_replace("strt=yes", "strt=no", $sorturlhead);
+  }
+  else if ($strt == "no") {
+    $strtchange = "Show STRT & non-STRT";
+    $strthead = str_replace("strt=no", "strt=all", $sorturlhead);
+  } else {
+    $strtchange = "Only STRT";
+    $strthead = str_replace("strt=all", "strt=yes", $sorturlhead);
+  }
+  $strtfilter = $strthead . $sortKey . ">" . $strtchange . "</a>";
+
   $filterText = "";
   if ($clientId != "") $filterText .= " for P.I. " . $clientId;
   if ($managerId != "") $filterText .= " for manager " . $managerId;
   if ($contactId != "") $filterText .= " for contact " . $contactId;
   if ($cancelled == "yes") $filterText .= " including cancelled";
+  if ($strt != "all") $filterText .= " " . $strtchange;
 
   echo "<h1>Samples $filterText </h1>";
   echo "<div class='project'>
           <fieldset>
             <legend>
-               <nobr> $cancelledfilter $newlink </nobr><br /><br />
+               <nobr> $cancelledfilter $strtfilter &nbsp;&nbsp; $newlink </nobr><br /><br />
                <nobr>Sort: $newsorter $platesorter $nonasgnsorter $pisorter
                            $contactsorter $managersorter $statussorter
                </nobr>
@@ -96,6 +112,8 @@ defined('_JEXEC') or die('Restricted access');
     if ($managerId != "" && $project->person != $managerId) continue;
     if ($contactId != "" && $project->contactperson != $contactId) continue;
     if ($cancelled != "yes" && $project->status == "cancelled") continue;
+    if ($strt == "yes" && $project->plateid[0] != "L") continue;
+    if ($strt == "no" && $project->plateid[0] == "L") continue;
 
     echo "<tr>";
     $projectlink = "&nbsp; <a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 

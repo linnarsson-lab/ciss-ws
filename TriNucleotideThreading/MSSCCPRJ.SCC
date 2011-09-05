@@ -1,9 +1,0 @@
-SCC = This is a source code control file
-
-[TriNucleotideThreading.csproj]
-SCC_Aux_Path = "P4SCC#192.168.1.3:1666##stenl##Indranil-HP"
-SCC_Project_Name = Perforce Project
-
-[TriNucleotideThreading.sln]
-SCC_Aux_Path = "P4SCC#192.168.1.3:1666##stenl##Indranil-HP"
-SCC_Project_Name = Perforce Project

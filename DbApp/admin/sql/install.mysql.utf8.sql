@@ -207,6 +207,24 @@ CREATE TABLE `#__aaaanalysis` (
   FOREIGN KEY `fk_aaa_analysis_1` (`#__aaaprojectid`) REFERENCES `#__aaaproject` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `#__aaafqmailqueue`;
+CREATE TABLE `#__aaafqmailqueue` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `runno` int(11) NOT NULL,
+  `laneno` VARCHAR(255) DEFAULT NULL,
+  `email` VARCHAR(255) DEFAULT NULL,
+  `status` VARCHAR(255) DEFAULT NULL,
+  `published` TINYINT DEFAULT 1,
+  `hits` INT(11),
+  `checked_out` INT(11) DEFAULT 0,
+  `checked_out_time` DATETIME DEFAULT '0000-00-00 00:00:00',
+  `ordering` INT(11),
+  `param` TEXT,
+  `user` VARCHAR(255) DEFAULT NULL,
+  `time` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 
 SET foreign_key_checks = 1;
 

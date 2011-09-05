@@ -188,16 +188,46 @@ namespace Linnarsson.Dna
             for (int p = 0; p < maxIdx; p++)
                 positions[p] = hits[p] & ~annotMask; // Remove annotation info bit
             Array.Sort(positions);
-            List<int> stops = new List<int>();
+            Queue<int> stops = new Queue<int>();
             int hitIdx = 0;
 			int i = 0;
 			while (i < chrLength && hitIdx < maxIdx)
 			{
                 i = positions[hitIdx++];
-                stops.Add(i + averageReadLength);
+                stops.Enqueue(i + averageReadLength);
 				writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i+1);
 				while (i < chrLength && stops.Count > 0)
 				{
+                    while (hitIdx < maxIdx && positions[hitIdx] == i)
+                    {
+                        hitIdx++;
+                        stops.Enqueue(i + averageReadLength);
+                    }
+                    writer.WriteLine(stops.Count * multiplier);
+                    i++;
+                    while (stops.Count > 0 && i == stops.Peek()) stops.Dequeue();
+                }
+			}
+		}
+
+        private void OLD_WriteWiggleStrand(StreamWriter writer, string chr, int[] hits, int maxIdx,
+                                       int averageReadLength, int multiplier)
+        {
+            int chrLength = chrLengths[chr];
+            int[] positions = new int[maxIdx];
+            for (int p = 0; p < maxIdx; p++)
+                positions[p] = hits[p] & ~annotMask; // Remove annotation info bit
+            Array.Sort(positions);
+            List<int> stops = new List<int>();
+            int hitIdx = 0;
+            int i = 0;
+            while (i < chrLength && hitIdx < maxIdx)
+            {
+                i = positions[hitIdx++];
+                stops.Add(i + averageReadLength);
+                writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
+                while (i < chrLength && stops.Count > 0)
+                {
                     while (hitIdx < maxIdx && positions[hitIdx] == i)
                     {
                         hitIdx++;
@@ -207,8 +237,8 @@ namespace Linnarsson.Dna
                     i++;
                     while (stops.Count > 0 && i == stops[0]) stops.RemoveAt(0);
                 }
-			}
-		}
+            }
+        }
 
     }
 }

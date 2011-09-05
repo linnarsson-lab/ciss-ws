@@ -1,9 +1,0 @@
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\DnaLib\bin\Debug\Linnarsson.Dna.dll
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\DnaLib\bin\Debug\Linnarsson.Dna.pdb
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\DnaLib\bin\Debug\Linnarsson.Mathematics.dll
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\DnaLib\bin\Debug\Linnarsson.Utilities.dll
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\DnaLib\bin\Debug\Linnarsson.Mathematics.pdb
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\DnaLib\bin\Debug\Linnarsson.Utilities.pdb
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\DnaLib\obj\Debug\ResolveAssemblyReference.cache
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\DnaLib\obj\Debug\Linnarsson.Dna.dll
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\DnaLib\obj\Debug\Linnarsson.Dna.pdb

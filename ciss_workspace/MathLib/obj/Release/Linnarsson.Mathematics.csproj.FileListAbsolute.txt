@@ -1,7 +1,0 @@
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\MathLib\bin\Release\Linnarsson.Mathematics.dll
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\MathLib\bin\Release\Linnarsson.Mathematics.pdb
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\MathLib\bin\Release\Linnarsson.Utilities.dll
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\MathLib\bin\Release\Linnarsson.Utilities.pdb
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\MathLib\obj\Release\ResolveAssemblyReference.cache
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\MathLib\obj\Release\Linnarsson.Mathematics.dll
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\MathLib\obj\Release\Linnarsson.Mathematics.pdb

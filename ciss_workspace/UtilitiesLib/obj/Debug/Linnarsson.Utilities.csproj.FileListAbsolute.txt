@@ -1,8 +1,0 @@
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\UtilitiesLib\bin\Debug\Linnarsson.Utilities.dll
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\UtilitiesLib\bin\Debug\Linnarsson.Utilities.pdb
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\UtilitiesLib\obj\Debug\ResolveAssemblyReference.cache
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\UtilitiesLib\obj\Debug\Linnarsson.Utilities.ConsoleBox.resources
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\UtilitiesLib\obj\Debug\GenerateResource-ResGen.read.1.tlog
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\UtilitiesLib\obj\Debug\GenerateResource-ResGen.write.1.tlog
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\UtilitiesLib\obj\Debug\Linnarsson.Utilities.dll
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.3_1666\workspace\UtilitiesLib\obj\Debug\Linnarsson.Utilities.pdb

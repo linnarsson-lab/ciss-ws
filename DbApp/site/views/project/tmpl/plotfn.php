@@ -72,7 +72,8 @@ function plotHistogram($title, $xtitle, $barmids, $counts) {
 	//$graph->SetTickDensity(TICKD_SPARSE);
 	//$bplot->SetColor("white");
 	$bplot->SetFillColor("darkgreen");
-	$bplot->SetWidth(0.2);
+        $width = ($barmids[1] - $barmids[0]);
+	$bplot->SetWidth($width);
 	$graph->legend->SetFrameWeight(1);
 	$graph->xaxis->HideTicks(false,false);
 	if (strlen($xtitle) > 0) {

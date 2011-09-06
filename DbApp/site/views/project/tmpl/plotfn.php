@@ -160,7 +160,7 @@ function plot_reads($title, $labels, $values) {
 
 function plot_senseantisense($title, $labels, $ysense, $yanti) {
         $width = 500;
-        if (count($labels) > 6) $width += (count($labels) - 6) * 20;
+        if (count($labels) > 6) $width += (count($labels) - 6) * 18;
 	$graph = new Graph($width, 500, 'auto');
 	$graph->SetScale("textlin");
 	$theme_class=new UniversalTheme;

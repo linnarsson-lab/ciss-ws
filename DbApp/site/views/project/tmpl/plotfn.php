@@ -191,7 +191,7 @@ function plot_senseantisense($title, $labels, $ysense, $yanti) {
 
 function addTable($title, $values){
     $rownames = "ABCDEFGHIJKLMNOPQRSTUVW";
-    $numeric = is_numeric($values[0]);
+    $numeric = is_numeric($values[0]) || ($values[0] == "(0)");
 	if ($numeric == true) {
         $minval = log(min($values) + 0.01);
 		$colspan = log(max($values) + 0.01) - $minval;

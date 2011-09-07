@@ -29,7 +29,7 @@ defined('_JEXEC') or die('Restricted access');
           <th>Genome<br />" . JHTML::tooltip('Not displayed until results are ready') . "&nbsp;</th>
           <th>DBVer<br />" . JHTML::tooltip('Source and creation date of genome and annotation database. Note that source may have changed if the requested build was not available at processing time.') . "&nbsp;</th>
           <th>Type<br />" . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "&nbsp;</th>
-          <th>Comment&nbsp;</th>
+          <th>Com-<br />ment</th>
          </tr>";
 
     function newestsort($a, $b) { if ($a->id == $b->id) { return 0; }
@@ -65,7 +65,7 @@ defined('_JEXEC') or die('Restricted access');
     echo "<td>" . $result->genome . "&nbsp;</td>";
     echo "<td>" . $result->transcript_db_version . "&nbsp;</td>";
     echo "<td>" . $result->transcript_variant . "&nbsp;</td>";
-    echo "<td>" . $result->comment . "</td>";
+    echo "<td>" . ( (strlen($result->comment) > 4)? JHTML::tooltip($result->comment) :  $result->comment ) . "</td>";
     echo "</tr>";
   }
   echo "</table></fieldset></div><br />&nbsp;<br />";

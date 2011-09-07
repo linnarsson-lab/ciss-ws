@@ -29,6 +29,7 @@ defined('_JEXEC') or die('Restricted access');
       $barcodeset = $lane->barcodeset;
       $layoutfile = $lane->layoutfile;
       $species = $lane->species;
+      $person = $lane->person;
       break;
     }
     if ($barcodeset == "") {
@@ -148,8 +149,12 @@ if ($allowinqueue) {
           <tr>
             <td>Select manager:</td>
             <td><select id="manager" name="manager">
-                <?php foreach ($managers as $manager)
-                      {  echo '<option value="' . $manager->email . '">' . $manager->person . '</option>'; }
+                <?php $personemail = "";
+                       foreach ($managers as $manager)
+                       {
+                         if ($manager->person == $person) $personemail = $manager->email;
+                         echo '<option value="' . $manager->email . '">' . $manager->person . '</option>';
+                       }
                 ?>
                 </select>&nbsp;
                 <input type="submit" value="Add to recepient list" onClick="addManager();return false;" /></td>
@@ -161,7 +166,8 @@ if ($allowinqueue) {
           </tr>
           <tr>
             <td>Recepients:</td>
-            <td><input type="text" id="emails" name="emails" size="60" readonly="readonly" /></td>
+            <td><input type="text" id="emails" name="emails" size="60" readonly="readonly"
+                       value="<?php echo $personemail;?>"/></td>
             <td><input type="submit" value="Clear all" onClick="clearEmails();return false"; /></td>
           </tr>
         </table>

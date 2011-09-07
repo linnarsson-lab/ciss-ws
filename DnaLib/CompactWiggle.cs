@@ -120,31 +120,33 @@ namespace Linnarsson.Dna
                 if ((hits[p] & annotMask) == maskTest)
                     positions[pIdx++] = hits[p] & ~annotMask; // Remove annotation info bit
             Array.Resize(ref positions, pIdx);
+            //Console.WriteLine("Array.Hotspot Sort " + positions.Length + " values on chr " + chr + ". Start at " + DateTime.Now);
             Array.Sort(positions);
-            List<int> stops = new List<int>();
+            //Console.WriteLine("   - hotspot ready sorting at " + DateTime.Now);
+            Queue<int> stops = new Queue<int>();
             int lastHit = 0;
             int hitIdx = 0;
             int i = 0;
             while (i < chrLength && hitIdx < pIdx)
             {
                 i = positions[hitIdx++];
-                stops.Add(i + averageReadLength);
+                stops.Enqueue(i + averageReadLength);
                 while (i < chrLength && stops.Count > 0)
                 {
                     while (hitIdx < pIdx && positions[hitIdx] == i)
                     {
                         hitIdx++;
-                        stops.Add(i + averageReadLength);
+                        stops.Enqueue(i + averageReadLength);
                     }
                     i++;
-                    if (stops.Count > 0 && i == stops[0])
+                    if (stops.Count > 0 && i == stops.Peek())
                     {
                         if (i - lastHit >= 5)
                         {
                             lastHit = i;
                             hFinder.Add(stops.Count, i - (averageReadLength / 2));
                         }
-                        while (stops.Count > 0 && i == stops[0]) stops.RemoveAt(0);
+                        while (stops.Count > 0 && i == stops.Peek()) stops.Dequeue();
                     }
                 }
             }
@@ -156,6 +158,7 @@ namespace Linnarsson.Dna
                 writer.WriteLine("{0}\t{1}\t{2}\t{3}", 
                                  chr, start + averageReadLength/2, strand, counts[cI]);
             }
+            //Console.WriteLine("   - hotspot ready writing to file at " + DateTime.Now);
         }
 
         public void WriteWriggle(string file)
@@ -187,7 +190,9 @@ namespace Linnarsson.Dna
             int[] positions = new int[maxIdx];
             for (int p = 0; p < maxIdx; p++)
                 positions[p] = hits[p] & ~annotMask; // Remove annotation info bit
+            //Console.WriteLine("Array.Sort " + positions.Length + " values on chr " + chr + ". Start at " + DateTime.Now);
             Array.Sort(positions);
+            //Console.WriteLine("   - ready sorting at " + DateTime.Now);
             Queue<int> stops = new Queue<int>();
             int hitIdx = 0;
 			int i = 0;
@@ -208,7 +213,8 @@ namespace Linnarsson.Dna
                     while (stops.Count > 0 && i == stops.Peek()) stops.Dequeue();
                 }
 			}
-		}
+            //Console.WriteLine("   - ready writing to file at " + DateTime.Now);
+        }
 
         private void OLD_WriteWiggleStrand(StreamWriter writer, string chr, int[] hits, int maxIdx,
                                        int averageReadLength, int multiplier)

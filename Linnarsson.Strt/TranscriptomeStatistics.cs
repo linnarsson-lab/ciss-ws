@@ -27,7 +27,8 @@ namespace Linnarsson.Strt
         AbstractGenomeAnnotations Annotations;
         Barcodes barcodes;
 		DnaMotif[] motifs;
-        int numReads = 0;                // Total number of reads in input files
+        int numReads = 0;                // Total number of mapped reads in input .map files
+        int[] numReadsByBarcode;         // Total number of mapped reads in each barcode
         int numAltFeatureReads = 0;      // Number of reads that can stem from one of alternative features
         int numAnnotatedReads = 0;       // Number of reads that map to some annotation
         int numExonAnnotatedReads = 0;   // Number of reads that map to (one or more) exons
@@ -57,6 +58,7 @@ namespace Linnarsson.Strt
             TotalHitsByAnnotTypeAndBarcode = new int[AnnotType.Count, barcodes.Count];
             TotalHitsByAnnotTypeAndChr = new Dictionary<string, int[]>();
             TotalHitsByAnnotType = new int[AnnotType.Count];
+            numReadsByBarcode = new int[barcodes.Count];
         }
 
         public void SetRedundantHitMapper(AbstractGenomeAnnotations annotations, int averageReadLen)
@@ -78,6 +80,8 @@ namespace Linnarsson.Strt
         public void Add(BowtieMapRecord[] recs, int weight)
         {
             numReads++;
+            int bcodeIdx = recs[0].barcodeIdx;
+            numReadsByBarcode[bcodeIdx]++;
             bool someAnnotationHit = false;
             bool someExonHit = false;
             int nAltFeaturesHits = 0;
@@ -96,7 +100,6 @@ namespace Linnarsson.Strt
                 int hitLen = recs[recCount].SeqLen;
                 int halfWidth = hitLen / 2;
                 int hitMidPos = hitStartPos + halfWidth;
-                int bcodeIdx = recs[recCount].barcodeIdx;
                 foreach (FtInterval ivl in Annotations.GetMatching(chr, hitMidPos))
                 {
                     MarkResult res = ivl.Mark(hitMidPos, halfWidth, strand, bcodeIdx, ivl.ExtraData, markType);
@@ -167,7 +170,6 @@ namespace Linnarsson.Strt
                 string chr = rec.Chr;
                 char strand = rec.Strand;
                 int hitMidPos = chrStart + halfWidth;
-                int bcodeIdx = rec.barcodeIdx;
                 MarkResult res = ivl.Mark(hitMidPos, halfWidth, rec.Strand, bcodeIdx, ivl.ExtraData, markStatus);
                 if (rec.Mismatches != "")
                     ((GeneFeature)res.feature).MarkSNPs(rec.Position, bcodeIdx, rec.Mismatches);
@@ -275,6 +277,7 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
             xmlFile.WriteLine("<strtSummary project=\"{0}\">", Path.GetDirectoryName(fileNameBase));
             WriteReadStats(readCounter, txtFile, xmlFile);
+            WriteReadsBySpecies(xmlFile);
             WriteFeatureStats(txtFile, xmlFile);
             WriteSenseAntisenseStats(txtFile, xmlFile);
             WriteHitsByChromosome(xmlFile);
@@ -313,35 +316,43 @@ namespace Linnarsson.Strt
 
         private void WriteReadStats(ReadCounter readCounter, StreamWriter txtFile, StreamWriter xmlFile)
         {
-            int totalReads = readCounter.GrandTotal;
-            if (totalReads == 0) totalReads = numReads;
+            int allBcCount = barcodes.Count;
+            int spBcCount = barcodes.GenomeBarcodeIndexes(Annotations.Genome, false).Length;
+            double totalReads = readCounter.GrandTotal;
+            if (totalReads < 0.0001) totalReads = numReads;
             xmlFile.WriteLine("    <readfiles>");
             foreach (string path in readCounter.GetReadFiles())
                 xmlFile.WriteLine("      <readfile path=\"{0}\" />", path); 
             xmlFile.WriteLine("    </readfiles>");
             xmlFile.WriteLine("  <reads>");
-            xmlFile.WriteLine("    <title>Read distribution (10^6) by categories</title>");
-            xmlFile.WriteLine("    <point x=\"All reads (100%)\" y=\"{0}\" />", totalReads / 1.0E6d);
+            xmlFile.WriteLine("    <title>Read distribution (10^6). [# samples/wells]</title>");
+            xmlFile.WriteLine("    <point x=\"All reads [{0}] (100%)\" y=\"{1}\" />", allBcCount, totalReads / 1.0E6d);
             int validReads = readCounter.GrandCount(ReadStatus.VALID);
-            xmlFile.WriteLine("    <point x=\"Valid STRT ({1:0%})\" y=\"{0}\" />", validReads / 1.0E6d, validReads / (double)totalReads);
-            xmlFile.WriteLine("    <point x=\"Mapped ({1:0%})\" y=\"{0}\" />", numReads / 1.0E6d, numReads / (double)totalReads);
-            xmlFile.WriteLine("    <point x=\"Annotated ({1:0%})\" y=\"{0}\" />", numAnnotatedReads / 1.0E6d, numAnnotatedReads / (double)totalReads);
+            xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />", allBcCount, validReads / totalReads, validReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Mapped [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numReads / totalReads, numReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Annotated [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
+                              numAnnotatedReads / totalReads, numAnnotatedReads / 1.0E6d);
             if (Props.props.DirectionalReads)
             {
-                xmlFile.WriteLine("    <point x=\"Exon(sense) ({1:0%})\" y=\"{0}\" />", numExonAnnotatedReads / 1.0E6d, numExonAnnotatedReads / (double)totalReads);
-                xmlFile.WriteLine("    <point x=\"Intron(sense) ({1:0%})\" y=\"{0}\" />", TotalHitsByAnnotType[AnnotType.INTR] / 1.0E6d, TotalHitsByAnnotType[AnnotType.INTR] / (double)totalReads);
+                xmlFile.WriteLine("    <point x=\"Exon(sense) [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
+                                  numExonAnnotatedReads / totalReads, numExonAnnotatedReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Intron(sense) [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, 
+                                  TotalHitsByAnnotType[AnnotType.INTR] / totalReads, TotalHitsByAnnotType[AnnotType.INTR] / 1.0E6d);
             }
             else
             {
                 int numIntronHits = TotalHitsByAnnotType[AnnotType.INTR] + TotalHitsByAnnotType[AnnotType.AINTR];
-                xmlFile.WriteLine("    <point x=\"Exon ({1:0%})\" y=\"{0}\" />", numExonAnnotatedReads / 1.0E6d, numExonAnnotatedReads / (double)totalReads);
-                xmlFile.WriteLine("    <point x=\"Intron ({1:0%})\" y=\"{0}\" />", numIntronHits / 1.0E6d, numIntronHits / (double)totalReads);
+                xmlFile.WriteLine("    <point x=\"Exon [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
+                                   numExonAnnotatedReads / totalReads, numExonAnnotatedReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Intron [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, 
+                                   numIntronHits / totalReads, numIntronHits / 1.0E6d);
             }
-            xmlFile.WriteLine("    <point x=\"Repeat ({1:0%})\" y=\"{0}\" />", TotalHitsByAnnotType[AnnotType.REPT] / 1.0E6d, TotalHitsByAnnotType[AnnotType.REPT] / (double)totalReads);
+            xmlFile.WriteLine("    <point x=\"Repeat [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
+                               TotalHitsByAnnotType[AnnotType.REPT] / totalReads, TotalHitsByAnnotType[AnnotType.REPT] / 1.0E6d);
             xmlFile.WriteLine("  </reads>");
 
             txtFile.WriteLine(readCounter.TotalsToString());
-            txtFile.WriteLine("Number of reads mapped to genome: {0} ({1:0%})", numReads, numReads / (double)totalReads);
+            txtFile.WriteLine("Number of reads mapped to genome: {0} ({1:0%})", numReads, numReads / totalReads);
             if (numAltFeatureReads == 0)
                 txtFile.WriteLine("Alternative mappings to genome were not analyzed.");
             else
@@ -350,9 +361,42 @@ namespace Linnarsson.Strt
             txtFile.WriteLine("Number of reads with > max alt. genome mappings and shown hit is not exon: " + nMaxAltMappingsReadsWOTrHit);
             txtFile.WriteLine("Number of reads mapped to some annotated position (gene locus or repeat): " + numAnnotatedReads);
             txtFile.WriteLine("Number of reads mapped only to position(s) without annotation: " + (numReads - numAnnotatedReads));
-            txtFile.WriteLine("Number of reads mapped to a transcript: {0} ({1:0%})", numExonAnnotatedReads, numExonAnnotatedReads / (double)totalReads);
+            txtFile.WriteLine("Number of reads mapped to a transcript: {0} ({1:0%})", numExonAnnotatedReads, numExonAnnotatedReads / totalReads);
         }
 
+        private void WriteReadsBySpecies(StreamWriter xmlFile)
+        {
+            if (!barcodes.HasSampleLayout() || !Props.props.DirectionalReads) return;
+            int[] genomeBcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome);
+            WriteSpeciesReadSection(xmlFile, genomeBcIndexes, Annotations.Genome.Name);
+            int[] emptyBcIndexes = barcodes.EmptyBarcodeIndexes();
+            WriteSpeciesReadSection(xmlFile, emptyBcIndexes, "empty");
+        }
+
+        private void WriteSpeciesReadSection(StreamWriter xmlFile, int[] speciesBcIndexes, string speciesName)
+        {
+            double nMappedReads = 0;
+            double nAnnotated = 0;
+            foreach (int bcIdx in speciesBcIndexes)
+            {
+                nMappedReads += numReadsByBarcode[bcIdx];
+                nAnnotated += NumAnnotatedHitsByBarcode[bcIdx];
+            }
+            xmlFile.WriteLine("  <reads species=\"{0}\">", speciesName);
+            xmlFile.WriteLine("    <title>Mapped read distribution (10^6) by categories in {0} {1} wells</title>",
+                              speciesBcIndexes.Length, speciesName);
+            xmlFile.WriteLine("    <point x=\"Mapped (100%)\" y=\"{0}\" />", nMappedReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Annotated (0:0%)\" y=\"{1}\" />", nAnnotated / nMappedReads, nAnnotated / 1.0E6d);
+            foreach (int annotType in new int[] { AnnotType.EXON, AnnotType.INTR, AnnotType.AEXON, AnnotType.REPT })
+            {
+                int nType = 0;
+                foreach (int bcIdx in speciesBcIndexes)
+                    nType += TotalHitsByAnnotTypeAndBarcode[annotType, bcIdx];
+                xmlFile.WriteLine("    <point x=\"{0} ({1:0%})\" y=\"{2}\" />", AnnotType.GetName(annotType), nType / nMappedReads, nType / 1.0E6d);
+            }
+            xmlFile.WriteLine("  </reads>");
+        }
+        
         private void WriteLibraryDepth(StreamWriter txtFile, StreamWriter xmlFile)
         {
             xmlFile.WriteLine("  <librarydepth>");
@@ -401,7 +445,7 @@ namespace Linnarsson.Strt
         private void WriteHitsByChromosome(StreamWriter xmlFile)
         {
             xmlFile.WriteLine("  <senseantisensebychr>");
-            xmlFile.WriteLine("    <title>% of mapped reads that hit Sense and Antisense exons by chromosome</title>");
+            xmlFile.WriteLine("    <title>% of reads mapped to Sense/Antisense exons [ratio below] by chromosome</title>");
             List<int> numkeys = new List<int>();
             List<string> alphakeys = new List<string>();
             int v;
@@ -419,7 +463,7 @@ namespace Linnarsson.Strt
                     continue;
                 double nSense = TotalHitsByAnnotTypeAndChr[chr][AnnotType.EXON];
                 double nAsense = TotalHitsByAnnotTypeAndChr[chr][AnnotType.AEXON];
-                string ratio = (nAsense == 0)? "1:0" : string.Format("{0:0}:1", nSense / (double)nAsense);
+                string ratio = (nAsense == 0)? "1:0" : string.Format("{0:0}", nSense / (double)nAsense);
                 xmlFile.WriteLine("    <point x=\"{0}#br#{1}\" y=\"{2:0.###}\" y2=\"{3:0.###}\" />",
                                   chr, ratio, 100.0d *(nSense / (double)numReads), 100.0d * (nAsense / (double)numReads));
             }

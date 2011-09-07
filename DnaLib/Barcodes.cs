@@ -150,6 +150,14 @@ namespace Linnarsson.Dna
                     indexes.Add(idx);
             return indexes.ToArray();
         }
+        public int[] EmptyBarcodeIndexes()
+        {
+            if (m_SpeciesByWell == null) return new int[] {};
+            List<int> indexes = new List<int>();
+            for (int i = 0; i < m_SpeciesByWell.Length; i++)
+                if (m_SpeciesByWell[i].ToLower() == "empty") indexes.Add(i);
+            return indexes.ToArray();
+        }
 
         public string GetWellId(int wellIdx)
         {

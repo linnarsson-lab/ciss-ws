@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Diagnostics;
 using System.Threading;
 using Linnarsson.Strt;
 using Linnarsson.Dna;
@@ -18,7 +19,7 @@ namespace BkgFastQMailer
         {
             int minutesWait = 15; // Time between scans.
             string readsFolder = Props.props.ReadsFolder;
-            string logFile = Props.props.MailerLogFile;
+            string logFile = new FileInfo("BFQM_" + Process.GetCurrentProcess().Id + ".log").FullName;
 
             try
             {
@@ -53,13 +54,14 @@ namespace BkgFastQMailer
             }
             if (!File.Exists(logFile))
             {
-                Console.WriteLine("Can not find logfile {0}. Creating it.", logFile);
+                Console.WriteLine("Can not find {0}. Creating it.", logFile);
                 File.Create(logFile).Close();
             }
-            Console.WriteLine("BkgFastQMailer logging to " + logFile);
             StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
-            logWriter.WriteLine("Starting BkgFastQMailer at " + DateTime.Now.ToPathSafeString());
+            string now = DateTime.Now.ToString();
+            logWriter.WriteLine("Starting BkgFastQMailer at " + now);
             logWriter.Flush();
+            Console.WriteLine("BkgFastQMailer stated at " + now + " and logging to " + logFile);
 
             ReadMailer readMailer = new ReadMailer(readsFolder, logWriter);
             int nExceptions = 0;

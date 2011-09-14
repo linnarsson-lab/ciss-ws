@@ -179,7 +179,20 @@ namespace Linnarsson.Strt
             return pds;
         }
 */
+        public ProjectDescription GetNextProjectInQueue()
+        {
+            ProjectDescription pd = null;
+            List<ProjectDescription> queue = GetProjectDescriptions("WHERE a.status=\"" + ProjectDescription.STATUS_INQUEUE + "\"");
+            if (queue.Count > 0)
+                pd = queue[0];
+            return pd;
+        }
+
         public List<ProjectDescription> GetProjectDescriptions()
+        {
+            return GetProjectDescriptions("");
+        }
+        private List<ProjectDescription> GetProjectDescriptions(string whereClause)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             List<ProjectDescription> pds = new List<ProjectDescription>();
@@ -191,7 +204,8 @@ namespace Linnarsson.Strt
                          "RIGHT JOIN jos_aaaanalysislane al ON a.id = al.jos_aaaanalysisid " +
                          "LEFT JOIN jos_aaalane l ON al.jos_aaalaneid = l.id " +
                          "LEFT JOIN jos_aaailluminarun r ON l.jos_aaailluminarunid = r.id " +
-                         "GROUP BY a.id, runid ORDER BY a.id, p.plateid, runid;";
+                         whereClause + 
+                         " GROUP BY a.id, runid ORDER BY a.id, p.plateid, runid;";
             try
             {
                 conn.Open();
@@ -300,56 +314,7 @@ namespace Linnarsson.Strt
             }
             conn.Close();
         }
-/*
-        public void OLD_UpdateDB(ProjectDescription projDescr)
-        {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            string sql = string.Format("UPDATE jos_aaaproject SET status=\"{0}\" WHERE plateid=\"{1}\";",
-                                       projDescr.status, projDescr.projectName);
-            try
-            {
-                conn.Open();
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                cmd.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-            conn.Close();
-        }
 
-        public void OLD_PublishResults(ProjectDescription projDescr)
-        {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            try
-            {
-                string sql = string.Format("SELECT id FROM jos_aaaproject WHERE plateid=\"{0}\";", projDescr.projectName);
-                conn.Open();
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                int projectId = Convert.ToInt32(cmd.ExecuteScalar());
-                int laneCount = projDescr.LaneCount;
-                foreach (ResultDescription resultDescr in projDescr.resultDescriptions)
-                {
-                    string[] parts = resultDescr.bowtieIndexVersion.Split('_');
-                    string genome = parts[0];
-                    string variants = (parts[1][0] == 'a') ? "all" : "single";
-                    string dbbuild = parts[1].Substring(1);
-                    sql = string.Format("INSERT INTO jos_aaaanalysis " +
-                            "(jos_aaaprojectid, extraction_version, annotation_version, genome, transcript_db_version, transcript_variant, lanecount, resultspath) " +
-                            "VALUES (\"{0}\", \"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\");", projectId,
-                            projDescr.extractionVersion, projDescr.annotationVersion, genome, dbbuild, variants, laneCount, resultDescr.resultFolder);
-                    cmd = new MySqlCommand(sql, conn);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-            conn.Close();
-        }
-*/
         /// <summary>
         /// Sets the bcl copy/collection status of a run.
         /// </summary>

@@ -246,7 +246,7 @@ namespace Linnarsson.Strt
             return Extract(readsFiles, outputFolder); 
         }
 
-        public static readonly string EXTRACTION_VERSION = "23";
+        public static readonly string EXTRACTION_VERSION = "24";
         private List<string> Extract(List<string> readsFiles, string outputFolder)
         {
             DateTime start = DateTime.Now;
@@ -496,7 +496,7 @@ namespace Linnarsson.Strt
             return indexVersion;
         }
 
-        public static readonly string ANNOTATION_VERSION = "29";
+        public static readonly string ANNOTATION_VERSION = "31";
         /// <summary>
         /// Annotate output from Bowtie alignment
         /// </summary>
@@ -556,7 +556,7 @@ namespace Linnarsson.Strt
                 Background.Message("File " + (nFile++) + "/" + mapFiles.Count);
                 int n = AnnotateRedundantBowtieReads(ts, mapFile, genome);
                 int nWells = barcodes.GenomeBarcodeIndexes(genome).Length;
-                Console.WriteLine(n + " reads matching " + nWells + " " + genome.Abbrev + "/empty samples were found.");
+                Console.WriteLine(n + " reads matching " + nWells + " " + genome.Abbrev + " or empty samples were found.");
                 if (ts.GetNumMappedReads() == 0)
                     Console.WriteLine("WARNING: contigIds of reads do not seem to match with genome Ids.\n" +
                                       "Was the Bowtie index made on a different genome or contig set?");
@@ -578,10 +578,11 @@ namespace Linnarsson.Strt
             BowtieMapFile bmf = new BowtieMapFile(barcodes);
             bool singleSpecies = !barcodes.HasSampleLayout();
             int[] genomeBcIndexes = barcodes.GenomeBarcodeIndexes(genome);
+            HashSet<int> validBcIndexes = new HashSet<int>(genomeBcIndexes);
             StreamReader reader = file.OpenRead();
             foreach (BowtieMapRecord[] recs in bmf.ReadBlocks(reader, 12))
             {
-                if (singleSpecies || genomeBcIndexes.Contains(recs[0].barcodeIdx))
+                if (singleSpecies || validBcIndexes.Contains(recs[0].barcodeIdx))
                 {
                     genomeN++;
                     ts.Add(recs, 1);

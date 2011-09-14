@@ -51,7 +51,7 @@ namespace Linnarsson.Strt
 
         public override string[] GetChromosomeNames()
         {
- 	        return ChromosomeSequences.Keys.ToArray();
+ 	        return QuickAnnotations.Keys.ToArray();
         }
 
         private void MarkUpOverlappingFeatures()
@@ -137,7 +137,7 @@ namespace Linnarsson.Strt
             annotationsPath = PathHandler.ExistsOrGz(annotationsPath);
             if (annotationsPath == null)
                 throw new NoAnnotationsFileFoundException("Could not find annotation file: " + annotationsPath);
-            Console.WriteLine("Annotations read from " + Path.GetFileName(annotationsPath) + ".");
+            Console.WriteLine("Annotations from " + annotationsPath + ".");
             LoadAnnotationsFile(annotationsPath);
         }
 

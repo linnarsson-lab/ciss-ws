@@ -144,7 +144,8 @@ namespace Linnarsson.Strt
         private int minReadLength;
         private int minInsertNonAs;
         private string[] barcodeSeqs;
-        private string[] barcodesWithTSSeq;
+        //private string[] barcodesWithTSSeq;
+        private Dictionary<string, int> barcodesWithTSSeq;
         private char lastNtOfTSSeq;
         private int firstNegBarcodeIndex;
 
@@ -157,7 +158,11 @@ namespace Linnarsson.Strt
             minReadLength = barcodes.GetInsertStartPos() + props.MinExtractionInsertLength;
             minInsertNonAs = props.MinExtractionInsertNonAs;
             barcodeSeqs = barcodes.Seqs;
-            barcodesWithTSSeq = barcodes.GetBarcodesWithTSSeq();
+            int sIdx = 0;
+            barcodesWithTSSeq = new Dictionary<string, int>();
+            foreach (string s in barcodes.GetBarcodesWithTSSeq())
+                barcodesWithTSSeq[s] = sIdx++;
+            //barcodesWithTSSeq = barcodes.GetBarcodesWithTSSeq();
             lastNtOfTSSeq = barcodes.TSTrimNt;
             firstNegBarcodeIndex = barcodes.FirstNegBarcodeIndex;
         }
@@ -169,7 +174,9 @@ namespace Linnarsson.Strt
             int insertLength = TrimTrailingAN(rSeq);
             if (insertLength < minReadLength)
                 return ReadStatus.LENGTH_ERROR;
-            int bcIdx = Array.IndexOf(barcodesWithTSSeq, rSeq.Substring(barcodePos, bcWithTSSeqLen));
+            int bcIdx;
+             //int bcIdx = Array.IndexOf(barcodesWithTSSeq, rSeq.Substring(barcodePos, bcWithTSSeqLen));
+            bcIdx = (barcodesWithTSSeq.TryGetValue(rSeq.Substring(barcodePos, bcWithTSSeqLen), out bcIdx)) ? bcIdx : -1;
             if (bcIdx == -1)
                 return ReadStatus.BARCODE_ERROR;
             if (bcIdx >= firstNegBarcodeIndex)

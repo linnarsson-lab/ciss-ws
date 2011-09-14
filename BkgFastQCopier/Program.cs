@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Diagnostics;
 using System.Threading;
 using Linnarsson.Utilities;
 using Linnarsson.Dna;
@@ -18,7 +19,7 @@ namespace BkgFastQCopier
             int minutesWait = 15; // Time between scans.
             string illuminaRunsFolder = Props.props.RunsFolder;
             string outputReadsFolder = Props.props.ReadsFolder;
-            string logFile = Props.props.CopierLogFile;
+            string logFile = new FileInfo("BFQC_" + Process.GetCurrentProcess().Id + ".log").FullName;
 
             try 
             {
@@ -61,10 +62,11 @@ namespace BkgFastQCopier
                 Console.WriteLine("Can not find logfile {0}. Creating it.", logFile);
                 File.Create(logFile).Close();
             }
-            Console.WriteLine("BkgFastQCopier logging to " + logFile);
             StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
-            logWriter.WriteLine("Starting BkgFastQCopier at " + DateTime.Now.ToPathSafeString());
+            string now = DateTime.Now.ToString();
+            logWriter.WriteLine("Starting BkgFastQCopier at " + now);
             logWriter.Flush();
+            Console.WriteLine("BkgFastQCopier started at " + now + " and logging to " + logFile);
 
             ReadCopier readCopier = new ReadCopier(illuminaRunsFolder, outputReadsFolder, logWriter);
             int nExceptions = 0;

@@ -4,6 +4,7 @@ using System.Linq;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Diagnostics;
 using Linnarsson.Dna;
 using Linnarsson.Strt;
 using Linnarsson.Utilities;
@@ -16,9 +17,9 @@ namespace ProjectDBProcessor
     {
         static void Main(string[] args)
         {
-            string logFile = Props.props.LogFile;
             int minutesWait = 5; // Time between scans to wait for new data to appear in queue.
             int maxExceptions = 20; // Max number of exceptions before giving up.
+            string logFile = new FileInfo("PDBP_" + Process.GetCurrentProcess().Id + ".log").FullName;
             try
             {
                 int i = 0;
@@ -51,16 +52,19 @@ namespace ProjectDBProcessor
             {
                 File.Create(logFile).Close();
             }
-            ProjectDB projectDB = new ProjectDB();
-            Run(minutesWait, maxExceptions, logFile, projectDB);
-        }
-
-        private static void Run(int minutesWait, int maxExceptions, string logFile, ProjectDB projectDB)
-            {
             StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
-            logWriter.WriteLine("ProjectDBProcessor started at " + DateTime.Now.ToString() +
+            string now = DateTime.Now.ToString();
+            logWriter.WriteLine("ProjectDBProcessor started at " + now +
                                 " ScanInterval=" + minutesWait + " minutes. Max#Exceptions=" + maxExceptions);
             logWriter.Flush();
+            Console.WriteLine("ProjectDBProcessor started " + now + " and logging to " + logFile);
+
+            ProjectDB projectDB = new ProjectDB();
+            Run(minutesWait, maxExceptions, logWriter, projectDB);
+        }
+
+        private static void Run(int minutesWait, int maxExceptions, StreamWriter logWriter, ProjectDB projectDB)
+        { 
             int nExceptions = 0;
             while (nExceptions < maxExceptions)
             {
@@ -96,10 +100,9 @@ namespace ProjectDBProcessor
 
         private static void ScanDB(ProjectDB projectDB, StreamWriter logWriter)
         {
-            List<ProjectDescription> queue = projectDB.GetProjectDescriptions();
-            foreach (ProjectDescription projDescr in queue.Where(pd => pd.status == ProjectDescription.STATUS_INQUEUE))
+            ProjectDescription pd = projectDB.GetNextProjectInQueue();
+            while (pd != null)
             {
-                ProjectDescription pd = projDescr;
                 if (CheckAllReadsCollected(ref pd))
                 {
                     pd.status = ProjectDescription.STATUS_PROCESSING;
@@ -118,7 +121,6 @@ namespace ProjectDBProcessor
                         pd.managerEmails = Props.props.FailureReportEmail;
                         logWriter.WriteLine("*** ERROR: ProjectDBProcessor processing " + pd.projectName + " ***\n" + e);
                         logWriter.Flush();
-                        Console.WriteLine("*** ERROR: ProjectDBProcessor processing " + pd.projectName + " ***\n" + e);
                         results.Add(e.ToString());
                     }
                     NotifyManager(pd, results);
@@ -127,11 +129,15 @@ namespace ProjectDBProcessor
                     Console.WriteLine(pd.projectName + "[analysisId=" + pd.analysisId + "] finished with status " + pd.status);
                     logWriter.Flush();
                 }
+                pd = projectDB.GetNextProjectInQueue();
             }
         }
 
         private static void ProcessItem(ProjectDescription projDescr, StreamWriter logWriter)
         {
+            logWriter.WriteLine("Processing " + projDescr.projectName + " - " + projDescr.LaneCount + " lanes [DBId=" + projDescr.analysisId + "]...");
+            logWriter.Flush();
+            DateTime d = DateTime.Now;
             if (projDescr.layoutFile != "")
             {
                 string layoutSrcPath = Path.Combine(Props.props.UploadsFolder, projDescr.layoutFile);
@@ -151,6 +157,8 @@ namespace ProjectDBProcessor
             Props.props.BarcodesName = projDescr.barcodeSet;
             StrtReadMapper mapper = new StrtReadMapper(Props.props);
             mapper.Process(projDescr);
+            logWriter.WriteLine("..." + projDescr.projectName + " done after " + DateTime.Now.Subtract(d) + ".");
+            logWriter.Flush();
         }
 
         private static void NotifyManager(ProjectDescription projDescr, List<string> results)
@@ -206,7 +214,7 @@ namespace ProjectDBProcessor
                         File.Delete(docFileDest);
                     File.Copy(Props.props.OutputDocFile, docFileDest);
                 }
-                string resultTarName = projDescr.projectName + "_" + DateTime.Now.ToPathSafeString() + ".tar.gz";
+                string resultTarName = Path.GetFileName(resultDescr.resultFolder) + ".tar.gz";
                 string tempTarGzPath = Path.Combine(Path.GetTempPath(), resultTarName);
                 CompressResult(resultDescr.resultFolder, tempTarGzPath);
                 string cmdArg = string.Format("-P 9952 {0} {1}", tempTarGzPath, Props.props.ResultDownloadUrl);

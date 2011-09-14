@@ -54,7 +54,7 @@ namespace Linnarsson.Dna
                         try
                         {
                             if (genesByChr[gf.Chr].FindIndex(
-                                    (g) => GeneFeature.StripVersionPart(g.Name) == gf.Name) >= 0)
+                                    (g) => g.NonVariantName == gf.Name) >= 0)
                                 continue;
                         }
                         catch (KeyNotFoundException) { }

@@ -9,6 +9,7 @@ namespace Linnarsson.Dna
     public interface IFeature
     {
         string Name { get; set; }
+        string NonVariantName { get; }
         int GetLocusLength();
         int GetTotalHits();
         int GetTotalHits(bool sense);

@@ -8,7 +8,31 @@ namespace Linnarsson.Dna
 {
     public class LocusFeature : IFeature
     {
-        public string Name { get; set; }
+        public readonly static string variantIndicator = "_v";
+
+        public bool IsVariant()
+        {
+            return Name.Contains(variantIndicator);
+        }
+        public bool IsMainVariant()
+        {
+            return !Name.Contains(variantIndicator);
+        }
+
+        private string m_Name;
+        public string Name
+        {
+            get { return m_Name; }
+            set
+            {
+                m_Name = value;
+                int pos = value.IndexOf(variantIndicator);
+                if (pos > 0) m_NonVariantName = value.Substring(0, pos);
+                else m_NonVariantName = value;
+            }
+        }
+        private string m_NonVariantName;
+        public string NonVariantName { get { return m_NonVariantName; } }
         public string Chr { get; set; }
         public char Strand { get; set; }
         protected int m_Start;

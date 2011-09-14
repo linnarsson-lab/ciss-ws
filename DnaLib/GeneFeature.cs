@@ -10,7 +10,6 @@ namespace Linnarsson.Dna
 {
     public class GeneFeature : LocusFeature
     {
-        public readonly static string variantIndicator = "_v";
         public readonly static string pseudoGeneIndicator = "_p";
         public readonly static string altLocusIndicator = "_loc";
         public readonly static string nonUTRExtendedIndicator = variantIndicator + "Original";
@@ -183,10 +182,6 @@ namespace Linnarsson.Dna
             return GetTranscriptHits() > 0;
         }
 
-        public bool IsMainVariant()
-        {
-            return ! Name.Contains(variantIndicator);
-        }
         public bool IsSpike()
         {
             return Name.Contains("_SPIKE");
@@ -389,7 +384,7 @@ namespace Linnarsson.Dna
                 return new MarkResult(annotType, this);
             if (markType == MarkStatus.TEST_EXON_MARK_OTHER)
             {
-                if (!AnnotType.IsTranscript(annotType)) // (annotType == AnnotType.AEXON) for analysis of directional reads
+                if (!AnnotType.IsTranscript(annotType))
                 {   // Only happens for directional AEXON reads
                     MarkLocusHitPos(chrHitPos, strand, bcodeIdx);
                     IncrTotalHits(strand == Strand);
@@ -546,18 +541,6 @@ namespace Linnarsson.Dna
             for (int i = 0; i < nParts; i++)
                 parts[i] = int.Parse(items[i]) + offset;
             return parts;
-        }
-
-        public static string StripVersionPart(string featureName)
-        {
-            int pos = featureName.IndexOf(variantIndicator);
-            if (pos == -1) return featureName;
-            return featureName.Substring(0, pos);
-        }
-
-        public bool IsVariant()
-        {
-            return Name.Contains(variantIndicator);
         }
 
         /// <summary>

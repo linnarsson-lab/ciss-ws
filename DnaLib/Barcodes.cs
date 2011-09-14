@@ -120,7 +120,7 @@ namespace Linnarsson.Dna
             }
         }
 
-        public bool GenomeMatchesWell(StrtGenome genome, int barcodeIdx, bool strict)
+        private bool GenomeMatchesWell(StrtGenome genome, int barcodeIdx, bool strict)
         {
             if (m_SpeciesByWell == null) return true;
             string speciesId = m_SpeciesByWell[barcodeIdx].ToLower();

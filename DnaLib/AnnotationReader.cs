@@ -130,18 +130,18 @@ namespace Linnarsson.Dna
             try
             {
                 GeneFeature prevGf = nameToGene[gf.Name];
-                if (!prevGf.Name.Contains(GeneFeature.variantIndicator))
+                if (!prevGf.IsVariant())
                 {
-                    string firstNameWithVariant = prevGf.Name + GeneFeature.variantIndicator + "1";
+                    string firstNameWithVariant = prevGf.Name + LocusFeature.variantIndicator + "1";
                     prevGf.Name = firstNameWithVariant;
                     nameToGene[firstNameWithVariant] = prevGf;
                 }
                 int ver = 2;
-                string versionName = gf.Name + GeneFeature.variantIndicator + ver.ToString();
+                string versionName = gf.Name + LocusFeature.variantIndicator + ver.ToString();
                 while (nameToGene.ContainsKey(versionName))
                 {
                     ver++;
-                    versionName = gf.Name + GeneFeature.variantIndicator + ver.ToString();
+                    versionName = gf.Name + LocusFeature.variantIndicator + ver.ToString();
                 }
                 gf.Name = versionName;
             }

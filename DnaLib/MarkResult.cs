@@ -12,12 +12,10 @@ namespace Linnarsson.Dna
     {
         public int annotType;
         public IFeature feature;
-        //public List<Pair<int, GeneFeature>> AltGfPositions; // Alternative mapping genes and their chr positions
         public MarkResult(int annotType, IFeature feature)
         {
             this.annotType = annotType;
             this.feature = feature;
-            //this.AltGfPositions = null;
         }
     }
     public delegate MarkResult DoMarkHit(int chrHitPos, int halfWidth, char strand,

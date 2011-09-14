@@ -264,6 +264,7 @@ namespace Junction_labels_simulator
                                     {
                                         //MessageBox.Show("I at Tsp_count=" + Tsp_count); 
                                         Tsp_len = second_Tsp - first_Tsp;
+                                        if (Tsp_len < 100) goto Next_Tsp;
                                         Tsp_ds=molecule_ds.SubSequence(first_Tsp,Tsp_len);
                                         CF9L = CF9R;
                                         if (Tsp_ds.Count >= 9) // new changed
@@ -305,6 +306,8 @@ namespace Junction_labels_simulator
                                     }
                                     
                                 }
+                            Next_Tsp:
+                                ;
                             }
                             
                         }
@@ -339,37 +342,119 @@ namespace Junction_labels_simulator
                     
                     //output3.Close();
 
-                    // this code will generate a fastq file with random quality score
+                    // this code will generate 2 fastq files with fixed random quality score. To check the output replace the output4 and output5 with some other name******* 
+                    //string Totseq_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones.txt"));
+                    //var output4 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_1.fq")).OpenWrite();
+                    //var output5 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_2.fq")).OpenWrite();
+                    //string[] Totseq_lines = System.IO.File.ReadAllLines(Totseq_file);
+                    ////Random rndReads = new Random();
+                    //long totReads = 0;
+                    //int readCounting = 0;
+                    //int readNo=0;
+                    //for (int i = 1; i < Totseq_lines.Length; i++)
+                    //{
+                    //    string Totseq_oneline = Totseq_lines[i];
+                    //    string[] Totseq_lineitems = Totseq_oneline.Split('\t');
+                    //    int readlen =Convert.ToInt32(readLenTxt.Text);
+                    //    //int readC = Convert.ToInt32(Totseq_lineitems[13]); 
+                    //    double random_no = Tsp_rnd.NextDouble();
+
+                    //    //double quality_scr = 30; //-10 * Math.Log10(random_no/(1-random_no));
+                    //    int[] quality_scr = new int[1000];
+                    //    DnaSequence fwdseq = new DnaSequence(Totseq_lineitems[12]);
+                    //    DnaSequence revSeq = new DnaSequence(Totseq_lineitems[12]);
+                    //    //string fwdseq = "", revSeq = "";
+                    //    //double quality_scr = -10 * Math.Log10(0.05 / (1 - 0.05));
+                    //    //MessageBox.Show(quality_scr.ToString()); 
+                    //    if (readlen >= Totseq_lineitems[12].Length)
+                    //    {
+                            
+                    //        //fwdseq = Totseq_lineitems[12];
+                    //        //revSeq = Reverse(Totseq_lineitems[12]);
+                    //        quality_scr = new int[readlen];
+                    //        for (int k = 0; k < Totseq_lineitems[12].Length; k++)
+                    //        {
+                    //            quality_scr[k] = 94;
+
+                    //        }
+                    //    }
+                    //    else if (readlen < Totseq_lineitems[12].Length)
+                    //    {
+                    //        //fwdseq = Fwd100(Totseq_lineitems[12]);
+                    //        //revSeq = Reverse100(Totseq_lineitems[12]);
+                    //        fwdseq = fwdseq.SubSequence(0, 100);
+                    //        revSeq = revSeq.SubSequence(0, 100);
+                    //        revSeq.RevComp();
+                    //        quality_scr = new int[100];
+                    //        for (int k = 0; k < 100; k++)
+                    //        {
+                    //            quality_scr[k] = 94;
+
+                    //        }
+                    //    }
+                    //    //readCount = rndReads.Next(Reads_in_million);
+                    //    readCounting = Convert.ToInt32(Totseq_lineitems[13]);
+
+                    //    //totReads = totReads + (2 * readCount);
+                    //    totReads = (totReads + readCounting)/2;
+                    //    //MessageBox.Show(readCount.ToString() + "and " + totReads.ToString());  
+                    //    if (totReads <= Reads_in_million) readNo = readCounting;
+                    //    else readNo = 0; // 
+                    //    //MessageBox.Show(readNo.ToString());
+                    //    char q = ' ';
+                    //    StringBuilder quality_scr_all = new StringBuilder();
+                    //    for (int x = 0; x < quality_scr.Length; x++)
+                    //    {
+                    //        q=Convert.ToChar(quality_scr[x]);
+                    //        //MessageBox.Show(q + "and" + quality_scr[x]); 
+                    //        quality_scr_all.Append(q);
+                    //    }
+                    //    //MessageBox.Show(quality_scr_all.ToString()); 
+                    //    //FastQRecord rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), fwdseq, quality_scr);
+                    //    //output4.WriteLine(rec1.ToString());
+                    //    //rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), revSeq, quality_scr);
+                    //    //output4.WriteLine(rec1.ToString());
+                    //    FastQRecord rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), fwdseq.ToString(), quality_scr_all.ToString());
+                    //    output4.WriteLine(rec1.ToString());
+                    //    rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), revSeq.ToString(), quality_scr_all.ToString());
+                    //    output5.WriteLine(rec1.ToString());
+ 
+ 
+                    //}
+                    ////MessageBox.Show(totReads.ToString()); 
+                    //output4.Close();
+                    //output5.Close();
+                    
                     string Totseq_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones.txt"));
+                    //string QualityScore=("\\192.168.1.12\data\reads\Run00007_L1_1_100521_GA2X_0007.fq");
+                    FastQFile fq = FastQFile.Load("C:\\Indranil\\2011 work and activity\\denovo.Run00007_L1_1_100521_GA2X_0007.fq");
                     var output4 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_1.fq")).OpenWrite();
                     var output5 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_2.fq")).OpenWrite();
                     string[] Totseq_lines = System.IO.File.ReadAllLines(Totseq_file);
                     //Random rndReads = new Random();
                     long totReads = 0;
                     int readCounting = 0;
-                    int readNo=0;
+                    int readNo = 0;
                     for (int i = 1; i < Totseq_lines.Length; i++)
                     {
                         string Totseq_oneline = Totseq_lines[i];
                         string[] Totseq_lineitems = Totseq_oneline.Split('\t');
-                        int readlen =Convert.ToInt32(readLenTxt.Text);
+                        int readlen = Convert.ToInt32(readLenTxt.Text);
+                        int readC = Convert.ToInt32(Totseq_lineitems[13]); 
                         double random_no = Tsp_rnd.NextDouble();
-                        //double quality_scr = 30; //-10 * Math.Log10(random_no/(1-random_no));
-                        int[] quality_scr = new int[1000];
-                        DnaSequence fwdseq = new DnaSequence(Totseq_lineitems[12]);
-                        DnaSequence revSeq = new DnaSequence(Totseq_lineitems[12]);
-                        //string fwdseq = "", revSeq = "";
-                        //double quality_scr = -10 * Math.Log10(0.05 / (1 - 0.05));
-                        //MessageBox.Show(quality_scr.ToString()); 
-                        if (readlen >= Totseq_lineitems[12].Length)
+                        for (int rc = 0; rc < readC; rc++)
                         {
-                            
-                            //fwdseq = Totseq_lineitems[12];
-                            //revSeq = Reverse(Totseq_lineitems[12]);
+                            DnaSequence fwdseq = new DnaSequence(Totseq_lineitems[12]);
+                            DnaSequence revSeq = new DnaSequence(Totseq_lineitems[12]);    
+                            int[] quality_scr = new int[1000];
+                            if (readlen >= Totseq_lineitems[12].Length)
+                            {
                             quality_scr = new int[readlen];
+                            Random rnd = new Random();
                             for (int k = 0; k < Totseq_lineitems[12].Length; k++)
                             {
-                                quality_scr[k] = 94;
+                                //double error_prob=FastQRecord.
+                                //quality_scr[k] = 94;
 
                             }
                         }
@@ -379,6 +464,7 @@ namespace Junction_labels_simulator
                             //revSeq = Reverse100(Totseq_lineitems[12]);
                             fwdseq = fwdseq.SubSequence(0, 100);
                             revSeq = revSeq.SubSequence(0, 100);
+                            revSeq.RevComp();
                             quality_scr = new int[100];
                             for (int k = 0; k < 100; k++)
                             {
@@ -390,7 +476,7 @@ namespace Junction_labels_simulator
                         readCounting = Convert.ToInt32(Totseq_lineitems[13]);
 
                         //totReads = totReads + (2 * readCount);
-                        totReads = (totReads + readCounting)/2;
+                        totReads = (totReads + readCounting) / 2;
                         //MessageBox.Show(readCount.ToString() + "and " + totReads.ToString());  
                         if (totReads <= Reads_in_million) readNo = readCounting;
                         else readNo = 0; // 
@@ -399,25 +485,23 @@ namespace Junction_labels_simulator
                         StringBuilder quality_scr_all = new StringBuilder();
                         for (int x = 0; x < quality_scr.Length; x++)
                         {
-                            q=Convert.ToChar(quality_scr[x]);
+                            q = Convert.ToChar(quality_scr[x]);
                             //MessageBox.Show(q + "and" + quality_scr[x]); 
                             quality_scr_all.Append(q);
                         }
-                        //MessageBox.Show(quality_scr_all.ToString()); 
-                        //FastQRecord rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), fwdseq, quality_scr);
-                        //output4.WriteLine(rec1.ToString());
-                        //rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), revSeq, quality_scr);
-                        //output4.WriteLine(rec1.ToString());
                         FastQRecord rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), fwdseq.ToString(), quality_scr_all.ToString());
                         output4.WriteLine(rec1.ToString());
                         rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), revSeq.ToString(), quality_scr_all.ToString());
                         output5.WriteLine(rec1.ToString());
- 
- 
+
+
                     }
+                }
                     //MessageBox.Show(totReads.ToString()); 
                     output4.Close();
                     output5.Close();
+
+
                 }
 
             }

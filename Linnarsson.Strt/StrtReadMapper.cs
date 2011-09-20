@@ -27,7 +27,7 @@ namespace Linnarsson.Strt
             barcodes = props.Barcodes;
             this.pathHandler = new PathHandler(props);
         }
-        private void ChangeBarcodes(string barcodesName)
+        private void SetBarcodeSet(string barcodesName)
         {
             props.BarcodesName = barcodesName;
             barcodes = props.Barcodes;
@@ -233,21 +233,29 @@ namespace Linnarsson.Strt
         /// <param name="project">project folder or project name</param>
         /// <param name="laneArgs">Items of "RunNo:LaneNos" that define the lanes of the project.
         ///                        If empty, all sequence files in projectFolder/Reads are used.</param>
-        /// <returns>Paths to output files, some of which may have existed already and hence not re-generated</returns>
-		public List<string> Extract(string project, List<string> laneArgs)
+		public void Extract(string project, List<string> laneArgs)
 		{
             project = PathHandler.GetRootedProjectFolder(project);
-            List<string> readsFiles = new List<string>();
+            List<ExtractionInfo> extrInfos = new List<ExtractionInfo>();
             if (laneArgs.Count > 0)
-                readsFiles = PathHandler.ListReadsFiles(laneArgs);
+                extrInfos = PathHandler.ListReadsFiles(laneArgs);
             else
-                readsFiles = PathHandler.CollectReadsFilesNames(project);
+                foreach (string extractedFile in PathHandler.CollectReadsFilesNames(project))
+                    extrInfos.Add(new ExtractionInfo(extractedFile, "X", 'x'));
             string outputFolder = pathHandler.MakeExtractedFolder(project, barcodes.Name, EXTRACTION_VERSION);
-            return Extract(readsFiles, outputFolder); 
+            Extract(extrInfos, outputFolder);
         }
 
-        public static readonly string EXTRACTION_VERSION = "24";
-        private List<string> Extract(List<string> readsFiles, string outputFolder)
+        public void Extract(ProjectDescription pd)
+        {
+            List<ExtractionInfo> extrInfos = PathHandler.ListReadsFiles(pd.runIdsLanes.ToList());
+            pd.extractionVersion = EXTRACTION_VERSION;
+            string outputFolder = pathHandler.MakeExtractedFolder(pd.ProjectFolder, barcodes.Name, EXTRACTION_VERSION);
+            Extract(extrInfos, outputFolder);
+        }
+
+        public static readonly string EXTRACTION_VERSION = "25";
+        private void Extract(List<ExtractionInfo> extrInfos, string outputFolder)
         {
             DateTime start = DateTime.Now;
             ReadExtractor readExtractor = new ReadExtractor(props);
@@ -255,46 +263,33 @@ namespace Linnarsson.Strt
             Background.Message("Extracting...");
             Directory.CreateDirectory(outputFolder);
             List<string> outputFiles = new List<string>();
-            foreach (string readsFile in readsFiles)
+            foreach (ExtractionInfo extrInfo in extrInfos)
 			{
-                string bcOutputPath = PathHandler.GetBarcodedReadsPath(outputFolder, readsFile, EXTRACTION_VERSION);
-                string summaryOutputPath = PathHandler.GetExtractionSummaryPath(outputFolder, readsFile, EXTRACTION_VERSION);
-                outputFiles.Add(bcOutputPath);
+                string readFile = extrInfo.readFilePath;
+                ReadCounter readCounter = new ReadCounter();
+                string bcOutputPath = PathHandler.GetBarcodedReadsPath(outputFolder, readFile, EXTRACTION_VERSION);
+                string summaryOutputPath = PathHandler.GetExtractionSummaryPath(outputFolder, readFile, EXTRACTION_VERSION);
+                extrInfo.extractedFilePath = bcOutputPath;
                 if (File.Exists(bcOutputPath))
                     continue;
-                ReadCounter readCounter = new ReadCounter();
-                readCounter.AddReadFilename(readsFile);
+                readCounter.AddReadFilename(readFile);
                 ExtractionWordCounter wordCounter = new ExtractionWordCounter(props.ExtractionCounterWordLength);
-                long fileSize = new FileInfo(readsFile).Length;
-                long filePos = 0;
 				StreamWriter sw_barcoded = new StreamWriter(bcOutputPath);
-                string duplicatesPath = PathHandler.GetDuplicateReadsPath(outputFolder, readsFile, EXTRACTION_VERSION);
-                StreamWriter sw_duplicates = (barcodes.HasRandomBarcodes)? new StreamWriter(duplicatesPath) : null;
-                string slaskFile = PathHandler.GetSlaskReadsPath(outputFolder, readsFile, EXTRACTION_VERSION);
+                string slaskFile = PathHandler.GetSlaskReadsPath(outputFolder, readFile, EXTRACTION_VERSION);
 				StreamWriter sw_slask = slaskFile.OpenWrite();
                 ExtractionQuality extrQ = (props.AnalyzeExtractionQualities)? new ExtractionQuality(props.LargestPossibleReadLength) : null;
-				foreach (FastQRecord fastQRecord in FastQFile.Stream(readsFile, props.QualityScoreBase))
+				foreach (FastQRecord fastQRecord in FastQFile.Stream(readFile, props.QualityScoreBase))
 				{
                     FastQRecord rec = fastQRecord;
-                    filePos += 6 + rec.Sequence.Length + rec.Qualities.Length + 2 * rec.Header.Length;
                     if (extrQ != null) extrQ.Add(rec);
                     wordCounter.AddRead(rec.Sequence);
                     int readStatus = readExtractor.Extract(ref rec);
                     readCounter.Add(readStatus);
                     if (readStatus == ReadStatus.VALID) sw_barcoded.WriteLine(rec.ToString(props.QualityScoreBase));
-                    else if (readStatus == ReadStatus.DUPLICATE) sw_duplicates.WriteLine(rec.ToString(props.QualityScoreBase));
                     else sw_slask.WriteLine(rec.ToString(props.QualityScoreBase));
-					if((DateTime.Now - start).TotalSeconds > 2)
-					{
-						start = DateTime.Now;
-						Background.Message(Math.Round(readCounter.PartialTotal/1e6d,1).ToString() + "M reads extracted.");
-                        Background.Progress((int)(100.0*(double)filePos / fileSize));
-                        if (Background.CancellationPending) break;
-                    }
 				}
 				sw_barcoded.Close();
 				sw_slask.Close();
-                if (sw_duplicates != null) sw_duplicates.Close();
                 StreamWriter sw_summary = summaryOutputPath.OpenWrite();
                 sw_summary.WriteLine(readCounter.TotalsToTabString());
                 sw_summary.WriteLine("\nBelow are the most common words among all reads.\n");
@@ -302,14 +297,15 @@ namespace Linnarsson.Strt
                 sw_summary.Close();
                 if (extrQ != null)
                 {
-                    string fHead = PathHandler.CreateExtractedFileHead(outputFolder, readsFile, EXTRACTION_VERSION);
-                    extrQ.Write(readsFile, fHead);
+                    string fHead = PathHandler.CreateExtractedFileHead(outputFolder, readFile, EXTRACTION_VERSION);
+                    extrQ.Write(readFile, fHead);
                 }
+                extrInfo.nReads = readCounter.PartialTotal;
+                extrInfo.nPFReads = readCounter.PartialCount(ReadStatus.VALID);
                 if (Background.CancellationPending) break;
             }
             Background.Progress(100);
 			Background.Message("Ready");
-            return outputFiles;
 		}
 
         /// <summary>
@@ -356,9 +352,7 @@ namespace Linnarsson.Strt
         /// <param name="projDescr"></param>
         public void Process(ProjectDescription projDescr)
         {
-            projDescr.extractionVersion = EXTRACTION_VERSION;
-            List<string> extractedFiles = Extract(projDescr.ProjectFolder, projDescr.runIdsLanes.ToList());
-            projDescr.extractedFiles = extractedFiles;
+            Extract(projDescr);
             string sampleLayoutPath = Path.Combine(projDescr.ProjectFolder, projDescr.layoutFile);
             string[] speciesArgs = GetSpeciesArgs(sampleLayoutPath, projDescr.defaultSpecies);
             projDescr.annotationVersion = ANNOTATION_VERSION;
@@ -366,18 +360,15 @@ namespace Linnarsson.Strt
             {
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, projDescr.analyzeVariants, projDescr.defaultBuild);
                 string bowtieIndexName = genome.GetBowtieIndexName();
-                if (bowtieIndexName == "")
+                if (bowtieIndexName == "" && genome.Annotation != "UCSC")
                 {
-                    if (genome.Annotation != "UCSC")
-                    {
-                        genome.Annotation = "UCSC";
-                        Console.WriteLine("Could not find a Bowtie index " + bowtieIndexName + 
-                                          " - trying UCSC instead for " + projDescr.projectName);
-                        bowtieIndexName = genome.GetBowtieIndexName();
-                    }
+                    genome.Annotation = "UCSC";
+                    Console.WriteLine("Could not find a Bowtie index " + bowtieIndexName + 
+                                        " - trying UCSC instead for " + projDescr.projectName);
+                    bowtieIndexName = genome.GetBowtieIndexName();
                 }
                 string bowtieIndexVersion = PathHandler.GetIndexVersion(bowtieIndexName);
-                List<string> mapFiles = CreateBowtieMaps(bowtieIndexName, extractedFiles.ToArray());
+                List<string> mapFiles = CreateBowtieMaps(bowtieIndexName, projDescr.GetExtractedFiles());
                 string resultSubFolder = projDescr.projectName + "_" + genome.GetBowtieIndexName() + "_" + DateTime.Now.ToPathSafeString();
                 string resultPath = Path.Combine(projDescr.ProjectFolder, resultSubFolder);
                 ProcessAnnotation(projDescr.barcodeSet, genome, projDescr.ProjectFolder, projDescr.projectName, mapFiles, resultPath);
@@ -421,7 +412,7 @@ namespace Linnarsson.Strt
                 extractedFolder = PathHandler.GetLatestExtractedFolder(projectFolder);
                 extractedFiles = Directory.GetFiles(extractedFolder, "*" + PathHandler.BarcodedFileEnding);
             }
-            string existingIndexVersion = GetExistingMapFilesVersion(extractedFolder, extractedFiles, bowtieIndexName);
+            string existingIndexVersion = GetExistingAlignmentFilesVersion(extractedFolder, extractedFiles, bowtieIndexName, barcodes.HasRandomBarcodes);
             if (existingIndexVersion == "")
             {
                 ClearExistingBowtieMaps(extractedFolder, bowtieIndexName);
@@ -431,8 +422,10 @@ namespace Linnarsson.Strt
 
         private void ClearExistingBowtieMaps(string extractedFolder, string bowtieIndexNameOrVersion)
         {
-            foreach (string mapFile in PathHandler.GetMapFiles(extractedFolder, bowtieIndexNameOrVersion))
+            foreach (string mapFile in PathHandler.FindBowtieMapFiles(extractedFolder, bowtieIndexNameOrVersion))
                 File.Delete(mapFile);
+            //foreach (string bamFile in PathHandler.FindBowtieOutputFiles(extractedFolder, bowtieIndexNameOrVersion, true))
+            //    File.Delete(bamFile);
         }
 
         /// <summary>
@@ -475,9 +468,10 @@ namespace Linnarsson.Strt
             return mapFiles;
         }
 
-        private static string GetExistingMapFilesVersion(string extractedFolder, string[] barcodedFiles, string buildName)
+        private static string GetExistingAlignmentFilesVersion(string extractedFolder, string[] barcodedFiles, string buildName,
+                                                         bool useBamFiles)
         {
-            List<string> existingMapFiles = PathHandler.GetMapFiles(extractedFolder, buildName);
+            List<string> existingMapFiles = PathHandler.FindBowtieOutputFiles(extractedFolder, buildName, useBamFiles);
             string indexVersion = PathHandler.GetIndexVersion(buildName);
             foreach (string bcFile in barcodedFiles)
             {
@@ -510,10 +504,12 @@ namespace Linnarsson.Strt
             string projectFolder = PathHandler.GetRootedProjectFolder(projectFolderOrName);
             string extractedFolder = PathHandler.GetLatestExtractedFolder(projectFolder);
             string projectName = Directory.GetParent(extractedFolder).Name;
+            string barcodeSet = PathHandler.ParseBarcodeSet(extractedFolder);
+            SetBarcodeSet(barcodeSet);
             string buildName = genome.GetBowtieIndexName();
-            List<string> mapFiles = PathHandler.GetMapFiles(extractedFolder, buildName);
+            List<string> mapFiles = PathHandler.FindBowtieOutputFiles(extractedFolder, buildName, barcodes.HasRandomBarcodes);
             if (mapFiles.Count == 0)
-                throw new NoMapFilesFoundException("There are no .map files for index " + 
+                throw new NoMapFilesFoundException("There are no .map/.bam files for index " + 
                                            buildName + " in Extracted folder " + Path.GetFileName(extractedFolder));
             string indexVersion = PathHandler.ExtractIndexVersion(mapFiles[0]);
             string annotFolderName = PathHandler.MakeAnnotFolderName(projectName, indexVersion, ANNOTATION_VERSION);
@@ -521,7 +517,6 @@ namespace Linnarsson.Strt
             string outputSubFolder = null;
             if (!Directory.Exists(outputFolder))
             {
-                string barcodeSet = PathHandler.ParseBarcodeSet(extractedFolder);
                 ProcessAnnotation(barcodeSet, genome, projectFolder, projectName, mapFiles, outputFolder);
                 string projectFolderName = Path.GetFileName(projectFolder);
                 outputSubFolder = outputFolder.Substring(outputFolder.IndexOf(projectFolderName));
@@ -539,24 +534,28 @@ namespace Linnarsson.Strt
             if (mapFiles.Count == 0)
                 return;
             ReadCounter readCounter = new ReadCounter();
-            ChangeBarcodes(barcodeSet);
+            SetBarcodeSet(barcodeSet);
             Background.Message("Loading annotations.");
             UpdateGenesToPaint(projectFolder, props);
             AbstractGenomeAnnotations annotations = new UCSCGenomeAnnotations(props, genome);
             annotations.Load();
-            string outputNamebase = Path.Combine(outputFolder, projectName);
+            bool useBamFiles = mapFiles[0].EndsWith("bam");
+            bool useRandomTagFilter = useBamFiles && barcodes.HasRandomBarcodes;
+            string outputNamebase = projectName + (useRandomTagFilter ? "RF_" : "");
+            string outputPathbase = Path.Combine(outputFolder, outputNamebase);
             TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props);
             string syntLevelFile = PathHandler.GetSyntLevelFile(projectFolder);
             if (File.Exists(syntLevelFile))
-                ts.TestReporter = new SyntReadReporter(syntLevelFile, genome.GeneVariants, outputNamebase, annotations.geneFeatures);
+                ts.TestReporter = new SyntReadReporter(syntLevelFile, genome.GeneVariants, outputPathbase, annotations.geneFeatures);
             int nFile = 1;
             foreach (string mapFile in mapFiles)
             {
                 Console.Write("Processing " + Path.GetFileName(mapFile) + "...");
                 Background.Message("File " + (nFile++) + "/" + mapFiles.Count);
-                int n = AnnotateRedundantBowtieReads(ts, mapFile, genome);
-                int nWells = barcodes.GenomeBarcodeIndexes(genome).Length;
-                Console.WriteLine(n + " reads matching " + nWells + " " + genome.Abbrev + " or empty samples were found.");
+                int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+                int n = (useBamFiles)? ts.AnnotateBamFile(mapFile, genomeBcIndexes, useRandomTagFilter) :
+                                       ts.AnnotateMapFile(mapFile, genomeBcIndexes, useRandomTagFilter);
+                Console.WriteLine(n + " reads matching " + genomeBcIndexes.Length + " " + genome.Abbrev + " or empty samples were found.");
                 if (ts.GetNumMappedReads() == 0)
                     Console.WriteLine("WARNING: contigIds of reads do not seem to match with genome Ids.\n" +
                                       "Was the Bowtie index made on a different genome or contig set?");
@@ -568,30 +567,7 @@ namespace Linnarsson.Strt
             ts.SampleStatistics();
             Console.WriteLine("Saving to {0}...", outputFolder);
             Background.Message("Saving results");
-            ts.Save(readCounter, outputNamebase);
-        }
-
-        private int AnnotateRedundantBowtieReads(TranscriptomeStatistics ts, string file, StrtGenome genome)
-        {
-            int n = 0, genomeN = 0;
-            long fileSize = new FileInfo(file).Length;
-            BowtieMapFile bmf = new BowtieMapFile(barcodes);
-            bool singleSpecies = !barcodes.HasSampleLayout();
-            int[] genomeBcIndexes = barcodes.GenomeBarcodeIndexes(genome);
-            HashSet<int> validBcIndexes = new HashSet<int>(genomeBcIndexes);
-            StreamReader reader = file.OpenRead();
-            foreach (BowtieMapRecord[] recs in bmf.ReadBlocks(reader, 12))
-            {
-                if (singleSpecies || validBcIndexes.Contains(recs[0].barcodeIdx))
-                {
-                    genomeN++;
-                    ts.Add(recs, 1);
-                }
-                if ((n++ % 1000) == 0)
-                    Background.Progress((int)(100 * (double)recs[0].filePos / fileSize));
-            }
-            reader.Close();
-            return genomeN;
+            ts.Save(readCounter, outputPathbase);
         }
 
         private void UpdateGenesToPaint(string projectFolder, Props props)
@@ -642,7 +618,7 @@ namespace Linnarsson.Strt
 					int end = int.Parse(fields[2]);
 					int height = int.Parse(fields[3]);
 					char strand = file.Contains("fw") ? '+' : '-';
-                    BowtieMapRecord rec = new BowtieMapRecord("Line" + n, 0, strand, chr, start, end - start, wiggle.BaseStream.Position);
+                    ReadMapping rec = new ReadMapping("Line" + n, 0, strand, chr, start, end - start, 0);
                     ts.Add(rec, height);
                     n++;
 					countMappedReads += (end - start) * height / 25; // assuming 25 bp read length on average

@@ -13,11 +13,13 @@ namespace Linnarsson.Strt
 {
 	public class TranscriptomeStatistics
 	{
+        private readonly int bamFileWindowSize = 1000000;
         private CompactWiggle compactWiggle;
         public bool GenerateWiggle { get; set; }
         public bool DetermineMotifs { get; set; }
         public bool AnalyzeAllGeneVariants { get; set; }
         private RedundantExonHitMapper redundantExonHitMapper;
+        private RandomTagFilter randomTagFilter;
         public SyntReadReporter TestReporter { get; set; }
 
         Dictionary<string, int[]> TotalHitsByAnnotTypeAndChr; // Separates sense and antisense
@@ -67,11 +69,71 @@ namespace Linnarsson.Strt
             exonsToMark = new List<Pair<int, FtInterval>>(100);
             exonHitGeneNames = new List<string>(100);
             annotationChrId = Annotations.Genome.Annotation;
+            if (barcodes.HasRandomBarcodes) randomTagFilter = new RandomTagFilter(barcodes, bamFileWindowSize);
         }
 
         public void SetRedundantHitMapper(AbstractGenomeAnnotations annotations, int averageReadLen)
         {
             redundantExonHitMapper = RedundantExonHitMapper.GetRedundantHitMapper(annotations.Genome, averageReadLen, annotations.geneFeatures);
+        }
+
+        public int AnnotateMapFile(string file, int[] genomeBcIndexes, bool useRandomBcFilter)
+        {
+            if (useRandomBcFilter)
+                throw new InvalidOperationException("Random tags can only be filtered with .bam files as input!");
+            int nReadsInValidBarcodes = 0;
+            BowtieMapFile bmf = new BowtieMapFile(barcodes);
+            bool singleSpecies = !barcodes.HasSampleLayout();
+            HashSet<int> validBcIndexes = new HashSet<int>(genomeBcIndexes);
+            foreach (ReadMapping[] recs in bmf.ReadBlocks(file, 12))
+            {
+                if (singleSpecies || validBcIndexes.Contains(recs[0].barcodeIdx))
+                {
+                    nReadsInValidBarcodes++;
+                    Add(recs, 1);
+                }
+            }
+            return nReadsInValidBarcodes;
+        }
+
+        public int AnnotateBamFile(string file, int[] genomeBcIndexes, bool useRandomBcFilter)
+        {
+            int nReadsInValidBarcodes = 0;
+            BamFile bamf = new BamFile(file);
+            bool singleSpecies = !barcodes.HasSampleLayout();
+            HashSet<int> validBcIndexes = new HashSet<int>(genomeBcIndexes);
+            Console.Write("Analyzing bam reads from chr ");
+            foreach (string chr in Annotations.ChromosomeLengths.Keys)
+            {
+                string chrName = "chr" + chr;
+                Console.Write(chr + ".");
+                for (int windowStart = 0; windowStart < Annotations.ChromosomeLengths[chr]; windowStart += bamFileWindowSize)
+                {
+                    List<BamAlignedRead> bamReads = bamf.Fetch(chrName, windowStart, windowStart + bamFileWindowSize);
+                    foreach (BamAlignedRead a in bamReads)
+                    {
+                        ReadMapping rec = ReadMapping.FromBamAlignedRead(a, barcodes);
+                        if (singleSpecies || validBcIndexes.Contains(rec.barcodeIdx))
+                        {
+                            nReadsInValidBarcodes++;
+                            if (!useRandomBcFilter || randomTagFilter.IsNew(rec.Position, rec.Strand, rec.barcodeIdx, rec.randomBcIdx))
+                                Add(rec, 1);
+                        }
+                    }
+                }
+                if (useRandomBcFilter)
+                {
+                    Console.WriteLine("===============\nAfter " + chrName + " (" + nReadsInValidBarcodes + " valid and " + numReads + " unique molecules)");
+                    Console.WriteLine("Accumulated distribution of reads over random tags:");
+                    for (int i = 0; i < randomTagFilter.nReadsByRandomTag.Length; i++)
+                        Console.WriteLine(barcodes.MakeRandomTag(i) + "\t" + randomTagFilter.nReadsByRandomTag[i]);
+                    Console.WriteLine("\nCases of unique reads for various random tag coverage:");
+                    for (int i = 1; i < randomTagFilter.nReadsByRandomTag.Length; i++)
+                        Console.WriteLine(i + "\t" + randomTagFilter.nCasesPerRandomTagCount[i]);
+                }
+            }
+            Console.WriteLine();
+            return nReadsInValidBarcodes;
         }
 
         /// <summary>
@@ -80,12 +142,12 @@ namespace Linnarsson.Strt
         /// <param name="rec"></param>
         /// <param name="weight"></param>
         /// <returns></returns>
-        public void Add(BowtieMapRecord rec, int weight)
+        public void Add(ReadMapping rec, int weight)
         {
-            Add(new BowtieMapRecord[] { rec }, weight);
+            Add(new ReadMapping[] { rec }, weight);
         }
 
-        public void Add(BowtieMapRecord[] recs, int weight)
+        public void Add(ReadMapping[] recs, int weight)
         {
             numReads++;
             int bcodeIdx = recs[0].barcodeIdx;
@@ -160,7 +222,7 @@ namespace Linnarsson.Strt
             {
                 int recIdx = exonToMark.First;
                 FtInterval ivl = exonToMark.Second;
-                BowtieMapRecord rec = recs[recIdx];
+                ReadMapping rec = recs[recIdx];
                 int halfWidth = rec.SeqLen / 2;
                 int chrStart = rec.Position;
                 string chr = rec.Chr;
@@ -282,6 +344,7 @@ namespace Linnarsson.Strt
             AddSampledCVs(xmlFile);
             AddCVHistogram(xmlFile);
             WriteBarcodeStats(fileNameBase, xmlFile);
+            WriteRandomFilterStats(xmlFile);
             xmlFile.WriteLine("</strtSummary>");
             xmlFile.Close();
             txtFile.Close();
@@ -302,6 +365,19 @@ namespace Linnarsson.Strt
                 foreach (int c in sampledBarcodeFeatures[i])
                     txtFile.Write("\t" + c);
             }
+        }
+
+        private void WriteRandomFilterStats(StreamWriter xmlFile)
+        {
+            if (randomTagFilter == null) return;
+            xmlFile.WriteLine("    <randomtagfrequence>");
+            for (int i = 0; i < randomTagFilter.nReadsByRandomTag.Length; i++)
+                xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", barcodes.MakeRandomTag(i), randomTagFilter.nReadsByRandomTag[i]);
+            xmlFile.WriteLine("    </randomtagfrequence>");
+            xmlFile.WriteLine("    <nuniqueateachrandomtagcoverage>");
+            for (int i = 0; i < randomTagFilter.nCasesPerRandomTagCount.Length; i++)
+                xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
+            xmlFile.WriteLine("    </nuniqueateachrandomtagcoverage>");
         }
 
         private void WriteReadStats(ReadCounter readCounter, StreamWriter txtFile, StreamWriter xmlFile)
@@ -515,7 +591,7 @@ namespace Linnarsson.Strt
                 if (gf.Name.StartsWith("RNA_SPIKE_"))
                 {
                     DescriptiveStatistics ds = new DescriptiveStatistics();
-                    foreach (int bcIdx in barcodes.GenomeBarcodeIndexes(Annotations.Genome))
+                    foreach (int bcIdx in barcodes.GenomeAndEmptyBarcodeIndexes(Annotations.Genome))
                     {
                         int c = TotalHitsByAnnotTypeAndBarcode[AnnotType.EXON, bcIdx];
                         if (!AnnotType.DirectionalReads) c += TotalHitsByAnnotTypeAndBarcode[AnnotType.AEXON, bcIdx];
@@ -753,7 +829,7 @@ namespace Linnarsson.Strt
             }
             xmlFile.WriteLine("\n    </barcodestat>");
             WriteBarcodes(xmlFile, barcodeStats, bCodeLines);
-            int[] genomeBcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome);
+            int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(Annotations.Genome);
             if (barcodes.SpeciesByWell != null)
                 WriteSpeciesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
             WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);

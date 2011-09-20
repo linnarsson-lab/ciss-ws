@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="AbstractGenomeAnnotations.cs" />
     <Compile Include="AnnotationBuilder.cs" />
+    <Compile Include="BowtieMapFileSorter.cs" />
     <Compile Include="ProjectDB.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReadExtractor.cs" />

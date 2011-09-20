@@ -14,11 +14,11 @@ namespace Linnarsson.Strt
         public readonly static int BARCODE_ERROR = 1;
         public readonly static int LENGTH_ERROR = 2;
         public readonly static int COMPLEXITY_ERROR = 3;
-        public readonly static int DUPLICATE = 4;
+        public readonly static int N_IN_RANDOM_BC = 4;
         public readonly static int NEGATIVE_BARCODE_ERROR = 5;
         public readonly static int Length = 6;
         public readonly static string[] categories = new string[] { "VALID", "BARCODE_ERROR", "LENGTH_ERROR", 
-                                                                   "COMPLEXITY_ERROR", "DUPLICATE", "NEGATIVE_BARCODE_ERROR" };
+                                                                   "COMPLEXITY_ERROR", "N_IN_RANDOM_BC", "NEGATIVE_BARCODE_ERROR" };
         public static int Parse(string category) { return Array.IndexOf(categories, category.ToUpper()); }
     }
 
@@ -71,8 +71,8 @@ namespace Linnarsson.Strt
                            PartialCount(ReadStatus.VALID) + " accepted, " + PartialRejected + " rejected. (" +
                            PartialCount(ReadStatus.BARCODE_ERROR) + " wrong barcode, " + PartialCount(ReadStatus.LENGTH_ERROR) + " too short, " +
                            PartialCount(ReadStatus.COMPLEXITY_ERROR) + " polyA-like";
-            if (PartialCount(ReadStatus.DUPLICATE) > 0)
-                stats += ", " + PartialCount(ReadStatus.DUPLICATE) + " duplicated random barcodes";
+            if (PartialCount(ReadStatus.N_IN_RANDOM_BC) > 0)
+                stats += ", " + PartialCount(ReadStatus.N_IN_RANDOM_BC) + " unparseable random barcodes";
             stats += ").";
             return stats;
         }
@@ -86,8 +86,8 @@ namespace Linnarsson.Strt
                  "\n- wrong barcode/Gs missing: " + GrandCount(ReadStatus.BARCODE_ERROR) +
                  "\n- too short: " + GrandCount(ReadStatus.LENGTH_ERROR) +
                  "\n- polyA/low complexity: " + GrandCount(ReadStatus.COMPLEXITY_ERROR);
-            if (GrandCount(ReadStatus.DUPLICATE) > 0)
-                s += "\nRejected reads due to duplicated random tags: " + GrandCount(ReadStatus.DUPLICATE);
+            if (GrandCount(ReadStatus.N_IN_RANDOM_BC) > 0)
+                s += "\nRejected reads due to unparseable random tags: " + GrandCount(ReadStatus.N_IN_RANDOM_BC);
             if (GrandCount(ReadStatus.NEGATIVE_BARCODE_ERROR) > 0)
                 s += "\nRejected reads due to negative barcodes: " + GrandCount(ReadStatus.NEGATIVE_BARCODE_ERROR);
             return s;
@@ -137,14 +137,15 @@ namespace Linnarsson.Strt
 
     public class ReadExtractor
     {
-        private RandomTagFilter randomFilter;
         private int bcWithTSSeqLen;
         private readonly static int maxExtraTSNts = 6; // Limit # of extra (G) Nts (in addition to min#==3) to remove from template switching
         private int barcodePos;
+        private int insertStartPos;
+        private int rndBcPos;
+        private int rndBcLen;
         private int minReadLength;
         private int minInsertNonAs;
         private string[] barcodeSeqs;
-        //private string[] barcodesWithTSSeq;
         private Dictionary<string, int> barcodesWithTSSeq;
         private char lastNtOfTSSeq;
         private int firstNegBarcodeIndex;
@@ -152,9 +153,11 @@ namespace Linnarsson.Strt
         public ReadExtractor(Props props)
         {
             Barcodes barcodes = props.Barcodes;
-            if (barcodes.HasRandomBarcodes) randomFilter = new RandomTagFilter(barcodes);
             bcWithTSSeqLen = barcodes.GetLengthOfBarcodesWithTSSeq();
             barcodePos = barcodes.BarcodePos;
+            insertStartPos = barcodes.GetInsertStartPos();
+            rndBcPos = barcodes.RandomTagPos;
+            rndBcLen = barcodes.RandomTagLen;
             minReadLength = barcodes.GetInsertStartPos() + props.MinExtractionInsertLength;
             minInsertNonAs = props.MinExtractionInsertNonAs;
             barcodeSeqs = barcodes.Seqs;
@@ -162,11 +165,15 @@ namespace Linnarsson.Strt
             barcodesWithTSSeq = new Dictionary<string, int>();
             foreach (string s in barcodes.GetBarcodesWithTSSeq())
                 barcodesWithTSSeq[s] = sIdx++;
-            //barcodesWithTSSeq = barcodes.GetBarcodesWithTSSeq();
             lastNtOfTSSeq = barcodes.TSTrimNt;
             firstNegBarcodeIndex = barcodes.FirstNegBarcodeIndex;
         }
 
+        /// <summary>
+        /// Extracts the barcode and random barcode from rec.Sequence and puts in rec.Header.
+        /// </summary>
+        /// <param name="rec"></param>
+        /// <returns>A ReadStatus that indicates if the read was valid</returns>
         public int Extract(ref FastQRecord rec)
         {
             rec.TrimBBB();
@@ -176,14 +183,18 @@ namespace Linnarsson.Strt
                 return ReadStatus.LENGTH_ERROR;
             int bcIdx;
              //int bcIdx = Array.IndexOf(barcodesWithTSSeq, rSeq.Substring(barcodePos, bcWithTSSeqLen));
-            bcIdx = (barcodesWithTSSeq.TryGetValue(rSeq.Substring(barcodePos, bcWithTSSeqLen), out bcIdx)) ? bcIdx : -1;
-            if (bcIdx == -1)
+            if (!barcodesWithTSSeq.TryGetValue(rSeq.Substring(barcodePos, bcWithTSSeqLen), out bcIdx))
                 return ReadStatus.BARCODE_ERROR;
             if (bcIdx >= firstNegBarcodeIndex)
                 return ReadStatus.NEGATIVE_BARCODE_ERROR;
-            if (randomFilter != null && !randomFilter.IsUnique(rec, bcIdx))
-                return ReadStatus.DUPLICATE;
-            int insertStart = barcodePos + bcWithTSSeqLen;
+            string bcRandomPart = "";
+            if (rndBcLen > 0)
+            {
+                bcRandomPart = rSeq.Substring(rndBcPos, rndBcLen) + ".";
+                if (bcRandomPart.Contains('N'))
+                    return ReadStatus.N_IN_RANDOM_BC;
+            }
+            int insertStart = insertStartPos;
             insertLength -= insertStart;
             int nTsNt = maxExtraTSNts;
             while (nTsNt-- > 0 && rSeq[insertStart] == lastNtOfTSSeq)
@@ -193,7 +204,7 @@ namespace Linnarsson.Strt
             }
             if (!HasComplexity(rSeq, insertStart, insertLength))
                 return ReadStatus.COMPLEXITY_ERROR;
-            rec.Header = rec.Header + "_" + barcodeSeqs[bcIdx];
+            rec.Header = rec.Header + "_" + bcRandomPart + barcodeSeqs[bcIdx];
             rec.Trim(insertStart, insertLength);
             return ReadStatus.VALID;
         }

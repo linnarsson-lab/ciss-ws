@@ -448,7 +448,7 @@ namespace Linnarsson.Strt
                 matrixFile.WriteLine("NOTE: This is non-STRT analysis with non-directional reads.");
             WriteBarcodeHeaders(matrixFile, 6);
             matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\tMaxExonHits");
-            int[] speciesBcIndexes = barcodes.GenomeBarcodeIndexes(genome);
+            int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             foreach (GeneFeature gf in geneFeatures.Values)
             {
                 int ncHits = gf.NonConflictingTranscriptHitsByBarcode.Sum();
@@ -482,7 +482,7 @@ namespace Linnarsson.Strt
             var tableFile = (fileNameBase + "_expression_list.tab").OpenWrite();
             tableFile.WriteLine("Barcode\tFeature\tLevel");
             tableFile.WriteLine();
-            int[] speciesBcIndexes = barcodes.GenomeBarcodeIndexes(genome);
+            int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             foreach (GeneFeature gf in geneFeatures.Values)
             {
                 foreach (int idx in speciesBcIndexes)
@@ -497,7 +497,7 @@ namespace Linnarsson.Strt
 
         private void WriteBarcodeHeaders(StreamWriter matrixFile, int nTabs)
         {
-            int[] speciesBcIndexes = barcodes.GenomeBarcodeIndexes(genome);
+            int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             matrixFile.Write(new String('\t', nTabs) + "Barcode:");
             foreach (int idx in speciesBcIndexes) matrixFile.Write("\t" + barcodes.Seqs[idx]);
             matrixFile.WriteLine();
@@ -561,7 +561,7 @@ namespace Linnarsson.Strt
             WriteRPMSection(matrixFile, true, null);
             matrixFile.WriteLine();
             StreamWriter simpleTableFile = (fileNameBase + "_" + rpType + "_simple.txt").OpenWrite();
-            foreach (int idx in barcodes.GenomeBarcodeIndexes(genome))
+            foreach (int idx in barcodes.GenomeAndEmptyBarcodeIndexes(genome))
                 simpleTableFile.Write("\t" + barcodes.GetWellId(idx));
             simpleTableFile.WriteLine();
             WriteRPMSection(matrixFile, false, simpleTableFile);
@@ -571,7 +571,7 @@ namespace Linnarsson.Strt
 
         private void WriteRPMSection(StreamWriter matrixFile, bool selectSpikes, StreamWriter simpleTableFile)
         {
-            int[] speciesBcIndexes = barcodes.GenomeBarcodeIndexes(genome);
+            int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             int[] totCountsByBarcode = GetTotalTranscriptCountsByBarcode(selectSpikes);
             int totCount = totCountsByBarcode.Sum();
             List<double> ASReadsPerBase = GetExonASOrderedReadsPerBase(selectSpikes);
@@ -1035,7 +1035,7 @@ namespace Linnarsson.Strt
             }
             capHitsFile.WriteLine("Overall average fraction is " + allFracs.Mean());
             capHitsFile.Write("\nMidLength\tFraction\t#GenesInBin\t");
-            int[] speciesBcIndexes = barcodes.GenomeBarcodeIndexes(genome);
+            int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             foreach (int idx in speciesBcIndexes) capHitsFile.Write("\t" + barcodes.Seqs[idx]);
             capHitsFile.WriteLine();
             capHitsFile.Write("\t\t\t");

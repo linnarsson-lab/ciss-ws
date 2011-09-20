@@ -41,7 +41,7 @@ namespace Linnarsson.Strt
         public string annotationVersion { get; set; }
         public string layoutFile { get; set; }
         public string defaultBuild { get; set; }
-        public List<string> extractedFiles { get; set; }
+        public List<ExtractionInfo> extractionInfos { get; set; }
         public string analysisId { get; set; }
         public List<ResultDescription> resultDescriptions { get; set; }
 
@@ -96,6 +96,10 @@ namespace Linnarsson.Strt
                 return n;
             }
         }
+        public string[] GetExtractedFiles()
+        {
+            return extractionInfos.ConvertAll(info => info.extractedFilePath).ToArray();
+        }
     }
 
     [Serializable()]
@@ -131,54 +135,7 @@ namespace Linnarsson.Strt
         public ProjectDB()
         {
         }
-/*
-        public List<ProjectDescription> OLD_GetProjectDescriptions()
-        {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            List<ProjectDescription> pds = new List<ProjectDescription>();
-            string sql = "SELECT proj.plateid, proj.barcodeset, proj.species, proj.layoutfile, proj.status, mgr.email, " +
-                         " run.illuminarunid AS runid, GROUP_CONCAT(lane.laneno ORDER BY lane.laneno) AS lanenos " +
-                         "FROM jos_aaaproject proj " +
-                         "RIGHT JOIN jos_aaasequencingbatch seq on proj.id = seq.jos_aaaprojectid " +
-                         "RIGHT JOIN jos_aaalane lane on lane.jos_aaasequencingbatchid = seq.id " +
-                         "LEFT JOIN jos_aaailluminarun run on lane.jos_aaailluminarunid = run.id " +
-                         "LEFT JOIN jos_aaamanager mgr on proj.jos_aaamanagerid = mgr.id " +
-                         "GROUP BY proj.plateid, runid ORDER BY proj.plateid, runid;";
-            try
-            {
-                conn.Open();
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                MySqlDataReader rdr = cmd.ExecuteReader();
-                List<string> laneInfos = new List<string>();
-                string currPlateId = "", currBcSet = "", currSpecies = "", currLayoutFile = "", currStatus = "", managerEmail = "";
-                while (rdr.Read())
-                {
-                    string plateId = rdr["plateid"].ToString();
-                    if (currPlateId != "" && plateId != currPlateId)
-                    {
-                        pds.Add(new ProjectDescription(currPlateId, currBcSet, currSpecies, laneInfos, currLayoutFile, currStatus, managerEmail));
-                        laneInfos = new List<string>();
-                    }
-                    string laneInfo = rdr["runid"].ToString() + ":" + rdr.GetString("lanenos").Replace(",", "");
-                    laneInfos.Add(laneInfo);
-                    currBcSet = rdr["barcodeset"].ToString();
-                    currSpecies = rdr["species"].ToString();
-                    currLayoutFile = rdr["layoutfile"].ToString();
-                    currStatus = rdr["status"].ToString();
-                    managerEmail = rdr["email"].ToString();
-                    currPlateId = plateId;
-                }
-                if (currPlateId != "") pds.Add(new ProjectDescription(currPlateId, currBcSet, currSpecies, laneInfos, currLayoutFile, currStatus, managerEmail));
-                rdr.Close();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-            conn.Close();
-            return pds;
-        }
-*/
+
         public ProjectDescription GetNextProjectInQueue()
         {
             ProjectDescription pd = null;
@@ -302,17 +259,27 @@ namespace Linnarsson.Strt
                                            projectId, projDescr.extractionVersion, projDescr.annotationVersion, genome,
                                            dbbuild, variants, laneCount, resultDescr.resultFolder, projDescr.status);
                     }
-                    Console.WriteLine(sql);
                     cmd = new MySqlCommand(sql, conn);
                     cmd.ExecuteNonQuery();
                     firstResult = false;
                 }
+                foreach (ExtractionInfo extrInfo in projDescr.extractionInfos)
+                {
+                    if (extrInfo.nReads == 0)
+                        continue; // Has been extracted earlier - no data to update
+                    sql = string.Format(string.Format("UPDATE jos_aaalane SET yield=\"{0}\", pfyield=\"{1}\" WHERE laneno=\"{2]\" AND " + 
+                                           "jos_aaailluminarunid= (SELECT id FROM jos_aaailluminarun WHERE illuminarunid=\"{3}\") ",
+                                           extrInfo.nReads, extrInfo.nPFReads, extrInfo.laneNo, extrInfo.runId));
+                    Console.WriteLine(sql);
+                    cmd = new MySqlCommand(sql, conn);
+                    cmd.ExecuteNonQuery();
+                }
+                conn.Close();
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
-            conn.Close();
         }
 
         /// <summary>

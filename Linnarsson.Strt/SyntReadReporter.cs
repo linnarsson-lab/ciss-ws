@@ -43,7 +43,7 @@ namespace Linnarsson.Strt
             }
         }
 
-        public void ReportHit(List<string> exonHitGeneNames, BowtieMapRecord[] recs, List<Pair<int, FtInterval>> exonsToMark)
+        public void ReportHit(List<string> exonHitGeneNames, ReadMapping[] recs, List<Pair<int, FtInterval>> exonsToMark)
         {
             string descr = "";
             if (recs[0].ReadId.StartsWith("Synt:BKG"))
@@ -91,7 +91,7 @@ namespace Linnarsson.Strt
             else if (exonHitGeneNames.Count == 1)
             {
                 string actualHitGene = exonHitGeneNames[0];
-                foreach (BowtieMapRecord rec in recs.TakeWhile(r => r.Position != -1))
+                foreach (ReadMapping rec in recs.TakeWhile(r => r.Position != -1))
                 {
                     if (rec.ReadId.Contains(actualHitGene))
                         return;
@@ -107,14 +107,14 @@ namespace Linnarsson.Strt
             if (descr != "")
             {
                 readReporter.WriteLine(descr);
-                foreach (BowtieMapRecord rec in recs.TakeWhile(r => r.Position != -1))
+                foreach (ReadMapping rec in recs.TakeWhile(r => r.Position != -1))
                 {
                     readReporter.WriteLine(rec.ToString());
                 }
             }
         }
 
-        private void AddToRedundant(BowtieMapRecord rec)
+        private void AddToRedundant(ReadMapping rec)
         {
             int pos = rec.ReadId.IndexOf(":", 5);
             string geneName = rec.ReadId.Substring(5, pos - 5);

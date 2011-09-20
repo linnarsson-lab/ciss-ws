@@ -110,7 +110,7 @@ namespace BkgFastQCopier
 
         public string Copy(int runId, string runFolder, string readsFolder)
         {
-            string qseqFolder = Path.Combine(runFolder, PathHandler.GetRunDataSubPath());
+            string qseqFolder = Path.Combine(runFolder, PathHandler.MakeRunDataSubPath());
             if (!Directory.Exists(qseqFolder))
             {
                 logWriter.WriteLine("*** ERROR: qseq folder does not exist: {0}", qseqFolder);

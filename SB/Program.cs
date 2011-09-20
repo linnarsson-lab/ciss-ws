@@ -66,7 +66,7 @@ namespace CmdSilverBullet
                                 Console.WriteLine("Updating {0}...", pd.projectName);
                                 props.BarcodesName = pd.barcodeSet;
                                 mapper = new StrtReadMapper(props);
-                                mapper.Extract(pd.ProjectFolder, pd.runIdsLanes.ToList());
+                                mapper.Extract(pd);
                                 mapper.MapAndAnnotateWithLayout(pd.ProjectFolder, pd.defaultSpecies, Props.props.AnalyzeAllGeneVariants);
                             }
                             Console.WriteLine("Finished updating.");
@@ -83,6 +83,11 @@ namespace CmdSilverBullet
                         case "download":
                             UCSCGenomeDownloader gd = new UCSCGenomeDownloader();
                             gd.DownloadGenome(args[argOffset]);
+                            break;
+
+                        case "sort":
+                            BowtieMapFileSorter bmfs = new BowtieMapFileSorter();
+                            bmfs.SortMapFile(args[argOffset]);
                             break;
 
                         case "x":

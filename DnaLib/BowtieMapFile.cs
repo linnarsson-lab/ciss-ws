@@ -10,109 +10,74 @@ namespace Linnarsson.Dna
 	public class BowtieMapFile
 	{
         private Barcodes barcodes;
-        private BarcodeMapper bm;
 
         public BowtieMapFile(Barcodes barcodes)
         {
             this.barcodes = barcodes;
-            this.bm = new BarcodeMapper(barcodes);
         }
 
-        public IEnumerable<BowtieMapRecord> Read(string file)
+        public IEnumerable<ReadMapping> Read(string file)
         {
-            BowtieMapRecord recHolder = new BowtieMapRecord();
-            string line;
-            string[] arg;
+            ReadMapping recHolder = new ReadMapping();
             var reader = file.OpenRead();
-            while (true)
+            string line = reader.ReadLine();
+            string[] fields = line.Split('\t');
+            while (line != null)
             {
-                recHolder.filePos = reader.BaseStream.Position;
-                line = reader.ReadLine();
-                if (line == null) break;
-                arg = line.Split('\t');
-                int p = arg[0].Length - barcodes.SeqLength;
-                if (arg[0][p - 1] == '_')
-                {
-                    recHolder.ReadId = arg[0].Substring(0, p - 1);
-                    recHolder.barcodeIdx = bm.GetBarcodeIdx(arg[0].Substring(p, barcodes.SeqLength));
-                }
-                else
-                {
-                    recHolder.ReadId = arg[0];
-                    recHolder.barcodeIdx = bm.NOBARIdx;
-                }
-                recHolder.Strand = arg[1][0];
-                recHolder.Chr = arg[2].StartsWith("chr") ? arg[2].Substring(3) : arg[2];
-                recHolder.Position = int.Parse(arg[3]);
-                recHolder.SeqLen = arg[4].Length;
-                //recHolder.Sequence = arg[4];
-                //recHolder.Qualities = ConvertQualitiesToIlluminaBase64(arg[5]);
-                recHolder.AltMappings = int.Parse(arg[6]);
-                recHolder.Mismatches = arg[7];
-                arg = null;
+                fields = line.Split('\t');
+                ParseFields(ref recHolder, fields);
+                barcodes.ExtractBarcodesFromReadId(ref recHolder.ReadId, out recHolder.barcodeIdx, out recHolder.randomBcIdx);
+                fields = null;
                 yield return recHolder;
+                line = reader.ReadLine();
             }
             reader.Close();
             yield break;
         }
 
-        public IEnumerable<BowtieMapRecord[]> ReadBlocks(TextReader reader, int maxCount)
+        private void ParseFields(ref ReadMapping recHolder, string[] fields)
         {
-            int nErronousRecords = 0;
-            BowtieMapRecord[] recHolders = new BowtieMapRecord[maxCount + 1];
+            recHolder.Strand = fields[1][0];
+            recHolder.Chr = fields[2].StartsWith("chr") ? fields[2].Substring(3) : fields[2];
+            recHolder.Position = int.Parse(fields[3]);
+            recHolder.SeqLen = fields[4].Length;
+            recHolder.AltMappings = int.Parse(fields[6]);
+            recHolder.Mismatches = fields[7];
+        }
+
+        /// <summary>
+        /// Generate sets of alternative alignments for every read in the file.
+        /// N.B.: Only the first record in each set will get barcode and readId set!
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="maxCount"></param>
+        /// <returns></returns>
+        public IEnumerable<ReadMapping[]> ReadBlocks(string file, int maxCount)
+        {
+            ReadMapping[] recHolders = new ReadMapping[maxCount + 1];
             for (int i = 0; i < recHolders.Length; i++)
-                recHolders[i] = new BowtieMapRecord();
-            string line;
-            long filePos;
-            string[] arg;
+                recHolders[i] = new ReadMapping();
+            StreamReader reader = file.OpenRead();
+            string line = reader.ReadLine();
+            string[] fields = line.Split('\t');
+            if (fields.Length < 8)
+                throw new FormatException("Too few columns in input bowtie map file " + file);
             int recIdx = 0;
-            string lastReadId = "";
-            while (true)
+            while (line != null)
             {
-                filePos = 0;//reader.BaseStream.Position;
-                line = reader.ReadLine();
-                if (line == null) break;
-                if (lastReadId != "" && !line.StartsWith(lastReadId))
+                if (!line.StartsWith(fields[0]))
                 {
+                    barcodes.ExtractBarcodesFromReadId(ref recHolders[0].ReadId, out recHolders[0].barcodeIdx, out recHolders[0].randomBcIdx);
                     recHolders[recIdx].Position = -1;
                     yield return recHolders;
                     recIdx = 0;
-                    lastReadId = "";
                 }
-                arg = line.Split('\t');
-                if (arg.Length < 8)
-                {
-                    if (nErronousRecords == 0)
-                    { // Be kind with erronous or truncated records in the input file.
-                        Console.Error.WriteLine("Detected erronous record in .map file: {0}", line);
-                        nErronousRecords++;
-                    }
-                    continue;
-                }
-                int p = arg[0].Length - barcodes.SeqLength;
-                if (p > 0 && arg[0][p - 1] == '_')
-                {
-                    recHolders[recIdx].ReadId = arg[0].Substring(0, p - 1);
-                    recHolders[recIdx].barcodeIdx = bm.GetBarcodeIdx(arg[0].Substring(p, barcodes.SeqLength));
-                }
-                else
-                {
-                    recHolders[recIdx].ReadId = arg[0];
-                    recHolders[recIdx].barcodeIdx = bm.NOBARIdx;
-                }
-                lastReadId = recHolders[recIdx].ReadId;
-                recHolders[recIdx].filePos = filePos;
-                recHolders[recIdx].Strand = arg[1][0];
-                recHolders[recIdx].Chr = arg[2].StartsWith("chr") ? arg[2].Substring(3) : arg[2];
-                recHolders[recIdx].Position = int.Parse(arg[3]);
-                recHolders[recIdx].SeqLen = arg[4].Length;
-                recHolders[recIdx].AltMappings = int.Parse(arg[6]);
-                recHolders[recIdx].Mismatches = arg[7];
+                fields = line.Split('\t');
+                ParseFields(ref recHolders[recIdx], fields);
                 recIdx++;
+                line = reader.ReadLine();
             }
             reader.Close();
-            if (nErronousRecords > 0)
-                Console.Error.WriteLine("Skipped totally {0} erronous records in .map file", nErronousRecords);
             yield break;
         }
         
@@ -132,35 +97,54 @@ namespace Linnarsson.Dna
 		}
 	}
 
-	public struct BowtieMapRecord
+	public struct ReadMapping
 	{
         public string ReadId;
         public int barcodeIdx;
+        public int randomBcIdx;
         public char Strand;
         public string Chr;
         public int Position;
         public int SeqLen;
-        //public string Sequence;
-        //public string Qualities;
         public string Mismatches;
-        public long filePos;
         public int AltMappings;
 
-        public BowtieMapRecord(string id, int bcIdx, char strand, string chr, int pos, int len, long fPos)
+        public ReadMapping(string id, int bcIdx, char strand, string chr, int pos, int len, int rndBcIdx)
         {
             ReadId = id;
             barcodeIdx = bcIdx;
+            randomBcIdx = rndBcIdx;
             Strand = strand;
             Chr = chr;
             Position = pos;
             SeqLen = len;
-            filePos = fPos;
             AltMappings = 1;
             Mismatches = null;
         }
         public override string ToString()
         {
-            return ReadId + "\tchr" + Chr + "\t" + Strand + "\t" + Position;
+            return ReadId + " BcIdx=" + barcodeIdx + " RndTagIdx=" + randomBcIdx + " Chr=" + Chr + Strand + ":" + Position + " Alt=" + AltMappings;
         }
-	}
+
+        public static ReadMapping FromBamAlignedRead(BamAlignedRead a, Barcodes barcodes)
+        {
+            ReadMapping recHolder = new ReadMapping();
+            recHolder.ReadId = a.QueryName;
+            recHolder.Strand = (a.Strand == DnaStrand.Forward) ? '+' : '-';
+            recHolder.Chr = (a.Chromosome.StartsWith("chr")) ? a.Chromosome.Substring(3) : a.Chromosome;
+            recHolder.Position = a.Position;
+            recHolder.SeqLen = (int)a.QuerySequence.Count;
+            recHolder.AltMappings = 0;
+            barcodes.ExtractBarcodesFromReadId(ref recHolder.ReadId, out recHolder.barcodeIdx, out recHolder.randomBcIdx);
+            foreach (string x in a.ExtraFields)
+                if (x.StartsWith("XM:i:"))
+                {
+                    recHolder.AltMappings = int.Parse(x.Substring(5));
+                    break;
+                }
+            recHolder.Mismatches = ""; // Do not handle the mismatches for BAM input - need seq to get substitution bases.
+            return recHolder;
+        }
+
+    }
 }

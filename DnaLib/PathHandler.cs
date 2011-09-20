@@ -126,9 +126,9 @@ namespace Linnarsson.Dna
         public string[] GetRepeatMaskFiles(StrtGenome genome)
         {
             string genomeFolder = GetGenomeSequenceFolder(genome);
-            string[] rmskFiles = Directory.GetFiles(genomeFolder, "*rmsk.txt*");
+            string[] rmskFiles = Directory.GetFiles(genomeFolder, "*rmsk.txt.gz");
             if (rmskFiles.Length == 0)
-                rmskFiles = Directory.GetFiles(genomeFolder, "*fa.out");
+                rmskFiles = Directory.GetFiles(genomeFolder, "*rmsk.txt");
             return rmskFiles;
         }
 
@@ -165,19 +165,20 @@ namespace Linnarsson.Dna
             return runNo; 
         }
 
-        public static List<string> ListReadsFiles(List<string> laneArgs)
+        public static List<ExtractionInfo> ListReadsFiles(List<string> laneArgs)
         {
-            List<string> readsFiles = new List<string>();
+            List<ExtractionInfo> readsFiles = new List<ExtractionInfo>();
             foreach (string laneArg in laneArgs)
             {
                 string[] parts = laneArg.Split(':');
-                string matchPat = GetReadFileMatchPattern(parts[0]);
+                string runId = parts[0];
+                string matchPat = GetReadFileMatchPattern(runId);
                 foreach (char laneNo in parts[1])
                 {
                     string readFilePat = string.Format(matchPat, laneNo);
                     string[] laneFiles = Directory.GetFiles(Props.props.ReadsFolder, readFilePat);
                     if (laneFiles.Length > 0)
-                        readsFiles.Add(laneFiles[0]);
+                        readsFiles.Add(new ExtractionInfo(laneFiles[0], runId, laneNo));
                 }
             }
             return readsFiles;
@@ -282,9 +283,9 @@ namespace Linnarsson.Dna
         public string GetRootedRunDataFolder(string runNameOrNumber)
         {
             string runFolder = GetRootedRunFolder(runNameOrNumber);
-            if (!runFolder.Contains(GetRunDataSubPath()))
+            if (!runFolder.Contains(MakeRunDataSubPath()))
             {
-                string stdSubFolder = Path.Combine(runFolder, GetRunDataSubPath());
+                string stdSubFolder = Path.Combine(runFolder, MakeRunDataSubPath());
                 if (Directory.Exists(stdSubFolder))
                     runFolder = stdSubFolder;
             }
@@ -321,10 +322,6 @@ namespace Linnarsson.Dna
         {
             string projectName = Path.GetFileName(projectFolder);
             return Path.Combine(projectFolder, projectName + "_extraction_summary.txt");
-        }
-        public static string GetDuplicateReadsPath(string outputFolder, string readsFile, string extractionVersion)
-        {
-            return CreateExtractedFileHead(outputFolder, readsFile, extractionVersion) + "_duplicate_tags.fq";
         }
         public static string GetSlaskReadsPath(string outputFolder, string readsFile, string extractionVersion)
         {
@@ -382,37 +379,41 @@ namespace Linnarsson.Dna
             return null;
         }
 
-        public static string GetRunDataSubPath()
+        public static string MakeRunDataSubPath()
         {
             return Path.Combine("Data", Path.Combine("Intensities", "BaseCalls"));
         }
 
-        public static string GetBarcodeFilePath(string bcSetName)
+        public static string MakeBarcodeFilePath(string bcSetName)
         {
             string bcPath = Path.Combine(Props.props.ProjectsFolder, "barcodes");
             return Path.Combine(bcPath, bcSetName + ".barcodes");
         }
 
         /// <summary>
-        /// Return paths to all .map files in folder that correspond to the given bowtie index (and version)
+        /// Return paths to all .map or .bam files in folder that correspond to the given bowtie index (and version)
         /// </summary>
         /// <param name="folder">Usually an extraction folder</param>
         /// <param name="bowtieIndexName">Either an index, e.g. "mm9_sUCSC", or a specific index version, e.g. "hg19_aUCSC110402"</param>
-        /// <returns>All corresponding map files in folder</returns>
-        public static List<string> GetMapFiles(string folder, string bowtieIndexName)
+        /// <returns>All corresponding alignment files in folder</returns>
+        public static List<string> FindBowtieMapFiles(string folder, string bowtieIndexName)
         {
-            string pattern = string.Format(".+_{0}[0-9]*M?.map$", bowtieIndexName);
-            List<string> multiMapFiles = new List<string>();
+            return FindBowtieOutputFiles(folder, bowtieIndexName, false);
+        }
+        public static List<string> FindBowtieOutputFiles(string folder, string bowtieIndexName, bool bamFormat)
+        {
+            string pattern = (bamFormat) ? string.Format(".+_{0}[0-9]+.bam$", bowtieIndexName) :
+                                          string.Format(".+_{0}[0-9]*M?.map$", bowtieIndexName);
+            List<string> files = new List<string>();
             foreach (string file in Directory.GetFiles(folder))
                 if (Regex.Match(file, pattern).Success)
-                    multiMapFiles.Add(file);
-            return multiMapFiles;
+                    files.Add(file);
+            return files;
         }
 
         public static string ExtractIndexVersion(string mapFile)
         {
-            return Regex.Match(mapFile, string.Format("_([^_]+_[^_]+).map")).Groups[1].Value;
-
+            return Regex.Match(mapFile, string.Format("_([^_]+_[^_]+).[bm]a[mp]$")).Groups[1].Value;
         }
 
         public static readonly string BarcodedFileEnding = "barcoded.fq";

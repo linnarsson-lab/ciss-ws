@@ -124,13 +124,6 @@ namespace Linnarsson.Dna
                         bool passedFilter = (items[10] == "1");
 						if (includeNonPFRecords || passedFilter)
 						{
-							//if (firstRecord)
-							//{
-							//    int scoreBase = FastQRecord.SetQualityScoreBase(qual);
-							//    if (scoreBase != 64)
-							//        Console.Error.WriteLine("WARNING: Set Illumina quality score base to {0} for {1}", scoreBase, path);
-							//    firstRecord = false;
-							//}
 							var fqr = new FastQRecord(hdr, seq, FastQRecord.QualitiesFromString(qual, qualityScoreBase), passedFilter);
 							if(fqr.IsValid()) yield return fqr;
 							//else Console.WriteLine("Invalid record: " + line);
@@ -162,10 +155,10 @@ namespace Linnarsson.Dna
         public string Header { get; set; }
 		public string Sequence { get; private set; }
 
+        /// <summary>
 		/// Qualities as phred score
 		/// </summary>
 		public byte[] Qualities { get; private set; }
-		//private string QualityString;
         public bool PassedFilter { get; set; }
 
 		public FastQRecord(string hdr, string seq, byte[] phredQualities) : this(hdr, seq, phredQualities, true) { }
@@ -237,39 +230,6 @@ namespace Linnarsson.Dna
 			return (int)(-10 * Math.Log10(prob));
 		}
 
-		//public FastQRecord(string hdr, string seq, int[] quals)
-		//    : this(hdr, seq, qs, true)
-		//{
-		//}
-		//public FastQRecord(string hdr, string seq, string qs, bool passedFilter)
-		//{
-		//    PassedFilter = passedFilter;
-		//    Header = hdr;
-		//    Sequence = seq;
-		//    QualityString = qs;
-		//    if (qs != null)
-		//    {
-		//        m_Qualities = new double[qs.Length];
-		//        for (int i = 0; i < qs.Length; i++)
-		//        {
-		//            double temp = ((int)qs[i]) - QualityScoreBase;
-		//            m_Qualities[i] = 1 / (1 + Math.Pow(10, temp / 10.0));
-		//        }
-		//    }
-		//}
-
-		//public static int SetQualityScoreBase(string exampleQualityString)
-		//{
-		//    QualityScoreBase = 64;
-		//    foreach (int q in exampleQualityString)
-		//        if (q < 64)
-		//        {
-		//            QualityScoreBase = 33;
-		//            break;
-		//        }
-		//    return QualityScoreBase;
-		//}
-
         public void Trim(int start, int len)
         {
            byte[] newQualities = new byte[len];
@@ -295,7 +255,7 @@ namespace Linnarsson.Dna
         public bool IsValid()
         {
             if (Sequence == null || Qualities == null || Header == null) return false;
-            if (Sequence.Length != Qualities.Length) return false; 
+            if (Sequence.Length != Qualities.Length) return false;
             foreach (char c in Sequence) if ("ACGTN".IndexOf(c) < 0) return false;
 			for (int i = 0; i < Qualities.Length; i++)
 			{

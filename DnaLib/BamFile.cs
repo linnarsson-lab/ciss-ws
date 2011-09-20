@@ -92,6 +92,7 @@ namespace Linnarsson.Dna
 		public string MateChromosome { get; set; }
 		public int MatePosition { get; set; }
 		public int MateDistance { get; set; }
+        public string[] ExtraFields { get; set; }
 	}
 
 	//[StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -192,7 +193,7 @@ namespace Linnarsson.Dna
 			return stdout.ToString();
 		}
 
-		/// <summary>
+        /// <summary>
 		/// Return all alignments for a given region.
 		/// </summary>
 		/// <param name="chromosome">Name of the chromosome, like 'chr12'</param>
@@ -201,23 +202,21 @@ namespace Linnarsson.Dna
 		/// <returns></returns>
 		public List<BamAlignedRead> Fetch(string chromosome, int start, int end)
 		{
-			//Console.WriteLine("2.1");
-
 			List<BamAlignedRead> result = new List<BamAlignedRead>();
 			string alignments = null;
 
 			try
 			{
-				alignments = samtools("view", BamFileName + " " + chromosome + ":" + start + "-" + end);
+                string samArg = BamFileName + " " + chromosome + ":" + start + "-" + end;
+                alignments = samtools("view", samArg);
 			}
 			catch (IOException io)
 			{
 				Console.WriteLine(io.Message);
 				return result;
 			}
-
-			//Console.WriteLine("2.2");
-			foreach (string line in alignments.Split('\n', '\r'))
+            string[] lines = alignments.Split('\n', '\r');
+			foreach (string line in lines)
 			{
 				if (string.IsNullOrEmpty(line)) break;
 				//Console.WriteLine("2.2");
@@ -240,11 +239,13 @@ namespace Linnarsson.Dna
                         QueryQuality = fields[10],
                         Cigar = fields[5]
                     };
+                    a.ExtraFields = new string[fields.Length - 11];
+                    Array.ConstrainedCopy(fields, 11, a.ExtraFields, 0, fields.Length - 11);
                     result.Add(a);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    Console.WriteLine("line=" + line);
+                    Console.WriteLine(e + " BamLine=" + line);
                 }
 			}
 			return result;

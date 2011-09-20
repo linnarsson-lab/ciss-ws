@@ -117,6 +117,7 @@
     <Compile Include="QuickAnnotationMap.cs" />
     <Compile Include="GeneFeature.cs" />
     <Compile Include="RandomTagFilter.cs" />
+    <Compile Include="ExtractionInfo.cs" />
     <Compile Include="RedundantExonHitMapper.cs" />
     <Compile Include="RepeatFeature.cs" />
     <Compile Include="RestrictionEnzyme.cs" />

@@ -55,6 +55,7 @@
             this.mySQLConnectionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.projectFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.consoleBox1 = new Linnarsson.Utilities.ConsoleBox();
+            this.sortMapFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -171,7 +172,8 @@
             this.buildSplicedExonsToolStripMenuItem,
             this.updateAnnotationsToolStripMenuItem,
             this.importFastaFileToolStripMenuItem,
-            this.synthesizeReadsFileToolStripMenuItem});
+            this.synthesizeReadsFileToolStripMenuItem,
+            this.sortMapFileToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(48, 20);
             this.toolsToolStripMenuItem.Text = "Tools";
@@ -248,6 +250,16 @@
             this.testToolStripMenuItem.Size = new System.Drawing.Size(41, 20);
             this.testToolStripMenuItem.Text = "Test";
             // 
+            // mySQLConnectionToolStripMenuItem
+            // 
+            this.mySQLConnectionToolStripMenuItem.Name = "mySQLConnectionToolStripMenuItem";
+            this.mySQLConnectionToolStripMenuItem.Size = new System.Drawing.Size(67, 22);
+            // 
+            // projectFileToolStripMenuItem
+            // 
+            this.projectFileToolStripMenuItem.Name = "projectFileToolStripMenuItem";
+            this.projectFileToolStripMenuItem.Size = new System.Drawing.Size(67, 22);
+            // 
             // consoleBox1
             // 
             this.consoleBox1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -256,6 +268,13 @@
             this.consoleBox1.Name = "consoleBox1";
             this.consoleBox1.Size = new System.Drawing.Size(594, 492);
             this.consoleBox1.TabIndex = 10;
+            // 
+            // sortMapFileToolStripMenuItem
+            // 
+            this.sortMapFileToolStripMenuItem.Name = "sortMapFileToolStripMenuItem";
+            this.sortMapFileToolStripMenuItem.Size = new System.Drawing.Size(252, 22);
+            this.sortMapFileToolStripMenuItem.Text = "Sort map file...";
+            this.sortMapFileToolStripMenuItem.Click += new System.EventHandler(this.sortMapFileToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -309,5 +328,6 @@
         private System.Windows.Forms.ToolStripMenuItem testToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem mySQLConnectionToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem projectFileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem sortMapFileToolStripMenuItem;
 	}
 }

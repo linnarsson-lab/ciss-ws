@@ -444,8 +444,25 @@ namespace SilverBullet
                 Console.WriteLine("Updating {0}...", pd.projectName);
                 Props.props.BarcodesName = pd.barcodeSet;
                 mapper = new StrtReadMapper(Props.props);
-                mapper.Extract(pd.ProjectFolder, pd.runIdsLanes.ToList());
+                mapper.Extract(pd);
                 mapper.MapAndAnnotateWithLayout(pd.ProjectFolder, pd.defaultSpecies, Props.props.AnalyzeAllGeneVariants);
+            }
+        }
+
+        private void sortMapFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (Background.IsBusy)
+            {
+                if (MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
+            }
+			OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Title = "Locate a .map file you want to sort";
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                string mapFile = ofd.FileName;
+                BowtieMapFileSorter s = new BowtieMapFileSorter();
+                Background.RunAsync(() =>
+                 { s.SortMapFile(mapFile); });
             }
         }
 

@@ -156,6 +156,16 @@ foreach ($allxml->childNodes AS $graphdata) {
         $graph = plotLines("linlin", "", $d["title"], $d["curves"], $d["xtitle"]);
         addGraph($graph);
         break;
+      case "randomtagfrequence":
+        $d = parseSingleCurve($graphdata);
+        $graph = plotHistogram($d["title"], $d["xtitle"], $d["xvalues"], $d["yvalues"]);
+        addGraph($graph);
+        break;
+      case "nuniqueateachrandomtagcoverage":
+        $d = parseSingleCurve($graphdata);
+        $graph = plotHistogram($d["title"], $d["xtitle"], $d["xvalues"], $d["yvalues"]);
+        addGraph($graph);
+        break;
     }
 }
 $xlabels = null;

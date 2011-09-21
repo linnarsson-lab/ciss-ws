@@ -23,7 +23,7 @@ class DbAppModelIlluminaRuns extends JModel {
 
     $db =& JFactory::getDBO();
     $query = ' SELECT r.id AS id, illuminarunid, r.comment, rundate, 
-           r.user AS user, r.time AS time, rundocument, r.status AS status, runno,
+           r.user AS user, r.time AS time, r.title AS title, rundocument, r.status AS status, runno,
            GROUP_CONCAT(DISTINCT(plateid) ORDER BY plateid ASC) AS plateids, 
            GROUP_CONCAT(DISTINCT(p.id) ORDER BY plateid ASC) AS platedbids
                FROM #__aaailluminarun r 

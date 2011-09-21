@@ -23,10 +23,11 @@ defined('_JEXEC') or die('Restricted access');
          <table>
            <tr><th colspan='2'></th>
             <th>RunId&nbsp;</th>
+            <th>Title&nbsp;<br />" . JHTML::tooltip('Your free designation of the run') . "</th>
             <th><nobr>Run date&nbsp;</nobr></th>
             <th>Status&nbsp;<br />" . JHTML::tooltip('n/a=No data exists, copying=making read files, copied=ready for analysis, copyfail=error during read file making') . "</th>
             <th>RunNo&nbsp;<br />" . JHTML::tooltip('Run number created by Illumina machine') . "</th>
-            <th>Run document&nbsp;</th>
+            <th>Run doc&nbsp;</th>
             <th>Samples&nbsp;</th>    
            </tr>"; 
 
@@ -52,12 +53,13 @@ defined('_JEXEC') or die('Restricted access');
            . $run->id . "&Itemid=" . $itemid . ">edit</a>&nbsp;";
     echo "<td>&nbsp;" . $runlink . "</td><td>" . $editlink . "</td>";
     echo "<td><nobr>&nbsp;" . $run->illuminarunid . "</nobr></td>";
+    echo "<td><nobr>&nbsp;" . $run->title . "</nobr></td>";
     echo "<td><nobr>&nbsp;" . $run->rundate . "</nobr></td>";
     echo "<td><nobr>&nbsp;" . $run->status . "</nobr></td>";
     echo "<td><nobr>&nbsp;" . $run->runno . "</nobr></td>";
     $RUNDOC = "";
     if ($run->rundocument != "") {
-      $RUNDOC = "<nobr>&nbsp;<a href='../../../../../../uploads/" . $run->rundocument . "' target='_blank' >" . $run->rundocument . "</a></nobr>&nbsp;";
+      $RUNDOC = "<nobr>&nbsp;<a href='../../../../../../uploads/" . $run->rundocument . "' target='_blank' >Yes</a></nobr>&nbsp;";
     }
     echo "<td>&nbsp;" . $RUNDOC . "</td>";
 

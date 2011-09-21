@@ -75,8 +75,8 @@ defined('_JEXEC') or die('Restricted access'); ?>
             <th>Laneno</th>
             <th>Cycles</th>
             <th>Conc</th>
-            <th>Yield" . JHTML::tooltip('Total millions of reads in lane.') . "</th>
-            <th>%PF" . JHTML::tooltip('Reads that passed Illumina quality filter.') . "</th>
+            <th>Yield<br />" . JHTML::tooltip('Total millions of reads in lane.') . "</th>
+            <th>%PF<br />" . JHTML::tooltip('Reads that passed Illumina quality filter.') . "</th>
             <th>Comment</th>
             <th>User</th>
             <th>Last change</th>

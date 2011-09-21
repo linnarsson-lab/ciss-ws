@@ -19,7 +19,7 @@ JHtml::_('behavior.formvalidation');
     <table>
       <tr>
         <td><nobr>RunId/CellId&nbsp; 
-               <?php echo JHTML::tooltip('Typically D...XX, or a number for the old machine'); ?>&nbsp;</nobr></td>
+               <?php echo JHTML::tooltip('The EXACT cellId, D...XX, or a run number for the old machine'); ?>&nbsp;</nobr></td>
         <td><input type="text" name="illuminarunid" id="illuminarunid" value="<?php if ($searchid > 0) echo $item->illuminarunid; ?>" class="inputbox required" size="40"/></td>
         <td rowspan="5">&nbsp; Run&nbsp;document<br />
            &nbsp; <input type="file" name="uploadedfile" id="uploadedfile" value="" size="40"/><br />
@@ -29,7 +29,8 @@ JHtml::_('behavior.formvalidation');
 			} ?></td>
       </tr>
       <tr>
-        <td>Title&nbsp;</td>
+        <td>Title&nbsp;
+               <?php echo JHTML::tooltip('Any designation of your choice'); ?></td>
         <td><input type="text" name="title" id="title" value="<?php if ($searchid > 0) echo $item->title; ?>" class="inputbox required" size="40"/></td>
       </tr>
       <tr>

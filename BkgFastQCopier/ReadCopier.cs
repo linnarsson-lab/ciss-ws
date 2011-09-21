@@ -78,30 +78,32 @@ namespace BkgFastQCopier
             string[] runFolderNames = Directory.GetDirectories(illuminaRunsFolder);
             foreach (string runFolder in runFolderNames)
             {
-                Match m = Regex.Match(runFolder, "[0-9]{6}_[^_]+_([0-9]+)_FC$");
+                Match m = Regex.Match(runFolder, "([0-9]{6})_[^_]+_([0-9]+)_FC$");
                 if (!m.Success)
-                    m = Regex.Match(runFolder, "[0-9]{6}_[^_]+_([0-9]+)$");
+                    m = Regex.Match(runFolder, "([0-9]{6})_[^_]+_([0-9]+)$");
                 if (!m.Success)
-                    m = Regex.Match(runFolder, "[0-9]{6}_[^_]+_([0-9]{4})_[AB]([a-zA-Z0-9]+)$");
+                    m = Regex.Match(runFolder, "([0-9]{6})_[^_]+_([0-9]{4})_[AB]([a-zA-Z0-9]+)$");
                 if (m.Success)
                 {
                     string readyFilePath = Path.Combine(runFolder, Props.props.IlluminaRunReadyFilename);
-                    int runNo = int.Parse(m.Groups[1].Value);
-                    string runId = (m.Groups.Count > 2)? m.Groups[2].Value : runNo.ToString();
+                    int runNo = int.Parse(m.Groups[2].Value);
+                    string runId = (m.Groups.Count > 3)? m.Groups[3].Value : runNo.ToString();
+                    string runDate = m.Groups[1].Value;
+                    runDate = "20" + runDate.Substring(0, 2) + "-" + runDate.Substring(2, 2) + "-" + runDate.Substring(4);
                     if (!copiedRunIds.ContainsKey(runNo) && File.Exists(readyFilePath))
                     {
                         string status;
-                        new ProjectDB().UpdateRunStatus(runId, "copying", runNo);
+                        new ProjectDB().UpdateRunStatus(runId, "copying", runNo, runDate);
                         try
                         {
                             status = Copy(runNo, runFolder, outputReadsFolder);
                         }
                         catch (Exception e)
                         {
-                            new ProjectDB().UpdateRunStatus(runId, "copyfail", runNo);
+                            new ProjectDB().UpdateRunStatus(runId, "copyfail", runNo, runDate);
                             throw (e);
                         }
-                        new ProjectDB().UpdateRunStatus(runId, status, runNo);
+                        new ProjectDB().UpdateRunStatus(runId, status, runNo, runDate);
                         copiedRunIds[runNo] = null;
                     }
                 }

@@ -14,7 +14,7 @@ class DbAppModelIlluminaRun extends JModel {
                       r.title AS title, r.labbookpage AS labbookpage, cycles, plateid, rundocument, runno,
                       p.id AS projectid, c.principalinvestigator AS pi, contactperson, contactemail, l.id AS Lid,
                       laneno, l.molarconcentration AS molarconcentration, b.title AS batchtitle,
-                      yield, l.comment AS Lcomment, l.user AS Luser, l.time AS Ltime, b.id AS Sid
+                      yield, pfyield, l.comment AS Lcomment, l.user AS Luser, l.time AS Ltime, b.id AS Sid
                FROM #__aaailluminarun r
                LEFT JOIN #__aaalane l ON l.#__aaailluminarunid = r.id 
                LEFT JOIN #__aaasequencingbatch b ON l.#__aaasequencingbatchid = b.id 

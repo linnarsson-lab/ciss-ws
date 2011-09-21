@@ -75,7 +75,8 @@ defined('_JEXEC') or die('Restricted access'); ?>
             <th>Laneno</th>
             <th>Cycles</th>
             <th>Conc</th>
-            <th>Yield</th>
+            <th>Yield" . JHTML::tooltip('Total millions of reads in lane.') . "</th>
+            <th>%PF" . JHTML::tooltip('Reads that passed Illumina quality filter.') . "</th>
             <th>Comment</th>
             <th>User</th>
             <th>Last change</th>
@@ -102,7 +103,8 @@ defined('_JEXEC') or die('Restricted access'); ?>
             <td>" . $lane->laneno . "</td>
             <td>" . $lane->cycles . "</td>
             <td>" . $lane->molarconcentration . "</td>
-            <td>" . $lane->yield . "</td>
+            <td>" . number_format($lane->yield / 1000000.0, 1) . "</td>
+            <td>" . number_format($lane->pfyield / $lane->yield, 2) . "</td>
             <td>" . $lane->Lcomment . "</td>
             <td>" . $lane->Luser . "</td>
             <td>&nbsp;" . $lane->Ltime . "</td>";

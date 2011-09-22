@@ -27,9 +27,6 @@ namespace Linnarsson.Dna
         {
             this.exonStarts = exonStarts;
             this.offsets = offsets;
-            int partLength = exonEnds[0] - exonStarts[0] + 1;
-            //if (partLength != spliceFlankLen)
-            //    throw new Exception("SpliceJunctionLen does not match junction exon size in annotation file.\nUpdate config.xml file or rebuild junction chromosome!");
             junctionIds = new int[spliceIds.Length];
             realExonIds = new int[spliceIds.Length];
             for (int i = 0; i < spliceIds.Length; i++)

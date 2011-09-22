@@ -93,7 +93,13 @@ namespace Linnarsson.Dna
 		public int MatePosition { get; set; }
 		public int MateDistance { get; set; }
         public string[] ExtraFields { get; set; }
-	}
+
+            public override string ToString()
+        {
+            return QueryName + "\t" + Chromosome + "\t" + Strand + "\t" + Position + "\t" + QuerySequence.Count + "\t" + ExtraFields;
+        }
+
+    }
 
 	//[StructLayout(LayoutKind.Sequential, Pack = 1)]
 	//struct bam1_t

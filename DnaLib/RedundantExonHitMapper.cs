@@ -9,20 +9,20 @@ namespace Linnarsson.Dna
 {
     public class RedundantExonHitMapper
     {
-        private Dictionary<long, List<Pair<int, FtInterval>>> altMap;
+        private Dictionary<long, List<Pair<MultiReadMapping, FtInterval>>> altMap;
         private Dictionary<string, int> chrCodes;
 
         public RedundantExonHitMapper(string redundantDataFile, Dictionary<string, GeneFeature> geneFeatures)
         {
             chrCodes = new Dictionary<string, int>();
-            altMap = new Dictionary<long, List<Pair<int, FtInterval>>>();
+            altMap = new Dictionary<long, List<Pair<MultiReadMapping, FtInterval>>>();
             StreamReader reader = new StreamReader(redundantDataFile);
             string line = reader.ReadLine();
             while (line != null)
             {  // chrid,chrbowtiehitpos,strand \t gene1name,gene1trmidhitpos \t gene2name,gene2trmidhitpos ...
                 string[] data = line.Trim().Split('\t');
                 string[] chrData = data[0].Split(',');
-                List<Pair<int, FtInterval>> redundantPairs = new List<Pair<int, FtInterval>>();
+                List<Pair<MultiReadMapping, FtInterval>> redundantPairs = new List<Pair<MultiReadMapping, FtInterval>>();
                 for (int i = 1; i < data.Length; i++)
                 {
                     string[] dataPair = data[i].Split(',');
@@ -31,7 +31,7 @@ namespace Linnarsson.Dna
                     int gfTrMidHitPos = int.Parse(dataPair[1]);
                     int gfChrPos = gf.GetChrPos(gfTrMidHitPos);
                     FtInterval ivl = new FtInterval(0, 0, gf.MarkAltExonHit, gfChrPos);
-                    redundantPairs.Add(new Pair<int, FtInterval>(0, ivl));
+                    redundantPairs.Add(new Pair<MultiReadMapping, FtInterval>(null, ivl));
                 }
                 string chrId = chrData[0];
                 if (!chrCodes.ContainsKey(chrId))
@@ -50,7 +50,7 @@ namespace Linnarsson.Dna
             return (hitMidPos << 8) + (chrCode << 1) + codedStrand;
         }
 
-        public List<Pair<int, FtInterval>> GetRedundantMappings(string chrId, int hitMidPos, char strand)
+        public List<Pair<MultiReadMapping, FtInterval>> GetRedundantMappings(string chrId, int hitMidPos, char strand)
         {
             long codedPos = CodeChrPos(chrId, hitMidPos, strand);
             return altMap[codedPos];

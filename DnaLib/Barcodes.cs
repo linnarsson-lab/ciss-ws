@@ -85,7 +85,7 @@ namespace Linnarsson.Dna
             return Math.Max(m_BarcodePos + GetLengthOfBarcodesWithTSSeq(), m_RandomTagPos + m_RandomTagLen); 
         }
 
-        public void ExtractBarcodesFromReadId(ref string readId, out int bcIdx, out int randomBcIdx)
+        public string ExtractBarcodesFromReadId(string readId, out int bcIdx, out int randomBcIdx)
         {
             bcIdx = GetBarcodeIdx(readId.Substring(readId.Length - m_SeqLength));
             randomBcIdx = 0;
@@ -94,7 +94,7 @@ namespace Linnarsson.Dna
             {
                 randomBcIdx = (randomBcIdx << 2) | ("ACGT".IndexOf(readId[p++]));
             }
-            readId = readId.Substring(0, readId.Length - BarcodeFieldLen - 1);
+            return readId.Substring(0, readId.Length - BarcodeFieldLen - 1);
         }
         public string MakeRandomTag(int randomBcIdx)
         {

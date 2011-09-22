@@ -10,75 +10,14 @@ namespace Linnarsson.Dna
 	public class BowtieMapFile
 	{
         private Barcodes barcodes;
+        private StreamReader reader;
+        private MultiReadMappings mrm;
 
-        public BowtieMapFile(Barcodes barcodes)
+        public BowtieMapFile(string file, int maxNMappings, Barcodes barcodes)
         {
+            reader = new StreamReader(file);
             this.barcodes = barcodes;
-        }
-
-        public IEnumerable<ReadMapping> Read(string file)
-        {
-            ReadMapping recHolder = new ReadMapping();
-            var reader = file.OpenRead();
-            string line = reader.ReadLine();
-            string[] fields = line.Split('\t');
-            while (line != null)
-            {
-                fields = line.Split('\t');
-                ParseFields(ref recHolder, fields);
-                barcodes.ExtractBarcodesFromReadId(ref recHolder.ReadId, out recHolder.barcodeIdx, out recHolder.randomBcIdx);
-                fields = null;
-                yield return recHolder;
-                line = reader.ReadLine();
-            }
-            reader.Close();
-            yield break;
-        }
-
-        private void ParseFields(ref ReadMapping recHolder, string[] fields)
-        {
-            recHolder.Strand = fields[1][0];
-            recHolder.Chr = fields[2].StartsWith("chr") ? fields[2].Substring(3) : fields[2];
-            recHolder.Position = int.Parse(fields[3]);
-            recHolder.SeqLen = fields[4].Length;
-            recHolder.AltMappings = int.Parse(fields[6]);
-            recHolder.Mismatches = fields[7];
-        }
-
-        /// <summary>
-        /// Generate sets of alternative alignments for every read in the file.
-        /// N.B.: Only the first record in each set will get barcode and readId set!
-        /// </summary>
-        /// <param name="file"></param>
-        /// <param name="maxCount"></param>
-        /// <returns></returns>
-        public IEnumerable<ReadMapping[]> ReadBlocks(string file, int maxCount)
-        {
-            ReadMapping[] recHolders = new ReadMapping[maxCount + 1];
-            for (int i = 0; i < recHolders.Length; i++)
-                recHolders[i] = new ReadMapping();
-            StreamReader reader = file.OpenRead();
-            string line = reader.ReadLine();
-            string[] fields = line.Split('\t');
-            if (fields.Length < 8)
-                throw new FormatException("Too few columns in input bowtie map file " + file);
-            int recIdx = 0;
-            while (line != null)
-            {
-                if (!line.StartsWith(fields[0]))
-                {
-                    barcodes.ExtractBarcodesFromReadId(ref recHolders[0].ReadId, out recHolders[0].barcodeIdx, out recHolders[0].randomBcIdx);
-                    recHolders[recIdx].Position = -1;
-                    yield return recHolders;
-                    recIdx = 0;
-                }
-                fields = line.Split('\t');
-                ParseFields(ref recHolders[recIdx], fields);
-                recIdx++;
-                line = reader.ReadLine();
-            }
-            reader.Close();
-            yield break;
+            mrm = new MultiReadMappings(maxNMappings, barcodes);
         }
         
 		/// <summary>
@@ -95,56 +34,114 @@ namespace Linnarsson.Dna
 			}
 			return result.ToString();
 		}
+
+        public IEnumerable<MultiReadMappings> MultiMappings()
+        {
+            string line = reader.ReadLine();
+            if (line == null) yield break;
+            string[] fields = line.Split('\t');
+            if (fields.Length < 8)
+                throw new FormatException("Too few columns in input bowtie map file");
+            mrm.Init(fields[0], fields[4].Length, int.Parse(fields[6]));
+            while (line != null)
+            {
+                fields = line.Split('\t');
+                if (!line.StartsWith(mrm.ReadId))
+                {
+                    yield return mrm;
+                    mrm.Init(fields[0], fields[4].Length, int.Parse(fields[6]));
+                }
+                mrm.AddMapping(fields[2], fields[1][0], int.Parse(fields[3]), fields[7]);
+                line = reader.ReadLine();
+            }
+            reader.Close();
+            yield return mrm;
+            yield break;
+        }
 	}
 
-	public struct ReadMapping
-	{
-        public string ReadId;
-        public int barcodeIdx;
-        public int randomBcIdx;
-        public char Strand;
+    public class MultiReadMapping
+    {
         public string Chr;
+        public char Strand;
         public int Position;
-        public int SeqLen;
         public string Mismatches;
+    }
+    public class MultiReadMappings
+    {
+        private static Barcodes Barcodes;
+
+        public string ReadId;
+        public int BarcodeIdx;
+        public int RandomBcIdx;
+        public int SeqLen;
         public int AltMappings;
-
-        public ReadMapping(string id, int bcIdx, char strand, string chr, int pos, int len, int rndBcIdx)
+        public int NMappings;
+        private MultiReadMapping[] Mappings;
+        public MultiReadMappings(int maxNMappings, Barcodes barcodes)
         {
-            ReadId = id;
-            barcodeIdx = bcIdx;
-            randomBcIdx = rndBcIdx;
-            Strand = strand;
-            Chr = chr;
-            Position = pos;
-            SeqLen = len;
-            AltMappings = 1;
-            Mismatches = null;
+            Mappings = new MultiReadMapping[maxNMappings];
+            for (int i = 0; i < maxNMappings; i++)
+                Mappings[i] = new MultiReadMapping();
+            Barcodes = barcodes;
         }
-        public override string ToString()
+        public void Init(string combinedReadId, int seqLen, int altMappings)
         {
-            return ReadId + " BcIdx=" + barcodeIdx + " RndTagIdx=" + randomBcIdx + " Chr=" + Chr + Strand + ":" + Position + " Alt=" + AltMappings;
+            ReadId = Barcodes.ExtractBarcodesFromReadId(combinedReadId, out BarcodeIdx, out RandomBcIdx);
+            SeqLen = seqLen;
+            AltMappings = altMappings;
+            NMappings = 0;
+        }
+        public void AddMapping(string chr, char strand, int pos, string mismatches)
+        {
+            if (NMappings < Mappings.Length)
+            {
+                Mappings[NMappings].Chr = chr.StartsWith("chr") ? chr.Substring(3) : chr;
+                Mappings[NMappings].Strand = strand;
+                Mappings[NMappings].Position = pos;
+                Mappings[NMappings].Mismatches = mismatches;
+                NMappings++;
+            }
+        }
+        public MultiReadMapping this[int idx]
+        {
+            get { return (idx < NMappings)? Mappings[idx] : null; }
         }
 
-        public static ReadMapping FromBamAlignedRead(BamAlignedRead a, Barcodes barcodes)
+        public IEnumerable<MultiReadMapping> ValidMappings()
         {
-            ReadMapping recHolder = new ReadMapping();
-            recHolder.ReadId = a.QueryName;
-            recHolder.Strand = (a.Strand == DnaStrand.Forward) ? '+' : '-';
-            recHolder.Chr = (a.Chromosome.StartsWith("chr")) ? a.Chromosome.Substring(3) : a.Chromosome;
-            recHolder.Position = a.Position;
-            recHolder.SeqLen = (int)a.QuerySequence.Count;
-            recHolder.AltMappings = 0;
-            barcodes.ExtractBarcodesFromReadId(ref recHolder.ReadId, out recHolder.barcodeIdx, out recHolder.randomBcIdx);
+            for (int idx = 0; idx < NMappings; idx++)
+                yield return Mappings[idx];
+            yield break;
+        }
+
+        public void FromBamAlignedRead(BamAlignedRead a)
+        {
+            NMappings = 1;
+            Mappings[0].Chr = (a.Chromosome.StartsWith("chr")) ? a.Chromosome.Substring(3) : a.Chromosome;
+            Mappings[0].Strand = (a.Strand == DnaStrand.Forward) ? '+' : '-';
+            Mappings[0].Position = a.Position - 1; // SAM data are 1-based - "samtools view" delivers SAM-style data from BAM files
+            SeqLen = (int)a.QuerySequence.Count;
+            AltMappings = 0;
+            ReadId = Barcodes.ExtractBarcodesFromReadId(a.QueryName, out BarcodeIdx, out RandomBcIdx);
             foreach (string x in a.ExtraFields)
                 if (x.StartsWith("XM:i:"))
                 {
-                    recHolder.AltMappings = int.Parse(x.Substring(5));
+                    AltMappings = int.Parse(x.Substring(5));
                     break;
                 }
-            recHolder.Mismatches = ""; // Do not handle the mismatches for BAM input - need seq to get substitution bases.
-            return recHolder;
+            Mappings[0].Mismatches = ""; // Do not handle the mismatches for BAM input - need seq to get substitution bases.
         }
 
+        public void InitSingleMapping(string readId, string chr, char strand, int position, int seqLen, int altMappings, string mismatches)
+        {
+            ReadId = readId;
+            SeqLen = seqLen;
+            AltMappings = altMappings;
+            NMappings = 1;
+            Mappings[0].Chr = chr;
+            Mappings[0].Strand = strand;
+            Mappings[0].Mismatches = mismatches;
+        }
     }
 }

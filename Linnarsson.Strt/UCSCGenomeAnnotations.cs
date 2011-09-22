@@ -26,16 +26,16 @@ namespace Linnarsson.Strt
         public override void Load()
         {
             PathHandler ph = new PathHandler(props);
-            Dictionary<string, string> chrIdToFileMap = ph.GetGenomeFilesMap(genome);
-            int nFiles = (int)(chrIdToFileMap.Count * 1.3);
+            ChrIdToFileMap = ph.GetGenomeFilesMap(genome);
+            int nFiles = (int)(ChrIdToFileMap.Count * 1.3);
             Background.Progress(0);
-            foreach (string chrId in chrIdToFileMap.Keys)
+            foreach (string chrId in ChrIdToFileMap.Keys)
                 QuickAnnotations[chrId] = new QuickAnnotationMap(annotationBinSize);
             AssertGeneFile(ph);
             MarkUpOverlappingFeatures();
             foreach (GeneFeature gf in geneFeatures.Values) AddIntervals((GeneFeature)gf);
             if (needChromosomeSequences || needChromosomeLengths)
-                ReadChromsomeSequences(chrIdToFileMap, nFiles);
+                ReadChromsomeSequences(ChrIdToFileMap, nFiles);
             if (Background.CancellationPending) return;
             string[] rmskFiles = ph.GetRepeatMaskFiles(genome);
             Console.Write("Reading {0} masking files..", rmskFiles.Length);

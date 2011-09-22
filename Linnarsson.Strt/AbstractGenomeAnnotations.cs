@@ -15,10 +15,14 @@ namespace Linnarsson.Strt
         public static int annotationBinSize = 30000;
 
         /// <summary>
-        /// The actual chromosome sequences
+        /// The actual chromosome sequences - only those needed for stat calc.
         /// </summary>
         public Dictionary<string, DnaSequence> ChromosomeSequences { get; set; }
         public Dictionary<string, int> ChromosomeLengths { get; set; }
+        /// <summary>
+        /// Map of all chrIds to their sequence files.
+        /// </summary>
+        public Dictionary<string, string> ChrIdToFileMap;
         /// <summary>
         /// A dictionary of annotations indexed by chromosome Id
         /// </summary>

@@ -13,7 +13,7 @@ namespace Linnarsson.Strt
 {
 	public class TranscriptomeStatistics
 	{
-        private readonly int bamFileWindowSize = 1000000;
+        private readonly int bamFileWindowSize = 10000000;
         private CompactWiggle compactWiggle;
         public bool GenerateWiggle { get; set; }
         public bool DetermineMotifs { get; set; }
@@ -41,7 +41,7 @@ namespace Linnarsson.Strt
         List<int> sampledNumUniqueReads = new List<int>();
         List<int[]> sampledBarcodeFeatures = new List<int[]>();
         Dictionary<string, int> redundantHits = new Dictionary<string, int>();
-        List<Pair<int, FtInterval>> exonsToMark;
+        List<Pair<MultiReadMapping, FtInterval>> exonsToMark;
         List<string> exonHitGeneNames;
         string annotationChrId;
 
@@ -66,7 +66,7 @@ namespace Linnarsson.Strt
                 TotalHitsByAnnotTypeAndChr[chr] = new int[AnnotType.Count];
             TotalHitsByAnnotType = new int[AnnotType.Count];
             numReadsByBarcode = new int[barcodes.Count];
-            exonsToMark = new List<Pair<int, FtInterval>>(100);
+            exonsToMark = new List<Pair<MultiReadMapping, FtInterval>>(100);
             exonHitGeneNames = new List<string>(100);
             annotationChrId = Annotations.Genome.Annotation;
             if (barcodes.HasRandomBarcodes) randomTagFilter = new RandomTagFilter(barcodes, bamFileWindowSize);
@@ -82,15 +82,15 @@ namespace Linnarsson.Strt
             if (useRandomBcFilter)
                 throw new InvalidOperationException("Random tags can only be filtered with .bam files as input!");
             int nReadsInValidBarcodes = 0;
-            BowtieMapFile bmf = new BowtieMapFile(barcodes);
+            BowtieMapFile bmf = new BowtieMapFile(file, 12, barcodes);
             bool singleSpecies = !barcodes.HasSampleLayout();
             HashSet<int> validBcIndexes = new HashSet<int>(genomeBcIndexes);
-            foreach (ReadMapping[] recs in bmf.ReadBlocks(file, 12))
+            foreach (MultiReadMappings mappings in bmf.MultiMappings())
             {
-                if (singleSpecies || validBcIndexes.Contains(recs[0].barcodeIdx))
+                if (singleSpecies || validBcIndexes.Contains(mappings.BarcodeIdx))
                 {
                     nReadsInValidBarcodes++;
-                    Add(recs, 1);
+                    Add(mappings, 1);
                 }
             }
             return nReadsInValidBarcodes;
@@ -103,21 +103,25 @@ namespace Linnarsson.Strt
             bool singleSpecies = !barcodes.HasSampleLayout();
             HashSet<int> validBcIndexes = new HashSet<int>(genomeBcIndexes);
             Console.Write("Analyzing bam reads from chr ");
-            foreach (string chr in Annotations.ChromosomeLengths.Keys)
+            MultiReadMappings mappings = new MultiReadMappings(1, barcodes);
+            foreach (string chrId in Annotations.ChromosomeLengths.Keys)
             {
-                string chrName = "chr" + chr;
-                Console.Write(chr + ".");
-                for (int windowStart = 0; windowStart < Annotations.ChromosomeLengths[chr]; windowStart += bamFileWindowSize)
+                string chrName = (StrtGenome.IsSpliceAnnotationChr(chrId))? chrId: "chr" + chrId;
+                Console.Write(chrId + ".");
+                for (int windowStart = 0; windowStart < Annotations.ChromosomeLengths[chrId]; windowStart += bamFileWindowSize)
                 {
                     List<BamAlignedRead> bamReads = bamf.Fetch(chrName, windowStart, windowStart + bamFileWindowSize);
                     foreach (BamAlignedRead a in bamReads)
                     {
-                        ReadMapping rec = ReadMapping.FromBamAlignedRead(a, barcodes);
-                        if (singleSpecies || validBcIndexes.Contains(rec.barcodeIdx))
+                        //Console.WriteLine(a.ToString());
+                        mappings.FromBamAlignedRead(a);
+                        //Console.WriteLine(rec.ToString());
+                        if (singleSpecies || validBcIndexes.Contains(mappings.BarcodeIdx))
                         {
                             nReadsInValidBarcodes++;
-                            if (!useRandomBcFilter || randomTagFilter.IsNew(rec.Position, rec.Strand, rec.barcodeIdx, rec.randomBcIdx))
-                                Add(rec, 1);
+                            MultiReadMapping m = mappings[0];
+                            if (!useRandomBcFilter || randomTagFilter.IsNew(m.Position, m.Strand, mappings.BarcodeIdx, mappings.RandomBcIdx))
+                                Add(mappings, 1);
                         }
                     }
                 }
@@ -136,37 +140,27 @@ namespace Linnarsson.Strt
             return nReadsInValidBarcodes;
         }
 
-        /// <summary>
-        /// For single mappings of reads
-        /// </summary>
-        /// <param name="rec"></param>
-        /// <param name="weight"></param>
-        /// <returns></returns>
-        public void Add(ReadMapping rec, int weight)
+        public void Add(MultiReadMappings mappings, int weight)
         {
-            Add(new ReadMapping[] { rec }, weight);
-        }
-
-        public void Add(ReadMapping[] recs, int weight)
-        {
+            exonHitGeneNames.Clear();
             numReads++;
-            int bcodeIdx = recs[0].barcodeIdx;
+            int bcodeIdx = mappings.BarcodeIdx;
+            int hitLen = mappings.SeqLen;
+            int halfWidth = hitLen / 2;
             numReadsByBarcode[bcodeIdx]++;
             bool someAnnotationHit = false;
             bool someExonHit = false;
             int nAltFeaturesHits = 0;
             MarkStatus markType = MarkStatus.TEST_EXON_MARK_OTHER;
             int recCount = 0;
-            for (; recCount < recs.Length; recCount++)
+            foreach (MultiReadMapping mapping in mappings.ValidMappings())
             {
-                int hitStartPos = recs[recCount].Position;
+                int hitStartPos = mapping.Position;
                 if (hitStartPos == -1)
                     break;
                 bool recSomeAnnotationHit = false;
-                string chr = recs[recCount].Chr;
-                char strand = recs[recCount].Strand;
-                int hitLen = recs[recCount].SeqLen;
-                int halfWidth = hitLen / 2;
+                string chr = mapping.Chr;
+                char strand = mapping.Strand;
                 int hitMidPos = hitStartPos + halfWidth;
                 foreach (FtInterval ivl in Annotations.GetMatching(chr, hitMidPos))
                 {
@@ -182,7 +176,7 @@ namespace Linnarsson.Strt
                         if (!exonHitGeneNames.Contains(gfName))
                         {
                             exonHitGeneNames.Add(gfName);
-                            exonsToMark.Add(new Pair<int, FtInterval>(recCount, ivl));
+                            exonsToMark.Add(new Pair<MultiReadMapping, FtInterval>(mapping, ivl));
                         }
                     }
                     else // hit is not to EXON or SPLC (neither AEXON/ASPLC for non-directional samples)
@@ -210,20 +204,18 @@ namespace Linnarsson.Strt
             }
             // Now when the best alignments have been selected, mark these transcript hits
             MarkStatus markStatus = (exonsToMark.Count > 1) ? MarkStatus.ALT_MAPPINGS : MarkStatus.SINGLE_MAPPING;
-            if (recCount == 1 && recs[0].AltMappings > 0)
+            if (recCount == 1 && mappings.AltMappings > 0)
             {
                 if (redundantExonHitMapper != null)
                 {
-                    exonsToMark = redundantExonHitMapper.GetRedundantMappings(recs[0].Chr, recs[0].Position, recs[0].Strand);
+                    exonsToMark = redundantExonHitMapper.GetRedundantMappings(mappings[0].Chr, mappings[0].Position, mappings[0].Strand);
                 }
                 markStatus = MarkStatus.MARK_ALT_MAPPINGS;
             } 
-            foreach (Pair<int, FtInterval> exonToMark in exonsToMark)
+            foreach (Pair<MultiReadMapping, FtInterval> exonToMark in exonsToMark)
             {
-                int recIdx = exonToMark.First;
+                MultiReadMapping rec = exonToMark.First;
                 FtInterval ivl = exonToMark.Second;
-                ReadMapping rec = recs[recIdx];
-                int halfWidth = rec.SeqLen / 2;
                 int chrStart = rec.Position;
                 string chr = rec.Chr;
                 char strand = rec.Strand;
@@ -259,10 +251,9 @@ namespace Linnarsson.Strt
                     redundantHits[combNames] = 1;
                 else
                     redundantHits[combNames]++;
-                exonHitGeneNames.Clear();
             }
             if (TestReporter != null)
-                TestReporter.ReportHit(exonHitGeneNames, recs, exonsToMark);
+                TestReporter.ReportHit(exonHitGeneNames, mappings, exonsToMark);
             exonsToMark.Clear();
         }
 
@@ -292,13 +283,13 @@ namespace Linnarsson.Strt
 		{
             if (TestReporter != null)
                 TestReporter.Summarize(Annotations.geneFeatures);
-            WriteSnps(fileNameBase);
-            WriteSnpsByBarcode(fileNameBase);
             WriteRedundantExonHits(fileNameBase);
             WriteASExonDistributionHistogram(fileNameBase);
             WriteSampledVariation(fileNameBase);
-            Annotations.WriteStats(fileNameBase);
             WriteSummary(fileNameBase, Annotations.GetSummaryLines(), readCounter);
+            Annotations.WriteStats(fileNameBase);
+            WriteSnps(fileNameBase);
+            //WriteSnpsByBarcode(fileNameBase); // Large file & takes time
             if (DetermineMotifs)
                 WriteSequenceLogos(fileNameBase);
             if (compactWiggle != null)
@@ -371,10 +362,14 @@ namespace Linnarsson.Strt
         {
             if (randomTagFilter == null) return;
             xmlFile.WriteLine("    <randomtagfrequence>");
+            xmlFile.WriteLine("<title>Number of reads detected in each random barcode</title>");
+            xmlFile.WriteLine("<xtitle>Random tag index (AAAA...TTTT)</xtitle>");
             for (int i = 0; i < randomTagFilter.nReadsByRandomTag.Length; i++)
                 xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", barcodes.MakeRandomTag(i), randomTagFilter.nReadsByRandomTag[i]);
             xmlFile.WriteLine("    </randomtagfrequence>");
             xmlFile.WriteLine("    <nuniqueateachrandomtagcoverage>");
+            xmlFile.WriteLine("<title>Unique alignmentposition-barcodes as fn of # random tags they occur in</title>");
+            xmlFile.WriteLine("<xtitle>Number of different random tags</xtitle>");
             for (int i = 0; i < randomTagFilter.nCasesPerRandomTagCount.Length; i++)
                 xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
             xmlFile.WriteLine("    </nuniqueateachrandomtagcoverage>");

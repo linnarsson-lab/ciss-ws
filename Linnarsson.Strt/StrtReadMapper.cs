@@ -515,7 +515,7 @@ namespace Linnarsson.Strt
             string annotFolderName = PathHandler.MakeAnnotFolderName(projectName, indexVersion, ANNOTATION_VERSION);
             string outputFolder = Path.Combine(extractedFolder, annotFolderName);
             string outputSubFolder = null;
-            if (!Directory.Exists(outputFolder))
+            if (!File.Exists(Path.Combine(outputFolder, "config.xml")))
             {
                 ProcessAnnotation(barcodeSet, genome, projectFolder, projectName, mapFiles, outputFolder);
                 string projectFolderName = Path.GetFileName(projectFolder);
@@ -601,6 +601,7 @@ namespace Linnarsson.Strt
 			Console.WriteLine("Processing wiggle files...");
 			int countMappedReads = 0;
             int n = 1;
+            MultiReadMappings mappings = new MultiReadMappings(1, barcodes);
 			foreach(string file in Directory.GetFiles(wiggleFolder, "*.wig.gz"))
 			{
                 readCounter.AddReadFilename(file);
@@ -618,8 +619,8 @@ namespace Linnarsson.Strt
 					int end = int.Parse(fields[2]);
 					int height = int.Parse(fields[3]);
 					char strand = file.Contains("fw") ? '+' : '-';
-                    ReadMapping rec = new ReadMapping("Line" + n, 0, strand, chr, start, end - start, 0);
-                    ts.Add(rec, height);
+                    mappings.InitSingleMapping("Line" + n, chr, strand, start, end - start, 0, "");
+                    ts.Add(mappings, height);
                     n++;
 					countMappedReads += (end - start) * height / 25; // assuming 25 bp read length on average
 				}

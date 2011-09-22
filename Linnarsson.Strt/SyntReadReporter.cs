@@ -43,15 +43,15 @@ namespace Linnarsson.Strt
             }
         }
 
-        public void ReportHit(List<string> exonHitGeneNames, ReadMapping[] recs, List<Pair<int, FtInterval>> exonsToMark)
+        public void ReportHit(List<string> exonHitGeneNames, MultiReadMappings recs, List<Pair<MultiReadMapping, FtInterval>> exonsToMark)
         {
             string descr = "";
-            if (recs[0].ReadId.StartsWith("Synt:BKG"))
+            if (recs.ReadId.StartsWith("Synt:BKG"))
             {
                 if (exonHitGeneNames.Count > 0)
                 {
                     string pat = "Synt:BKG:([^+-]+)([+-]):([0-9]+):([0-9]+)";
-                    Match m = Regex.Match(recs[0].ReadId, pat);
+                    Match m = Regex.Match(recs.ReadId, pat);
                     string chrId = m.Groups[1].Value;
                     int pos = int.Parse(m.Groups[4].Value);
                     List<string> realGfHits = new List<string>();
@@ -59,7 +59,7 @@ namespace Linnarsson.Strt
                     foreach (string geneName in exonHitGeneNames)
                     {
                         GeneFeature gf = geneFeatures[geneName];
-                        if (gf.Contains(pos, pos + recs[0].SeqLen))
+                        if (gf.Contains(pos, pos + recs.SeqLen))
                         {
                             realGfHits.Add(gf.Name);
                             realGeneBkgCounts[gf.Name]++;
@@ -82,39 +82,39 @@ namespace Linnarsson.Strt
             {
                 descr = "---- No hit to annotated exon: ----";
                 nNoHitToGene++;
-                if (recs[0].AltMappings >= maxNumMappings)
+                if (recs.AltMappings >= maxNumMappings)
                 {
-                    AddToRedundant(recs[0]);
-                    descr = "---- No hit: Redundant: Many mappings to genome (" + recs[0].AltMappings + "): ----";
+                    AddToRedundant(recs);
+                    descr = "---- No hit: Redundant: Many mappings to genome (" + recs.AltMappings + "): ----";
                 }
             }
             else if (exonHitGeneNames.Count == 1)
             {
                 string actualHitGene = exonHitGeneNames[0];
-                foreach (ReadMapping rec in recs.TakeWhile(r => r.Position != -1))
+                foreach (MultiReadMapping rec in recs.ValidMappings())
                 {
-                    if (rec.ReadId.Contains(actualHitGene))
+                    if (recs.ReadId.Contains(actualHitGene))
                         return;
                 }
                 nHitToWrongGene++;
                 descr = "---- Got a wrong hit to " + actualHitGene + ": ----";
-                if (recs[0].AltMappings >= maxNumMappings)
+                if (recs.AltMappings >= maxNumMappings)
                 {
-                    AddToRedundant(recs[0]);
-                    descr = "---- Wrong hit to " + actualHitGene + ": Redundant: Many mappings to genome (" + recs[0].AltMappings + "): ----";
+                    AddToRedundant(recs);
+                    descr = "---- Wrong hit to " + actualHitGene + ": Redundant: Many mappings to genome (" + recs.AltMappings + "): ----";
                 }
             }
             if (descr != "")
             {
                 readReporter.WriteLine(descr);
-                foreach (ReadMapping rec in recs.TakeWhile(r => r.Position != -1))
+                foreach (MultiReadMapping rec in recs.ValidMappings())
                 {
                     readReporter.WriteLine(rec.ToString());
                 }
             }
         }
 
-        private void AddToRedundant(ReadMapping rec)
+        private void AddToRedundant(MultiReadMappings rec)
         {
             int pos = rec.ReadId.IndexOf(":", 5);
             string geneName = rec.ReadId.Substring(5, pos - 5);

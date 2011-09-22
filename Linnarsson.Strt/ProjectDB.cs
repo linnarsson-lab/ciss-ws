@@ -288,13 +288,14 @@ namespace Linnarsson.Strt
         /// <param name="runId">Either a run number for the old machine or a cell Id for the new</param>
         /// <param name="status"></param>
         /// <param name="runNo">A run number to set.</param>
-        public void UpdateRunStatus(string runId, string status, int runNo)
+        public void UpdateRunStatus(string runId, string status, int runNo, string runDate)
         { // Below SQL will update with status and runno if user has defined the run, else add a new run as
           // well as defining 8 new lanes by side-effect of a MySQL trigger
             MySqlConnection conn = new MySqlConnection(connectionString);
-            string sql = string.Format("INSERT INTO jos_aaailluminarun (status, runno, illuminarunid) VALUES ('{0}', '{1}', '{2}') " +
+            string sql = string.Format("INSERT INTO jos_aaailluminarun (status, runno, illuminarunid, rundate) " +
+                                       "VALUES ('{0}', '{1}', '{2}', '{3}') " +
                                        "ON DUPLICATE KEY UPDATE status='{0}', runno='{1}';",
-                                       status, runNo, runId);
+                                       status, runNo, runId, runDate);
             try
             {
                 conn.Open();

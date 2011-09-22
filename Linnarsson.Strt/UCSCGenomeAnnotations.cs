@@ -867,6 +867,7 @@ namespace Linnarsson.Strt
         /// <param name="fileNameBase"></param>
         private void WriteGeneImages(string fileNameBase)
         {
+            if (props.GenesToPaint.Length == 0) return;
             string imgDir = Directory.CreateDirectory(fileNameBase + "_gene_images").FullName;
             foreach (string gene in props.GenesToPaint)
             {
@@ -919,6 +920,7 @@ namespace Linnarsson.Strt
         /// <param name="fileNameBase"></param>
         private void WriteTranscriptImages(string fileNameBase)
         {
+            if (props.GenesToPaint.Length == 0) return;
             string imgDir = Directory.CreateDirectory(fileNameBase + "_transcript_images").FullName;
             foreach (string gene in props.GenesToPaint)
             {

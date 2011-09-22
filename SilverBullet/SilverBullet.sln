@@ -22,7 +22,10 @@ EndProject
 Global
 	GlobalSection(SourceCodeControl) = preSolution
 		SccNumberOfProjects = 10
-		SccLocalPath0 = .
+		SccProjectName0 = Perforce\u0020Project
+		SccLocalPath0 = ..
+		SccProvider0 = MSSCCI:Perforce\u0020SCM
+		SccProjectFilePathRelativizedFromConnection0 = SilverBullet\\
 		SccProjectUniqueName1 = ..\\DnaLib\\Linnarsson.Dna.csproj
 		SccLocalPath1 = ..\\DnaLib
 		SccProjectUniqueName2 = ..\\UtilitiesLib\\Linnarsson.Utilities.csproj

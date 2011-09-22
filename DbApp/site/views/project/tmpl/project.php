@@ -9,19 +9,19 @@ defined('_JEXEC') or die('Restricted access'); ?>
   
 $removelink = "";
 if (count($this->seqbatches) == 0 && $project->status != 'inqueue' && $project->status != 'processing') {
-  $removelink = "<a href=index.php?option=com_dbapp&view=project&layout=remove&controller=project&searchid=" 
-           . $project->id . "&Itemid=" . $itemid . " onclick=\"return confirm('This sample will be deleted.');\">Remove sample</a>&nbsp;";
+  $removelink = "<a href=\"index.php?option=com_dbapp&view=project&layout=remove&controller=project&searchid=" 
+           . $project->id . "&Itemid=" . $itemid . "\" onclick=\"return confirm('This sample will be deleted.');\" title=\"Will irreversibly delete this sample from the database.\">Remove sample</a>&nbsp;";
 }
 $cancellink = ""; 
 if ($project->status != 'cancelled') {
-    $cancellink = "<a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
-	   . $project->id . "&cancel=yes&Itemid=" . $itemid . ">Cancel sample</a>";
+    $cancellink = "<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
+	   . $project->id . "&cancel=yes&Itemid=" . $itemid . "\" title=\"Hide this (e.g. failed) sample from the sample list, but do not delete it from database.\">Cancel sample</a>";
 } else {
-    $cancellink = "<a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
-	   . $project->id . "&cancel=no&Itemid=" . $itemid . ">Reactivate sample</a>";
+    $cancellink = "<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
+	   . $project->id . "&cancel=no&Itemid=" . $itemid . "\" title=\"Make this currently cancelled sample visible in the sample list.\">Reactivate sample</a>";
 }
-$editlink = "<a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=" 
-         . $project->id . "&Itemid=" . $itemid . ">Edit this record</a>";
+$editlink = "<a href=\"index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=" 
+         . $project->id . "&Itemid=" . $itemid . "\">Edit this record</a>";
  
    $cancelcmt = ($project->status == 'cancelled')? " cancelled": "";
     echo "<h1>View of$cancelcmt sample $project->plateid </h1>";
@@ -78,9 +78,9 @@ if ($project->fileupload == 1) {
     echo "<tr><th>Comment:&nbsp;</th><td>" . $project->comment . "</td></tr></table></td></tr></table></fieldset></div>";
 
   $newbatchlink = ($project->status == 'cancelled')? "" :
-                    "<a href=index.php?option=com_dbapp&view=sequencingbatch&layout=edit&controller=sequencingbatch&searchid=0&ProjectId=" 
+                    "<a href=\"index.php?option=com_dbapp&view=sequencingbatch&layout=edit&controller=sequencingbatch&searchid=0&ProjectId=" 
                   . $project->id . "&BatchNo="
-                  . (count($this->seqbatches) + 1) . "&Itemid=" . $itemid . " >New sequencing batch</a>";
+                  . (count($this->seqbatches) + 1) . "&Itemid=" . $itemid . "\">New sequencing batch</a>";
   echo "<div class='sequencingbatch'><fieldset><legend><nobr>Associated sequencing batches &nbsp; &nbsp; &nbsp;$newbatchlink</nobr></legend>";
 
 if (count($this->seqbatches) != 0) {
@@ -93,8 +93,8 @@ if (count($this->seqbatches) != 0) {
             <th>IlluminaRuns&nbsp;</th>
             <th>Signed&nbsp;</th></tr>";
   foreach ($this->seqbatches as $batch) {
-    $batchlink = "&nbsp;  <a href=index.php?option=com_dbapp&view=sequencingbatch&layout=sequencingbatch&controller=sequencingbatch&searchid=" 
-                 . $batch->id . "&Itemid=" . $itemid . ">" . $batch->batchno . " (" . $batch->id . ")</a>&nbsp;";
+    $batchlink = "&nbsp;  <a href=\"index.php?option=com_dbapp&view=sequencingbatch&layout=sequencingbatch&controller=sequencingbatch&searchid=" 
+                 . $batch->id . "&Itemid=" . $itemid . "\">" . $batch->batchno . " (" . $batch->id . ")</a>&nbsp;";
     echo "<tr>
             <td> $batch->plateid </td>
             <td> $batchlink </td>

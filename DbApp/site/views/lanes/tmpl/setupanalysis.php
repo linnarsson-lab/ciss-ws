@@ -157,15 +157,16 @@ if ($allowinqueue) {
                        }
                 ?>
                 </select>&nbsp;
-                <input type="submit" value="Add to recepient list" onClick="addManager();return false;" /></td>
+                <input type="submit" value="Add to recepients" onClick="addManager();return false;" /></td>
           </tr>
           <tr>
-            <td>Other email address:</td>
+            <td title="To add result recepients that are not managers">Other email address:</td>
             <td><input type="text" id="email" name="email" />&nbsp;
-                <input type="submit" value="Add to recepient list" onClick="addEmail();return false;" /></td>
+                <input type="submit" value="Add to recepients" onClick="addEmail();return false;" /></td>
           </tr>
           <tr>
-            <td>Recepients:</td>
+            <td title="Info will be sent to all these addresses when analysis is finished or failed.">
+                <b>Recepients:</b></td>
             <td><input type="text" id="emails" name="emails" size="60" readonly="readonly"
                        value="<?php echo $personemail;?>"/></td>
             <td><input type="submit" value="Clear all" onClick="clearEmails();return false"; /></td>

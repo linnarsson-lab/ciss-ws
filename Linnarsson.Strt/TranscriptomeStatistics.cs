@@ -102,7 +102,7 @@ namespace Linnarsson.Strt
             BamFile bamf = new BamFile(file);
             bool singleSpecies = !barcodes.HasSampleLayout();
             HashSet<int> validBcIndexes = new HashSet<int>(genomeBcIndexes);
-            Console.Write("Analyzing bam reads from chr ");
+            Console.Write("\nAnalyzing bam file reads for chr ");
             MultiReadMappings mappings = new MultiReadMappings(1, barcodes);
             foreach (string chrId in Annotations.ChromosomeLengths.Keys)
             {
@@ -113,9 +113,7 @@ namespace Linnarsson.Strt
                     List<BamAlignedRead> bamReads = bamf.Fetch(chrName, windowStart, windowStart + bamFileWindowSize);
                     foreach (BamAlignedRead a in bamReads)
                     {
-                        //Console.WriteLine(a.ToString());
                         mappings.FromBamAlignedRead(a);
-                        //Console.WriteLine(rec.ToString());
                         if (singleSpecies || validBcIndexes.Contains(mappings.BarcodeIdx))
                         {
                             nReadsInValidBarcodes++;
@@ -124,16 +122,6 @@ namespace Linnarsson.Strt
                                 Add(mappings, 1);
                         }
                     }
-                }
-                if (useRandomBcFilter)
-                {
-                    Console.WriteLine("===============\nAfter " + chrName + " (" + nReadsInValidBarcodes + " valid and " + numReads + " unique molecules)");
-                    Console.WriteLine("Accumulated distribution of reads over random tags:");
-                    for (int i = 0; i < randomTagFilter.nReadsByRandomTag.Length; i++)
-                        Console.WriteLine(barcodes.MakeRandomTag(i) + "\t" + randomTagFilter.nReadsByRandomTag[i]);
-                    Console.WriteLine("\nCases of unique reads for various random tag coverage:");
-                    for (int i = 1; i < randomTagFilter.nReadsByRandomTag.Length; i++)
-                        Console.WriteLine(i + "\t" + randomTagFilter.nCasesPerRandomTagCount[i]);
                 }
             }
             Console.WriteLine();

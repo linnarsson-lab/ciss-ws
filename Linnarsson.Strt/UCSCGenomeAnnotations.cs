@@ -275,7 +275,7 @@ namespace Linnarsson.Strt
         /// <returns>true if gf represents a new gene, and not an artificial splice gene.</returns>
         private bool RegisterGeneFeature(LocusFeature gf)
         {
-            if (StrtGenome.IsSpliceAnnotationChr(gf.Chr))
+            if (genome.Annotation == gf.Chr) //(StrtGenome.IsSpliceAnnotationChr(gf.Chr))
             { // Requires that real loci are registered before artificial splice loci.
                 if (lastLoadedGeneName == gf.Name)
                 {    // Link from artificial splice chromosome to real locus

@@ -145,12 +145,19 @@ namespace Linnarsson.Dna
 		public string[] Chromosomes { get; set; }
 		public int[] ChromosomeLengths { get; set; }
 
-		/// <summary>
-		/// Open a BAM file for random access. BAM file must be indexed (i.e. have a companion BAI file). 
-		/// 'samtools' must be available in the PATH.
-		/// </summary>
-		/// <param name="filename">Full path to the BAM file (including ".bam")</param>
-		public BamFile(string filename)
+        public int GetChromosomeLength(string chr)
+        {
+            int i = Array.IndexOf(Chromosomes, chr);
+            if (i >= 0)
+                return ChromosomeLengths[i];
+            return 0;
+        }
+        /// <summary>
+        /// Open a BAM file for random access. BAM file must be indexed (i.e. have a companion BAI file). 
+        /// 'samtools' must be available in the PATH.
+        /// </summary>
+        /// <param name="filename">Full path to the BAM file (including ".bam")</param>
+        public BamFile(string filename)
 		{
 			BamFileName = filename;
 			if(!File.Exists(filename)) throw new FileNotFoundException(filename + " does not exist");

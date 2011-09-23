@@ -104,11 +104,9 @@ namespace Linnarsson.Strt
             HashSet<int> validBcIndexes = new HashSet<int>(genomeBcIndexes);
             Console.Write("\nAnalyzing bam file reads for chr ");
             MultiReadMappings mappings = new MultiReadMappings(1, barcodes);
-            foreach (string chrId in Annotations.ChrIdToFileMap.Keys)
+            foreach (string chrName in bamf.Chromosomes)
             {
-                string chrName = (StrtGenome.IsSpliceAnnotationChr(chrId))? chrId: "chr" + chrId;
-                Console.Write(chrId + ".");
-                for (int windowStart = 0; windowStart < Annotations.ChromosomeLengths[chrId]; windowStart += bamFileWindowSize)
+                for (int windowStart = 0; windowStart < bamf.GetChromosomeLength(chrName); windowStart += bamFileWindowSize)
                 {
                     List<BamAlignedRead> bamReads = bamf.Fetch(chrName, windowStart, windowStart + bamFileWindowSize);
                     foreach (BamAlignedRead a in bamReads)

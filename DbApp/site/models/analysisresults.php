@@ -22,7 +22,7 @@ class DbAppModelAnalysisresults extends JModel {
   public function getItems() {
 
     $db =& JFactory::getDBO();
-    $query = ' SELECT a.id, #__aaaprojectid AS projectid, p.title AS project, extraction_version, annotation_version,
+    $query = ' SELECT a.id, #__aaaprojectid AS projectid, p.plateid AS project, extraction_version, annotation_version,
                genome, transcript_db_version, transcript_variant, a.comment, lanecount, resultspath, a.user, a.time,
                a.status AS status
                FROM #__aaaanalysis a

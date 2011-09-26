@@ -158,12 +158,12 @@ foreach ($allxml->childNodes AS $graphdata) {
         break;
       case "randomtagfrequence":
         $d = parseSingleCurve($graphdata);
-        $graph = plotHistogram($d["title"], $d["xtitle"], $d["xvalues"], $d["yvalues"]);
+        $graph = plotBarsByCategory("textlin", $d["title"], $d["xtitle"], $d["xvalues"], $d["yvalues"]);
         addGraph($graph);
         break;
       case "nuniqueateachrandomtagcoverage":
         $d = parseSingleCurve($graphdata);
-        $graph = plotHistogram($d["title"], $d["xtitle"], $d["xvalues"], $d["yvalues"]);
+        $graph = plotBarsByCategory("textlog", $d["title"], $d["xtitle"], $d["xvalues"], $d["yvalues"]);
         addGraph($graph);
         break;
     }

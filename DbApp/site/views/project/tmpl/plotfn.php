@@ -57,8 +57,11 @@ function plotLines($scale, $y2scale, $title, $curves, $xtitle) {
 }
 
 function plotHistogram($title, $xtitle, $barmids, $counts) {
-	$graph = new Graph(500,400,'auto');
-	$graph->SetScale("linlin");
+        $graph = new Graph(500,400,'auto');
+        if (is_numeric($barmids[0]))
+            $graph->SetScale("linlin");
+        else
+            $graph->SetScale("textlin");
 	$theme_class=new UniversalTheme;
 	$graph->SetTheme($theme_class);
 	$graph->title->Set($title);
@@ -72,8 +75,10 @@ function plotHistogram($title, $xtitle, $barmids, $counts) {
 	//$graph->SetTickDensity(TICKD_SPARSE);
 	//$bplot->SetColor("white");
 	$bplot->SetFillColor("darkgreen");
-        $width = ($barmids[1] - $barmids[0]);
-	$bplot->SetWidth($width);
+        if (is_numeric($barmids[0])) {
+            $width = ($barmids[1] - $barmids[0]);
+	    $bplot->SetWidth($width);
+        }
 	$graph->legend->SetFrameWeight(1);
 	$graph->xaxis->HideTicks(false,false);
 	if (strlen($xtitle) > 0) {
@@ -81,6 +86,34 @@ function plotHistogram($title, $xtitle, $barmids, $counts) {
 		$graph->xaxis->title->Align('center');
 	}
 	return $graph;
+}
+
+function plotBarsByCategory($scaletypes, $title, $xtitle, $categories, $yvalues) {
+        $width = 1024;
+        #if (count($categories) > 6) $width += (count($categories) - 6) * 18;
+        $graph = new Graph($width, 500, 'auto');
+        $graph->SetScale($scaletypes);
+        $theme_class=new UniversalTheme;
+        $graph->SetTheme($theme_class);
+        $graph->SetBox(false);
+        $graph->SetMargin(100,20,50,50);
+        $graph->ygrid->SetFill(false);
+        $graph->xaxis->SetLabelMargin(5);
+        for ($i = 0; $i < count($categories); $i++)
+            if ($i != count($categories)-1 && ($i % 10 != 0 || $i > count($categories)-10))
+                 $categories[$i] = " ";
+        $graph->xaxis->SetTickLabels($categories);
+        $graph->yaxis->HideLine(false);
+        $bplot = new BarPlot($yvalues);
+        $graph->Add($bplot);
+        $bplot->SetColor("darkgreen");
+        $bplot->SetFillColor("darkgreen");
+        $graph->title->Set($title);
+        if (strlen($xtitle) > 0) {
+            $graph->xaxis->SetTitle($xtitle, 'middle');
+            $graph->xaxis->title->Align('center');
+        }
+        return $graph;
 }
 
 function plotBars($title, $labels, $values) {
@@ -154,6 +187,8 @@ function plot_reads($title, $labels, $values) {
 	$graph->Add($b1plot);
 	$graph->SetTickDensity(TICKD_SPARSE);
 	$b1plot->SetColor("white");
+        $b1plot->value->SetColor('black');
+        $b1plot->value->Show();
 	$b1plot->SetFillColor(array("darkgreen", "darkgreen", "darkgreen", "darkgreen", "red", "red"));
 	$graph->title->Set($title);
 	return $graph;

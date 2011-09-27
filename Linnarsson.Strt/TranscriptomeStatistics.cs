@@ -102,7 +102,6 @@ namespace Linnarsson.Strt
             BamFile bamf = new BamFile(file);
             bool singleSpecies = !barcodes.HasSampleLayout();
             HashSet<int> validBcIndexes = new HashSet<int>(genomeBcIndexes);
-            Console.Write("\nAnalyzing bam file reads for chr ");
             MultiReadMappings mappings = new MultiReadMappings(1, barcodes);
             foreach (string chrName in bamf.Chromosomes)
             {

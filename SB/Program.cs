@@ -86,8 +86,11 @@ namespace CmdSilverBullet
                             break;
 
                         case "sort":
-                            BowtieMapFileSorter bmfs = new BowtieMapFileSorter();
-                            bmfs.SortMapFile(args[argOffset]);
+                            MapMergeSorter bmfs = new MapMergeSorter();
+                            List<string> inFiles = new List<string>();
+                            for (int i = argOffset; i < args.Length - 1; i++)
+                                inFiles.Add(args[i]);
+                            bmfs.MergeSort(inFiles, args[args.Length - 1]);
                             break;
 
                         case "x":
@@ -275,6 +278,7 @@ namespace CmdSilverBullet
                 "SB.exe upd [<Build> <Annot> | <Sp>] <AnnotErrorFile>\n    - update SilverBullet annotations of 5' ends using the specified XXX_annot_errors_xxx.tab file.\n" +
                 "SB.exe bt <Sp>|<IdxName> all|single <ProjectPath>|<ExtractedPath>\n    - run Bowtie on latest/specified Extracted folder\n" +
                 "SB.exe aw <Sp> <MapFolderPath>/n    - annotate data from Wiggles .wig files folder\n" +
+                "SB.exe sort [<MapFile>]+ <outFile>\n    - sort and merge specified .map files\n" +
                 "SB.exe split [<BcSet>] <ProjectPath>\n    - split data by barcode\n" +
                 "SB.exe synt <BcSet> <IdxName> all|single <OutputFolder>\n" +
                 "    - generate synthetic reads from a genome\n" +

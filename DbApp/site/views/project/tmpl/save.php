@@ -163,10 +163,11 @@ function getValidBuilds($genomesLocation) {
              if (preg_match("/^mm[0-9]+$/", $genome)) {
                  $validBuilds["mm"] = 1;
                  $validBuilds["mouse"] = 1;
-             }
-             if (preg_match("/^hg[0-9]+$/", $genome)) {
+             } else if (preg_match("/^hg[0-9]+$/", $genome)) {
                  $validBuilds["hs"] = 1;
                  $validBuilds["human"] = 1;
+             } else if (preg_match("/^[A-Za-z][A-Za-z][0-9]+$/", $genome)) {
+                 $validBuilds[substr($genome, 0, 2)] = 1;
              }
          }
      }

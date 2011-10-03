@@ -42,6 +42,8 @@
             this.label5 = new System.Windows.Forms.Label();
             this.ReadmTxt = new System.Windows.Forms.TextBox();
             this.label6 = new System.Windows.Forms.Label();
+            this.FQbutton = new System.Windows.Forms.Button();
+            this.UnConnButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // LoadGenome
@@ -96,7 +98,7 @@
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(185, 23);
             this.button1.TabIndex = 5;
-            this.button1.Text = "random value";
+            this.button1.Text = "Fasta file generator";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
@@ -138,6 +140,7 @@
             // 
             // readLenTxt
             // 
+            this.readLenTxt.Enabled = false;
             this.readLenTxt.Location = new System.Drawing.Point(275, 175);
             this.readLenTxt.Name = "readLenTxt";
             this.readLenTxt.Size = new System.Drawing.Size(43, 20);
@@ -172,11 +175,33 @@
             this.label6.TabIndex = 13;
             this.label6.Text = "Reads in million";
             // 
+            // FQbutton
+            // 
+            this.FQbutton.Location = new System.Drawing.Point(249, 348);
+            this.FQbutton.Name = "FQbutton";
+            this.FQbutton.Size = new System.Drawing.Size(75, 23);
+            this.FQbutton.TabIndex = 14;
+            this.FQbutton.Text = "FQ file";
+            this.FQbutton.UseVisualStyleBackColor = true;
+            this.FQbutton.Click += new System.EventHandler(this.FQbutton_Click);
+            // 
+            // UnConnButton
+            // 
+            this.UnConnButton.Location = new System.Drawing.Point(377, 348);
+            this.UnConnButton.Name = "UnConnButton";
+            this.UnConnButton.Size = new System.Drawing.Size(150, 23);
+            this.UnConnButton.TabIndex = 15;
+            this.UnConnButton.Text = "Unique connections";
+            this.UnConnButton.UseVisualStyleBackColor = true;
+            this.UnConnButton.Click += new System.EventHandler(this.UnConnButton_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(467, 383);
+            this.ClientSize = new System.Drawing.Size(571, 454);
+            this.Controls.Add(this.UnConnButton);
+            this.Controls.Add(this.FQbutton);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.ReadmTxt);
             this.Controls.Add(this.label5);
@@ -215,6 +240,8 @@
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.TextBox ReadmTxt;
         private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Button FQbutton;
+        private System.Windows.Forms.Button UnConnButton;
     }
 }
 

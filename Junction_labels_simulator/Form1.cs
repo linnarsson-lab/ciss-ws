@@ -28,15 +28,38 @@ namespace Junction_labels_simulator
         public int CountN(DnaSequence ds, long ds_len) // counting no of Ns in a sequence
         {
             int N = 0;
-            for (int i = 0; i <= ds_len; i++)
+            for (int i = 0; i < ds_len; i++)
             {
                 if (ds.GetNucleotide(i) == 'N' || ds.GetNucleotide(i) == 'n')
                     N++;
 
             }
-            return N ;
+            return N;
         }
 
+        public int CountN(ShortDnaSequence ds, long ds_len) // counting no of Ns in a sequence
+        {
+            int N = 0;
+            for (int i = 0; i < ds_len; i++)
+            {
+                if (ds.GetNucleotide(i) == 'N' || ds.GetNucleotide(i) == 'n')
+                    N++;
+
+            }
+            return N;
+        }
+
+        public int CountN(LongDnaSequence ds, long ds_len) // counting no of Ns in a sequence
+        {
+            int N = 0;
+            for (int i = 0; i < ds_len; i++)
+            {
+                if (ds.GetNucleotide(i) == 'N' || ds.GetNucleotide(i) == 'n')
+                    N++;
+
+            }
+            return N;
+        }
         public string[] CreateRandomN(string elements, int len, int times)
         {
             // <summary>
@@ -143,8 +166,10 @@ namespace Junction_labels_simulator
                         break;
                     }
                     //MessageBox.Show(totalLength.ToString());
-                    DnaSequence ds1 = new DnaSequence(rec.Sequence); // to get data from 1st strand
-                    DnaSequence ds2 = new DnaSequence(rec.Sequence); // to get data from 1st strand and set SNPs and convert into 2nd strand 
+                    //DnaSequence ds1 = new DnaSequence(rec.Sequence); // to get data from 1st strand
+                    
+                    LongDnaSequence ds1 = new LongDnaSequence(rec.Sequence);
+                    LongDnaSequence ds2 = new LongDnaSequence(rec.Sequence); // to get data from 1st strand and set SNPs and convert into 2nd strand 
                     string[] lines = System.IO.File.ReadAllLines(ofd2.FileName);
                     for (int i = 1; i < lines.Length; i++)
                     {
@@ -191,7 +216,9 @@ namespace Junction_labels_simulator
                             //MessageBox.Show("1"); 
                             //ds1.SubSequence(molecule_start, molecule_len);
                             // writing in a file which contains fragmented sequence information: the file contains following cols. Strand, seqStart, Stop and Sequence
+                            //ShortDnaSequence ds1_tmp = ds1.SubSequence(molecule_start, molecule_len);
                             DnaSequence ds1_tmp = ds1.SubSequence(molecule_start, molecule_len);
+                            
                             count_N = CountN(ds1_tmp, molecule_len);
                             output.WriteLine(("M" + molecule_id) + "\t" + "1" + "\t" + molecule_start + "\t" + (molecule_start + molecule_len) + "\t" + count_N + "\t" + ds1.SubSequence(molecule_start, molecule_len) + "\t" + readCount );
                                         molecule_start = molecule_start + molecule_len;
@@ -203,7 +230,7 @@ namespace Junction_labels_simulator
                         {
                             DnaSequence ds2_tmp = ds2.SubSequence(molecule_start, molecule_len);
                             count_N = CountN(ds2_tmp, molecule_len);
-                                        DnaSequence ds2_rev = new DnaSequence(ds2.SubSequence(molecule_start, molecule_len));
+                                        ShortDnaSequence ds2_rev = new ShortDnaSequence(ds2.SubSequence(molecule_start, molecule_len));
                                         //ds2_rev.RevComp();
                                         output.WriteLine(("M" + molecule_id) + "\t" + "2" + "\t" + molecule_start + "\t" + (molecule_start + molecule_len) + "\t" + count_N + "\t" + ds2_rev.ToString() + "\t" + readCount);
                                         molecule_start = molecule_start + molecule_len;
@@ -237,10 +264,10 @@ namespace Junction_labels_simulator
                         int first_Tsp = 0, second_Tsp = 0;
                         string Tsp_oneLine = Tsp_lines[i];
                         string[] Tsp_lineItems = Tsp_oneLine.Split('\t');
-                        DnaSequence molecule_ds = new DnaSequence(Tsp_lineItems[5]);
-                        DnaSequence Tsp_ds = new DnaSequence();
-                        DnaSequence CF9L = new DnaSequence();
-                        DnaSequence CF9R = new DnaSequence();
+                        ShortDnaSequence molecule_ds = new ShortDnaSequence(Tsp_lineItems[5]);
+                        ShortDnaSequence Tsp_ds= new ShortDnaSequence();
+                        ShortDnaSequence CF9L = new ShortDnaSequence();
+                        ShortDnaSequence CF9R = new ShortDnaSequence();
                         if ((((Convert.ToInt32(Tsp_lineItems[3])) - (Convert.ToInt32(Tsp_lineItems[2]))) / 2) <= Convert.ToInt32(Tsp_lineItems[4]))
                         {
                             goto Next_loop; // if more than hallf of the sequences are represented by N  
@@ -265,24 +292,28 @@ namespace Junction_labels_simulator
                                         //MessageBox.Show("I at Tsp_count=" + Tsp_count); 
                                         Tsp_len = second_Tsp - first_Tsp;
                                         if (Tsp_len < 100) goto Next_Tsp;
-                                        Tsp_ds=molecule_ds.SubSequence(first_Tsp,Tsp_len);
+                                        int len = Tsp_len;
+                                        Tsp_ds=(ShortDnaSequence )molecule_ds.SubSequence(first_Tsp,Tsp_len);
                                         CF9L = CF9R;
                                         if (Tsp_ds.Count >= 9) // new changed
                                         {
                                             //ME19L = Tsp_ds.SubSequence(0, 19);
-                                            CF9R = Tsp_ds.SubSequence(Tsp_ds.Count - 9, 9);
-                                            Tsp_ds = molecule_ds.SubSequence(first_Tsp, (Tsp_len - 9));
+                                            CF9R = (ShortDnaSequence )Tsp_ds.SubSequence(Tsp_ds.Count - 9, 9);
+                                            Tsp_ds = (ShortDnaSequence)molecule_ds.SubSequence(first_Tsp, (Tsp_len - 9));
+                                            len = Tsp_len - 9;
                                         }
                                         else
                                         {
                                             //ME19L = Tsp_ds;
                                             CF9R = Tsp_ds;
                                         }
-                                        Tsp_N = CountN(Tsp_ds, Tsp_len);
+                                        //Tsp_N = CountN(Tsp_ds, Tsp_len);
+                                        Tsp_N = CountN(Tsp_ds, len);
                                         //MessageBox.Show((Tsp_N / 2).ToString() + "and" + Tsp_len.ToString()); 
-                                        if (Tsp_N  <= Tsp_len/2)
+                                        //if (Tsp_N  <= Tsp_len/2)
+                                        if (Tsp_N <= len / 2)
                                         {
-                                            output2.WriteLine(Tsp_count - 1 + "\t" + Tsp_count + "\t" + Tsp_lineItems[0] + "\t" + Tsp_lineItems[1] + "\t" + (first_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + (second_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + Tsp_len + "\t" + Tsp_ds + "\t" + CF9L + "\t" + ME19L  + "\t" + ME19R  + "\t" + CF9R + "\t" + (ME19L + CF9L + Tsp_ds +CF9R +ME19R) + "\t" + Tsp_lineItems[6]);
+                                            output2.WriteLine(Tsp_count - 1 + "\t" + Tsp_count + "\t" + Tsp_lineItems[0] + "\t" + Tsp_lineItems[1] + "\t" + (first_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + (second_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + /*Tsp_len*/len + "\t" + Tsp_ds + "\t" + CF9L + "\t" + ME19L  + "\t" + ME19R  + "\t" + CF9R + "\t" + (/*ME19L +*/ CF9L.ToString() + Tsp_ds + CF9R /*+ME19R*/) + "\t" + Tsp_lineItems[6]);
                                         }
                                         Tsp_count++;
                                         Tsp_molecule_id = Tsp_lineItems[0];
@@ -291,10 +322,10 @@ namespace Junction_labels_simulator
                                     {
                                         if (Tsp_ds.Count >= 9)
                                         {
-                                            CF9L = Tsp_ds.SubSequence(0, 9);
-                                            Tsp_ds = Tsp_ds.SubSequence(9, (Tsp_ds.Count - 9));
+                                            CF9L = (ShortDnaSequence)Tsp_ds.SubSequence(0, 9);
+                                            Tsp_ds = (ShortDnaSequence)Tsp_ds.SubSequence(9, (Tsp_ds.Count - 9));
 
-                                            CF9R = Tsp_ds.SubSequence(Tsp_ds.Count - 9, 9);
+                                            CF9R = (ShortDnaSequence)Tsp_ds.SubSequence(Tsp_ds.Count - 9, 9);
                                         }
                                         else
                                         {
@@ -427,7 +458,8 @@ namespace Junction_labels_simulator
                     
                     string Totseq_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones.txt"));
                     //string QualityScore=("\\192.168.1.12\data\reads\Run00007_L1_1_100521_GA2X_0007.fq");
-                    FastQFile fq = FastQFile.Load("C:\\Indranil\\2011 work and activity\\denovo.Run00007_L1_1_100521_GA2X_0007.fq");
+                    FastQFile fq = FastQFile.Load("C:\\Indranil\\2011 work and activity\\denovo\\f100lines.fq", 64);
+                    int errorcount = 0;
                     var output4 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_1.fq")).OpenWrite();
                     var output5 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_2.fq")).OpenWrite();
                     string[] Totseq_lines = System.IO.File.ReadAllLines(Totseq_file);
@@ -436,42 +468,67 @@ namespace Junction_labels_simulator
                     int readCounting = 0;
                     int readNo = 0;
                     for (int i = 1; i < Totseq_lines.Length; i++)
+                    //for (int i = 1; i < 3; i++)  //added for test **********************************************
                     {
                         string Totseq_oneline = Totseq_lines[i];
                         string[] Totseq_lineitems = Totseq_oneline.Split('\t');
                         int readlen = Convert.ToInt32(readLenTxt.Text);
-                        int readC = Convert.ToInt32(Totseq_lineitems[13]); 
+                        int readC = Convert.ToInt32(Totseq_lineitems[13]);
+                        string totSeq = Totseq_lineitems[12].ToString();
+                        ShortDnaSequence totDseq=new ShortDnaSequence(totSeq);
                         double random_no = Tsp_rnd.NextDouble();
-                        for (int rc = 0; rc < readC; rc++)
-                        {
-                            DnaSequence fwdseq = new DnaSequence(Totseq_lineitems[12]);
-                            DnaSequence revSeq = new DnaSequence(Totseq_lineitems[12]);    
-                            int[] quality_scr = new int[1000];
+                        int record = 0;
+                        int recordSeq = 0;
+                        FastQRecord fqR = fq.Records[record];
+                        //for (int rc = 0; rc < readC; rc++)
+                        //{
+                            ShortDnaSequence fwdSeq = new ShortDnaSequence();
+                            ShortDnaSequence revSeq = new ShortDnaSequence();    
+                            Random rnd = new Random();
+                            for (int k = 0; k < 100 /*totSeq.Length*/; k++)
+                            {
+                                recordSeq++;
+                                if (recordSeq>100)
+                                {
+                                    fqR = fq.Records[record + 1];
+                                    recordSeq = 0;
+                                }
+                                double error_prob = FastQRecord.QualityToProbability(fqR.Qualities[k]);
+                                if (rnd.NextDouble() < error_prob)
+                                {
+                                    if (totDseq.GetNucleotide(k) == 'A' || totDseq.GetNucleotide(k) == 'a')
+                                    {
+                                        totDseq.SetNucleotide(k, 'C');
+                                    }
+                                    else if (totDseq.GetNucleotide(k) == 'C' || totDseq.GetNucleotide(k) == 'c')
+                                    {
+                                        totDseq.SetNucleotide(k, 'A');
+                                    }
+                                    else if (totDseq.GetNucleotide(k) == 'G' || totDseq.GetNucleotide(k) == 'g')
+                                    {
+                                        totDseq.SetNucleotide(k, 'T');
+                                    }
+                                    else if (totDseq.GetNucleotide(k) == 'T' || totDseq.GetNucleotide(k) == 't')
+                                    {
+                                        totDseq.SetNucleotide(k, 'G');
+                                    }
+                                    errorcount++;
+                                }
+
+                            }
                             if (readlen >= Totseq_lineitems[12].Length)
                             {
-                            quality_scr = new int[readlen];
-                            Random rnd = new Random();
-                            for (int k = 0; k < Totseq_lineitems[12].Length; k++)
-                            {
-                                //double error_prob=FastQRecord.
-                                //quality_scr[k] = 94;
-
+                                fwdSeq = new ShortDnaSequence(totDseq);
+                                revSeq = new ShortDnaSequence(totDseq);
+                                revSeq.RevComp();
                             }
-                        }
-                        else if (readlen < Totseq_lineitems[12].Length)
-                        {
-                            //fwdseq = Fwd100(Totseq_lineitems[12]);
-                            //revSeq = Reverse100(Totseq_lineitems[12]);
-                            fwdseq = fwdseq.SubSequence(0, 100);
-                            revSeq = revSeq.SubSequence(0, 100);
-                            revSeq.RevComp();
-                            quality_scr = new int[100];
-                            for (int k = 0; k < 100; k++)
+                            else if (readlen < Totseq_lineitems[12].Length)
                             {
-                                quality_scr[k] = 94;
-
+                                fwdSeq = (ShortDnaSequence)totDseq.SubSequence(0, 100);
+                                revSeq = (ShortDnaSequence)totDseq.SubSequence((totSeq.Length-100), 100);
+                                revSeq.RevComp();
+                            
                             }
-                        }
                         //readCount = rndReads.Next(Reads_in_million);
                         readCounting = Convert.ToInt32(Totseq_lineitems[13]);
 
@@ -480,26 +537,31 @@ namespace Junction_labels_simulator
                         //MessageBox.Show(readCount.ToString() + "and " + totReads.ToString());  
                         if (totReads <= Reads_in_million) readNo = readCounting;
                         else readNo = 0; // 
+                        FastQRecord rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), fwdSeq.ToString(), fqR.Qualities);
+                        output4.WriteLine(rec1.ToString(64));
+                        FastQRecord rec2 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), revSeq.ToString(), fqR.Qualities);
+                        output5.WriteLine(rec2.ToString(64));
                         //MessageBox.Show(readNo.ToString());
-                        char q = ' ';
-                        StringBuilder quality_scr_all = new StringBuilder();
-                        for (int x = 0; x < quality_scr.Length; x++)
-                        {
-                            q = Convert.ToChar(quality_scr[x]);
-                            //MessageBox.Show(q + "and" + quality_scr[x]); 
-                            quality_scr_all.Append(q);
-                        }
-                        FastQRecord rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), fwdseq.ToString(), quality_scr_all.ToString());
-                        output4.WriteLine(rec1.ToString());
-                        rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), revSeq.ToString(), quality_scr_all.ToString());
-                        output5.WriteLine(rec1.ToString());
+                        //char q = ' ';
+                        //StringBuilder quality_scr_all = new StringBuilder();
+                        //for (int x = 0; x < quality_scr.Length; x++)
+                        //{
+                        //    q = Convert.ToChar(quality_scr[x]);
+                        //    //MessageBox.Show(q + "and" + quality_scr[x]); 
+                        //    quality_scr_all.Append(q);
+                        //}
+                        //FastQRecord rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), fwdseq.ToString(), quality_scr_all.ToString());
+                        //output4.WriteLine(rec1.ToString());
+                        //rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), revSeq.ToString(), quality_scr_all.ToString());
+                        //output5.WriteLine(rec1.ToString());
 
 
-                    }
+                    //}
                 }
                     //MessageBox.Show(totReads.ToString()); 
                     output4.Close();
                     output5.Close();
+                    MessageBox.Show(errorcount.ToString());
 
 
                 }
@@ -513,30 +575,154 @@ namespace Junction_labels_simulator
 
         private void button1_Click(object sender, EventArgs e)
         {
-            string[] N1;
-            List<string> N2=new List<string>();
-            SaveFileDialog sfd = new SaveFileDialog();
-            if (sfd.ShowDialog() != DialogResult.OK) return;
-            var output2 = sfd.FileName.OpenWrite();
-            //var output2 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_ME19.txt")).OpenWrite();
-            output2.WriteLine("T20_1" + "\t" + "T20_2");
-            N1=CreateRandomN("ACGT", 20,10);
-            //N2 = CreateRandomN("ACGT", 20);
-            FastQFile ff = new FastQFile();
-            Random rnd = new Random();
+            //string[] N1;
+            //List<string> N2=new List<string>();
+            //SaveFileDialog sfd = new SaveFileDialog();
+            //if (sfd.ShowDialog() != DialogResult.OK) return;
+            //var output2 = sfd.FileName.OpenWrite();
+            ////var output2 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_ME19.txt")).OpenWrite();
+            //output2.WriteLine("T20_1" + "\t" + "T20_2");
+            //N1=CreateRandomN("ACGT", 20,10);
+            ////N2 = CreateRandomN("ACGT", 20);
+            //FastQFile ff = new FastQFile();
+            //Random rnd = new Random();
             
-            for (int i = 0; i < 100; i++) 
+            //for (int i = 0; i < 100; i++) 
+            //{
+            //    //ff.Records[i] = N2.Add(N1[i]);
+            //    //N2.
+            //    //output2.WriteLine(N1[i]); 
+            //    output2.WriteLine(rnd.Next(1,1000));
+            //}
+
+            //output2.Close(); 
+            //MessageBox.Show("End of Run!!");
+            //FastaFile ff = new FastaFile();
+            //FastaRecord fr = new FastaRecord();
+            OpenFileDialog ofd1 = new OpenFileDialog();
+            if (ofd1.ShowDialog() != DialogResult.OK) return;
+            var output1 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_max2_connections.fa")).OpenWrite();
+            string[] lines = System.IO.File.ReadAllLines(ofd1.FileName);
+            DnaSequence ds2 = new ShortDnaSequence();
+            string header2 = "";
+            int countseq = 0;
+            for (int i = 1; i < lines.Length-1; i++)
             {
-                //ff.Records[i] = N2.Add(N1[i]);
-                //N2.
-                //output2.WriteLine(N1[i]); 
-                output2.WriteLine(rnd.Next(1,1000));
+                string firstLine = lines[i];
+                string secondLine = lines[i+1];
+                string[] firstlineItems = firstLine.Split('\t');
+                string[] secondlineItems = secondLine.Split('\t');
+                int start1 = Convert.ToInt32(firstlineItems[0]);
+                int start2 = Convert.ToInt32(secondlineItems[0]);
+                DnaSequence ds1 = new ShortDnaSequence(firstlineItems[8]);
+                
+                ds1.Append(firstlineItems[7]);
+                string header1 = firstlineItems[0] + "_" + firstlineItems[1] + "_" + firstlineItems[2] + "_" + firstlineItems[3] + "_" + firstlineItems[4] + "_" + firstlineItems[5] + "_" + firstlineItems[6];
+                //StreamWriter sw = new StreamWriter();
+                //sw.Write(header);
+                if (ds2==null)
+                {
+                    ds2 = new ShortDnaSequence(ds1);
+                    header2 = header1;
+                }
+                if (i>=2 && (start1+1) == start2)
+                {
+                    
+                    if (countseq>=1)
+                    {
+                        ds2.Append(ds1);
+                        header2 = header2 + " AND " + header1;    
+                    }
+                    else
+                    {
+                        ds2 = new ShortDnaSequence(ds1);
+                        header2 = header1;       
+                    }
+                    countseq++;
+                    
+                    //ds2.Append(secondlineItems[8]);
+                    //ds2.Append(secondlineItems[9]);
+                }
+                else if (i >= 2 && (start1 + 1) != start2)
+                {
+                    if (countseq >= 1)
+                    {
+                        ds2.Append(ds1);
+                        header2 = header2 + " AND " + header1;
+                    }
+                    FastaRecord rec1 = new FastaRecord(header2, ds2);
+                    output1.WriteLine(rec1.ToString());
+                    ds2 = null;
+                    header2 = "";
+                    countseq = 0;
+                }
+                else if (i == 1 && (start1 + 1) != start2)
+                {
+                    //ds2.Append(ds1);
+                    //header2 = header1;
+                    ds1.Append(firstlineItems[9]);
+                    FastaRecord rec1 = new FastaRecord(header1, ds1);
+                    output1.WriteLine(rec1.ToString());
+                    //ds2 = null;
+                    //header2 = "";
+                }
+                else if (i == 1 && (start1 + 1) == start2)
+                {
+                    ds2.Append(ds1);
+                    header2 = header1;
+                    
+                }
+            }
+            
+            output1.Close();
+            MessageBox.Show("End of Run!");
+            
+        }
+
+        private void FQbutton_Click(object sender, EventArgs e)
+        {
+            
+
+        }
+
+        private void UnConnButton_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd1 = new OpenFileDialog();
+            if (ofd1.ShowDialog() != DialogResult.OK) return;
+            var output1 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_max2_connections.txt")).OpenWrite();
+            output1.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "Seq" + "\t" + "Common Fragment 9L" + "\t" + "ME19L" + "\t" + "ME19R" + "\t" + "Common Fragment 9R" + "\t" + "Total Seq" + "\t" + "Read Count" + "\t" + "CF_9L_count");
+            string[] lines = System.IO.File.ReadAllLines(ofd1.FileName);
+            string[] CF9L_Array = new string[lines.Length];
+            string[] CF9R_Array = new string[lines.Length];
+            for (int i = 1; i < lines.Length; i++)
+            {
+                string firstLine = lines[i];
+                string[] firstlineItems = firstLine.Split('\t');
+                CF9L_Array[i] = firstlineItems[8];
+                CF9R_Array[i] = firstlineItems[11];
+            }
+            for (int i = 1; i < CF9L_Array.Length; i++)
+            {
+                int CF9LCount = 0;
+                for (int j = 1; j < lines.Length; j++)
+                {
+                    if (CF9L_Array[i] == CF9L_Array[j] || CF9L_Array[i] == CF9R_Array[j])
+                    {
+                        CF9LCount++;
+                        if (CF9LCount >= 3)
+                            break;
+                    }
+                }
+                if (CF9LCount <= 2)
+                {
+                    output1.WriteLine(lines[i] + "\t " + CF9LCount.ToString());
+                }
+
             }
 
-            output2.Close(); 
-            MessageBox.Show("End of Run!!");
-            
-            
+
+            output1.Close();
+            MessageBox.Show("End of Run!");
         }
 
        

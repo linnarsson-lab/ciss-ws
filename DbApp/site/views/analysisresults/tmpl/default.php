@@ -14,7 +14,7 @@ defined('_JEXEC') or die('Restricted access');
   $sampleidsorter = ($sortKey == "sampleid")? "SampleId" : ($sorturlhead . "sampleid>SampleId</a>");
 
   echo "<div class='analysis'><fieldset>
-         <legend><nobr>Requested and processed analysis</nobr><br /<br />
+         <legend><nobr>Requested and processed analyses</nobr><br /<br />
                 <nobr> Sort: $newestsorter $sampleidsorter </nobr>
          </legend>
          <table>
@@ -43,6 +43,8 @@ defined('_JEXEC') or die('Restricted access');
   }
 
   foreach ($this->items as $result) {
+    if ($result->status == "cancelled")
+        continue;
     $rpath = $result->resultspath;
     if (!file_exists($rpath) && $result->status == "ready") {
       $rpath = "<i> $rpath - missing! </i>"; 
@@ -52,8 +54,9 @@ defined('_JEXEC') or die('Restricted access');
       $viewlink = "&nbsp;<a href=index.php?option=com_dbapp&view=project&controller=project&layout=analysis&searchid="
                   . $result->id . "&Itemid=" . $itemid . ">view</a>";
     }
-    $projectlink = "&nbsp;<a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid="
-           . $result->projectid . "&Itemid=" . $itemid . ">" . $result->project . "</a>";
+    $projectlink = "&nbsp;<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid="
+           . $result->projectid . "&Itemid=" . $itemid
+           . "\" title=\"$result->projecttitle / $result->tissue / $result->sampletype\">" . $result->project . "</a>";
     echo "\n    <tr>";
     echo "<td>" . $viewlink . "&nbsp;</td>";
     echo "<td>" . $projectlink . "&nbsp;</td>"; 

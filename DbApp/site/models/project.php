@@ -26,6 +26,18 @@ class DbAppModelProject extends JModel {
     $searchid = JRequest::getVar('searchid');
     $inqueue = JRequest::getVar('inqueue');
     $cancel = JRequest::getVar('cancel', "");
+    $rescancel = JRequest::getVar('rescancel', "0");
+    if ($rescancel > 0) {
+      $query = " UPDATE #__aaaanalysis SET status='cancelled' WHERE id='$rescancel' ";
+      $db->setQuery($query);
+      if ($db->query()) {
+        JError::raiseNotice('Message', JText::_("Analysis Id $rescancel Status-> 'cancelled'"));
+        $item->status = $newstatus;
+      } else {
+        JError::raiseWarning('Message', JText::_( "[ " . $db->getErrorMsg() . " ]"));
+      }
+    }
+
     $query = " SELECT p.id AS id, principalinvestigator, c.id AS aaaclientid, person, m.id AS aaamanagerid,
                   contactperson, ctct.id AS aaacontactid, title, plateid, p.status, platereference, barcodeset,
                   species, tissue, sampletype, collectionmethod, weightconcentration, layoutfile, fragmentlength,

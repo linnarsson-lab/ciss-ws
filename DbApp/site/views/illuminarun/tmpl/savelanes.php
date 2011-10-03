@@ -23,7 +23,6 @@ for ($i = 1; $i <= 8; $i++) {
   $batchid = $afteredit['#__aaasequencingbatchid' . $i];
   $batchid = ($batchid == "X")? "NULL" : $db->Quote($batchid);
   $query[$i] .= " #__aaasequencingbatchid = " . $batchid . ", ";
-  $query[$i] .= " cycles  = " . $db->Quote($afteredit['cycles' . $i]) . ", ";
   $query[$i] .= " molarconcentration  = " . $db->Quote($afteredit['molarconcentration' . $i]) . ", ";
   $query[$i] .= " yield  = " . $db->Quote($afteredit['yield' . $i]) . ", ";
   $query[$i] .= " comment  = " . $db->Quote($afteredit['comment' . $i]) . ", ";

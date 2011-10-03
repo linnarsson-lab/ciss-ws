@@ -52,18 +52,19 @@ function updateSelect(i)
            <legend>Select lanes:&nbsp;</legend>";
     echo "<table>
            <tr>
+            <th>Lane</th>
             <th>SampleId&nbsp;</th>
             <th>Batch</th>
             <th>P.I.&nbsp;</th>
             <th>Contact&nbsp;</th>
-            <th>Laneno</th>
             <th>Comment</th>
             <th><nobr>Email address&nbsp;</nobr></th>
-            <th></th>
+            <th>Select</th>
            </tr>";
   $boxid = "";
   foreach ($this->illuminaruns as $lane) {
     echo "<tr>
+            <td>" . $lane->laneno . "</td>
             <td><nobr>";
     if ($lane->Sid === null)
       echo " ? ";
@@ -81,7 +82,6 @@ function updateSelect(i)
     echo    "&nbsp;</td>
             <td>" . $lane->pi . "&nbsp;</td>
             <td>" . $lane->contactperson . "&nbsp;</td>
-            <td>" . $lane->laneno . "</td>
             <td>" . $lane->Lcomment . "</td>";
     if ($ircopystatus == "copied" && $lane->Sid > 1) {
       $boxid = "lanesel" . $lane->laneno;

@@ -34,6 +34,16 @@ JHtml::_('behavior.formvalidation');
         <td><input type="text" name="title" id="title" value="<?php if ($searchid > 0) echo $item->title; ?>" class="inputbox required" size="40"/></td>
       </tr>
       <tr>
+        <td>Cycles&nbsp;
+               <?php echo JHTML::tooltip('Number of cycles in the run'); ?></td>
+        <td><input type="text" name="cycles" id="cycles" value="<?php if ($searchid > 0) echo $item->cycles; ?>" class="inputbox required" size="40"/></td>
+      </tr>
+      <tr>
+        <td>Index cycles&nbsp;
+               <?php echo JHTML::tooltip('Number of index cycles in the run'); ?></td>
+        <td><input type="text" name="indexcycles" id="indexcycles" value="<?php if ($searchid > 0) echo $item->indexcycles; ?>" class="inputbox required" size="40"/></td>
+      </tr>
+      <tr>
         <td>Lab&nbsp;book&nbsp;(page)</td>
         <td><input type="text" name="labbookpage" id="labbookpage" value="<?php if ($searchid > 0) echo $item->labbookpage; ?>" class="inputbox required" size="40"/></td>
       </tr>
@@ -92,9 +102,4 @@ echo "
     <input type="hidden" name="task" value="save" />
     <?php echo JHtml::_('form.token'); ?>
 </form>
-
-
-
-
-
 

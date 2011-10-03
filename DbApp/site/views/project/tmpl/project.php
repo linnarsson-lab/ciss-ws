@@ -136,11 +136,12 @@ if (count($this->seqbatches) != 0) {
       echo "<table>
               <tr>
                 <th></th>
-                <th>DB Id</th>
+                <th></th>
+                <th>DBId</th>
                 <th>Lanes</th>
                 <th>Status&nbsp;</th>
-                <th>ExtrVer&nbsp;" . JHTML::tooltip('Version of sequence filter and barcoded extraction software used for processing') . "&nbsp;</th>
-                <th>AnnotVer&nbsp;" . JHTML::tooltip('Version of feature annotation software used for processing') . "&nbsp;</th>
+                <th>Extr&nbsp;" . JHTML::tooltip('Version of sequence filter and barcoded extraction software used for processing') . "&nbsp;</th>
+                <th>Annot&nbsp;" . JHTML::tooltip('Version of feature annotation software used for processing') . "&nbsp;</th>
                 <th>Genome&nbsp;</th>
                 <th>DBVer&nbsp;" . JHTML::tooltip('Source and creation date of genome and annotation database. Source may change after analysis if unavailable at processing time') . "&nbsp;</th>
                 <th>Type&nbsp;" . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "&nbsp;</th>
@@ -154,9 +155,23 @@ if (count($this->seqbatches) != 0) {
         if (file_exists($analys->resultspath)) {
           $analysissummary = "<a href=index.php?option=com_dbapp&view=project&controller=project&layout=analysis&searchid=" . $analys->id . "&Itemid=" . $itemid . ">view</a>&nbsp;";  
           $a = explode('/', $analys->resultspath);
-          $resultname = $a[sizeof($a)-1]; 
+          $resultname = $a[sizeof($a)-1];
         }
-        echo "<tr><td>$analysissummary</td>";
+        $cancelledstyle = "";
+        $rescancellink = "";
+        if ($analys->status != 'cancelled') {
+            $rescancellink = "<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid="
+                             . $project->id . "&rescancel=" . $analys->id . "&Itemid=" . $itemid
+                             . "\" title=\"Invalidate this analysis result.\""
+                             . " onclick=\"return confirm('This analysis will be cancelled but still visible under the project.');\" >cancel</a>&nbsp;";
+        } else {
+            $cancelledstyle = " style=\"font-style:italic; color:grey;\"";
+         //   $rescancellink = "<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid="
+         //                    . $project->id . "&resrescue=" . $analys->id . "&Itemid=" . $itemid
+         //                    . "\" title=\"Make this cancelled analysis result valid again.\">rescue</a>&nbsp;";
+        }
+        echo "<tr$cancelledstyle><td>$analysissummary</td>";
+        echo "<td>$rescancellink</td>";
         echo "<td>" . $analys->id . "&nbsp;</td>";
         echo "<td>" . $analys->lanecount . "&nbsp;</td>";
         echo "<td>" . $analys->status . "&nbsp;</td>";
@@ -167,8 +182,8 @@ if (count($this->seqbatches) != 0) {
         echo "<td>" . $analys->transcript_variant . "&nbsp;</td>";
         echo "<td>" . $resultname . "</td>";
         $comment = $analys->comment;
-        if (strlen($comment) > 20)
-            echo "<td>&nbsp;" . substr($comment, 0, 15) . JHTML::tooltip($comment) . "</td></tr>";
+        if (strlen($comment) > 8)
+            echo "<td>&nbsp;" . substr($comment, 0, 8) . JHTML::tooltip($comment) . "</td></tr>";
         else
             echo "<td>&nbsp;" . $comment . "</td></tr>";
       }

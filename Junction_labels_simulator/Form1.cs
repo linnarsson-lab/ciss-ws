@@ -199,18 +199,18 @@ namespace Junction_labels_simulator
                     
                     //MessageBox.Show(num_molecule + " and " + molecule_len); 
                     var output = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "molecules_info.txt")).OpenWrite();
-                    output.WriteLine("Molecule_id" + "\t" + "Strand" + "\t" + "Molecule Start" + "\t" + "Molecule End" + "\t" + "No of Ns" + "\t" + "Molecule Seq" + "\t" + "Read Count");
+                    output.WriteLine("Molecule_id" + "\t" + "Strand" + "\t" + "Molecule Start" + "\t" + "Molecule End" + "\t" + "No of Ns" + "\t" + "Molecule Seq"/* + "\t" + "Read Count"*/);
                     long molecule_start = 0;
                     
                     Random chr_selection = new Random(); // selecting molecules from 2 strands randomly
                     Random frag_selection = new Random(); // Selecting fragments randomly
                     Random rndRead = new Random();
-                    int readCount = 0; 
+                    //int readCount = 0; 
                     int[] chrno_frag_array=new int[num_molecule];
                     for (int chr_frag = 0; chr_frag <= num_molecule; chr_frag++)
                     {
                         //chrno_frag_array[chr_frag] = chr_selection.Next(1, 3);
-                        readCount = rndRead.Next(1000000);
+                        //readCount = rndRead.Next(1000000);
                         if (chr_selection.Next(1, 3) == 1)
                         {
                             //MessageBox.Show("1"); 
@@ -220,7 +220,7 @@ namespace Junction_labels_simulator
                             DnaSequence ds1_tmp = ds1.SubSequence(molecule_start, molecule_len);
                             
                             count_N = CountN(ds1_tmp, molecule_len);
-                            output.WriteLine(("M" + molecule_id) + "\t" + "1" + "\t" + molecule_start + "\t" + (molecule_start + molecule_len) + "\t" + count_N + "\t" + ds1.SubSequence(molecule_start, molecule_len) + "\t" + readCount );
+                            output.WriteLine(("M" + molecule_id) + "\t" + "1" + "\t" + molecule_start + "\t" + (molecule_start + molecule_len) + "\t" + count_N + "\t" + ds1.SubSequence(molecule_start, molecule_len) /*+ "\t" + readCount */);
                                         molecule_start = molecule_start + molecule_len;
                                         molecule_id++;
                             count_N = 0;
@@ -232,7 +232,7 @@ namespace Junction_labels_simulator
                             count_N = CountN(ds2_tmp, molecule_len);
                                         ShortDnaSequence ds2_rev = new ShortDnaSequence(ds2.SubSequence(molecule_start, molecule_len));
                                         //ds2_rev.RevComp();
-                                        output.WriteLine(("M" + molecule_id) + "\t" + "2" + "\t" + molecule_start + "\t" + (molecule_start + molecule_len) + "\t" + count_N + "\t" + ds2_rev.ToString() + "\t" + readCount);
+                                        output.WriteLine(("M" + molecule_id) + "\t" + "2" + "\t" + molecule_start + "\t" + (molecule_start + molecule_len) + "\t" + count_N + "\t" + ds2_rev.ToString()/*+ "\t" + readCount */);
                                         molecule_start = molecule_start + molecule_len;
                                         molecule_id++;
                             count_N = 0;
@@ -247,7 +247,7 @@ namespace Junction_labels_simulator
                     output2.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "Seq" + "\t"  + "Common Fragment 9L" + "\t"+ "ME19L"  + "\t" +"ME19R"+ "\t" + "Common Fragment 9R" + "\t" + "Total Seq" + "\t" + "Read Count");
                     string[] Tsp_lines = System.IO.File.ReadAllLines(Molecules_file);
                     Random Tsp_rnd = new Random();
-                   
+                    int readCount = 0;
                     int Tsp_start = 0;
                     int Tsp_count = 0;
                     string ME19L = "CTGTCTCTTATACACATCT";
@@ -262,6 +262,7 @@ namespace Junction_labels_simulator
                     for (int i = 1; i < Tsp_lines.Length; i++)
                     {
                         int first_Tsp = 0, second_Tsp = 0;
+                        
                         string Tsp_oneLine = Tsp_lines[i];
                         string[] Tsp_lineItems = Tsp_oneLine.Split('\t');
                         ShortDnaSequence molecule_ds = new ShortDnaSequence(Tsp_lineItems[5]);
@@ -313,7 +314,8 @@ namespace Junction_labels_simulator
                                         //if (Tsp_N  <= Tsp_len/2)
                                         if (Tsp_N <= len / 2)
                                         {
-                                            output2.WriteLine(Tsp_count - 1 + "\t" + Tsp_count + "\t" + Tsp_lineItems[0] + "\t" + Tsp_lineItems[1] + "\t" + (first_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + (second_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + /*Tsp_len*/len + "\t" + Tsp_ds + "\t" + CF9L + "\t" + ME19L  + "\t" + ME19R  + "\t" + CF9R + "\t" + (/*ME19L +*/ CF9L.ToString() + Tsp_ds + CF9R /*+ME19R*/) + "\t" + Tsp_lineItems[6]);
+                                            readCount = rndRead.Next(10);
+                                            output2.WriteLine(Tsp_count - 1 + "\t" + Tsp_count + "\t" + Tsp_lineItems[0] + "\t" + Tsp_lineItems[1] + "\t" + (first_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + (second_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + /*Tsp_len*/len + "\t" + Tsp_ds + "\t" + CF9L + "\t" + ME19L  + "\t" + ME19R  + "\t" + CF9R + "\t" + (/*ME19L +*/ CF9L.ToString() + Tsp_ds + CF9R /*+ME19R*/) + "\t" + readCount);
                                         }
                                         Tsp_count++;
                                         Tsp_molecule_id = Tsp_lineItems[0];
@@ -480,8 +482,8 @@ namespace Junction_labels_simulator
                         int record = 0;
                         int recordSeq = 0;
                         FastQRecord fqR = fq.Records[record];
-                        //for (int rc = 0; rc < readC; rc++)
-                        //{
+                        for (int rc = 0; rc < readC; rc++)
+                        {
                             ShortDnaSequence fwdSeq = new ShortDnaSequence();
                             ShortDnaSequence revSeq = new ShortDnaSequence();    
                             Random rnd = new Random();
@@ -556,7 +558,7 @@ namespace Junction_labels_simulator
                         //output5.WriteLine(rec1.ToString());
 
 
-                    //}
+                    }
                 }
                     //MessageBox.Show(totReads.ToString()); 
                     output4.Close();
@@ -606,6 +608,7 @@ namespace Junction_labels_simulator
             DnaSequence ds2 = new ShortDnaSequence();
             string header2 = "";
             int countseq = 0;
+            string N5="NNNNN";
             for (int i = 1; i < lines.Length-1; i++)
             {
                 string firstLine = lines[i];
@@ -614,15 +617,17 @@ namespace Junction_labels_simulator
                 string[] secondlineItems = secondLine.Split('\t');
                 int start1 = Convert.ToInt32(firstlineItems[0]);
                 int start2 = Convert.ToInt32(secondlineItems[0]);
-                DnaSequence ds1 = new ShortDnaSequence(firstlineItems[8]);
-                
-                ds1.Append(firstlineItems[7]);
-                string header1 = firstlineItems[0] + "_" + firstlineItems[1] + "_" + firstlineItems[2] + "_" + firstlineItems[3] + "_" + firstlineItems[4] + "_" + firstlineItems[5] + "_" + firstlineItems[6];
-                //StreamWriter sw = new StreamWriter();
-                //sw.Write(header);
+                DnaSequence ds1 = new ShortDnaSequence(firstlineItems[12]);
+                ShortDnaSequence ds1F_sub = (ShortDnaSequence)ds1.SubSequence(0, 100);
+                ShortDnaSequence ds1R_sub = (ShortDnaSequence)ds1.SubSequence(ds1.Count-100,ds1.Count);
+                //ds1.Append(firstlineItems[7]);
+                //string header1 = firstlineItems[0] + "_" + firstlineItems[1] + "_" + firstlineItems[2] + "_" + firstlineItems[3] + "_" + firstlineItems[4] + "_" + firstlineItems[5] + "_" + firstlineItems[6];
+                string header1 = firstlineItems[0] + "_"  + firstlineItems[4] + "_" + firstlineItems[5];
                 if (ds2==null)
                 {
-                    ds2 = new ShortDnaSequence(ds1);
+                    ds2 = new ShortDnaSequence(ds1F_sub);
+                    ds2.Append(N5);
+                    ds2.Append(ds1R_sub);
                     header2 = header1;
                 }
                 if (i>=2 && (start1+1) == start2)
@@ -630,12 +635,16 @@ namespace Junction_labels_simulator
                     
                     if (countseq>=1)
                     {
-                        ds2.Append(ds1);
-                        header2 = header2 + " AND " + header1;    
+                        ds2.Append(ds1F_sub.SubSequence(9));
+                        ds2.Append(N5);
+                        ds2.Append(ds1R_sub);
+                        header2 = header2 + " & " + header1;    
                     }
                     else
                     {
-                        ds2 = new ShortDnaSequence(ds1);
+                        ds2 = new ShortDnaSequence(ds1F_sub);
+                        ds2.Append(N5);
+                        ds2.Append(ds1R_sub);
                         header2 = header1;       
                     }
                     countseq++;
@@ -647,11 +656,13 @@ namespace Junction_labels_simulator
                 {
                     if (countseq >= 1)
                     {
-                        ds2.Append(ds1);
-                        header2 = header2 + " AND " + header1;
+                        ds2.Append(ds1F_sub.SubSequence(9));
+                        ds2.Append(N5);
+                        ds2.Append(ds1R_sub);
+                        header2 = header2 + " & " + header1;
                     }
                     FastaRecord rec1 = new FastaRecord(header2, ds2);
-                    output1.WriteLine(rec1.ToString());
+                    output1.Write(rec1.ToString());
                     ds2 = null;
                     header2 = "";
                     countseq = 0;
@@ -660,15 +671,20 @@ namespace Junction_labels_simulator
                 {
                     //ds2.Append(ds1);
                     //header2 = header1;
-                    ds1.Append(firstlineItems[9]);
-                    FastaRecord rec1 = new FastaRecord(header1, ds1);
-                    output1.WriteLine(rec1.ToString());
+                    //ds1.Append(firstlineItems[9]);
+                    ds2 = new ShortDnaSequence(ds1F_sub);
+                    ds2.Append(N5);
+                    ds2.Append(ds1R_sub);
+                    FastaRecord rec1 = new FastaRecord(header1, ds2);
+                    output1.Write(rec1.ToString());
                     //ds2 = null;
                     //header2 = "";
                 }
                 else if (i == 1 && (start1 + 1) == start2)
                 {
-                    ds2.Append(ds1);
+                    ds2.Append(ds1F_sub);
+                    ds2.Append(N5);
+                    ds2.Append(ds1R_sub);
                     header2 = header1;
                     
                 }

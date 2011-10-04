@@ -112,14 +112,6 @@
       <Project>{70EA71CD-073B-4195-B04F-36A7F6B1D4E7}</Project>
       <Name>Linnarsson.Dna</Name>
     </ProjectReference>
-    <ProjectReference Include="..\LineageTool\LineageTool.csproj">
-      <Project>{B9241A61-FF70-4660-93EB-8968B054BA1B}</Project>
-      <Name>LineageTool</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Linnarsson.Lineage\Linnarsson.Lineage.csproj">
-      <Project>{23C19168-CC75-44FD-9B19-0FF83397DF76}</Project>
-      <Name>Linnarsson.Lineage</Name>
-    </ProjectReference>
     <ProjectReference Include="..\MathLib\Linnarsson.Mathematics.csproj">
       <Project>{CA6815A6-BA36-47A6-A177-FE6C44099FC2}</Project>
       <Name>Linnarsson.Mathematics</Name>

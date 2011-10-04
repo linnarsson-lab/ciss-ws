@@ -95,7 +95,7 @@ class DbAppModelLanes extends JModel {
        $selector = " WHERE r.id=" . $db->Quote($runid) . " ORDER BY laneno ASC ";
     }
     $query = " SELECT l.id as id, r.id as aaailluminarunid, illuminarunid, b.id as aaasequencingbatchid,
-                      laneno, cycles, l.molarconcentration, yield, l.comment as comment,
+                      laneno, r.cycles, l.molarconcentration, yield, l.comment as comment,
                       l.user as user, l.time as time, p.title, plateid, rundate, b.title AS batchtitle,
                       m.email AS email, m.person AS person, p.id AS Pid, r.status AS runstatus,
                       p.species, p.layoutfile, p.barcodeset

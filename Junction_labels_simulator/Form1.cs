@@ -349,32 +349,37 @@ namespace Junction_labels_simulator
                      
                     output2.Close();
 
-                    //// this code will introduce a 20bp random sequece at each side of a sequece
-                    //string Tsp_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones.txt"));
-                    //var output3 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_Tsp_N20.txt")).OpenWrite();
+                    // this code will introduce a 6bp random sequece at each side of a sequece
+                    string Tsp_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones.txt"));
+                    var output3 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_N6.txt")).OpenWrite();
                     //output3.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "ME1_19" + "\t" + "Common Fragment 9L" + "\t" + "Seq" + "\t" + "Common Fragment 9R" + "\t" + "ME2_19" + "\t" + "Total Seq");
-                    //string[] TspN20_lines = System.IO.File.ReadAllLines(Tsp_file);
-                    //string[] N20 = CreateRandomN("ACGT",19,(TspN20_lines.Length+1));
-                    //int discart = 0;
-                    //for (int i = 1; i < TspN20_lines.Length; i++)
-                    //{
-                    //    string TspN20_oneLine = TspN20_lines[i];
-                    //    string[] TspN20_lineItems = TspN20_oneLine.Split('\t');
-                    //    int per = TspN20_lines.Length * Discard_percentage / 100;
-                    //    double random_no = Tsp_rnd.NextDouble(); 
-                    //    //MessageBox.Show(discart.ToString() + "and" + per.ToString() + "and" + random_no.ToString() );
-                    //    if (discart <= per && random_no > 0.5) //tsp_probability)
-                    //    {
-                    //        discart = discart +1;
-                    //    }
+                    output3.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "ME19L" + "\t" + "N6_1" + "\t" + "ComnFrg 9L" + "\t" + "Seq" + "\t" + "ComnFrg 9R" + "\t" + "N6_2" + "\t" + "ME19R" +  "\t" + "Read Count"  + "\t" + "N6_1&ComnFrg9L" + "\t" + "ComnFrg9R&N6_2");
+                    string[] TspN6_lines = System.IO.File.ReadAllLines(Tsp_file);
+                    string[] N6 = CreateRandomN("ACGT",6,(TspN6_lines.Length+1));
+                    int discardFrg = 0;
+                    for (int i = 1; i < TspN6_lines.Length; i++)
+                    {
+                        string TspN6_oneLine = TspN6_lines[i];
+                        string[] TspN6_lineItems = TspN6_oneLine.Split('\t');
+                        int per = TspN6_lines.Length * Discard_percentage / 100;
+                        double random_no = Tsp_rnd.NextDouble(); 
+                        //MessageBox.Show(discart.ToString() + "and" + per.ToString() + "and" + random_no.ToString() );
+                        if (discardFrg <= per && random_no > 0.5) //tsp_probability)
+                        {
+                            discardFrg = discardFrg + 1;
+                        }
 
                     //    //if (Convert.ToInt32(TspN20_lineItems[6]) > 30 && Convert.ToInt32(TspN20_lineItems[6]) < 250)
-                    //    else
-                    //        output3.WriteLine(TspN20_lineItems[0] + "\t" + TspN20_lineItems[1] + "\t" + TspN20_lineItems[2] + "\t" + TspN20_lineItems[3] + "\t" + TspN20_lineItems[4] + "\t" + TspN20_lineItems[5] + "\t" + TspN20_lineItems[6] + "\t" + N20[i] + "\t" + TspN20_lineItems[8] + "\t" + TspN20_lineItems[7] + "\t" + TspN20_lineItems[9] + "\t" + N20[i + 1] + "\t" + N20[i] + TspN20_lineItems[8] + TspN20_lineItems[7] + TspN20_lineItems[9] + N20[i + 1]);
-                    //}
+                        else
+                            output3.WriteLine(TspN6_lineItems[0] + "\t" + TspN6_lineItems[1] + "\t" + TspN6_lineItems[2] + "\t" + TspN6_lineItems[3] + "\t" + TspN6_lineItems[4] + "\t" + TspN6_lineItems[5] + "\t" + TspN6_lineItems[6] + "\t" + TspN6_lineItems[9] + "\t" + N6[i] + "\t" + TspN6_lineItems[8] + "\t" + TspN6_lineItems[7] + "\t" + TspN6_lineItems[11] + "\t" + N6[i + 1] + "\t" + TspN6_lineItems[10] + "\t" + TspN6_lineItems[13] + "\t" + (N6[i] + TspN6_lineItems[8]) + "\t" + (N6[i+1]+TspN6_lineItems[11]));
+                    }
                     
-                    //output3.Close();
-
+                    output3.Close();
+                    DialogResult dr=MessageBox.Show("Do you want to continue....","Yes to continue", MessageBoxButtons.YesNo,MessageBoxIcon.Hand);
+                    if (dr==DialogResult.No)
+                    {
+                        break;
+                    } 
                     // this code will generate 2 fastq files with fixed random quality score. To check the output replace the output4 and output5 with some other name******* 
                     //string Totseq_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones.txt"));
                     //var output4 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_1.fq")).OpenWrite();

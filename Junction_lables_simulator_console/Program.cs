@@ -14,6 +14,7 @@ namespace Junction_lables_simulator_console
             var p = new Options() {
                 { "seq=", "Select the Genome/Chromosome sequence files -For example Chr21 from hg18", (v) => smtr.refSeqFilepath = v },
                 { "SNP=", "Select the SNP file(s) for the same Genome/Chromosome i.e. chr21 URN sample", (v) => smtr.snpfilepath = v },
+                { "Erro=", "Select the Illumina file(s) for the introducing error", (v) => smtr.IlluminaSeqError = v },
                 { "nm:", "Number of molecules", (v) => smtr.num_molecule = int.Parse(v) },
                 { "lm:", "Length of each molecules (kb). Given no will be multiplied by 1KB", (v) => smtr.molecule_len = long.Parse(v) },
                 { "prob:", "Insert transposon with probability =1/", (var) => smtr.tsp_probability = double.Parse(var) },

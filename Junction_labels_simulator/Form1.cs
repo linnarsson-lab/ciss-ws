@@ -474,6 +474,7 @@ namespace Junction_labels_simulator
                     long totReads = 0;
                     int readCounting = 0;
                     int readNo = 0;
+                    int record = 0;
                     for (int i = 1; i < Totseq_lines.Length; i++)
                     //for (int i = 1; i < 3; i++)  //added for test **********************************************
                     {
@@ -484,9 +485,10 @@ namespace Junction_labels_simulator
                         string totSeq = Totseq_lineitems[12].ToString();
                         ShortDnaSequence totDseq=new ShortDnaSequence(totSeq);
                         double random_no = Tsp_rnd.NextDouble();
-                        int record = 0;
+                        
                         int recordSeq = 0;
                         FastQRecord fqR = fq.Records[record];
+                        
                         for (int rc = 0; rc < readC; rc++)
                         {
                             ShortDnaSequence fwdSeq = new ShortDnaSequence();
@@ -497,7 +499,10 @@ namespace Junction_labels_simulator
                                 recordSeq++;
                                 if (recordSeq>100)
                                 {
-                                    fqR = fq.Records[record + 1];
+                                    record++;
+                                    //if (record >= 24) record = 0;
+                                    if (fq.Records.Count == record) record = 0; 
+                                    fqR = fq.Records[record];
                                     recordSeq = 0;
                                 }
                                 double error_prob = FastQRecord.QualityToProbability(fqR.Qualities[k]);
@@ -564,6 +569,9 @@ namespace Junction_labels_simulator
 
 
                     }
+                        record++;
+                        //if (record >= 24) record = 0;
+                        if (fq.Records.Count == record) record = 0;
                 }
                     //MessageBox.Show(totReads.ToString()); 
                     output4.Close();

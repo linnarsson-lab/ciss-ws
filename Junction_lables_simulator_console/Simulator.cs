@@ -417,7 +417,7 @@ namespace Junction_lables_simulator_console
                 string Tsp_file = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposones.txt"));
                 var output3 = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposones_N6.txt")).OpenWrite();
                 //output3.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "ME1_19" + "\t" + "Common Fragment 9L" + "\t" + "Seq" + "\t" + "Common Fragment 9R" + "\t" + "ME2_19" + "\t" + "Total Seq");
-                output3.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "ME19L" + "\t" + "N6_1" + "\t" + "ComnFrg 9L" + "\t" + "Seq" + "\t" + "ComnFrg 9R" + "\t" + "N6_2" + "\t" + "ME19R" + "\t" + "Read Count" + "\t" + "N6_1&ComnFrg9L" + "\t" + "ComnFrg9R&N6_2");
+                output3.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "ME19L" + "\t" + "N6_1" + "\t" + "ComnFrg 9L" + "\t" + "Seq" + "\t" + "ComnFrg 9R" + "\t" + "N6_2" + "\t" + "ME19R" + "\t" + "Read Count" + "\t" + "N6_1&ComnFrg9L" + "\t" + "ComnFrg9R&N6_2" + "\t" + "Total Seq");
                 string[] TspN6_lines = System.IO.File.ReadAllLines(Tsp_file);
                 string[] N6 = CreateRandomN("ACGT", 6, (TspN6_lines.Length + 1));
                 int discardFrg = 0;
@@ -435,7 +435,7 @@ namespace Junction_lables_simulator_console
 
                 //    //if (Convert.ToInt32(TspN20_lineItems[6]) > 30 && Convert.ToInt32(TspN20_lineItems[6]) < 250)
                     else
-                        output3.WriteLine(TspN6_lineItems[0] + "\t" + TspN6_lineItems[1] + "\t" + TspN6_lineItems[2] + "\t" + TspN6_lineItems[3] + "\t" + TspN6_lineItems[4] + "\t" + TspN6_lineItems[5] + "\t" + TspN6_lineItems[6] + "\t" + TspN6_lineItems[9] + "\t" + N6[i] + "\t" + TspN6_lineItems[8] + "\t" + TspN6_lineItems[7] + "\t" + TspN6_lineItems[11] + "\t" + N6[i + 1] + "\t" + TspN6_lineItems[10] + "\t" + TspN6_lineItems[13] + "\t" + (N6[i] + TspN6_lineItems[8]) + "\t" + (N6[i + 1] + TspN6_lineItems[11]));
+                        output3.WriteLine(TspN6_lineItems[0] + "\t" + TspN6_lineItems[1] + "\t" + TspN6_lineItems[2] + "\t" + TspN6_lineItems[3] + "\t" + TspN6_lineItems[4] + "\t" + TspN6_lineItems[5] + "\t" + TspN6_lineItems[6] + "\t" + TspN6_lineItems[9] + "\t" + N6[i] + "\t" + TspN6_lineItems[8] + "\t" + TspN6_lineItems[7] + "\t" + TspN6_lineItems[11] + "\t" + N6[i + 1] + "\t" + TspN6_lineItems[10] + "\t" + TspN6_lineItems[13] + "\t" + (N6[i] + TspN6_lineItems[8]) + "\t" + (N6[i + 1] + TspN6_lineItems[11]) + "\t" + (N6[i] + TspN6_lineItems[12] + N6[i + 1]));
                 }
 
                 output3.Close();
@@ -513,7 +513,7 @@ namespace Junction_lables_simulator_console
                     //output4.Close();
 
                 string Totseq_file = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposones_N6.txt"));
-                //string QualityScore=("\\192.168.1.12\data\reads\Run00007_L1_1_100521_GA2X_0007.fq");
+                //string IlluminaSeqError = ("Run0007_Line100.fq");
                 //FastQFile fq = FastQFile.Load("C:\\Indranil\\2011 work and activity\\denovo\\f100lines.fq", 64);
                 //FastQFile fq = FastQFile.Load("\\192.168.1.12\\data\\sequtils\\IS\\Simulator\\f100lines.fq", 64);
                 Console.WriteLine(Path.GetFileName(IlluminaSeqError));
@@ -533,8 +533,8 @@ namespace Junction_lables_simulator_console
                     string Totseq_oneline = Totseq_lines[i];
                     string[] Totseq_lineitems = Totseq_oneline.Split('\t');
                     //int readlen = Convert.ToInt32(readLenTxt.Text);
-                    int readC = Convert.ToInt32(Totseq_lineitems[13]);
-                    string totSeq = Totseq_lineitems[12].ToString();
+                    int readC = Convert.ToInt32(Totseq_lineitems[14]);
+                    string totSeq = Totseq_lineitems[17].ToString();
                     ShortDnaSequence totDseq = new ShortDnaSequence(totSeq);
                     double random_no = Tsp_rnd.NextDouble();
 
@@ -546,10 +546,10 @@ namespace Junction_lables_simulator_console
                         ShortDnaSequence fwdSeq = new ShortDnaSequence();
                         ShortDnaSequence revSeq = new ShortDnaSequence();
                         Random rnd = new Random();
-                        for (int k = 0; k < 100 /*totSeq.Length*/; k++)
+                        for (int k = 0; k <= 100 /*totSeq.Length*/; k++)
                         {
                             recordSeq++;
-                            if (recordSeq > 100)
+                            if (recordSeq >= 100)
                             {
                                 record++;
                                 //if (record >= 24) record = 0;
@@ -580,20 +580,20 @@ namespace Junction_lables_simulator_console
                             }
 
                         }
-                        if (readlen >= Totseq_lineitems[12].Length)
+                        if (readlen >= Totseq_lineitems[17].Length)
                         {
                             fwdSeq = new ShortDnaSequence(totDseq);
                             revSeq = new ShortDnaSequence(totDseq);
                             revSeq.RevComp();
                         }
-                        else if (readlen < Totseq_lineitems[12].Length)
+                        else if (readlen < Totseq_lineitems[17].Length)
                         {
                             fwdSeq = (ShortDnaSequence)totDseq.SubSequence(0, 100);
                             revSeq = (ShortDnaSequence)totDseq.SubSequence((totSeq.Length - 100), 100);
                             revSeq.RevComp();
 
                         }
-                        readCounting = Convert.ToInt32(Totseq_lineitems[13]);
+                        readCounting = Convert.ToInt32(Totseq_lineitems[14]);
                         totReads = (totReads + readCounting) / 2;
                         if (totReads <= Reads_in_million) readNo = readCounting;
                         else readNo = 0; // 

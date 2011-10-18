@@ -53,6 +53,7 @@
     <Compile Include="AbstractGenomeAnnotations.cs" />
     <Compile Include="AnnotationBuilder.cs" />
     <Compile Include="BowtieMapFileSorter.cs" />
+    <Compile Include="HitMapAnnotator.cs" />
     <Compile Include="MapMergeSorter.cs" />
     <Compile Include="ProjectDB.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

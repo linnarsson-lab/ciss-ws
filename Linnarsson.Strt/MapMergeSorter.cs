@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using Linnarsson.Dna;
+using Linnarsson.Mathematics;
 
 namespace Linnarsson.Strt
 {
@@ -11,25 +13,55 @@ namespace Linnarsson.Strt
         int tempFileIdx;
         string tempPath;
         int maxItems;
+        MultiReadMappings mrm;
 
-        public MapMergeSorter()
+        public MapMergeSorter(Barcodes barcodes)
         {
             tempFileIdx = 1;
             maxItems = 10000000;
+            mrm = new MultiReadMappings(20, barcodes);
+        }
+
+        public void MergeSort(List<string> mapFiles, string outFile)
+        {
+            tempPath = Path.GetDirectoryName(outFile);
+            List<string> tempFiles = SplitAndSort(mapFiles);
+            if (tempFiles.Count == 1)
+            {
+                if (File.Exists(outFile))
+                    File.Delete(outFile);
+                File.Move(tempFiles[0], outFile);
+            }
+            else
+            {
+                JoinFiles(tempFiles, outFile);
+                foreach (string tempFile in tempFiles)
+                    File.Delete(tempFile);
+            }
         }
 
         private class Item : IComparable<Item>
         {
-            public static Dictionary<string, long> chrIndex = new Dictionary<string, long>();
+            private static Dictionary<string, long> chrIndex = new Dictionary<string, long>();
+            private static int nonNumericChrIdx = 64;
             public long sorter;
-            public string[] lines;
-            public Item(long sorter, string[] lines)
+            private string lineBlock;
+            public int mappingIndex;
+
+            public Item(long sorter, string lineBlock, int mappingIndex)
             {
                 this.sorter = sorter;
-                this.lines = lines;
+                this.lineBlock = lineBlock;
+                this.mappingIndex = mappingIndex;
             }
+            public string GetLines()
+            {
+                return lineBlock;
+            }
+
             public static List<Item> MakeAll(List<long> sorters, List<string> lines)
             {
+                Sort.QuickSort(sorters, lines);
                 List<Item> all = new List<Item>(sorters.Count);
                 for (int s = 0; s < sorters.Count; s++)
                 { // Order lines so that the first line always corresponds to each sorter.
@@ -38,14 +70,20 @@ namespace Linnarsson.Strt
                     int l = 1;
                     for (int i = 0; i < lines.Count; i++)
                         if (i != s) orderedLines[l++] = lines[i];
-                    all.Add(new Item(sorters[s], orderedLines));
+                    all.Add(new Item(sorters[s],  string.Join("\n", orderedLines), s));
                 }
                 return all;
             }
             public static long MakeSorter(string chr, char strand, int pos)
             {
                 if (!chrIndex.ContainsKey(chr))
-                    chrIndex[chr] = chrIndex.Count;
+                {
+                    int chrNo;
+                    if (int.TryParse(chr, out chrNo))
+                        chrIndex[chr] = chrNo;
+                    else
+                        chrIndex[chr] = nonNumericChrIdx++;
+                }
                 long s = (strand == '+')? 1 : 0;
                 return (chrIndex[chr] << 51) + (s << 50) + pos; 
             }
@@ -57,9 +95,9 @@ namespace Linnarsson.Strt
             }
         }
         
-        private static IEnumerable<Item> MultiMappings(string file)
+        private static IEnumerable<Item> MultiMappings(string bowtieMapFile)
         {
-            StreamReader reader = new StreamReader(file);
+            StreamReader reader = new StreamReader(bowtieMapFile);
             string line = reader.ReadLine();
             if (line == null) yield break;
             string[] fields = line.Split('\t');
@@ -92,23 +130,13 @@ namespace Linnarsson.Strt
             yield break;
         }
 
-        private string WriteToTemp(Item[] items)
-        {
-            string tempFile = Path.Combine(tempPath, "temp_sorting_" + tempFileIdx + ".map");
-            tempFileIdx++;
-            using (StreamWriter w = new StreamWriter(tempFile))
-                foreach (Item j in items)
-                    w.WriteLine(string.Join("\n", j.lines));
-            Console.WriteLine("Wrote " + items.Length + " items to " + tempFile);
-            return tempFile;
-        }
-
-        private class MapFile : IComparable<MapFile>
+        private class SortedMapFileQueueItem : IComparable<SortedMapFileQueueItem>
         {
             private StreamReader reader;
             private string nextLine;
             private Item currentItem;
-            public MapFile(string file)
+
+            public SortedMapFileQueueItem(string file)
             {
                 this.reader = new StreamReader(file);
                 nextLine = reader.ReadLine();
@@ -124,19 +152,12 @@ namespace Linnarsson.Strt
                 else
                 {
                     string[] fields = nextLine.Split('\t');
-                    string id = fields[0];
-                    string chr = fields[2];
-                    char strand = fields[1][0];
-                    int pos = int.Parse(fields[3]);
-                    List<string> lines = new List<string>();
-                    lines.Add(nextLine);
+                    string[] m = fields[6].Split('/');
+                    string chr = m[0];
+                    char strand = m[1][0];
+                    int pos = int.Parse(m[2]);
+                    currentItem = new Item(Item.MakeSorter(chr, strand, pos), nextLine, int.Parse(fields[4]));
                     nextLine = reader.ReadLine();
-                    while (nextLine != null && nextLine.StartsWith(id))
-                    {
-                        lines.Add(nextLine);
-                        nextLine = reader.ReadLine();
-                    }
-                    currentItem = new Item(Item.MakeSorter(chr, strand, pos), lines.ToArray());
                 }
             }
             public Item Peek()
@@ -150,11 +171,11 @@ namespace Linnarsson.Strt
                 return current;
             }
 
-            public int CompareTo(MapFile other)
+            public int CompareTo(SortedMapFileQueueItem other)
             {
                 if (other == null)
                     return 1;
-                long diff = currentItem.sorter - ((MapFile)other).currentItem.sorter;
+                long diff = currentItem.sorter - ((SortedMapFileQueueItem)other).currentItem.sorter;
                 return (diff < 0) ? -1 : ((diff > 0) ? 1 : 0);
             }
         }
@@ -162,17 +183,17 @@ namespace Linnarsson.Strt
         private void JoinFiles(List<string> tempFiles, string outFile)
         {
             int n = 0;
-            List<MapFile> queue = new List<MapFile>();
+            List<SortedMapFileQueueItem> queue = new List<SortedMapFileQueueItem>();
             foreach (string tempFile in tempFiles)
-                queue.Add(new MapFile(tempFile));
+                queue.Add(new SortedMapFileQueueItem(tempFile));
             queue.Sort();
             StreamWriter writer = new StreamWriter(outFile);
             while (queue.Count > 0)
             {
-                MapFile currentFile = queue[0];
+                SortedMapFileQueueItem currentFile = queue[0];
                 Item next = currentFile.Next();
                 n++;
-                writer.WriteLine(string.Join("\n", next.lines));
+                writer.WriteLine(next.GetLines());
                 queue.RemoveAt(0);
                 if (currentFile.Peek() != null)
                 {
@@ -182,25 +203,24 @@ namespace Linnarsson.Strt
                 }
             }
             writer.Close();
-            Console.WriteLine("Wrote totally " + n + " multireads to " + outFile);
+            Console.WriteLine("Wrote totally " + n + " sorted multiple-positioned multireads to " + outFile);
         }
 
-        public void MergeSort(List<string> mapFiles, string outFile)
+        private List<string> SplitAndSort(List<string> mapFiles)
         {
-            tempPath = Path.GetDirectoryName(outFile);
             List<string> tempFiles = new List<string>();
             Item[] items = new Item[maxItems];
             int nReads = 0;
             int n = 0;
             foreach (string file in mapFiles)
             {
+                Console.WriteLine("Processing " + file + "...");
                 foreach (Item i in MultiMappings(file))
                 {
                     nReads++;
                     items[n++] = i;
                     if (n == maxItems)
                     {
-                        Array.Sort(items);
                         tempFiles.Add(WriteToTemp(items));
                         n = 0;
                     }
@@ -209,22 +229,26 @@ namespace Linnarsson.Strt
             if (n > 0)
             {
                 Array.Resize(ref items, n);
-                Array.Sort(items);
                 tempFiles.Add(WriteToTemp(items));
             }
             Console.WriteLine("Totally " + nReads + " multireads in " + mapFiles.Count + " .map files.");
-            if (tempFiles.Count == 1)
-            {
-                if (File.Exists(outFile))
-                    File.Delete(outFile);
-                File.Move(tempFiles[0], outFile);
-            }
-            else
-            {
-                JoinFiles(tempFiles, outFile);
-                foreach (string tempFile in tempFiles)
-                    File.Delete(tempFile);
-            }
+            return tempFiles;
+        }
+
+        private string WriteToTemp(Item[] items)
+        {
+            Array.Sort(items);
+            string tempFile = Path.Combine(tempPath, "temp_sorting_" + tempFileIdx + ".smap");
+            tempFileIdx++;
+            using (StreamWriter w = new StreamWriter(tempFile))
+                foreach (Item j in items)
+                {
+                    BowtieMapFile.ParseFileItem(j.GetLines(), ref mrm);
+                    mrm.MappingNumber = j.mappingIndex;
+                    w.WriteLine(SortedMapFile.ToFileItem(mrm));
+                }
+            Console.WriteLine("Wrote " + items.Length + " items to " + tempFile);
+            return tempFile;
         }
 
     }

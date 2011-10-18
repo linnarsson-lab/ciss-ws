@@ -174,14 +174,14 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="rec"></param>
         /// <returns>A ReadStatus that indicates if the read was valid</returns>
-        public int Extract(ref FastQRecord rec)
+        public int Extract(ref FastQRecord rec, out int bcIdx)
         {
+            bcIdx = 0;
             rec.TrimBBB();
             string rSeq = rec.Sequence;
             int insertLength = TrimTrailingAN(rSeq);
             if (insertLength < minReadLength)
                 return ReadStatus.LENGTH_ERROR;
-            int bcIdx;
              //int bcIdx = Array.IndexOf(barcodesWithTSSeq, rSeq.Substring(barcodePos, bcWithTSSeqLen));
             if (!barcodesWithTSSeq.TryGetValue(rSeq.Substring(barcodePos, bcWithTSSeqLen), out bcIdx))
                 return ReadStatus.BARCODE_ERROR;

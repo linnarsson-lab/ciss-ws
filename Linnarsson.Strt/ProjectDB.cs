@@ -16,14 +16,21 @@ namespace Linnarsson.Strt
     {
         public string bowtieIndexVersion { get; set; }
         public string resultFolder { get; set; }
-        public List<string> mapFiles { get; set; }
+        public List<string> mapFileFolders { get; set; }
+        public List<string> mapFilePaths { get; set; }
 
         public ResultDescription() { }
-        public ResultDescription(List<string> mapFiles, string bowtieIndexVersion, string resultFolder)
+        public ResultDescription(List<string> mapFilePaths, string bowtieIndexVersion, string resultFolder)
         {
-            this.mapFiles = mapFiles;
+            this.mapFilePaths = mapFilePaths;
             this.bowtieIndexVersion = bowtieIndexVersion;
             this.resultFolder = resultFolder;
+            this.mapFileFolders = new List<string>();
+            foreach (string mapFilePath in mapFilePaths)
+            {
+                string mapFileFolder = Path.GetDirectoryName(mapFilePath);
+                if (!mapFileFolders.Contains(mapFileFolder)) mapFileFolders.Add(mapFileFolder);
+            }
         }
     }
 
@@ -41,9 +48,11 @@ namespace Linnarsson.Strt
         public string annotationVersion { get; set; }
         public string layoutFile { get; set; }
         public string defaultBuild { get; set; }
-        public List<ExtractionInfo> extractionInfos { get; set; }
+        public List<LaneInfo> extractionInfos { get; set; }
         public string analysisId { get; set; }
         public List<ResultDescription> resultDescriptions { get; set; }
+
+        public string SampleLayoutPath { get { return Path.Combine(ProjectFolder, layoutFile); } }
 
         [XmlIgnoreAttribute]
         public string defaultSpecies;
@@ -95,10 +104,6 @@ namespace Linnarsson.Strt
                     n += laneArg.Split(':')[1].Length;
                 return n;
             }
-        }
-        public string[] GetExtractedFiles()
-        {
-            return extractionInfos.ConvertAll(info => info.extractedFilePath).ToArray();
         }
     }
 
@@ -263,7 +268,7 @@ namespace Linnarsson.Strt
                     cmd.ExecuteNonQuery();
                     firstResult = false;
                 }
-                foreach (ExtractionInfo extrInfo in projDescr.extractionInfos)
+                foreach (LaneInfo extrInfo in projDescr.extractionInfos)
                 {
                     if (extrInfo.nReads == 0)
                         continue; // Has been extracted earlier - no data to update

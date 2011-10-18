@@ -91,7 +91,7 @@ namespace Linnarsson.Strt
             else if (exonHitGeneNames.Count == 1)
             {
                 string actualHitGene = exonHitGeneNames[0];
-                foreach (MultiReadMapping rec in recs.ValidMappings())
+                foreach (MultiReadMapping rec in recs.IterMappings())
                 {
                     if (recs.ReadId.Contains(actualHitGene))
                         return;
@@ -107,7 +107,7 @@ namespace Linnarsson.Strt
             if (descr != "")
             {
                 readReporter.WriteLine(descr);
-                foreach (MultiReadMapping rec in recs.ValidMappings())
+                foreach (MultiReadMapping rec in recs.IterMappings())
                 {
                     readReporter.WriteLine(rec.ToString());
                 }

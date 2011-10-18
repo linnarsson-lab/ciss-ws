@@ -102,11 +102,10 @@ namespace SilverBullet
                 GeneVariantsDialog gvd = new GeneVariantsDialog();
                 gvd.ShowDialog();
                 gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
-                string buildName = gd.Genome.GetBowtieIndexName();
                 SetupMapper(barcodeSet);
                 Background.RunAsync(() =>
                 {
-                    mapper.RunBowtie(buildName, projectFolder);
+                    mapper.Map(projectFolder, gd.Genome);
                     Console.WriteLine("Done.");
                 });
             }
@@ -137,7 +136,7 @@ namespace SilverBullet
                     {
                         gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
                         string projectFolder = Path.GetDirectoryName(mapFolder);
-                        mapper.AnnotateFromBowtie(mapFolder, gd.Genome);
+                        mapper.Annotate(mapFolder, gd.Genome);
                     }
                     catch (NoAnnotationsFileFoundException)
                     {
@@ -463,6 +462,29 @@ namespace SilverBullet
                 BowtieMapFileSorter s = new BowtieMapFileSorter();
                 Background.RunAsync(() =>
                  { s.SortMapFile(mapFile); });
+            }
+        }
+
+        private void dumpTranscriptsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (Background.IsBusy)
+            {
+                if (MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
+            }
+            GenomeDialog gd = new GenomeDialog();
+            gd.ShowDialog();
+            GeneVariantsDialog gvd = new GeneVariantsDialog();
+            gvd.ShowDialog();
+            mapper = new StrtReadMapper(Props.props);
+            gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
+            Console.WriteLine("Read lengths will be 44bp. All splices are made.");
+			SaveFileDialog ofd = new SaveFileDialog();
+            ofd.Title = "Specify a FQ file to save the reads to.";
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                string fastaFile = ofd.FileName;
+                Background.RunAsync(() =>
+                { mapper.DumpTranscripts(gd.Genome, 44, 1, 0, fastaFile, true, 3, 10); });
             }
         }
 

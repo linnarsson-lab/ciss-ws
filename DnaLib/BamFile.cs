@@ -264,6 +264,27 @@ namespace Linnarsson.Dna
 			return result;
 		}
 
+        public IEnumerable<string> IterLines(string chromosome, int start, int end)
+        {
+            string alignments = null;
+            try
+            {
+                string samArg = BamFileName + " " + chromosome + ":" + start + "-" + end;
+                alignments = samtools("view", samArg);
+            }
+            catch (IOException io)
+            {
+                Console.WriteLine(io.Message);
+                yield break;
+            }
+            string[] lines = alignments.Split('\n', '\r');
+            foreach (string line in lines)
+            {
+                if (string.IsNullOrEmpty(line)) yield break;
+                yield return line;
+            }
+        }
+
 		/// <summary>
 		/// Return all alignments for a given region. Does not work because .NET does not provide
 		/// binary access to the StandardOutput stream.

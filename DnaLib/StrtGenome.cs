@@ -65,6 +65,10 @@ namespace Linnarsson.Dna
         {
             return Build + "_" + GeneVariantsChar + Annotation;
         }
+        public string GetBowtieSplcIndexName()
+        {
+            return Build + "chr" + GeneVariantsChar + Annotation;
+        }
         public bool IsChrInBuild(string chr)
         {
             return !IsSpliceAnnotationChr(chr) || chr.EndsWith(GeneVariantsChar + Annotation);

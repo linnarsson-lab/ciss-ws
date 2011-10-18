@@ -8,19 +8,19 @@ namespace Linnarsson.Dna
 {
     public class RandomTagFilter
     {
-        private Barcodes barcodes;
+        public static readonly int SortedAnalysisWindowSize = 10000000;
+
+        private bool hasRndTags;
         private Dictionary<int, byte[]> molCounts;
-        private int windowSize;
         private int windowStart;
         private int rndBcCount;
         private int posStrandDataSize;
         public int[] nReadsByRandomTag;
         public int[] nCasesPerRandomTagCount;
 
-        public RandomTagFilter(Barcodes barcodes, int windowSize)
+        public RandomTagFilter(Barcodes barcodes)
         {
-            this.barcodes = barcodes;
-            this.windowSize = windowSize;
+            hasRndTags = barcodes.HasRandomBarcodes;
             rndBcCount = barcodes.RandomBarcodeCount;
             posStrandDataSize = rndBcCount * barcodes.Count;
             molCounts = new Dictionary<int, byte[]>();
@@ -43,7 +43,7 @@ namespace Linnarsson.Dna
                 }
             }
             molCounts.Clear();
-            windowStart = pos / windowSize;
+            windowStart = pos / SortedAnalysisWindowSize;
         }
         /// <summary>
         /// Check if the molecule is new and add to statistics.
@@ -53,8 +53,9 @@ namespace Linnarsson.Dna
         /// <returns>True if the pos-strand-bc-randomBc combination is new</returns>
         public bool IsNew(int pos, char strand, int bcIdx, int rndBcIdx)
         {
+            if (!hasRndTags) return true;
             int relPos = pos - windowStart;
-            if (relPos > windowSize || relPos < 0) MoveWindow(pos);
+            if (relPos > SortedAnalysisWindowSize || relPos < 0) MoveWindow(pos);
             nReadsByRandomTag[rndBcIdx]++;
             int strandIdx = (strand == '+') ? 0 : 1;
             int posStrand = (pos << 1) | strandIdx;

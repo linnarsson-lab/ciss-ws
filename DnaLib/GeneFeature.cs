@@ -533,7 +533,7 @@ namespace Linnarsson.Dna
             Array.Resize(ref spliceIds, nExons);
             int partLength = exonEnds[0] - exonStarts[0] + 1;
             if (partLength != SpliceFlankLen)
-                Console.WriteLine("WARNING: Length " + partLength + ") of splice chromosome exon (gene " + name + 
+                Console.WriteLine("WARNING: Length " + partLength + " of splice chromosome exon (gene " + name + 
                                   ") does not equal SpliceFlankLength (" + SpliceFlankLen + ") as specified in " + Props.configFilename);
             return new SplicedGeneFeature(name, chr, strand, exonStarts, exonEnds, offsets, spliceIds);
         }

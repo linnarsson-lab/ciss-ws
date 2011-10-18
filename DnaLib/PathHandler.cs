@@ -165,9 +165,9 @@ namespace Linnarsson.Dna
             return runNo; 
         }
 
-        public static List<ExtractionInfo> ListReadsFiles(List<string> laneArgs)
+        public static List<LaneInfo> ListReadsFiles(List<string> laneArgs)
         {
-            List<ExtractionInfo> readsFiles = new List<ExtractionInfo>();
+            List<LaneInfo> extrInfos = new List<LaneInfo>();
             foreach (string laneArg in laneArgs)
             {
                 string[] parts = laneArg.Split(':');
@@ -178,10 +178,10 @@ namespace Linnarsson.Dna
                     string readFilePat = string.Format(matchPat, laneNo);
                     string[] laneFiles = Directory.GetFiles(Props.props.ReadsFolder, readFilePat);
                     if (laneFiles.Length > 0)
-                        readsFiles.Add(new ExtractionInfo(laneFiles[0], runId, laneNo));
+                        extrInfos.Add(new LaneInfo(laneFiles[0], runId, laneNo));
                 }
             }
-            return readsFiles;
+            return extrInfos;
         }
 
         /// <summary>
@@ -391,23 +391,38 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Return paths to all .map or .bam files in folder that correspond to the given bowtie index (and version)
+        /// Return paths to the bowtie output files in folder that correspond to the genome,
+        /// and are either main maps, or splc maps of the latest common bowtie index date
         /// </summary>
-        /// <param name="folder">Usually an extraction folder</param>
-        /// <param name="bowtieIndexName">Either an index, e.g. "mm9_sUCSC", or a specific index version, e.g. "hg19_aUCSC110402"</param>
-        /// <returns>All corresponding alignment files in folder</returns>
-        public static List<string> FindBowtieMapFiles(string folder, string bowtieIndexName)
+        /// <param name="projectFolder">Project folder</param>
+        /// <param name="genome">Selected genome</param>
+        /// <param name="randomTagged">true to look for .bam instead of .map files</param>
+        /// <param name="indexVersion">will return the selected latest bowtie index version (e.g. hg19_sUCSC110606) </param>
+        /// <returns>The genome-corresponding alignment files of the latest bowtie index date from folder</returns>
+        public static List<string> FindBowtieOutputFiles(string projectFolder, StrtGenome genome)
         {
-            return FindBowtieOutputFiles(folder, bowtieIndexName, false);
-        }
-        public static List<string> FindBowtieOutputFiles(string folder, string bowtieIndexName, bool bamFormat)
-        {
-            string pattern = (bamFormat) ? string.Format(".+_{0}[0-9]+.bam$", bowtieIndexName) :
-                                          string.Format(".+_{0}[0-9]*M?.map$", bowtieIndexName);
+            string extractedFolder = GetLatestExtractedFolder(projectFolder);
+            string mainPattern = string.Format(".+_{0}.map$", genome.Build);
             List<string> files = new List<string>();
-            foreach (string file in Directory.GetFiles(folder))
-                if (Regex.Match(file, pattern).Success)
+            foreach (string file in Directory.GetFiles(projectFolder))
+                if (Regex.Match(file, mainPattern).Success)
                     files.Add(file);
+            string splcPattern = string.Format(".+_{0}([0-9]+).map$", genome.GetBowtieSplcIndexName());
+            Dictionary<string, List<string>> splcFilesByDate = new Dictionary<string, List<string>>();
+            foreach (string file in Directory.GetFiles(projectFolder))
+            {
+                Match m = Regex.Match(file, splcPattern);
+                if (m.Success)
+                {
+                    string date = m.Groups[1].Value;
+                    if (!splcFilesByDate.ContainsKey(date))
+                        splcFilesByDate[date] = new List<string>();
+                    splcFilesByDate[date].Add(file);
+                }
+            }
+            List<string> dates = splcFilesByDate.Keys.ToList();
+            string latestDate = dates.Max();
+            files.AddRange(splcFilesByDate[latestDate]);
             return files;
         }
 

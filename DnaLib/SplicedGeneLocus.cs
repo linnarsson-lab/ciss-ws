@@ -93,7 +93,26 @@ namespace Linnarsson.Dna
             return string.Format("{0}{1}{2}", e1, sep, e2);
         }
 
-        public override MarkResult MarkHit(int chrHitPos, int halfWidth, char strand, 
+        public override MarkResult MarkHit(int chrHitPos, int halfWidth, char strand,
+                                           int bcodeIdx, int partIdx, MarkStatus markType)
+        {
+            int hitStart = chrHitPos - halfWidth;
+            int hitEnd = chrHitPos + halfWidth;
+            // Assert we have hit across splice
+            if ( (hitStart % junctionSize) >= spliceFlankLen - 2 || (hitEnd % junctionSize) <= spliceFlankLen + 2 )
+                return new MarkResult(AnnotType.NOHIT, this);
+            int annotType = (strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
+            if ((markType == MarkStatus.TEST_EXON_MARK_OTHER && AnnotType.IsTranscript(annotType)) //&& strand == Strand)
+                || markType == MarkStatus.TEST_EXON_SKIP_OTHER)
+                return new MarkResult(annotType, this);
+            RealChrId = realFeature.Chr;
+            RealChrOffset = offsets[partIdx];
+            int realChrHitPos = chrHitPos + RealChrOffset;
+            return realFeature.MarkSpliceHit(realChrHitPos, halfWidth, strand, bcodeIdx,
+                                             realExonIds[partIdx], junctionIds[partIdx], markType);
+        }
+
+/*        public override MarkResult MarkHit(int chrHitPos, int halfWidth, char strand, 
                                            int bcodeIdx, int partIdx, MarkStatus markType)
         {
             int hitStart = chrHitPos - halfWidth;
@@ -115,7 +134,7 @@ namespace Linnarsson.Dna
             }
             return realFeature.MarkSpliceHit(realChrHitPos, halfWidth, strand, bcodeIdx,
                                              realExonIds[partIdx], junctionIds[partIdx], markType);
-        }
+        }*/
 
         public override IEnumerable<FtInterval> IterIntervals()
         {

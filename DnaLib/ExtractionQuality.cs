@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 using Linnarsson.Mathematics;
 using Linnarsson.Utilities;
 
@@ -45,12 +46,13 @@ namespace Linnarsson.Dna
             lengthDistro[1, insertLength]++;
         }
 
-        public void Write(string referredFile, string outputPathHead)
+        public void Write(LaneInfo extrInfo)
         {
             // Dump quality profile & color balance
-            WriteQualityProfile(qprofile, referredFile, outputPathHead + "_quality.txt");
-            WriteColorBalance(colorBalance, referredFile, outputPathHead +  "_colors.txt");
-            WriteLengthDistribution(lengthDistro, referredFile, outputPathHead + "_lengths.txt");
+            string outputPathHead = Path.Combine(extrInfo.extractedFileFolder, "extraction_");
+            WriteQualityProfile(qprofile, extrInfo.readFilePath, outputPathHead + "quality.txt");
+            WriteColorBalance(colorBalance, extrInfo.readFilePath, outputPathHead + "colors.txt");
+            WriteLengthDistribution(lengthDistro, extrInfo.readFilePath, outputPathHead + "lengths.txt");
         }
 
         private static void WriteLengthDistribution(int[,] lengthDistro, string referredFile, string outputPath)

@@ -52,7 +52,7 @@ namespace CmdSilverBullet
                                 analyzeAllGeneVariants = (args[argOffset++].ToLower().StartsWith("a")) ? true : false;
                             projectFolder = args[argOffset];
                             mapper = new StrtReadMapper(props);
-                            mapper.Extract(projectFolder, laneArgs);
+                            List<LaneInfo> extrInfos = mapper.Extract(projectFolder, laneArgs);
                             if (speciesArg != "")
                                 mapper.MapAndAnnotate(projectFolder, speciesArg, analyzeAllGeneVariants);
                             else
@@ -86,7 +86,8 @@ namespace CmdSilverBullet
                             break;
 
                         case "sort":
-                            MapMergeSorter bmfs = new MapMergeSorter();
+                            props.BarcodesName = args[argOffset++];
+                            MapMergeSorter bmfs = new MapMergeSorter(props.Barcodes);
                             List<string> inFiles = new List<string>();
                             for (int i = argOffset; i < args.Length - 1; i++)
                                 inFiles.Add(args[i]);
@@ -108,7 +109,7 @@ namespace CmdSilverBullet
                             genome = StrtGenome.GetGenome(args[1], args[2].StartsWith("a"));
                             string buildName = genome.GetBowtieIndexName();
                             mapper = new StrtReadMapper(props);
-                            mapper.RunBowtie(buildName, projectFolder);
+                            mapper.Map(projectFolder, genome);
                             break;
 
                         case "ab":
@@ -174,7 +175,7 @@ namespace CmdSilverBullet
 
                         case "dump":
                             genome = StrtGenome.GetGenome(args[1]);
-                            int readLength = 0, step = 1, maxPerGene = 20;
+                            int readLength = 0, step = 1, maxPerGene = 0;
                             int junk;
                             string outputPath = "";
                             if (!int.TryParse(args[args.Length - 1], out junk))
@@ -189,7 +190,46 @@ namespace CmdSilverBullet
                             if (args.Length > 4)
                                 maxPerGene = int.Parse(args[4]);
                             mapper = new StrtReadMapper(props);
-                            mapper.DumpTranscripts(genome, readLength, step, maxPerGene, outputPath);
+                            bool makeSplices = true;
+                            int maxSkip = 10;
+                            int minOverhang = 3;
+                            mapper.DumpTranscripts(genome, readLength, step, maxPerGene, outputPath, makeSplices, minOverhang, maxSkip);
+                            break;
+
+                        case "serializehitmap":
+                            HitMapAnnotator hma1 = new HitMapAnnotator();
+                            hma1.InitHitMapFromReadMapFile(args[1]);
+                            Console.WriteLine("Writing .NET serialized data to " + args[2]);
+                            hma1.Serialize(args[2]);
+                            string sbaFile = Path.GetFileNameWithoutExtension(args[2]) + ".sba";
+                            Console.WriteLine("Writing SilverBullet txt formatted data to " + sbaFile);
+                            hma1.WriteHitMapToSbaFile(sbaFile);
+                            break;
+
+                        case "writehitmap":
+                            HitMapAnnotator hma2 = new HitMapAnnotator();
+                            hma2.InitHitMapFromReadMapFile(args[1]);
+                            Console.WriteLine("Writing SilverBullet txt formatted data to " + args[2]);
+                            hma2.WriteHitMapToSbaFile(args[2]);
+                            break;
+
+                        case "hitmapannotate":
+                            HitMapAnnotator hma = new HitMapAnnotator();
+                            hma.InitHitMapFromFile(args[1]);
+                            Console.WriteLine("Setting barcodes to " + args[2]);
+                            props.BarcodesName = args[2];
+                            hma.InitAnalysis(props.Barcodes);
+                            string[] mapFiles = Directory.GetFiles(args[3], args[4]);
+                            hma.AnnotatateMapFiles(args[3], mapFiles);
+                            hma.WriteSummary();
+                            Console.WriteLine("Writing output to " + args[args.Length - 1]);
+                            hma.WriteRawCounts(args[args.Length - 1]);
+                            if (args[1].EndsWith(".map"))
+                            {
+                                string outf = args[1].Replace(".map", ".sba");
+                                Console.WriteLine("Saving annotations to SilverBullet formatted txt file " + outf);
+                                hma.WriteHitMapToSbaFile(outf);
+                            }
                             break;
 
                         case "jct":
@@ -278,7 +318,8 @@ namespace CmdSilverBullet
                 "SB.exe upd [<Build> <Annot> | <Sp>] <AnnotErrorFile>\n    - update SilverBullet annotations of 5' ends using the specified XXX_annot_errors_xxx.tab file.\n" +
                 "SB.exe bt <Sp>|<IdxName> all|single <ProjectPath>|<ExtractedPath>\n    - run Bowtie on latest/specified Extracted folder\n" +
                 "SB.exe aw <Sp> <MapFolderPath>/n    - annotate data from Wiggles .wig files folder\n" +
-                "SB.exe sort [<MapFile>]+ <outFile>\n    - sort and merge specified .map files\n" +
+                "SB.exe sort <BcSet> [<MapFile>]+ <outFile>\n    - sort and merge specified .map files\n" +
+                "SB.exe hitmapannotate <annotFile> <BcSet> <MapFilesFolder> <MapFilePattern> <outputFile>\n" +
                 "SB.exe split [<BcSet>] <ProjectPath>\n    - split data by barcode\n" +
                 "SB.exe synt <BcSet> <IdxName> all|single <OutputFolder>\n" +
                 "    - generate synthetic reads from a genome\n" +

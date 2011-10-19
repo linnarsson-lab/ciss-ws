@@ -171,14 +171,14 @@ namespace Linnarsson.Dna
         public static string ConvertIfAnnotation(string chrId)
         {
             foreach (string a in AnnotationSources)
-                if (chrId.EndsWith(a)) return a;
+                if (chrId.IndexOf(a) > 2) return a;
             return chrId;
         }
 
         public static bool IsSpliceAnnotationChr(string chr)
         {
             foreach (string a in AnnotationSources)
-                if (chr.EndsWith(a)) return true;
+                if (chr.IndexOf(a) > 2) return true;
             return false;
         }
 

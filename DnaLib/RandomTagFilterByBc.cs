@@ -9,7 +9,7 @@ namespace Linnarsson.Dna
     {
         private class ChrTagData
         {
-            private Dictionary<int, byte[]> molCounts; // posOnChr -> countsByRndTag
+            private Dictionary<int, byte[]> molCounts = new Dictionary<int,byte[]>(); // posOnChr -> countsByRndTag
 
             public void ChangeBcIdx()
             {
@@ -52,13 +52,15 @@ namespace Linnarsson.Dna
         protected static int nRndTags;
         public int[] nReadsByRandomTag;
         public int[] nCasesPerRandomTagCount;
+        public int[] nDuplicatesByBarcode;
 
         public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds)
         {
             hasRndTags = barcodes.HasRandomBarcodes;
             nRndTags = barcodes.RandomBarcodeCount;
             nReadsByRandomTag = new int[nRndTags];
-            nCasesPerRandomTagCount = new int[nRndTags + 1];
+            nCasesPerRandomTagCount = new int[nRndTags];
+            nDuplicatesByBarcode = new int[nRndTags];
             if (!hasRndTags) return;
             chrTagDatas = new Dictionary<string, ChrTagData>();
             foreach (string chrId in chrIds)
@@ -88,7 +90,9 @@ namespace Linnarsson.Dna
             if (bcIdx != currentBcIdx)
                 ChangeBcIdx(bcIdx);
             nReadsByRandomTag[rndTagIdx]++;
-            return chrTagDatas[chr].IsNew(pos, strand, rndTagIdx);
+            bool isNew = chrTagDatas[chr].IsNew(pos, strand, rndTagIdx);
+            if (!isNew) nDuplicatesByBarcode[bcIdx]++;
+            return isNew;
         }
 
     }

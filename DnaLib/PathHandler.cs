@@ -22,6 +22,11 @@ namespace Linnarsson.Dna
             return Path.Combine(Props.props.GenomesFolder, genome.Build);
         }
 
+        public static string GetGenomeSequenceFolder(StrtGenome genome)
+        {
+            return Path.Combine(GetGenomeBuildFolder(genome), "genome");
+        }
+
         public static string GetBowtieIndicesFolder()
         {
             string pathVar = Environment.GetEnvironmentVariable("PATH");
@@ -31,19 +36,15 @@ namespace Linnarsson.Dna
             return Props.props.BowtieIndexFolder;
         }
 
-        public static string GetIndexVersion(string buildName)
+        public static string GetIndexVersion(StrtGenome genome)
         {
+            string buildName = genome.GetBowtieSplcIndexName();
             string indexFolder = GetBowtieIndicesFolder();
             string testFile = Path.Combine(indexFolder, buildName + ".1.ebwt");
             if (!File.Exists(testFile))
                 return "";
             FileInfo fInfo = new FileInfo(testFile);
             return buildName + fInfo.CreationTime.ToString("yyMMdd");
-        }
-
-        public static string GetGenomeSequenceFolder(StrtGenome genome)
-        {
-            return Path.Combine(GetGenomeBuildFolder(genome), "genome");
         }
 
         public static string ExtractChrId(string filenameOrPath)
@@ -234,102 +235,10 @@ namespace Linnarsson.Dna
             return projectFolderOrName;
         }
 
-        /// <summary>
-        /// If input is a partial run folder name, root it in the standard runs folder.
-        /// If it is a number, convert it to a full run folder path.
-        /// If it is a rooted path, return as-is.
-        /// </summary>
-        /// <param name="runNameOrNumber"></param>
-        /// <returns>Rooted path to a run folder</returns>
-        public string GetRootedRunFolder(string runNameOrNumber)
-        {
-            string runFolder = runNameOrNumber;
-            string runsFolder = props.RunsFolder;
-            int runNo;
-            if (int.TryParse(runNameOrNumber, out runNo))
-            {
-                string searchPattern = string.Format("*_{0:0000}", runNo);
-                string[] files = Directory.GetDirectories(runsFolder, searchPattern);
-                if (files.Length == 0)
-                {
-                    searchPattern = string.Format("*_{0:00000}_FC", runNo);
-                    files = Directory.GetDirectories(runsFolder, searchPattern);
-                }
-                if (files.Length == 0)
-                    throw new IOException("No run with number " + runNameOrNumber + " found in " + runsFolder);
-                if (files.Length > 1)
-                {
-                    Array.Sort(files);
-                    Array.Reverse(files);
-                    Console.Error.WriteLine("Several runs with number " + runNameOrNumber + " found in " + runsFolder);
-                    Console.Error.WriteLine("Using latest: " + files[0]);
-                }
-                runFolder = files[0];
-            }
-            if (!Path.IsPathRooted(runFolder))
-                runFolder = Path.Combine(runsFolder, runFolder);
-            return runFolder;
-        }
-
-        /// <summary>
-        /// Convert a run number or partial run folder path to the valid
-        /// directory name of the raw Illumina qseq.txt files.
-        /// If input is a full path to or name of a run folder that does
-        /// not contain the default Illumina sub-structure, the
-        /// return value is the input path itself, rooted in the top runs folder, if needed.
-        /// </summary>
-        /// <param name="runNameOrNumber"></param>
-        /// <returns></returns>
-        public string GetRootedRunDataFolder(string runNameOrNumber)
-        {
-            string runFolder = GetRootedRunFolder(runNameOrNumber);
-            if (!runFolder.Contains(MakeRunDataSubPath()))
-            {
-                string stdSubFolder = Path.Combine(runFolder, MakeRunDataSubPath());
-                if (Directory.Exists(stdSubFolder))
-                    runFolder = stdSubFolder;
-            }
-            return runFolder;
-        }
-
-        public string MakeRandomTagFilteredFilename(string projectFolder)
-        {
-            return Path.Combine(projectFolder, "unique_tags.fq");
-        }
-
-        public static string CreateExtractedFileHead(string outputFolder, string readsFile, string extractionVersion)
-        {
-            string fileName = Path.GetFileNameWithoutExtension(readsFile);
-            Match m = Regex.Match(fileName, "^Run[0-9]+_L[0-9]+_[0-9]");
-            fileName = fileName.Substring(0, m.Length) + "_" + extractionVersion;
-            return Path.Combine(outputFolder, fileName);
-        }
         public static string MakeExtractionSummaryPath(string mapFilePath)
         {
             Match m = Regex.Match(mapFilePath, "^.*Run[0-9]+_L[0-9]+_[0-9]_[0-9]+");
             return mapFilePath.Substring(0, m.Length) + "_summary.txt";
-        }
-        public static string GetExtractionSummaryPath(string outputFolder, string readsFile, string extractionVersion)
-        {
-            return CreateExtractedFileHead(outputFolder, readsFile, extractionVersion) + "_summary.txt";
-        }
-        /// <summary>
-        /// To be used only with the piped Extract.exe > Bowtie > Annotate.exe process line.
-        /// </summary>
-        /// <param name="projectFolder"></param>
-        /// <returns></returns>
-        public static string GetGlobalExtractionSummaryPath(string projectFolder)
-        {
-            string projectName = Path.GetFileName(projectFolder);
-            return Path.Combine(projectFolder, projectName + "_extraction_summary.txt");
-        }
-        public static string GetSlaskReadsPath(string outputFolder, string readsFile, string extractionVersion)
-        {
-            return CreateExtractedFileHead(outputFolder, readsFile, extractionVersion) + "_slask.fq.gz";
-        }
-        public static string GetBarcodedReadsPath(string outputFolder, string readsFile, string extractionVersion)
-        {
-            return CreateExtractedFileHead(outputFolder, readsFile, extractionVersion) + "_barcoded.fq";
         }
 
         public static string extractedFolderMakePattern = "{0}_ExtractionVer{1}_{2}";
@@ -339,6 +248,7 @@ namespace Linnarsson.Dna
             string projectName = Path.GetFileName(projectFolder);
             return Path.Combine(projectFolder, string.Format(extractedFolderMakePattern, projectName, extractionVersion, barcodeSet));
         }
+
         /// <summary>
         /// Finds the latest Extracted folder inside (project) inputFolder
         /// </summary>
@@ -390,59 +300,6 @@ namespace Linnarsson.Dna
             return Path.Combine(bcPath, bcSetName + ".barcodes");
         }
 
-        /// <summary>
-        /// Return paths to the bowtie output files in folder that correspond to the genome,
-        /// and are either main maps, or splc maps of the latest common bowtie index date
-        /// </summary>
-        /// <param name="projectFolder">Project folder</param>
-        /// <param name="genome">Selected genome</param>
-        /// <param name="randomTagged">true to look for .bam instead of .map files</param>
-        /// <param name="indexVersion">will return the selected latest bowtie index version (e.g. hg19_sUCSC110606) </param>
-        /// <returns>The genome-corresponding alignment files of the latest bowtie index date from folder</returns>
-        public static List<string> FindBowtieOutputFiles(string projectFolder, StrtGenome genome)
-        {
-            string extractedFolder = GetLatestExtractedFolder(projectFolder);
-            string mainPattern = string.Format(".+_{0}.map$", genome.Build);
-            List<string> files = new List<string>();
-            foreach (string file in Directory.GetFiles(projectFolder))
-                if (Regex.Match(file, mainPattern).Success)
-                    files.Add(file);
-            string splcPattern = string.Format(".+_{0}([0-9]+).map$", genome.GetBowtieSplcIndexName());
-            Dictionary<string, List<string>> splcFilesByDate = new Dictionary<string, List<string>>();
-            foreach (string file in Directory.GetFiles(projectFolder))
-            {
-                Match m = Regex.Match(file, splcPattern);
-                if (m.Success)
-                {
-                    string date = m.Groups[1].Value;
-                    if (!splcFilesByDate.ContainsKey(date))
-                        splcFilesByDate[date] = new List<string>();
-                    splcFilesByDate[date].Add(file);
-                }
-            }
-            List<string> dates = splcFilesByDate.Keys.ToList();
-            string latestDate = dates.Max();
-            files.AddRange(splcFilesByDate[latestDate]);
-            return files;
-        }
-
-        public static string ExtractIndexVersion(string mapFile)
-        {
-            return Regex.Match(mapFile, string.Format("_([^_]+_[^_]+).[bm]a[mp]$")).Groups[1].Value;
-        }
-
-        public static readonly string BarcodedFileEnding = "barcoded.fq";
-        public static readonly string ExtractionSummaryFileEnding = "summary.txt";
-        public static string CombineToMapFilename(string bcFilename, string indexVersion, string extension)
-        {
-            return bcFilename.Replace(BarcodedFileEnding, indexVersion + extension);
-        }
-
-        public static string MakeAnnotFolderName(string projectName, string bowtieIndexVersion, string annotationVersion)
-        {
-            return string.Format("{0}_AnnotationVer{1}_{2}", projectName, annotationVersion, bowtieIndexVersion);
-        }
-
         public static string ParseBarcodeSet(string extractedFolder)
         {
             Match m = Regex.Match(extractedFolder, ".*Extract[^_]+_([^_]+)");
@@ -467,12 +324,6 @@ namespace Linnarsson.Dna
             foreach (char c in Path.GetInvalidFileNameChars())
                 safeName = safeName.Replace(c, '_');
             return safeName;
-        }
-
-        public static string GetIndexNameFromResultSubPath(string resultSubFolder)
-        {
-            Match m = Regex.Match(resultSubFolder, "AnnotationVer[0-9]+_(.+)$");
-            return m.Groups[1].Value;
         }
 
     }

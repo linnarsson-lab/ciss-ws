@@ -104,11 +104,16 @@ namespace Linnarsson.Strt
             return s;
         }
 
-        public void AddSummaryTabfile(string summaryTabfilePath)
+        public void AddExtractionSummaries(List<string> extractionSummaryPaths)
+        {
+            foreach (string summaryPath in extractionSummaryPaths)
+                AddExtractionSummary(summaryPath);
+        }
+        private void AddExtractionSummary(string extractionSummaryPath)
         {
             try
             {
-                StreamReader extrFile = summaryTabfilePath.OpenRead();
+                StreamReader extrFile = extractionSummaryPath.OpenRead();
                 string line = extrFile.ReadLine();
                 while (line != null)
                 {
@@ -130,7 +135,7 @@ namespace Linnarsson.Strt
             }
             catch (FileNotFoundException)
             {
-                readFiles.Add(summaryTabfilePath + " - MISSING: Read statistics omitted for this data.");
+                readFiles.Add(extractionSummaryPath + " - MISSING: Read statistics omitted for this data.");
             }
         }
     }

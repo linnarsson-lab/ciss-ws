@@ -558,6 +558,12 @@ namespace Linnarsson.Strt
             for (int i = 0; i < randomTagFilter.nCasesPerRandomTagCount.Length; i++)
                 xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
             xmlFile.WriteLine("    </nuniqueateachrandomtagcoverage>");
+            xmlFile.WriteLine("    <nduplicatedrandomtagsperbarcodeidx>");
+            xmlFile.WriteLine("<title>Number of duplicated molecules in each barcode</title>");
+            xmlFile.WriteLine("<xtitle>Barcode index</xtitle>");
+            for (int i = 0; i < randomTagFilter.nDuplicatesByBarcode.Length; i++)
+                xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nDuplicatesByBarcode[i]);
+            xmlFile.WriteLine("    </nduplicatedrandomtagsperbarcodeidx>");
         }
 
         private void WriteReadStats(ReadCounter readCounter, StreamWriter txtFile, StreamWriter xmlFile)

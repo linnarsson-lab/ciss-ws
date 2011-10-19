@@ -327,6 +327,20 @@ namespace Linnarsson.Strt
             laneInfo.summaryFilePath = Path.Combine(extractedByBcFolder, "summary.txt");
         }
 
+        private List<string> CollectExtractionSummaryPaths(List<string> mapFilePaths, StrtGenome genome)
+        {
+            Dictionary<string, object> summaryPaths = new Dictionary<string, object>();
+            string splcIndexVersion = PathHandler.GetIndexVersion(genome);
+            foreach (string mapFilePath in mapFilePaths)
+            {
+                string summaryFolder = Path.GetDirectoryName(mapFilePath).Replace(splcIndexVersion, "fq");
+                string summaryPath = Path.Combine(summaryFolder, "summary.txt");
+                if (!summaryPaths.ContainsKey(summaryPath))
+                    summaryPaths[summaryPath] = null;
+            }
+            return summaryPaths.Keys.ToList();
+        }
+
         private StreamWriter[] OpenStreamWriters(string[] extractedFilePaths)
         {
             StreamWriter[] sws_barcoded = new StreamWriter[extractedFilePaths.Length];
@@ -378,7 +392,7 @@ namespace Linnarsson.Strt
 
         private static void SetAvailableBowtieIndexVersion(ProjectDescription projDescr, StrtGenome genome)
         {
-            string bowtieIndexVersion = PathHandler.GetIndexVersion(genome.GetBowtieSplcIndexName());
+            string bowtieIndexVersion = PathHandler.GetIndexVersion(genome);
             if (bowtieIndexVersion == "" && genome.Annotation != "UCSC")
             {
                 Console.WriteLine("Could not find a Bowtie index for " + genome.Annotation +
@@ -466,7 +480,7 @@ namespace Linnarsson.Strt
 
         private static string SetMappedFileFolder(StrtGenome genome, LaneInfo extrInfo)
         {
-            string splcIndexVersion = PathHandler.GetIndexVersion(genome.GetBowtieSplcIndexName()); // The current version including date
+            string splcIndexVersion = PathHandler.GetIndexVersion(genome); // The current version including date
             extrInfo.mappedFileFolder = Path.Combine(Path.Combine(extrInfo.extractionTopFolder, splcIndexVersion), extrInfo.ExtractedFileFolderName);
             return splcIndexVersion;
         }
@@ -589,25 +603,25 @@ namespace Linnarsson.Strt
             string syntLevelFile = PathHandler.GetSyntLevelFile(projectFolder);
             if (File.Exists(syntLevelFile))
                 ts.TestReporter = new SyntReadReporter(syntLevelFile, genome.GeneVariants, outputPathbase, annotations.geneFeatures);
-            int nFile = 1;
-            Console.WriteLine("Processing " + mapFilePaths.Count + " map files...");
+            Console.WriteLine("Processing " + mapFilePaths.Count + " map files");
             mapFilePaths.Sort(); // Important to have them sorted by barcode
             foreach (string mapFile in mapFilePaths)
             {
-                Background.Message("File " + (nFile++) + "/" + mapFilePaths.Count);
-                int n = ts.AnnotateMapFile(mapFile);
-                if (ts.GetNumMappedReads() == 0)
-                    Console.WriteLine("WARNING: contigIds of reads do not seem to match with genome Ids.\n" +
-                                      "Was the Bowtie index made on a different genome or contig set?");
-                Console.WriteLine("Totally {0} reads were annotated: {1} expressed genes and {2} expressed repeat types.",
-                                  ts.GetNumMappedReads(), annotations.GetNumExpressedGenes(), annotations.GetNumExpressedRepeats());
-                readCounter.AddSummaryTabfile(PathHandler.MakeExtractionSummaryPath(mapFile));
+                Console.Write(".");
+                ts.AnnotateMapFile(mapFile);
             }
+            Console.WriteLine();
+            if (ts.GetNumMappedReads() == 0)
+                Console.WriteLine("WARNING: contigIds of reads do not seem to match with genome Ids.\n" +
+                                  "Was the Bowtie index made on a different genome or contig set?");
+            Console.WriteLine("Totally {0} reads were annotated: {1} expressed genes and {2} expressed repeat types.",
+                              ts.GetNumMappedReads(), annotations.GetNumExpressedGenes(), annotations.GetNumExpressedRepeats());
+            readCounter.AddExtractionSummaries(CollectExtractionSummaryPaths(mapFilePaths, genome));
             Directory.CreateDirectory(outputFolder);
             ts.SampleStatistics();
             Console.WriteLine("Saving to {0}...", outputFolder);
             ts.Save(readCounter, outputPathbase);
-            string bowtieIndexVersion = PathHandler.GetIndexVersion(genome.GetBowtieSplcIndexName());
+            string bowtieIndexVersion = PathHandler.GetIndexVersion(genome);
             return new ResultDescription(mapFilePaths, bowtieIndexVersion, outputFolder);
         }
 

@@ -202,7 +202,7 @@ namespace Linnarsson.Strt
         private StreamWriter PrepareJunctionChrFile(StrtGenome genome, string junctionChrId, string newIndexName)
         {
             string jChrPath = (string.IsNullOrEmpty(newIndexName)) ? ph.GetJunctionChrPath(genome) :
-                                            Path.Combine(PathHandler.GetGenomeSequenceFolder(genome), "chr" + newIndexName + ".fa");
+                                            Path.Combine(PathHandler.GetGenomeSequenceFolder(genome), "chr_" + newIndexName + ".fa");
             Console.WriteLine("Artificial exon junction chromosome: " + jChrPath);
             if (File.Exists(jChrPath))
             {

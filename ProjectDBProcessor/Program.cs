@@ -149,7 +149,7 @@ namespace ProjectDBProcessor
                         Directory.CreateDirectory(Path.GetDirectoryName(layoutDestPath));
                     if (File.Exists(layoutDestPath))
                         File.Delete(layoutDestPath);
-                    File.Copy(layoutSrcPath, layoutDestPath);
+                    File.Copy(layoutSrcPath, layoutDestPath, true);
                 }
                 else
                     logWriter.WriteLine("*** WARNING: " + projDescr.projectName + " - layout file does not exist: " + layoutSrcPath);

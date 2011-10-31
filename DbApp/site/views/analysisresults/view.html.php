@@ -19,5 +19,4 @@ class DbAppViewAnalysisResults extends JView {
 
 	}
 
-
 }

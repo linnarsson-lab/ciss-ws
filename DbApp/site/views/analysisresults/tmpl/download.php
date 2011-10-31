@@ -1,31 +1,52 @@
 <?php
-
-// place this code inside a php file and call it f.e. "download.php"
-$path = $_SERVER['DOCUMENT_ROOT']."/path2file/"; // change the path to fit your websites document structure
-$fullPath = $path.$_GET['download_file'];
-
-if ($fd = fopen ($fullPath, "r")) {
-    $fsize = filesize($fullPath);
-    $path_parts = pathinfo($fullPath);
-    $ext = strtolower($path_parts["extension"]);
-    switch ($ext) {
-        case "pdf":
-        header("Content-type: application/pdf"); // add here more headers for diff. extensions
-        header("Content-Disposition: attachment; filename=\"".$path_parts["basename"]."\""); // use 'attachment' to force a download
-        break;
-        default;
-        header("Content-type: application/octet-stream");
-        header("Content-Disposition: filename=\"".$path_parts["basename"]."\"");
-    }
-    header("Content-length: $fsize");
-    header("Cache-control: private"); //use this to open files directly
-    while(!feof($fd)) {
-        $buffer = fread($fd, 2048);
-        echo $buffer;
-    }
-}
-fclose ($fd);
-exit;
-// example: place this kind of link into the document where the file download is offered:
-// <a href="download.php?download_file=some_file.pdf">Download here</a>
+defined('_JEXEC') or die('Restricted access');
+require_once ('strt2Qsingle.php');
 ?>
+
+
+</script>
+
+<?php
+  echo "<h1>Analysis Result Download for Qlucore</h1>";
+  $menus = &JSite::getMenu();
+  $menu  = $menus->getActive();
+  $sortKey = JRequest::getVar('sortKey', "");
+  $itemid = $menu->id;
+
+if (1) {
+  $analysisid = JRequest::getVar("analysisid", "");
+  foreach ($this->items as $result) {
+    if ($result->id == $analysisid) {
+      $filePath = $result->resultspath;
+      $dirs = explode("/", $filePath);
+      $fileName = $filePath . "/" . $dirs[3] . "_RPM.tab";
+      $shortName = $dirs[3] . "_RPM.tab";
+      $qlucoreFile = $dirs[3] . "_RPM.gedata";
+    }
+  }
+
+  $qout = toQlucore($fileName);
+
+//  echo $qout;
+  echo "<br /><br />To download right-click this link and save the file to your computer <a href=http://192.168.1.12/joomla16/tmp/" . $qlucoreFile . ">" . $qlucoreFile . "</a>";
+}
+
+?>
+
+<script language="javascript">
+  FileInputStream fileToDownload = new FileInputStream("<?php echo $qout; ?>");
+  ServletOutputStream output = response.getOutputStream();
+  response.setContentType("application/text-plain");
+  response.setHeader("Content-Disposition", "attachment; filename=<?php echo $shortName; ?>");
+  response.setContentLength(fileToDownload.available());
+  int c;
+  while ((c = fileToDownload.read()) != -1) {
+    output.write(c);
+  }
+  output.flush();
+  output.close();
+  fileToDownload.close();
+
+  fileToDownload();
+ </script>
+

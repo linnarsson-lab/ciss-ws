@@ -4,8 +4,8 @@ $ php test.php */
 
 function toQlucore ($filename) {
 
-  $tmpPath = "/var/www/html/joomla16/tmp/";
-  print "Will parse $filename for glucore.\n";
+  $tmpPath = "/srv/www/htdocs/joomla16/tmp/";
+  print "<br />Will parse $filename for glucore.\n";
   $dirs = explode("/", $filename);
   $noPath = $dirs[count($dirs) - 1];
 
@@ -137,6 +137,8 @@ foreach ($variables as $var => $arr) {
   fwrite($fh, "\n");
 }
 fclose($fh);
+
+return($tmpPath . $lNo . "_RPM.gedata");
 
 }
 

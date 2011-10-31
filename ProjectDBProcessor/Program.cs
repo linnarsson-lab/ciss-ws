@@ -101,34 +101,31 @@ namespace ProjectDBProcessor
         private static void ScanDB(ProjectDB projectDB, StreamWriter logWriter)
         {
             ProjectDescription pd = projectDB.GetNextProjectInQueue();
-            while (pd != null)
+            while (pd != null && CheckAllReadsCollected(ref pd))
             {
-                if (CheckAllReadsCollected(ref pd))
-                {
-                    pd.status = ProjectDescription.STATUS_PROCESSING;
-                    projectDB.UpdateDB(pd);
-                    List<string> results = new List<string>();
-                    try
-                    { 
-                        ProcessItem(pd, logWriter);
-                        results = PublishResultsForDownload(pd);
-                        pd.status = ProjectDescription.STATUS_DONE;
-                        projectDB.PublishResults(pd);
-                    }
-                    catch (Exception e)
-                    {
-                        pd.status = ProjectDescription.STATUS_FAILED;
-                        pd.managerEmails = Props.props.FailureReportEmail;
-                        logWriter.WriteLine("*** ERROR: ProjectDBProcessor processing " + pd.projectName + " ***\n" + e);
-                        logWriter.Flush();
-                        results.Add(e.ToString());
-                    }
-                    NotifyManager(pd, results);
-                    projectDB.UpdateDB(pd);
-                    logWriter.WriteLine(pd.projectName + "[analysisId=" + pd.analysisId + "] finished with status " + pd.status);
-                    Console.WriteLine(pd.projectName + "[analysisId=" + pd.analysisId + "] finished with status " + pd.status);
-                    logWriter.Flush();
+                pd.status = ProjectDescription.STATUS_PROCESSING;
+                projectDB.UpdateDB(pd);
+                List<string> results = new List<string>();
+                try
+                { 
+                    ProcessItem(pd, logWriter);
+                    results = PublishResultsForDownload(pd);
+                    pd.status = ProjectDescription.STATUS_DONE;
+                    projectDB.PublishResults(pd);
                 }
+                catch (Exception e)
+                {
+                    pd.status = ProjectDescription.STATUS_FAILED;
+                    pd.managerEmails = Props.props.FailureReportEmail;
+                    logWriter.WriteLine("*** ERROR: ProjectDBProcessor processing " + pd.projectName + " ***\n" + e);
+                    logWriter.Flush();
+                    results.Add(e.ToString());
+                }
+                NotifyManager(pd, results);
+                projectDB.UpdateDB(pd);
+                logWriter.WriteLine(pd.projectName + "[analysisId=" + pd.analysisId + "] finished with status " + pd.status);
+                Console.WriteLine(pd.projectName + "[analysisId=" + pd.analysisId + "] finished with status " + pd.status);
+                logWriter.Flush();
                 pd = projectDB.GetNextProjectInQueue();
             }
         }

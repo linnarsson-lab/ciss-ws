@@ -4,8 +4,6 @@ require_once ('strt2Qsingle.php');
 ?>
 
 
-</script>
-
 <?php
   echo "<h1>Analysis Result Download for Qlucore</h1>";
   $menus = &JSite::getMenu();

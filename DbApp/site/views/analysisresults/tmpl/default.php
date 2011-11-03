@@ -22,8 +22,7 @@ defined('_JEXEC') or die('Restricted access');
          <tr>
           <th>&nbsp;</th>
           <th>Sample</th>
-          <th><nobr>Status" . JHTML::tooltip('If "ready" - link to export in Qlucore format [.gedata]
-This function is under construction/NOT YET IMPLEMENTED!') . "</nobr></th>
+          <th><nobr>Status" . JHTML::tooltip('If "ready" - link to export in Qlucore format [.gedata]') . "</nobr></th>
           <th><nobr>Path " . JHTML::tooltip('Not displayed until results are ready') . "</nobr></th>
           <th><nobr>Lanes " . JHTML::tooltip('Total no. of lanes included in analysis') . "</nobr></th>
           <th><nobr>Extr " . JHTML::tooltip('Version of read filter and barcoded extraction software') . "</nobr></th>

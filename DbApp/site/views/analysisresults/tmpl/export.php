@@ -35,7 +35,7 @@ require_once ('strt2Qsingle.php');
       $outstring = "<tr><td colspan=7 bgcolor=yellow>Genome <b>" . $gnms[1] . "</b> Variables <b>" . $out[0][2] . "</b></td></tr>_CUT_";
       $outstring .= "<tr><th>" . $qlucoreFile . "</th>";
       $outstring .= "<td align=center><input type=checkbox name=file" . $count . " value='" . $filePath . "/" . $qlucoreFile . "' /></td>";
-      $outstring .= "<td>" . $dirs[4] . "</td>";
+      $outstring .= "<td><a href=index.php?option=com_dbapp&view=analysisresults&layout=rawdownload&analysisid=" . $result->id . "  \"target=_blank\" >" . $dirs[4] . "</a></td>";
       $outstring .= "<td align=center>" . $out[0][0] . "</td>";
       $outstring .= "<td align=center>" . $out[0][1] . "</td>";
       $outstring .= "<td align=center>" . $out[0][2] . "</td>";

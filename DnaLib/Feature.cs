@@ -102,10 +102,10 @@ namespace Linnarsson.Dna
             return new MarkResult(annotType, this);
         }
 
-        public virtual IFeature Clone()
+        /*public virtual IFeature Clone()
         {
             return new LocusFeature(Name, Chr, Strand, Start, End);
-        }
+        }*/
 
         public virtual bool Contains(int pos)
         {

@@ -120,9 +120,7 @@ namespace Linnarsson.Dna
                 if ((hits[p] & annotMask) == maskTest)
                     positions[pIdx++] = hits[p] & ~annotMask; // Remove annotation info bit
             Array.Resize(ref positions, pIdx);
-            //Console.WriteLine("Array.Hotspot Sort " + positions.Length + " values on chr " + chr + ". Start at " + DateTime.Now);
             Array.Sort(positions);
-            //Console.WriteLine("   - hotspot ready sorting at " + DateTime.Now);
             Queue<int> stops = new Queue<int>();
             int lastHit = 0;
             int hitIdx = 0;
@@ -158,7 +156,6 @@ namespace Linnarsson.Dna
                 writer.WriteLine("{0}\t{1}\t{2}\t{3}", 
                                  chr, start + averageReadLength/2, strand, counts[cI]);
             }
-            //Console.WriteLine("   - hotspot ready writing to file at " + DateTime.Now);
         }
 
         public void WriteWriggle(string file)
@@ -184,64 +181,64 @@ namespace Linnarsson.Dna
 		}
 
 		private void WriteWiggleStrand(StreamWriter writer, string chr, int[] hits, int maxIdx,
-                                       int averageReadLength, int multiplier)
+                                       int averageReadLength, int strandSign)
 		{
             int chrLength = chrLengths[chr];
             int[] positions = new int[maxIdx];
             for (int p = 0; p < maxIdx; p++)
                 positions[p] = hits[p] & ~annotMask; // Remove annotation info bit
-            //Console.WriteLine("Array.Sort " + positions.Length + " values on chr " + chr + ". Start at " + DateTime.Now);
-            Array.Sort(positions);
-            //Console.WriteLine("   - ready sorting at " + DateTime.Now);
-            Queue<int> stops = new Queue<int>();
-            int hitIdx = 0;
-			int i = 0;
-			while (i < chrLength && hitIdx < maxIdx)
-			{
-                i = positions[hitIdx++];
-                stops.Enqueue(i + averageReadLength);
-				writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i+1);
-				while (i < chrLength && stops.Count > 0)
-				{
-                    while (hitIdx < maxIdx && positions[hitIdx] == i)
-                    {
-                        hitIdx++;
-                        stops.Enqueue(i + averageReadLength);
-                    }
-                    writer.WriteLine(stops.Count * multiplier);
-                    i++;
-                    while (stops.Count > 0 && i == stops.Peek()) stops.Dequeue();
-                }
-			}
-            //Console.WriteLine("   - ready writing to file at " + DateTime.Now);
+            DumpToWiggle(writer, chr, averageReadLength, strandSign, chrLength, positions);
         }
 
-        private void OLD_WriteWiggleStrand(StreamWriter writer, string chr, int[] hits, int maxIdx,
-                                       int averageReadLength, int multiplier)
+        public static void DumpToWiggle(StreamWriter writer, string chr, int readLength, int strandSign, int chrLength, int[] positions)
         {
-            int chrLength = chrLengths[chr];
-            int[] positions = new int[maxIdx];
-            for (int p = 0; p < maxIdx; p++)
-                positions[p] = hits[p] & ~annotMask; // Remove annotation info bit
             Array.Sort(positions);
-            List<int> stops = new List<int>();
+            Queue<int> stops = new Queue<int>();
             int hitIdx = 0;
             int i = 0;
-            while (i < chrLength && hitIdx < maxIdx)
+            while (i < chrLength && hitIdx < positions.Length)
             {
                 i = positions[hitIdx++];
-                stops.Add(i + averageReadLength);
+                stops.Enqueue(i + readLength);
                 writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
                 while (i < chrLength && stops.Count > 0)
                 {
-                    while (hitIdx < maxIdx && positions[hitIdx] == i)
+                    while (hitIdx < positions.Length && positions[hitIdx] == i)
                     {
                         hitIdx++;
-                        stops.Add(i + averageReadLength);
+                        stops.Enqueue(i + readLength);
                     }
-                    writer.WriteLine(stops.Count * multiplier);
+                    writer.WriteLine(stops.Count * strandSign);
                     i++;
-                    while (stops.Count > 0 && i == stops[0]) stops.RemoveAt(0);
+                    while (stops.Count > 0 && i == stops.Peek()) stops.Dequeue();
+                }
+            }
+        }
+
+        public static void DumpToWiggle(StreamWriter writer, string chr, int readLength, int strandSign, int chrLength,
+                                         int[] positions, int[] countAtEachPosition)
+        {
+            Array.Sort(positions, countAtEachPosition);
+            Queue<int> stops = new Queue<int>();
+            int hitIdx = 0;
+            int i = 0;
+            while (i < chrLength && hitIdx < positions.Length)
+            {
+                int c = countAtEachPosition[hitIdx];
+                i = positions[hitIdx++];
+                for (int cc = 0; cc < c; cc++)
+                    stops.Enqueue(i + readLength);
+                writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
+                while (i < chrLength && stops.Count > 0)
+                {
+                    while (hitIdx < positions.Length && positions[hitIdx] == i)
+                    {
+                        hitIdx++;
+                        stops.Enqueue(i + readLength);
+                    }
+                    writer.WriteLine(stops.Count * strandSign);
+                    i++;
+                    while (stops.Count > 0 && i == stops.Peek()) stops.Dequeue();
                 }
             }
         }

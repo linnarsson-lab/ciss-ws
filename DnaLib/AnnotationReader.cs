@@ -14,16 +14,16 @@ namespace Linnarsson.Dna
 
     public abstract class AnnotationReader
     {
-        protected PathHandler ph;
         protected StrtGenome genome;
+        protected int SpliceFlankLen;
         protected Dictionary<string, GeneFeature> nameToGene;
         protected Dictionary<string, List<GeneFeature>> genesByChr;
         protected int pseudogeneCount = 0;
 
-        public AnnotationReader(PathHandler ph, StrtGenome genome)
+        public AnnotationReader(StrtGenome genome)
         {
-            this.ph = ph;
             this.genome = genome;
+            this.SpliceFlankLen = Props.props.SpliceFlankLength;
         }
 
         public abstract Dictionary<string, List<GeneFeature>> BuildGeneModelsByChr();

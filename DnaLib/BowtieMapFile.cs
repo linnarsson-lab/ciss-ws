@@ -48,7 +48,19 @@ namespace Linnarsson.Dna
             return result.ToString();
         }
 
+        /// <summary>
+        /// Iterates through mapped reads of file.
+        /// Every multiread will be combined into one result object containing alternative mappings
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns></returns>
         public abstract IEnumerable<MultiReadMappings> MultiMappings(string file);
+        /// <summary>
+        /// Iterates through all mappings of file.
+        /// A multiread will generate one result with the same readId for every alternative mapping
+        /// </summary>
+        /// <param name="file"></param>
+        /// <returns></returns>
         public abstract IEnumerable<MultiReadMappings> SingleMappings(string file);
     }
 

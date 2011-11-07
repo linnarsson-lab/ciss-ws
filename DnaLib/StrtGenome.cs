@@ -71,7 +71,18 @@ namespace Linnarsson.Dna
         }
         public bool IsChrInBuild(string chr)
         {
-            return !IsSpliceAnnotationChr(chr) || chr.EndsWith(GeneVariantsChar + Annotation);
+            return IsBuildSpliceChr(chr) || !IsASpliceAnnotationChr(chr);
+        }
+        public bool IsBuildSpliceChr(string chr)
+        {
+            return chr.EndsWith(GeneVariantsChar + Annotation);
+        }
+
+        public static bool IsASpliceAnnotationChr(string chr)
+        {
+            foreach (string a in AnnotationSources)
+                if (chr.IndexOf(a) >= 0) return true;
+            return false;
         }
 
         private StrtGenome() { }
@@ -171,20 +182,13 @@ namespace Linnarsson.Dna
         public static string ConvertIfAnnotation(string chrId)
         {
             foreach (string a in AnnotationSources)
-                if (chrId.IndexOf(a) > 2) return a;
+                if (chrId.IndexOf(a) >= 0) return a;
             return chrId;
-        }
-
-        public static bool IsSpliceAnnotationChr(string chr)
-        {
-            foreach (string a in AnnotationSources)
-                if (chr.IndexOf(a) > 2) return true;
-            return false;
         }
 
         public static bool IsSyntheticChr(string chr)
         {
-            return chr.EndsWith(chrCTRLId) || IsSpliceAnnotationChr(chr);
+            return chr.EndsWith(chrCTRLId) || IsASpliceAnnotationChr(chr);
         }
 	}
 }

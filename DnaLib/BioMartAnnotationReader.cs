@@ -12,8 +12,8 @@ namespace Linnarsson.Dna
     {
         private string sourceName;
 
-        public BioMartAnnotationReader(PathHandler ph, StrtGenome genome, string sourceName)
-            : base(ph, genome)
+        public BioMartAnnotationReader(StrtGenome genome, string sourceName)
+            : base(genome)
         {
             this.sourceName = sourceName;
         }
@@ -47,7 +47,7 @@ namespace Linnarsson.Dna
             string refFlatPath = GetAnnotationPath("refFlat.txt");
             if (File.Exists(refFlatPath))
             {
-                foreach (GeneFeature gf in UCSCAnnotationReader.IterAnnotationFile(refFlatPath))
+                foreach (GeneFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(refFlatPath))
                 {
                     if (!gf.Chr.Contains("random"))
                     {

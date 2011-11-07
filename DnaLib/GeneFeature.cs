@@ -17,8 +17,8 @@ namespace Linnarsson.Dna
         public static bool GenerateLocusProfiles = false;
         public static int LocusProfileBinSize = 50;
         public static int LocusFlankLength;
-        public static int SpliceFlankLen;
 
+        public int SpliceLen; // Set by the corresponding SplicedGeneLocus
         /// <summary>
         /// Hits stored as ints of pp..pppbbbbbbbs where p is position relative to LocusStart
         /// in chromosome orientation, b is barcode, and s is chromosome strand (0 = '+', 1 = '-')
@@ -96,7 +96,8 @@ namespace Linnarsson.Dna
         public int[] TranscriptHitsByBarcode;
         public int[] NonConflictingTranscriptHitsByBarcode;
         public List<double> VariationSamples;
-        public Dictionary<int, int> TranscriptHitsByExonIdx; // Used to analyse exon and splice hit distribution
+        public int[] TranscriptHitsByExonIdx; // Used to analyse exon hit distribution
+        public Dictionary<string, int> TranscriptHitsByJunction; // Used to analyse cross-junction hit distribution
         public int[] HitsByAnnotType;  // Note that EXON/AEXON counts will include SPLC/ASPLC counts
         public int[] NonMaskedHitsByAnnotType;
         public CompactGenePainter cPainter;
@@ -145,7 +146,8 @@ namespace Linnarsson.Dna
             TranscriptHitsByBarcode = new int[Barcodes.MaxCount];
             NonConflictingTranscriptHitsByBarcode = new int[Barcodes.MaxCount];
             VariationSamples = new List<double>();
-            TranscriptHitsByExonIdx = new Dictionary<int, int>();
+            TranscriptHitsByExonIdx = new int[exonStarts.Length];
+            TranscriptHitsByJunction = new Dictionary<string, int>();
             HitsByAnnotType = new int[AnnotType.Count];
             NonMaskedHitsByAnnotType = new int[AnnotType.Count];
             m_LocusHits = new int[1000];
@@ -157,6 +159,17 @@ namespace Linnarsson.Dna
         public int GetExonLength(int i)
         {
             return ExonEnds[i] - ExonStarts[i] + 1;
+        }
+
+        /// <summary>
+        /// Return the biological 1-based exon number from an 0-based exon index in chromosome direction
+        /// </summary>
+        /// <param name="exonIdxOnChr"></param>
+        /// <returns></returns>
+        public int GetRealExonId(int exonIdxOnChr)
+        {
+            if (Strand == '+') return exonIdxOnChr + 1;
+            return ExonCount - exonIdxOnChr;
         }
 
         public int GetAnnotCounts(int annotType, bool excludeMasked)
@@ -181,6 +194,10 @@ namespace Linnarsson.Dna
         {
             return GetTranscriptHits() > 0;
         }
+        public bool IsExpressed(int barcodeIdx)
+        {
+            return TranscriptHitsByBarcode[barcodeIdx] > 0;
+        }
 
         public bool IsSpike()
         {
@@ -199,7 +216,7 @@ namespace Linnarsson.Dna
             if (annotType == AnnotType.DSTR || annotType == AnnotType.ADSTR)
                 return (MaskedDSTR && excludeMasked) ? 0 : (Strand == '+')? RightFlankLength : LeftFlankLength;
             if (annotType == AnnotType.SPLC || annotType == AnnotType.ASPLC)
-                return SpliceFlankLen * 2 * (ExonCount - 1); // TODO: Calc better, squared for N < 40
+                return SpliceLen;
             return 0;
         }
 
@@ -247,23 +264,31 @@ namespace Linnarsson.Dna
         {
             if (Strand == '+')
             {
-                for (int i = 0; i < ExonCount; i++)
-                {
-                    int len = ExonEnds[i] - ExonStarts[i] + 1;
-                    if (transcriptPos < len) return ExonStarts[i] + transcriptPos;
-                    transcriptPos -= len;
-                }
+                return GetChrPosChrDir(transcriptPos);
             }
-            else
+            for (int i = ExonCount - 1; i >= 0 ; i--)
             {
-                for (int i = ExonCount - 1; i >= 0 ; i--)
-                {
-                    int len = ExonEnds[i] - ExonStarts[i] + 1;
-                    if (transcriptPos < len) return ExonEnds[i] - transcriptPos;
-                    transcriptPos -= len;
-                }
+                int len = ExonEnds[i] - ExonStarts[i] + 1;
+                if (transcriptPos < len) return ExonEnds[i] - transcriptPos;
+                transcriptPos -= len;
             }
             return -1; // Given pos is outside transcript
+        }
+
+        /// <summary>
+        /// Returns corresponding position on chromosome
+        /// </summary>
+        /// <param name="posInTrInChrDir">Transcript pos, counting 0 as the leftmost nt on chr, even for '-' oriented genes</param>
+        /// <returns></returns>
+        public int GetChrPosChrDir(int posInTrInChrDir)
+        {
+            for (int i = 0; i < ExonCount; i++)
+            {
+                int len = ExonEnds[i] - ExonStarts[i] + 1;
+                if (posInTrInChrDir < len) return ExonStarts[i] + posInTrInChrDir;
+                posInTrInChrDir -= len;
+            }
+            return -1;
         }
 
         /// <summary>
@@ -320,10 +345,10 @@ namespace Linnarsson.Dna
             return false;
         }
 
-        public override IFeature Clone()
+        /*public override IFeature Clone()
         {
             return new GeneFeature(Name, Chr, Strand, ExonStarts, ExonEnds);
-        }
+        }*/
 
         private MarkResult MarkUpstreamFlankHit(int chrHitPos, int junkW, char strand, int bcodeIdx,
                                                 int junk, MarkStatus markType)
@@ -397,7 +422,7 @@ namespace Linnarsson.Dna
             {
                 MarkLocusHitPos(chrHitPos, strand, bcodeIdx);
                 IncrTotalHits(strand == Strand);
-                MarkExonicHit(exonIdx);
+                TranscriptHitsByExonIdx[exonIdx]++;
                 TranscriptHitsByBarcode[bcodeIdx]++;
                 if (markType == MarkStatus.SINGLE_MAPPING)
                     NonConflictingTranscriptHitsByBarcode[bcodeIdx]++;
@@ -407,24 +432,14 @@ namespace Linnarsson.Dna
             return new MarkResult(annotType, this);
         }
 
-        // Called when splice chromosome got a unique alignment to one half of a junction.
-        // Convert it to the exon to which the hit should have been.
-        public MarkResult ConvertSpliceHit(int realChrHitPos, int halfWidth, char strand, int bcodeIdx,
-                                           int exonId, MarkStatus markType)
-        {
-            // Convert the single mapping not spanning splice to real exon mapping
-            int exonIdx = (Strand == '+') ? exonId - 1 : ExonCount - exonId;
-            return MarkExonHit(realChrHitPos, halfWidth, strand, bcodeIdx, exonIdx, markType);
-        }
-
         public MarkResult MarkSpliceHit(int realChrHitPos, int halfWidth, char strand, int bcodeIdx,
-                                        int exonId, int junctionId, MarkStatus markType)
+                                        int exonId, string junctionId, MarkStatus markType)
         {
             int exonIdx = (Strand == '+') ? exonId - 1 : ExonCount - exonId;
-            int annotType = (strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC; // int annotType = AnnotType.SPLC;
-            if (AnnotType.IsTranscript(annotType)) //(strand == Strand)
+            int annotType = (strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
+            if (AnnotType.IsTranscript(annotType))
             {
-                MarkExonicHit(junctionId);
+                MarkJunctionHit(junctionId);
                 NonMaskedHitsByAnnotType[annotType]++;
             }
             else // Only happens for directional ASPLC hits
@@ -436,12 +451,12 @@ namespace Linnarsson.Dna
             return new MarkResult(annotType, this);
         }
 
-        private void MarkExonicHit(int exonOrJunctionIdx)
+        private void MarkJunctionHit(string junctionId)
         {
-            if (!TranscriptHitsByExonIdx.ContainsKey(exonOrJunctionIdx))
-                TranscriptHitsByExonIdx[exonOrJunctionIdx] = 1;
+            if (!TranscriptHitsByJunction.ContainsKey(junctionId))
+                TranscriptHitsByJunction[junctionId] = 1;
             else
-                TranscriptHitsByExonIdx[exonOrJunctionIdx]++;
+                TranscriptHitsByJunction[junctionId]++;
         }
 
         public override IEnumerable<FtInterval> IterIntervals()
@@ -463,27 +478,21 @@ namespace Linnarsson.Dna
             yield break;
         }
 
-        public int[][] GetSpliceCounts()
+        public List<Pair<string, int>> GetSpliceCounts()
         {
             int nExons = ExonStarts.Length;
-            int[][] result = new int[nExons][];
-            for (int e1 = 1; e1 <= nExons - 1; e1++)
-            {
-                result[e1] = new int[nExons + 1];
-                for (int e2 = e1 + 1; e2 <= nExons; e2++)
-                {
-                    int jId = SplicedGeneFeature.GetJunctionId(e1, e2);
-                    if (TranscriptHitsByExonIdx.ContainsKey(jId))
-                        result[e1][e2] = TranscriptHitsByExonIdx[jId];
-                    else
-                        result[e1][e2] = 0;
-                }
-            }
+            List<Pair<string, int>> result = new List<Pair<string, int>>();
+            for (int exonIdx = 0; exonIdx < TranscriptHitsByExonIdx.Length; exonIdx++)
+                result.Add(new Pair<string,int>(exonIdx.ToString(), TranscriptHitsByExonIdx[exonIdx]));
+            string[] junctionIds = TranscriptHitsByJunction.Keys.ToArray();
+            Array.Sort(junctionIds);
+            foreach (string junctionId in junctionIds)
+                result.Add(new Pair<string, int>(junctionId, TranscriptHitsByJunction[junctionId]));
             return result;
         }
 
         /// <summary>
-        /// Samples the expression CV across the wells (of the surrent species) at the current read depth.
+        /// Samples the expression CV across the wells (of the current species) at the current read depth.
         /// The CV is calculated after the counts of each well has been normalized against the
         /// total count in that well, and only the wells where the total count is higher than
         /// minTotByBarcode are used. The sampled CV is added to the VariationSamples array.
@@ -515,27 +524,6 @@ namespace Linnarsson.Dna
                 cv = Math.Sqrt(sqDiffSum / (n - 1.0)) / meanFrac;
             }
             VariationSamples.Add(cv);
-        }
-
-        public static IFeature FromRefFlatLine(string refFlatLine)
-        {
-            string[] record = refFlatLine.Split('\t');
-            string name = record[0].Trim();
-            string chr = record[2].Trim();
-            char strand = record[3].Trim()[0];
-            int nExons = int.Parse(record[8]);
-            int[] exonStarts = SplitField(record[9], nExons, 0);
-            int[] exonEnds = SplitField(record[10], nExons, -1);
-            if (record.Length == 11)
-                return new GeneFeature(name, chr, strand, exonStarts, exonEnds);
-            int[] offsets = SplitField(record[11], nExons, 0);
-            string[] spliceIds = record[12].Split(',');
-            Array.Resize(ref spliceIds, nExons);
-            int partLength = exonEnds[0] - exonStarts[0] + 1;
-            if (partLength != SpliceFlankLen)
-                Console.WriteLine("WARNING: Length " + partLength + " of splice chromosome exon (gene " + name + 
-                                  ") does not equal SpliceFlankLength (" + SpliceFlankLen + ") as specified in " + Props.configFilename);
-            return new SplicedGeneFeature(name, chr, strand, exonStarts, exonEnds, offsets, spliceIds);
         }
 
         private static int[] SplitField(string field, int nParts, int offset)

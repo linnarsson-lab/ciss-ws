@@ -27,6 +27,7 @@ namespace Linnarsson.Dna
         public string ResultDownloadUrl = "strtserver@192.168.1.3:/srv/www/htdocs/strt/";
         public string ResultDownloadFolderHttp = "http://linnarsson.mbb.ki.se/strt/";
         public string FailureReportEmail = "peter.lonnerberg@ki.se";
+        public string ProjectDBProcessorNotifierEmailSender = "peter.lonnerberg@ki.se";
         public string BowtieIndexFolder = "\\\\192.168.1.12\\sequtils\\bowtie-0.12.7\\indexes";
         public string QueueFile = "\\\\192.168.1.12\\data\\strt\\SilverBulletQueue.txt";
         public string LogFile = "SilverBulletLog.txt";
@@ -36,6 +37,7 @@ namespace Linnarsson.Dna
         public string OutputDocFile = "\\\\192.168.1.12\\data\\strt\\STRTOutputManual.pdf";
 
         public bool GenerateWiggle = true; // Generate wiggle files for upload to UCSC Genome Browser
+        public bool GenerateBarcodedWiggle = true; // Generate wiggle files for upload to UCSC Genome Browser
         public bool DetermineMotifs = false; // Analyse over-represented sequence motifs around read start
         public string[] SeqStatsChrIds = null; // Used to limit detailed statistics to only a subset of chromosomes
         public string[] GenesToPaint =
@@ -51,15 +53,17 @@ namespace Linnarsson.Dna
         public string DefaultBarcodeSet = "v2"; // This is the default barcode set
         public int LocusFlankLength = 1000; // Maximum length of UPSTREAM and DOWNSTREAM regions to analyse
         public int SpliceFlankLength = 60; // Bp to join from each of two exons when constructing the artificial splice chromosome
+        public int StandardReadLen = 53; // Better not use actual read that are longer - totherwise some junction hits may be missed
+        public int MaxAlignmentMismatches = 3;  // Should be the value used in bowtie calls
+        public int MaxExonsSkip = 10; // Max number of exons to consider for splice out in junction chromosome
         public bool AnalyzeExtractionQualities = false; // Analyze read quality and color balance
         public int MinExtractionInsertLength = 25; // Min acceptable read length excluding barcode and GGG
-        public int MaxExonsForAllJunctions = 40; // Genes with more exons will only get consecutive splices in splice chromosome
 		public int MinExtractionInsertNonAs = 5; // Min number of C/G/T in an acceptable read
         public int LargestPossibleReadLength = 300; // Used for dimensioning extraction quality calculators
         public int CapRegionSize = 200; // Used for elongation efficiency (full length cDNA) estimation.
 		public byte QualityScoreBase = 64; // For ASCII-encoding of phred scores (if you change this, then also change Bowtie options below)
-        public string BowtieMultiOptions = "--phred64-quals -v 3 --best";
-        public int BowtieMaxNumAltMappings = 1; // Value to replace in BowtieMultiOptions
+        public string BowtieMultiOptions = "--phred64-quals -a -v MaxAlignmentMismatches -M BowtieMaxNumAltMappings --best";
+        public int BowtieMaxNumAltMappings = 5; // Value to replace in BowtieMultiOptions
         public double SyntheticReadsRandomMutationProb = 0.005; // Used only in synthetic data construction
         public double SyntheticReadsBackgroundFreq = 0.001; // Frequency of random background reads in synthetic data
         public bool SynthesizeReadsFromGeneVariants = false; // Used only in synthetic data construction

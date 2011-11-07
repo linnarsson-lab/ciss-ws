@@ -28,17 +28,26 @@ namespace Linnarsson.Strt
         AbstractGenomeAnnotations Annotations;
         Barcodes barcodes;
 		DnaMotif[] motifs;
+        int currentBcIdx = 0;
+        string currentMapFilePath;
         int numReads = 0;                // Total number of mapped reads in input .map files
         int[] numReadsByBarcode;         // Total number of mapped reads in each barcode
-        int numAltFeatureReads = 0;      // Number of reads that can stem from one of alternative features
+        int[] numUniqueMolReadsByBarcode;   // Total number of unique molecule reads in each barcode
         int numAnnotatedReads = 0;       // Number of reads that map to some annotation
         int numExonAnnotatedReads = 0;   // Number of reads that map to (one or more) exons
         int nMaxAltMappingsReads = 0; // Number of reads that hit the limit of alternative genomic mapping positions in bowtie
         int nMaxAltMappingsReadsWOTrHit = 0; // Dito where the only hit in map file is not to a transcript
-        int sampleDistForUniqueReads = 500000;
-        List<int> hitsAtSample = new List<int>();
-        List<int> sampledNumUniqueReads = new List<int>();
-        List<int[]> sampledBarcodeFeatures = new List<int[]>();
+
+        int sampleDistForAccuStats = 5000000;
+        private int statsSampleDistPerBarcode;
+
+        Dictionary<int, List<int>> sampledDetectedTranscriptsByBcIdx = new Dictionary<int, List<int>>();
+        // For non-rndTagged samples the following to will be identical:
+        Dictionary<int, List<int>> sampledUniqueMoleculesByBcIdx = new Dictionary<int, List<int>>();
+        Dictionary<int, List<int>> sampledUniqueHitPositionsByBcIdx = new Dictionary<int, List<int>>();
+        int[] nReadsInSampleBin = new int[1];
+        int sampleBinNumber = 0;
+
         Dictionary<string, int> redundantHits = new Dictionary<string, int>();
         List<Pair<MultiReadMapping, FtInterval>> exonsToMark;
         Dictionary<string, Pair<MultiReadMapping, FtInterval>> geneToExonToMark = new Dictionary<string,Pair<MultiReadMapping,FtInterval>>();
@@ -66,10 +75,12 @@ namespace Linnarsson.Strt
                 TotalHitsByAnnotTypeAndChr[chr] = new int[AnnotType.Count];
             TotalHitsByAnnotType = new int[AnnotType.Count];
             numReadsByBarcode = new int[barcodes.Count];
+            numUniqueMolReadsByBarcode = new int[barcodes.Count];
             exonsToMark = new List<Pair<MultiReadMapping, FtInterval>>(100);
             exonHitGeneNames = new List<string>(100);
             annotationChrId = Annotations.Genome.Annotation;
             randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeNames());
+            statsSampleDistPerBarcode = sampleDistForAccuStats / barcodes.Count;
         }
 
         public void SetRedundantHitMapper(AbstractGenomeAnnotations annotations, int averageReadLen)
@@ -77,33 +88,110 @@ namespace Linnarsson.Strt
             redundantExonHitMapper = RedundantExonHitMapper.GetRedundantHitMapper(annotations.Genome, averageReadLen, annotations.geneFeatures);
         }
 
-        public int AnnotateMapFile(string file)
+        public void AnnotateSingleBarcodeMapFile(string mapFilePath, int bcIdx)
         {
-            int nReadsInValidBarcodes = 0;
-            MapFile mapFileReader = MapFile.GetMapFile(file, 20, barcodes);
+            currentMapFilePath = mapFilePath;
+            if (numReads > 0 && bcIdx != currentBcIdx)
+                FinishBarcode(numReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
+            currentBcIdx = bcIdx;
+            MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, 20, barcodes);
             if (mapFileReader == null)
-                throw new Exception("Unknown read map file type : " + file);
-            bool singleSpecies = !barcodes.HasSampleLayout();
-            foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(file))
+                throw new Exception("Unknown read map file type : " + mapFilePath);
+            foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
             {
-                    nReadsInValidBarcodes++;
-                    if (randomTagFilter.IsNew(mrm[0].Chr, mrm[0].Position, mrm[0].Strand, mrm.BarcodeIdx, mrm.RandomBcIdx))
-                        Add(mrm);
+                if (mrm.BarcodeIdx != currentBcIdx)
+                    Console.WriteLine("Error in read.BcIdx: " + mrm.BarcodeIdx + " detected for currentBcIdx" + currentBcIdx + " in " + mapFilePath);
+                if (randomTagFilter.IsNew(mrm[0].Chr, mrm[0].Position, mrm[0].Strand, currentBcIdx, mrm.RandomBcIdx))
+                    Add(mrm);
+                numReads++;
+                if ((++numReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
+                    SampleStatistics(statsSampleDistPerBarcode);
             }
-            return nReadsInValidBarcodes;
+        }
+
+        public void SampleStatistics(int numReadsInBin)
+        {
+            SampleDepths(numReadsInBin);
+            //SampleForGeneCVs();
+        }
+
+        private void SampleForGeneCVs()
+        {
+            int[] speciesBcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
+            List<int> totbcHits = new List<int>(TotalHitsByBarcode);
+            totbcHits.Sort();
+            int minTotBcHits = totbcHits[totbcHits.Count / 2];
+            foreach (GeneFeature gf in Annotations.geneFeatures.Values)
+            {
+                gf.SampleVariation(TotalHitsByBarcode, minTotBcHits, speciesBcIndexes);
+            }
+        }
+
+        private void SampleDepths(int numReadsInBin)
+        {
+            if (!sampledUniqueHitPositionsByBcIdx.ContainsKey(currentBcIdx))
+            {
+                sampledDetectedTranscriptsByBcIdx[currentBcIdx] = new List<int>();
+                sampledUniqueMoleculesByBcIdx[currentBcIdx] = new List<int>();
+                sampledUniqueHitPositionsByBcIdx[currentBcIdx] = new List<int>();
+            }
+            sampledDetectedTranscriptsByBcIdx[currentBcIdx].Add(Annotations.GetNumExpressedGenes(currentBcIdx));
+            sampledUniqueMoleculesByBcIdx[currentBcIdx].Add(randomTagFilter.nUniqueByBarcode[currentBcIdx]);
+            sampledUniqueHitPositionsByBcIdx[currentBcIdx].Add(randomTagFilter.GetNumDistinctMappings());
+            if (nReadsInSampleBin.Length == sampleBinNumber)
+                Array.Resize(ref nReadsInSampleBin, sampleBinNumber + 1);
+            nReadsInSampleBin[sampleBinNumber++] += numReadsInBin;
+        }
+        public void FinishBarcode()        {
+            int nReadsInBin = numReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode;
+            FinishBarcode(nReadsInBin);        }        public void FinishBarcode(int nReadsInBin)
+        {
+            SampleStatistics(nReadsInBin);
+            sampleBinNumber = 0;
+            MakeWigglePlotsByMolecule();
+        }
+
+        private void MakeWigglePlotsByMolecule()
+        {
+            if (!barcodes.HasRandomBarcodes || !Props.props.GenerateBarcodedWiggle)
+                return;
+            int readLength = 0;
+            WriteMoleculeWiggleStrand(readLength, '+');
+            WriteMoleculeWiggleStrand(readLength, '-');
+        }
+
+        private void WriteMoleculeWiggleStrand(int readLength, char strand)
+        {
+            int strandSign = (strand == '+') ? 1 : -1;
+            string fileNameHead = string.Format("{0}_{1}_bymolecule_{2}", currentBcIdx, Annotations.Genome.Build, ((strand == '+') ? "_fw" : "_rev"));
+            string filePathHead = Path.Combine(Path.GetDirectoryName(currentMapFilePath), fileNameHead);
+            string file = filePathHead + ".wig.gz";
+            if (File.Exists(file))
+                return;
+            var writer = file.OpenWrite();
+            writer.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} (+)\" visibility=full", fileNameHead, strand);
+            foreach (KeyValuePair<string, RandomTagFilterByBc.ChrTagData> tagDataPair in randomTagFilter.chrTagDatas)
+            {
+                string chr = tagDataPair.Key;
+                if (!StrtGenome.IsSyntheticChr(chr))
+                {
+                    int chrLen = Annotations.ChromosomeLengths[chr];
+                    int[] positions, countAtEachPosition;
+                    tagDataPair.Value.GetDistinctPositionsAndMoleculeCounts(strand, out positions, out countAtEachPosition);
+                    CompactWiggle.DumpToWiggle(writer, chr, readLength, strandSign, chrLen, positions, countAtEachPosition);
+                }
+            }
+            writer.Close();
         }
 
         public void Add(MultiReadMappings mappings)
         {
             exonHitGeneNames.Clear();
             int bcodeIdx = mappings.BarcodeIdx;
-            numReads++;
-            numReadsByBarcode[bcodeIdx]++;
             int hitLen = mappings.SeqLen;
             int halfWidth = hitLen / 2;
             bool someAnnotationHit = false;
             bool someExonHit = false;
-            int nAltFeaturesHits = 0;
             MarkStatus markType = MarkStatus.TEST_EXON_MARK_OTHER;
             foreach (MultiReadMapping mapping in mappings.IterMappings())
             {
@@ -130,7 +218,6 @@ namespace Linnarsson.Strt
                     }
                     else // hit is not to EXON or SPLC (neither AEXON/ASPLC for non-directional samples)
                     {
-                        nAltFeaturesHits++;
                         if (markType == MarkStatus.TEST_EXON_MARK_OTHER)
                         {
                             TotalHitsByAnnotTypeAndBarcode[res.annotType, bcodeIdx]++;
@@ -154,13 +241,13 @@ namespace Linnarsson.Strt
             }
             // Now when the best alignments have been selected, mark these transcript hits
             MarkStatus markStatus = (exonsToMark.Count > 1) ? MarkStatus.ALT_MAPPINGS : MarkStatus.SINGLE_MAPPING;
-            if (mappings.NMappings == 1 && mappings.AltMappings > 0) // if (recCount == 1 && mappings.AltMappings > 0)
+            if (mappings.NMappings == 1 && mappings.AltMappings == Props.props.BowtieMaxNumAltMappings)
             {
-                if (redundantExonHitMapper != null)
-                {
-                    exonsToMark = redundantExonHitMapper.GetRedundantMappings(mappings[0].Chr, mappings[0].Position, mappings[0].Strand);
-                }
                 markStatus = MarkStatus.MARK_ALT_MAPPINGS;
+                nMaxAltMappingsReads++;
+                if (!someExonHit) nMaxAltMappingsReadsWOTrHit++;
+                if (redundantExonHitMapper != null)
+                    exonsToMark = redundantExonHitMapper.GetRedundantMappings(mappings[0].Chr, mappings[0].Position, mappings[0].Strand);
             } 
             foreach (Pair<MultiReadMapping, FtInterval> exonToMark in exonsToMark)
             {
@@ -177,21 +264,11 @@ namespace Linnarsson.Strt
                 TotalHitsByAnnotTypeAndChr[chr][res.annotType]++;
                 TotalHitsByAnnotType[res.annotType]++;
                 TotalHitsByBarcode[bcodeIdx]++;
-                nAltFeaturesHits++;
             }
             if (someAnnotationHit)
             {
                 numAnnotatedReads++;
-                if (numAnnotatedReads % sampleDistForUniqueReads == 0)
-                    SampleStatistics();
                 if (someExonHit) numExonAnnotatedReads++;
-            }
-            if (nAltFeaturesHits > 1)
-                numAltFeatureReads++;
-            if (markStatus == MarkStatus.MARK_ALT_MAPPINGS)
-            {
-                nMaxAltMappingsReads++;
-                if (!someExonHit) nMaxAltMappingsReadsWOTrHit++;
             }
             if (exonHitGeneNames.Count > 1)
             {
@@ -205,258 +282,6 @@ namespace Linnarsson.Strt
             if (TestReporter != null)
                 TestReporter.ReportHit(exonHitGeneNames, mappings, exonsToMark);
             exonsToMark.Clear();
-        }
-
-        public void AddDividedMapFiles(MultiReadMappings mappings)
-        {
-            exonHitGeneNames.Clear();
-            numReads++;
-            int bcodeIdx = mappings.BarcodeIdx;
-            int hitLen = mappings.SeqLen;
-            int halfWidth = hitLen / 2;
-            numReadsByBarcode[bcodeIdx]++;
-            bool someAnnotationHit = false;
-            bool someExonHit = false;
-            int nAltFeaturesHits = 0;
-            MarkStatus markType = MarkStatus.TEST_EXON_MARK_OTHER;
-            //int recCount = 0;
-            foreach (MultiReadMapping mapping in mappings.IterMappings())
-            {
-                bool currentMappingHitAnAnnotation = false;
-                int hitStartPos = mapping.Position;
-                string chr = mapping.Chr;
-                char strand = mapping.Strand;
-                int hitMidPos = hitStartPos + halfWidth;
-                foreach (FtInterval ivl in Annotations.GetMatching(chr, hitMidPos))
-                {
-                    MarkResult res = ivl.Mark(hitMidPos, halfWidth, strand, bcodeIdx, ivl.ExtraData, markType);
-                    if (res.annotType == AnnotType.NOHIT)
-                        continue;
-                    someAnnotationHit = true;
-                    currentMappingHitAnAnnotation = true;
-                    if (AnnotType.IsTranscript(res.annotType))
-                    {
-                        //string gfName = (AnalyzeAllGeneVariants)? res.feature.Name: res.feature.NonVariantName;
-                        if (!exonHitGeneNames.Contains(res.feature.Name)) //if (!exonHitGeneNames.Contains(gfName))
-                        {
-                            someExonHit = true;
-                            exonHitGeneNames.Add(res.feature.Name); //exonHitGeneNames.Add(gfName);
-                            exonsToMark.Add(new Pair<MultiReadMapping, FtInterval>(mapping, ivl));
-                        }
-                    }
-                    else // hit is not to EXON or SPLC (neither AEXON/ASPLC for non-directional samples)
-                    {
-                        nAltFeaturesHits++;
-                        if (markType == MarkStatus.TEST_EXON_MARK_OTHER)
-                        {
-                            TotalHitsByAnnotTypeAndBarcode[res.annotType, bcodeIdx]++;
-                            TotalHitsByAnnotTypeAndChr[chr][res.annotType]++;
-                            TotalHitsByAnnotType[res.annotType]++;
-                            TotalHitsByBarcode[bcodeIdx]++;
-                            markType = MarkStatus.TEST_EXON_SKIP_OTHER;
-                        }
-                        //markType = MarkStatus.TEST_EXON_SKIP_OTHER;
-                    }
-                }
-                if (chr != annotationChrId)
-                {
-                    if (compactWiggle != null)
-                        compactWiggle.AddHit(chr, strand, hitStartPos, hitLen, 1, currentMappingHitAnAnnotation);
-                    // Add to the motif (base 21 in the motif will be the first base of the read)
-                    // Subtract one to make it zero-based
-                    if (DetermineMotifs && someAnnotationHit && Annotations.HasChromosome(chr))
-                        motifs[bcodeIdx].Add(Annotations.GetChromosome(chr), hitStartPos - 20 - 1, strand);
-                }
-            }
-            // Now when the best alignments have been selected, mark these transcript hits
-            MarkStatus markStatus = (exonsToMark.Count > 1) ? MarkStatus.ALT_MAPPINGS : MarkStatus.SINGLE_MAPPING;
-            if (mappings.NMappings == 1 && mappings.AltMappings > 0) // if (recCount == 1 && mappings.AltMappings > 0)
-            {
-                if (redundantExonHitMapper != null)
-                {
-                    exonsToMark = redundantExonHitMapper.GetRedundantMappings(mappings[0].Chr, mappings[0].Position, mappings[0].Strand);
-                }
-                markStatus = MarkStatus.MARK_ALT_MAPPINGS;
-            }
-            foreach (Pair<MultiReadMapping, FtInterval> exonToMark in exonsToMark)
-            {
-                MultiReadMapping rec = exonToMark.First;
-                FtInterval ivl = exonToMark.Second;
-                int chrStart = rec.Position;
-                string chr = rec.Chr;
-                char strand = rec.Strand;
-                int hitMidPos = chrStart + halfWidth;
-                MarkResult res = ivl.Mark(hitMidPos, halfWidth, rec.Strand, bcodeIdx, ivl.ExtraData, markStatus);
-                if (rec.Mismatches != "")
-                    ((GeneFeature)res.feature).MarkSNPs(rec.Position, bcodeIdx, rec.Mismatches);
-                TotalHitsByAnnotTypeAndBarcode[res.annotType, bcodeIdx]++;
-                TotalHitsByAnnotTypeAndChr[chr][res.annotType]++;
-                TotalHitsByAnnotType[res.annotType]++;
-                TotalHitsByBarcode[bcodeIdx]++;
-                nAltFeaturesHits++;
-            }
-            if (someAnnotationHit)
-            {
-                numAnnotatedReads++;
-                if (numAnnotatedReads % sampleDistForUniqueReads == 0)
-                    SampleStatistics();
-                if (someExonHit) numExonAnnotatedReads++;
-            }
-            if (nAltFeaturesHits > 1)
-                numAltFeatureReads++;
-            if (markStatus == MarkStatus.MARK_ALT_MAPPINGS)
-            {
-                nMaxAltMappingsReads++;
-                if (!someExonHit) nMaxAltMappingsReadsWOTrHit++;
-            }
-            if (exonHitGeneNames.Count > 1)
-            {
-                exonHitGeneNames.Sort();
-                string combNames = string.Join("#", exonHitGeneNames.ToArray());
-                if (!redundantHits.ContainsKey(combNames))
-                    redundantHits[combNames] = 1;
-                else
-                    redundantHits[combNames]++;
-            }
-            if (TestReporter != null)
-                TestReporter.ReportHit(exonHitGeneNames, mappings, exonsToMark);
-            exonsToMark.Clear();
-        }
-
-        /// <summary>
-        /// Used for sorted random barcoded multireads where every multiread is represented fully at each position it aligns to
-        /// in the genome (.smap files). At the first position the exonic hit at that position as well as any non-exonic hits and all
-        /// competing genes will be annotated. At the second and later positions only the exonic hits to these positions are annotated.
-        /// </summary>
-        /// <param name="mappings"></param>
-        public void AddFirstMapping(MultiReadMappings mappings)
-        {
-            numReads++;
-            int bcodeIdx = mappings.BarcodeIdx;
-            int hitLen = mappings.SeqLen;
-            int halfWidth = hitLen / 2;
-            numReadsByBarcode[bcodeIdx]++;
-            bool someAnnotationHit = false;
-            bool someExonHit = false;
-            int nAltFeaturesHits = 0;
-            MarkStatus markType = MarkStatus.TEST_EXON_MARK_OTHER;
-            bool isFirstMapping = true;
-            foreach (MultiReadMapping mapping in mappings.IterMappings())
-            {
-                int hitStartPos = mapping.Position;
-                bool recSomeAnnotationHit = false;
-                string chr = mapping.Chr;
-                char strand = mapping.Strand;
-                int hitMidPos = hitStartPos + halfWidth;
-                foreach (FtInterval ivl in Annotations.GetMatching(chr, hitMidPos))
-                {
-                    MarkResult res = ivl.Mark(hitMidPos, halfWidth, strand, bcodeIdx, ivl.ExtraData, markType);
-                    if (res.annotType == AnnotType.NOHIT)
-                        continue;
-                    someAnnotationHit = true;
-                    recSomeAnnotationHit = true;
-                    if (AnnotType.IsTranscript(res.annotType))
-                    {
-                        if (!exonHitGeneNames.Contains(res.feature.Name))
-                        {
-                            someExonHit = true;
-                            exonHitGeneNames.Add(res.feature.Name);
-                            if (isFirstMapping)
-                                exonsToMark.Add(new Pair<MultiReadMapping, FtInterval>(mapping, ivl));
-                        }
-                    }
-                    else // hit is not to EXON or SPLC (neither AEXON/ASPLC for non-directional samples)
-                    {
-                        nAltFeaturesHits++;
-                        if (markType == MarkStatus.TEST_EXON_MARK_OTHER)
-                        {
-                            TotalHitsByAnnotTypeAndBarcode[res.annotType, bcodeIdx]++;
-                            TotalHitsByAnnotTypeAndChr[chr][res.annotType]++;
-                            TotalHitsByAnnotType[res.annotType]++;
-                            TotalHitsByBarcode[bcodeIdx]++;
-                            markType = MarkStatus.TEST_EXON_SKIP_OTHER;
-                        }
-                    }
-                }
-                if (chr != annotationChrId)
-                {
-                    if (compactWiggle != null)
-                        compactWiggle.AddHit(chr, strand, hitStartPos, hitLen, 1, recSomeAnnotationHit);
-                    if (DetermineMotifs && someAnnotationHit && Annotations.HasChromosome(chr))
-                        motifs[bcodeIdx].Add(Annotations.GetChromosome(chr), hitStartPos - 20 - 1, strand);
-                }
-                isFirstMapping = false;
-            }
-            MarkStatus markStatus = (exonHitGeneNames.Count > 1) ? MarkStatus.ALT_MAPPINGS : MarkStatus.SINGLE_MAPPING;
-            if (mappings.NMappings == 1 && mappings.AltMappings > 0)
-            {
-                if (redundantExonHitMapper != null)
-                {
-                    exonsToMark = redundantExonHitMapper.GetRedundantMappings(mappings[0].Chr, mappings[0].Position, mappings[0].Strand);
-                }
-                markStatus = MarkStatus.MARK_ALT_MAPPINGS;
-            }
-            nAltFeaturesHits += exonHitGeneNames.Count;
-            foreach (Pair<MultiReadMapping, FtInterval> exonToMark in exonsToMark)
-            {
-                MultiReadMapping rec = exonToMark.First;
-                FtInterval ivl = exonToMark.Second;
-                int chrStart = rec.Position;
-                string chr = rec.Chr;
-                char strand = rec.Strand;
-                int hitMidPos = chrStart + halfWidth;
-                MarkResult res = ivl.Mark(hitMidPos, halfWidth, rec.Strand, bcodeIdx, ivl.ExtraData, markStatus);
-                if (rec.Mismatches != "")
-                    ((GeneFeature)res.feature).MarkSNPs(rec.Position, bcodeIdx, rec.Mismatches);
-                TotalHitsByAnnotTypeAndBarcode[res.annotType, bcodeIdx]++;
-                TotalHitsByAnnotTypeAndChr[chr][res.annotType]++;
-                TotalHitsByAnnotType[res.annotType]++;
-                TotalHitsByBarcode[bcodeIdx]++;
-            }
-            if (someAnnotationHit)
-            {
-                numAnnotatedReads++;
-                if (numAnnotatedReads % sampleDistForUniqueReads == 0)
-                    SampleStatistics();
-                if (someExonHit) numExonAnnotatedReads++;
-            }
-            if (nAltFeaturesHits > 1)
-                numAltFeatureReads++;
-            if (markStatus == MarkStatus.MARK_ALT_MAPPINGS)
-            {
-                nMaxAltMappingsReads++;
-                if (!someExonHit) nMaxAltMappingsReadsWOTrHit++;
-            }
-            if (exonHitGeneNames.Count > 1)
-            {
-                exonHitGeneNames.Sort();
-                string combNames = string.Join("#", exonHitGeneNames.ToArray());
-                if (!redundantHits.ContainsKey(combNames))
-                    redundantHits[combNames] = 1;
-                else
-                    redundantHits[combNames]++;
-            }
-            if (TestReporter != null)
-                TestReporter.ReportHit(exonHitGeneNames, mappings, exonsToMark);
-            exonsToMark.Clear();
-        }
-
-
-        public void SampleStatistics()
-        {
-            int[] speciesBcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
-            List<int> totbcHits = new List<int>(TotalHitsByBarcode);
-            totbcHits.Sort();
-            int minTotBcHits = totbcHits[totbcHits.Count / 2];
-            int n = 0;
-            foreach (GeneFeature gf in Annotations.geneFeatures.Values)
-            {
-                n += CompactGenePainter.GetUniqueBarcodedHitPositionCount(gf);
-                gf.SampleVariation(TotalHitsByBarcode, minTotBcHits, speciesBcIndexes);
-            }
-            hitsAtSample.Add(numAnnotatedReads);
-            sampledNumUniqueReads.Add(n);
-            sampledBarcodeFeatures.Add(Annotations.SampleBarcodeExpressedGenes());
         }
 
 		/// <summary>
@@ -464,15 +289,14 @@ namespace Linnarsson.Strt
 		/// </summary>
         /// <param name="extractionSummaryPath">Full path to Lxxx_extraction_summary.txt file</param>
 		/// <param name="fileNameBase">A path and a filename prefix that will used to create all output files, e.g. "/data/Sample12_"</param>
-		public void Save(ReadCounter readCounter, string fileNameBase)
+		public void SaveResult(ReadCounter readCounter, string fileNameBase)
 		{
             if (TestReporter != null)
                 TestReporter.Summarize(Annotations.geneFeatures);
             WriteRedundantExonHits(fileNameBase);
             WriteASExonDistributionHistogram(fileNameBase);
-            WriteSampledVariation(fileNameBase);
             WriteSummary(fileNameBase, Annotations.GetSummaryLines(), readCounter);
-            Annotations.WriteStats(fileNameBase);
+            Annotations.SaveResult(fileNameBase);
             WriteSnps(fileNameBase);
             //WriteSnpsByBarcode(fileNameBase); // Large file & takes time
             if (DetermineMotifs)
@@ -499,53 +323,51 @@ namespace Linnarsson.Strt
 
         private void WriteSummary(string fileNameBase, List<string> summaryLines, ReadCounter readCounter)
         {
-            var txtFile = (fileNameBase + "_summary.tab").OpenWrite();
             string xmlPath = fileNameBase + "_summary.xml";
             var xmlFile = xmlPath.OpenWrite();
             xmlFile.WriteLine("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
             xmlFile.WriteLine("<strtSummary project=\"{0}\">", Path.GetDirectoryName(fileNameBase));
-            WriteReadStats(readCounter, txtFile, xmlFile);
+            WriteReadStats(readCounter, xmlFile);
             WriteReadsBySpecies(xmlFile);
-            WriteFeatureStats(txtFile, xmlFile);
-            WriteSenseAntisenseStats(txtFile, xmlFile);
+            WriteFeatureStats(xmlFile);
+            WriteSenseAntisenseStats(xmlFile);
             WriteHitsByChromosome(xmlFile);
-            WriteLibraryDepth(txtFile, xmlFile);
-            WriteAccuBarcodedDetection(txtFile);
-            txtFile.WriteLine();
-            foreach (string line in summaryLines)
-                txtFile.WriteLine(line);
+            WriteAccuBarcodedDetection(xmlFile);
+            WriteMappingDepth(xmlFile);
             AddSpikes(xmlFile);
-            Annotations.WriteSpikeDetection(txtFile, xmlFile);
+            Annotations.WriteSpikeDetection(xmlFile);
             AddHitProfile(xmlFile);
-            AddSampledCVs(xmlFile);
+            //AddSampledCVs(xmlFile); Difficult when running barcode-by-barcode
             AddCVHistogram(xmlFile);
             WriteBarcodeStats(fileNameBase, xmlFile);
             WriteRandomFilterStats(xmlFile);
             xmlFile.WriteLine("</strtSummary>");
             xmlFile.Close();
-            txtFile.Close();
             if (!Environment.OSVersion.VersionString.Contains("Microsoft"))
             {
                 CmdCaller.Run("php", "make_html_summary.php " + xmlPath);
             }
         }
 
-        private void WriteAccuBarcodedDetection(StreamWriter txtFile)
+        private void WriteAccuBarcodedDetection(StreamWriter xmlFile)
         {
-            txtFile.WriteLine("\nExpressed transcripts in each barcode accumulated as function of total read count:");
-            txtFile.Write("ReadCount");
-            foreach (string bcode in barcodes.Seqs) txtFile.Write("\t" + bcode);
-            for (int i = 0; i < sampledBarcodeFeatures.Count; i++)
-            {
-                txtFile.Write("\n{0}", hitsAtSample[i]);
-                foreach (int c in sampledBarcodeFeatures[i])
-                    txtFile.Write("\t" + c);
-            }
+            //WriteAccuMolecules(xmlFile, "transcriptdepth", "Distinct (10^6) detected transcripts as fn. of reads processed",
+            //                       sampledDetectedTranscriptsByBcIdx);
+            WriteAccuMoleculesByBc(xmlFile, "transcriptdepthbybc", "Distinct detected transcripts in each barcode as fn. of reads processed", 
+                                   sampledDetectedTranscriptsByBcIdx);
+        }
+
+        private void WriteMappingDepth(StreamWriter xmlFile)
+        {
+            //WriteAccuMolecules(xmlFile, "librarydepth", "Distinct (10^6) mappings as fn. of reads processed",
+            //                       sampledUniqueHitPositionsByBcIdx);
+            WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings in each barcode as fn. of reads processed",
+                                   sampledUniqueHitPositionsByBcIdx);
         }
 
         private void WriteRandomFilterStats(StreamWriter xmlFile)
         {
-            if (randomTagFilter == null) return;
+            if (!barcodes.HasRandomBarcodes) return;
             xmlFile.WriteLine("    <randomtagfrequence>");
             xmlFile.WriteLine("<title>Number of reads detected in each random barcode</title>");
             xmlFile.WriteLine("<xtitle>Random tag index (AAAA...TTTT)</xtitle>");
@@ -559,14 +381,67 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
             xmlFile.WriteLine("    </nuniqueateachrandomtagcoverage>");
             xmlFile.WriteLine("    <nduplicatedrandomtagsperbarcodeidx>");
-            xmlFile.WriteLine("<title>Number of duplicated molecules in each barcode</title>");
-            xmlFile.WriteLine("<xtitle>Barcode index</xtitle>");
-            for (int i = 0; i < randomTagFilter.nDuplicatesByBarcode.Length; i++)
-                xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nDuplicatesByBarcode[i]);
-            xmlFile.WriteLine("    </nduplicatedrandomtagsperbarcodeidx>");
+            //WriteAccuMolecules(xmlFile, "moleculedepth", "Distinct (10^6) detected molecules as fn. of reads processed",
+            //                       sampledUniqueMoleculesByBcIdx);
+            WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules in each barcode as fn. of reads processed",
+                                   sampledUniqueMoleculesByBcIdx);
         }
 
-        private void WriteReadStats(ReadCounter readCounter, StreamWriter txtFile, StreamWriter xmlFile)
+        private void WriteAccuMoleculesByBc(StreamWriter xmlFile, string tag, string title, Dictionary<int, List<int>> data)
+        {
+            xmlFile.WriteLine("  <" + tag + ">");
+            xmlFile.WriteLine("    <title>" + title + "</title>");
+            xmlFile.WriteLine("    <xtitle>Millions of reads processed</xtitle>");
+            foreach (int bcIdx in data.Keys)
+            {
+                List<int> curve = data[bcIdx];
+                xmlFile.WriteLine("      <curve legend=\"{0}\" color=\"#{1:x2}{2:x2}{3:x2}\">",
+                                  barcodes.Seqs[bcIdx], (bcIdx * 17) % 255, (bcIdx * 11) % 255, (255 - (43 * bcIdx % 255)));
+                int nReads = 0;
+                int i = 0;
+                for (; i < curve.Count - 1; i++)
+                {
+                    nReads += statsSampleDistPerBarcode;
+                    xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", nReads / 1.0E6d, curve[i]);
+                }
+                nReads = numReadsByBarcode[bcIdx];
+                xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", nReads / 1.0E6d, curve[i]);
+                xmlFile.WriteLine("    </curve>");
+            }
+            xmlFile.WriteLine("  </" + tag + ">");
+        }
+
+        /* This does not work since same data in different barcodes will we counted as distinct.
+        private void WriteAccuMolecules(StreamWriter xmlFile, string tag, string title, Dictionary<int, List<int>> data)
+        {
+            int nSamples0 = data.Values.ToArray()[0].Count;
+            int[] valuesInBins = new int[nSamples0];
+            foreach (int bcIdx in data.Keys)
+            {
+                int nSamples = data[bcIdx].Count;
+                if (valuesInBins.Length < nSamples)
+                    Array.Resize(ref valuesInBins, nSamples);
+                for (int sampleIdx = 0; sampleIdx < nSamples; sampleIdx++)
+                    valuesInBins[sampleIdx] += data[bcIdx][sampleIdx];
+            }
+            xmlFile.WriteLine("  <" + tag + ">");
+            xmlFile.WriteLine("    <title>" + title + "</title>");
+            xmlFile.WriteLine("	   <xtitle>Millions of reads processed</xtitle>");
+            xmlFile.WriteLine("      <curve legend=\"Total accumulated (millions)\" color=\"#00FF00\">");
+            int i = 0, nAccuReads = 0, nAccuValues = 0;
+            for (; i < valuesInBins.Length - 1; i++)
+            {
+                nAccuReads += nReadsInSampleBin[i];
+                nAccuValues += valuesInBins[i];
+                xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", nAccuReads / 1.0E6d, nAccuValues / 1.0E6d);
+            }
+            nAccuValues += valuesInBins[i];
+            xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", nAccuReads / 1.0E6d, nAccuValues / 1.0E6d);
+            xmlFile.WriteLine("    </curve>");
+            xmlFile.WriteLine("  </" + tag + ">");
+        }*/
+
+        private void WriteReadStats(ReadCounter readCounter, StreamWriter xmlFile)
         {
             int allBcCount = barcodes.Count;
             int spBcCount = barcodes.GenomeBarcodeIndexes(Annotations.Genome, false).Length;
@@ -582,6 +457,8 @@ namespace Linnarsson.Strt
             int validReads = readCounter.GrandCount(ReadStatus.VALID);
             xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />", allBcCount, validReads / totalReads, validReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Mapped [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numReads / totalReads, numReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"- over {0} hits [{1}] ({2:0%})\" y=\"{3}\" />",
+                              Props.props.BowtieMaxNumAltMappings, spBcCount, nMaxAltMappingsReads / totalReads, nMaxAltMappingsReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Annotated [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
                               numAnnotatedReads / totalReads, numAnnotatedReads / 1.0E6d);
             if (Props.props.DirectionalReads)
@@ -602,18 +479,6 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("    <point x=\"Repeat [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
                                TotalHitsByAnnotType[AnnotType.REPT] / totalReads, TotalHitsByAnnotType[AnnotType.REPT] / 1.0E6d);
             xmlFile.WriteLine("  </reads>");
-
-            txtFile.WriteLine(readCounter.TotalsToString());
-            txtFile.WriteLine("Number of reads mapped to genome: {0} ({1:0%})", numReads, numReads / totalReads);
-            if (numAltFeatureReads == 0)
-                txtFile.WriteLine("Alternative mappings to genome were not analyzed.");
-            else
-                txtFile.WriteLine("Number of reads that can stem from one of alternative features: " + numAltFeatureReads);
-            txtFile.WriteLine("Number of reads with > max (" + Props.props.BowtieMaxNumAltMappings + ") alt. genome mappings: " + nMaxAltMappingsReads);
-            txtFile.WriteLine("Number of reads with > max alt. genome mappings and shown hit is not exon: " + nMaxAltMappingsReadsWOTrHit);
-            txtFile.WriteLine("Number of reads mapped to some annotated position (gene locus or repeat): " + numAnnotatedReads);
-            txtFile.WriteLine("Number of reads mapped only to position(s) without annotation: " + (numReads - numAnnotatedReads));
-            txtFile.WriteLine("Number of reads mapped to a transcript: {0} ({1:0%})", numExonAnnotatedReads, numExonAnnotatedReads / totalReads);
         }
 
         private void WriteReadsBySpecies(StreamWriter xmlFile)
@@ -627,50 +492,42 @@ namespace Linnarsson.Strt
 
         private void WriteSpeciesReadSection(StreamWriter xmlFile, int[] speciesBcIndexes, string speciesName)
         {
-            double nMappedReads = 0;
+            double nAllMappedReads = 0;
+            double nUniqueMappedReads = 0;
             double nAnnotationsHit = 0;
             foreach (int bcIdx in speciesBcIndexes)
             {
-                nMappedReads += numReadsByBarcode[bcIdx];
+                nAllMappedReads += numReadsByBarcode[bcIdx];
+                nUniqueMappedReads += numUniqueMolReadsByBarcode[bcIdx];
                 nAnnotationsHit += TotalHitsByBarcode[bcIdx];
             }
             xmlFile.WriteLine("  <reads species=\"{0}\">", speciesName);
-            xmlFile.WriteLine("    <title>Mapped read distribution (10^6) by categories in {0} {1} wells</title>",
-                              speciesBcIndexes.Length, speciesName);
-            xmlFile.WriteLine("    <point x=\"Mapped (100%)\" y=\"{0}\" />", nMappedReads / 1.0E6d);
-            xmlFile.WriteLine("    <point x=\"Annotations ({0:0%})\" y=\"{1}\" />", nAnnotationsHit / nMappedReads, nAnnotationsHit / 1.0E6d);
-            foreach (int annotType in new int[] { AnnotType.EXON, AnnotType.INTR, AnnotType.AEXON, AnnotType.REPT })
+            if (barcodes.HasRandomBarcodes)
             {
-                int nType = 0;
-                foreach (int bcIdx in speciesBcIndexes)
-                    nType += TotalHitsByAnnotTypeAndBarcode[annotType, bcIdx];
-                xmlFile.WriteLine("    <point x=\"{0} ({1:0%})\" y=\"{2}\" />", AnnotType.GetName(annotType), nType / nMappedReads, nType / 1.0E6d);
+                xmlFile.WriteLine("    <title>Unique molecule distribution (10^6) by categories in {0} {1} wells</title>",
+                              speciesBcIndexes.Length, speciesName);
+                xmlFile.WriteLine("    <point x=\"All mapped reads(100%)\" y=\"{0}\" />", nAllMappedReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Unique molecules ({0:0%})\" y=\"{1}\" />", nUniqueMappedReads / nAllMappedReads, nUniqueMappedReads / 1.0E6d);
             }
-            xmlFile.WriteLine("  </reads>");
+            else
+            {
+                xmlFile.WriteLine("    <title>Mapped read distribution (10^6) by categories in {0} {1} wells</title>",
+                              speciesBcIndexes.Length, speciesName);
+                xmlFile.WriteLine("    <point x=\"All mapped (100%)\" y=\"{0}\" />", nAllMappedReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Annotations ({0:0%})\" y=\"{1}\" />", nAnnotationsHit / nAllMappedReads, nAnnotationsHit / 1.0E6d);
+                foreach (int annotType in new int[] { AnnotType.EXON, AnnotType.INTR, AnnotType.AEXON, AnnotType.REPT })
+                {
+                    int nType = 0;
+                    foreach (int bcIdx in speciesBcIndexes)
+                        nType += TotalHitsByAnnotTypeAndBarcode[annotType, bcIdx];
+                    xmlFile.WriteLine("    <point x=\"{0} ({1:0%})\" y=\"{2}\" />", AnnotType.GetName(annotType), nType / nAllMappedReads, nType / 1.0E6d);
+                }
+                xmlFile.WriteLine("  </reads>");
+            }
         }
         
-        private void WriteLibraryDepth(StreamWriter txtFile, StreamWriter xmlFile)
+        private void WriteSenseAntisenseStats(StreamWriter xmlFile)
         {
-            xmlFile.WriteLine("  <librarydepth>");
-            xmlFile.WriteLine("    <title>Unique (10^6) barcoded feature hit positions as fn. of feature hits</title>");
-            xmlFile.WriteLine("	<xtitle>Millions of feature hits processed</xtitle>");
-            xmlFile.WriteLine("      <curve legend=\"\" color=\"#00FF00\">");
-            txtFile.WriteLine("\nAccumulated number of unique barcode/hit position combinations in gene loci as function of read count:");
-            for (int i = 0; i < sampledNumUniqueReads.Count; i++)
-            {
-                txtFile.WriteLine("{0}\t{1}", hitsAtSample[i], sampledNumUniqueReads[i]);
-                xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", hitsAtSample[i] / 1.0E6d, sampledNumUniqueReads[i] / 1.0E6d);
-            }
-            xmlFile.WriteLine("    </curve>");
-            xmlFile.WriteLine("  </librarydepth>");
-        }
-
-        private void WriteSenseAntisenseStats(StreamWriter txtFile, StreamWriter xmlFile)
-        {
-            txtFile.WriteLine("\nAbove every read is counted once. In table below every feature (e.g. transcript variant) hit by a read is counted.");
-            txtFile.WriteLine("Hence, reads mapping to overlapping genes/gene variants and repeats inside genes will be counted more than once.");
-            txtFile.WriteLine("Repeats are always non-directional and counted on both strands. TotLen of splices is the sum of all artifical junction lengths.");
-            txtFile.WriteLine("Type\tTotLen\tSense\tAntisense\tRatio");
             xmlFile.WriteLine("  <senseantisense>");
             xmlFile.WriteLine("    <title>Sense and Antisense reads per kb feature length</title>");
             foreach (int t in AnnotType.GetSenseTypes())
@@ -682,14 +539,11 @@ namespace Linnarsson.Strt
                 int totLen = Annotations.GetTotalAnnotLength(at, true);
                 if (totASense > 0)
                     ratio = string.Format("{0:0.0}", totSense / (double)totASense);
-                txtFile.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", AnnotType.GetName(t),
-                               totLen, totSense, totASense, ratio);
                 xmlFile.WriteLine("   <point x=\"{0}#br#{1}:1\" y=\"{2:0.##}\" y2=\"{3:0.##}\" />", AnnotType.GetName(t),
                                   ratio, 1000.0d * (totSense / (double)totLen), 1000.0d * (totASense / (double)totLen));
             }
             int reptLen = Annotations.GetTotalAnnotLength(AnnotType.REPT);
             int reptCount = TotalHitsByAnnotType[AnnotType.REPT];
-            txtFile.WriteLine("REPT\t{0}\t{1}\t{2}\t{3}", reptLen, reptCount, reptCount, 1.0);
             xmlFile.WriteLine("   <point x=\"REPT#br#1:1\" y=\"{0:0.###}\" y2=\"{0:0.####}\" />", reptCount / (double)reptLen);
             xmlFile.WriteLine("  </senseantisense>");
         }
@@ -711,7 +565,7 @@ namespace Linnarsson.Strt
             string[] chrs = TotalHitsByAnnotTypeAndChr.Keys.ToArray();
             foreach (string chr in sortedkeys)
             {
-                if (StrtGenome.IsSpliceAnnotationChr(chr))
+                if (StrtGenome.IsASpliceAnnotationChr(chr))
                     continue;
                 double nSense = TotalHitsByAnnotTypeAndChr[chr][AnnotType.EXON];
                 double nAsense = TotalHitsByAnnotTypeAndChr[chr][AnnotType.AEXON];
@@ -722,15 +576,12 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </senseantisensebychr>");
         }
 
-        private void WriteFeatureStats(StreamWriter txtFile, StreamWriter xmlFile)
+        private void WriteFeatureStats(StreamWriter xmlFile)
         {
             xmlFile.WriteLine("  <features>");
             xmlFile.WriteLine("    <title>Overall detection of features</title>");
             if (!Annotations.noGeneVariants)
-            {
-                txtFile.WriteLine("Number of expressed genes including variants: " + Annotations.GetNumExpressedGenes());
                 xmlFile.WriteLine("    <point x=\"Detected tr. variants\" y=\"{0}\" />", Annotations.GetNumExpressedGenes());
-            }
             xmlFile.WriteLine("    <point x=\"Detected main tr. variants\" y=\"{0}\" />", Annotations.GetNumExpressedMainGeneVariants());
             int[] bcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
             int nGenesInAllBarcodes = 0;
@@ -744,28 +595,6 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("    <point x=\"in every species well ({0})\" y=\"{1}\" />", bcIndexes.Length, nGenesInAllBarcodes);
             xmlFile.WriteLine("    <point x=\"Detected repeat classes\" y=\"{0}\" />", Annotations.GetNumExpressedRepeats());
             xmlFile.WriteLine("  </features>");
-            txtFile.WriteLine("Number of expressed main gene variants: " + Annotations.GetNumExpressedMainGeneVariants());
-            txtFile.WriteLine("Number of expressed repeats: " + Annotations.GetNumExpressedRepeats());
-        }
-
-        private void WriteSampledVariation(string fileNameBase)
-        {
-            var file = (fileNameBase + "_sampled_CV.tab").OpenWrite();
-            file.WriteLine("Estimated coefficient of variation for each gene as a function of number of processed reads.");
-            file.Write("Feature\tFinalTotalHits");
-            for (int i = 0; i < sampledNumUniqueReads.Count; i++)
-                file.Write("\t" + hitsAtSample[i]);
-            file.WriteLine();
-            foreach (GeneFeature gf in Annotations.geneFeatures.Values)
-            {
-                int trHits = gf.GetTranscriptHits();
-                if (trHits == 0) continue;
-                file.Write(gf.Name + "\t" + trHits);
-                for (int i = 0; i < sampledNumUniqueReads.Count; i++)
-                    file.Write("\t{0}%", (int)Math.Round(gf.VariationSamples[i] * 100, 0));
-                file.WriteLine();
-            }
-            file.Close();
         }
 
         private void AddSpikes(StreamWriter xmlFile)
@@ -876,7 +705,7 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </hitprofile>");
         }
 
-        private void AddSampledCVs(StreamWriter xmlFile)
+        /*private void AddSampledCVs(StreamWriter xmlFile)
         {
             int nSamples = hitsAtSample.Count;
             int[] exprLevels = new int[] { 20, 100, 1000, 10000 };
@@ -926,7 +755,7 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("    </curve>");
             }
             xmlFile.WriteLine("  </variationbyreads>");
-        }
+        }*/
 
         private void AddCVHistogram(StreamWriter xmlFile)
         {
@@ -1019,6 +848,7 @@ namespace Linnarsson.Strt
             if (barcodes.SpeciesByWell != null)
                 WriteSpeciesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
             WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
+            WriteDuplicateMoleculesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
             WriteFeaturesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
             barcodeStats.WriteLine("Transcripts detected in each barcode:");
             string[] trCounts = Array.ConvertAll<int, string>(Annotations.SampleBarcodeExpressedGenes(), 
@@ -1070,6 +900,26 @@ namespace Linnarsson.Strt
             for (int bcIdx = 0; bcIdx < counts.Length; bcIdx++)
             {
                 counts[bcIdx] = TotalHitsByBarcode[bcIdx].ToString();
+                bCodeLines.Write("\t" + counts[bcIdx]);
+                if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
+                string d = genomeBcIndexes.Contains(bcIdx) ? counts[bcIdx] : "(" + counts[bcIdx] + ")";
+                xmlFile.Write("    <d>{0}</d>", d);
+            }
+            xmlFile.WriteLine("\n    </barcodestat>");
+            barcodeStats.WriteLine(MakeDataMatrix(counts, "0"));
+            bCodeLines.WriteLine();
+        }
+
+        private void WriteDuplicateMoleculesByBarcode(StreamWriter xmlFile, StreamWriter barcodeStats, StreamWriter bCodeLines, int[] genomeBcIndexes)
+        {
+            if (!barcodes.HasRandomBarcodes) return;
+            barcodeStats.WriteLine("\nDuplicated reads filtered away due to same random tag and position, by barcode:\n");
+            bCodeLines.Write("TOTAL");
+            xmlFile.Write("    <barcodestat section=\"duplicated molecules (by position-random tag)\">");
+            string[] counts = new string[barcodes.Count];
+            for (int bcIdx = 0; bcIdx < counts.Length; bcIdx++)
+            {
+                counts[bcIdx] = randomTagFilter.nDuplicatesByBarcode[bcIdx].ToString();
                 bCodeLines.Write("\t" + counts[bcIdx]);
                 if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
                 string d = genomeBcIndexes.Contains(bcIdx) ? counts[bcIdx] : "(" + counts[bcIdx] + ")";

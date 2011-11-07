@@ -44,8 +44,6 @@ namespace Linnarsson.Strt
 		{
             summaryLines = new List<string>();
             SpliceFlankLen = props.SpliceFlankLength;
-            SplicedGeneFeature.SetSpliceFlankLen(SpliceFlankLen);
-            GeneFeature.SpliceFlankLen = SpliceFlankLen;
             this.props = props;
             this.genome = genome;
             this.barcodes = props.Barcodes;
@@ -69,7 +67,7 @@ namespace Linnarsson.Strt
         public abstract int GetTotalAnnotLength(int annotType);
         public abstract int GetTotalAnnotLength(int annotType, bool excludeMasked);
         public abstract int GetTotalAnnotCounts(int annotType, bool excludeMasked);
-        public abstract void WriteSpikeDetection(StreamWriter file, StreamWriter xmlFile);
+        public abstract void WriteSpikeDetection(StreamWriter xmlFile);
 
         public virtual List<string> GetSummaryLines()
         {
@@ -80,7 +78,7 @@ namespace Linnarsson.Strt
         /// Write locus oriented statistics
         /// </summary>
         /// <param name="fileBaseName"></param>
-        public virtual void WriteStats(string fileBaseName)
+        public virtual void SaveResult(string fileBaseName)
         { }
 
         public IEnumerable<FtInterval> GetMatching(string chr, int hitPos)
@@ -128,6 +126,10 @@ namespace Linnarsson.Strt
         public int GetNumExpressedGenes()
         {
             return geneFeatures.Values.Count(g => g.IsExpressed());
+        }
+        public int GetNumExpressedGenes(int barcodeIdx)
+        {
+            return geneFeatures.Values.Count(g => g.IsExpressed(barcodeIdx));
         }
         public int GetNumExpressedMainGeneVariants()
         {

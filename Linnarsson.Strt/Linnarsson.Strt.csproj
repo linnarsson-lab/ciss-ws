@@ -58,6 +58,7 @@
     <Compile Include="ProjectDB.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReadExtractor.cs" />
+    <Compile Include="ReadFragGenerator.cs" />
     <Compile Include="SilverBulletSummary.cs" />
     <Compile Include="StrtExceptions.cs" />
     <Compile Include="StrtReadMapper.cs" />

@@ -151,7 +151,7 @@ namespace Linnarsson.Strt
             foreach (string chrId in selectedChrIds)
             {
                 Console.Write("." + chrId);
-                if (StrtGenome.IsSpliceAnnotationChr(chrId)) continue;
+                if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
                 try
                 {
                     if (needChromosomeSequences)
@@ -252,7 +252,7 @@ namespace Linnarsson.Strt
             int nLines = 0;
             int nGeneFeatures = 0;
             int nTooLongFeatures = 0;
-            foreach (LocusFeature gf in UCSCAnnotationReader.IterAnnotationFile(annotationsPath))
+            foreach (LocusFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(annotationsPath))
             {
                 nLines++;
                 if (noGeneVariants && gf.Name.Contains(GeneFeature.variantIndicator))
@@ -330,12 +330,16 @@ namespace Linnarsson.Strt
             return totLen;
         }
 
-        public override void WriteStats(string fileNameBase)
+        public override void SaveResult(string fileNameBase)
         {
             WritePotentialErronousAnnotations(fileNameBase);
             WriteSplicesByGeneLocus(fileNameBase);
             WriteExpressionTable(fileNameBase);
-            WriteBarcodedRPM(fileNameBase);
+            string rpmFile = WriteBarcodedRPM(fileNameBase);
+            if (!Environment.OSVersion.VersionString.Contains("Microsoft"))
+            {
+                CmdCaller.Run("php", "strt2Qsingle.php " + rpmFile);
+            }
             if (GeneFeature.GenerateTranscriptProfiles)
                 WriteTranscriptHitsByGeneLocus(fileNameBase);
             if (GeneFeature.GenerateLocusProfiles)
@@ -512,10 +516,8 @@ namespace Linnarsson.Strt
             }
         }
 
-        public override void WriteSpikeDetection(StreamWriter summaryFile, StreamWriter xmlFile)
+        public override void WriteSpikeDetection(StreamWriter xmlFile)
         {
-            summaryFile.WriteLine("\nFraction of wells where spikes have been detected:");
-            summaryFile.WriteLine("Spike\tTotalCount\tFractionDetected");
             xmlFile.WriteLine("  <spikedetection>");
             xmlFile.WriteLine("    <title>Detection of spikes across all {0} wells</title>", barcodes.Count);
             StringBuilder sbt = new StringBuilder();
@@ -532,7 +534,6 @@ namespace Linnarsson.Strt
                 }
                 double fraction = (detected / (double)barcodes.Count);
                 string spikeId = gf.Name.Replace("RNA_SPIKE_", "");
-                summaryFile.WriteLine("{0}\t{1}\t{2:0.000}", gf.Name, total, fraction);
                 sbt.Append(string.Format("      <point x=\"#{0}\" y=\"{1:0}\" />\n", spikeId, total));
                 sbf.Append(string.Format("      <point x=\"#{0}\" y=\"{1:0.###}\" />\n", spikeId, fraction));
             }
@@ -545,10 +546,11 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </spikedetection>");
         }
 
-        private void WriteBarcodedRPM(string fileNameBase)
+        private string WriteBarcodedRPM(string fileNameBase)
         {
             string rpType = (props.UseRPKM) ? "RPKM" : "RPM";
-            var matrixFile = (fileNameBase + "_" + rpType + ".tab").OpenWrite();
+            string rpmPath = fileNameBase + "_" + rpType + ".tab";
+            var matrixFile = rpmPath.OpenWrite();
             if (props.DirectionalReads)
             {
                 matrixFile.WriteLine("Estimated detection limits as {0} thresholds calculated from 99% and 99.9% of the global distribution ", rpType);
@@ -567,6 +569,7 @@ namespace Linnarsson.Strt
             WriteRPMSection(matrixFile, false, simpleTableFile);
             simpleTableFile.Close();
             matrixFile.Close();
+            return rpmPath;
         }
 
         private void WriteRPMSection(StreamWriter matrixFile, bool selectSpikes, StreamWriter simpleTableFile)
@@ -714,66 +717,26 @@ namespace Linnarsson.Strt
         /// <param name="fileNameBase"></param>
         private void WriteSplicesByGeneLocus(string fileNameBase)
         {
-            int nExonsToShow = 50;
             string fPath = fileNameBase + "_diff_splice.tab";
             var matrixFile = fPath.OpenWrite();
-            matrixFile.WriteLine("Total 3' splice junction hits per exon, and, when variant splices were detected, hit counts of each.");
-            matrixFile.Write("Gene\t#Exons\tJunctionHits\t");
-            for (int i = 0; i < nExonsToShow; i++)
-                matrixFile.Write("FromEx{0}\tSplices\t", (i+1));
+            matrixFile.WriteLine("Total hits to exons and splice junction.");
+            matrixFile.WriteLine("Gene\t#Exons\tExonHits\tJunctionHits\tExon/Junction IDs...");
+            matrixFile.WriteLine("    \t      \t         \t           \tJCounts...");
             matrixFile.WriteLine();
-            int totSpliceOutCount = 0;
-            int numSpliceOuts = 0;
-            int numGenesSpliceOut = 0;
-            int numMainGenesWithSPLCHits = 0;
-            int numGenesWithSPLCHits = 0;
             foreach (GeneFeature gf in geneFeatures.Values)
             {
-                if (gf.GetJunctionHits() == 0)
+                if (gf.GetTranscriptHits() == 0)
                     continue;
-                numGenesWithSPLCHits++;
-                if (gf.IsMainVariant()) numMainGenesWithSPLCHits++;
-                matrixFile.Write(gf.Name + "\t" + gf.ExonCount + "\t" + gf.GetJunctionHits() + "\t");
-                int[][] countMatrix = gf.GetSpliceCounts();
-                bool someSplicedOutExon = false;
-                for (int e1 = 1; e1 < countMatrix.Length; e1++)
-                {
-                    int[] fromEx1SplcCounts = countMatrix[e1];
-                    int splcOutCount = 0;
-                    for (int e2 = e1 + 2; e2 < fromEx1SplcCounts.Length; e2++)
-                    {
-                        splcOutCount += fromEx1SplcCounts[e2];
-                        if (fromEx1SplcCounts[e2] > 0) numSpliceOuts++;
-                    }
-                    int totSplcCount = fromEx1SplcCounts[e1 + 1] + splcOutCount;
-                    matrixFile.Write("{0}\t", totSplcCount);
-                    if (splcOutCount > 0)
-                    {
-                        totSpliceOutCount += splcOutCount;
-                        someSplicedOutExon = true;
-                        List<string> accData = new List<string>();
-                        for (int accId = e1 + 1; accId < fromEx1SplcCounts.Length; accId++)
-                        {
-                            int c = fromEx1SplcCounts[accId];
-                            if (c > 0)
-                                accData.Add(string.Format("{0}>{1}({2})", e1, accId, c));
-                        }
-                        matrixFile.Write(string.Join(",", accData.ToArray()));
-                    }
-                    matrixFile.Write("\t");
-                }
-                if (someSplicedOutExon) numGenesSpliceOut++;
+                matrixFile.Write(gf.Name + "\t" + gf.ExonCount + "\t" + gf.GetTranscriptHits() + "\t" + gf.GetJunctionHits());
+                List<Pair<string, int>> counts = gf.GetSpliceCounts();
+                foreach (Pair<string, int> count in counts)
+                    matrixFile.Write("\t" + count.First);
+                matrixFile.WriteLine();
+                matrixFile.Write("    \t      \t         \t           ");
+                foreach (Pair<string, int> count in counts)
+                    matrixFile.Write("\t" + count.Second);
                 matrixFile.WriteLine();
             }
-            string summaryLine = string.Format("Totally {0} splice events that excluded some exon were detected in {1} genes by {2} reads.",
-                                 numSpliceOuts, numGenesSpliceOut, totSpliceOutCount);
-            matrixFile.WriteLine(summaryLine);
-            summaryLines.Add(summaryLine);
-            string vTxt = (noGeneVariants) ? "" : numGenesWithSPLCHits + " out of all and ";
-            summaryLine = vTxt + numMainGenesWithSPLCHits + " out of main gene variants had hits to some splice junction.";
-            matrixFile.WriteLine(summaryLine);
-            summaryLine += " For details, view the diff_splice.tab file\n";
-            summaryLines.Add(summaryLine);
             matrixFile.Close();
         }
 

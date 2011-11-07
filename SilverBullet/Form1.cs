@@ -138,10 +138,9 @@ namespace SilverBullet
                         string projectFolder = Path.GetDirectoryName(mapFolder);
                         mapper.Annotate(mapFolder, gd.Genome);
                     }
-                    catch (NoAnnotationsFileFoundException)
+                    catch (NoAnnotationsFileFoundException nafe)
                     {
-                        Console.WriteLine("No annotation file for {0} was found (use Tools->Build Index)",
-                                          gd.Genome.GetBowtieIndexName(), gd.Genome.Annotation);
+                        Console.WriteLine("ERROR: " + nafe.Message);
                     }
                     catch (ChromosomeMissingException ce)
                     {
@@ -471,6 +470,9 @@ namespace SilverBullet
             {
                 if (MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
             }
+            BarcodeSetDialog bsd = new BarcodeSetDialog();
+            bsd.ShowDialog();
+            Barcodes bc = Barcodes.GetBarcodes(bsd.barcodeSet);
             GenomeDialog gd = new GenomeDialog();
             gd.ShowDialog();
             GeneVariantsDialog gvd = new GeneVariantsDialog();
@@ -484,7 +486,7 @@ namespace SilverBullet
             {
                 string fastaFile = ofd.FileName;
                 Background.RunAsync(() =>
-                { mapper.DumpTranscripts(gd.Genome, 44, 1, 0, fastaFile, true, 3, 10); });
+                { mapper.DumpTranscripts(bc, gd.Genome, 44, 1, 0, fastaFile, true, 3, 10); });
             }
         }
 

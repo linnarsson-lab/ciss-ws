@@ -161,7 +161,7 @@ namespace ProjectDBProcessor
         private static void NotifyManager(ProjectDescription projDescr, List<string> results)
         {
             if (projDescr.managerEmails == "") return;
-            string from = "peter.lonnerberg@ki.se";
+            string from = Props.props.ProjectDBProcessorNotifierEmailSender;
             string smtp = "localhost";
             bool success = (projDescr.status == ProjectDescription.STATUS_DONE);
             string subject = (success)? "Results ready from STRT project " + projDescr.projectName :

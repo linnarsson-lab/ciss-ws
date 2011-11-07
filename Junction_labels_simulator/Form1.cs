@@ -549,25 +549,11 @@ namespace Junction_labels_simulator
                         //MessageBox.Show(readCount.ToString() + "and " + totReads.ToString());  
                         if (totReads <= Reads_in_million) readNo = readCounting;
                         else readNo = 0; // 
-                        FastQRecord rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), fwdSeq.ToString(), fqR.Qualities);
+                        FastQRecord rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "\t" + readNo), fwdSeq.ToString(), fqR.Qualities);
                         output4.WriteLine(rec1.ToString(64));
-                        FastQRecord rec2 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), revSeq.ToString(), fqR.Qualities);
+                        FastQRecord rec2 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "\t" + readNo), revSeq.ToString(), fqR.Qualities);
                         output5.WriteLine(rec2.ToString(64));
-                        //MessageBox.Show(readNo.ToString());
-                        //char q = ' ';
-                        //StringBuilder quality_scr_all = new StringBuilder();
-                        //for (int x = 0; x < quality_scr.Length; x++)
-                        //{
-                        //    q = Convert.ToChar(quality_scr[x]);
-                        //    //MessageBox.Show(q + "and" + quality_scr[x]); 
-                        //    quality_scr_all.Append(q);
-                        //}
-                        //FastQRecord rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), fwdseq.ToString(), quality_scr_all.ToString());
-                        //output4.WriteLine(rec1.ToString());
-                        //rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "_" + readNo), revSeq.ToString(), quality_scr_all.ToString());
-                        //output5.WriteLine(rec1.ToString());
-
-
+                       
                     }
                         record++;
                         //if (record >= 24) record = 0;
@@ -752,6 +738,147 @@ namespace Junction_labels_simulator
 
             output1.Close();
             MessageBox.Show("End of Run!");
+        }
+
+        private void ButtonErrorCorr_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd1 = new OpenFileDialog();
+            if (ofd1.ShowDialog() != DialogResult.OK) return;
+            var output = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_errorCorrected.fq")).OpenWrite();
+            string[] lines = System.IO.File.ReadAllLines(ofd1.FileName);
+            //string[] seqLines = new string[lines.Length / 4];
+            string[] headerLines = new string[lines.Length / 4];
+            ShortDnaSequence seq = new ShortDnaSequence();
+            ShortDnaSequence Array32bp=new ShortDnaSequence();
+
+           
+            int seqCount = 0;
+            ulong score = 0;
+            //ulong de = 0;
+            
+            for (int i = 0; i < lines.Length; i = i + 4)
+            {
+                headerLines[seqCount] = lines[i];
+                string errorScore=lines[i+3];
+                string[] HLItems = lines[i].Split('\t');
+                int readCount = Convert.ToInt32(HLItems[1]);
+                string resultLine = "";
+                Dictionary<ulong, string> d = new Dictionary<ulong, string>();
+                Dictionary<ulong, int> d1 = new Dictionary<ulong, int>();
+                Dictionary<ulong, int> d2 = new Dictionary<ulong, int>();
+                Dictionary<ulong, int> d3 = new Dictionary<ulong, int>();
+                Dictionary<ulong, int> d4 = new Dictionary<ulong, int>();
+                for (int ij = 0; ij < (readCount*4); ij = ij + 4)
+                {
+
+                    seq = new ShortDnaSequence(lines[i + 1]);
+                    //MessageBox.Show(seq.ToString());
+                    int seqfrag = 0;
+                    int deCount = 0;
+                    //for (int j = 0; j < 4; j++)
+                    //{
+                    //for dictionary d1*********************
+                    Array32bp = (ShortDnaSequence)seq.SubSequence(seqfrag, 32);
+                    seqfrag = seqfrag + 32;
+                    score = Array32bp.ToIndex();
+                    if (!d.ContainsKey(score)) d.Add(score, Array32bp.ToString());
+                    
+                    if (d1.ContainsKey(score) == true)
+                    {
+                        d1.TryGetValue(score, out deCount);
+                        deCount++;
+                        d1.Remove(score);
+                        d1.Add(score, deCount);
+                           
+                    }
+                    else d1.Add(score, deCount + 1);
+
+                    //for dictionary d2*********************
+                    Array32bp = (ShortDnaSequence)seq.SubSequence(seqfrag, 32);
+                    seqfrag = seqfrag + 32;
+                    score = Array32bp.ToIndex();
+                    if (!d.ContainsKey(score)) d.Add(score, Array32bp.ToString());
+                    if (d2.ContainsKey(score) == true)
+                    {
+                        d2.TryGetValue(score, out deCount);
+                        deCount++;
+                        d2.Remove(score);
+                        d2.Add(score, deCount);
+
+                    }
+                    else d2.Add(score, deCount + 1);
+
+                    Array32bp = (ShortDnaSequence)seq.SubSequence(seqfrag, 32);
+                    seqfrag = seqfrag + 32;
+                    score = Array32bp.ToIndex();
+                    if (!d.ContainsKey(score)) d.Add(score, Array32bp.ToString());
+                    if (d3.ContainsKey(score) == true)
+                    {
+                        d3.TryGetValue(score, out deCount);
+                        deCount++;
+                        d3.Remove(score);
+                        d3.Add(score, deCount);
+
+                    }
+                    else d3.Add(score, deCount + 1);
+
+                    Array32bp = (ShortDnaSequence)seq.SubSequence(seqfrag, 32);
+                    //seqfrag = seqfrag + 32;
+                    score = Array32bp.ToIndex();
+                    if (!d.ContainsKey(score)) d.Add(score, Array32bp.ToString());
+                    if (d4.ContainsKey(score) == true)
+                    {
+                        d4.TryGetValue(score, out deCount);
+                        deCount++;
+                        d4.Remove(score);
+                        d4.Add(score, deCount);
+
+                    }
+                    else d4.Add(score, deCount + 1);
+                        
+                    //}
+                    //MessageBox.Show("value of i=" + i);
+                    i = i + 4;
+                }
+                //var sortedD1 = (from entry in d1 orderby entry.Value ascending select entry).ToDictionary(pair => pair.Key, pair => pair.Value);
+                var sortedd1 = d1.OrderByDescending (x1 => x1.Value);
+                var sortedd2 = d2.OrderByDescending(x2 => x2.Value);
+                var sortedd3 = d3.OrderByDescending(x3 => x3.Value);
+                var sortedd4 = d4.OrderByDescending(x4 => x4.Value);
+                string tempseq="";
+                var seq1=sortedd1.ElementAt(0);
+                d.TryGetValue(seq1.Key,out tempseq);
+                resultLine = resultLine + tempseq;
+                tempseq = "";
+                var seq2 = sortedd2.ElementAt(0);
+                d.TryGetValue(seq2.Key, out tempseq);
+                resultLine = resultLine + tempseq;
+                tempseq = "";
+                var seq3 = sortedd3.ElementAt(0);
+                d.TryGetValue(seq3.Key, out tempseq);
+                resultLine = resultLine + tempseq;
+                tempseq = "";
+                var seq4 = sortedd4.ElementAt(0);
+                d.TryGetValue(seq4.Key, out tempseq);
+                resultLine = resultLine + tempseq;
+                tempseq = "";
+                //MessageBox.Show(resultLine);
+                    //foreach (var item in sortedd1)
+                    //{
+                    //    MessageBox.Show("key="+(item.Key).ToString());
+                    //    MessageBox.Show("value="+(item.Value).ToString());
+                    //} 
+
+                output.WriteLine(headerLines[seqCount]);
+                output.WriteLine(resultLine);
+                output.WriteLine("+");
+                output.WriteLine(errorScore);
+                seqCount++;
+                i = i - 4;
+            }
+            output.Close();
+            MessageBox.Show("End of Run!");
+            
         }
 
        

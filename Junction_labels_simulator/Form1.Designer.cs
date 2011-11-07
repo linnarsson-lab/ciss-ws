@@ -44,6 +44,7 @@
             this.label6 = new System.Windows.Forms.Label();
             this.FQbutton = new System.Windows.Forms.Button();
             this.UnConnButton = new System.Windows.Forms.Button();
+            this.ButtonErrorCorr = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // LoadGenome
@@ -195,11 +196,22 @@
             this.UnConnButton.UseVisualStyleBackColor = true;
             this.UnConnButton.Click += new System.EventHandler(this.UnConnButton_Click);
             // 
+            // ButtonErrorCorr
+            // 
+            this.ButtonErrorCorr.Location = new System.Drawing.Point(13, 387);
+            this.ButtonErrorCorr.Name = "ButtonErrorCorr";
+            this.ButtonErrorCorr.Size = new System.Drawing.Size(184, 23);
+            this.ButtonErrorCorr.TabIndex = 16;
+            this.ButtonErrorCorr.Text = "Error Correction";
+            this.ButtonErrorCorr.UseVisualStyleBackColor = true;
+            this.ButtonErrorCorr.Click += new System.EventHandler(this.ButtonErrorCorr_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(571, 454);
+            this.Controls.Add(this.ButtonErrorCorr);
             this.Controls.Add(this.UnConnButton);
             this.Controls.Add(this.FQbutton);
             this.Controls.Add(this.label6);
@@ -242,6 +254,7 @@
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Button FQbutton;
         private System.Windows.Forms.Button UnConnButton;
+        private System.Windows.Forms.Button ButtonErrorCorr;
     }
 }
 

@@ -97,7 +97,7 @@ namespace Linnarsson.Dna
 							sr.ReadLine();
 							recoverLen++;
 						}
-						Console.Error.WriteLine(recoverLen.ToString() + " lines skipped while recovering from malformed record.");
+						Console.Error.WriteLine(recoverLen.ToString() + " lines skipped while recovering from malformed record. Next line:" + sr.PeekLine());
 					}
 				}
                 else if (line.StartsWith(">")) // Standard Fasta file

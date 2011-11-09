@@ -180,16 +180,17 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// 
+        /// Makes histogram data of hits to gf transcript within each equally large section of size binSize.
         /// </summary>
         /// <param name="gf"></param>
         /// <param name="binSize"></param>
         /// <param name="senseOnly">If true, only hits to transcript sense will be counted</param>
+        /// <param name="readLen">Used to exclude the transcript ends, where no hitMids can occur, from the bins</param>
         /// <returns></returns>
-        public static int[] GetBinnedTranscriptHitsRelEnd(GeneFeature gf, double binSize, bool senseOnly)
+        public static int[] GetBinnedTranscriptHitsRelEnd(GeneFeature gf, double binSize, bool senseOnly, int readLen)
         {
             char strand = (senseOnly) ? gf.Strand : '.';
-            return GetIvlSpecificCountsInBinsRelEnd(gf.LocusHits, strand, binSize,
+            return GetIvlSpecificCountsInBinsRelEnd(gf.LocusHits, strand, binSize, readLen,
                                                     gf.ExonStarts, gf.ExonEnds, gf.LocusStart);
         }
 
@@ -205,7 +206,7 @@ namespace Linnarsson.Dna
         /// <param name="ends">ends of intervals</param>
         /// <param name="offset">reference point for intervals. Has to be consistent with pos in MarkHit() calls</param>
         /// <returns>histogram of counts</returns>
-        private static int[] GetIvlSpecificCountsInBinsRelEnd(int[] hits, char strand, double binSize, 
+        private static int[] GetIvlSpecificCountsInBinsRelEnd(int[] hits, char strand, double binSize, int readLen,
                                                      int[] starts, int[] ends, int offset)
         {
             if (hits.Length == 0) return new int[0];
@@ -216,7 +217,8 @@ namespace Linnarsson.Dna
                 rightIvlsLen[i] = accuLen;
                 accuLen += ends[i] - starts[i] + 1;
             }
-            int nBins = (int)Math.Ceiling(accuLen / binSize);
+            if (accuLen <= readLen) return new int[0];
+            int nBins = (int)Math.Ceiling((accuLen - readLen) / binSize);
             int[] result = new int[nBins];
             int s = (strand == '-') ? 1 : 0;
             int strandMask = (strand != '.') ? 1 : 0;
@@ -246,20 +248,8 @@ namespace Linnarsson.Dna
                         {
                             dist = leftIvlsLen + (pos - ivlStart);
                         }
-                        int bin = (int)Math.Floor(dist / binSize);
-                        try
-                        {
-                            result[bin]++;
-                        }
-                        catch (IndexOutOfRangeException)
-                        {
-                            //Console.WriteLine("Index error. bin: {0} dist: {1} pos: {2}", bin, dist, pos);
-                            //Console.WriteLine("nBins: {0} binSize: {1}", nBins, binSize);
-                            //Console.WriteLine("rightIvlsLen:");
-                            //for (int ri = starts.Length - 1; ri >= 0; ri--)
-                            //    Console.Write(rightIvlsLen[ri] + "\t");
-                            //Console.WriteLine("\nleftIvlsLen at this point:" + leftIvlsLen);
-                        }
+                        int bin = Math.Max(0, Math.Min(nBins - 1, (int)Math.Floor((dist - readLen/2) / binSize)));
+                        result[bin]++;
                     }
                 }
                 leftIvlsLen += ends[i] - starts[i] + 1;

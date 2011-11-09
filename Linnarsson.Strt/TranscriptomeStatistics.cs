@@ -48,6 +48,8 @@ namespace Linnarsson.Strt
         int[] nReadsInSampleBin = new int[1];
         int sampleBinNumber = 0;
 
+        private StreamWriter rndTagProfileByGeneWriter;
+
         Dictionary<string, int> redundantHits = new Dictionary<string, int>();
         List<Pair<MultiReadMapping, FtInterval>> exonsToMark;
         Dictionary<string, Pair<MultiReadMapping, FtInterval>> geneToExonToMark = new Dictionary<string,Pair<MultiReadMapping,FtInterval>>();
@@ -142,13 +144,54 @@ namespace Linnarsson.Strt
                 Array.Resize(ref nReadsInSampleBin, sampleBinNumber + 1);
             nReadsInSampleBin[sampleBinNumber++] += numReadsInBin;
         }
-        public void FinishBarcode()        {
+
+        public void FinishBarcode()
+        {
             int nReadsInBin = numReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode;
-            FinishBarcode(nReadsInBin);        }        public void FinishBarcode(int nReadsInBin)
+            FinishBarcode(nReadsInBin);
+        }
+        public void FinishBarcode(int nReadsInBin)
         {
             SampleStatistics(nReadsInBin);
+            MakeGeneRndTagProfiles();
             sampleBinNumber = 0;
             MakeWigglePlotsByMolecule();
+        }
+
+        private void MakeGeneRndTagProfiles()
+        {
+            if (Props.props.GenesToShowRndTagProfile != null)
+            {
+                foreach (string geneName in Props.props.GenesToShowRndTagProfile)
+                {
+                    GeneFeature gf;
+                    if (Annotations.geneFeatures.ContainsKey(geneName))
+                        gf = Annotations.geneFeatures[geneName];
+                    if (Annotations.geneFeatures.ContainsKey(geneName.ToUpper()))
+                        gf = Annotations.geneFeatures[geneName.ToUpper()];
+                    else
+                        continue;
+                    for (int trPosInChrDir = 0; trPosInChrDir < gf.Length; trPosInChrDir++)
+                    {
+                        int chrPos = gf.GetChrPosFromTrPosInChrDir(trPosInChrDir);
+                        byte[] profile = randomTagFilter.GetMoleculeCounts(gf.Chr, chrPos, gf.Strand);
+                        if (profile != null)
+                        {
+                            if (rndTagProfileByGeneWriter == null)
+                            {
+                                string file = Path.Combine(Path.GetDirectoryName(currentMapFilePath), "rnd_tag_profiles.tab");
+                                rndTagProfileByGeneWriter = file.OpenWrite();
+                                rndTagProfileByGeneWriter.WriteLine("Gene\tBarcode\tTrPos\tReadCountsByRndTagIdx");
+                            }
+                            int trPos = (gf.Strand == '+') ? 1 + trPosInChrDir : 1 + gf.Length - trPosInChrDir;
+                            rndTagProfileByGeneWriter.Write("{0}\t{1}\t{2}", gf.Name, barcodes.Seqs[currentBcIdx], trPos);
+                            foreach (byte count in profile)
+                                rndTagProfileByGeneWriter.Write("\t" + count);
+                            rndTagProfileByGeneWriter.WriteLine();
+                        }
+                    }
+                }
+            }
         }
 
         private void MakeWigglePlotsByMolecule()
@@ -226,7 +269,6 @@ namespace Linnarsson.Strt
                             TotalHitsByBarcode[bcodeIdx]++;
                             markType = MarkStatus.TEST_EXON_SKIP_OTHER;
                         }
-                        //markType = MarkStatus.TEST_EXON_SKIP_OTHER;
                     }
                 }
                 if (chr != annotationChrId)
@@ -306,6 +348,8 @@ namespace Linnarsson.Strt
                 compactWiggle.WriteHotspots(fileNameBase, false, 50);
                 compactWiggle.WriteWriggle(fileNameBase);
             }
+            if (rndTagProfileByGeneWriter != null)
+                rndTagProfileByGeneWriter.Close();
         }
 
         /// <summary>
@@ -385,6 +429,12 @@ namespace Linnarsson.Strt
             //                       sampledUniqueMoleculesByBcIdx);
             WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules in each barcode as fn. of reads processed",
                                    sampledUniqueMoleculesByBcIdx);
+            xmlFile.WriteLine("    <moleculereadscountshistogram>");
+            xmlFile.WriteLine("<title>Distribution of number of times every unique molecule has been observed</title>");
+            xmlFile.WriteLine("<xtitle>Number of observations (reads)</xtitle>");
+            for (int i = 1; i < randomTagFilter.moleculeReadCountsHistogram.Length; i++)
+                xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.moleculeReadCountsHistogram[i]);
+            xmlFile.WriteLine("    </moleculereadscountshistogram>");
         }
 
         private void WriteAccuMoleculesByBc(StreamWriter xmlFile, string tag, string title, Dictionary<int, List<int>> data)

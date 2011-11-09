@@ -1008,9 +1008,9 @@ namespace Linnarsson.Strt
                                                                                       exonSeqsInChrDir);
                         foreach (ReadFrag frag in readFrags)
                         {
-                            string exonNos = string.Join("-", frag.ExonIds.ConvertAll(v => v.ToString()).ToArray());
-                            int posInTrFw = (gf.Strand == '+') ? frag.Pos : (trLen - frag.Pos - (int)frag.Length);
-                            int posInChr = (gf.Strand == '+') ? gf.GetChrPos(frag.Pos) : gf.GetChrPos(trLen - 1 - frag.Pos);
+                            string exonNos = string.Join("-", frag.ExonIds.ConvertAll(i => (gf.Strand == '+')? i.ToString(): (gf.ExonCount + 1 - i).ToString()).ToArray());
+                            int posInTrFw = (gf.Strand == '+') ? 1 + frag.TrPosInChrDir : (1 + trLen - frag.TrPosInChrDir - (int)frag.Length);
+                            int posInChr = gf.GetChrPosFromTrPosInChrDir(frag.TrPosInChrDir);
                             if (gf.Strand == '-')
                                 frag.Seq.RevComp();
                             string seqString = new string('A', barcodes.BarcodePos) + bc + "GGG" + frag.Seq.ToString();

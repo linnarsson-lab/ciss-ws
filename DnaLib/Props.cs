@@ -44,6 +44,8 @@ namespace Linnarsson.Dna
             new string[] { "Sox2" ,"Actb", "Nanog", "Klf4", "Calb1", "Rnr2", "Tmpo", "Trpm6", "Pou5f1",
                            "Rnr1", "Nd1", "Cox2", "Vcam1", "Zfp42", "Fgf2r", "Nt5e", "Runx2", "Taz",
                            "Osx", "Twist", "Ap1", "Sox9", "Sox6", "Sox5", "Bmp2", "Smad1", "Smad4" };
+        public string[] GenesToShowRndTagProfile =
+            new string[] { "Sox2" ,"Actb", "Nanog" };
         public bool GenerateTranscriptProfiles = false;
         public bool GenerateGeneLocusProfiles = false;
         public bool GenerateGeneProfilesByBarcode = false;

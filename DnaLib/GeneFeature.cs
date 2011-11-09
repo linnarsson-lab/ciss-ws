@@ -255,16 +255,15 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Convert from position within transcript relative 5' end to chromosome position
-        /// (all positions zero-based)
+        /// Convert from 0-based position within transcript in sense direction to chromosome position
         /// </summary>
-        /// <param name="transcriptPos"></param>
+        /// <param name="transcriptPos">0-based position within transcript</param>
         /// <returns>-1 if transcriptPos is larger than transcript length</returns>
         public int GetChrPos(int transcriptPos)
         {
             if (Strand == '+')
             {
-                return GetChrPosChrDir(transcriptPos);
+                return GetChrPosFromTrPosInChrDir(transcriptPos);
             }
             for (int i = ExonCount - 1; i >= 0 ; i--)
             {
@@ -276,11 +275,11 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Returns corresponding position on chromosome
+        /// Convert from 0-based transcript position in chr direction to chromosome position
         /// </summary>
         /// <param name="posInTrInChrDir">Transcript pos, counting 0 as the leftmost nt on chr, even for '-' oriented genes</param>
         /// <returns></returns>
-        public int GetChrPosChrDir(int posInTrInChrDir)
+        public int GetChrPosFromTrPosInChrDir(int posInTrInChrDir)
         {
             for (int i = 0; i < ExonCount; i++)
             {

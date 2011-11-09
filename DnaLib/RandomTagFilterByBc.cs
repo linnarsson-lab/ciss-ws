@@ -14,6 +14,10 @@ namespace Linnarsson.Dna
             /// Position stored as "(pos * 2) | strand" where strand in bit0: +/- => 0/1
             /// </summary>
             private Dictionary<int, byte[]> molCounts = new Dictionary<int, byte[]>();
+            /// <summary>
+            /// Max value of data items in the molCounts arrays.
+            /// </summary>
+            public static int MaxMoleculeReadCount { get { return byte.MaxValue; } }
 
             public void ChangeBcIdx()
             {
@@ -36,6 +40,30 @@ namespace Linnarsson.Dna
                 int currentCount = molCounts[posStrand][rndTagIdx];
                 molCounts[posStrand][rndTagIdx] = (byte)Math.Min(255, currentCount + 1);
                 return currentCount == 0;
+            }
+
+            /// <summary>
+            /// Use to get the read count profile for a specific genomic position and strand
+            /// </summary>
+            /// <param name="pos"></param>
+            /// <param name="strand"></param>
+            /// <returns>Number of reads as function of rndTag index at given genomic location</returns>
+            public byte[] GetMoleculeCounts(int pos, char strand)
+            {
+                int strandIdx = (strand == '+') ? 0 : 1;
+                int posStrand = (pos << 1) | strandIdx;
+                return molCounts[posStrand];
+            }
+
+            /// <summary>
+            /// Generates (in arbitrary order) the number of times each registered molecule has been observed.
+            /// </summary>
+            /// <returns></returns>
+            public IEnumerable<byte> IterMoleculeReadCounts()
+            {
+                foreach (byte[] molCountsAtPos in molCounts.Values)
+                    foreach (byte nOfRndTag in molCountsAtPos)
+                        yield return nOfRndTag;
             }
 
             /// <summary>
@@ -126,6 +154,10 @@ namespace Linnarsson.Dna
         /// </summary>
         public int[] nUniqueByBarcode;
         /// <summary>
+        /// Histogram of number of times (reads) every molecule has been seen
+        /// </summary>
+        public int[] moleculeReadCountsHistogram;
+        /// <summary>
         /// Number of reads that are copies of a first distinct read in each barcode.
         /// (i.e., the position, strand, and rndTag are exactly the same.)
         /// </summary>
@@ -144,6 +176,7 @@ namespace Linnarsson.Dna
                 chrTagDatas[chrId] = new ChrTagData();
             currentBcIdx = 0;
             usedBcIdxs = new HashSet<int>();
+            moleculeReadCountsHistogram = new int[ChrTagData.MaxMoleculeReadCount + 1];
         }
 
         private void ChangeBcIdx(int newBcIdx)
@@ -157,6 +190,8 @@ namespace Linnarsson.Dna
                 int[] chrCounts = tagData.GetCasesByRndTagCount();
                 for (int i = 0; i < nCasesPerRandomTagCount.Length; i++)
                     nCasesPerRandomTagCount[i] += chrCounts[i];
+                foreach (byte count in tagData.IterMoleculeReadCounts())
+                    moleculeReadCountsHistogram[count]++;
                 tagData.ChangeBcIdx();
             }
         }
@@ -175,6 +210,24 @@ namespace Linnarsson.Dna
             if (isNew) nUniqueByBarcode[bcIdx]++;
             else nDuplicatesByBarcode[bcIdx]++;
             return isNew | !hasRndTags;
+        }
+
+        /// <summary>
+        /// Use to get the read count profile for a specific genomic location
+        /// </summary>
+        /// <param name="pos"></param>
+        /// <param name="strand"></param>
+        /// <returns>Number of reads as function of rndTag index at given genomic location, or null if no reads has hit that location</returns>
+        public byte[] GetMoleculeCounts(string chr, int pos, char strand)
+        {
+            try
+            {
+                return chrTagDatas[chr].GetMoleculeCounts(pos, strand);
+            }
+            catch (KeyNotFoundException)
+            {
+                return null;
+            }
         }
 
         /// <summary>

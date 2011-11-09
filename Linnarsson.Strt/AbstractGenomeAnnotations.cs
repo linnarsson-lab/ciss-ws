@@ -78,7 +78,7 @@ namespace Linnarsson.Strt
         /// Write locus oriented statistics
         /// </summary>
         /// <param name="fileBaseName"></param>
-        public virtual void SaveResult(string fileBaseName)
+        public virtual void SaveResult(string fileBaseName, int averageReadLen)
         { }
 
         public IEnumerable<FtInterval> GetMatching(string chr, int hitPos)

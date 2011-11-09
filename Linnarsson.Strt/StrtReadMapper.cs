@@ -644,6 +644,7 @@ namespace Linnarsson.Strt
             annotations.Load();
             string outputPathbase = Path.Combine(outputFolder, projectName);
             TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props);
+            ts.OutputPathbase = outputPathbase;
             string syntLevelFile = PathHandler.GetSyntLevelFile(projectFolder);
             if (File.Exists(syntLevelFile))
                 ts.TestReporter = new SyntReadReporter(syntLevelFile, genome.GeneVariants, outputPathbase, annotations.geneFeatures);

@@ -30,6 +30,8 @@ namespace Linnarsson.Strt
 		DnaMotif[] motifs;
         int currentBcIdx = 0;
         string currentMapFilePath;
+        public string OutputPathbase;
+
         int numReads = 0;                // Total number of mapped reads in input .map files
         int[] numReadsByBarcode;         // Total number of mapped reads in each barcode
         int[] numUniqueMolReadsByBarcode;   // Total number of unique molecule reads in each barcode
@@ -160,17 +162,20 @@ namespace Linnarsson.Strt
 
         private void MakeGeneRndTagProfiles()
         {
-            if (Props.props.GenesToShowRndTagProfile != null)
+            if (Props.props.GenesToShowRndTagProfile != null && barcodes.HasRandomBarcodes)
             {
                 foreach (string geneName in Props.props.GenesToShowRndTagProfile)
                 {
                     GeneFeature gf;
                     if (Annotations.geneFeatures.ContainsKey(geneName))
                         gf = Annotations.geneFeatures[geneName];
-                    if (Annotations.geneFeatures.ContainsKey(geneName.ToUpper()))
+                    else if (Annotations.geneFeatures.ContainsKey(geneName.ToUpper()))
                         gf = Annotations.geneFeatures[geneName.ToUpper()];
                     else
+                    {
+                        Console.WriteLine("Can not locate a gene named " + geneName + " for rndTag profile writing.");
                         continue;
+                    }
                     for (int trPosInChrDir = 0; trPosInChrDir < gf.Length; trPosInChrDir++)
                     {
                         int chrPos = gf.GetChrPosFromTrPosInChrDir(trPosInChrDir);
@@ -179,7 +184,8 @@ namespace Linnarsson.Strt
                         {
                             if (rndTagProfileByGeneWriter == null)
                             {
-                                string file = Path.Combine(Path.GetDirectoryName(currentMapFilePath), "rnd_tag_profiles.tab");
+                                string file = OutputPathbase + "_rnd_tag_profiles.tab";
+                                Console.WriteLine("Writing rndTag profiles for selected genes to " + file);
                                 rndTagProfileByGeneWriter = file.OpenWrite();
                                 rndTagProfileByGeneWriter.WriteLine("Gene\tBarcode\tTrPos\tReadCountsByRndTagIdx");
                             }
@@ -326,6 +332,10 @@ namespace Linnarsson.Strt
             exonsToMark.Clear();
         }
 
+        public void SaveResult(ReadCounter readCounter)
+        {
+            SaveResult(readCounter, OutputPathbase);
+        }
 		/// <summary>
 		///  Save all the statistics to a set of files
 		/// </summary>
@@ -338,7 +348,8 @@ namespace Linnarsson.Strt
             WriteRedundantExonHits(fileNameBase);
             WriteASExonDistributionHistogram(fileNameBase);
             WriteSummary(fileNameBase, Annotations.GetSummaryLines(), readCounter);
-            Annotations.SaveResult(fileNameBase);
+            int averageReadLen = (int)compactWiggle.GetAverageHitLength();
+            Annotations.SaveResult(fileNameBase, averageReadLen);
             WriteSnps(fileNameBase);
             //WriteSnpsByBarcode(fileNameBase); // Large file & takes time
             if (DetermineMotifs)
@@ -666,9 +677,12 @@ namespace Linnarsson.Strt
                             ds.Add(RPM);
                         }
                     }
+                    if (ds.Count == 0)
+                        continue;
+                    double mean = Math.Max(0.001, ds.Mean());
                     string spikeId = "#" + gf.Name.Replace("RNA_SPIKE_", "");
                     if (ds.Count > 0)
-                        xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1:0.###}\" error=\"{2:0.###}\" />", spikeId, ds.Mean(), ds.StandardDeviation());
+                        xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1:0.###}\" error=\"{2:0.###}\" />", spikeId, mean, ds.StandardDeviation());
                     else
                         xmlFile.WriteLine("    <point x=\"{0}\" y=\"0.0\" error=\"0.0\" />", spikeId);
                 }
@@ -678,12 +692,15 @@ namespace Linnarsson.Strt
 
         private void AddHitProfile(StreamWriter xmlFile)
         {
+            int averageReadLen = (int)compactWiggle.GetAverageHitLength();
             xmlFile.WriteLine("  <hitprofile>");
             xmlFile.WriteLine("  <title>5'->3' read distr. Green=Transcripts/Blue=Spikes</title>");
             xmlFile.WriteLine("	 <xtitle>Relative pos within transcript</xtitle>");
             int trLenBinSize = 500;
-            int trLen1stBinMid = 500;
+            int trLenBinHalfWidth = trLenBinSize / 2;
             int trLenBinStep = 1500;
+            int trLen1stBinMid = 500;
+            int trLen1stBinStart = trLen1stBinMid - trLenBinHalfWidth;
             int trLenBinCount = 4;
             int nSections = 20;
             int minHitsPerGene = nSections * 10;
@@ -694,8 +711,8 @@ namespace Linnarsson.Strt
                     binnedEfficiencies[trLenBinIdx, section] = new DescriptiveStatistics();
             }
             int[] geneCounts = new int[trLenBinCount];
-            int spikeColor = 0x000080;
-            int spikeColorStep = ((0xFF - 0x81) / 8);
+            int spikeColor = 0x200040;
+            int spikeColorStep = ((0xFF - 0x41) / 8);
             foreach (GeneFeature gf in Annotations.geneFeatures.Values)
             {
                 bool isSpike = gf.Name.StartsWith("RNA_SPIKE_");
@@ -704,21 +721,21 @@ namespace Linnarsson.Strt
                 if (!isSpike && gf.GetTranscriptHits() < minHitsPerGene)
                     continue;
                 int trLen = gf.GetTranscriptLength();
-                double sectionSize = trLen / (double)nSections;
-                int[] trSectionCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, sectionSize, Props.props.DirectionalReads);
+                double sectionSize = (trLen - averageReadLen) / (double)nSections;
+                int[] trSectionCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, sectionSize, Props.props.DirectionalReads, averageReadLen);
                 if (trSectionCounts.Length == 0) continue;
                 double trTotalCounts = 0.0;
                 foreach (int c in trSectionCounts) trTotalCounts += c;
                 if (trTotalCounts == 0.0) continue;
-                int trIdx = nSections - 1;
                 if (!isSpike)
                 {
-                    if (Math.Abs((trLen - trLen1stBinMid) % trLenBinSize) > 250)
+                    if (trLen < trLen1stBinStart || (trLen - trLen1stBinStart) % trLenBinStep > trLenBinSize)
                         continue;
-                    int trLenBin = (trLen - trLenBinSize / 2) / trLenBinStep;
+                    //if (Math.Abs((trLen - trLen1stBinMid) % trLenBinSize) > 250) continue;
+                    int trLenBin = (trLen - trLen1stBinStart) / trLenBinStep;
                     if (trLenBin >= trLenBinCount) continue;
                     for (int section = 0; section < nSections; section++)
-                        binnedEfficiencies[trLenBin, section].Add(trSectionCounts[trIdx--] / trTotalCounts);
+                        binnedEfficiencies[trLenBin, section].Add(trSectionCounts[nSections - 1 - section] / trTotalCounts);
                     geneCounts[trLenBin]++;
                 }
                 else
@@ -728,26 +745,26 @@ namespace Linnarsson.Strt
                     spikeColor += spikeColorStep;
                     for (int section = 0; section < nSections; section++)
                     {
-                        double eff = trSectionCounts[trIdx--] / trTotalCounts;
-                        double fracPos = section / (double)nSections;
+                        double eff = trSectionCounts[nSections - 1 - section] / trTotalCounts;
+                        double fracPos = section / (double)(nSections - 1);
                         xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", fracPos, eff);
                     }
                     xmlFile.WriteLine("    </curve>");
                 }
             }
-            int geneColor = 0x008000;
-            int geneColorStep = ((0xFF - 0x81) / trLenBinCount) * 0x0100;
+            int geneColor = 0x304030;
+            int geneColorStep = ((0xFF - 0x41) / trLenBinCount) * 0x0100;
             for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
             {
-                if (geneCounts[trLenBinIdx] < 5) continue;
+                if (geneCounts[trLenBinIdx] < 10) continue;
                 int midLen = (trLenBinIdx * trLenBinStep) + trLen1stBinMid;
                 xmlFile.WriteLine("    <curve legend=\"{0}-{1}bp\" color=\"#{2:X6}\">",
-                                  midLen - (trLenBinSize / 2), midLen + (trLenBinSize / 2), geneColor);
+                                  midLen - trLenBinHalfWidth, midLen + trLenBinHalfWidth, geneColor);
                 geneColor += geneColorStep;
                 for (int section = 0; section < nSections; section++)
                 {
                     double eff = binnedEfficiencies[trLenBinIdx, section].Mean();
-                    double fracPos = section / (double)nSections;
+                    double fracPos = section / (double)(nSections - 1);
                     xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", fracPos, eff);
                 }
                 xmlFile.WriteLine("    </curve>");

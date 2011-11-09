@@ -330,7 +330,7 @@ namespace Linnarsson.Strt
             return totLen;
         }
 
-        public override void SaveResult(string fileNameBase)
+        public override void SaveResult(string fileNameBase, int averageReadLen)
         {
             WritePotentialErronousAnnotations(fileNameBase);
             WriteSplicesByGeneLocus(fileNameBase);
@@ -341,7 +341,7 @@ namespace Linnarsson.Strt
                 CmdCaller.Run("php", "strt2Qsingle.php " + rpmFile);
             }
             if (GeneFeature.GenerateTranscriptProfiles)
-                WriteTranscriptHitsByGeneLocus(fileNameBase);
+                WriteTranscriptHitsByGeneLocus(fileNameBase, averageReadLen);
             if (GeneFeature.GenerateLocusProfiles)
                 WriteLocusHitsByGeneLocus(fileNameBase);
             WriteExpressedAntisenseGenes(fileNameBase);
@@ -352,7 +352,7 @@ namespace Linnarsson.Strt
             }
             WriteUniquehits(fileNameBase);
             WriteAnnotTypeAndExonCounts(fileNameBase);
-            WriteElongationEfficiency(fileNameBase);
+            WriteElongationEfficiency(fileNameBase, averageReadLen);
         }
 
         private void WriteExpressedAntisenseGenes(string fileNameBase)
@@ -744,20 +744,21 @@ namespace Linnarsson.Strt
         /// For every expressed gene, write the binned hit count profile across the transcript.
         /// </summary>
         /// <param name="fileNameBase"></param>
-        private void WriteTranscriptHitsByGeneLocus(string fileNameBase)
+        private void WriteTranscriptHitsByGeneLocus(string fileNameBase, int averageReadLen)
         {
             var file = (fileNameBase + "_transcript_profile.tab").OpenWrite();
             file.WriteLine("Binned number of hits to transcripts counting from 3' end");
             file.Write("Gene\tTrLen\tTotHits\tExonHits\t3'-");
             for (int i = 0; i < 100; i++)
-                file.Write("{0}\t", i * GeneFeature.LocusProfileBinSize);
+                file.Write("{0}\t", averageReadLen + i * GeneFeature.LocusProfileBinSize);
             file.WriteLine();
             foreach (GeneFeature gf in geneFeatures.Values)
             {
                 if (!gf.IsExpressed()) continue;
                 file.Write(gf.Name + "\t" + gf.GetTranscriptLength() + "\t" + 
                            gf.GetTotalHits() + "\t" + gf.GetTranscriptHits() + "\t");
-                int[] trBinCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, GeneFeature.LocusProfileBinSize, props.DirectionalReads);
+                int[] trBinCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, GeneFeature.LocusProfileBinSize, 
+                                                                                     props.DirectionalReads, averageReadLen);
                 foreach (int c in trBinCounts)
                     file.Write(c + "\t");
                 file.WriteLine();
@@ -928,14 +929,14 @@ namespace Linnarsson.Strt
             file.Close();
         }
 
-        private void WriteElongationEfficiency(string fileNameBase)
+        private void WriteElongationEfficiency(string fileNameBase, int averageReadLen)
         {
             int capRegionSize = props.CapRegionSize;
             int trLenBinSize = 500;
             int nSections = 20;
             var capHitsFile = (fileNameBase + "_cap_hits.tab").OpenWrite();
-            WriteSpikeElongationHitCurve(capHitsFile, trLenBinSize, nSections);
-            WriteElongationHitCurve(capHitsFile, trLenBinSize, nSections);
+            WriteSpikeElongationHitCurve(capHitsFile, trLenBinSize, nSections, averageReadLen);
+            WriteElongationHitCurve(capHitsFile, trLenBinSize, nSections, averageReadLen);
             // The old style hit statistics profile below:
             int minHitsPerGene = 50;
             capHitsFile.WriteLine("\n\nFraction hits that are to the 5' {0} bases of genes with >= {1} hits, grouped by transcript length (BinSize={2})",
@@ -1016,7 +1017,7 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void WriteElongationHitCurve(StreamWriter capHitsFile, int trLenBinSize, int nSections)
+        private void WriteElongationHitCurve(StreamWriter capHitsFile, int trLenBinSize, int nSections, int averageReadLen)
         {
             int nTrSizeBins = 10000 / trLenBinSize;
             int minHitsPerGene = nSections * 10;
@@ -1035,8 +1036,8 @@ namespace Linnarsson.Strt
                     continue;
                 int trLen = gf.GetTranscriptLength();
                 int trLenBin = Math.Min(nTrSizeBins - 1, trLen / trLenBinSize);
-                double posBinSize = trLen / (double)nSections;
-                int[] trBinCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, posBinSize, props.DirectionalReads);
+                double posBinSize = (trLen - averageReadLen) / (double)nSections;
+                int[] trBinCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, posBinSize, props.DirectionalReads, averageReadLen);
                 double allCounts = 0.0;
                 foreach (int c in trBinCounts) allCounts += c;
                 int trIdx = nSections - 1;
@@ -1048,7 +1049,7 @@ namespace Linnarsson.Strt
             capHitsFile.WriteLine("\nMidLength\tnGenes\t5' -> 3' hit distribution");
             for (int di = 0; di < nTrSizeBins; di++)
             {
-                int binMid = di * trLenBinSize + trLenBinSize / 2;
+                int binMid = averageReadLen + di * trLenBinSize + trLenBinSize / 2;
                 capHitsFile.Write(binMid + "\t" + geneCounts[di]);
                 for (int section = 0; section < nSections; section++)
                     capHitsFile.Write("\t{0:0.####}", binnedEfficiencies[di, section].Mean());
@@ -1056,7 +1057,7 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void WriteSpikeElongationHitCurve(StreamWriter capHitsFile, int trLenBinSize, int nSections)
+        private void WriteSpikeElongationHitCurve(StreamWriter capHitsFile, int trLenBinSize, int nSections, int averageReadLen)
         {
             int minHitsPerGene = nSections * 10;
             bool wroteHeader = false;
@@ -1065,8 +1066,8 @@ namespace Linnarsson.Strt
                 if (!gf.Name.StartsWith("RNA_SPIKE") || gf.GetTotalHits(true) < 50)
                     continue;
                 int trLen = gf.GetTranscriptLength();
-                double binSize = trLen / (double)nSections;
-                int[] trBinCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, binSize, props.DirectionalReads);
+                double binSize = (trLen - averageReadLen) / (double)nSections;
+                int[] trBinCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, binSize, props.DirectionalReads, averageReadLen);
                 if (trBinCounts.Length == 0) continue;
                 double allCounts = 0.0;
                 foreach (int c in trBinCounts) allCounts += c;

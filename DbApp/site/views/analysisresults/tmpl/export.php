@@ -6,17 +6,16 @@ require_once ('strt2Qsingle.php');
 
 
 <?php
-  echo "<h1>Chose data for Qlucore data file generation</h1>";
+  echo "<h1>STRT data export/download page</h1>";
   $menus = &JSite::getMenu();
   $menu  = $menus->getActive();
 //  $sortKey = JRequest::getVar('sortKey', "");
   $itemid = $menu->id;
 
   echo "<div class='analysis'><fieldset>
-         <legend><nobr>Combine Results from the same genome type</nobr>
-         </legend>
          <form  name=input  action='index.php?option=com_dbapp&view=analysisresults&layout=joindata'  method=post   ><table>";
-
+  echo "<p>To download <b>Standard results files [.tab]</b> just click the link in the analysis column.</p>";
+  echo "<p>To download data for <b>Qlucore [.gedata]</b> tick the boxes from relevant runs and click a submit button. You can only combine data from one genome type (identified by sub-tables), variables refer to gene count.</p>";
   $outstrings  = array();
   $count = 0;
   foreach ($this->items as $result) {

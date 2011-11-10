@@ -70,6 +70,8 @@ namespace Linnarsson.Dna
 			while(true)
 			{
 				string line = sr.ReadLine();
+                while (line == "")
+                    line = sr.ReadLine();
 				if (line == null)
 				{
 					sr.Close();
@@ -82,7 +84,8 @@ namespace Linnarsson.Dna
 					string seq = sr.ReadLine();
 					sr.ReadLine();
 					string qs = sr.ReadLine();
-					
+                    if (qs == null)
+                        yield break;
 					var fqr = new FastQRecord(hdr, seq, FastQRecord.QualitiesFromString(qs, qualityScoreBase));
 					if(fqr.IsValid()) yield return fqr;
 					else

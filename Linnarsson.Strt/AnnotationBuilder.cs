@@ -126,24 +126,27 @@ namespace Linnarsson.Strt
                 DnaSequence junction = new ShortDnaSequence();
                 List<int> startsInJunction = new List<int>();
                 List<int> startsInRealChr = new List<int>();
-                DnaSequence firstExon = exonSeqsInChrDir[ec.ExonIndexes[0]];
+                int exonIdx0 = ec.ExonIndexes[0];
+                DnaSequence firstExon = exonSeqsInChrDir[exonIdx0];
                 int firstLen = Math.Min((int)firstExon.Count, MatchableLen - ec.InternalExonsLen);
                 startsInJunction.Add((int)junction.Count);
                 int posInFirstExon = (int)firstExon.Count - firstLen;
-                startsInRealChr.Add(gf.ExonStarts[0] + posInFirstExon);
+                startsInRealChr.Add(gf.ExonStarts[exonIdx0] + posInFirstExon);
                 junction.Append(firstExon.SubSequence(posInFirstExon, firstLen));
                 int i = 1;
                 for (; i < ec.ExonIndexes.Count - 1; i++)
                 {
-                    DnaSequence midExon = exonSeqsInChrDir[ec.ExonIndexes[i]];
+                    int exonIdx = ec.ExonIndexes[i];
+                    DnaSequence midExon = exonSeqsInChrDir[exonIdx];
                     startsInJunction.Add((int)junction.Count);
-                    startsInRealChr.Add(gf.ExonStarts[i]);
+                    startsInRealChr.Add(gf.ExonStarts[exonIdx]);
                     junction.Append(midExon);
                 }
-                DnaSequence lastExon = exonSeqsInChrDir[ec.ExonIndexes[i]];
+                int exonIdxLast = ec.ExonIndexes[i];
+                DnaSequence lastExon = exonSeqsInChrDir[exonIdxLast];
                 int lastLen = Math.Min((int)lastExon.Count, MatchableLen - ec.InternalExonsLen);
                 startsInJunction.Add((int)junction.Count);
-                startsInRealChr.Add(gf.ExonStarts[i]);
+                startsInRealChr.Add(gf.ExonStarts[exonIdxLast]);
                 junction.Append(lastExon.SubSequence(0, lastLen));
                 ec.StartsInJunction = startsInJunction;
                 ec.StartsInRealChr = startsInRealChr;

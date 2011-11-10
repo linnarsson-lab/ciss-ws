@@ -245,7 +245,8 @@ namespace Linnarsson.Strt
                             jEnds.Add(jStartInSpliceChr + endInJunction);
                             exonIdStrings.Add(ec.ExonsString);
                             realExonIds.Add(gf.GetRealExonId(ec.ExonIndexes[i]));
-                            offsets.Add(ec.StartsInRealChr[i] - startInJChr);
+                            int seqStartInJChr = jStartInSpliceChr + ec.StartsInJunction[i];
+                            offsets.Add(ec.StartsInRealChr[i] - seqStartInJChr);
                         }
                     }
                     if (jStarts.Count > 0)

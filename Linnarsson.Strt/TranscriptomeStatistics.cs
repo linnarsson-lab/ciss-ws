@@ -1177,21 +1177,22 @@ namespace Linnarsson.Strt
         private void WriteSnps(string fileNameBase)
         {
             StreamWriter snpFile = (fileNameBase + "_SNPs.tab").OpenWrite();
-            snpFile.WriteLine("#Gene\tChr\tmRNAStartChrPos\tHZ_eSNPChrPos\tAlt_eSNPChrPos");
-            int thres = (int)(SnpAnalyzer.thresholdFractionAltHitsForHZPos * 100);
+            snpFile.WriteLine("#Gene\tChr\tmRNAStartChrPos\tHetero_eSNPChrPos\tAlt_eSNPChrPos");
+            int thres = (int)(SnpAnalyzer.thresholdFractionAltHitsForMixPos * 100);
             snpFile.WriteLine("#(>={0} AltNtReads/Pos required)\t\t\t({1}-{2}% AltNt)\t(>{2}% Alt Nt)", SnpAnalyzer.minAltHitsToTestSnpPos, thres, 100 - thres);
             int averageHitLen = (int)Math.Round(compactWiggle.GetAverageHitLength());
+            int safeSpan = averageHitLen - 2 * Props.props.MaxAlignmentMismatches;
             foreach (GeneFeature gf in Annotations.geneFeatures.Values)
             {
-                List<int> HZLocusPos, altLocusPos;
-                SnpAnalyzer.GetSnpLocusPositions(gf, averageHitLen, out HZLocusPos, out altLocusPos);
-                int nNeededOutputLines = Math.Max(HZLocusPos.Count, altLocusPos.Count);
+                List<int> mixLocusPos, altLocusPos;
+                SnpAnalyzer.GetSnpLocusPositions(gf, safeSpan, out mixLocusPos, out altLocusPos);
+                int nNeededOutputLines = Math.Max(mixLocusPos.Count, altLocusPos.Count);
                 if (nNeededOutputLines == 0) continue;
                 string first = gf.Name + "\t" + gf.Chr + "\t" + gf.Start + "\t";
                 for (int i = 0; i < nNeededOutputLines; i++)
                 {
                     snpFile.Write(first);
-                    if (i < HZLocusPos.Count) snpFile.Write(HZLocusPos[i] + gf.LocusStart);
+                    if (i < mixLocusPos.Count) snpFile.Write(mixLocusPos[i] + gf.LocusStart);
                     if (i < altLocusPos.Count) snpFile.Write("\t" + (altLocusPos[i] + gf.LocusStart));
                     snpFile.WriteLine();
                     first = "\t\t\t";

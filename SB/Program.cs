@@ -197,9 +197,11 @@ namespace CmdSilverBullet
                             string bcSet = "no";
                             if (args.Length > 6)
                                 bcSet = args[6];
+                            bool makeSplices = true;
+                            if (args.Length > 7)
+                                makeSplices = args[7] .ToUpper().StartsWith("S");
                             Barcodes barcodes = Barcodes.GetBarcodes(bcSet);
                             mapper = new StrtReadMapper(props);
-                            bool makeSplices = true;
                             int maxSkip = props.MaxExonsSkip;
                             mapper.DumpTranscripts(barcodes, genome, readLength, step, maxPerGene, outputPath, makeSplices, minOverhang, maxSkip);
                             break;
@@ -332,7 +334,7 @@ namespace CmdSilverBullet
                 "SB.exe synt <BcSet> <IdxName> all|single <OutputFolder>\n" +
                 "    - generate synthetic reads from a genome\n" +
                 "SB.exe stats [<BcSet>] <ProjectPath>\n    - calculate barcode statistics\n" +
-                "SB.exe dump <IdxName> [<readLen> [<Step> [<MaxPerGene> [<MinOverhang> [<bcSet>]]]]] [<OutputPath>]\n" +
+                "SB.exe dump <IdxName> [<readLen> [<Step> [<MaxPerGene> [<MinOverhang> [<bcSet> [Splices|Linear]]]]]] [<OutputPath>]\n" +
                 "    - make fq file of transcript fragments. Makes all if MaxPerGene=0 \n\n" + 
                 "<RunLaneSpec> is e.g. '17:235' indicating lanes 2,3, and 5 of run 17.\n" + 
                 "              If left out, defaults to all sequence files in Reads/ folder under ProjectPath\n" +

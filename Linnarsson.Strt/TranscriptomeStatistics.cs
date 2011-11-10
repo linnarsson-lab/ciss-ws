@@ -660,12 +660,16 @@ namespace Linnarsson.Strt
 
         private void AddSpikes(StreamWriter xmlFile)
         {
-            xmlFile.WriteLine("  <spikes>");
-            xmlFile.WriteLine("    <title>Normalized spike means and standard deviations</title>");
+            StringBuilder sb = new StringBuilder();
+            sb.Append("  <spikes>\n");
+            sb.Append("    <title>Normalized spike means and standard deviations</title>\n");
+            bool anySpikeDetected = false;
             foreach (GeneFeature gf in Annotations.geneFeatures.Values)
             {
                 if (gf.Name.StartsWith("RNA_SPIKE_"))
                 {
+                    if (gf.IsExpressed())
+                        anySpikeDetected = true;
                     DescriptiveStatistics ds = new DescriptiveStatistics();
                     foreach (int bcIdx in barcodes.GenomeAndEmptyBarcodeIndexes(Annotations.Genome))
                     {
@@ -673,7 +677,7 @@ namespace Linnarsson.Strt
                         if (!AnnotType.DirectionalReads) c += TotalHitsByAnnotTypeAndBarcode[AnnotType.AEXON, bcIdx];
                         if (c > 0)
                         {
-                            double RPM = gf.TranscriptHitsByBarcode[bcIdx] * 1.0E+6 / (double)c;
+                            double RPM = gf.NonConflictingTranscriptHitsByBarcode[bcIdx] * 1.0E+6 / (double)c;
                             ds.Add(RPM);
                         }
                     }
@@ -682,12 +686,14 @@ namespace Linnarsson.Strt
                     double mean = Math.Max(0.001, ds.Mean());
                     string spikeId = "#" + gf.Name.Replace("RNA_SPIKE_", "");
                     if (ds.Count > 0)
-                        xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1:0.###}\" error=\"{2:0.###}\" />", spikeId, mean, ds.StandardDeviation());
+                        sb.Append(string.Format("    <point x=\"{0}\" y=\"{1:0.###}\" error=\"{2:0.###}\" />\n", spikeId, mean, ds.StandardDeviation()));
                     else
-                        xmlFile.WriteLine("    <point x=\"{0}\" y=\"0.0\" error=\"0.0\" />", spikeId);
+                        sb.Append(string.Format("    <point x=\"{0}\" y=\"0.0\" error=\"0.0\" />\n", spikeId));
                 }
             }
-            xmlFile.WriteLine("  </spikes>");
+            sb.Append("  </spikes>");
+            if (anySpikeDetected)
+                xmlFile.WriteLine(sb.ToString());
         }
 
         private void AddHitProfile(StreamWriter xmlFile)
@@ -746,7 +752,7 @@ namespace Linnarsson.Strt
                     for (int section = 0; section < nSections; section++)
                     {
                         double eff = trSectionCounts[nSections - 1 - section] / trTotalCounts;
-                        double fracPos = section / (double)(nSections - 1);
+                        double fracPos = (section + 0.5D) / (double)nSections;
                         xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", fracPos, eff);
                     }
                     xmlFile.WriteLine("    </curve>");
@@ -764,7 +770,7 @@ namespace Linnarsson.Strt
                 for (int section = 0; section < nSections; section++)
                 {
                     double eff = binnedEfficiencies[trLenBinIdx, section].Mean();
-                    double fracPos = section / (double)(nSections - 1);
+                    double fracPos = (section + 0.5D) / (double)nSections;
                     xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", fracPos, eff);
                 }
                 xmlFile.WriteLine("    </curve>");

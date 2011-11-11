@@ -67,8 +67,17 @@ namespace Linnarsson.Dna
             return End - Start + 1 + 2 * LocusFlankLength;
         }
 
+        /// <summary>
+        /// Start position on chromosome of the gene locus including 5' flank sequence
+        /// </summary>
         public int LocusStart { get { return Start - LocusFlankLength; } }
+        /// <summary>
+        /// End position on chromosome of the gene locus including 3' flank sequence
+        /// </summary>
         public int LocusEnd { get { return End + LocusFlankLength; } }
+        /// <summary>
+        /// Start position on chromosome of the leftmost exon
+        /// </summary>
         public override int Start
         {
             get
@@ -81,6 +90,9 @@ namespace Linnarsson.Dna
                 ExonStarts[0] = value;
             }
         }
+        /// <summary>
+        /// Inclusive end position on chromosome of the rightmost exon
+        /// </summary>
         public override int End
         {
             get

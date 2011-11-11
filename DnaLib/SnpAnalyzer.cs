@@ -35,7 +35,7 @@ namespace Linnarsson.Dna
     public class SnpAnalyzer
     {
         public static readonly int minAltHitsToTestSnpPos = 10;
-        public static readonly double thresholdFractionAltHitsForHZPos = 0.25;
+        public static readonly double thresholdFractionAltHitsForMixPos = 0.25;
         public static readonly int MinTotalHitsToShowBarcodedSnps = 10;
 
         private Dictionary<char, int[]> countsByNt;
@@ -101,10 +101,17 @@ namespace Linnarsson.Dna
             countsByNt.Clear();
         }
 
-        public static void GetSnpLocusPositions(GeneFeature gf, int meanHitLen, 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <param name="safeSpanWithinRead">Normally readLen - 2 * MaxAlignmentMismatches</param>
+        /// <param name="heterozygousLocusPos"></param>
+        /// <param name="altLocusPos"></param>
+        public static void GetSnpLocusPositions(GeneFeature gf, int safeSpanWithinRead, 
                                                 out List<int> heterozygousLocusPos, out List<int> altLocusPos)
         {
-            int halfMeanHitLen = meanHitLen / 2;
+            int halfMeanHitLen = safeSpanWithinRead / 2;
             heterozygousLocusPos = new List<int>();
             altLocusPos = new List<int>();
             if (gf.LocusSnps.Length == 0) return;
@@ -118,9 +125,9 @@ namespace Linnarsson.Dna
                     int spanEndInLocus = locusSnpPos + halfMeanHitLen;
                     int totalHits = CompactGenePainter.GetIvlHitCount(spanStartInLocus, spanEndInLocus, gf.Strand, gf.LocusHits);
                     double ratio = altCount / (double)totalHits;
-                    if (ratio > (1 - thresholdFractionAltHitsForHZPos))
+                    if (ratio > (1 - thresholdFractionAltHitsForMixPos))
                         altLocusPos.Add(locusSnpPos);
-                    else if (ratio > thresholdFractionAltHitsForHZPos)
+                    else if (ratio > thresholdFractionAltHitsForMixPos)
                         heterozygousLocusPos.Add(locusSnpPos);
                 }
             }

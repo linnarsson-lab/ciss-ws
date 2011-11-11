@@ -225,16 +225,22 @@ namespace Linnarsson.Dna
 
         /// <summary>
         /// If input is the name of a project folder, it is rooted in the project directory.
-        /// If input is an Extacted folder, return the rooted projet folder
+        /// If input is an Extracted folder, return the rooted project folder
         /// </summary>
         /// <param name="projectFolderOrName"></param>
         /// <returns></returns>
         public static string GetRootedProjectFolder(string projectFolderOrName)
         {
-            if (!Path.IsPathRooted(projectFolderOrName))
-                projectFolderOrName =  Path.Combine(Props.props.ProjectsFolder, projectFolderOrName);
+            projectFolderOrName = GetRooted(projectFolderOrName);
             if (Path.GetFileName(projectFolderOrName).IndexOf("_ExtractionVer") >= 0)
                 projectFolderOrName = Path.GetDirectoryName(projectFolderOrName);
+            return projectFolderOrName;
+        }
+
+        public static string GetRooted(string projectFolderOrName)
+        {
+            if (!Path.IsPathRooted(projectFolderOrName))
+                projectFolderOrName = Path.Combine(Props.props.ProjectsFolder, projectFolderOrName);
             return projectFolderOrName;
         }
 
@@ -262,7 +268,7 @@ namespace Linnarsson.Dna
         ///          an Extracted folder</returns>
         public static string GetLatestExtractedFolder(string inputFolder)
         {
-            inputFolder = GetRootedProjectFolder(inputFolder);
+            inputFolder = GetRooted(inputFolder);
             string latestExtracted = inputFolder;
             if (!inputFolder.Contains("_ExtractionVer"))
             {

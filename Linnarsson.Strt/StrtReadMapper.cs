@@ -539,18 +539,21 @@ namespace Linnarsson.Strt
             return true;
         }
 
-        public void Map(string projectFolderOrName, StrtGenome genome)
+        public void Map(string projectOrExtractedFolderOrName, StrtGenome genome)
         {
-            string projectFolder = PathHandler.GetRootedProjectFolder(projectFolderOrName);
-            string extractedFolder = SetupForLatestExtractedFolder(projectFolder);
+            string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
+            string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
+            string extractedFolder = SetupForLatestExtractedFolder(projectOrExtractedFolder);
             List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
             CreateBowtieMaps(genome, laneInfos);
         }
 
-        public string MapAndAnnotate(string projectFolderOrName, string speciesArg, bool defaultGeneVariants)
+        public string MapAndAnnotate(string projectOrExtractedFolderOrName, string speciesArg, bool defaultGeneVariants)
         {
-            string projectFolder = PathHandler.GetRootedProjectFolder(projectFolderOrName);
-            string extractedFolder = SetupForLatestExtractedFolder(projectFolder);
+            string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
+            string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
+            string extractedFolder = SetupForLatestExtractedFolder(projectOrExtractedFolder);
+            Console.WriteLine("Processing data from " + extractedFolder);
             List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
             StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants);
             CreateBowtieMaps(genome, laneInfos);
@@ -558,27 +561,28 @@ namespace Linnarsson.Strt
             return AnnotateMapFiles(genome, projectFolder, extractedFolder, mapFiles);
         }
 
-        public static readonly string ANNOTATION_VERSION = "33";
+        public static readonly string ANNOTATION_VERSION = "34";
         /// <summary>
         /// Annotate output from Bowtie alignment
         /// </summary>
-        /// <param name="projectFolderOrName">Either the path to a specific Extracted folder,
+        /// <param name="projectOrExtractedFolderOrName">Either the path to a specific Extracted folder,
         ///                             or the path of the projectFolder, in which case the latest
         ///                             Extracted folder will be processed</param>
         /// <param name="genome">Genome to annotate against</param>
         /// <returns>subpath under ProjectMap to results, or null if no processing was needed</returns>
-        public string Annotate(string projectFolderOrName, StrtGenome genome)
+        public string Annotate(string projectOrExtractedFolderOrName, StrtGenome genome)
 		{
-            string projectFolder = PathHandler.GetRootedProjectFolder(projectFolderOrName);
-            string extractedFolder = SetupForLatestExtractedFolder(projectFolder);
+            string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
+            string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
+            string extractedFolder = SetupForLatestExtractedFolder(projectOrExtractedFolder);
             List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
             List<string> mapFiles = SetExistingMapFilePaths(genome, laneInfos);
             return AnnotateMapFiles(genome, projectFolder, extractedFolder, mapFiles);
 		}
 
-        private string SetupForLatestExtractedFolder(string projectFolder)
+        private string SetupForLatestExtractedFolder(string projectOrExtractedFolder)
         {
-            string extractedFolder = PathHandler.GetLatestExtractedFolder(projectFolder);
+            string extractedFolder = PathHandler.GetLatestExtractedFolder(projectOrExtractedFolder);
             string barcodeSet = PathHandler.ParseBarcodeSet(extractedFolder);
             SetBarcodeSet(barcodeSet);
             return extractedFolder;

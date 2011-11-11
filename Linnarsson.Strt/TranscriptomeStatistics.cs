@@ -33,6 +33,7 @@ namespace Linnarsson.Strt
         public string OutputPathbase;
 
         int numReads = 0;                // Total number of mapped reads in input .map files
+        int numDuplicateReads = 0;       // Duplicated reads when using random Tags
         int[] numReadsByBarcode;         // Total number of mapped reads in each barcode
         int[] numUniqueMolReadsByBarcode;   // Total number of unique molecule reads in each barcode
         int numAnnotatedReads = 0;       // Number of reads that map to some annotation
@@ -107,6 +108,7 @@ namespace Linnarsson.Strt
                     Console.WriteLine("Error in read.BcIdx: " + mrm.BarcodeIdx + " detected for currentBcIdx" + currentBcIdx + " in " + mapFilePath);
                 if (randomTagFilter.IsNew(mrm[0].Chr, mrm[0].Position, mrm[0].Strand, currentBcIdx, mrm.RandomBcIdx))
                     Add(mrm);
+                else numDuplicateReads++;
                 numReads++;
                 if ((++numReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
                     SampleStatistics(statsSampleDistPerBarcode);
@@ -521,6 +523,9 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("    <point x=\"Mapped [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numReads / totalReads, numReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"- over {0} hits [{1}] ({2:0%})\" y=\"{3}\" />",
                               Props.props.BowtieMaxNumAltMappings, spBcCount, nMaxAltMappingsReads / totalReads, nMaxAltMappingsReads / 1.0E6d);
+            if (barcodes.HasRandomBarcodes)
+                xmlFile.WriteLine("    <point x=\"Duplicates [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
+                                   numDuplicateReads / totalReads, numDuplicateReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Annotated [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
                               numAnnotatedReads / totalReads, numAnnotatedReads / 1.0E6d);
             if (Props.props.DirectionalReads)

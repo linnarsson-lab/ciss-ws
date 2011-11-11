@@ -437,7 +437,6 @@ namespace Linnarsson.Strt
             for (int i = 0; i < randomTagFilter.nCasesPerRandomTagCount.Length; i++)
                 xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
             xmlFile.WriteLine("    </nuniqueateachrandomtagcoverage>");
-            xmlFile.WriteLine("    <nduplicatedrandomtagsperbarcodeidx>");
             //WriteAccuMolecules(xmlFile, "moleculedepth", "Distinct (10^6) detected molecules as fn. of reads processed",
             //                       sampledUniqueMoleculesByBcIdx);
             WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules in each barcode as fn. of reads processed",

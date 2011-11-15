@@ -9,6 +9,7 @@ namespace Linnarsson.Dna
 {
     public abstract class MapFile
     {
+        public static readonly int SortedAnalysisWindowSize = 10000000;
         protected bool m_RedundantSecondaryMappings = false;
         public bool RedundantSecondaryMappings { get { return m_RedundantSecondaryMappings; } }
 
@@ -23,7 +24,7 @@ namespace Linnarsson.Dna
             if (file.EndsWith(".map"))
                 return new BowtieMapFile(maxNMappings, barcodes);
             if (file.EndsWith(".bam") || file.EndsWith(".sbam"))
-                return new BamMapFile(barcodes, RandomTagFilter.SortedAnalysisWindowSize);
+                return new BamMapFile(barcodes, SortedAnalysisWindowSize);
             return null;
         }
 

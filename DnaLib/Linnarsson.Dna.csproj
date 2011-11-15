@@ -116,7 +116,6 @@
     <Compile Include="QueueRecord.cs" />
     <Compile Include="QuickAnnotationMap.cs" />
     <Compile Include="GeneFeature.cs" />
-    <Compile Include="RandomTagFilter.cs" />
     <Compile Include="ExtractionInfo.cs" />
     <Compile Include="RandomTagFilterByBc.cs" />
     <Compile Include="RedundantExonHitMapper.cs" />

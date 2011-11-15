@@ -475,36 +475,6 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </" + tag + ">");
         }
 
-        /* This does not work since same data in different barcodes will we counted as distinct.
-        private void WriteAccuMolecules(StreamWriter xmlFile, string tag, string title, Dictionary<int, List<int>> data)
-        {
-            int nSamples0 = data.Values.ToArray()[0].Count;
-            int[] valuesInBins = new int[nSamples0];
-            foreach (int bcIdx in data.Keys)
-            {
-                int nSamples = data[bcIdx].Count;
-                if (valuesInBins.Length < nSamples)
-                    Array.Resize(ref valuesInBins, nSamples);
-                for (int sampleIdx = 0; sampleIdx < nSamples; sampleIdx++)
-                    valuesInBins[sampleIdx] += data[bcIdx][sampleIdx];
-            }
-            xmlFile.WriteLine("  <" + tag + ">");
-            xmlFile.WriteLine("    <title>" + title + "</title>");
-            xmlFile.WriteLine("	   <xtitle>Millions of reads processed</xtitle>");
-            xmlFile.WriteLine("      <curve legend=\"Total accumulated (millions)\" color=\"#00FF00\">");
-            int i = 0, nAccuReads = 0, nAccuValues = 0;
-            for (; i < valuesInBins.Length - 1; i++)
-            {
-                nAccuReads += nReadsInSampleBin[i];
-                nAccuValues += valuesInBins[i];
-                xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", nAccuReads / 1.0E6d, nAccuValues / 1.0E6d);
-            }
-            nAccuValues += valuesInBins[i];
-            xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", nAccuReads / 1.0E6d, nAccuValues / 1.0E6d);
-            xmlFile.WriteLine("    </curve>");
-            xmlFile.WriteLine("  </" + tag + ">");
-        }*/
-
         private void WriteReadStats(ReadCounter readCounter, StreamWriter xmlFile)
         {
             int allBcCount = barcodes.Count;
@@ -534,14 +504,28 @@ namespace Linnarsson.Strt
                                   numExonAnnotatedReads / totalReads, numExonAnnotatedReads / 1.0E6d);
                 xmlFile.WriteLine("    <point x=\"Intron(sense) [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, 
                                   TotalHitsByAnnotType[AnnotType.INTR] / totalReads, TotalHitsByAnnotType[AnnotType.INTR] / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Upstream(sense) [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
+                                  TotalHitsByAnnotType[AnnotType.USTR] / totalReads, TotalHitsByAnnotType[AnnotType.USTR] / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Downstream(sense) [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
+                                  TotalHitsByAnnotType[AnnotType.DSTR] / totalReads, TotalHitsByAnnotType[AnnotType.DSTR] / 1.0E6d);
+                int numOtherAS = TotalHitsByAnnotType[AnnotType.AUSTR] + TotalHitsByAnnotType[AnnotType.AEXON] + 
+                                 TotalHitsByAnnotType[AnnotType.AINTR] + TotalHitsByAnnotType[AnnotType.ADSTR];
+                xmlFile.WriteLine("    <point x=\"Loci A-sense [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
+                                  numOtherAS / totalReads, numOtherAS / 1.0E6d);
             }
             else
             {
                 int numIntronHits = TotalHitsByAnnotType[AnnotType.INTR] + TotalHitsByAnnotType[AnnotType.AINTR];
+                int numUstrHits = TotalHitsByAnnotType[AnnotType.USTR] + TotalHitsByAnnotType[AnnotType.AUSTR];
+                int numDstrHits = TotalHitsByAnnotType[AnnotType.DSTR] + TotalHitsByAnnotType[AnnotType.ADSTR];
                 xmlFile.WriteLine("    <point x=\"Exon [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
                                    numExonAnnotatedReads / totalReads, numExonAnnotatedReads / 1.0E6d);
                 xmlFile.WriteLine("    <point x=\"Intron [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, 
                                    numIntronHits / totalReads, numIntronHits / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Upstream [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
+                                   numUstrHits / totalReads, numUstrHits / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Downstream [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
+                                   numDstrHits / totalReads, numDstrHits / 1.0E6d);
             }
             xmlFile.WriteLine("    <point x=\"Repeat [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
                                TotalHitsByAnnotType[AnnotType.REPT] / totalReads, TotalHitsByAnnotType[AnnotType.REPT] / 1.0E6d);
@@ -554,7 +538,8 @@ namespace Linnarsson.Strt
             int[] genomeBcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
             WriteSpeciesReadSection(xmlFile, genomeBcIndexes, Annotations.Genome.Name);
             int[] emptyBcIndexes = barcodes.EmptyBarcodeIndexes();
-            WriteSpeciesReadSection(xmlFile, emptyBcIndexes, "empty");
+            if (emptyBcIndexes.Length > 0)
+                WriteSpeciesReadSection(xmlFile, emptyBcIndexes, "empty");
         }
 
         private void WriteSpeciesReadSection(StreamWriter xmlFile, int[] speciesBcIndexes, string speciesName)
@@ -582,7 +567,7 @@ namespace Linnarsson.Strt
                               speciesBcIndexes.Length, speciesName);
                 xmlFile.WriteLine("    <point x=\"All mapped (100%)\" y=\"{0}\" />", nAllMappedReads / 1.0E6d);
                 xmlFile.WriteLine("    <point x=\"Annotations ({0:0%})\" y=\"{1}\" />", nAnnotationsHit / nAllMappedReads, nAnnotationsHit / 1.0E6d);
-                foreach (int annotType in new int[] { AnnotType.EXON, AnnotType.INTR, AnnotType.AEXON, AnnotType.REPT })
+                foreach (int annotType in new int[] { AnnotType.EXON, AnnotType.INTR, AnnotType.USTR, AnnotType.DSTR, AnnotType.AEXON, AnnotType.REPT })
                 {
                     int nType = 0;
                     foreach (int bcIdx in speciesBcIndexes)
@@ -839,7 +824,11 @@ namespace Linnarsson.Strt
         private void AddCVHistogram(StreamWriter xmlFile)
         {
             int[] genomeBcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
-            if (genomeBcIndexes.Length < 3) return;
+            if (genomeBcIndexes.Length < 3)
+            {
+                Console.WriteLine("SKIPPING CVhisto because genomeBcIndexes.length=" + genomeBcIndexes.Length);
+                return;
+            }
             int nPairs = 1000;
             int nBins = 40;
             List<double[]> validBcCountsByGene = new List<double[]>();
@@ -857,9 +846,13 @@ namespace Linnarsson.Strt
                     gfTotal += c;
                     totalsByBarcode[bcIdx] += c;
                 }
-                totalCountsByGene.Add(gfTotal);
-                validBcCountsByGene.Add(gfValidBcCounts);
+                if (gfTotal > 0)
+                {
+                    totalCountsByGene.Add(gfTotal);
+                    validBcCountsByGene.Add(gfValidBcCounts);
+                }
             }
+            Console.WriteLine("Got totals for " + totalCountsByGene.Count + " genes for use in CVhisto.");
             double[] CVs = CalcCVs(genomeBcIndexes, nPairs, validBcCountsByGene, totalCountsByGene, totalsByBarcode);
             if (CVs != null)
                 OutputCVBars(xmlFile, nPairs, nBins, CVs);
@@ -874,7 +867,10 @@ namespace Linnarsson.Strt
             int minValidWellCount = numReads / genomeBcIndexes.Length / 20;
             int[] usefulBcIndexes = genomeBcIndexes.Where(bcIdx => totalsByBarcode[bcIdx] > minValidWellCount).ToArray();
             if (usefulBcIndexes.Length < 3)
+            {
+                Console.WriteLine("ERROR: userfulBcIndexes = " + usefulBcIndexes.Length);
                 return null;
+            }
             for (int geneIdx = 0; geneIdx < nGenes; geneIdx++)
             {
                 double[] bcodeCounts = validBcCountsByGene[geneIdx];
@@ -903,6 +899,8 @@ namespace Linnarsson.Strt
                     xmlFile.WriteLine("    <point x=\"{0:0.###}\" y=\"{1}\" />", minCV + bin * binStep, geneCVHisto[bin]);
                 xmlFile.WriteLine("  </cvhistogram>");
             }
+            else
+                Console.WriteLine("ERROR: CVs.Count=" + CVs.Length + " minCV=" + minCV + " maxCV= " + maxCV);
         }
 
         /// <summary>

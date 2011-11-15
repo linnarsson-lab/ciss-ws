@@ -95,7 +95,6 @@ namespace Linnarsson.Strt
             DateTime startTime = DateTime.Now;
             if (string.IsNullOrEmpty(newIndexName))
                 newIndexName = genome.Build;
-            Console.WriteLine("*** Build of Bowtie index {0} started at {1} ***", newIndexName, DateTime.Now);
             string genomeFolder = PathHandler.GetGenomeSequenceFolder(genome);
             string spliceChrFile = null;
             List<string> realChrFiles = new List<string>();
@@ -111,10 +110,16 @@ namespace Linnarsson.Strt
             string outfileHead = Path.Combine(PathHandler.GetBowtieIndicesFolder(), newIndexName);
             string arguments = String.Format("{0} {1}", chrFilesArg, outfileHead);
             string cmd = "bowtie-build";
-            Console.WriteLine(cmd + " " + arguments);
-            int exitCode = CmdCaller.Run(cmd, arguments);
-            if (exitCode != 0)
-                Console.Error.WriteLine("Failed to run bowtie-build. ExitCode={0}", exitCode);
+            if (Directory.GetFiles(PathHandler.GetBowtieIndicesFolder(), newIndexName + ".*.ebwt").Length == 6)
+                Console.WriteLine("Main index " + newIndexName + " already exists. Delete index files to force rebuild.");
+            else
+            {
+                Console.WriteLine("*** Build of Bowtie index {0} started at {1} ***", newIndexName, DateTime.Now);
+                Console.WriteLine(cmd + " " + arguments);
+                int exitCode = CmdCaller.Run(cmd, arguments);
+                if (exitCode != 0)
+                    Console.Error.WriteLine("Failed to run bowtie-build. ExitCode={0}", exitCode);
+            }
             if (spliceChrFile != null)
             {
                 string spliceIndexName = genome.GetBowtieSplcIndexName().Replace(genome.Build, newIndexName);
@@ -122,7 +127,7 @@ namespace Linnarsson.Strt
                 outfileHead = Path.Combine(PathHandler.GetBowtieIndicesFolder(), spliceIndexName);
                 arguments = String.Format("{0} {1}", spliceChrFile, outfileHead);
                 Console.WriteLine(cmd + " " + arguments);
-                exitCode = CmdCaller.Run(cmd, arguments);
+                int exitCode = CmdCaller.Run(cmd, arguments);
                 if (exitCode != 0)
                     Console.Error.WriteLine("Failed to run bowtie-build. ExitCode={0}", exitCode);
             }
@@ -561,7 +566,7 @@ namespace Linnarsson.Strt
             return AnnotateMapFiles(genome, projectFolder, extractedFolder, mapFiles);
         }
 
-        public static readonly string ANNOTATION_VERSION = "34";
+        public static readonly string ANNOTATION_VERSION = "35";
         /// <summary>
         /// Annotate output from Bowtie alignment
         /// </summary>

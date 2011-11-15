@@ -180,7 +180,6 @@ namespace Linnarsson.Strt
                             if (rndTagProfileByGeneWriter == null)
                             {
                                 string file = OutputPathbase + "_rnd_tag_profiles.tab";
-                                Console.WriteLine("Writing rndTag profiles for selected genes to " + file);
                                 if (!Directory.Exists(Path.GetDirectoryName(file)))
                                     Directory.CreateDirectory(Path.GetDirectoryName(file));
                                 rndTagProfileByGeneWriter = file.OpenWrite();

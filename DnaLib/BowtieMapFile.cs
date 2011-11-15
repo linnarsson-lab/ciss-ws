@@ -308,11 +308,19 @@ namespace Linnarsson.Dna
         public void AddMapping(string chr, char strand, int pos, string mismatches)
         {
             if (NMappings < Mappings.Length)
-            {
-                Mappings[NMappings].Chr = chr.StartsWith("chr") ? chr.Substring(3) : chr;
-                Mappings[NMappings].Strand = strand;
-                Mappings[NMappings].Position = pos;
-                Mappings[NMappings].Mismatches = mismatches;
+            { // Keep mappings ordered by position, irrespective of chr or strand.
+                int idx = NMappings;
+                while (idx > 0)
+                {
+                    if (Mappings[idx - 1].Position <= pos)
+                        break;
+                    Mappings[idx] = Mappings[idx - 1];
+                    idx--;
+                }
+                Mappings[idx].Chr = chr.StartsWith("chr") ? chr.Substring(3) : chr;
+                Mappings[idx].Strand = strand;
+                Mappings[idx].Position = pos;
+                Mappings[idx].Mismatches = mismatches;
                 NMappings++;
             }
         }

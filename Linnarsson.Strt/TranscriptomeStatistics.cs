@@ -17,7 +17,6 @@ namespace Linnarsson.Strt
         public bool GenerateWiggle { get; set; }
         public bool DetermineMotifs { get; set; }
         public bool AnalyzeAllGeneVariants { get; set; }
-        private RedundantExonHitMapper redundantExonHitMapper;
         private RandomTagFilterByBc randomTagFilter;
         public SyntReadReporter TestReporter { get; set; }
 
@@ -39,7 +38,6 @@ namespace Linnarsson.Strt
         int numAnnotatedReads = 0;       // Number of reads that map to some annotation
         int numExonAnnotatedReads = 0;   // Number of reads that map to (one or more) exons
         int nMaxAltMappingsReads = 0; // Number of reads that hit the limit of alternative genomic mapping positions in bowtie
-        int nMaxAltMappingsReadsWOTrHit = 0; // Dito where the only hit in map file is not to a transcript
 
         int sampleDistForAccuStats = 5000000;
         private int statsSampleDistPerBarcode;
@@ -86,11 +84,6 @@ namespace Linnarsson.Strt
             annotationChrId = Annotations.Genome.Annotation;
             randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeNames());
             statsSampleDistPerBarcode = sampleDistForAccuStats / barcodes.Count;
-        }
-
-        public void SetRedundantHitMapper(AbstractGenomeAnnotations annotations, int averageReadLen)
-        {
-            redundantExonHitMapper = RedundantExonHitMapper.GetRedundantHitMapper(annotations.Genome, averageReadLen, annotations.geneFeatures);
         }
 
         public void AnnotateSingleBarcodeMapFile(string mapFilePath, int bcIdx)
@@ -297,9 +290,6 @@ namespace Linnarsson.Strt
             {
                 markStatus = MarkStatus.MARK_ALT_MAPPINGS;
                 nMaxAltMappingsReads++;
-                if (!someExonHit) nMaxAltMappingsReadsWOTrHit++;
-                if (redundantExonHitMapper != null)
-                    exonsToMark = redundantExonHitMapper.GetRedundantMappings(mappings[0].Chr, mappings[0].Position, mappings[0].Strand);
             } 
             foreach (Pair<MultiReadMapping, FtInterval> exonToMark in exonsToMark)
             {

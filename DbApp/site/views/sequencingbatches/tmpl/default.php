@@ -69,7 +69,7 @@ defined('_JEXEC') or die('Restricted access');
             <th>&nbsp;SampleId</th>
             <th><nobr>Batch (DB&nbsp;id)&nbsp;</nobr></th>
             <th>#Cycles&nbsp;<br />/Primer</th>
-            <th>#IdxCycles&nbsp;<br />/Primer</th>
+            <th>#IdxCycles&nbsp;/Primer</th>
             <th>Plan&nbsp;<br />" . JHTML::tooltip('Total # lanes that are planned') . "</th>
             <th>Asgn&nbsp;<br />" . JHTML::tooltip('Total # lanes that have been assigned to runs') . "</th>
             <th>IlluminaRuns&nbsp;</th>
@@ -130,38 +130,38 @@ defined('_JEXEC') or die('Restricted access');
     if ($assignedStatus == "incomplete" && ($batch->plannednumberoflanes - $batch->assignedlanes) <= 0) continue;
 
     echo "<tr>";
-    $batchviewlink = "&nbsp;  <a href=index.php?option=com_dbapp&view=sequencingbatch&layout=sequencingbatch&controller=sequencingbatch&searchid=" . $batch->id . "&Itemid=" . $itemid . ">view</a>&nbsp;";
-    $batcheditlink = "&nbsp;  <a href=index.php?option=com_dbapp&view=sequencingbatch&layout=edit&controller=sequencingbatch&searchid=" . $batch->id . "&Itemid=" . $itemid . ">edit</a>&nbsp;";
+    $batchviewlink = "<a href=index.php?option=com_dbapp&view=sequencingbatch&layout=sequencingbatch&controller=sequencingbatch&searchid=" . $batch->id . "&Itemid=" . $itemid . ">view</a>";
+    $batcheditlink = "<a href=index.php?option=com_dbapp&view=sequencingbatch&layout=edit&controller=sequencingbatch&searchid=" . $batch->id . "&Itemid=" . $itemid . ">edit</a>";
 //    echo "<td>" . $batch->title . "</td>";
-    echo "<td>$batchviewlink</td><td>$batcheditlink</td>";
-    $plateviewlink = "&nbsp;  <a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" . $batch->platedbid . "&Itemid=" . $itemid . ">" . $batch->plateid . "</a>&nbsp;";
-    echo "<td>$plateviewlink</td>";
+    echo "<td style='padding-right=2px;' >$batchviewlink</td><td>$batcheditlink</td>";
+    $plateviewlink = "<a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" . $batch->platedbid . "&Itemid=" . $itemid . ">" . $batch->plateid . "</a>";
+    echo "<td><nobr>$plateviewlink</nobr></td>";
     //echo "<td>" . $batch->plateid . "</td>";
-    echo "<td>&nbsp;" . $batch->batchno . " (" . $batch->id . ")</td>";
+    echo "<td>" . $batch->batchno . " (" . $batch->id . ")</td>";
     if ($batch->primer == "") $seqprimer = "?";
     else {
       $seqprimer = explode(' ', $batch->primer);
       $seqprimer = $seqprimer[0];
     }
     $cycles = ($batch->plannednumberofcycles > 0)? $batch->plannednumberofcycles : "?";
-    echo "<td>&nbsp;" . $cycles . " / " . $seqprimer . "</td>";
+    echo "<td><nobr>" . $cycles . "/" . $seqprimer . "</nobr></td>";
     if ($batch->indexprimer == "") $idxprimer = "?";
     else {
       $idxprimer = explode(' ', $batch->indexprimer);
       $idxprimer = $idxprimer[0];
     }
     $idxcycles = ($batch->plannedindexcycles > 0)? $batch->plannedindexcycles : "?";
-    echo "<td>&nbsp;" . $idxcycles . " / " . $idxprimer . "</td>";
-    echo "<td>&nbsp;" . $batch->plannednumberoflanes . "</td>";
-    echo "<td>&nbsp;" . $batch->assignedlanes . "</td>";
+    echo "<td>" . $idxcycles . " / " . $idxprimer . "</td>";
+    echo "<td>" . $batch->plannednumberoflanes . "</td>";
+    echo "<td>" . $batch->assignedlanes . "</td>";
     $runids = explode(',', $batch->illids);
     $rundbids = explode(',', $batch->illdbids);
     $runlinks = array();
     for ($i = 0; $i < sizeof($runids); $i++) {
-      $runlinks[] = " <a href=index.php?option=com_dbapp&view=illuminarun&layout=illuminarun&controller=illuminarun&searchid=" . $rundbids[$i] . "&Itemid=" . $itemid . ">" . $runids[$i] . "</a>";
+      $runlinks[] = "<a href=index.php?option=com_dbapp&view=illuminarun&layout=illuminarun&controller=illuminarun&searchid=" . $rundbids[$i] . "&Itemid=" . $itemid . ">" . $runids[$i] . "</a>";
     }
-    $runlinks = implode(',', $runlinks);
-    echo "<td>&nbsp;$runlinks</td>";
+    $runlinks = implode(', ', $runlinks);
+    echo "<td>$runlinks</td>";
     //echo "<td>" . $batch->illids . "</td>";
     if ($batch->principalinvestigator == "") $pi = "?";
     else {
@@ -169,19 +169,19 @@ defined('_JEXEC') or die('Restricted access');
       $pi = "<a href=index.php?option=com_dbapp&view=client&layout=client&controller=client&searchid="
            . $batch->clientid . "&Itemid=" . $itemid . ">" . $pi . "</a>";
     }
-    echo "<td>&nbsp;$pi</td>";
+    echo "<td>$pi</td>";
     $signed = "?";
     if ($batch->signed == "yes") $signed = "Y";
     else if ($batch->signed == "no") $signed = "n";
-    echo "<td>&nbsp;" . $signed . "</td>";
-    echo "<td>&nbsp;" . $batch->cost . "</td>";
+    echo "<td>" . $signed . "</td>";
+    echo "<td>" . $batch->cost . "</td>";
     $invoice = "?";
     if ($batch->invoice == "sent") $invoice = "Y";
     else if ($batch->invoice == "not sent") $invoice = "n";
-    echo "<td>&nbsp;" . $invoice . "</td>";
+    echo "<td>" . $invoice . "</td>";
     $comment = $batch->comment;
     if (strlen($comment) > 0)
-      echo "<td>&nbsp;" . JHTML::tooltip($comment) . "</td></tr>";
+      echo "<td>" . JHTML::tooltip($comment) . "</td></tr>";
     else
       echo "<td></td></tr>";
 //    echo "<td><nobr> ";# . $batch->user . " &nbsp; " ;

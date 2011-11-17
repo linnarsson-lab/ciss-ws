@@ -18,6 +18,7 @@ namespace Linnarsson.Strt
         public bool DetermineMotifs { get; set; }
         public bool AnalyzeAllGeneVariants { get; set; }
         private RandomTagFilterByBc randomTagFilter;
+        private SnpRndTagVerifier snpRndTagVerifier;
         public SyntReadReporter TestReporter { get; set; }
 
         Dictionary<string, int[]> TotalHitsByAnnotTypeAndChr; // Separates sense and antisense
@@ -64,6 +65,8 @@ namespace Linnarsson.Strt
             Annotations = annotations;
             if (props.GenerateWiggle) 
                 compactWiggle = new CompactWiggle(Annotations.ChromosomeLengths);
+            if (props.SnpRndTagVerification)
+                snpRndTagVerifier = new SnpRndTagVerifier(props);
             DetermineMotifs = props.DetermineMotifs;
             AnalyzeAllGeneVariants = !Annotations.noGeneVariants;
 			motifs = new DnaMotif[barcodes.Count];
@@ -103,6 +106,8 @@ namespace Linnarsson.Strt
                     Add(mrm);
                 else numDuplicateReads++;
                 numReads++;
+                if (snpRndTagVerifier != null)
+                    snpRndTagVerifier.Add(mrm);
                 if ((++numReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
                     SampleStatistics(statsSampleDistPerBarcode);
             }
@@ -174,7 +179,7 @@ namespace Linnarsson.Strt
                     for (int trPosInChrDir = 0; trPosInChrDir < gf.Length; trPosInChrDir++)
                     {
                         int chrPos = gf.GetChrPosFromTrPosInChrDir(trPosInChrDir);
-                        byte[] profile = randomTagFilter.GetMoleculeCounts(gf.Chr, chrPos, gf.Strand);
+                        ushort[] profile = randomTagFilter.GetMoleculeCounts(gf.Chr, chrPos, gf.Strand);
                         if (profile != null)
                         {
                             if (rndTagProfileByGeneWriter == null)
@@ -300,7 +305,7 @@ namespace Linnarsson.Strt
                 int hitMidPos = chrStart + halfWidth;
                 MarkResult res = ivl.Mark(hitMidPos, halfWidth, rec.Strand, bcodeIdx, ivl.ExtraData, markStatus);
                 if (rec.Mismatches != "")
-                    ((GeneFeature)res.feature).MarkSNPs(rec.Position, bcodeIdx, rec.Mismatches);
+                    ((GeneFeature)res.feature).MarkSNPs(rec.Position, bcodeIdx, rec.Mismatches, mappings.RandomBcIdx);
                 TotalHitsByAnnotTypeAndBarcode[res.annotType, bcodeIdx]++;
                 TotalHitsByAnnotTypeAndChr[chr][res.annotType]++;
                 TotalHitsByAnnotType[res.annotType]++;
@@ -343,6 +348,8 @@ namespace Linnarsson.Strt
             WriteSummary(fileNameBase, Annotations.GetSummaryLines(), readCounter);
             int averageReadLen = (int)compactWiggle.GetAverageHitLength();
             Annotations.SaveResult(fileNameBase, averageReadLen);
+            if (snpRndTagVerifier != null)
+                snpRndTagVerifier.Verify(fileNameBase);
             WriteSnps(fileNameBase);
             //WriteSnpsByBarcode(fileNameBase); // Large file & takes time
             if (DetermineMotifs)
@@ -758,66 +765,11 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </hitprofile>");
         }
 
-        /*private void AddSampledCVs(StreamWriter xmlFile)
-        {
-            int nSamples = hitsAtSample.Count;
-            int[] exprLevels = new int[] { 20, 100, 1000, 10000 };
-            Dictionary<int, Dictionary<int, List<double>>> groupedCVs = new Dictionary<int, Dictionary<int, List<double>>>();
-            foreach (int level in exprLevels)
-            {
-                groupedCVs[level] = new Dictionary<int, List<double>>();
-                for (int sampleIdx = 0; sampleIdx < nSamples; sampleIdx++)
-                    groupedCVs[level][sampleIdx] = new List<double>();
-            }
-            foreach (GeneFeature gf in Annotations.geneFeatures.Values)
-            {
-                int finalCount = gf.GetTranscriptHits();
-                if (finalCount == 0) continue;
-                foreach (int level in exprLevels)
-                {
-                    if (Math.Abs((level - finalCount)) < 0.2 * (double)level)
-                    {
-                        for (int sampleIdx = 0; sampleIdx < hitsAtSample.Count; sampleIdx++)
-                        {
-                            double cv = gf.VariationSamples[sampleIdx];
-                            groupedCVs[level][sampleIdx].Add(cv);
-                        }
-                        break;
-                    }
-                }
-            }
-            int colorCode = 64;
-            int colorStep = (255 - colorCode) / exprLevels.Length;
-            xmlFile.WriteLine("  <variationbyreads>");
-            xmlFile.WriteLine("    <title>Median %CV as function of feature hits at various transcript levels</title>");
-            xmlFile.WriteLine("	   <xtitle>Millions of feature hits processed</xtitle>");
-            foreach (int level in groupedCVs.Keys)
-            {
-                if (groupedCVs[level].ContainsKey(0) && groupedCVs[level][0].Count < 5) continue;
-                double[] medianCVs = new double[nSamples];
-                for (int sampleIdx = 0; sampleIdx < nSamples; sampleIdx++)
-                    medianCVs[sampleIdx] = DescriptiveStatistics.Median(groupedCVs[level][sampleIdx]);
-                if (!medianCVs.All(cv => cv < 0.000001))
-                {
-                    xmlFile.WriteLine("    <curve legend=\"{0} hits\" color=\"#00{1:X2}00\">", level, colorCode);
-                    for (int i = 0; i < nSamples; i++)
-                        if (medianCVs[i] > 0.0)
-                            xmlFile.WriteLine("      <point x=\"{0:0.##}\" y=\"{1:#.#}\" />", hitsAtSample[i] / 1.0E6d, 100.0d * medianCVs[i]);
-                }
-                colorCode += colorStep;
-                xmlFile.WriteLine("    </curve>");
-            }
-            xmlFile.WriteLine("  </variationbyreads>");
-        }*/
-
         private void AddCVHistogram(StreamWriter xmlFile)
         {
             int[] genomeBcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
             if (genomeBcIndexes.Length < 3)
-            {
-                Console.WriteLine("SKIPPING CVhisto because genomeBcIndexes.length=" + genomeBcIndexes.Length);
                 return;
-            }
             int nPairs = 1000;
             int nBins = 40;
             List<double[]> validBcCountsByGene = new List<double[]>();
@@ -841,7 +793,6 @@ namespace Linnarsson.Strt
                     validBcCountsByGene.Add(gfValidBcCounts);
                 }
             }
-            Console.WriteLine("Got totals for " + totalCountsByGene.Count + " genes for use in CVhisto.");
             double[] CVs = CalcCVs(genomeBcIndexes, nPairs, validBcCountsByGene, totalCountsByGene, totalsByBarcode);
             if (CVs != null)
                 OutputCVBars(xmlFile, nPairs, nBins, CVs);
@@ -853,13 +804,10 @@ namespace Linnarsson.Strt
             validBcCountsByGene.Reverse(); // Get indices of genes in order of most->least expressed
             int nGenes = Math.Min(validBcCountsByGene.Count - 1, nPairs);
             double[] CVs = new double[nGenes];
-            int minValidWellCount = numReads / genomeBcIndexes.Length / 20;
+            int minValidWellCount = numAnnotatedReads / genomeBcIndexes.Length / 20;
             int[] usefulBcIndexes = genomeBcIndexes.Where(bcIdx => totalsByBarcode[bcIdx] > minValidWellCount).ToArray();
             if (usefulBcIndexes.Length < 3)
-            {
-                Console.WriteLine("ERROR: userfulBcIndexes = " + usefulBcIndexes.Length);
                 return null;
-            }
             for (int geneIdx = 0; geneIdx < nGenes; geneIdx++)
             {
                 double[] bcodeCounts = validBcCountsByGene[geneIdx];
@@ -1170,7 +1118,7 @@ namespace Linnarsson.Strt
         private void WriteSnps(string fileNameBase)
         {
             StreamWriter snpFile = (fileNameBase + "_SNPs.tab").OpenWrite();
-            snpFile.WriteLine("#Gene\tChr\tmRNAStartChrPos\tHetero_eSNPChrPos\tAlt_eSNPChrPos");
+            snpFile.WriteLine("#Gene\tChr\tmRNAStartChrPosition\tHetero_eSNPChrPositions\tAlt_eSNPChrPositions");
             int thres = (int)(SnpAnalyzer.thresholdFractionAltHitsForMixPos * 100);
             snpFile.WriteLine("#(>={0} AltNtReads/Pos required)\t\t\t({1}-{2}% AltNt)\t(>{2}% Alt Nt)", SnpAnalyzer.minAltHitsToTestSnpPos, thres, 100 - thres);
             int averageHitLen = (int)Math.Round(compactWiggle.GetAverageHitLength());

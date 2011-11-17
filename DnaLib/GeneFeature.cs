@@ -47,15 +47,15 @@ namespace Linnarsson.Dna
         /// </summary>
         private int locusSnpIdx;
         private bool locusSnpsSorted;
-        private uint[] m_LocusSnps;
-        public uint[] LocusSnps
+        private SNPInfo[] m_LocusSnps;
+        public SNPInfo[] LocusSnps
         {
             get
             {
                 if (!locusSnpsSorted)
                 {
                     Array.Resize(ref m_LocusSnps, locusSnpIdx);
-                    Array.Sort(m_LocusSnps);
+                    Array.Sort(m_LocusSnps, SNPInfo.Compare);
                     locusSnpsSorted = true;
                 }
                 return m_LocusSnps;
@@ -164,7 +164,7 @@ namespace Linnarsson.Dna
             NonMaskedHitsByAnnotType = new int[AnnotType.Count];
             m_LocusHits = new int[1000];
             locusHitIdx = 0;
-            m_LocusSnps = new uint[10];
+            m_LocusSnps = new SNPInfo[10];
             locusSnpIdx = 0;
         }
 
@@ -662,23 +662,25 @@ namespace Linnarsson.Dna
         }
 
         private static readonly char[] validSNPNts = new char[] { 'A', 'C', 'G', 'T' };
-        public void MarkSNPs(int hitStartPos, int bcodeIdx, string mismatches)
+        public void MarkSNPs(int hitStartPos, int bcodeIdx, string mismatches, int rndTagIdx)
         {
             foreach (string snp in mismatches.Split(','))
             {
                 int p = snp.IndexOf(':');
                 int relPos = int.Parse(snp.Substring(0, p));
                 char altNtChar = snp[p + 3];
-                int locusSnpPos = hitStartPos + relPos - LocusStart;
+                int chrSnpPos = hitStartPos + relPos;
+                if (chrSnpPos < Start || chrSnpPos > End)
+                    continue;
+                int locusSnpPos = chrSnpPos - LocusStart;
                 if (!validSNPNts.Contains(altNtChar) || locusSnpPos < 0 || locusSnpPos >= GetLocusLength())
                     continue; // May happen if map to N or mapping accidentally includes a few bases outside locus.
-                uint codedSnp = new SNPInfo(altNtChar, bcodeIdx, locusSnpPos).CodedSNP;
                 locusSnpsSorted = false;
                 if (locusSnpIdx == m_LocusSnps.Length)
                 {
                     Array.Resize(ref m_LocusSnps, Math.Max(100, m_LocusSnps.Length * 2));
                 }
-                m_LocusSnps[locusSnpIdx++] = codedSnp;
+                m_LocusSnps[locusSnpIdx++] = new SNPInfo(altNtChar, bcodeIdx, locusSnpPos, rndTagIdx);
             }
         }
     }

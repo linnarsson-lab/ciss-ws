@@ -46,6 +46,9 @@ namespace Linnarsson.Dna
                            "Osx", "Twist", "Ap1", "Sox9", "Sox6", "Sox5", "Bmp2", "Smad1", "Smad4" };
         public string[] GenesToShowRndTagProfile =
             new string[] { "Sox2" ,"Actb", "Nanog" };
+        public bool SnpRndTagVerification = false;
+        public string SnpRndTagVerificationChr = "1";
+        public int[] SnpRndTagVerificationPositions = new int[] { };
         public bool GenerateTranscriptProfiles = false;
         public bool GenerateGeneLocusProfiles = false;
         public bool GenerateGeneProfilesByBarcode = false;

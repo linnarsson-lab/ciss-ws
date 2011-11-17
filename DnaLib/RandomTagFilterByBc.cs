@@ -13,11 +13,11 @@ namespace Linnarsson.Dna
             /// PosAndStrand_on_Chr -> countsByRndTagIdx
             /// Position stored as "(pos * 2) | strand" where strand in bit0: +/- => 0/1
             /// </summary>
-            private Dictionary<int, byte[]> molCounts = new Dictionary<int, byte[]>();
+            private Dictionary<int, ushort[]> molCounts = new Dictionary<int, ushort[]>();
             /// <summary>
             /// Max value of data items in the molCounts arrays.
             /// </summary>
-            public static int MaxMoleculeReadCount { get { return byte.MaxValue; } }
+            public static int MaxMoleculeReadCount { get { return ushort.MaxValue; } }
 
             public void ChangeBcIdx()
             {
@@ -36,9 +36,9 @@ namespace Linnarsson.Dna
                 int strandIdx = (strand == '+') ? 0 : 1;
                 int posStrand = (pos << 1) | strandIdx;
                 if (!molCounts.ContainsKey(posStrand))
-                    molCounts[posStrand] = new byte[nRndTags];
+                    molCounts[posStrand] = new ushort[nRndTags];
                 int currentCount = molCounts[posStrand][rndTagIdx];
-                molCounts[posStrand][rndTagIdx] = (byte)Math.Min(255, currentCount + 1);
+                molCounts[posStrand][rndTagIdx] = (ushort)Math.Min(ushort.MaxValue, currentCount + 1);
                 return currentCount == 0;
             }
 
@@ -48,7 +48,7 @@ namespace Linnarsson.Dna
             /// <param name="pos"></param>
             /// <param name="strand"></param>
             /// <returns>Number of reads as function of rndTag index at given genomic location</returns>
-            public byte[] GetMoleculeCounts(int pos, char strand)
+            public ushort[] GetMoleculeCounts(int pos, char strand)
             {
                 int strandIdx = (strand == '+') ? 0 : 1;
                 int posStrand = (pos << 1) | strandIdx;
@@ -59,11 +59,11 @@ namespace Linnarsson.Dna
             /// Generates (in arbitrary order) the number of times each registered molecule has been observed.
             /// </summary>
             /// <returns></returns>
-            public IEnumerable<byte> IterMoleculeReadCounts()
+            public IEnumerable<int> IterMoleculeReadCounts()
             {
-                foreach (byte[] molCountsAtPos in molCounts.Values)
-                    foreach (byte nOfRndTag in molCountsAtPos)
-                        yield return nOfRndTag;
+                foreach (ushort[] molCountsAtPos in molCounts.Values)
+                    foreach (ushort nOfRndTag in molCountsAtPos)
+                        yield return (int)nOfRndTag;
             }
 
             /// <summary>
@@ -73,10 +73,10 @@ namespace Linnarsson.Dna
             public int[] GetCasesByRndTagCount()
             {
                 int[] nCasesByRndTagCount = new int[nRndTags + 1];
-                foreach (byte[] molCountsAtPos in molCounts.Values)
+                foreach (ushort[] molCountsAtPos in molCounts.Values)
                 {
                     int nUsedRndTags = 0;
-                    foreach (byte nOfRndTag in molCountsAtPos)
+                    foreach (ushort nOfRndTag in molCountsAtPos)
                         if (nOfRndTag > 0) nUsedRndTags++;
                     if (nUsedRndTags > 0)
                         nCasesByRndTagCount[nUsedRndTags]++;
@@ -119,11 +119,11 @@ namespace Linnarsson.Dna
                 tagCountAtEachPosition = new int[molCounts.Count];
                 int strandIdx = (strand == '+') ? 0 : 1;
                 int p = 0;
-                foreach (KeyValuePair<int, byte[]> codedPair in molCounts)
+                foreach (KeyValuePair<int, ushort[]> codedPair in molCounts)
                     if ((codedPair.Key & 1) == strandIdx)
                     {
                         int nUsedRndTags = 0;
-                        foreach (byte nReadsInRndTag in codedPair.Value)
+                        foreach (ushort nReadsInRndTag in codedPair.Value)
                             if (nReadsInRndTag > 0) nUsedRndTags++;
                         tagCountAtEachPosition[p] = nUsedRndTags;
                         positions[p++] = codedPair.Key >> 1;
@@ -157,6 +157,8 @@ namespace Linnarsson.Dna
         /// Histogram of number of times (reads) every molecule has been seen
         /// </summary>
         public int[] moleculeReadCountsHistogram;
+        public static readonly int MaxValueInReadCountHistogram = 255;
+
         /// <summary>
         /// Number of reads that are copies of a first distinct read in each barcode.
         /// (i.e., the position, strand, and rndTag are exactly the same.)
@@ -176,7 +178,7 @@ namespace Linnarsson.Dna
                 chrTagDatas[chrId] = new ChrTagData();
             currentBcIdx = 0;
             usedBcIdxs = new HashSet<int>();
-            moleculeReadCountsHistogram = new int[ChrTagData.MaxMoleculeReadCount + 1];
+            moleculeReadCountsHistogram = new int[MaxValueInReadCountHistogram + 1];
         }
 
         private void ChangeBcIdx(int newBcIdx)
@@ -190,8 +192,8 @@ namespace Linnarsson.Dna
                 int[] chrCounts = tagData.GetCasesByRndTagCount();
                 for (int i = 0; i < nCasesPerRandomTagCount.Length; i++)
                     nCasesPerRandomTagCount[i] += chrCounts[i];
-                foreach (byte count in tagData.IterMoleculeReadCounts())
-                    moleculeReadCountsHistogram[count]++;
+                foreach (int count in tagData.IterMoleculeReadCounts())
+                    moleculeReadCountsHistogram[Math.Min(MaxValueInReadCountHistogram, count)]++;
                 tagData.ChangeBcIdx();
             }
         }
@@ -218,7 +220,7 @@ namespace Linnarsson.Dna
         /// <param name="pos"></param>
         /// <param name="strand"></param>
         /// <returns>Number of reads as function of rndTag index at given genomic location, or null if no reads has hit that location</returns>
-        public byte[] GetMoleculeCounts(string chr, int pos, char strand)
+        public ushort[] GetMoleculeCounts(string chr, int pos, char strand)
         {
             try
             {

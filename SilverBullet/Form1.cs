@@ -119,7 +119,7 @@ namespace SilverBullet
 			}
 			// Locate the extraction folder
 			FolderBrowserDialog fbd = new FolderBrowserDialog();
-			fbd.Description = "Locate the extraction folder (with *.map files)";
+			fbd.Description = "Locate the extraction folder";
 			fbd.ShowNewFolderButton = false;
 			fbd.SelectedPath = Props.props.ProjectsFolder;
 			if(fbd.ShowDialog() == DialogResult.OK)

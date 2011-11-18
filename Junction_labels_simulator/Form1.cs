@@ -152,13 +152,17 @@ namespace Junction_labels_simulator
             //SaveFileDialog sfd = new SaveFileDialog();
             //if (sfd.ShowDialog() != DialogResult.OK) return;
             //var result = sfd.FileName.OpenWrite();
+
+            
+            
             long totalLength=0;
             foreach (string fname in ofd1.FileNames)
             {
-               
+                
                 FastaFile ff = FastaFile.Load(fname);
                 foreach (FastaRecord rec in ff.Records)
                 {
+                    
                     totalLength += rec.Sequence.Count;
                     if (num_molecule * molecule_len > totalLength)
                     {
@@ -167,7 +171,10 @@ namespace Junction_labels_simulator
                     }
                     //MessageBox.Show(totalLength.ToString());
                     //DnaSequence ds1 = new DnaSequence(rec.Sequence); // to get data from 1st strand
-                    
+                    Random Tsp_rnd = new Random();
+                    DialogResult dr2 = MessageBox.Show("Do you want to continue from Quality correction?", "Yes to continue", MessageBoxButtons.YesNo, MessageBoxIcon.Hand);
+                    if (dr2 == DialogResult.Yes) goto qualitysection;
+
                     LongDnaSequence ds1 = new LongDnaSequence(rec.Sequence);
                     LongDnaSequence ds2 = new LongDnaSequence(rec.Sequence); // to get data from 1st strand and set SNPs and convert into 2nd strand 
                     string[] lines = System.IO.File.ReadAllLines(ofd2.FileName);
@@ -246,7 +253,7 @@ namespace Junction_labels_simulator
                     var output2 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones.txt")).OpenWrite();
                     output2.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "Seq" + "\t"  + "Common Fragment 9L" + "\t"+ "ME19L"  + "\t" +"ME19R"+ "\t" + "Common Fragment 9R" + "\t" + "Total Seq" + "\t" + "Read Count");
                     string[] Tsp_lines = System.IO.File.ReadAllLines(Molecules_file);
-                    Random Tsp_rnd = new Random();
+                    
                     int readCount = 0;
                     int Tsp_start = 0;
                     int Tsp_count = 0;
@@ -314,7 +321,7 @@ namespace Junction_labels_simulator
                                         //if (Tsp_N  <= Tsp_len/2)
                                         if (Tsp_N <= len / 2)
                                         {
-                                            readCount = rndRead.Next(10);
+                                            readCount = rndRead.Next(10); // Need to change here *************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
                                             output2.WriteLine(Tsp_count - 1 + "\t" + Tsp_count + "\t" + Tsp_lineItems[0] + "\t" + Tsp_lineItems[1] + "\t" + (first_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + (second_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + /*Tsp_len*/len + "\t" + Tsp_ds + "\t" + CF9L + "\t" + ME19L  + "\t" + ME19R  + "\t" + CF9R + "\t" + (/*ME19L +*/ CF9L.ToString() + Tsp_ds + CF9R /*+ME19R*/) + "\t" + readCount);
                                         }
                                         Tsp_count++;
@@ -462,13 +469,14 @@ namespace Junction_labels_simulator
                     ////MessageBox.Show(totReads.ToString()); 
                     //output4.Close();
                     //output5.Close();
-                    
+                qualitysection: ;
                     string Totseq_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones_N6.txt"));
                     //string QualityScore=("\\192.168.1.12\data\reads\Run00007_L1_1_100521_GA2X_0007.fq");
-                    FastQFile fq = FastQFile.Load("C:\\Indranil\\2011 work and activity\\denovo\\f100lines.fq", 64);
+                    FastQFile fq = FastQFile.Load("C:\\Indranil\\2011 work and activity\\denovo\\xaaz.fq", 64);
                     int errorcount = 0;
                     var output4 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_1.fq")).OpenWrite();
                     var output5 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_2.fq")).OpenWrite();
+                    var errorOutput = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_errorOutput.txt")).OpenWrite();
                     string[] Totseq_lines = System.IO.File.ReadAllLines(Totseq_file);
                     //Random rndReads = new Random();
                     long totReads = 0;
@@ -488,41 +496,60 @@ namespace Junction_labels_simulator
                         
                         int recordSeq = 0;
                         FastQRecord fqR = fq.Records[record];
-                        
+
                         for (int rc = 0; rc < readC; rc++)
                         {
                             ShortDnaSequence fwdSeq = new ShortDnaSequence();
-                            ShortDnaSequence revSeq = new ShortDnaSequence();    
+                            ShortDnaSequence revSeq = new ShortDnaSequence();
+                            totDseq = new ShortDnaSequence(totSeq);
                             Random rnd = new Random();
                             for (int k = 0; k <= 100 /*totSeq.Length*/; k++) //##############
                             {
                                 recordSeq++;
                                 if (recordSeq >= 100) //##############
                                 {
+                                    recordSeq = 0;
                                     record++;
                                     //if (record >= 24) record = 0;
-                                    if (fq.Records.Count == record) record = 0; 
+                                    if (fq.Records.Count == record) record = 0;
                                     fqR = fq.Records[record];
-                                    recordSeq = 0;
                                 }
-                                double error_prob = FastQRecord.QualityToProbability(fqR.Qualities[k]);
-                                if (rnd.NextDouble() < error_prob)
+                                //MessageBox.Show( fqR.Sequence[k].ToString() + " and  " + fqR.Qualities[k].ToString());
+                                do
                                 {
+                                    if (fq.Records.Count == record) record = 0;
+                                    fqR = fq.Records[record];
+                                    fqR.TrimBBB();
+                                    record++;
+                                    //MessageBox.Show("I am here and the record is =" + record + "  and the quality.length is = " + fqR.Qualities.Length);
+                                } while (fqR.Qualities.Length <= 100);
+
+                                //MessageBox.Show("I am outside the do loop");
+                                string header=Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5];
+                                double error_prob = FastQRecord.QualityToProbability(fqR.Qualities[k]);
+                                double rndDouble=rnd.NextDouble();
+                                if (rndDouble < error_prob)
+                                {
+                                    //MessageBox.Show(rndDouble + "  <  " + error_prob);
                                     if (totDseq.GetNucleotide(k) == 'A' || totDseq.GetNucleotide(k) == 'a')
                                     {
                                         totDseq.SetNucleotide(k, 'C');
+                                        errorOutput.WriteLine(header + "\t" + rc + "\t" + k + "\t" + "A->C");
                                     }
                                     else if (totDseq.GetNucleotide(k) == 'C' || totDseq.GetNucleotide(k) == 'c')
                                     {
                                         totDseq.SetNucleotide(k, 'A');
+                                        errorOutput.WriteLine(header + "\t" + rc + "\t" + k + "\t" + "C->A");
                                     }
                                     else if (totDseq.GetNucleotide(k) == 'G' || totDseq.GetNucleotide(k) == 'g')
                                     {
                                         totDseq.SetNucleotide(k, 'T');
+                                        errorOutput.WriteLine(header + "\t" + rc + "\t" + k + "\t" + "G->T");
                                     }
                                     else if (totDseq.GetNucleotide(k) == 'T' || totDseq.GetNucleotide(k) == 't')
                                     {
                                         totDseq.SetNucleotide(k, 'G');
+                                        errorOutput.WriteLine(header + "\t" + rc + "\t" + k + "\t" + "T->G");
                                     }
                                     errorcount++;
                                 }
@@ -562,8 +589,9 @@ namespace Junction_labels_simulator
                     //MessageBox.Show(totReads.ToString()); 
                     output4.Close();
                     output5.Close();
+                    errorOutput.Close();
                     MessageBox.Show(errorcount.ToString());
-
+                    
 
                 }
 
@@ -789,6 +817,7 @@ namespace Junction_labels_simulator
                         deCount++;
                         d1.Remove(score);
                         d1.Add(score, deCount);
+                        deCount = 0;
                            
                     }
                     else d1.Add(score, deCount + 1);
@@ -804,6 +833,7 @@ namespace Junction_labels_simulator
                         deCount++;
                         d2.Remove(score);
                         d2.Add(score, deCount);
+                        deCount = 0;
 
                     }
                     else d2.Add(score, deCount + 1);
@@ -818,6 +848,7 @@ namespace Junction_labels_simulator
                         deCount++;
                         d3.Remove(score);
                         d3.Add(score, deCount);
+                        deCount = 0;
 
                     }
                     else d3.Add(score, deCount + 1);
@@ -832,6 +863,7 @@ namespace Junction_labels_simulator
                         deCount++;
                         d4.Remove(score);
                         d4.Add(score, deCount);
+                        deCount = 0;
 
                     }
                     else d4.Add(score, deCount + 1);
@@ -863,11 +895,11 @@ namespace Junction_labels_simulator
                 resultLine = resultLine + tempseq;
                 tempseq = "";
                 //MessageBox.Show(resultLine);
-                    //foreach (var item in sortedd1)
-                    //{
-                    //    MessageBox.Show("key="+(item.Key).ToString());
-                    //    MessageBox.Show("value="+(item.Value).ToString());
-                    //} 
+                //foreach (var item in sortedd1)
+                //{
+                //    MessageBox.Show("key=" + (item.Key).ToString());
+                //    MessageBox.Show("value=" + (item.Value).ToString());
+                //} 
 
                 output.WriteLine(headerLines[seqCount]);
                 output.WriteLine(resultLine);

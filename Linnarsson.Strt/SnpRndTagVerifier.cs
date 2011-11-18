@@ -138,6 +138,7 @@ namespace Linnarsson.Strt
                             writer.Write("\t" + "0ACGT"[ntIdx]);
                             for (int i = 0; i < sData.countsByNtAndRndTagIdx.GetLength(1); i++)
                                 writer.Write("\t" + sData.countsByNtAndRndTagIdx[ntIdx, i].ToString());
+                            writer.WriteLine();
                         }
                     }
                 }

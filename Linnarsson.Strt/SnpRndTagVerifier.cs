@@ -13,7 +13,7 @@ namespace Linnarsson.Strt
 
         public SnpRndTagData(int nRndTags)
         {
-            countsByNtAndRndTagIdx = new short[4, nRndTags];
+            countsByNtAndRndTagIdx = new short[5, nRndTags];
         }
 
         public static int GetNtIdx(char nt)
@@ -64,9 +64,15 @@ namespace Linnarsson.Strt
         {
             this.props = props;
             verificationChr = props.SnpRndTagVerificationChr;
-            int[] pos = props.SnpRndTagVerificationPositions;
-            for (int i = 0; i < pos.Length; i++)
-                data[pos[i]] = new SnpRndTagData[props.Barcodes.Count];
+            int[] verPositions = props.SnpRndTagVerificationPositions;
+            int nBarcodes = props.Barcodes.Count;
+            int nRndTags = props.Barcodes.RandomBarcodeCount;
+            foreach (int pos in verPositions)
+            {
+                data[pos] = new SnpRndTagData[nBarcodes];
+                for (int i = 0; i < nBarcodes; i++)
+                    data[pos][i] = new SnpRndTagData(nRndTags);
+            }
         }
 
         public void Add(MultiReadMappings mrm)
@@ -87,6 +93,11 @@ namespace Linnarsson.Strt
             foreach (string snp in mismatches.Split(','))
             {
                 int p = snp.IndexOf(':');
+                if (p == -1)
+                {
+                    Console.WriteLine("Strange mismatches: " + mismatches + " at hitStartPos=" + hitStartPos);
+                    continue;
+                }
                 int relPos = int.Parse(snp.Substring(0, p));
                 if (hitStartPos + relPos == snpPos)
                     return snp[p + 3];

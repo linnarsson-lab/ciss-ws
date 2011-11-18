@@ -7,6 +7,46 @@ namespace Linnarsson.Dna
 {
     public class RandomTagFilterByBc
     {
+        public class TagItem
+        {
+            // TagItem summarize all reads that map to a specific (chr, pos, strand) combination.
+            ushort[] molCounts; // Count of reads in each rndTag like before
+            ushort[] snpCounts; // Count of a read-common SNP within each rndTag
+            byte[] snpOffsets; // Offset from Read startPos of the SNP
+            char[] snpNt; // The alternative Nt of the SNP (really needed?)
+            bool hasAltMappings; // true when the (chr, pos, strand) read seq is not unique in genome.
+            // molCount & snpCount can probably be reduced to byte once we know how to detect
+            // saturation of reads and mutation rates for mutation removal.
+            //
+            // Could potentially save pointers to the pre-calculated alternative mappings for
+            // important sequences (exons) here, to avoid the multiread issue:
+            // AltMappings altMappings;
+            // with AltMappings being an array of (chr, pos, strand) items, pointed to by all member TagItems.
+            // or:
+            // TagItem[] altTagItems;
+            // being pointers to all the alternative mapped TagItems
+            // All items in either array should then be visited during the annotation step,
+            // or better, all the other TagItems should also be assigned immediately, so that annotation can
+            // process gene-by-gene as well as TagItem-by-TagItem.
+            // If analyzing gene-by-gene, a flag should indicate that the TagItem has been visited, to 
+            // be able to separate Max/Min counts for redundant genes:
+            // bool visited = false;
+            // These ways require all TagItems with alternative mappings to be initiated even if no reads will map.
+            // Save memory by keeping the TagItems data empty until some actual reads are assigned to them.
+            //
+            // The process of first counting all reads before annotating, loses the readLen of each
+            // read. Maybe a stronger limit on min readLen should be used, and small A-tails not be removed,
+            // so that a constant readLen can be assumed.
+            //
+            // SNPs can only be correctly analyzed if the mapping is unique, i.e. hasAltMappings = false
+            // This setup allows only one SNP within the readLen window of this TagItem.
+            // ...handle that e.g. by changing offset and Nt when detecting a new and count is only <= 1.
+            // snpCount should be 0 or equal to molCount, otherwise the molecule is probably really
+            // two mixed molecules, one from each allele (ca.50/50), or due to a mutation during PCR (any ratio).
+            // Whether the SNP is real can be inferred by scanning all rndTags of TagItems spanning the SNP position.
+            // Then, every molecule that spans a SNP can be assigned to either allele.
+        }
+
         public class ChrTagData
         {
             /// <summary>

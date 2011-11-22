@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "rikard_ett", "rikard_ett\rikard_ett.csproj", "{899CA803-DEEE-4335-87F0-6675E687DC0D}"
+EndProject
+Global
+	GlobalSection(SourceCodeControl) = preSolution
+		SccNumberOfProjects = 2
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = rikard_ett\\rikard_ett.csproj
+		SccLocalPath1 = .
+		SccProjectFilePathRelativizedFromConnection1 = rikard_ett\\
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{899CA803-DEEE-4335-87F0-6675E687DC0D}.Debug|x86.ActiveCfg = Debug|x86
+		{899CA803-DEEE-4335-87F0-6675E687DC0D}.Debug|x86.Build.0 = Debug|x86
+		{899CA803-DEEE-4335-87F0-6675E687DC0D}.Release|x86.ActiveCfg = Release|x86
+		{899CA803-DEEE-4335-87F0-6675E687DC0D}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

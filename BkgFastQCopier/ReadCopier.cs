@@ -7,7 +7,6 @@ using System.Text.RegularExpressions;
 using Linnarsson.Utilities;
 using Linnarsson.Dna;
 using Linnarsson.Strt;
-using System.Threading.Tasks;
 
 
 namespace BkgFastQCopier
@@ -78,11 +77,7 @@ namespace BkgFastQCopier
             string[] runFolderNames = Directory.GetDirectories(illuminaRunsFolder);
             foreach (string runFolder in runFolderNames)
             {
-                Match m = Regex.Match(runFolder, "([0-9]{6})_[^_]+_([0-9]+)_FC$");
-                if (!m.Success)
-                    m = Regex.Match(runFolder, "([0-9]{6})_[^_]+_([0-9]+)$");
-                if (!m.Success)
-                    m = Regex.Match(runFolder, "([0-9]{6})_[^_]+_([0-9]{4})_[AB]([a-zA-Z0-9]+)$");
+                Match m = MatchRunFolderName(runFolder);
                 if (m.Success)
                 {
                     string readyFilePath = Path.Combine(runFolder, Props.props.IlluminaRunReadyFilename);
@@ -108,6 +103,28 @@ namespace BkgFastQCopier
                     }
                 }
             }
+        }
+
+        private static Match MatchRunFolderName(string runFolder)
+        {
+            Match m = Regex.Match(runFolder, "([0-9]{6})_[^_]+_([0-9]+)_FC$");
+            if (!m.Success)
+                m = Regex.Match(runFolder, "([0-9]{6})_[^_]+_([0-9]+)$");
+            if (!m.Success)
+                m = Regex.Match(runFolder, "([0-9]{6})_[^_]+_([0-9]{4})_[AB]([a-zA-Z0-9]+)$");
+            return m;
+        }
+
+        public string Copy(string runFolder, string readsFolder)
+        {
+            string result = "copyfail";
+            Match m = MatchRunFolderName(runFolder);
+            if (m.Success)
+            {
+                int runNo = int.Parse(m.Groups[2].Value);
+                result = Copy(runNo, runFolder, readsFolder);
+            }
+            return result;
         }
 
         public string Copy(int runId, string runFolder, string readsFolder)
@@ -137,7 +154,7 @@ namespace BkgFastQCopier
             int laneCount = 0;
             logWriter.WriteLine("Processing bcl files from " + runFolder + ".");
             logWriter.Flush();
-			Parallel.For(1, 9, (int lane) =>
+			for (int lane = 1; lane <= 8; lane++)
 				{
 					for (int read = 1; read <= 3; read++)
 					{
@@ -156,8 +173,7 @@ namespace BkgFastQCopier
 						if (outputter != null)
 							outputter.Close();
 					}
-				});
-
+				};
             return laneCount;
         }
 

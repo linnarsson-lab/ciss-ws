@@ -20,6 +20,7 @@ namespace BkgFastQCopier
             string illuminaRunsFolder = Props.props.RunsFolder;
             string outputReadsFolder = Props.props.ReadsFolder;
             string logFile = new FileInfo("BFQC_" + Process.GetCurrentProcess().Id + ".log").FullName;
+            string specificRunFolder = null;
 
             try 
             {
@@ -43,18 +44,21 @@ namespace BkgFastQCopier
                         minutesWait = int.Parse(args[++i]);
                     else if (arg.StartsWith("-o"))
                         minutesWait = int.Parse(arg.Substring(2));
+                    else if (arg == "--run")
+                        specificRunFolder = args[++i];
                     else throw new ArgumentException();
+                    i++;
                 }
             }
             catch (Exception)
             {
-                    Console.WriteLine("\nOptions:\n\n" +
-                                      "-i<file>    - specify a non-standard Illumina runs folder" +
-                                      "-o<file>    - specify a non-standard reads output folder" +
-                                      "-l<file>    - specify a non-standard log file\n\n" +
-                                      "-t<N>       - specify a non-standard interval for scans in minutes\n\n" +
-                                      "Start using nohup to scan forever every {0} minutes.\n" +
-                                      "Log output goes to {1}.", minutesWait, logFile);
+                Console.WriteLine("\nOptions:\n\n" +
+                                  "-i <file>      - specify a non-standard Illumina runs folder\n" +
+                                  "-o <file>      - specify a non-standard reads output folder\n" +
+                                  "-l <file>      - specify a non-standard log file\n" +
+                                  "-t <N>         - specify a non-standard interval for scans in minutes\n" +
+                                  "--run <folder> - copy only specified run folder and then quit\n" +
+                                  "Start using nohup to scan for new data every {0} minutes.\n", minutesWait);
                     return;
             }
             if (!File.Exists(logFile))
@@ -67,8 +71,23 @@ namespace BkgFastQCopier
             logWriter.WriteLine("Starting BkgFastQCopier at " + now);
             logWriter.Flush();
             Console.WriteLine("BkgFastQCopier started at " + now + " and logging to " + logFile);
-
             ReadCopier readCopier = new ReadCopier(illuminaRunsFolder, outputReadsFolder, logWriter);
+            if (specificRunFolder != null)
+            {
+                Console.WriteLine("Copying data from " + specificRunFolder + " to " + outputReadsFolder);
+                readCopier.Copy(specificRunFolder, outputReadsFolder);
+            }
+            else
+            {
+                Console.WriteLine("Scans for new data every {0} minutes. Log output goes to {1}.", minutesWait, logFile);
+                KeepScanning(minutesWait, logWriter, readCopier);
+            }
+            logWriter.WriteLine("BkgFastQCopier quit at " + DateTime.Now.ToPathSafeString());
+            logWriter.Close();
+        }
+
+        private static void KeepScanning(int minutesWait, StreamWriter logWriter, ReadCopier readCopier)
+        {
             int nExceptions = 0;
             while (nExceptions < 5 && Program.keepRunning)
             {
@@ -84,8 +103,6 @@ namespace BkgFastQCopier
                 }
                 Thread.Sleep(1000 * 60 * minutesWait);
             }
-            logWriter.WriteLine("BkgFastQCopier quit at " + DateTime.Now.ToPathSafeString());
-            logWriter.Close();
         }
 
     }

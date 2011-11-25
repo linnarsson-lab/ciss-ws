@@ -109,7 +109,7 @@ namespace Linnarsson.Strt
                 }
             }
         }
-        protected void AddInterval(string chr, int start, int end, DoMarkHit marker, int extraData)
+        protected void AddInterval(string chr, int start, int end, NewMarkHit marker, int extraData)
         {
             QuickAnnotations[chr].Add(new FtInterval(start, end, marker, extraData));
         }

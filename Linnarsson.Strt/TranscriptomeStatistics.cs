@@ -13,7 +13,11 @@ namespace Linnarsson.Strt
 {
 	public class TranscriptomeStatistics
 	{
-        private CompactWiggle compactWiggle;
+        private static readonly int sampleDistForAccuStats = 5000000;
+
+        public static readonly int maxHotspotCount = 50;
+        public static readonly int minHotspotDistance = 5;
+
         public bool GenerateWiggle { get; set; }
         public bool DetermineMotifs { get; set; }
         public bool AnalyzeAllGeneVariants { get; set; }
@@ -40,31 +44,26 @@ namespace Linnarsson.Strt
         int numExonAnnotatedReads = 0;   // Number of reads that map to (one or more) exons
         int nMaxAltMappingsReads = 0; // Number of reads that hit the limit of alternative genomic mapping positions in bowtie
 
-        int sampleDistForAccuStats = 5000000;
         private int statsSampleDistPerBarcode;
 
         Dictionary<int, List<int>> sampledDetectedTranscriptsByBcIdx = new Dictionary<int, List<int>>();
         // For non-rndTagged samples the following to will be identical:
         Dictionary<int, List<int>> sampledUniqueMoleculesByBcIdx = new Dictionary<int, List<int>>();
         Dictionary<int, List<int>> sampledUniqueHitPositionsByBcIdx = new Dictionary<int, List<int>>();
-        int[] nReadsInSampleBin = new int[1];
-        int sampleBinNumber = 0;
 
         private StreamWriter rndTagProfileByGeneWriter;
 
         Dictionary<string, int> redundantHits = new Dictionary<string, int>();
-        List<Pair<MultiReadMapping, FtInterval>> exonsToMark;
+        List<Pair<MappedTagItem, FtInterval>> exonsToMark;
         Dictionary<string, Pair<MultiReadMapping, FtInterval>> geneToExonToMark = new Dictionary<string,Pair<MultiReadMapping,FtInterval>>();
         List<string> exonHitGeneNames;
-        string annotationChrId;
+        private string annotationChrId;
 
         public TranscriptomeStatistics(AbstractGenomeAnnotations annotations, Props props)
 		{
             AnnotType.DirectionalReads = props.DirectionalReads;
             barcodes = props.Barcodes;
             Annotations = annotations;
-            if (props.GenerateWiggle) 
-                compactWiggle = new CompactWiggle(Annotations.ChromosomeLengths);
             if (props.SnpRndTagVerification)
                 snpRndTagVerifier = new SnpRndTagVerifier(props);
             DetermineMotifs = props.DetermineMotifs;
@@ -82,82 +81,175 @@ namespace Linnarsson.Strt
             TotalHitsByAnnotType = new int[AnnotType.Count];
             numReadsByBarcode = new int[barcodes.Count];
             numUniqueMolReadsByBarcode = new int[barcodes.Count];
-            exonsToMark = new List<Pair<MultiReadMapping, FtInterval>>(100);
+            exonsToMark = new List<Pair<MappedTagItem, FtInterval>>(100);
             exonHitGeneNames = new List<string>(100);
             annotationChrId = Annotations.Genome.Annotation;
-            randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeNames());
+            string tagMappingFile = PathHandler.GetTagMappingPath(Annotations.Genome);
+            randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeNames(), tagMappingFile);
             statsSampleDistPerBarcode = sampleDistForAccuStats / barcodes.Count;
         }
 
-        public void AnnotateSingleBarcodeMapFile(string mapFilePath, int bcIdx)
+        private static int CompareMapFiles(string path1, string path2)
         {
-            currentMapFilePath = mapFilePath;
-            if (numReads > 0 && bcIdx != currentBcIdx)
-                FinishBarcode(numReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
-            currentBcIdx = bcIdx;
-            MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, 20, barcodes);
-            if (mapFileReader == null)
-                throw new Exception("Unknown read map file type : " + mapFilePath);
-            foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
+            string name1 = Path.GetFileName(path1);
+            string name2 = Path.GetFileName(path2);
+            int bc1 = int.Parse(name1.Substring(0, name1.IndexOf('_')));
+            int bc2 = int.Parse(name2.Substring(0, name2.IndexOf('_')));
+            return bc1.CompareTo(bc2);
+        }
+        public void ProcessMapFiles(List<string> mapFilePaths)
+        {
+            if (mapFilePaths.Count == 0)
+                return;
+            mapFilePaths.Sort(CompareMapFiles); // Important to have them sorted by barcode
+            if (Props.props.AnalyzeSNPs)
             {
-                if (mrm.BarcodeIdx != currentBcIdx)
-                    Console.WriteLine("Error in read.BcIdx: " + mrm.BarcodeIdx + " detected for currentBcIdx" + currentBcIdx + " in " + mapFilePath);
-                if (randomTagFilter.IsNew(mrm[0].Chr, mrm[0].Position, mrm[0].Strand, currentBcIdx, mrm.RandomBcIdx))
-                    Add(mrm);
-                else numDuplicateReads++;
-                numReads++;
-                if (snpRndTagVerifier != null)
-                    snpRndTagVerifier.Add(mrm);
-                if ((++numReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
-                    SampleStatistics(statsSampleDistPerBarcode);
+                Console.WriteLine("Defining SNP positions by scanning map files...");
+                MapFileSnpFinder mfsf = new MapFileSnpFinder(barcodes);
+                mfsf.ProcessMapFiles(mapFilePaths);
+                randomTagFilter.SetupSNPCounters(mfsf.GetAverageReadLength(), mfsf.IterSNPLocations());
             }
+            List<string> bcMapFilePaths = new List<string>();
+            string mapFileName = Path.GetFileName(mapFilePaths[0]);
+            currentBcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
+            Console.Write("Annotatating " + mapFilePaths.Count + " map files");
+            foreach (string mapFilePath in mapFilePaths)
+            {
+                Console.Write(".");
+                mapFileName = Path.GetFileName(mapFilePath);
+                int bcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
+                if (bcIdx != currentBcIdx)
+                {
+                    ProcessBarcodeMapFiles(bcMapFilePaths);
+                    bcMapFilePaths.Clear();
+                    currentBcIdx = bcIdx;
+                }
+            }
+            if (bcMapFilePaths.Count > 0)
+                ProcessBarcodeMapFiles(bcMapFilePaths);
+            Console.WriteLine();
         }
 
-        public void SampleStatistics(int numReadsInBin)
+        private void ProcessBarcodeMapFiles(List<string> bcMapFilePaths)
         {
-            SampleDepths(numReadsInBin);
-            //SampleForGeneCVs();
-        }
-
-        private void SampleForGeneCVs()
-        {
-            int[] speciesBcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
-            List<int> totbcHits = new List<int>(TotalHitsByBarcode);
-            totbcHits.Sort();
-            int minTotBcHits = totbcHits[totbcHits.Count / 2];
-            foreach (GeneFeature gf in Annotations.geneFeatures.Values)
+            long totalReadLength = 0;
+            foreach (string mapFilePath in bcMapFilePaths)
             {
-                gf.SampleVariation(TotalHitsByBarcode, minTotBcHits, speciesBcIndexes);
+                currentMapFilePath = mapFilePath;
+                MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, 1, barcodes);
+                if (mapFileReader == null)
+                    throw new Exception("Unknown read map file type : " + mapFilePath);
+                foreach (MultiReadMappings mrm in mapFileReader.SingleMappings(mapFilePath))
+                {
+                    randomTagFilter.Add(mrm);
+                    numReads++;
+                    if (snpRndTagVerifier != null)
+                        snpRndTagVerifier.Add(mrm);
+                    totalReadLength += mrm.SeqLen;
+                    if ((++numReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
+                        SampleReadStatistics(statsSampleDistPerBarcode);
+                }
             }
-        }
-
-        private void SampleDepths(int numReadsInBin)
-        {
-            if (!sampledUniqueHitPositionsByBcIdx.ContainsKey(currentBcIdx))
-            {
-                sampledDetectedTranscriptsByBcIdx[currentBcIdx] = new List<int>();
-                sampledUniqueMoleculesByBcIdx[currentBcIdx] = new List<int>();
-                sampledUniqueHitPositionsByBcIdx[currentBcIdx] = new List<int>();
-            }
-            sampledDetectedTranscriptsByBcIdx[currentBcIdx].Add(Annotations.GetNumExpressedGenes(currentBcIdx));
-            sampledUniqueMoleculesByBcIdx[currentBcIdx].Add(randomTagFilter.nUniqueByBarcode[currentBcIdx]);
-            sampledUniqueHitPositionsByBcIdx[currentBcIdx].Add(randomTagFilter.GetNumDistinctMappings());
-            if (nReadsInSampleBin.Length == sampleBinNumber)
-                Array.Resize(ref nReadsInSampleBin, sampleBinNumber + 1);
-            nReadsInSampleBin[sampleBinNumber++] += numReadsInBin;
+            SampleReadStatistics(numReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
+            MappedTagItem.AverageReadLen = (int)Math.Round((double)totalReadLength / numReadsByBarcode[currentBcIdx]);
+            foreach (MappedTagItem item in randomTagFilter.IterItems())
+                Annotate(item);
+            FinishBarcode();
         }
 
         public void FinishBarcode()
         {
-            int nReadsInBin = numReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode;
-            FinishBarcode(nReadsInBin);
-        }
-        public void FinishBarcode(int nReadsInBin)
-        {
-            SampleStatistics(nReadsInBin);
             MakeGeneRndTagProfiles();
-            sampleBinNumber = 0;
-            MakeWigglePlotsByMolecule();
+            MakeBcWigglePlots();
+        }
+
+        public void SampleReadStatistics(int numReadsInBin)
+        {
+            if (!sampledUniqueHitPositionsByBcIdx.ContainsKey(currentBcIdx))
+            {
+                sampledUniqueMoleculesByBcIdx[currentBcIdx] = new List<int>();
+                sampledUniqueHitPositionsByBcIdx[currentBcIdx] = new List<int>();
+            }
+            sampledUniqueMoleculesByBcIdx[currentBcIdx].Add(randomTagFilter.nUniqueByBarcode[currentBcIdx]);
+            sampledUniqueHitPositionsByBcIdx[currentBcIdx].Add(randomTagFilter.GetNumDistinctMappings());
+        }
+
+        public void Annotate(MappedTagItem item)
+        {
+            exonHitGeneNames.Clear();
+            bool someAnnotationHit = false;
+            bool someExonHit = false;
+            MarkStatus markType = MarkStatus.TEST_EXON_MARK_OTHER;
+            foreach (FtInterval ivl in Annotations.GetMatching(item.chr, item.HitMidPos))
+            {
+                MarkResult res = ivl.Mark(item, ivl.ExtraData, markType);
+                if (res.annotType == AnnotType.NOHIT)
+                    continue;
+                someAnnotationHit = true;
+                if (AnnotType.IsTranscript(res.annotType))
+                {
+                    if (!exonHitGeneNames.Contains(res.feature.Name))
+                    {
+                        someExonHit = true;
+                        exonHitGeneNames.Add(res.feature.Name);
+                        exonsToMark.Add(new Pair<MappedTagItem, FtInterval>(item, ivl));
+                    }
+                }
+                else // hit is not to EXON or SPLC (neither AEXON/ASPLC for non-directional samples)
+                {
+                    if (markType == MarkStatus.TEST_EXON_MARK_OTHER)
+                    {
+                        TotalHitsByAnnotTypeAndBarcode[res.annotType, currentBcIdx] += item.MolCount;
+                        TotalHitsByAnnotTypeAndChr[item.chr][res.annotType] += item.MolCount;
+                        TotalHitsByAnnotType[res.annotType] += item.MolCount;
+                        TotalHitsByBarcode[currentBcIdx] += item.MolCount;
+                        markType = MarkStatus.TEST_EXON_SKIP_OTHER;
+                    }
+                }
+            }
+            if (item.chr != annotationChrId)
+            {
+                // Add to the motif (base 21 in the motif will be the first base of the read)
+                // Subtract one to make it zero-based
+                if (DetermineMotifs && someAnnotationHit && Annotations.HasChromosome(item.chr))
+                    motifs[currentBcIdx].Add(Annotations.GetChromosome(item.chr), item.hitStartPos - 20 - 1, item.strand);
+            }
+            // Now when the best alignments have been selected, mark these transcript hits
+            MarkStatus markStatus = (exonsToMark.Count > 1) ? MarkStatus.ALT_MAPPINGS : MarkStatus.SINGLE_MAPPING;
+            if (item.tagItem.hasAltMappings)
+            {
+                markStatus = MarkStatus.MARK_ALT_MAPPINGS;
+                nMaxAltMappingsReads++;
+            }
+            foreach (Pair<MappedTagItem, FtInterval> exonToMark in exonsToMark)
+            {
+                MappedTagItem rec = exonToMark.First;
+                FtInterval ivl = exonToMark.Second;
+                MarkResult res = ivl.Mark(item, ivl.ExtraData, markStatus);
+                //if (rec.tagItem.HasSNPs)
+                //    ((GeneFeature)res.feature).MarkSNPs(item);
+                TotalHitsByAnnotTypeAndBarcode[res.annotType, currentBcIdx] += item.MolCount;
+                TotalHitsByAnnotTypeAndChr[item.chr][res.annotType] += item.MolCount;
+                TotalHitsByAnnotType[res.annotType] += item.MolCount;
+                TotalHitsByBarcode[currentBcIdx] += item.MolCount;
+            }
+            if (someAnnotationHit)
+            {
+                numAnnotatedReads += item.ReadCount;
+                if (someExonHit) numExonAnnotatedReads += item.ReadCount;
+            }
+            if (exonHitGeneNames.Count > 1)
+            {
+                exonHitGeneNames.Sort();
+                string combNames = string.Join("#", exonHitGeneNames.ToArray());
+                if (!redundantHits.ContainsKey(combNames))
+                    redundantHits[combNames] = item.MolCount;
+                else
+                    redundantHits[combNames]+= item.MolCount;
+            }
+            //if (TestReporter != null)
+            //    TestReporter.ReportHit(exonHitGeneNames, mappings, exonsToMark);
+            exonsToMark.Clear();
         }
 
         private void MakeGeneRndTagProfiles()
@@ -201,133 +293,47 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void MakeWigglePlotsByMolecule()
+        private void MakeBcWigglePlots()
         {
-            if (!barcodes.HasRandomBarcodes || !Props.props.GenerateBarcodedWiggle)
-                return;
-            int readLength = 0;
-            WriteMoleculeWiggleStrand(readLength, '+');
-            WriteMoleculeWiggleStrand(readLength, '-');
+            if (!Props.props.GenerateBarcodedWiggle) return;
+            int readLength = MappedTagItem.AverageReadLen;
+            WriteBcWiggleStrand(readLength, '+');
+            WriteBcWiggleStrand(readLength, '-');
         }
 
-        private void WriteMoleculeWiggleStrand(int readLength, char strand)
+        private void WriteBcWiggleStrand(int readLength, char strand)
         {
             int strandSign = (strand == '+') ? 1 : -1;
-            string fileNameHead = string.Format("{0}_{1}_bymolecule_{2}", currentBcIdx, Annotations.Genome.Build, ((strand == '+') ? "_fw" : "_rev"));
+            string fileNameHead = string.Format("{0}_{1}_{2}", currentBcIdx, Annotations.Genome.Build, ((strand == '+') ? "_fw" : "_rev"));
             string filePathHead = Path.Combine(Path.GetDirectoryName(currentMapFilePath), fileNameHead);
-            string file = filePathHead + ".wig.gz";
-            if (File.Exists(file))
-                return;
-            var writer = file.OpenWrite();
-            writer.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} (+)\" visibility=full", fileNameHead, strand);
-            foreach (KeyValuePair<string, RandomTagFilterByBc.ChrTagData> tagDataPair in randomTagFilter.chrTagDatas)
+            StreamWriter writerByMol = null, writerByRead = null;
+            if (barcodes.HasRandomBarcodes)
+            {
+                string fileByMol = filePathHead + "_bymolecule.wig.gz";
+                if (File.Exists(fileByMol)) return;
+                writerByMol = fileByMol.OpenWrite();
+                writerByMol.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} (+)\" visibility=full", fileNameHead + "_bymolecule", strand);
+            }
+            string fileByRead = filePathHead + "_byread.wig.gz";
+            if (File.Exists(fileByRead)) return;
+            writerByRead = fileByRead.OpenWrite();
+            writerByRead.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} (+)\" visibility=full", fileNameHead + "_byread", strand);
+            foreach (KeyValuePair<string, ChrTagData> tagDataPair in randomTagFilter.chrTagDatas)
             {
                 string chr = tagDataPair.Key;
                 if (!StrtGenome.IsSyntheticChr(chr))
                 {
                     int chrLen = Annotations.ChromosomeLengths[chr];
-                    int[] positions, countAtEachPosition;
-                    tagDataPair.Value.GetDistinctPositionsAndMoleculeCounts(strand, out positions, out countAtEachPosition);
-                    CompactWiggle.DumpToWiggle(writer, chr, readLength, strandSign, chrLen, positions, countAtEachPosition);
+                    int[] positions, molsAtEachPos, readsAtEachPos;
+                    tagDataPair.Value.GetDistinctPositionsAndCounts(strand, out positions, out molsAtEachPos, out readsAtEachPos);
+                    Wiggle.WriteToWigFile(writerByRead, chr, readLength, strandSign, chrLen, positions, readsAtEachPos);
+                    if (writerByMol != null)
+                        Wiggle.WriteToWigFile(writerByMol, chr, readLength, strandSign, chrLen, positions, molsAtEachPos);
                 }
             }
-            writer.Close();
-        }
-
-        public void Add(MultiReadMappings mappings)
-        {
-            exonHitGeneNames.Clear();
-            int bcodeIdx = mappings.BarcodeIdx;
-            int hitLen = mappings.SeqLen;
-            int halfWidth = hitLen / 2;
-            bool someAnnotationHit = false;
-            bool someExonHit = false;
-            MarkStatus markType = MarkStatus.TEST_EXON_MARK_OTHER;
-            foreach (MultiReadMapping mapping in mappings.IterMappings())
-            {
-                bool currentMappingHitAnAnnotation = false;
-                int hitStartPos = mapping.Position;
-                string chr = mapping.Chr;
-                char strand = mapping.Strand;
-                int hitMidPos = hitStartPos + halfWidth;
-                foreach (FtInterval ivl in Annotations.GetMatching(chr, hitMidPos))
-                {
-                    MarkResult res = ivl.Mark(hitMidPos, halfWidth, strand, bcodeIdx, ivl.ExtraData, markType);
-                    if (res.annotType == AnnotType.NOHIT)
-                        continue;
-                    someAnnotationHit = true;
-                    currentMappingHitAnAnnotation = true;
-                    if (AnnotType.IsTranscript(res.annotType))
-                    {
-                        if (!exonHitGeneNames.Contains(res.feature.Name))
-                        {
-                            someExonHit = true;
-                            exonHitGeneNames.Add(res.feature.Name);
-                            exonsToMark.Add(new Pair<MultiReadMapping, FtInterval>(mapping, ivl));
-                        }
-                    }
-                    else // hit is not to EXON or SPLC (neither AEXON/ASPLC for non-directional samples)
-                    {
-                        if (markType == MarkStatus.TEST_EXON_MARK_OTHER)
-                        {
-                            TotalHitsByAnnotTypeAndBarcode[res.annotType, bcodeIdx]++;
-                            TotalHitsByAnnotTypeAndChr[chr][res.annotType]++;
-                            TotalHitsByAnnotType[res.annotType]++;
-                            TotalHitsByBarcode[bcodeIdx]++;
-                            markType = MarkStatus.TEST_EXON_SKIP_OTHER;
-                        }
-                    }
-                }
-                if (chr != annotationChrId)
-                {
-                    if (compactWiggle != null)
-                        compactWiggle.AddHit(chr, strand, hitStartPos, hitLen, 1, currentMappingHitAnAnnotation);
-                    // Add to the motif (base 21 in the motif will be the first base of the read)
-                    // Subtract one to make it zero-based
-                    if (DetermineMotifs && someAnnotationHit && Annotations.HasChromosome(chr))
-                        motifs[bcodeIdx].Add(Annotations.GetChromosome(chr), hitStartPos - 20 - 1, strand);
-                }
-            }
-            // Now when the best alignments have been selected, mark these transcript hits
-            MarkStatus markStatus = (exonsToMark.Count > 1) ? MarkStatus.ALT_MAPPINGS : MarkStatus.SINGLE_MAPPING;
-            if (mappings.NMappings == 1 && mappings.AltMappings == Props.props.BowtieMaxNumAltMappings)
-            {
-                markStatus = MarkStatus.MARK_ALT_MAPPINGS;
-                nMaxAltMappingsReads++;
-            } 
-            foreach (Pair<MultiReadMapping, FtInterval> exonToMark in exonsToMark)
-            {
-                MultiReadMapping rec = exonToMark.First;
-                FtInterval ivl = exonToMark.Second;
-                int chrStart = rec.Position;
-                string chr = rec.Chr;
-                char strand = rec.Strand;
-                int hitMidPos = chrStart + halfWidth;
-                MarkResult res = ivl.Mark(hitMidPos, halfWidth, rec.Strand, bcodeIdx, ivl.ExtraData, markStatus);
-                if (rec.Mismatches != "")
-                    ((GeneFeature)res.feature).MarkSNPs(rec.Position, bcodeIdx, rec.Mismatches, mappings.RandomBcIdx);
-                TotalHitsByAnnotTypeAndBarcode[res.annotType, bcodeIdx]++;
-                TotalHitsByAnnotTypeAndChr[chr][res.annotType]++;
-                TotalHitsByAnnotType[res.annotType]++;
-                TotalHitsByBarcode[bcodeIdx]++;
-            }
-            if (someAnnotationHit)
-            {
-                numAnnotatedReads++;
-                if (someExonHit) numExonAnnotatedReads++;
-            }
-            if (exonHitGeneNames.Count > 1)
-            {
-                exonHitGeneNames.Sort();
-                string combNames = string.Join("#", exonHitGeneNames.ToArray());
-                if (!redundantHits.ContainsKey(combNames))
-                    redundantHits[combNames] = 1;
-                else
-                    redundantHits[combNames]++;
-            }
-            if (TestReporter != null)
-                TestReporter.ReportHit(exonHitGeneNames, mappings, exonsToMark);
-            exonsToMark.Clear();
+            if (writerByMol != null)
+                writerByMol.Close();
+            writerByRead.Close();
         }
 
         public void SaveResult(ReadCounter readCounter)
@@ -346,19 +352,16 @@ namespace Linnarsson.Strt
             WriteRedundantExonHits(fileNameBase);
             WriteASExonDistributionHistogram(fileNameBase);
             WriteSummary(fileNameBase, Annotations.GetSummaryLines(), readCounter);
-            int averageReadLen = (int)compactWiggle.GetAverageHitLength();
+            int averageReadLen = MappedTagItem.AverageReadLen;
             Annotations.SaveResult(fileNameBase, averageReadLen);
             if (snpRndTagVerifier != null)
                 snpRndTagVerifier.Verify(fileNameBase);
-            WriteSnps(fileNameBase);
-            //WriteSnpsByBarcode(fileNameBase); // Large file & takes time
+            if (Props.props.AnalyzeSNPs)
+                WriteSnps(fileNameBase);
             if (DetermineMotifs)
                 WriteSequenceLogos(fileNameBase);
-            if (compactWiggle != null)
-            {
-                compactWiggle.WriteHotspots(fileNameBase, false, 50);
-                compactWiggle.WriteWriggle(fileNameBase);
-            }
+            WriteWriggle(fileNameBase);
+            WriteHotspots(fileNameBase);
             if (rndTagProfileByGeneWriter != null)
                 rndTagProfileByGeneWriter.Close();
         }
@@ -408,8 +411,8 @@ namespace Linnarsson.Strt
         {
             //WriteAccuMolecules(xmlFile, "transcriptdepth", "Distinct (10^6) detected transcripts as fn. of reads processed",
             //                       sampledDetectedTranscriptsByBcIdx);
-            WriteAccuMoleculesByBc(xmlFile, "transcriptdepthbybc", "Distinct detected transcripts in each barcode as fn. of reads processed", 
-                                   sampledDetectedTranscriptsByBcIdx);
+            //WriteAccuMoleculesByBc(xmlFile, "transcriptdepthbybc", "Distinct detected transcripts in each barcode as fn. of reads processed", 
+            //                       sampledDetectedTranscriptsByBcIdx);
         }
 
         private void WriteMappingDepth(StreamWriter xmlFile)
@@ -685,7 +688,7 @@ namespace Linnarsson.Strt
 
         private void AddHitProfile(StreamWriter xmlFile)
         {
-            int averageReadLen = (int)compactWiggle.GetAverageHitLength();
+            int averageReadLen = MappedTagItem.AverageReadLen;
             xmlFile.WriteLine("  <hitprofile>");
             xmlFile.WriteLine("  <title>5'->3' read distr. Green=Transcripts/Blue=Spikes</title>");
             xmlFile.WriteLine("	 <xtitle>Relative pos within transcript</xtitle>");
@@ -1121,20 +1124,18 @@ namespace Linnarsson.Strt
             snpFile.WriteLine("#Gene\tChr\tmRNAStartChrPosition\tHetero_eSNPChrPositions\tAlt_eSNPChrPositions");
             int thres = (int)(SnpAnalyzer.thresholdFractionAltHitsForMixPos * 100);
             snpFile.WriteLine("#(>={0} AltNtReads/Pos required)\t\t\t({1}-{2}% AltNt)\t(>{2}% Alt Nt)", SnpAnalyzer.minAltHitsToTestSnpPos, thres, 100 - thres);
-            int averageHitLen = (int)Math.Round(compactWiggle.GetAverageHitLength());
-            int safeSpan = averageHitLen - 2 * Props.props.MaxAlignmentMismatches;
             foreach (GeneFeature gf in Annotations.geneFeatures.Values)
             {
-                List<int> mixLocusPos, altLocusPos;
-                SnpAnalyzer.GetSnpLocusPositions(gf, safeSpan, out mixLocusPos, out altLocusPos);
-                int nNeededOutputLines = Math.Max(mixLocusPos.Count, altLocusPos.Count);
+                List<int> mixChrPos, altChrPos;
+                SnpAnalyzer.GetSnpChrPositions(gf, out mixChrPos, out altChrPos);
+                int nNeededOutputLines = Math.Max(mixChrPos.Count, altChrPos.Count);
                 if (nNeededOutputLines == 0) continue;
                 string first = gf.Name + "\t" + gf.Chr + "\t" + gf.Start + "\t";
                 for (int i = 0; i < nNeededOutputLines; i++)
                 {
                     snpFile.Write(first);
-                    if (i < mixLocusPos.Count) snpFile.Write(mixLocusPos[i] + gf.LocusStart);
-                    if (i < altLocusPos.Count) snpFile.Write("\t" + (altLocusPos[i] + gf.LocusStart));
+                    if (i < mixChrPos.Count) snpFile.Write(mixChrPos[i]);
+                    if (i < altChrPos.Count) snpFile.Write("\t" + altChrPos[i].ToString());
                     snpFile.WriteLine();
                     first = "\t\t\t";
                 }
@@ -1146,9 +1147,111 @@ namespace Linnarsson.Strt
         {
             StreamWriter snpFile = (fileNameBase + "_SNPs_by_barcode.tab").OpenWrite();
             SnpAnalyzer sa = new SnpAnalyzer();
-            int averageHitLength = (int)Math.Round(compactWiggle.GetAverageHitLength());
+            int averageHitLength = MappedTagItem.AverageReadLen;
             sa.WriteSnpsByBarcode(snpFile, barcodes, Annotations.geneFeatures, averageHitLength);
             snpFile.Close();
+        }
+
+        public void WriteWriggle(string fileNameBase)
+        {
+            WriteWiggleStrand(fileNameBase, '+');
+            WriteWiggleStrand(fileNameBase, '-');
+        }
+
+        private void WriteWiggleStrand(string fileNameBase, char strand)
+        {
+            string strandString = (strand == '+') ? "fw" : "rev";
+            StreamWriter readWriter = (fileNameBase + "_" + strandString + "_byread.wig.gz").OpenWrite();
+            readWriter.WriteLine("track type=wiggle_0 name=\"{0} (+)\" description=\"{0} (+)\" visibility=full",
+                Path.GetFileNameWithoutExtension(fileNameBase) + "_byread");
+            StreamWriter molWriter = null;
+            if (barcodes.HasRandomBarcodes)
+            {
+                molWriter = (fileNameBase + "_" + strandString + "_bymolecule.wig.gz").OpenWrite();
+                molWriter.WriteLine("track type=wiggle_0 name=\"{0} (+)\" description=\"{0} (+)\" visibility=full",
+                    Path.GetFileNameWithoutExtension(fileNameBase) + "_bymolecule");
+            }
+            int averageReadLength = MappedTagItem.AverageReadLen;
+            foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
+            {
+                string chr = data.Key;
+                if (StrtGenome.IsSyntheticChr(chr))
+                    continue;
+                data.Value.GetWiggle(strand).WriteReadWiggle(molWriter, chr, strand, averageReadLength, Annotations.ChromosomeLengths[chr]);
+                if (molWriter != null)
+                {
+                    data.Value.GetWiggle(strand).WriteMolWiggle(molWriter, chr, strand, averageReadLength, Annotations.ChromosomeLengths[chr]);
+                }
+            }
+            readWriter.Close();
+            if (molWriter != null)
+                molWriter.Close();
+        }
+
+        private void WriteHotspots(string file)
+        {
+            var writer = (file + "_hotspots.tab").OpenWrite();
+            writer.WriteLine("Positions with local maximal read counts that lack gene or repeat annotation. Samples < 5 bp apart not shown.");
+            writer.WriteLine("Chr\tPosition\tStrand\tCoverage");
+            foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
+            {
+                string chr = data.Key;
+                if (StrtGenome.IsSyntheticChr(chr))
+                    continue;
+                int[] positions, counts;
+                data.Value.GetWiggle('+').GetReadPositionsAndCounts(out positions, out counts);
+                FindHotspots(writer, chr, '+', positions, counts);
+                data.Value.GetWiggle('-').GetReadPositionsAndCounts(out positions, out counts);
+                FindHotspots(writer, chr, '-', positions, counts);
+            }
+            writer.Close();
+        }
+
+        private void FindHotspots(StreamWriter writer, string chr, char strand, int[] positions, int[] counts)
+        {
+            int averageReadLength = MappedTagItem.AverageReadLen;
+            int chrLength = Annotations.ChromosomeLengths[chr];
+            HotspotFinder hFinder = new HotspotFinder(maxHotspotCount);
+            Queue<int> stops = new Queue<int>();
+            int lastHit = 0;
+            int hitIdx = 0;
+            int i = 0;
+            while (i < chrLength && hitIdx < positions.Length)
+            {
+                int c = counts[hitIdx];
+                i = positions[hitIdx++];
+                if (Annotations.GetMatching(chr, i).Count() == 0)
+                {
+                    for (int cc = 0; cc < c; cc++)
+                        stops.Enqueue(i + averageReadLength);
+                }
+                while (i < chrLength && stops.Count > 0)
+                {
+                    while (hitIdx < positions.Length && positions[hitIdx] == i)
+                    {
+                        hitIdx++;
+                        stops.Enqueue(i + averageReadLength);
+                    }
+                    i++;
+                    if (stops.Count > 0 && i == stops.Peek())
+                    {
+                        if (i - lastHit >= minHotspotDistance)
+                        {
+                            lastHit = i;
+                            hFinder.Add(stops.Count, i - (averageReadLength / 2));
+                        }
+                        while (stops.Count > 0 && i == stops.Peek()) stops.Dequeue();
+                    }
+                }
+            }
+            int[] topCounts, locations;
+            hFinder.GetTop(out topCounts, out locations);
+            for (int cI = 0; cI < topCounts.Length; cI++)
+            {
+                int start = locations[cI];
+                writer.WriteLine("{0}\t{1}\t{2}\t{3}",
+                                 chr, start + averageReadLength / 2, strand, topCounts[cI]);
+            }
         }
 
     }

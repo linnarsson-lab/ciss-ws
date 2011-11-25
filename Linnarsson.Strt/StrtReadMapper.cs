@@ -287,7 +287,7 @@ namespace Linnarsson.Strt
             Extract(pd.extractionInfos, outputFolder);
         }
 
-        public static readonly string EXTRACTION_VERSION = "27";
+        public static readonly string EXTRACTION_VERSION = "28";
         private void Extract(List<LaneInfo> extrInfos, string outputFolder)
         {
             DateTime start = DateTime.Now;
@@ -657,17 +657,7 @@ namespace Linnarsson.Strt
             string syntLevelFile = PathHandler.GetSyntLevelFile(projectFolder);
             if (File.Exists(syntLevelFile))
                 ts.TestReporter = new SyntReadReporter(syntLevelFile, genome.GeneVariants, outputPathbase, annotations.geneFeatures);
-            Console.Write("Processing " + mapFilePaths.Count + " map files");
-            mapFilePaths.Sort(CompareMapFiles); // Important to have them sorted by barcode
-            foreach (string mapFilePath in mapFilePaths)
-            {
-                Console.Write(".");
-                string mapFileName = Path.GetFileName(mapFilePath);
-                int bcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
-                ts.AnnotateSingleBarcodeMapFile(mapFilePath, bcIdx);
-            }
-            ts.FinishBarcode();
-            Console.WriteLine();
+            ts.ProcessMapFiles(mapFilePaths);
             if (ts.GetNumMappedReads() == 0)
                 Console.WriteLine("WARNING: contigIds of reads do not seem to match with genome Ids.\n" +
                                   "Was the Bowtie index made on a different genome or contig set?");
@@ -696,54 +686,6 @@ namespace Linnarsson.Strt
                 props.GenesToPaint = genesToPaint;
             }
         }
-
-        /// <summary>
-        /// Load the .wig files, paint the hits onto the chromosomes, assign counts to features & splices,
-        /// then save the results in appropriate formats 
-        /// </summary>
-        /// <param name="wiggleFolder">Folder of .wg.gz files to process</param>
-        /// <param name="genome">Genome to annotate against</param>
-		public void AnnotateFromWiggles(string wiggleFolder, StrtGenome genome)
-		{
-            AbstractGenomeAnnotations annotations = new UCSCGenomeAnnotations(props, genome);
-            annotations.Load();
-            TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props);
-            ReadCounter readCounter = new ReadCounter();
-			Console.WriteLine("Processing wiggle files...");
-			int countMappedReads = 0;
-            int n = 1;
-            MultiReadMappings mappings = new MultiReadMappings(1, barcodes);
-			foreach(string file in Directory.GetFiles(wiggleFolder, "*.wig.gz"))
-			{
-                readCounter.AddReadFilename(file);
-				Console.WriteLine("Processing " + file);
-				var wiggle = file.OpenRead();
-				wiggle.ReadLine(); // Skip header
-				while(true)
-				{
-					string line = wiggle.ReadLine();
-					if(line == null) break;
-					string[] fields = line.Split('\t');
-					string chr = fields[0].Substring(3);
-					int start = int.Parse(fields[1]);
-                    if (start < 1) continue;
-					int end = int.Parse(fields[2]);
-					int height = int.Parse(fields[3]);
-					char strand = file.Contains("fw") ? '+' : '-';
-                    mappings.InitSingleMapping("Line" + n, chr, strand, start, end - start, 0, "");
-                    for (int i = 0; i < height; i++)
-                        ts.Add(mappings);
-                    n++;
-					countMappedReads += (end - start) * height / 25; // assuming 25 bp read length on average
-				}
-				wiggle.Close();
-				Console.WriteLine("Found approximately {0} mapped reads", countMappedReads);
-                readCounter.Add(ReadStatus.VALID, countMappedReads);
-				Console.WriteLine("Found {0} distinct expressed features", annotations.GetNumExpressedGenes());
-			}
-			Console.WriteLine();
-			ts.SaveResult(readCounter, Path.Combine(wiggleFolder, DateTime.Now.ToPathSafeString()));
-		}
 
         /// <summary>
         /// Extracts reads from a FASTA-formatted file to a Fasta file in a STRT project folder.
@@ -950,7 +892,8 @@ namespace Linnarsson.Strt
 
         /// <summary>
         /// If readLength == 0, dumps the whole sequence for each gene, otherwise dumps
-        /// all possible subsequences of readLength from each gene
+        /// all possible subsequences of readLength from each gene.
+        /// If barcodes == null, no barcode and GGG sequences will be inserted 
         /// </summary>
         /// <param name="genome"></param>
         /// <param name="readLength"></param>
@@ -988,7 +931,9 @@ namespace Linnarsson.Strt
                 DnaSequence chrSeq = AbstractGenomeAnnotations.readChromosomeFile(chrIdToFileMap[chrId]);
                 foreach (LocusFeature f in chrIdToFeature[chrId])
                 {
-                    string bc = barcodes.Seqs[bcIdx++ % barcodes.Count];
+                    string readStart = "";
+                    if (barcodes != null)
+                        readStart = new string('A', barcodes.BarcodePos) + barcodes.Seqs[bcIdx++ % barcodes.Count] + "GGG";
                     GeneFeature gf = (GeneFeature)f;
                     if (!variantGenes && gf.IsVariant())
                         continue;
@@ -1023,7 +968,7 @@ namespace Linnarsson.Strt
                             int posInChr = gf.GetChrPosFromTrPosInChrDir(frag.TrPosInChrDir);
                             if (gf.Strand == '-')
                                 frag.Seq.RevComp();
-                            string seqString = new string('A', barcodes.BarcodePos) + bc + "GGG" + frag.Seq.ToString();
+                            string seqString = readStart + frag.Seq.ToString();
                             string outBlock = "@Gene=" + gf.Name + ":Chr=" + gf.Chr + gf.Strand + ":Pos=" + posInChr +
                                                   ":TrPos=" + posInTrFw + ":Exon=" + exonNos + "\n" +
                                                seqString + "\n" +

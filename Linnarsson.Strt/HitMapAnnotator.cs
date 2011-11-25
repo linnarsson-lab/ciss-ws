@@ -519,9 +519,9 @@ namespace Linnarsson.Strt
         public int GetTotHitsByAnnotType(int annotType)
         {
             int n = 0;
-                int[] annotTypes = new int[] { annotType };
-                foreach (GeneData gd in geneDatas.Values)
-                    n += gd.TotalHitsOfAnnotTypes(annotTypes);
+            int[] annotTypes = new int[] { annotType };
+            foreach (GeneData gd in geneDatas.Values)
+                n += gd.TotalHitsOfAnnotTypes(annotTypes);
             return n;
         }
 
@@ -541,6 +541,6 @@ namespace Linnarsson.Strt
                 writer.WriteLine();
             }
         }
-    }
 
+    }
 }

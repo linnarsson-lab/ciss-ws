@@ -184,7 +184,7 @@ namespace Linnarsson.Strt
             bcIdx = 0;
             rec.TrimBBB();
             string rSeq = rec.Sequence;
-            int insertLength = TrimTrailingAN(rSeq);
+            int insertLength = TrimTrailingNAndCheckAs(rSeq);
             if (insertLength < minReadLength)
                 return ReadStatus.LENGTH_ERROR;
              //int bcIdx = Array.IndexOf(barcodesWithTSSeq, rSeq.Substring(barcodePos, bcWithTSSeqLen));
@@ -214,12 +214,22 @@ namespace Linnarsson.Strt
             return ReadStatus.VALID;
         }
 
-        private int TrimTrailingAN(string rSeq)
+        /// <summary>
+        /// Removes trailing N:s.
+        /// If removing of trailing A:s leaves a sequence shorter than minReadLength, returns the truncated length,
+        /// otherwise includes the trailing A:s in the returned length
+        /// </summary>
+        /// <param name="rSeq"></param>
+        /// <returns>Length of remaining sequence</returns>
+        private int TrimTrailingNAndCheckAs(string rSeq)
         {
             int insertLength = rSeq.Length;
-            while (insertLength >= minReadLength &&
-                   (rSeq[insertLength - 1] == 'A' || rSeq[insertLength - 1] == 'N'))
+            while (insertLength >= minReadLength && rSeq[insertLength - 1] == 'N')
                 insertLength--;
+            int nonATailLen = insertLength;
+            while (nonATailLen >= minReadLength && rSeq[nonATailLen - 1] == 'A')
+                nonATailLen--;
+            if (nonATailLen < minReadLength) return nonATailLen;
             return insertLength;
         }
 

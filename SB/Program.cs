@@ -132,14 +132,6 @@ namespace CmdSilverBullet
                                 mapper.MapAndAnnotateWithLayout(projectFolder, "NotSpecified", analyzeAllGeneVariants);
                             break;
 
-                        case "aw":
-                            CheckArgs(args, 3, 3);
-                            genome = StrtGenome.GetGenome(args[1]);
-                            string wigFolder = args[2];
-                            mapper = new StrtReadMapper(props);
-                            mapper.AnnotateFromWiggles(wigFolder, genome);
-                            break;
-
                         case "idx":
                             CheckArgs(args, 2, 6);
                             string newBtIdxName = "";
@@ -181,6 +173,7 @@ namespace CmdSilverBullet
                             int minOverhang = props.MaxAlignmentMismatches;
                             int junk;
                             string outputPath = "";
+                            Barcodes barcodes = null;
                             if (!int.TryParse(args[args.Length - 1], out junk))
                             {
                                 outputPath = args[args.Length - 1];
@@ -194,13 +187,11 @@ namespace CmdSilverBullet
                                 maxPerGene = int.Parse(args[4]);
                             if (args.Length > 5)
                                 minOverhang = int.Parse(args[5]);
-                            string bcSet = "no";
-                            if (args.Length > 6)
-                                bcSet = args[6];
                             bool makeSplices = true;
+                            if (args.Length > 6)
+                                makeSplices = args[6] .ToUpper().StartsWith("S");
                             if (args.Length > 7)
-                                makeSplices = args[7] .ToUpper().StartsWith("S");
-                            Barcodes barcodes = Barcodes.GetBarcodes(bcSet);
+                                barcodes = Barcodes.GetBarcodes(args[7]);
                             mapper = new StrtReadMapper(props);
                             int maxSkip = props.MaxExonsSkip;
                             mapper.DumpTranscripts(barcodes, genome, readLength, step, maxPerGene, outputPath, makeSplices, minOverhang, maxSkip);
@@ -214,6 +205,12 @@ namespace CmdSilverBullet
                             string sbaFile = Path.GetFileNameWithoutExtension(args[2]) + ".sba";
                             Console.WriteLine("Writing SilverBullet txt formatted data to " + sbaFile);
                             hma1.WriteHitMapToSbaFile(sbaFile);
+                            break;
+
+                        case "translatemapfile":
+                            genome = StrtGenome.GetGenome(args[1]);
+                            string tagMappingPath = PathHandler.GetTagMappingPath(genome);
+                            TagMappingFile.TranslateMapFile(args[2], tagMappingPath);
                             break;
 
                         case "writehitmap":
@@ -240,6 +237,15 @@ namespace CmdSilverBullet
                                 Console.WriteLine("Saving annotations to SilverBullet formatted txt file " + outf);
                                 hma.WriteHitMapToSbaFile(outf);
                             }
+                            break;
+
+                        case "mapsnp":
+                            MapFileSnpFinder mfsf = new MapFileSnpFinder(Barcodes.GetBarcodes(args[1]));
+                            List<string> files = new List<string>();
+                            for (int i = 3; i < args.Length; i++)
+                                files.Add(args[i]);
+                            mfsf.ProcessMapFiles(files);
+                            mfsf.WriteToFile(args[2]);
                             break;
 
                         case "jct":
@@ -334,8 +340,10 @@ namespace CmdSilverBullet
                 "SB.exe synt <BcSet> <IdxName> all|single <OutputFolder>\n" +
                 "    - generate synthetic reads from a genome\n" +
                 "SB.exe stats [<BcSet>] <ProjectPath>\n    - calculate barcode statistics\n" +
-                "SB.exe dump <IdxName> [<readLen> [<Step> [<MaxPerGene> [<MinOverhang> [<bcSet> [Splices|Linear]]]]]] [<OutputPath>]\n" +
-                "    - make fq file of transcript fragments. Makes all if MaxPerGene=0 \n\n" + 
+                "SB.exe translatemapfile <Genome> <GenomeMapPath>\n    - make .hmap file of multiread mappings using a bowtie mapping of all reads for a genome\n" +
+                "SB.exe mapsnp <BcSet> <outputFile> [<mapFile>]+\n" + 
+                "SB.exe dump <IdxName> [<readLen> [<Step> [<MaxPerGene> [<MinOverhang> [Splices|Linear [<bcSet>]]]]]] [<OutputPath>]\n" +
+                "    - make fq file of transcript fragments. Makes all if MaxPerGene=0. Adds barcodes+GGG if bcSet given \n\n" + 
                 "<RunLaneSpec> is e.g. '17:235' indicating lanes 2,3, and 5 of run 17.\n" + 
                 "              If left out, defaults to all sequence files in Reads/ folder under ProjectPath\n" +
                 "rpkm will change analysis method to non-directional reads and output RPKM instead of RPM\n" + 

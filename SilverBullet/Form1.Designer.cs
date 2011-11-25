@@ -136,13 +136,6 @@
             this.mapPhaseTwoannotationsToolStripMenuItem.Text = "Annotate from bowtie mappings...";
             this.mapPhaseTwoannotationsToolStripMenuItem.Click += new System.EventHandler(this.annotateFromBowtieToolStripMenuItem_Click);
             // 
-            // annotateFromWiggleToolStripMenuItem
-            // 
-            this.annotateFromWiggleToolStripMenuItem.Name = "annotateFromWiggleToolStripMenuItem";
-            this.annotateFromWiggleToolStripMenuItem.Size = new System.Drawing.Size(256, 22);
-            this.annotateFromWiggleToolStripMenuItem.Text = "Annotate from Wiggle...";
-            this.annotateFromWiggleToolStripMenuItem.Click += new System.EventHandler(this.annotateFromWiggleToolStripMenuItem_Click);
-            // 
             // toolStripMenuItem2
             // 
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";

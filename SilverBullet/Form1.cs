@@ -198,51 +198,6 @@ namespace SilverBullet
             mapper = new StrtReadMapper(Props.props);
 		}
 
-		private void annotateFromWiggleToolStripMenuItem_Click(object sender, EventArgs e)
-		{
-			if(Background.IsBusy)
-			{
-				if(MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
-			}
-
-			// Locate the extraction folder
-			FolderBrowserDialog fbd = new FolderBrowserDialog();
-			fbd.Description = "Locate the extraction folder (with *.wig files)";
-			fbd.ShowNewFolderButton = false;
-			if(fbd.ShowDialog() == DialogResult.OK)
-			{
-				GenomeDialog gd = new GenomeDialog();
-				gd.ShowDialog();
-
-				string wigFolder = fbd.SelectedPath;
-				SetupMapper(null);
-				Background.RunAsync(() =>
-				{
-					try
-					{
-						mapper.AnnotateFromWiggles(wigFolder, gd.Genome);
-					}
-                    catch (NoAnnotationsFileFoundException)
-                    {
-                        Console.WriteLine("No index was found (use Tools->Build Index)");
-                    }
-                    catch (NoMapFilesFoundException)
-                    {
-                        Console.WriteLine("No .map files were found (use Pipeline->Run Bowtie)");
-                    }
-                    catch (Exception exp)
-					{
-						Console.WriteLine("*** Error in Form1.annotateFromWiggleToolStripMenuItem_Click: " + exp.Message);
-					}
-					Background.Message("Ready.");
-					Background.Progress(100);
-					Console.WriteLine("Done.");
-				});
-			}
-		}
-
-
-
 		private void peekAtgzFileToolStripMenuItem_Click(object sender, EventArgs e)
 		{
 			OpenFileDialog ofd = new OpenFileDialog();

@@ -86,26 +86,20 @@ namespace Linnarsson.Dna
             m_End = end;
         }
 
-        public virtual MarkResult MarkHit(int chrHitPos, int halfWidth, char strand, int bcodeIdx,
-                                          int junk, MarkStatus markType)
+        public virtual MarkResult MarkHit(MappedTagItem item, int junk, MarkStatus markType)
         {
             if (markType != MarkStatus.TEST_EXON_MARK_OTHER)
                 return new MarkResult(AnnotType.NOHIT, this);
             int annotType = AnnotType.USTR;
-            if (strand == Strand)
-                TotalSenseHits++;
+            if (item.strand == Strand)
+                TotalSenseHits += item.MolCount;
             else
             {
-                TotalAntiSenseHits++;
+                TotalAntiSenseHits += item.MolCount;
                 annotType = AnnotType.AUSTR;
             }
             return new MarkResult(annotType, this);
         }
-
-        /*public virtual IFeature Clone()
-        {
-            return new LocusFeature(Name, Chr, Strand, Start, End);
-        }*/
 
         public virtual bool Contains(int pos)
         {

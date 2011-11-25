@@ -38,6 +38,7 @@ namespace Linnarsson.Dna
 
         public bool GenerateWiggle = true; // Generate wiggle files for upload to UCSC Genome Browser
         public bool GenerateBarcodedWiggle = true; // Generate wiggle files for upload to UCSC Genome Browser
+        public bool AnalyzeSNPs = true;
         public bool DetermineMotifs = false; // Analyse over-represented sequence motifs around read start
         public string[] SeqStatsChrIds = null; // Used to limit detailed statistics to only a subset of chromosomes
         public string[] GenesToPaint =

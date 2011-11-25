@@ -19,8 +19,14 @@ namespace Linnarsson.Dna
         public string Abbrev { get; set; }
 		public string LatinName { get; set; }
 		public string Description { get; set; }
+        /// <summary>
+        /// Version of the genome build, e.g. "mm9" or "hg19"
+        /// </summary>
         public string Build { get; set; }
         public string m_Annotation;
+        /// <summary>
+        /// Source of annotations, e.g. "UCSC" or "VEGA"
+        /// </summary>
         public string Annotation
         { 
             get { return m_Annotation; }
@@ -55,6 +61,10 @@ namespace Linnarsson.Dna
         public string GetAnnotationsFileName()
         {
             return string.Format(AnnotationsFilenamePattern, GeneVariantsChar, Annotation);
+        }
+        public string GetTagMappingFileName()
+        {
+            return string.Format("Mappings_{0}{1}_{2}MM.hmap", GeneVariantsChar, Annotation, Props.props.MaxAlignmentMismatches);
         }
         public string GetRedundancyFileName(int averageReadLen)
         {  // Use redundant alignment files at steps of 10bp

@@ -72,13 +72,12 @@ namespace Linnarsson.Dna
             Length += length;
         }
 
-        public MarkResult MarkHit(int chrHitPos, int halfWidth, char strand, int bcodeIdx,
-                                  int extraData, MarkStatus markType)
+        public MarkResult MarkHit(MappedTagItem item, int extraData, MarkStatus markType)
         {
             if (markType != MarkStatus.TEST_EXON_MARK_OTHER)
                 return new MarkResult(AnnotType.NOHIT, this);
-            TotalHits++;
-            TotalHitsByBarcode[bcodeIdx]++;
+            TotalHits += item.MolCount;
+            TotalHitsByBarcode[item.bcIdx] += item.MolCount;
             return new MarkResult(AnnotType.REPT, this); // Do not care about orientation for repeats
         }
 

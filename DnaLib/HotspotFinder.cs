@@ -15,8 +15,7 @@ namespace Linnarsson.Dna
         {
             this.maxCount = maxCount;
             topCounts = new int[maxCount];
-             topLocations = new int[maxCount];
-
+            topLocations = new int[maxCount];
         }
 
         public void Add(int count, int value)

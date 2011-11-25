@@ -33,69 +33,45 @@ namespace Linnarsson.Dna
         public static readonly double thresholdFractionAltHitsForMixPos = 0.25;
         public static readonly int MinTotalHitsToShowBarcodedSnps = 10;
 
-        private static int halfMeanHitLen;
-
-        public void WriteSnpsByBarcode(StreamWriter snpFile, Barcodes barcodes, 
+        public void WriteSnpsByBarcode(StreamWriter snpFile, Barcodes barcodes,
                                        Dictionary<string, GeneFeature> geneFeatures, int averageHitLength)
         {
-            SnpAnalyzer.halfMeanHitLen = averageHitLength / 2;
             snpFile.Write("#Gene\tTrLen\tChr\tStrand\tChrPos\tTrPos\tNt\tTotal");
             for (int idx = 0; idx < barcodes.Count; idx++)
                 snpFile.Write("\t" + barcodes.GetWellId(idx));
             snpFile.WriteLine();
             foreach (GeneFeature gf in geneFeatures.Values)
             {
-                int currentLocusPos = -1;
-                Dictionary<char, int[]> bcCountsByNt = new Dictionary<char, int[]>();
-                foreach (SNPInfo info in gf.LocusSnps)
+                int trLen = gf.GetTranscriptLength();
+                foreach (KeyValuePair<int, SNPCounter[]> posCounts in gf.SNPCountersByBcIdx)
                 {
-                    if (currentLocusPos != -1 && info.LocusPos != currentLocusPos)
-                        FlushCurrentSnpPosToFile(snpFile, gf, currentLocusPos, bcCountsByNt);
-                    currentLocusPos = info.LocusPos;
-                    char nt = info.Nt;
-                    if (!bcCountsByNt.ContainsKey(nt))
-                        bcCountsByNt[nt] = new int[barcodes.Count];
-                    bcCountsByNt[nt][info.bcIdx]++;
-                }
-                if (currentLocusPos != -1)
-                    FlushCurrentSnpPosToFile(snpFile, gf, currentLocusPos, bcCountsByNt);
-            }
-            snpFile.Close();
-        }
-
-        private void FlushCurrentSnpPosToFile(StreamWriter snpFile, GeneFeature gf, int locusSnpPos, Dictionary<char, int[]> bcCountsByNt)
-        {
-            int trLen = gf.GetTranscriptLength();
-            int chrPos = locusSnpPos + gf.LocusStart;
-            int spanStartInLocus = locusSnpPos - SnpAnalyzer.halfMeanHitLen;
-            int spanEndInLocus = locusSnpPos + SnpAnalyzer.halfMeanHitLen;
-            int[] barcodedTotalHits = CompactGenePainter.GetBarcodedIvlHitCount(spanStartInLocus, spanEndInLocus, gf.Strand, gf.LocusHits);
-            int totalHits = 0;
-            StringBuilder bcTotalsSB = new StringBuilder();
-            foreach (int c in barcodedTotalHits)
-            {
-                totalHits += c;
-                bcTotalsSB.Append("\t" + c);
-            }
-            string bcTotalHits = bcTotalsSB.ToString();
-            int trPos = gf.GetTranscriptPos(chrPos);
-            if (trPos >= 0 && totalHits >= SnpAnalyzer.MinTotalHitsToShowBarcodedSnps)
-            {
-                snpFile.WriteLine(gf.Name + "\t" + trLen + "\t" + gf.Chr + "\t" + gf.Strand + "\t" + chrPos
-                                  + "\t" + trPos + "\tACGT\t" + totalHits + bcTotalHits);
-                foreach (char ntc in bcCountsByNt.Keys)
-                {
-                    StringBuilder bcCountByNtSB = new StringBuilder();
-                    int totalByNt = 0;
-                    foreach (int c in bcCountsByNt[ntc])
+                    int chrPos = posCounts.Key;
+                    int trPos = gf.GetTranscriptPos(chrPos);
+                    snpFile.WriteLine(gf.Name + "\t" + trLen + "\t" + gf.Chr + "\t" + gf.Strand + "\t" + chrPos
+                                      + "\t" + trPos + "\tACGT\t" + gf.GetTranscriptHits());
+                    Dictionary<char, StringBuilder> bcBcIdxStr = new Dictionary<char, StringBuilder>(5);
+                    Dictionary<char, int> totals = new Dictionary<char, int>(5);
+                    foreach (char nt in new char[] { '0', 'A', 'C', 'G', 'T' })
                     {
-                        totalByNt += c;
-                        bcCountByNtSB.Append("\t" + c);
+                        bcBcIdxStr[nt] = new StringBuilder();
+                        totals[nt] = 0;
+                        foreach (SNPCounter snpc in posCounts.Value)
+                        {
+                            int count = snpc.GetCount(nt);
+                            totals[nt] += count;
+                            bcBcIdxStr[nt].Append("\t" + count.ToString());
+                        }
                     }
-                    snpFile.WriteLine("\t\t\t\t\t\t" + ntc + "\t" + totalByNt + bcCountByNtSB.ToString());
+                    if (trPos >= 0 && totals['T'] >= SnpAnalyzer.MinTotalHitsToShowBarcodedSnps)
+                    {
+                        snpFile.WriteLine(gf.Name + "\t" + trLen + "\t" + gf.Chr + "\t" + gf.Strand + "\t" + chrPos
+                                          + "\t" + trPos + "\tACGT\t" + totals['0'] + bcBcIdxStr['0']);
+                        foreach (char nt in new char[] { 'A', 'C', 'G', 'T' })
+                            snpFile.WriteLine("\t\t\t\t\t\t" + nt + "\t" + totals[nt] + bcBcIdxStr[nt]);
+                    }
+                    snpFile.Close();
                 }
             }
-            bcCountsByNt.Clear();
         }
 
         /// <summary>
@@ -103,45 +79,32 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="gf"></param>
         /// <param name="safeSpanWithinRead">Normally readLen - 2 * MaxAlignmentMismatches</param>
-        /// <param name="heterozygousLocusPos"></param>
-        /// <param name="altLocusPos"></param>
-        public static void GetSnpLocusPositions(GeneFeature gf, int safeSpanWithinRead, 
-                                                out List<int> heterozygousLocusPos, out List<int> altLocusPos)
+        /// <param name="heterozygousPos"></param>
+        /// <param name="altPos"></param>
+        public static void GetSnpChrPositions(GeneFeature gf, out List<int> heterozygousPos, out List<int> altPos)
         {
-            int halfMeanHitLen = safeSpanWithinRead / 2;
-            heterozygousLocusPos = new List<int>();
-            altLocusPos = new List<int>();
-            if (gf.LocusSnps.Length == 0) return;
-            Dictionary<int, int> snpCounts = GetSnpCountsByLocusPos(gf);
-            foreach (int locusSnpPos in snpCounts.Keys)
+            heterozygousPos = new List<int>();
+            altPos = new List<int>();
+            if (gf.SNPCountersByBcIdx.Count == 0) return;
+            foreach (KeyValuePair <int, SNPCounter[]> posCounts in gf.SNPCountersByBcIdx)
             {
-                int altCount = snpCounts[locusSnpPos];
+                int chrPos = posCounts.Key;
+                int altCount = 0;
+                int totCount = 0;
+                foreach (SNPCounter counter in posCounts.Value)
+                {
+                    totCount += counter.nTotal;
+                    altCount += counter.nAlt;
+                }
                 if (altCount >= minAltHitsToTestSnpPos)
                 {
-                    int spanStartInLocus = locusSnpPos - halfMeanHitLen;
-                    int spanEndInLocus = locusSnpPos + halfMeanHitLen;
-                    int totalHits = CompactGenePainter.GetIvlHitCount(spanStartInLocus, spanEndInLocus, gf.Strand, gf.LocusHits);
-                    double ratio = altCount / (double)totalHits;
+                    double ratio = altCount / (double)totCount;
                     if (ratio > (1 - thresholdFractionAltHitsForMixPos))
-                        altLocusPos.Add(locusSnpPos);
+                        altPos.Add(chrPos);
                     else if (ratio > thresholdFractionAltHitsForMixPos)
-                        heterozygousLocusPos.Add(locusSnpPos);
+                        heterozygousPos.Add(chrPos);
                 }
             }
-        }
-
-        private static Dictionary<int, int> GetSnpCountsByLocusPos(GeneFeature gf)
-        {
-            Dictionary<int, int> snpCountsByLocusPos = new Dictionary<int, int>();
-            foreach (SNPInfo info in gf.LocusSnps)
-            {
-                int locusPos = info.LocusPos;
-                if (snpCountsByLocusPos.ContainsKey(locusPos))
-                    snpCountsByLocusPos[locusPos]++;
-                else
-                    snpCountsByLocusPos[locusPos] = 1;
-            }
-            return snpCountsByLocusPos;
         }
     }
 }

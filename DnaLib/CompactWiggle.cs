@@ -7,216 +7,87 @@ using Linnarsson.Utilities;
 
 namespace Linnarsson.Dna
 {
-    public class CompactWiggle
+    public class Wiggle
     {
-        private static long maxAverageChrHitCount = 2000000;
-        private static int annotMask = 1 << 29; // Non-annotated positions are marked with this bit set
-        int[] hitLengths = new int[Props.props.LargestPossibleReadLength];
-        Dictionary<string, int[]> fwHits;
-        Dictionary<string, int> fwHitIdx;
-        Dictionary<string, int[]> revHits;
-        Dictionary<string, int> revHitIdx;
-        Dictionary<string, int> chrLengths;
+        /// <summary>
+        /// Wiggle data, i.e. total counts (all barcodes) of reads and molecules for each position on the chromosome
+        /// </summary>
+        private SortedDictionary<int, int> molWiggle = new SortedDictionary<int, int>();
+        private SortedDictionary<int, int> readWiggle = new SortedDictionary<int, int>();
 
-        public CompactWiggle(Dictionary<string, int> chrIdToLength)
+        /// <summary>
+        /// Add (after every barcode) the molecule and read counts at all hit positions
+        /// </summary>
+        /// <param name="positions"></param>
+        /// <param name="molCounts"></param>
+        /// <param name="readCounts"></param>
+        public void AddCounts(int[] positions, int[] molCounts, int[] readCounts)
         {
-            chrLengths = new Dictionary<string, int>();
-            foreach (string chrId in chrIdToLength.Keys)
-                if (chrId != StrtGenome.chrCTRLId) chrLengths[chrId] = chrIdToLength[chrId];
-            int nChr = chrLengths.Count;
-            fwHits = new Dictionary<string, int[]>(nChr);
-            fwHitIdx = new Dictionary<string, int>(nChr);
-            revHits = new Dictionary<string, int[]>(nChr);
-            revHitIdx = new Dictionary<string, int>(nChr);
-            long averageChrLen = 0;
-            foreach (int l in chrLengths.Values) averageChrLen += l;
-            averageChrLen /= nChr;
-            Console.WriteLine("Setting up Wiggle for " + chrLengths.Keys.Count + " chromosomes.");
-            foreach (string chr in chrLengths.Keys)
+            for (int i = 0; i < positions.Length; i++)
             {
-                int chrLength = chrLengths[chr];
-                int maxChrHitCount = (int)(maxAverageChrHitCount * chrLength / averageChrLen);
-                fwHits[chr] = new int[maxChrHitCount/2];
-                fwHitIdx[chr] = 0;
-                revHits[chr] = new int[maxChrHitCount/2];
-                revHitIdx[chr] = 0;
+                int pos = positions[i];
+                if (readCounts[i] > 0)
+                    AddCount(readWiggle, pos, readCounts[i]);
+                if (molCounts[i] > 0)
+                    AddCount(readWiggle, pos, molCounts[i]);
             }
         }
-
-        public void AddHit(string chr, char strand, int start, int len, int weight, bool annotatedPosition)
+        public void AddMolecules(int pos, int count)
         {
-            if (!fwHitIdx.ContainsKey(chr)) return;
-            hitLengths[len]++;
-            int hitPos = (annotatedPosition) ? start : start | annotMask;
-            if (strand == '+')
-            {
-                int idx = fwHitIdx[chr];
-                int[] hits = fwHits[chr];
-                if (idx < hits.Length)
-                {
-                    fwHitIdx[chr]++;
-                    hits[idx] = hitPos;
-                }
-            }
+            AddCount(molWiggle, pos, count);
+        }
+        public void AddReads(int pos, int count)
+        {
+            AddCount(readWiggle, pos, count);
+        }
+        private void AddCount(SortedDictionary<int, int> wData, int pos, int count)
+        {
+            if (!wData.ContainsKey(pos))
+                wData[pos] = count;
             else
-            {
-                int idx = revHitIdx[chr];
-                int[] hits = revHits[chr];
-                if (idx < hits.Length)
-                {
-                    revHitIdx[chr]++;
-                    hits[idx] = hitPos;
-                }
-            }
+                wData[pos] += count;
         }
 
-        public int[] GetHitLengthCounts()
+        public int GetReadCount(int pos, int averageReadLength, int margin)
         {
-            return hitLengths;
+            return GetCount(readWiggle, pos, averageReadLength, margin);
         }
-
-        public double GetAverageHitLength()
+        public int GetMolCount(int pos, int averageReadLength)
         {
-            double sum = 0.0;
+            return GetCount(molWiggle, pos, averageReadLength, 0);
+        }
+        private int GetCount(SortedDictionary<int, int> wData, int pos, int averageReadLength, int margin)
+        {
             int count = 0;
-            for (int i = 0; i < hitLengths.Length; i++)
-            {
-                sum += hitLengths[i] * i;
-                count += hitLengths[i];
-            }
-            return sum / count;
+            for (int p = pos - averageReadLength + margin; p <= pos + 1 - margin; p++)
+                if (wData.ContainsKey(p))count += wData[p];
+            return count;
         }
 
-        public void WriteHotspots(string file, bool annotatedPositions, int maxCount)
+        public void GetReadPositionsAndCounts(out int[] positions, out int[] countAtEachPosition)
         {
-            string midName = (annotatedPositions) ? "annotated" : "nonannotated";
-            var writer = (file + "_" + midName + "_hotspots.tab").OpenWrite();
-            writer.WriteLine("Positions with local maximal counts that have no corresponding annotations (gene or repeat). Samples < 5 bp apart not shown.");
-            writer.WriteLine("Chr\tPosition\tStrand\tCoverage");
-            int averageReadLength = (int)Math.Round(GetAverageHitLength());
-			foreach (string chr in fwHits.Keys)
-            {
-                FindHotspots(writer, chr, '+', fwHits[chr], fwHitIdx[chr], averageReadLength, 
-                             annotatedPositions, maxCount);
-            }
-
-            foreach (string chr in revHits.Keys)
-            {
-                FindHotspots(writer, chr, '-', revHits[chr], revHitIdx[chr], averageReadLength, 
-                                  annotatedPositions, maxCount);
-            }
-            writer.Close();
+            positions = readWiggle.Keys.ToArray();
+            countAtEachPosition = readWiggle.Keys.ToArray();
         }
 
-        private void FindHotspots(StreamWriter writer, string chr, char strand, int[] hits, int maxIdx,
-                                       int averageReadLength, bool annotatedPositions, int maxCount)
+        public void WriteMolWiggle(StreamWriter writer, string chr, char strand, int averageReadLength, int chrLength)
         {
-            int maskTest = (annotatedPositions)? 0 : annotMask;
-            int chrLength = chrLengths[chr];
-            int[] positions = new int[maxIdx];
-            HotspotFinder hFinder = new HotspotFinder(maxCount);
-            int pIdx = 0;
-            for (int p = 0; p < maxIdx; p++)
-                if ((hits[p] & annotMask) == maskTest)
-                    positions[pIdx++] = hits[p] & ~annotMask; // Remove annotation info bit
-            Array.Resize(ref positions, pIdx);
-            Array.Sort(positions);
-            Queue<int> stops = new Queue<int>();
-            int lastHit = 0;
-            int hitIdx = 0;
-            int i = 0;
-            while (i < chrLength && hitIdx < pIdx)
-            {
-                i = positions[hitIdx++];
-                stops.Enqueue(i + averageReadLength);
-                while (i < chrLength && stops.Count > 0)
-                {
-                    while (hitIdx < pIdx && positions[hitIdx] == i)
-                    {
-                        hitIdx++;
-                        stops.Enqueue(i + averageReadLength);
-                    }
-                    i++;
-                    if (stops.Count > 0 && i == stops.Peek())
-                    {
-                        if (i - lastHit >= 5)
-                        {
-                            lastHit = i;
-                            hFinder.Add(stops.Count, i - (averageReadLength / 2));
-                        }
-                        while (stops.Count > 0 && i == stops.Peek()) stops.Dequeue();
-                    }
-                }
-            }
-            int[] counts, locations;
-            hFinder.GetTop(out counts, out locations);
-            for (int cI = 0; cI < counts.Length; cI++)
-            {
-                int start = locations[cI];
-                writer.WriteLine("{0}\t{1}\t{2}\t{3}", 
-                                 chr, start + averageReadLength/2, strand, counts[cI]);
-            }
+            WriteToWigFile(writer, chr, strand, averageReadLength, chrLength, molWiggle);
         }
-
-        public void WriteWriggle(string file)
+        public void WriteReadWiggle(StreamWriter writer, string chr, char strand, int averageReadLength, int chrLength)
         {
-            int averageReadLength = (int)Math.Round(GetAverageHitLength());
-			var writer = (file + "_fw.wig.gz").OpenWrite();
-			writer.WriteLine("track type=wiggle_0 name=\"{0} (+)\" description=\"{0} (+)\" visibility=full",
-				Path.GetFileNameWithoutExtension(file) );
-			foreach(string chr in fwHits.Keys)
-			{
-                if (!StrtGenome.IsSyntheticChr(chr))
-    				WriteWiggleStrand(writer, chr, fwHits[chr], fwHitIdx[chr], averageReadLength, 1);
-			}
-			writer.Close();
-			writer = (file + "_rev.wig.gz").OpenWrite();
-			writer.WriteLine("track type=wiggle_0 name=\"{0} (-)\" description=\"{0} (-)\" visibility=full",
-				Path.GetFileNameWithoutExtension(file) );
-			foreach(string chr in revHits.Keys)
-			{
-                WriteWiggleStrand(writer, chr, revHits[chr], revHitIdx[chr], averageReadLength, -1);
-            }
-			writer.Close();
-		}
-
-		private void WriteWiggleStrand(StreamWriter writer, string chr, int[] hits, int maxIdx,
-                                       int averageReadLength, int strandSign)
-		{
-            int chrLength = chrLengths[chr];
-            int[] positions = new int[maxIdx];
-            for (int p = 0; p < maxIdx; p++)
-                positions[p] = hits[p] & ~annotMask; // Remove annotation info bit
-            DumpToWiggle(writer, chr, averageReadLength, strandSign, chrLength, positions);
+            WriteToWigFile(writer, chr, strand, averageReadLength, chrLength, readWiggle);
         }
-
-        public static void DumpToWiggle(StreamWriter writer, string chr, int readLength, int strandSign, int chrLength, int[] positions)
+        private void WriteToWigFile(StreamWriter writer, string chr, char strand, int readLength, int chrLength, SortedDictionary<int, int> wData)
         {
-            Array.Sort(positions);
-            Queue<int> stops = new Queue<int>();
-            int hitIdx = 0;
-            int i = 0;
-            while (i < chrLength && hitIdx < positions.Length)
-            {
-                i = positions[hitIdx++];
-                stops.Enqueue(i + readLength);
-                writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
-                while (i < chrLength && stops.Count > 0)
-                {
-                    while (hitIdx < positions.Length && positions[hitIdx] == i)
-                    {
-                        hitIdx++;
-                        stops.Enqueue(i + readLength);
-                    }
-                    writer.WriteLine(stops.Count * strandSign);
-                    i++;
-                    while (stops.Count > 0 && i == stops.Peek()) stops.Dequeue();
-                }
-            }
+            int strandSign = (strand == '+') ? 1 : -1;
+            int[] positions = wData.Keys.ToArray();
+            int[] countAtEachPosition = wData.Keys.ToArray();
+            WriteToWigFile(writer, chr, readLength, strandSign, chrLength, positions, countAtEachPosition);
         }
 
-        public static void DumpToWiggle(StreamWriter writer, string chr, int readLength, int strandSign, int chrLength,
-                                         int[] positions, int[] countAtEachPosition)
+        public static void WriteToWigFile(StreamWriter writer, string chr, int readLength, int strandSign, int chrLength,
+                                           int[] positions, int[] countAtEachPosition)
         {
             Array.Sort(positions, countAtEachPosition);
             Queue<int> stops = new Queue<int>();

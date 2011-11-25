@@ -113,15 +113,15 @@ namespace Linnarsson.Dna
             return annotationsPath;
         }
 
-        public static string GetRedundancyPath(StrtGenome genome, int averageReadLen)
-        {
-            string redundancyFilename = genome.GetRedundancyFileName(averageReadLen);
-            return Path.Combine(GetGenomeSequenceFolder(genome), redundancyFilename);
-        }
-
         public string GetJunctionChrPath(StrtGenome genome)
         {
             return Path.Combine(GetGenomeSequenceFolder(genome), genome.GetJunctionChrFileName() + ".fa");
+        }
+
+        public static string GetTagMappingPath(StrtGenome genome)
+        {
+            string redundancyFilename = genome.GetTagMappingFileName();
+            return Path.Combine(GetGenomeSequenceFolder(genome), redundancyFilename);
         }
 
         public string[] GetRepeatMaskFiles(StrtGenome genome)
@@ -335,6 +335,5 @@ namespace Linnarsson.Dna
                 safeName = safeName.Replace(c, '_');
             return safeName;
         }
-
     }
 }

@@ -41,26 +41,9 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// SNPs stored as uints of pp..pppbbbbbbbnn where p is position relative to LocusStart
-        /// in chromosome orientation, b is barcode, and nn is the substituted Nt (ACGT => 0123).
-        /// Only EXON SNPs are considered (transcript forward strand only).
+        /// SNPCounter arrays by bcIdx for every SNP positions
         /// </summary>
-        private int locusSnpIdx;
-        private bool locusSnpsSorted;
-        private SNPInfo[] m_LocusSnps;
-        public SNPInfo[] LocusSnps
-        {
-            get
-            {
-                if (!locusSnpsSorted)
-                {
-                    Array.Resize(ref m_LocusSnps, locusSnpIdx);
-                    Array.Sort(m_LocusSnps, SNPInfo.Compare);
-                    locusSnpsSorted = true;
-                }
-                return m_LocusSnps;
-            }
-        }
+        public Dictionary<int,  SNPCounter[]> SNPCountersByBcIdx;
 
         public override int GetLocusLength()
         {
@@ -155,8 +138,8 @@ namespace Linnarsson.Dna
             LeftFlankLength = RightFlankLength = LocusFlankLength; // Init with default length
             MaskedAEXON = new bool[exonEnds.Length];
             MaskedINTR = new bool[exonEnds.Length - 1];
-            TranscriptHitsByBarcode = new int[Barcodes.MaxCount];
-            NonConflictingTranscriptHitsByBarcode = new int[Barcodes.MaxCount];
+            TranscriptHitsByBarcode = new int[Props.props.Barcodes.Count];
+            NonConflictingTranscriptHitsByBarcode = new int[Props.props.Barcodes.Count];
             VariationSamples = new List<double>();
             TranscriptHitsByExonIdx = new int[exonStarts.Length];
             TranscriptHitsByJunction = new Dictionary<string, int>();
@@ -164,8 +147,7 @@ namespace Linnarsson.Dna
             NonMaskedHitsByAnnotType = new int[AnnotType.Count];
             m_LocusHits = new int[1000];
             locusHitIdx = 0;
-            m_LocusSnps = new SNPInfo[10];
-            locusSnpIdx = 0;
+            SNPCountersByBcIdx = new Dictionary<int, SNPCounter[]>();
         }
 
         public int GetExonLength(int i)
@@ -356,118 +338,97 @@ namespace Linnarsson.Dna
             return false;
         }
 
-        /*public override IFeature Clone()
+        private MarkResult MarkUpstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
         {
-            return new GeneFeature(Name, Chr, Strand, ExonStarts, ExonEnds);
-        }*/
-
-        private MarkResult MarkUpstreamFlankHit(int chrHitPos, int junkW, char strand, int bcodeIdx,
-                                                int junk, MarkStatus markType)
-        {
-            return MarkFlankHit(AnnotType.USTR, chrHitPos, strand, bcodeIdx, markType);
+            return MarkFlankHit(AnnotType.USTR, item, markType);
         }
-        private MarkResult MarkDownstreamFlankHit(int chrHitPos, int junkW, char strand, int bcodeIdx,
-                                                  int junk, MarkStatus markType)
+        private MarkResult MarkDownstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
         {
-            return MarkFlankHit(AnnotType.DSTR, chrHitPos, strand, bcodeIdx, markType);
+            return MarkFlankHit(AnnotType.DSTR, item, markType);
         }
-        private MarkResult MarkFlankHit(int annotType, int chrHitPos, char strand, int bcodeIdx,
-                                        MarkStatus markType)
+        private MarkResult MarkFlankHit(int annotType, MappedTagItem item, MarkStatus markType)
         {
             int undirAnnotType = annotType;
-            if (strand != Strand) annotType = AnnotType.MakeAntisense(annotType);
+            if (item.strand != Strand) annotType = AnnotType.MakeAntisense(annotType);
             if (markType != MarkStatus.TEST_EXON_MARK_OTHER)
                 return new MarkResult(annotType, this);
-            MarkLocusHitPos(chrHitPos, strand, bcodeIdx);
-            IncrTotalHits(strand == Strand);
-            HitsByAnnotType[annotType]++;
+            MarkLocusHitPos(item);
+            IncrTotalHits(item.strand == Strand);
+            HitsByAnnotType[annotType] += item.MolCount;
             if ((undirAnnotType == AnnotType.USTR && !MaskedUSTR) ||
                 (undirAnnotType == AnnotType.DSTR && !MaskedDSTR))
-                NonMaskedHitsByAnnotType[annotType]++;
+                NonMaskedHitsByAnnotType[annotType] += item.MolCount;
             return new MarkResult(annotType, this);
         }
 
-        private MarkResult MarkIntronHit(int chrHitPos, int junk, char strand, int bcodeIdx,
-                                         int intronIdx, MarkStatus markType)
+        private MarkResult MarkIntronHit(MappedTagItem item, int intronIdx, MarkStatus markType)
         {
-            int annotType = (strand == Strand) ? AnnotType.INTR : AnnotType.AINTR;
+            int annotType = (item.strand == Strand) ? AnnotType.INTR : AnnotType.AINTR;
             if (markType != MarkStatus.TEST_EXON_MARK_OTHER)
                 return new MarkResult(annotType, this);
-            MarkLocusHitPos(chrHitPos, strand, bcodeIdx);
-            IncrTotalHits(strand == Strand);
-            HitsByAnnotType[annotType]++;
-            if (!MaskedINTR[intronIdx]) NonMaskedHitsByAnnotType[annotType]++;
+            MarkLocusHitPos(item);
+            IncrTotalHits(item.strand == Strand);
+            HitsByAnnotType[annotType] += item.MolCount;
+            if (!MaskedINTR[intronIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
             return new MarkResult(annotType, this);
         }
 
-        public MarkResult MarkAltExonHit(int junkOrigChrHitPos, int junkHalfWidth, char junkOrigGfStrand, int bcodeIdx,
-                                int myChrHitPos , MarkStatus markType)
-        { // We know it is sense strand. We do not know if it across splice junction. We know we have alternative exon mappings.
-            MarkLocusHitPos(myChrHitPos, Strand, bcodeIdx);
-            IncrTotalHits(true);
-            //MarkExonicHit(junkExonIdx); // Should we recalc exonIdx every time?
-            TranscriptHitsByBarcode[bcodeIdx]++;
-            HitsByAnnotType[AnnotType.EXON]++;
-            NonMaskedHitsByAnnotType[AnnotType.EXON]++;
-            return new MarkResult(AnnotType.EXON, this);
-        }
-
-        public MarkResult MarkExonHit(int chrHitPos, int halfWidth, char strand, int bcodeIdx,
-                                       int exonIdx, MarkStatus markType)
+        public MarkResult MarkExonHit(MappedTagItem item, int exonIdx, MarkStatus markType)
         {
-            int annotType = (strand == Strand) ? AnnotType.EXON : AnnotType.AEXON;
+            int annotType = (item.strand == Strand) ? AnnotType.EXON : AnnotType.AEXON;
             if (markType == MarkStatus.TEST_EXON_SKIP_OTHER)
                 return new MarkResult(annotType, this);
             if (markType == MarkStatus.TEST_EXON_MARK_OTHER)
             {
                 if (!AnnotType.IsTranscript(annotType))
                 {   // Only happens for directional AEXON reads
-                    MarkLocusHitPos(chrHitPos, strand, bcodeIdx);
-                    IncrTotalHits(strand == Strand);
-                    HitsByAnnotType[annotType]++;
-                    if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[annotType]++;
+                    MarkLocusHitPos(item);
+                    IncrTotalHits(item.strand == Strand);
+                    HitsByAnnotType[annotType] += item.MolCount;
+                    if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
+                    MarkSNPs(item);
                 }
                 return new MarkResult(annotType, this);
             } // Now hit should be marked
             if (AnnotType.IsTranscript(annotType)) //(strand == Strand) // Sense hit
             {
-                MarkLocusHitPos(chrHitPos, strand, bcodeIdx);
-                IncrTotalHits(strand == Strand);
-                TranscriptHitsByExonIdx[exonIdx]++;
-                TranscriptHitsByBarcode[bcodeIdx]++;
+                MarkLocusHitPos(item);
+                IncrTotalHits(item.strand == Strand);
+                TranscriptHitsByExonIdx[exonIdx] += item.MolCount;
+                TranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
                 if (markType == MarkStatus.SINGLE_MAPPING)
-                    NonConflictingTranscriptHitsByBarcode[bcodeIdx]++;
-                HitsByAnnotType[annotType]++;
-                NonMaskedHitsByAnnotType[annotType]++;
+                    NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
+                HitsByAnnotType[annotType] += item.MolCount;
+                NonMaskedHitsByAnnotType[annotType] += item.MolCount;
             }
             return new MarkResult(annotType, this);
         }
 
-        public MarkResult MarkSpliceHit(int realChrHitPos, int halfWidth, char strand, int bcodeIdx,
-                                        int exonId, string junctionId, MarkStatus markType)
+        public MarkResult MarkSpliceHit(int realChrHitPos, MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
         {
             int exonIdx = (Strand == '+') ? exonId - 1 : ExonCount - exonId;
-            int annotType = (strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
+            int annotType = (item.strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
             if (AnnotType.IsTranscript(annotType))
             {
-                MarkJunctionHit(junctionId);
-                NonMaskedHitsByAnnotType[annotType]++;
+                MarkJunctionHit(junctionId, item.MolCount);
+                NonMaskedHitsByAnnotType[annotType] += item.MolCount;
             }
             else // Only happens for directional ASPLC hits
             {
-                if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[annotType]++;
+                if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
             }
             HitsByAnnotType[annotType]++;
-            MarkResult res = MarkExonHit(realChrHitPos, halfWidth, strand, bcodeIdx, exonIdx, markType);
+            item.HitMidPos = realChrHitPos;
+            MarkResult res = MarkExonHit(item, exonIdx, markType);
             return new MarkResult(annotType, this);
         }
 
-        private void MarkJunctionHit(string junctionId)
+        private void MarkJunctionHit(string junctionId, int count)
         {
             if (!TranscriptHitsByJunction.ContainsKey(junctionId))
-                TranscriptHitsByJunction[junctionId] = 1;
+                TranscriptHitsByJunction[junctionId] = count;
             else
-                TranscriptHitsByJunction[junctionId]++;
+                TranscriptHitsByJunction[junctionId] += count;
         }
 
         public override IEnumerable<FtInterval> IterIntervals()
@@ -648,40 +609,40 @@ namespace Linnarsson.Dna
         /// <param name="chrPos"></param>
         /// <param name="strand"></param>
         /// <param name="bcodeIdx"></param>
-        public void MarkLocusHitPos(int chrPos, char strand, int bcodeIdx)
+        public void MarkLocusHitPos(MappedTagItem item)
         {
-            int locusPos = chrPos - LocusStart;
+            int locusPos = item.HitMidPos - LocusStart;
             locusHitsSorted = false;
             if (locusHitIdx == m_LocusHits.Length)
             {
                 Array.Resize(ref m_LocusHits, Math.Max(1000, m_LocusHits.Length * 2));
             }
-            int s = (strand == '+') ? 0 : 1;
-            int hit = (locusPos << 8) | (bcodeIdx << 1) | s;
+            int s = (item.strand == '+') ? 0 : 1;
+            int hit = (locusPos << 8) | (item.bcIdx << 1) | s;
             m_LocusHits[locusHitIdx++] = hit;
         }
 
-        private static readonly char[] validSNPNts = new char[] { 'A', 'C', 'G', 'T' };
-        public void MarkSNPs(int hitStartPos, int bcodeIdx, string mismatches, int rndTagIdx)
+        /// <summary>
+        /// Add to barcode sorted data for SNP positions contained within the MappedTagItem.
+        /// </summary>
+        /// <param name="item"></param>
+        private void MarkSNPs(MappedTagItem item)
         {
-            foreach (string snp in mismatches.Split(','))
+            foreach (LocatedSNPCounter locCounter in item.IterMolSNPCounts())
             {
-                int p = snp.IndexOf(':');
-                int relPos = int.Parse(snp.Substring(0, p));
-                char altNtChar = snp[p + 3];
-                int chrSnpPos = hitStartPos + relPos;
-                if (chrSnpPos < Start || chrSnpPos > End)
-                    continue;
-                int locusSnpPos = chrSnpPos - LocusStart;
-                if (!validSNPNts.Contains(altNtChar) || locusSnpPos < 0 || locusSnpPos >= GetLocusLength())
-                    continue; // May happen if map to N or mapping accidentally includes a few bases outside locus.
-                locusSnpsSorted = false;
-                if (locusSnpIdx == m_LocusSnps.Length)
+                int chrPos = locCounter.chrPos;
+                if (!SNPCountersByBcIdx.ContainsKey(chrPos))
                 {
-                    Array.Resize(ref m_LocusSnps, Math.Max(100, m_LocusSnps.Length * 2));
+                    SNPCountersByBcIdx[chrPos] = new SNPCounter[Props.props.Barcodes.Count];
+                    for (int bcIdx = 0; bcIdx < Props.props.Barcodes.Count; bcIdx++)
+                        SNPCountersByBcIdx[chrPos][bcIdx] = new SNPCounter();
                 }
-                m_LocusSnps[locusSnpIdx++] = new SNPInfo(altNtChar, bcodeIdx, locusSnpPos, rndTagIdx);
+                SNPCountersByBcIdx[chrPos][item.bcIdx].Add(locCounter.counter);
             }
+        }
+
+        public void GetSNPData()
+        {
         }
     }
 }

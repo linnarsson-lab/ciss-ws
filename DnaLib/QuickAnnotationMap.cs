@@ -49,58 +49,5 @@ namespace Linnarsson.Dna
 			foreach (FtInterval item in bins[bin])
                 if(item.Contains(pos)) yield return item;
 		}
-
-        /*
-                public void Serialize(BinaryWriter writer)
-                {
-                    long numItems = Count;
-                    writer.Write(numItems);
-                    writer.Write(BinSize);
-
-                    foreach(var bin in bins)
-                    {
-                        foreach(var item in bin)
-                        {
-                            writer.Write(item.Start);
-                            writer.Write(item.End);
-                            writer.Write(item.Item.Name);
-                        }
-                    }
-                }
-
-                public static IEnumerable<Feature> Loci(BinaryReader reader)
-                {
-                    // Careful! The order of these two statements matters!
-                    long numItems = reader.ReadInt64();
-                    int reportfreq = Math.Max((int)(numItems / 100), 1);
-                    for (long i = 0; i < numItems; i++)
-                    {
-                        Feature loc = new Feature();
-                        loc.Start = (int)reader.ReadInt64();
-                        loc.End = (int)reader.ReadInt64();
-                        loc.Name = reader.ReadString();
-                        yield return loc;
-                    }
-                    yield break;
-                }
-
-                public static QuickAnnotationMap Deserialize(BinaryReader reader)
-                {
-                    // Careful! The order of these two statements matters!
-                    long numItems = reader.ReadInt64();
-                    int reportfreq = Math.Max((int)(numItems / 100),1);
-                    QuickAnnotationMap result = new QuickAnnotationMap((int)reader.ReadInt64());
-                    for(long i = 0; i < numItems; i++)
-                    {
-                        IntInterval<DoMarkHit> interval = new IntInterval<DoMarkHit>(
-                            (int)reader.ReadInt64(),
-                            (int)reader.ReadInt64(),
-                            reader.ReadString()
-                            );
-                        result.Add(interval);
-                        if(i % reportfreq == 0) Background.Progress((int)(i * 100 / numItems));
-                    }
-                    return result;
-                }*/
     }
 }

@@ -44,18 +44,16 @@ namespace Linnarsson.Dna
             realFeature.SpliceLen = End - Start;
         }
 
-        public override MarkResult MarkHit(int chrHitPos, int halfWidth, char strand,
-                                           int bcodeIdx, int partIdx, MarkStatus markType)
+        public override MarkResult MarkHit(MappedTagItem item, int partIdx, MarkStatus markType)
         {
-            int annotType = (strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
+            int annotType = (item.strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
             if ((markType == MarkStatus.TEST_EXON_MARK_OTHER && AnnotType.IsTranscript(annotType))
                 || markType == MarkStatus.TEST_EXON_SKIP_OTHER)
                 return new MarkResult(annotType, this);
-            int realChrHitPos = offsets[partIdx] + chrHitPos;
+            int realChrHitPos = offsets[partIdx] + item.HitMidPos;
             if (realChrHitPos < realFeature.LocusStart || realChrHitPos > realFeature.LocusEnd)
                 Console.WriteLine("Error");
-            return realFeature.MarkSpliceHit(realChrHitPos, halfWidth, strand, bcodeIdx,
-                                             realExonIds[partIdx], junctionIds[partIdx], markType);
+            return realFeature.MarkSpliceHit(realChrHitPos, item, realExonIds[partIdx], junctionIds[partIdx], markType);
         }
 
         public override IEnumerable<FtInterval> IterIntervals()

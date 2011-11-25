@@ -2,184 +2,259 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
+using Linnarsson.Dna;
+using Linnarsson.Mathematics;
 
-namespace Linnarsson.Dna
+namespace Linnarsson.Strt
 {
+    public class ChrTagData
+    {
+        public static int marginInReadForSNP = 2;
+        public static int averageReadLen; // Needed for SNP handling
+
+        /// <summary>
+        /// PosAndStrand_on_Chr -> countsByRndTagIdx
+        /// Position stored as "(pos * 2) | strand" where strand in bit0: +/- => 0/1
+        /// </summary>
+        //private Dictionary<int, ushort[]> molCounts = new Dictionary<int, ushort[]>();
+        private Dictionary<int, TagItem> tagItems = new Dictionary<int, TagItem>();
+        /// <summary>
+        /// Max value of data items in the tagItems arrays.
+        /// </summary>
+        public static int MaxMoleculeReadCount { get { return ushort.MaxValue; } }
+
+        /// <summary>
+        /// Wiggle data in forward, i.e. total counts (all barcodes) of reads and molecules for each position on the chromosome
+        /// </summary>
+        public Wiggle wiggleFw = new Wiggle();
+        /// <summary>
+        /// Wiggle data in reverse, i.e. total counts (all barcodes) of reads and molecules for each position on the chromosome
+        /// </summary>
+        public Wiggle wiggleRev = new Wiggle();
+
+        public void Setup(int pos, char strand, TagItem tagItem)
+        {
+            int posStrand = MakePosStrandIdx(pos, strand);
+            tagItems[posStrand] = tagItem; 
+        }
+
+        private static int MakePosStrandIdx(int pos, char strand)
+        {
+            int strandIdx = (strand == '+') ? 0 : 1;
+            int posStrand = (pos << 1) | strandIdx;
+            return posStrand;
+        }
+
+        public void RegisterSNP(int chrPos)
+        {
+            for (byte snpOffset = (byte)(averageReadLen - marginInReadForSNP); snpOffset <= (byte)marginInReadForSNP; snpOffset--)
+            {
+                RegisterSNPOnTagItem(chrPos, snpOffset, 0);
+                RegisterSNPOnTagItem(chrPos, snpOffset, 1);
+            }
+        }
+
+        private void RegisterSNPOnTagItem(int chrPos, byte snpOffset, int strandIdx)
+        {
+            int posStrand = chrPos << 1 | strandIdx;
+            if (!tagItems.ContainsKey(posStrand))
+                tagItems[posStrand] = new TagItem(false);
+            tagItems[posStrand].RegisterSNP(snpOffset);
+        }
+
+        /// <summary>
+        /// Count, for each SNP nt at given position, the number of mapped molecules
+        /// </summary>
+        /// <param name="chrPos"></param>
+        /// <param name="strand"></param>
+        /// <returns>SNPCounter with totals of each nt</returns>
+        public SNPCounter GetMolSNPData(int snpChrPos, char strand)
+        {
+            SNPCounter totalCounts = new SNPCounter();
+            TagItem tagItem;
+            for (byte snpOffset = (byte)(averageReadLen - marginInReadForSNP); snpOffset <= (byte)marginInReadForSNP; snpOffset--)
+            {
+                int hitStartPos = snpChrPos - snpOffset;
+                int posStrand = MakePosStrandIdx(hitStartPos, strand);
+                if (tagItems.TryGetValue(posStrand, out tagItem))
+                {
+                    SNPCounter mapPosCounts = tagItem.GetMolSNPCounts(snpOffset);
+                    if (mapPosCounts != null)
+                        totalCounts.Add(mapPosCounts);
+                }
+            }
+            return totalCounts;
+        }
+
+        public void ChangeBcIdx()
+        {
+            AddToWiggle();
+            foreach (TagItem tagItem in tagItems.Values)
+                tagItem.Clear();
+        }
+
+        private void AddToWiggle()
+        {
+            int[] positions, molCounts, readCounts;
+            GetDistinctPositionsAndCounts('+', out positions, out molCounts, out readCounts);
+            wiggleFw.AddCounts(positions, molCounts, readCounts);
+            GetDistinctPositionsAndCounts('-', out positions, out molCounts, out readCounts);
+            wiggleRev.AddCounts(positions, molCounts, readCounts);
+        }
+
+        public Wiggle GetWiggle(char strand)
+        {
+            return (strand == '+') ? wiggleFw : wiggleRev;
+        }
+
+        /// <summary>
+        /// Add a read and checks weather the specified rndTag has been seen before on the pos and strand.
+        /// </summary>
+        /// <param name="pos"></param>
+        /// <param name="strand"></param>
+        /// <param name="rndTagIdx"></param>
+        /// <param name="hasAltMappings">As indicated by the map file</param>
+        /// <returns>true if the rndTag is new at this position-strand</returns>
+        public bool Add(int pos, char strand, int rndTagIdx, bool hasAltMappings, string mismatches, int readLen)
+        {
+            int strandIdx = (strand == '+') ? 0 : 1;
+            int posStrand = (pos << 1) | strandIdx;
+            if (!tagItems.ContainsKey(posStrand))
+                tagItems[posStrand] = new TagItem(false);
+            TagItem item = tagItems[posStrand];
+            if (!hasAltMappings && mismatches != "")
+            {
+                foreach (string snp in mismatches.Split(','))
+                {
+                    int p = snp.IndexOf(':');
+                    if (p == -1)
+                        continue;
+                    int posInRead = int.Parse(snp.Substring(0, p));
+                    if (posInRead < marginInReadForSNP || posInRead > readLen - marginInReadForSNP) continue;
+                    byte relPos = (byte)((strand == '+') ? posInRead : readLen - 1 - posInRead);
+                    char snpNt = snp[p + 3];
+                    item.AddSNP(rndTagIdx, relPos, snpNt);
+                }
+            }
+            return item.Add(rndTagIdx);
+        }
+
+        public IEnumerable<MappedTagItem> IterItems()
+        {
+            MappedTagItem item = new MappedTagItem();
+            foreach (KeyValuePair<int, TagItem> cPair in tagItems)
+            {
+                item.tagItem = cPair.Value;
+                item.strand = ((cPair.Key & 1) == 0)? '+' : '-';
+                item.hitStartPos = cPair.Key >> 1;
+                yield return item;
+            }
+        }
+
+        /// <summary>
+        /// Use to get the read count profile for a specific genomic position and strand
+        /// </summary>
+        /// <param name="pos"></param>
+        /// <param name="strand"></param>
+        /// <returns>Number of reads as function of rndTag index at given genomic location</returns>
+        public ushort[] GetReadCounts(int pos, char strand)
+        {
+            int strandIdx = (strand == '+') ? 0 : 1;
+            int posStrand = (pos << 1) | strandIdx;
+            return tagItems[posStrand].GetReadCountsByRndTag();
+        }
+
+        /// <summary>
+        /// Generates (in arbitrary order) the number of times each registered molecule has been observed.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<int> IterMoleculeReadCounts()
+        {
+            foreach (TagItem tagItem in tagItems.Values)
+                foreach (ushort nOfRndTag in tagItem.GetReadCountsByRndTag())
+                    yield return (int)nOfRndTag;
+        }
+
+        /// <summary>
+        /// Analyse how many position-strand combinations have been observed in each rndTag
+        /// </summary>
+        /// <returns>Counts of distinct mappings by rndTagIdx</returns>
+        public int[] GetCasesByRndTagCount()
+        {
+            int[] nCasesByRndTagCount = new int[RandomTagFilterByBc.nRndTags + 1];
+            foreach (TagItem molCountsAtPos in tagItems.Values)
+            {
+                int nUsedRndTags = molCountsAtPos.GetNumMolecules();
+                if (nUsedRndTags > 0)
+                    nCasesByRndTagCount[nUsedRndTags]++;
+            }
+            return nCasesByRndTagCount;
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>Number of distinct mappings (position-strand) that have been observed, irrespective of rndTags</returns>
+        public int GetNumDistinctMappings()
+        {
+            int n = 0;
+            foreach (TagItem tagItem in tagItems.Values)
+                if (tagItem.HasReads) n++;
+            return n;
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="strand"></param>
+        /// <returns>All positions with some mapped read on given strand</returns>
+        public int[] GetDistinctPositions(char strand)
+        {
+            int[] positions = new int[tagItems.Count];
+            int strandIdx = (strand == '+') ? 0 : 1;
+            int p = 0;
+            foreach (int codedPos in tagItems.Keys)
+                if ((codedPos & 1) == strandIdx)
+                    positions[p++] = codedPos >> 1;
+            Array.Resize(ref positions, p);
+            return positions;
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name="strand"></param>
+        /// <param name="positions">All positions with some mapped read on given strand</param>
+        /// <param name="molCountAtEachPosition">Number of distinct rndTags (=molecules) mapped at each of these positions</param>
+        /// <param name="readCountAtEachPosition">Number of reads mapped at each of these positions</param>
+        public void GetDistinctPositionsAndCounts(char strand, out int[] positions,
+                                                  out int[] molCountAtEachPosition, out int[] readCountAtEachPosition)
+        {
+            positions = new int[tagItems.Count];
+            molCountAtEachPosition = new int[tagItems.Count];
+            readCountAtEachPosition = new int[tagItems.Count];
+            int strandIdx = (strand == '+') ? 0 : 1;
+            int p = 0;
+            foreach (KeyValuePair<int, TagItem> codedPair in tagItems)
+                if ((codedPair.Key & 1) == strandIdx)
+                {
+                    molCountAtEachPosition[p] = codedPair.Value.GetNumMolecules();
+                    readCountAtEachPosition[p] = codedPair.Value.GetNumReads();
+                    positions[p++] = codedPair.Key >> 1;
+                }
+            Array.Resize(ref positions, p);
+            Array.Resize(ref molCountAtEachPosition, p);
+            Array.Resize(ref readCountAtEachPosition, p);
+        }
+
+    }
+
     public class RandomTagFilterByBc
     {
-        public class TagItem
-        {
-            // TagItem summarize all reads that map to a specific (chr, pos, strand) combination.
-            ushort[] molCounts; // Count of reads in each rndTag like before
-            ushort[] snpCounts; // Count of a read-common SNP within each rndTag
-            byte[] snpOffsets; // Offset from Read startPos of the SNP
-            char[] snpNt; // The alternative Nt of the SNP (really needed?)
-            bool hasAltMappings; // true when the (chr, pos, strand) read seq is not unique in genome.
-            // molCount & snpCount can probably be reduced to byte once we know how to detect
-            // saturation of reads and mutation rates for mutation removal.
-            //
-            // Could potentially save pointers to the pre-calculated alternative mappings for
-            // important sequences (exons) here, to avoid the multiread issue:
-            // AltMappings altMappings;
-            // with AltMappings being an array of (chr, pos, strand) items, pointed to by all member TagItems.
-            // or:
-            // TagItem[] altTagItems;
-            // being pointers to all the alternative mapped TagItems
-            // All items in either array should then be visited during the annotation step,
-            // or better, all the other TagItems should also be assigned immediately, so that annotation can
-            // process gene-by-gene as well as TagItem-by-TagItem.
-            // If analyzing gene-by-gene, a flag should indicate that the TagItem has been visited, to 
-            // be able to separate Max/Min counts for redundant genes:
-            // bool visited = false;
-            // These ways require all TagItems with alternative mappings to be initiated even if no reads will map.
-            // Save memory by keeping the TagItems data empty until some actual reads are assigned to them.
-            //
-            // The process of first counting all reads before annotating, loses the readLen of each
-            // read. Maybe a stronger limit on min readLen should be used, and small A-tails not be removed,
-            // so that a constant readLen can be assumed.
-            //
-            // SNPs can only be correctly analyzed if the mapping is unique, i.e. hasAltMappings = false
-            // This setup allows only one SNP within the readLen window of this TagItem.
-            // ...handle that e.g. by changing offset and Nt when detecting a new and count is only <= 1.
-            // snpCount should be 0 or equal to molCount, otherwise the molecule is probably really
-            // two mixed molecules, one from each allele (ca.50/50), or due to a mutation during PCR (any ratio).
-            // Whether the SNP is real can be inferred by scanning all rndTags of TagItems spanning the SNP position.
-            // Then, every molecule that spans a SNP can be assigned to either allele.
-        }
-
-        public class ChrTagData
-        {
-            /// <summary>
-            /// PosAndStrand_on_Chr -> countsByRndTagIdx
-            /// Position stored as "(pos * 2) | strand" where strand in bit0: +/- => 0/1
-            /// </summary>
-            private Dictionary<int, ushort[]> molCounts = new Dictionary<int, ushort[]>();
-            /// <summary>
-            /// Max value of data items in the molCounts arrays.
-            /// </summary>
-            public static int MaxMoleculeReadCount { get { return ushort.MaxValue; } }
-
-            public void ChangeBcIdx()
-            {
-                molCounts.Clear();
-            }
-
-            /// <summary>
-            /// Checks weather the specified rndTag has been seen before on the pos and strand.
-            /// </summary>
-            /// <param name="pos"></param>
-            /// <param name="strand"></param>
-            /// <param name="rndTagIdx"></param>
-            /// <returns></returns>
-            public bool IsNew(int pos, char strand, int rndTagIdx)
-            {
-                int strandIdx = (strand == '+') ? 0 : 1;
-                int posStrand = (pos << 1) | strandIdx;
-                if (!molCounts.ContainsKey(posStrand))
-                    molCounts[posStrand] = new ushort[nRndTags];
-                int currentCount = molCounts[posStrand][rndTagIdx];
-                molCounts[posStrand][rndTagIdx] = (ushort)Math.Min(ushort.MaxValue, currentCount + 1);
-                return currentCount == 0;
-            }
-
-            /// <summary>
-            /// Use to get the read count profile for a specific genomic position and strand
-            /// </summary>
-            /// <param name="pos"></param>
-            /// <param name="strand"></param>
-            /// <returns>Number of reads as function of rndTag index at given genomic location</returns>
-            public ushort[] GetMoleculeCounts(int pos, char strand)
-            {
-                int strandIdx = (strand == '+') ? 0 : 1;
-                int posStrand = (pos << 1) | strandIdx;
-                return molCounts[posStrand];
-            }
-
-            /// <summary>
-            /// Generates (in arbitrary order) the number of times each registered molecule has been observed.
-            /// </summary>
-            /// <returns></returns>
-            public IEnumerable<int> IterMoleculeReadCounts()
-            {
-                foreach (ushort[] molCountsAtPos in molCounts.Values)
-                    foreach (ushort nOfRndTag in molCountsAtPos)
-                        yield return (int)nOfRndTag;
-            }
-
-            /// <summary>
-            /// Analyse how many position-strand combinations have been observed in each rndTag
-            /// </summary>
-            /// <returns>Counts of distinct mappings by rndTagIdx</returns>
-            public int[] GetCasesByRndTagCount()
-            {
-                int[] nCasesByRndTagCount = new int[nRndTags + 1];
-                foreach (ushort[] molCountsAtPos in molCounts.Values)
-                {
-                    int nUsedRndTags = 0;
-                    foreach (ushort nOfRndTag in molCountsAtPos)
-                        if (nOfRndTag > 0) nUsedRndTags++;
-                    if (nUsedRndTags > 0)
-                        nCasesByRndTagCount[nUsedRndTags]++;
-                }
-                return nCasesByRndTagCount;
-            }
-
-            /// <summary>
-            /// </summary>
-            /// <returns>Number of distinct mappings (position-strand) that have been observed, irrespective of rndTags</returns>
-            public int GetNumDistinctMappings()
-            {
-                return molCounts.Count;
-            }
-
-            /// <summary>
-            /// </summary>
-            /// <param name="strand"></param>
-            /// <returns>All positions with some mapped read on given strand</returns>
-            public int[] GetDistinctPositions(char strand)
-            {
-                int[] positions = new int[molCounts.Count];
-                int strandIdx = (strand == '+') ? 0 : 1;
-                int p = 0;
-                foreach (int codedPos in molCounts.Keys)
-                    if ((codedPos & 1) == strandIdx)
-                        positions[p++] = codedPos >> 1;
-                Array.Resize(ref positions, p);
-                return positions;
-            }
-
-            /// <summary>
-            /// </summary>
-            /// <param name="strand"></param>
-            /// <param name="positions">All positions with some mapped read on given strand</param>
-            /// <param name="tagCountAtEachPosition">Number of distinct rndTags mapped at each of these positions</param>
-            public void GetDistinctPositionsAndMoleculeCounts(char strand, out int[] positions, out int[] tagCountAtEachPosition)
-            {
-                positions = new int[molCounts.Count];
-                tagCountAtEachPosition = new int[molCounts.Count];
-                int strandIdx = (strand == '+') ? 0 : 1;
-                int p = 0;
-                foreach (KeyValuePair<int, ushort[]> codedPair in molCounts)
-                    if ((codedPair.Key & 1) == strandIdx)
-                    {
-                        int nUsedRndTags = 0;
-                        foreach (ushort nReadsInRndTag in codedPair.Value)
-                            if (nReadsInRndTag > 0) nUsedRndTags++;
-                        tagCountAtEachPosition[p] = nUsedRndTags;
-                        positions[p++] = codedPair.Key >> 1;
-                    }
-                Array.Resize(ref positions, p);
-                Array.Resize(ref tagCountAtEachPosition, p);
-            }
-
-        }
-
         private bool hasRndTags;
         public Dictionary<string, ChrTagData> chrTagDatas;
         private int currentBcIdx;
         private HashSet<int> usedBcIdxs;
 
-        protected static int nRndTags;
+        public static int nRndTags;
         /// <summary>
         /// Number of reads in every random tag
         /// </summary>
@@ -205,10 +280,11 @@ namespace Linnarsson.Dna
         /// </summary>
         public int[] nDuplicatesByBarcode;
 
-        public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds)
+        public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds, string tagMappingFile)
         {
             hasRndTags = barcodes.HasRandomBarcodes;
             nRndTags = barcodes.RandomBarcodeCount;
+            TagItem.nRndTags = nRndTags;
             nReadsByRandomTag = new int[nRndTags];
             nCasesPerRandomTagCount = new int[nRndTags + 1];
             nDuplicatesByBarcode = new int[barcodes.AllCount];
@@ -219,41 +295,89 @@ namespace Linnarsson.Dna
             currentBcIdx = 0;
             usedBcIdxs = new HashSet<int>();
             moleculeReadCountsHistogram = new int[MaxValueInReadCountHistogram + 1];
+            if (File.Exists(tagMappingFile))
+                Setup(tagMappingFile);
+        }
+
+        /// <summary>
+        /// Read and initiate multiread mappings from the input file
+        /// </summary>
+        /// <param name="tagMappingFile"></param>
+        public void Setup(string tagMappingFile)
+        {
+            Console.WriteLine("Reading redundant mappings from " + tagMappingFile);
+            int n = 0;
+            using (StreamReader reader = new StreamReader(tagMappingFile))
+            {
+                string line = reader.ReadLine();
+                while (line.StartsWith("#")) line = reader.ReadLine();
+                while (line != null)
+                {
+                    if (++n % 10000000 == 0) Console.WriteLine(n + "...");
+                    TagItem tagItem = new TagItem(true);
+                    string[] groups = line.Split('\t');
+                    foreach (string group in groups)
+                    {
+                        string[] parts = group.Split(',');
+                        chrTagDatas[parts[0]].Setup(int.Parse(parts[1]), parts[2][0], tagItem);
+                    }
+                    line = reader.ReadLine();
+                }
+            }
+        }
+
+        public void SetupSNPCounters(int averageReadLen, IEnumerable<LocatedSNPCounter> snpDatas)
+        {
+            ChrTagData.averageReadLen = averageReadLen;
+            foreach (LocatedSNPCounter snpData in snpDatas)
+                chrTagDatas[snpData.chr].RegisterSNP(snpData.chrPos);
         }
 
         private void ChangeBcIdx(int newBcIdx)
         {
             if (usedBcIdxs.Contains(newBcIdx))
-                throw new Exception("Program or map file labelling error: Revisiting an already analyzed barcode (" + newBcIdx + ") is not allowed when using random tags.");
+                throw new Exception("Program or map file labelling error: Revisiting an already analyzed barcode ("
+                                    + newBcIdx + ") is not allowed when using random tags.");
             usedBcIdxs.Add(newBcIdx);
             currentBcIdx = newBcIdx;
-            foreach (ChrTagData tagData in chrTagDatas.Values)
+            foreach (ChrTagData chrTagData in chrTagDatas.Values)
             {
-                int[] chrCounts = tagData.GetCasesByRndTagCount();
+                int[] chrCounts = chrTagData.GetCasesByRndTagCount();
                 for (int i = 0; i < nCasesPerRandomTagCount.Length; i++)
                     nCasesPerRandomTagCount[i] += chrCounts[i];
-                foreach (int count in tagData.IterMoleculeReadCounts())
+                foreach (int count in chrTagData.IterMoleculeReadCounts())
                     moleculeReadCountsHistogram[Math.Min(MaxValueInReadCountHistogram, count)]++;
-                tagData.ChangeBcIdx();
+                chrTagData.ChangeBcIdx();
             }
         }
 
         /// <summary>
-        /// Check if the molecule is new and add to statistics.
-        /// Reads have to be submitted in sets containing all reads for each barcode.
+        /// Add a single-mapped read and check if the read represents a new molecule.
+        /// Reads have to be submitted in series containing all reads for each barcode.
         /// </summary>
         /// <returns>True if the chr-strand-pos-randomTag combination is new</returns>
-        public bool IsNew(string chr, int pos, char strand, int bcIdx, int rndTagIdx)
+        public bool Add(MultiReadMappings mrm)
         {
+            int bcIdx = mrm.BarcodeIdx;
             if (bcIdx != currentBcIdx)
                 ChangeBcIdx(bcIdx);
-            nReadsByRandomTag[rndTagIdx]++;
-            bool isNew = chrTagDatas[chr].IsNew(pos, strand, rndTagIdx);
+            nReadsByRandomTag[mrm.RandomBcIdx]++;
+            bool isNew = chrTagDatas[mrm[0].Chr].Add(mrm[0].Position, mrm[0].Strand, mrm.RandomBcIdx, mrm.HasAltMappings, mrm[0].Mismatches, mrm.SeqLen);
             if (isNew) nUniqueByBarcode[bcIdx]++;
             else nDuplicatesByBarcode[bcIdx]++;
             return isNew | !hasRndTags;
         }
 
+        public IEnumerable<MappedTagItem> IterItems()
+        {
+            foreach (KeyValuePair<string, ChrTagData> chrData in chrTagDatas)
+                foreach (MappedTagItem item in chrData.Value.IterItems())
+                {
+                    item.bcIdx = currentBcIdx;
+                    item.chr = chrData.Key;
+                    yield return item;
+                }
+        }
         /// <summary>
         /// Use to get the read count profile for a specific genomic location
         /// </summary>
@@ -264,7 +388,7 @@ namespace Linnarsson.Dna
         {
             try
             {
-                return chrTagDatas[chr].GetMoleculeCounts(pos, strand);
+                return chrTagDatas[chr].GetReadCounts(pos, strand);
             }
             catch (KeyNotFoundException)
             {

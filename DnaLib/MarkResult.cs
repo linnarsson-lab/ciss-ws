@@ -20,5 +20,7 @@ namespace Linnarsson.Dna
     }
     public delegate MarkResult DoMarkHit(int chrHitPos, int halfWidth, char strand,
                                          int bcodeIdx, int otherIdx, MarkStatus markType);
+    
+    public delegate MarkResult NewMarkHit(MappedTagItem mappedTagItem, int otherIdx, MarkStatus markType);
 
 }

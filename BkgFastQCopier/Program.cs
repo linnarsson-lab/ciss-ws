@@ -53,11 +53,11 @@ namespace BkgFastQCopier
             catch (Exception)
             {
                 Console.WriteLine("\nOptions:\n\n" +
-                                  "-i <file>      - specify a non-standard Illumina runs folder\n" +
-                                  "-o <file>      - specify a non-standard reads output folder\n" +
-                                  "-l <file>      - specify a non-standard log file\n" +
-                                  "-t <N>         - specify a non-standard interval for scans in minutes\n" +
-                                  "--run <folder> - copy only specified run folder and then quit\n" +
+                                  "-i <file>               - specify a non-standard Illumina runs folder\n" +
+                                  "-o <file>               - specify a non-standard reads output folder\n" +
+                                  "-l <file>               - specify a non-standard log file\n" +
+                                  "-t <N>                  - specify a non-standard interval for scans in minutes\n" +
+                                  "--run <folder>[:lane]   - copy only specified [lane of] run folder and then quit\n" +
                                   "Start using nohup to scan for new data every {0} minutes.\n", minutesWait);
                     return;
             }
@@ -74,8 +74,17 @@ namespace BkgFastQCopier
             ReadCopier readCopier = new ReadCopier(illuminaRunsFolder, outputReadsFolder, logWriter);
             if (specificRunFolder != null)
             {
-                Console.WriteLine("Copying data from " + specificRunFolder + " to " + outputReadsFolder);
-                readCopier.Copy(specificRunFolder, outputReadsFolder);
+                int laneFrom = 1, laneTo = 8;
+                string laneTxt = "";
+                if (specificRunFolder.Contains(':'))
+                {
+                    int colonIdx = specificRunFolder.IndexOf(':');
+                    laneFrom = laneTo = int.Parse(specificRunFolder.Substring(colonIdx + 1));
+                    specificRunFolder = specificRunFolder.Substring(0, colonIdx);
+                    laneTxt = "lane " + laneFrom.ToString() + " of ";
+                }
+                Console.WriteLine("Copying data from " + laneTxt + specificRunFolder + " to " + outputReadsFolder);
+                readCopier.Copy(specificRunFolder, outputReadsFolder, laneFrom, laneTo);
             }
             else
             {

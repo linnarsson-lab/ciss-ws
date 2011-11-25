@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Security.AccessControl;
 using System.Text.RegularExpressions;
 using Linnarsson.Utilities;
 using Linnarsson.Dna;
@@ -91,7 +92,7 @@ namespace BkgFastQCopier
                         new ProjectDB().UpdateRunStatus(runId, "copying", runNo, runDate);
                         try
                         {
-                            status = Copy(runNo, runFolder, outputReadsFolder);
+                            status = Copy(runNo, runFolder, outputReadsFolder, 1, 8);
                         }
                         catch (Exception e)
                         {
@@ -117,17 +118,21 @@ namespace BkgFastQCopier
 
         public string Copy(string runFolder, string readsFolder)
         {
+           return  Copy(runFolder, readsFolder, 1, 8);
+        }
+        public string Copy(string runFolder, string readsFolder, int laneFrom, int laneTo)
+        {
             string result = "copyfail";
             Match m = MatchRunFolderName(runFolder);
             if (m.Success)
             {
                 int runNo = int.Parse(m.Groups[2].Value);
-                result = Copy(runNo, runFolder, readsFolder);
+                result = Copy(runNo, runFolder, readsFolder, laneFrom, laneTo);
             }
             return result;
         }
 
-        public string Copy(int runId, string runFolder, string readsFolder)
+        public string Copy(int runId, string runFolder, string readsFolder, int laneFrom, int laneTo)
         {
             string qseqFolder = Path.Combine(runFolder, PathHandler.MakeRunDataSubPath());
             if (!Directory.Exists(qseqFolder))
@@ -137,9 +142,9 @@ namespace BkgFastQCopier
                 return "copyfail";
             }
             string runName = Path.GetFileName(runFolder);
-            int laneCount = CopyQseqFiles(runId, readsFolder, qseqFolder, runName);
+            int laneCount = CopyQseqFiles(runId, readsFolder, qseqFolder, runName, laneFrom, laneTo);
             if (laneCount == 0)
-                laneCount = CopyBclFiles(runId, readsFolder, runFolder, runName);
+                laneCount = CopyBclFiles(runId, readsFolder, runFolder, runName, laneFrom, laneTo);
             if (laneCount == 0)
             {
                 logWriter.WriteLine("*** ERROR: No qseq or bcl files found in {0}", qseqFolder);
@@ -149,12 +154,12 @@ namespace BkgFastQCopier
             return "copied";
         }
 
-        private int CopyBclFiles(int runId, string readsFolder, string runFolder, string runName)
+        private int CopyBclFiles(int runId, string readsFolder, string runFolder, string runName, int laneFrom, int laneTo)
         {
             int laneCount = 0;
             logWriter.WriteLine("Processing bcl files from " + runFolder + ".");
             logWriter.Flush();
-			for (int lane = 1; lane <= 8; lane++)
+			for (int lane = laneFrom; lane <= laneTo; lane++)
 				{
 					for (int read = 1; read <= 3; read++)
 					{
@@ -177,7 +182,7 @@ namespace BkgFastQCopier
             return laneCount;
         }
 
-        private int CopyQseqFiles(int runId, string readsFolder, string qseqFolder, string runName)
+        private int CopyQseqFiles(int runId, string readsFolder, string qseqFolder, string runName, int laneFrom, int laneTo)
         {
             int laneCount = 0;
             string[] files = Directory.GetFiles(qseqFolder, "*s_*_qseq.txt");
@@ -193,6 +198,9 @@ namespace BkgFastQCopier
             {
                 Match m = Regex.Match(qseqFile, "s_([0-9]+)_([0-9])_[0-9]+_qseq.txt");
                 string lane = m.Groups[1].Value;
+                int laneNo = int.Parse(lane);
+                if (laneNo < laneFrom || laneNo > laneTo)
+                    continue;
                 string read = m.Groups[2].Value;
                 if (lane != currLane || read != currRead)
                 {
@@ -213,6 +221,7 @@ namespace BkgFastQCopier
         class Outputter
         {
             StreamWriter PFFile;
+            string PFFilename;
             StreamWriter nonPFFile;
             string statsFilePath;
             uint nReads = 0;
@@ -222,7 +231,8 @@ namespace BkgFastQCopier
 
             public Outputter(string readsFolder, string fileId)
             {
-                PFFile = new StreamWriter(GetPFFilePath(readsFolder, fileId));
+                PFFilename = GetPFFilePath(readsFolder, fileId);
+                PFFile = new StreamWriter(PFFilename);
                 nonPFFile = Path.Combine(readsFolder, Path.Combine(nonPFSubFolder, fileId + "_nonPF.fq.gz")).OpenWrite();
                 statsFilePath = GetStatsFilePath(readsFolder, fileId);
             }
@@ -253,6 +263,7 @@ namespace BkgFastQCopier
             public void Close()
             {
                 PFFile.Close();
+                CmdCaller.Run("chmod", "a-w " + PFFilename);
                 nonPFFile.Close();
                 StreamWriter statsFile = new StreamWriter(statsFilePath);
                 statsFile.WriteLine("TotalReadsNumber\t" + nReads);

@@ -477,33 +477,43 @@ namespace Junction_labels_simulator
                     var output4 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_1.fq")).OpenWrite();
                     var output5 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_2.fq")).OpenWrite();
                     var errorOutput = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_errorOutput.txt")).OpenWrite();
+                    var outputF = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_F_seq.fq")).OpenWrite();
+                    var outputR = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_R_seq.fq")).OpenWrite();
                     string[] Totseq_lines = System.IO.File.ReadAllLines(Totseq_file);
+                    
                     //Random rndReads = new Random();
                     long totReads = 0;
                     int readCounting = 0;
                     int readNo = 0;
                     int record = 0;
+                    //MessageBox.Show(Totseq_lines.Length.ToString());
                     for (int i = 1; i < Totseq_lines.Length; i++)
                     //for (int i = 1; i < 3; i++)  //added for test **********************************************
                     {
+                        //MessageBox.Show("start="+i);
                         string Totseq_oneline = Totseq_lines[i];
                         string[] Totseq_lineitems = Totseq_oneline.Split('\t');
                         int readlen = Convert.ToInt32(readLenTxt.Text);
                         int readC = Convert.ToInt32(Totseq_lineitems[14]); //##############
                         string totSeq = Totseq_lineitems[17].ToString();  //##############
                         ShortDnaSequence totDseq=new ShortDnaSequence(totSeq);
+                        ShortDnaSequence tot100Fseq = (ShortDnaSequence)totDseq.SubSequence(0, 100);
+                        ShortDnaSequence tot100Rseq = (ShortDnaSequence)totDseq.SubSequence(totSeq.Length-100,totSeq.Length);
+                        tot100Rseq.RevComp();
                         double random_no = Tsp_rnd.NextDouble();
                         
                         int recordSeq = 0;
+                        if (fq.Records.Count <= record) record = 0;
                         FastQRecord fqR = fq.Records[record];
-
+                        
                         for (int rc = 0; rc < readC; rc++)
                         {
                             ShortDnaSequence fwdSeq = new ShortDnaSequence();
                             ShortDnaSequence revSeq = new ShortDnaSequence();
                             totDseq = new ShortDnaSequence(totSeq);
                             Random rnd = new Random();
-                            for (int k = 0; k <= 100 /*totSeq.Length*/; k++) //##############
+                            //string errorReport = "";
+                            for (int k = 0; k < 100 /*totSeq.Length*/; k++) //##############
                             {
                                 recordSeq++;
                                 if (recordSeq >= 100) //##############
@@ -511,13 +521,13 @@ namespace Junction_labels_simulator
                                     recordSeq = 0;
                                     record++;
                                     //if (record >= 24) record = 0;
-                                    if (fq.Records.Count == record) record = 0;
+                                    if (fq.Records.Count <= record) record = 0;
                                     fqR = fq.Records[record];
                                 }
                                 //MessageBox.Show( fqR.Sequence[k].ToString() + " and  " + fqR.Qualities[k].ToString());
                                 do
                                 {
-                                    if (fq.Records.Count == record) record = 0;
+                                    if (fq.Records.Count <= record) record = 0;
                                     fqR = fq.Records[record];
                                     fqR.TrimBBB();
                                     record++;
@@ -534,22 +544,34 @@ namespace Junction_labels_simulator
                                     if (totDseq.GetNucleotide(k) == 'A' || totDseq.GetNucleotide(k) == 'a')
                                     {
                                         totDseq.SetNucleotide(k, 'C');
-                                        errorOutput.WriteLine(header + "\t" + rc + "\t" + k + "\t" + "A->C");
+                                        errorOutput.WriteLine(header + "\t" + (rc+1) + "\t" + (k+1) + "\t" + "A" + "\t" + "C");
+                                        //if(errorReport.Length>=1)
+                                        //errorReport = errorReport + "," + header + "-" + rc + "-" + k + "-" + "A->C";
+                                        //else errorReport = header + "-" + rc + "-" + k + "-" + "A->C";
                                     }
                                     else if (totDseq.GetNucleotide(k) == 'C' || totDseq.GetNucleotide(k) == 'c')
                                     {
                                         totDseq.SetNucleotide(k, 'A');
-                                        errorOutput.WriteLine(header + "\t" + rc + "\t" + k + "\t" + "C->A");
+                                        errorOutput.WriteLine(header + "\t" + (rc + 1) + "\t" + (k + 1) + "\t" + "C" + "\t" + "A");
+                                        //if (errorReport.Length >= 1)
+                                        //    errorReport = errorReport + "," + header + "-" + rc + "-" + k + "-" + "C->A";
+                                        //else errorReport = header + "-" + rc + "-" + k + "-" + "C->A";
                                     }
                                     else if (totDseq.GetNucleotide(k) == 'G' || totDseq.GetNucleotide(k) == 'g')
                                     {
                                         totDseq.SetNucleotide(k, 'T');
-                                        errorOutput.WriteLine(header + "\t" + rc + "\t" + k + "\t" + "G->T");
+                                        errorOutput.WriteLine(header + "\t" + (rc + 1) + "\t" + (k + 1) + "\t" + "G" + "\t" + "T");
+                                        //if (errorReport.Length >= 1)
+                                        //    errorReport = errorReport + "," + header + "-" + rc + "-" + k + "-" + "G->T";
+                                        //else errorReport = header + "-" + rc + "-" + k + "-" + "G->T";
                                     }
                                     else if (totDseq.GetNucleotide(k) == 'T' || totDseq.GetNucleotide(k) == 't')
                                     {
                                         totDseq.SetNucleotide(k, 'G');
-                                        errorOutput.WriteLine(header + "\t" + rc + "\t" + k + "\t" + "T->G");
+                                        errorOutput.WriteLine(header + "\t" + (rc + 1) + "\t" + (k + 1) + "\t" + "T" + "\t" + "G");
+                                        //if (errorReport.Length >= 1)
+                                        //    errorReport = errorReport + "," + header + "-" + rc + "-" + k + "-" + "T->G";
+                                        //else errorReport = header + "-" + rc + "-" + k + "-" + "T->G";
                                     }
                                     errorcount++;
                                 }
@@ -576,12 +598,27 @@ namespace Junction_labels_simulator
                         //MessageBox.Show(readCount.ToString() + "and " + totReads.ToString());  
                         if (totReads <= Reads_in_million) readNo = readCounting;
                         else readNo = 0; // 
-                        FastQRecord rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "\t" + readNo), fwdSeq.ToString(), fqR.Qualities);
+                        FastQRecord rec1 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "\t" + readNo /* + "\t"+ errorReport*/ ), fwdSeq.ToString(), fqR.Qualities);
                         output4.WriteLine(rec1.ToString(64));
-                        FastQRecord rec2 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "\t" + readNo), revSeq.ToString(), fqR.Qualities);
+                        FastQRecord rec2 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "\t" + readNo /*+ "\t" + errorReport*/), revSeq.ToString(), fqR.Qualities);
                         output5.WriteLine(rec2.ToString(64));
+                        //MessageBox.Show("End=" + i);
                        
                     }
+                        //byte[] B=new byte[100];
+                        //for (int b = 0; b < 100; b++)
+                        //{
+                        //    B[b] =2;
+                        //}
+                        //if (readC>=1)
+                        //{
+                        //    FastQRecord rec3 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "\t" + readC), tot100Fseq.ToString(), B);
+                        //    outputF.WriteLine(rec3.ToString(64));
+                        //    FastQRecord rec4 = new FastQRecord((Totseq_lineitems[0] + "_" + Totseq_lineitems[1] + "_" + Totseq_lineitems[2] + "_" + Totseq_lineitems[3] + "_" + Totseq_lineitems[4] + "_" + Totseq_lineitems[5] + "\t" + readC), tot100Rseq.ToString(), B);
+                        //    outputR.WriteLine(rec4.ToString(64)); 
+                        //}
+                        
+
                         record++;
                         //if (record >= 24) record = 0;
                         if (fq.Records.Count == record) record = 0;
@@ -590,6 +627,8 @@ namespace Junction_labels_simulator
                     output4.Close();
                     output5.Close();
                     errorOutput.Close();
+                    outputF.Close();
+                    outputR.Close();
                     MessageBox.Show(errorcount.ToString());
                     
 
@@ -722,11 +761,7 @@ namespace Junction_labels_simulator
             
         }
 
-        private void FQbutton_Click(object sender, EventArgs e)
-        {
-            
-
-        }
+       
 
         private void UnConnButton_Click(object sender, EventArgs e)
         {
@@ -773,6 +808,8 @@ namespace Junction_labels_simulator
             OpenFileDialog ofd1 = new OpenFileDialog();
             if (ofd1.ShowDialog() != DialogResult.OK) return;
             var output = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_errorCorrected.fq")).OpenWrite();
+
+
             string[] lines = System.IO.File.ReadAllLines(ofd1.FileName);
             //string[] seqLines = new string[lines.Length / 4];
             string[] headerLines = new string[lines.Length / 4];
@@ -872,6 +909,8 @@ namespace Junction_labels_simulator
                     //MessageBox.Show("value of i=" + i);
                     i = i + 4;
                 }
+                //output1.WriteLine(d1.Values);
+                //output1.Close();
                 //var sortedD1 = (from entry in d1 orderby entry.Value ascending select entry).ToDictionary(pair => pair.Key, pair => pair.Value);
                 var sortedd1 = d1.OrderByDescending (x1 => x1.Value);
                 var sortedd2 = d2.OrderByDescending(x2 => x2.Value);
@@ -911,6 +950,55 @@ namespace Junction_labels_simulator
             output.Close();
             MessageBox.Show("End of Run!");
             
+        }
+
+        private void CompErrorbutton_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd1 = new OpenFileDialog();
+            if (ofd1.ShowDialog() != DialogResult.OK) return;
+            OpenFileDialog ofd2 = new OpenFileDialog();
+            if (ofd2.ShowDialog() != DialogResult.OK) return;
+            FastQFile fq = FastQFile.Load(ofd2.FileName, 64);
+            
+            var output1 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_errorReport.txt")).OpenWrite();
+            output1.WriteLine("Header" + "\t" + "readNo" + "\t" + "PositionAt" + "\t" + "From" + "\t" + "To" + "\t" + "ErrorReport" + "\t" + "Total no of reads");
+            string[] Errorlines = System.IO.File.ReadAllLines(ofd1.FileName);
+            //string[] ErrorCorrlines = System.IO.File.ReadAllLines(ofd2.FileName);
+            
+            string errorReport = "";
+            //string[] errorHead2 = fq.Records[0].Header.Split('\t');
+            //for (int j = 0; j < ErrorCorrlines.Length; j++)
+            //{
+            //   FastQRecord fr = fq.Records[j];    
+            //}
+            for (int i = 0; i <Errorlines.Length; i++)
+            {
+                string[] errorHead =Errorlines[i].Split('\t');
+                string[] errorHead2;
+                int fqRecord = -1;
+                
+                do
+                {
+                    fqRecord++;
+                    errorHead2=fq.Records[fqRecord].Header.Split('\t');
+                } while (errorHead[0]!= errorHead2[0]);
+                MessageBox.Show(errorHead[0] + "and " + errorHead2[0]);
+                ShortDnaSequence errorseq = new ShortDnaSequence(fq.Records[fqRecord].Sequence);
+                char charPosition1=errorseq.GetNucleotide(Convert.ToInt64(errorHead[2])-1);
+                char charPosition2 = Convert.ToChar(errorHead[3]);
+                if (charPosition1 == charPosition2)
+                {
+                    errorReport = "Error Corrected";
+                }
+                else errorReport = "Error not corrected";
+                output1.WriteLine(Errorlines[i].ToString() + "\t" /*+ charPosition1 + "\t" + charPosition2 + "\t"*/ + errorReport + "\t" + errorHead2[1]);
+                errorHead2 = null;
+                
+            }
+            output1.Close();
+            MessageBox.Show("End of Run!");
+
+
         }
 
        

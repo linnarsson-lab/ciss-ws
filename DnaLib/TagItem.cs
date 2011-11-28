@@ -159,32 +159,25 @@ namespace Linnarsson.Dna
         public int GetNumReads()
         {
             int n = 0;
-            foreach (int c in molCounts) n += c;
+            if (molCounts != null)
+                foreach (int c in molCounts) n += c;
             return n;
         }
-        /*
-        /// <summary>
-        /// Get total read counts for both alleles
-        /// </summary>
-        /// <param name="numNormReads">Total number of reads with genome sequence at this position-strand</param>
-        /// <param name="numSnpReads">Total number of reads with SNP at this position-strand</param>
-        public void GetAlleleReads(out int numNormReads, out int numSnpReads)
-        {
-            numNormReads = GetNumReads();
-            numSnpReads = 0;
-            if (SNPData == null) return;
-            numSnpReads = SNPData.GetSNPReadCount();
-            numNormReads -= numSnpReads;
-        }
-        */
 
+        /// <summary>
+        /// Get indices of the rndTags that represent real molecules and not only mutations from other rndTags
+        /// </summary>
+        /// <returns></returns>
         public List<int> GetValidMolRndTags()
         {
             List<int> validTagIndices = new List<int>();
-            int maxNumReads = molCounts.Max();
-            int cutOff = maxNumReads / 10;
-            for (int rndTagIdx = 0; rndTagIdx < molCounts.Length; rndTagIdx++)
-                if (molCounts[rndTagIdx] > cutOff) validTagIndices.Add(rndTagIdx);
+            if (molCounts != null)
+            {
+                int maxNumReads = molCounts.Max();
+                int cutOff = maxNumReads / 10;
+                for (int rndTagIdx = 0; rndTagIdx < molCounts.Length; rndTagIdx++)
+                    if (molCounts[rndTagIdx] > cutOff) validTagIndices.Add(rndTagIdx);
+            }
             return validTagIndices;
         }
 
@@ -195,39 +188,21 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public int GetNumMolecules()
         {
-            int maxNumReads = molCounts.Max();
-            int cutOff = maxNumReads / 10;
             int n = 0;
-            foreach (int c in molCounts)
-                if (c > cutOff) n++;
+            if (molCounts != null)
+            {
+                int maxNumReads = molCounts.Max();
+                int cutOff = maxNumReads / 10;
+                foreach (int c in molCounts)
+                    if (c > cutOff) n++;
+            }
             return n;
         }
-        /*
+
         /// <summary>
-        /// Get total molecule counts for both alleles.
-        /// Every rndTag where either allele has >= 8 times more counts than the other contributes to that allele count.
+        /// Get number of reads in each rndTag
         /// </summary>
-        /// <param name="numNormMols">Total number of molecules with genome sequence at this position-strand</param>
-        /// <param name="numSnpMols">Total number of molecules with SNP at this position-strand. -1 if not possible to tell (due to redundant mappings)</param>
-        public void GetAlleleMolecules(out int numNormMols, out int numSnpMols)
-        {
-            numNormMols = 0;
-            if (SNPData == null)
-            {
-                numNormMols = GetNumMolecules();
-                numSnpMols = -1;
-                return;
-            }
-            numSnpMols = 0;
-            for (int idx = 0; idx < molCounts.Length; idx++)
-            {
-                if (molCounts[idx] >= snpCounts[idx] * 8)
-                    numNormMols++;
-                else if (snpCounts[idx] >= molCounts[idx] * 8)
-                    numSnpMols++;
-            }
-        }
-        */
+        /// <returns>null if no reads have been found</returns>
         public ushort[] GetReadCountsByRndTag()
         {
             return molCounts;

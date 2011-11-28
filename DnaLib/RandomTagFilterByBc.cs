@@ -17,12 +17,7 @@ namespace Linnarsson.Strt
         /// PosAndStrand_on_Chr -> countsByRndTagIdx
         /// Position stored as "(pos * 2) | strand" where strand in bit0: +/- => 0/1
         /// </summary>
-        //private Dictionary<int, ushort[]> molCounts = new Dictionary<int, ushort[]>();
         private Dictionary<int, TagItem> tagItems = new Dictionary<int, TagItem>();
-        /// <summary>
-        /// Max value of data items in the tagItems arrays.
-        /// </summary>
-        public static int MaxMoleculeReadCount { get { return ushort.MaxValue; } }
 
         /// <summary>
         /// Wiggle data in forward, i.e. total counts (all barcodes) of reads and molecules for each position on the chromosome
@@ -33,6 +28,12 @@ namespace Linnarsson.Strt
         /// </summary>
         public Wiggle wiggleRev = new Wiggle();
 
+        /// <summary>
+        /// Pre-define a tagItem at specified position (used for shared multiread TagItems)
+        /// </summary>
+        /// <param name="pos"></param>
+        /// <param name="strand"></param>
+        /// <param name="tagItem"></param>
         public void Setup(int pos, char strand, TagItem tagItem)
         {
             int posStrand = MakePosStrandIdx(pos, strand);
@@ -46,15 +47,19 @@ namespace Linnarsson.Strt
             return posStrand;
         }
 
-        public void RegisterSNP(int chrPos)
+        /// <summary>
+        /// Preapre for analysis of a SNP at specified position
+        /// </summary>
+        /// <param name="snpChrPos"></param>
+        public void RegisterSNP(int snpChrPos)
         {
             for (byte snpOffset = (byte)(averageReadLen - marginInReadForSNP); snpOffset <= (byte)marginInReadForSNP; snpOffset--)
             {
-                RegisterSNPOnTagItem(chrPos, snpOffset, 0);
-                RegisterSNPOnTagItem(chrPos, snpOffset, 1);
+                int readStartPos = snpChrPos - snpOffset;
+                RegisterSNPOnTagItem(readStartPos, snpOffset, 0);
+                RegisterSNPOnTagItem(readStartPos, snpOffset, 1);
             }
         }
-
         private void RegisterSNPOnTagItem(int chrPos, byte snpOffset, int strandIdx)
         {
             int posStrand = chrPos << 1 | strandIdx;
@@ -75,8 +80,8 @@ namespace Linnarsson.Strt
             TagItem tagItem;
             for (byte snpOffset = (byte)(averageReadLen - marginInReadForSNP); snpOffset <= (byte)marginInReadForSNP; snpOffset--)
             {
-                int hitStartPos = snpChrPos - snpOffset;
-                int posStrand = MakePosStrandIdx(hitStartPos, strand);
+                int readStartPos = snpChrPos - snpOffset;
+                int posStrand = MakePosStrandIdx(readStartPos, strand);
                 if (tagItems.TryGetValue(posStrand, out tagItem))
                 {
                     SNPCounter mapPosCounts = tagItem.GetMolSNPCounts(snpOffset);
@@ -157,7 +162,7 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="pos"></param>
         /// <param name="strand"></param>
-        /// <returns>Number of reads as function of rndTag index at given genomic location</returns>
+        /// <returns>Number of reads as function of rndTag index at given genomic location, or null if no reads are found</returns>
         public ushort[] GetReadCounts(int pos, char strand)
         {
             int strandIdx = (strand == '+') ? 0 : 1;
@@ -172,8 +177,12 @@ namespace Linnarsson.Strt
         public IEnumerable<int> IterMoleculeReadCounts()
         {
             foreach (TagItem tagItem in tagItems.Values)
-                foreach (ushort nOfRndTag in tagItem.GetReadCountsByRndTag())
-                    yield return (int)nOfRndTag;
+            {
+                ushort[] readsByRndTag = tagItem.GetReadCountsByRndTag();
+                if (readsByRndTag != null)
+                    foreach (ushort nOfRndTag in readsByRndTag)
+                        yield return (int)nOfRndTag;
+            }
         }
 
         /// <summary>
@@ -300,26 +309,28 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Read and initiate multiread mappings from the input file
+        /// Read and initiate with pre-calculated exonic multiread mappings from the input file
         /// </summary>
         /// <param name="tagMappingFile"></param>
         public void Setup(string tagMappingFile)
         {
-            Console.WriteLine("Reading redundant mappings from " + tagMappingFile);
+            Console.WriteLine("Reading pre-calculated exonic multiread mappings from " + tagMappingFile);
             int n = 0;
             using (StreamReader reader = new StreamReader(tagMappingFile))
             {
                 string line = reader.ReadLine();
-                while (line.StartsWith("#")) line = reader.ReadLine();
                 while (line != null)
                 {
-                    if (++n % 10000000 == 0) Console.WriteLine(n + "...");
-                    TagItem tagItem = new TagItem(true);
-                    string[] groups = line.Split('\t');
-                    foreach (string group in groups)
+                    if (line.IndexOf('\t') > 0 && !line.StartsWith("#"))
                     {
-                        string[] parts = group.Split(',');
-                        chrTagDatas[parts[0]].Setup(int.Parse(parts[1]), parts[2][0], tagItem);
+                        if (++n % 1000000 == 0) Console.WriteLine(n + "...");
+                        TagItem tagItem = new TagItem(true);
+                        string[] groups = line.Split('\t');
+                        foreach (string group in groups)
+                        {
+                            string[] parts = group.Split(',');
+                            chrTagDatas[parts[0]].Setup(int.Parse(parts[2]), parts[1][0], tagItem);
+                        }
                     }
                     line = reader.ReadLine();
                 }

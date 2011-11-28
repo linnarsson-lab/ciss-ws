@@ -7,6 +7,9 @@ using Linnarsson.Utilities;
 
 namespace Linnarsson.Dna
 {
+    /// <summary>
+    /// Wiggle plot of reads and molecules for a single strand
+    /// </summary>
     public class Wiggle
     {
         /// <summary>
@@ -18,9 +21,9 @@ namespace Linnarsson.Dna
         /// <summary>
         /// Add (after every barcode) the molecule and read counts at all hit positions
         /// </summary>
-        /// <param name="positions"></param>
-        /// <param name="molCounts"></param>
-        /// <param name="readCounts"></param>
+        /// <param name="positions">Array of positions</param>
+        /// <param name="molCounts">Corresponding molecule counts</param>
+        /// <param name="readCounts">Corresponding read counts</param>
         public void AddCounts(int[] positions, int[] molCounts, int[] readCounts)
         {
             for (int i = 0; i < positions.Length; i++)
@@ -32,14 +35,27 @@ namespace Linnarsson.Dna
                     AddCount(readWiggle, pos, molCounts[i]);
             }
         }
+
+        /// <summary>
+        /// Add some molecules at a hit position
+        /// </summary>
+        /// <param name="pos"></param>
+        /// <param name="count"></param>
         public void AddMolecules(int pos, int count)
         {
             AddCount(molWiggle, pos, count);
         }
+
+        /// <summary>
+        /// Add some reads at a hit position
+        /// </summary>
+        /// <param name="pos"></param>
+        /// <param name="count"></param>
         public void AddReads(int pos, int count)
         {
             AddCount(readWiggle, pos, count);
         }
+
         private void AddCount(SortedDictionary<int, int> wData, int pos, int count)
         {
             if (!wData.ContainsKey(pos))
@@ -48,6 +64,14 @@ namespace Linnarsson.Dna
                 wData[pos] += count;
         }
 
+        /// <summary>
+        /// Get number of reads spanning across a position.
+        /// Note that this implementation requires all reads to be of almost same length for correct wiggle.
+        /// </summary>
+        /// <param name="pos"></param>
+        /// <param name="averageReadLength">Since each read's length is not stored, use Ceiling of average read len for complete coverage</param>
+        /// <param name="margin">Sometimes you only want to count reads that are surely spanning the position</param>
+        /// <returns></returns>
         public int GetReadCount(int pos, int averageReadLength, int margin)
         {
             return GetCount(readWiggle, pos, averageReadLength, margin);
@@ -59,8 +83,8 @@ namespace Linnarsson.Dna
         private int GetCount(SortedDictionary<int, int> wData, int pos, int averageReadLength, int margin)
         {
             int count = 0;
-            for (int p = pos - averageReadLength + margin; p <= pos + 1 - margin; p++)
-                if (wData.ContainsKey(p))count += wData[p];
+            for (int p = pos - averageReadLength + 1 + margin; p <= pos - margin; p++)
+                if (wData.ContainsKey(p)) count += wData[p];
             return count;
         }
 

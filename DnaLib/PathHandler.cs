@@ -47,16 +47,6 @@ namespace Linnarsson.Dna
             return buildName + fInfo.CreationTime.ToString("yyMMdd");
         }
 
-        public static string ExtractChrId(string filenameOrPath)
-        {
-            string filename = Path.GetFileName(filenameOrPath);
-            Match m = Regex.Match(filename, "chromosome\\.([^\\.]+)\\.");
-            if (!m.Success)
-                m = Regex.Match(filename, "chr([^\\.]+)\\.");
-            string chrId = m.Groups[1].Value;
-            return chrId;
-        }
-
         /// <summary>
         /// Generates a dictonary from chromosome Ids (without any "chr") to sequences.
         /// The sequences may be .gz compressed.
@@ -66,18 +56,16 @@ namespace Linnarsson.Dna
         public Dictionary<string, string> GetGenomeFilesMap(StrtGenome genome)
         {
             string genomeFolder = GetGenomeSequenceFolder(genome);
-            string[] chrFiles = GetFilesOrGz(genomeFolder, "*chr*.fa");
-            string[] gbkFiles = GetFilesOrGz(genomeFolder, "*chr*.gbk");
-            if (gbkFiles.Length > chrFiles.Length)
-                chrFiles = gbkFiles;
+            string[] chrFiles = GetFilesOrGz(genomeFolder, "chr*");
             Dictionary<string, string> chrIdToFileMap = new Dictionary<string, string>();
-            foreach (string file in chrFiles)
+            foreach (string filePath in chrFiles)
             {
-                string chrId = ExtractChrId(file);
-                if (genome.IsChrInBuild(chrId))
+                string filename = Path.GetFileName(filePath);
+                if (genome.IsChrInBuild(Path.GetFileName(filename)))
                 {
+                    string chrId = ExtractChrId(filename);
                     chrId = StrtGenome.ConvertIfAnnotation(chrId);
-                    chrIdToFileMap[chrId] = file;
+                    chrIdToFileMap[chrId] = filePath;
                 }
             }
             return chrIdToFileMap;
@@ -89,6 +77,14 @@ namespace Linnarsson.Dna
             if (chrGzFiles.Length > chrFiles.Length)
                 return chrGzFiles;
             return chrFiles;
+        }
+        private static string ExtractChrId(string filename)
+        {
+            Match m = Regex.Match(filename, "chromosome\\.([^\\.]+)\\.");
+            if (!m.Success)
+                m = Regex.Match(filename, "chr_?([^\\.]+)\\.");
+            string chrId = m.Groups[1].Value;
+            return chrId;
         }
 
         public static string GetSampleLayoutPath(string projectNameOrFolder)
@@ -108,14 +104,12 @@ namespace Linnarsson.Dna
 
         public string GetAnnotationsPath(StrtGenome genome)
         {
-            string annotationsFilename = genome.GetAnnotationsFileName();
-            string annotationsPath = Path.Combine(GetGenomeSequenceFolder(genome), annotationsFilename);
-            return annotationsPath;
+            return Path.Combine(GetGenomeSequenceFolder(genome), genome.GetAnnotationsFileName());
         }
 
         public string GetJunctionChrPath(StrtGenome genome)
         {
-            return Path.Combine(GetGenomeSequenceFolder(genome), genome.GetJunctionChrFileName() + ".fa");
+            return Path.Combine(GetGenomeSequenceFolder(genome), genome.GetJunctionChrFileName());
         }
 
         public static string GetTagMappingPath(StrtGenome genome)

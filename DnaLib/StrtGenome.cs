@@ -10,8 +10,8 @@ namespace Linnarsson.Dna
 {
 	public class StrtGenome
 	{
-        public static string AnnotationsFilenamePattern = "SilverBulletGenes_{0}{1}.txt";
-        public static string RedundancyFilenamePattern = "SilverBulletRedundacies_{2}bp_{0}{1}.txt";
+        public static string SpliceChrFilenamePattern = "chr{0}.splices";
+        public static string AnnotationsFilenamePattern = "Annotations_{0}.txt";
         public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE", "ENSEMBL" };
         public static string chrCTRLId = "CTRL";
 
@@ -43,6 +43,7 @@ namespace Linnarsson.Dna
         }
         public bool GeneVariants { get; set; }
         public string GeneVariantsChar { get { return GeneVariants ? "a" : "s"; } }
+        public string VarAnnot { get { return GeneVariantsChar + Annotation; } }
 
         public static string AddVariantChar(string speciesArg, bool defaultGeneVariants)
         {
@@ -56,43 +57,49 @@ namespace Linnarsson.Dna
         }
         public string GetJunctionChrFileName()
         {
-            return "chr" + GeneVariantsChar + Annotation;
+            return string.Format(SpliceChrFilenamePattern, VarAnnot);
         }
         public string GetAnnotationsFileName()
         {
-            return string.Format(AnnotationsFilenamePattern, GeneVariantsChar, Annotation);
+            return string.Format(AnnotationsFilenamePattern, VarAnnot);
         }
         public string GetTagMappingFileName()
         {
-            return string.Format("Mappings_{0}{1}_{2}MM.hmap", GeneVariantsChar, Annotation, Props.props.MaxAlignmentMismatches);
-        }
-        public string GetRedundancyFileName(int averageReadLen)
-        {  // Use redundant alignment files at steps of 10bp
-            int roundedReadLen = 10 * (int)((averageReadLen + 9) / 10);
-            return string.Format(RedundancyFilenamePattern, GeneVariantsChar, Annotation, roundedReadLen);
+            return string.Format("Mappings_{0}_{1}MM.hmap", VarAnnot, Props.props.MaxAlignmentMismatches);
         }
         public string GetBowtieIndexName()
         {
-            return Build + "_" + GeneVariantsChar + Annotation;
+            return Build + "_" + VarAnnot;
         }
         public string GetBowtieSplcIndexName()
         {
-            return Build + "chr" + GeneVariantsChar + Annotation;
-        }
-        public bool IsChrInBuild(string chr)
-        {
-            return IsBuildSpliceChr(chr) || !IsASpliceAnnotationChr(chr);
-        }
-        public bool IsBuildSpliceChr(string chr)
-        {
-            return chr.EndsWith(GeneVariantsChar + Annotation);
+            return Build + "chr" + VarAnnot;
         }
 
-        public static bool IsASpliceAnnotationChr(string chr)
+        public bool IsChrInBuild(string filename)
+        {
+            return IsBuildSpliceChr(filename) || !IsASpliceAnnotationChr(filename);
+        }
+        public bool IsBuildSpliceChr(string filename)
+        {
+            return filename.Equals(GetJunctionChrFileName());
+        }
+        public static bool IsASpliceAnnotationChr(string chrIdOrFilename)
         {
             foreach (string a in AnnotationSources)
-                if (chr.IndexOf(a) >= 0) return true;
+                if (chrIdOrFilename.IndexOf(a) >= 0) return true;
             return false;
+        }
+        public static bool IsSyntheticChr(string chrId)
+        {
+            return chrId.EndsWith(chrCTRLId) || IsASpliceAnnotationChr(chrId);
+        }
+
+        public static string ConvertIfAnnotation(string chrId)
+        {
+            foreach (string a in AnnotationSources)
+                if (chrId.IndexOf(a) >= 0) return a;
+            return chrId;
         }
 
         private StrtGenome() { }
@@ -187,18 +194,6 @@ namespace Linnarsson.Dna
                     return g;
                 }
             throw new ArgumentException("Genome data is not defined for " + speciesArg);
-        }
-
-        public static string ConvertIfAnnotation(string chrId)
-        {
-            foreach (string a in AnnotationSources)
-                if (chrId.IndexOf(a) >= 0) return a;
-            return chrId;
-        }
-
-        public static bool IsSyntheticChr(string chr)
-        {
-            return chr.EndsWith(chrCTRLId) || IsASpliceAnnotationChr(chr);
         }
 	}
 }

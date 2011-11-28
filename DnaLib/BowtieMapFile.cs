@@ -344,7 +344,7 @@ namespace Linnarsson.Dna
             SeqLen = seqLen;
             AltMappings = altMappings;
             NMappings = 1;
-            Mappings[0].Chr = chr;
+            Mappings[0].Chr = chr.StartsWith("chr") ? chr.Substring(3) : chr;
             Mappings[0].Strand = strand;
             Mappings[0].Mismatches = mismatches;
         }

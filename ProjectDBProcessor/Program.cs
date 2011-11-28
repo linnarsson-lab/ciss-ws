@@ -15,6 +15,9 @@ namespace ProjectDBProcessor
 {
     class Program
     {
+        private static StreamWriter logWriter;
+        private static ProjectDB projectDB;
+
         static void Main(string[] args)
         {
             int minutesWait = 5; // Time between scans to wait for new data to appear in queue.
@@ -52,25 +55,25 @@ namespace ProjectDBProcessor
             {
                 File.Create(logFile).Close();
             }
-            StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
+            logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
             string now = DateTime.Now.ToString();
             logWriter.WriteLine("ProjectDBProcessor started at " + now +
                                 " ScanInterval=" + minutesWait + " minutes. Max#Exceptions=" + maxExceptions);
             logWriter.Flush();
             Console.WriteLine("ProjectDBProcessor started " + now + " and logging to " + logFile);
 
-            ProjectDB projectDB = new ProjectDB();
-            Run(minutesWait, maxExceptions, logWriter, projectDB);
+            projectDB = new ProjectDB();
+            Run(minutesWait, maxExceptions);
         }
 
-        private static void Run(int minutesWait, int maxExceptions, StreamWriter logWriter, ProjectDB projectDB)
+        private static void Run(int minutesWait, int maxExceptions)
         { 
             int nExceptions = 0;
             while (nExceptions < maxExceptions)
             {
                 try
                 {
-                    ScanDB(projectDB, logWriter);
+                    ScanDB();
                     Thread.Sleep(1000 * 60 * minutesWait);
                 }
                 catch (Exception exp)
@@ -97,40 +100,49 @@ namespace ProjectDBProcessor
             return true;
         }
 
-
-        private static void ScanDB(ProjectDB projectDB, StreamWriter logWriter)
+        private static void ScanDB()
         {
+            projectDB.ResetQueue();
             ProjectDescription pd = projectDB.GetNextProjectInQueue();
-            while (pd != null && CheckAllReadsCollected(ref pd))
+            while (pd != null)
             {
-                pd.status = ProjectDescription.STATUS_PROCESSING;
-                projectDB.UpdateDB(pd);
-                List<string> results = new List<string>();
-                try
-                { 
-                    ProcessItem(pd, logWriter);
-                    results = PublishResultsForDownload(pd);
-                    pd.status = ProjectDescription.STATUS_DONE;
-                    projectDB.PublishResults(pd);
-                }
-                catch (Exception e)
+                if (CheckAllReadsCollected(ref pd))
                 {
-                    pd.status = ProjectDescription.STATUS_FAILED;
-                    pd.managerEmails = Props.props.FailureReportEmail;
-                    logWriter.WriteLine("*** ERROR: ProjectDBProcessor processing " + pd.projectName + " ***\n" + e);
-                    logWriter.Flush();
-                    results.Add(e.ToString());
+                    HandleDBTask(pd);
+                    projectDB.ResetQueue();
                 }
-                NotifyManager(pd, results);
-                projectDB.UpdateDB(pd);
-                logWriter.WriteLine(pd.projectName + "[analysisId=" + pd.analysisId + "] finished with status " + pd.status);
-                Console.WriteLine(pd.projectName + "[analysisId=" + pd.analysisId + "] finished with status " + pd.status);
-                logWriter.Flush();
                 pd = projectDB.GetNextProjectInQueue();
             }
         }
 
-        private static void ProcessItem(ProjectDescription projDescr, StreamWriter logWriter)
+        private static void HandleDBTask(ProjectDescription projDescr)
+        {
+            projDescr.status = ProjectDescription.STATUS_PROCESSING;
+            projectDB.UpdateDB(projDescr);
+            List<string> results = new List<string>();
+            try
+            {
+                ProcessItem(projDescr);
+                results = PublishResultsForDownload(projDescr);
+                projDescr.status = ProjectDescription.STATUS_DONE;
+                projectDB.PublishResults(projDescr);
+            }
+            catch (Exception e)
+            {
+                projDescr.status = ProjectDescription.STATUS_FAILED;
+                projDescr.managerEmails = Props.props.FailureReportEmail;
+                logWriter.WriteLine("*** ERROR: ProjectDBProcessor processing " + projDescr.projectName + " ***\n" + e);
+                logWriter.Flush();
+                results.Add(e.ToString());
+            }
+            NotifyManager(projDescr, results);
+            projectDB.UpdateDB(projDescr);
+            logWriter.WriteLine(projDescr.projectName + "[analysisId=" + projDescr.analysisId + "] finished with status " + projDescr.status);
+            Console.WriteLine(projDescr.projectName + "[analysisId=" + projDescr.analysisId + "] finished with status " + projDescr.status);
+            logWriter.Flush();
+        }
+
+        private static void ProcessItem(ProjectDescription projDescr)
         {
             logWriter.WriteLine("Processing " + projDescr.projectName + " - " + projDescr.LaneCount + " lanes [DBId=" + projDescr.analysisId + "]...");
             logWriter.Flush();

@@ -37,7 +37,7 @@
             this.runBowtieToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.mapPhaseTwoannotationsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.annotateFromWiggleToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.analyzeMapSNPsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.mergeAndNormalizeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.rerunAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -52,11 +52,11 @@
             this.importFastaFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.synthesizeReadsFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.sortMapFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.dumpTranscriptsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.testToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mySQLConnectionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.projectFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.consoleBox1 = new Linnarsson.Utilities.ConsoleBox();
-            this.dumpTranscriptsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -102,7 +102,7 @@
             this.runBowtieToolStripMenuItem,
             this.toolStripMenuItem1,
             this.mapPhaseTwoannotationsToolStripMenuItem,
-            this.annotateFromWiggleToolStripMenuItem,
+            this.analyzeMapSNPsToolStripMenuItem,
             this.toolStripMenuItem2,
             this.mergeAndNormalizeToolStripMenuItem,
             this.rerunAllToolStripMenuItem});
@@ -135,6 +135,13 @@
             this.mapPhaseTwoannotationsToolStripMenuItem.Size = new System.Drawing.Size(256, 22);
             this.mapPhaseTwoannotationsToolStripMenuItem.Text = "Annotate from bowtie mappings...";
             this.mapPhaseTwoannotationsToolStripMenuItem.Click += new System.EventHandler(this.annotateFromBowtieToolStripMenuItem_Click);
+            // 
+            // analyzeMapSNPsToolStripMenuItem
+            // 
+            this.analyzeMapSNPsToolStripMenuItem.Name = "analyzeMapSNPsToolStripMenuItem";
+            this.analyzeMapSNPsToolStripMenuItem.Size = new System.Drawing.Size(256, 22);
+            this.analyzeMapSNPsToolStripMenuItem.Text = "Analyze SNPs in map file...";
+            this.analyzeMapSNPsToolStripMenuItem.Click += new System.EventHandler(this.analyzeMapSNPsToolStripMenuItem_Click);
             // 
             // toolStripMenuItem2
             // 
@@ -243,6 +250,13 @@
             this.sortMapFileToolStripMenuItem.Text = "Sort map file...";
             this.sortMapFileToolStripMenuItem.Click += new System.EventHandler(this.sortMapFileToolStripMenuItem_Click);
             // 
+            // dumpTranscriptsToolStripMenuItem
+            // 
+            this.dumpTranscriptsToolStripMenuItem.Name = "dumpTranscriptsToolStripMenuItem";
+            this.dumpTranscriptsToolStripMenuItem.Size = new System.Drawing.Size(252, 22);
+            this.dumpTranscriptsToolStripMenuItem.Text = "Dump transcripts...";
+            this.dumpTranscriptsToolStripMenuItem.Click += new System.EventHandler(this.dumpTranscriptsToolStripMenuItem_Click);
+            // 
             // testToolStripMenuItem
             // 
             this.testToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -270,13 +284,6 @@
             this.consoleBox1.Name = "consoleBox1";
             this.consoleBox1.Size = new System.Drawing.Size(594, 492);
             this.consoleBox1.TabIndex = 10;
-            // 
-            // dumpTranscriptsToolStripMenuItem
-            // 
-            this.dumpTranscriptsToolStripMenuItem.Name = "dumpTranscriptsToolStripMenuItem";
-            this.dumpTranscriptsToolStripMenuItem.Size = new System.Drawing.Size(252, 22);
-            this.dumpTranscriptsToolStripMenuItem.Text = "Dump transcripts...";
-            this.dumpTranscriptsToolStripMenuItem.Click += new System.EventHandler(this.dumpTranscriptsToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -315,7 +322,7 @@
 		private System.Windows.Forms.ToolStripMenuItem extractToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem mapPhaseTwoannotationsToolStripMenuItem;
 		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
-		private System.Windows.Forms.ToolStripMenuItem annotateFromWiggleToolStripMenuItem;
+		private System.Windows.Forms.ToolStripMenuItem analyzeMapSNPsToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem peekAtgzFileToolStripMenuItem;
 		private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
 		private System.Windows.Forms.ToolStripMenuItem mergeAndNormalizeToolStripMenuItem;

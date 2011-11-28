@@ -445,5 +445,36 @@ namespace SilverBullet
             }
         }
 
+        private void analyzeMapSNPsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (Background.IsBusy)
+            {
+                if (MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
+            }
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.DefaultExt = "map";
+            ofd.Multiselect = true;
+            ofd.Title = "Locate .map file to analyze.";
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                BarcodeSetDialog bsd = new BarcodeSetDialog();
+                bsd.ShowDialog();
+                Barcodes bc = Barcodes.GetBarcodes(bsd.barcodeSet);
+                SaveFileDialog sfd = new SaveFileDialog();
+                sfd.FileName = Path.Combine(Path.GetDirectoryName(ofd.FileNames[0]), "snp.data");
+                sfd.Title = "Specify output file to write SNP locations to.";
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    Background.RunAsync(() =>
+                    {
+                        MapFileSnpFinder mfsf = new MapFileSnpFinder(bc);
+                        List<string> files = ofd.FileNames.ToList();
+                        mfsf.ProcessMapFiles(files);
+                        mfsf.WriteToFile(sfd.FileName);
+                    });
+                }
+            }
+        }
+
 	}
 }

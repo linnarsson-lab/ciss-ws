@@ -12,7 +12,8 @@ namespace ErrorCorrection_console
     public class ErrorHandler
     {
         public string refSeqFilepath { get; set; }
-
+        public string errorFilepath { get; set; }
+        public string errorCorrectedFilepath { get; set; }
         public ErrorHandler()
         { 
 
@@ -26,6 +27,8 @@ namespace ErrorCorrection_console
             }
 
             var output = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_errorCorrected.fq")).OpenWrite();
+
+
             string[] lines = System.IO.File.ReadAllLines(refSeqFilepath);
             //string[] seqLines = new string[lines.Length / 4];
             string[] headerLines = new string[lines.Length / 4];
@@ -125,6 +128,8 @@ namespace ErrorCorrection_console
                     //MessageBox.Show("value of i=" + i);
                     i = i + 4;
                 }
+                //output1.WriteLine(d1.Values);
+                //output1.Close();
                 //var sortedD1 = (from entry in d1 orderby entry.Value ascending select entry).ToDictionary(pair => pair.Key, pair => pair.Value);
                 var sortedd1 = d1.OrderByDescending(x1 => x1.Value);
                 var sortedd2 = d2.OrderByDescending(x2 => x2.Value);
@@ -162,7 +167,46 @@ namespace ErrorCorrection_console
                 i = i - 4;
             }
             output.Close();
+           // var output =                 (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_errorCorrected.fq")).OpenWrite();
+            //FastQFile fq = FastQFile.Load((Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_errorCorrected.fq")), 64);
+            FastQFile fq = FastQFile.Load(errorCorrectedFilepath, 64);
+            var output1 = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_errorReport.txt")).OpenWrite();
+            output1.WriteLine("Header" + "\t" + "readNo" + "\t" + "PositionAt" + "\t" + "From" + "\t" + "To" + "\t" + "ErrorReport" + "\t" + "Total no of reads");
+            string[] Errorlines = System.IO.File.ReadAllLines(errorFilepath);
+            //string[] ErrorCorrlines = System.IO.File.ReadAllLines(errorCorrectedFilepath);
+
+            string errorReport = "";
+            //for (int j = 0; j < ErrorCorrlines.Length; j++)
+            //{
+            //   FastQRecord fr = fq.Records[j];    
+            //}
+            for (int i = 0; i < Errorlines.Length; i++)
+            {
+                string[] errorHead = Errorlines[i].Split('\t');
+                string[] errorHead2;
+                int fqRecord = -1;
+
+                do
+                {
+                    fqRecord++;
+                    errorHead2 = fq.Records[fqRecord].Header.Split('\t');
+                } while (errorHead[0] != errorHead2[0]);
+                //MessageBox.Show(errorHead[0] + "and " + errorHead2[0]);
+                ShortDnaSequence errorseq = new ShortDnaSequence(fq.Records[fqRecord].Sequence);
+                char charPosition1 = errorseq.GetNucleotide(Convert.ToInt64(errorHead[2]) - 1);
+                char charPosition2 = Convert.ToChar(errorHead[3]);
+                if (charPosition1 == charPosition2)
+                {
+                    errorReport = "Error Corrected";
+                }
+                else errorReport = "Error not corrected";
+                output1.WriteLine(Errorlines[i].ToString() + "\t" /*+ charPosition1 + "\t" + charPosition2 + "\t"*/ + errorReport + "\t" + errorHead2[1]);
+                errorHead2 = null;
+
+            }
+            output1.Close();
             Console.WriteLine("End of Run!");
+
             
         }
     }

@@ -141,12 +141,17 @@ namespace Linnarsson.Strt
         {
         }
 
+        private int nextInQueue = 0;
+        public void ResetQueue()
+        {
+            nextInQueue = 0;
+        }
         public ProjectDescription GetNextProjectInQueue()
         {
             ProjectDescription pd = null;
             List<ProjectDescription> queue = GetProjectDescriptions("WHERE a.status=\"" + ProjectDescription.STATUS_INQUEUE + "\"");
-            if (queue.Count > 0)
-                pd = queue[0];
+            if (queue.Count > nextInQueue)
+                pd = queue[nextInQueue++];
             return pd;
         }
 

@@ -588,6 +588,9 @@ namespace Linnarsson.Strt
         private string SetupForLatestExtractedFolder(string projectOrExtractedFolder)
         {
             string extractedFolder = PathHandler.GetLatestExtractedFolder(projectOrExtractedFolder);
+            string extractionVersion = PathHandler.GetExtractionVersion(extractedFolder);
+            if (int.Parse(extractionVersion) < 28)
+                throw new Exception("Extractions of versions < 28 can not be processed anymore. Please redo extraction!");
             string barcodeSet = PathHandler.ParseBarcodeSet(extractedFolder);
             SetBarcodeSet(barcodeSet);
             return extractedFolder;

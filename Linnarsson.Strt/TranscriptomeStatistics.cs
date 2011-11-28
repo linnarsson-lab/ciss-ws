@@ -107,7 +107,8 @@ namespace Linnarsson.Strt
                 Console.WriteLine("Defining SNP positions by scanning map files...");
                 MapFileSnpFinder mfsf = new MapFileSnpFinder(barcodes);
                 mfsf.ProcessMapFiles(mapFilePaths);
-                randomTagFilter.SetupSNPCounters(mfsf.GetAverageReadLength(), mfsf.IterSNPLocations());
+                int nSNPs = randomTagFilter.SetupSNPCounters(mfsf.GetAverageReadLength(), mfsf.IterSNPLocations());
+                Console.WriteLine("Registered " + nSNPs + " potential SNP positions.");
             }
             List<string> bcMapFilePaths = new List<string>();
             string mapFileName = Path.GetFileName(mapFilePaths[0]);

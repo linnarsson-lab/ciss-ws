@@ -337,18 +337,22 @@ namespace Linnarsson.Strt
             }
         }
 
-        public void SetupSNPCounters(int averageReadLen, IEnumerable<LocatedSNPCounter> snpDatas)
+        public int SetupSNPCounters(int averageReadLen, IEnumerable<LocatedSNPCounter> snpDatas)
         {
+            int nSNPs = 0;
             ChrTagData.averageReadLen = averageReadLen;
             foreach (LocatedSNPCounter snpData in snpDatas)
+            {
+                nSNPs++;
                 chrTagDatas[snpData.chr].RegisterSNP(snpData.chrPos);
+            }
+            return nSNPs;
         }
 
         private void ChangeBcIdx(int newBcIdx)
         {
             if (usedBcIdxs.Contains(newBcIdx))
-                throw new Exception("Program or map file labelling error: Revisiting an already analyzed barcode ("
-                                    + newBcIdx + ") is not allowed when using random tags.");
+                throw new Exception("Program or map file naming error: Revisiting an already analyzed barcode (" + newBcIdx + ") is not allowed.");
             usedBcIdxs.Add(newBcIdx);
             currentBcIdx = newBcIdx;
             foreach (ChrTagData chrTagData in chrTagDatas.Values)

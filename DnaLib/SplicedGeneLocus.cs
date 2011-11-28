@@ -52,7 +52,9 @@ namespace Linnarsson.Dna
                 return new MarkResult(annotType, this);
             int realChrHitPos = offsets[partIdx] + item.HitMidPos;
             if (realChrHitPos < realFeature.LocusStart || realChrHitPos > realFeature.LocusEnd)
-                Console.WriteLine("Error");
+                Console.WriteLine("ERROR in SplicedGeneLocus.MarkHit: PartIdx=" + partIdx + " MarkType=" + AnnotType.GetName(annotType) + "\n  " 
+                                + "RealChrHitPos=" + realChrHitPos + " Gene=" + realFeature.Name + " LocusStart=" + realFeature.LocusStart + " LocusEnd=" + realFeature.LocusEnd + "\n  "
+                                + "MappedTagItem:" + item.ToString());
             return realFeature.MarkSpliceHit(realChrHitPos, item, realExonIds[partIdx], junctionIds[partIdx], markType);
         }
 

@@ -245,7 +245,7 @@ namespace Linnarsson.Dna
         }
 
         public static string extractedFolderMakePattern = "{0}_ExtractionVer{1}_{2}";
-        public static string extractedFolderMatchPattern = "^[^_]+_ExtractionVer[0-9]+_[^_]+$";
+        public static string extractedFolderMatchPattern = "^[^_]+_ExtractionVer([0-9]+)_[^_]+$";
         public string MakeExtractedFolder(string projectFolder, string barcodeSet, string extractionVersion)
         {
             string projectName = Path.GetFileName(projectFolder);
@@ -279,6 +279,18 @@ namespace Linnarsson.Dna
                 latestExtracted = extractedDirs[extractedDirs.Count - 1];
             }
             return latestExtracted;
+        }
+
+        /// <summary>
+        /// Get the version of extraction from an extracted folder path
+        /// </summary>
+        /// <param name="extractedFolder"></param>
+        /// <returns>"0" if path is not parsable</returns>
+        public static string GetExtractionVersion(string extractedFolder)
+        {
+            Match m = Regex.Match(extractedFolder, extractedFolderMatchPattern);
+            if (m.Success) return m.Groups[1].Value;
+            return "0";
         }
 
         /// <summary>

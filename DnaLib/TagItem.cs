@@ -36,6 +36,11 @@ namespace Linnarsson.Dna
             set { hitStartPos = value - HitLen / 2; }
         }
 
+        public override string ToString()
+        {
+            return string.Format("Loc=chr{0}{1}{2} Bc={3} HitMidPos={4} #Mols={5} #Reads={6}", chr, strand, hitStartPos, bcIdx, HitMidPos, MolCount, ReadCount);
+        }
+
         public IEnumerable<LocatedSNPCounter> IterMolSNPCounts()
         {
             if (tagItem.SNPData == null) yield break;
@@ -107,7 +112,8 @@ namespace Linnarsson.Dna
         public void Clear()
         {
             molCounts = null;
-            SNPData.Clear();
+            if (SNPData != null)
+                SNPData.Clear();
         }
 
         /// <summary>

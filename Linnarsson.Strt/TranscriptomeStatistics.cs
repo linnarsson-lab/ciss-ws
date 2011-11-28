@@ -124,6 +124,7 @@ namespace Linnarsson.Strt
                     bcMapFilePaths.Clear();
                     currentBcIdx = bcIdx;
                 }
+                bcMapFilePaths.Add(mapFilePath);
             }
             if (bcMapFilePaths.Count > 0)
                 ProcessBarcodeMapFiles(bcMapFilePaths);

@@ -31,9 +31,7 @@ namespace Linnarsson.Strt
             Background.Progress(0);
             foreach (string chrId in ChrIdToFileMap.Keys)
                 QuickAnnotations[chrId] = new QuickAnnotationMap(annotationBinSize);
-            AssertGeneFile(ph);
-            MarkUpOverlappingFeatures();
-            foreach (GeneFeature gf in geneFeatures.Values) AddIntervals((GeneFeature)gf);
+            RegisterGenesAndIntervals(ph);
             if (needChromosomeSequences || needChromosomeLengths)
                 ReadChromsomeSequences(ChrIdToFileMap, nFiles);
             if (Background.CancellationPending) return;
@@ -129,16 +127,6 @@ namespace Linnarsson.Strt
                     }
                 }
             }
-        }
-
-        private void AssertGeneFile(PathHandler ph)
-        {
-            string annotationsPath = ph.GetAnnotationsPath(genome);
-            annotationsPath = PathHandler.ExistsOrGz(annotationsPath);
-            if (annotationsPath == null)
-                throw new NoAnnotationsFileFoundException("Could not find annotation file: " + annotationsPath);
-            Console.WriteLine("Annotations from " + annotationsPath + ".");
-            LoadAnnotationsFile(annotationsPath);
         }
 
         private void ReadChromsomeSequences(Dictionary<string, string> chrIdToFileMap, int nFiles)
@@ -247,6 +235,19 @@ namespace Linnarsson.Strt
                   rmskPath, nLines, nRepeatFeatures, nTooLongFeatures, props.MaxFeatureLength);
         }
 
+        private void RegisterGenesAndIntervals(PathHandler ph)
+        {
+            string annotationsPath = ph.GetAnnotationsPath(genome);
+            annotationsPath = PathHandler.ExistsOrGz(annotationsPath);
+            if (annotationsPath == null)
+                throw new NoAnnotationsFileFoundException("Could not find annotation file: " + annotationsPath);
+            Console.WriteLine("Annotations from " + annotationsPath + ".");
+            LoadAnnotationsFile(annotationsPath);
+            MarkUpOverlappingFeatures();
+            foreach (GeneFeature gf in geneFeatures.Values) 
+                AddIntervals((GeneFeature)gf);
+        }
+
         private void LoadAnnotationsFile(string annotationsPath)
         {
             int nLines = 0;
@@ -275,7 +276,7 @@ namespace Linnarsson.Strt
         /// <returns>true if gf represents a new gene, and not an artificial splice gene.</returns>
         private bool RegisterGeneFeature(LocusFeature gf)
         {
-            if (genome.Annotation == gf.Chr) //(StrtGenome.IsSpliceAnnotationChr(gf.Chr))
+            if (genome.Annotation == gf.Chr)
             { // Requires that real loci are registered before artificial splice loci.
                 if (lastLoadedGeneName == gf.Name)
                 {    // Link from artificial splice chromosome to real locus

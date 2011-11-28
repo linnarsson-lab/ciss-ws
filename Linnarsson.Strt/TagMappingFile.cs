@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using Linnarsson.Dna;
 
 namespace Linnarsson.Strt
 {
@@ -53,7 +54,7 @@ namespace Linnarsson.Strt
                         lastReadId = readId;
                     }
                     char strand = fields[1][0];
-                    string hitChr = fields[2];
+                    string hitChr = fields[2].Replace("chr", "");
                     string hitPos = fields[3];
                     mapGroup.Add(string.Format("{0},{1},{2}", hitChr, strand, hitPos));
                 }
@@ -66,5 +67,29 @@ namespace Linnarsson.Strt
                 Console.WriteLine(dupl + " duplicated entries were replaced with one each.");
             }
         }
+
+        public static void ReadMappingsFromFile(string tagMappingFile, Dictionary<string, ChrTagData> chrTagDatas)
+        {
+            Console.WriteLine("Reading pre-calculated exonic multiread mappings from " + tagMappingFile);
+            int n = 0;
+            using (StreamReader reader = new StreamReader(tagMappingFile))
+            {
+                string line = reader.ReadLine();
+                while (line.StartsWith("#")) line = reader.ReadLine();
+                while (line != null)
+                {
+                    if (++n % 1000000 == 0) Console.WriteLine(n + "...");
+                    TagItem tagItem = new TagItem(true);
+                    string[] groups = line.Split('\t');
+                    foreach (string group in groups)
+                    {
+                        string[] parts = group.Split(',');
+                        chrTagDatas[parts[0]].Setup(int.Parse(parts[2]), parts[1][0], tagItem);
+                    }
+                    line = reader.ReadLine();
+                }
+            }
+        }
+
     }
 }

@@ -29,7 +29,7 @@ namespace Linnarsson.Strt
             this.chr = chr;
         }
         /// <summary>
-        /// Register an investigated read stating at given position. Call AddSNP() for every SNP in the read.
+        /// Register an investigated read starting at given position. Then call AddSNP() for every SNP in the read.
         /// </summary>
         /// <param name="hitStartPos"></param>
         /// <param name="hitLen"></param>
@@ -104,36 +104,39 @@ namespace Linnarsson.Strt
                     numReadInFile++;
                     if (mrm.HasAltMappings || mrm.NMappings > 1)
                         continue;
-                    string chr = mrm[0].Chr;
-                    if (!dataByChr.ContainsKey(chr))
-                        dataByChr[chr] = new ChrSNPCounter(chr);
+                    nValidReads++;
                     int hitStartPos = mrm[0].Position;
-                    int strandBit = (mrm[0].Strand == '+')? 1 : 0;
-                    ChrSNPCounter chrSNPData = dataByChr[mrm[0].Chr];
+                    string chr = mrm[0].Chr;
+                    ChrSNPCounter chrSNPData;
+                    if (!dataByChr.TryGetValue(chr, out chrSNPData))
+                    {
+                        chrSNPData = new ChrSNPCounter(chr);
+                        dataByChr[chr] = chrSNPData;
+                    }
                     chrSNPData.AddRead(hitStartPos, mrm.SeqLen);
                     totLen += mrm.SeqLen;
-                    nValidReads++;
-                    if (mrm[0].Mismatches == "")
-                        continue;
-                    string[] mms = mrm[0].Mismatches.Split(',');
-                    foreach (string snp in mms)
+                    if (mrm[0].Mismatches != "")
                     {
-                        int p = snp.IndexOf(':');
-                        if (p == -1)
+                        string[] mms = mrm[0].Mismatches.Split(',');
+                        foreach (string snp in mms)
                         {
-                            Console.WriteLine("Strange SNP: " + snp + " in " + mrm[0].Mismatches);
-                            continue;
+                            int p = snp.IndexOf(':');
+                            if (p == -1)
+                            {
+                                Console.WriteLine("Strange SNP: " + snp + " in " + mrm[0].Mismatches);
+                                continue;
+                            }
+                            int posInRead = int.Parse(snp.Substring(0, p));
+                            if (posInRead < marginForWiggle || posInRead >= mrm.SeqLen - marginForWiggle) continue;
+                            int relPos = (mrm[0].Strand == '+') ? posInRead : mrm.SeqLen - 1 - posInRead;
+                            int chrSnpPos = hitStartPos + relPos;
+                            char altNtChar = snp[p + 3];
+                            chrSNPData.AddSNP(chrSnpPos, altNtChar);
                         }
-                        int posInRead = int.Parse(snp.Substring(0, p));
-                        if (posInRead < marginForWiggle || posInRead > mrm.SeqLen - marginForWiggle) continue;
-                        int relPos = (mrm[0].Strand == '+') ? posInRead : mrm.SeqLen - 1 - posInRead;
-                        int chrSnpPos = hitStartPos + relPos;
-                        char altNtChar = snp[p + 3];
-                        chrSNPData.AddSNP(chrSnpPos, altNtChar);
                     }
                 }
             }
-            averageReadLength = (int)Math.Round(totLen / (double)nValidReads);
+            averageReadLength = (int)Math.Ceiling(totLen / (double)nValidReads);
             Console.WriteLine("Average read length:" + averageReadLength);
             Console.WriteLine("Counted " + nValidReads + " singleReads on valid chr out of totally " + numReadInFile + " reads in file.");
         }
@@ -143,6 +146,10 @@ namespace Linnarsson.Strt
             return averageReadLength;
         }
 
+        /// <summary>
+        /// Iterate over all SNPs that have at least 10 hits
+        /// </summary>
+        /// <returns>Reused container of SNP data</returns>
         public IEnumerable<LocatedSNPCounter> IterSNPLocations()
         {
             foreach (ChrSNPCounter chrSNPCounter in dataByChr.Values)
@@ -156,13 +163,15 @@ namespace Linnarsson.Strt
         public void WriteToFile(string file)
         {
             StreamWriter writer = new StreamWriter(file);
-            writer.WriteLine("Showing positions with at least 4% SNP:ed reads.");
+            writer.WriteLine("Showing positions with at least 4% SNP:ed reads and totally >= 10 reads.");
             writer.WriteLine(LocatedSNPCounter.Header);
             foreach (ChrSNPCounter chrSNPCounter in dataByChr.Values)
             {
                 foreach (LocatedSNPCounter item in chrSNPCounter.SNPItems(averageReadLength, marginForWiggle))
-                    if (item.counter.nSnps * 25 / item.counter.nTotal >= 1)
+                {
+                    if ((item.counter.nTotal >= 10) && (item.counter.nSnps * 25 / item.counter.nTotal >= 1))
                         writer.WriteLine(item.ToString());
+                }
             }
             writer.Close();
         }

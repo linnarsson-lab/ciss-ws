@@ -100,10 +100,10 @@ namespace Linnarsson.Strt
             List<string> realChrFiles = new List<string>();
             foreach (string f in Directory.GetFiles(genomeFolder, "*chr*.fa"))
             {
-                string chrId = PathHandler.ExtractChrId(f);
-                if (genome.IsBuildSpliceChr(chrId))
+                string filename = Path.GetFileName(f);
+                if (genome.IsBuildSpliceChr(filename))
                     spliceChrFile = f;
-                else if (genome.IsChrInBuild(chrId))
+                else if (genome.IsChrInBuild(filename))
                     realChrFiles.Add(f);
             }
             string chrFilesArg = string.Join(",", realChrFiles.ToArray());

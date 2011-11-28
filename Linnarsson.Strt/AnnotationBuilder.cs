@@ -97,7 +97,6 @@ namespace Linnarsson.Strt
                 return new AnnotationBuilder(props, new BioMartAnnotationReader(genome, genome.Annotation));
             return new AnnotationBuilder(props, new UCSCAnnotationReader(genome));
         }
-        private int SpliceFlankLen { get; set; }
         private Props props;
         private PathHandler ph;
         private AnnotationReader annotationReader;
@@ -110,7 +109,6 @@ namespace Linnarsson.Strt
         public AnnotationBuilder(Props props, AnnotationReader annotationReader)
         {
             ReadLen = props.StandardReadLen;
-            SpliceFlankLen = props.SpliceFlankLength;
             MaxAlignmentMismatches = props.MaxAlignmentMismatches;
             MaxExonsSkip = props.MaxExonsSkip;
             this.annotationReader = annotationReader;
@@ -293,173 +291,6 @@ namespace Linnarsson.Strt
             return s.ToString();
         }
 
-        /*
-        public void BuildExonSplices(StrtGenome genome)
-        {
-            BuildExonSplices(genome, "");
-        }
-        public void BuildExonSplices(StrtGenome genome, string newIndexName)
-        {
-            string junctionsChrId = "chr" + genome.Annotation;
-            Console.WriteLine("Genome: {0} Annotations: {1}", genome.Annotation, genome.Build);
-            Background.Progress(0);
-            char[] fillNts = new char[] { 'G', 'G', 'T' };
-            Dictionary<string, List<GeneFeature>> gfByChr = annotationReader.BuildGeneModelsByChr();
-            Console.WriteLine("Read data for {0} chromosomes from annotation files:", gfByChr.Count);
-            Console.WriteLine(string.Join(",", gfByChr.Keys.ToArray()));
-            Console.WriteLine(annotationReader.GetPseudogeneCount() + " genes are annotated as pseudogenes.");
-            Console.WriteLine(//" MinFlankSideLen=" + minFlankLen + " MinJunctionLen=" + minJunctionLen +
-                                "SpliceFlankLength=" + SpliceFlankLen + " FillNts=" + new String(fillNts));
-            int nDone = 0;
-            int nTooManyExons = 0;
-            DnaSequence jChrSeq = new LongDnaSequence();
-            Dictionary<string, string> chrIdToFileMap = ph.GetGenomeFilesMap(genome);
-            StreamWriter refWriter = PrepareAnnotationsFile(genome, newIndexName);
-            StreamWriter chrWriter = PrepareJunctionChrFile(genome, junctionsChrId, newIndexName);
-            int nFiles = (int)(chrIdToFileMap.Count * 1.2);
-            int sideExonMaxCopy = props.MinExtractionInsertLength / 2;
-            foreach (string chrId in chrIdToFileMap.Keys)
-            {
-                if (!gfByChr.ContainsKey(chrId))
-                    continue;
-                Background.Message("Reading chr" + chrId + "...");
-                DnaSequence chrSeq = AbstractGenomeAnnotations.readChromosomeFile(chrIdToFileMap[chrId]);
-                Console.WriteLine("Processing chr" + chrId + " (" + gfByChr[chrId].Count + " genes)...");
-                Background.Message("Processing chr" + chrId + "...");
-                List<long> gfEnds = new List<long>();
-                List<long> gfJPos = new List<long>();
-                int lastOverlappingGfIdx = 0;
-                List<GeneFeature> chrGfs = gfByChr[chrId];
-                chrGfs.Sort((gf1, gf2) => gf1.Start - gf2.Start);
-                foreach (GeneFeature gf in chrGfs) // GeneFeatures now sorted by position on chromosome
-                {
-                    if (!genome.GeneVariants && gf.IsVariant())
-                        continue;
-                    gfEnds.Add(gf.End);
-                    gfJPos.Add(jChrSeq.Count);
-                    refWriter.WriteLine(gf.ToString());
-                    if (gf.ExonStarts.Length > 1)
-                    {
-                        if (gf.ExonStarts.Length > props.MaxExonsForAllJunctions)
-                            nTooManyExons++;
-                        List<int> jStarts = new List<int>();
-                        List<int> jEnds = new List<int>();
-                        List<string> jIds = new List<string>();
-                        List<int> offsets = new List<int>();
-                        int nExons = gf.ExonEnds.Length;
-                        for (int eLeft = 0; eLeft <= gf.ExonStarts.Length - 2; eLeft++)
-                        {
-                            int eLeftLen = gf.GetExonLength(eLeft);
-                            if (true) //(eLeftLen >= minFlankLen)
-                            {
-                                for (int eRight = eLeft + 1; eRight <= gf.ExonCount - 1; eRight++)
-                                {
-                                    int eRightLen = gf.GetExonLength(eRight);
-                                    if (true) //(eRightLen >= minFlankLen) // && (eLeftLen + eRightLen) >= minJunctionLen)
-                                    {
-                                        string leftPartId = string.Format("{0}>{1}", eLeft + 1, eRight + 1);
-                                        string rightPartId = string.Format("{0}<{1}", eLeft + 1, eRight + 1);
-                                        if (gf.Strand == '-')
-                                        { // Ids always have lower exonNo first. "Larger" part is referred exon.
-                                            leftPartId = string.Format("{0}<{1}", nExons - eRight, nExons - eLeft);
-                                            rightPartId = string.Format("{0}>{1}", nExons - eRight, nExons - eLeft);
-                                        }
-                                        int startInLeft = gf.ExonEnds[eLeft] - SpliceFlankLen + 1;
-                                        DnaSequence leftSpliceSeq = chrSeq.SubSequence(startInLeft, SpliceFlankLen);
-                                        int p = startInLeft - 1;
-                                        int i = SpliceFlankLen - eLeftLen - 1;
-                                        int fillELeft = eLeft - 1;
-                                        while (i > 0 && fillELeft >= 0) // if (eLeftLen < minJunctionLen && eLeft > 0)
-                                        {
-                                            int c = gf.GetExonLength(fillELeft); //Math.Min(sideExonMaxCopy, gf.GetExonLength(eLeft-1));
-                                            p = gf.ExonEnds[fillELeft]; // int p = gf.ExonEnds[fillELeft];
-                                            while (c-- > 0 && i >= 0)
-                                                leftSpliceSeq[i--] = chrSeq[p--];
-                                            fillELeft--;
-                                            //if (i > 0) // Add a guranteed wrong nt.
-                                            //    leftSpliceSeq[i--] = IupacEncoding.Complement(chrSeq[p--]);
-                                        }
-                                        if (i > 0) // Add a guranteed wrong nt.
-                                            leftSpliceSeq[i--] = IupacEncoding.Complement(chrSeq[p--]);
-                                        if (i > 0) // Add a guranteed wrong nt.
-                                            leftSpliceSeq[i--] = IupacEncoding.Complement(chrSeq[p--]);
-                                        if (i > 0) // Add a guranteed wrong nt.
-                                            leftSpliceSeq[i--] = IupacEncoding.Complement(chrSeq[p--]);
-                                        for (; i >= 0; i--)
-                                            leftSpliceSeq.SetNucleotide(i, fillNts[i % 3]); // Fill out with non-alignable nts
-                                        int startInRight = gf.ExonStarts[eRight];
-                                        DnaSequence rightSpliceSeq = chrSeq.SubSequence(startInRight, SpliceFlankLen);
-                                        p = startInRight + SpliceFlankLen;
-                                        i = eRightLen;
-                                        int fillERight = eRight + 1;
-                                        while (i < rightSpliceSeq.Count && fillERight < gf.ExonCount) // if (eRightLen < minJunctionLen && eRight < gf.ExonCount - 1)
-                                        {
-                                            int c = gf.GetExonLength(fillERight); // Math.Min(sideExonMaxCopy, gf.GetExonLength(eRight + 1));
-                                            p = gf.ExonStarts[fillERight]; // int p = gf.ExonStarts[eRight + 1];
-                                            while (c-- > 0 && i < rightSpliceSeq.Count)
-                                                rightSpliceSeq[i++] = chrSeq[p++];
-                                            fillERight++;
-                                            //if (i < rightSpliceSeq.Count) // Add a guranteed wrong nt.
-                                            //    rightSpliceSeq[i++] = IupacEncoding.Complement(chrSeq[p++]);
-                                        }
-                                        if (i < rightSpliceSeq.Count) // Add a guranteed wrong nt.
-                                            rightSpliceSeq[i++] = IupacEncoding.Complement(chrSeq[p++]);
-                                        if (i < rightSpliceSeq.Count) // Add a guranteed wrong nt.
-                                            rightSpliceSeq[i++] = IupacEncoding.Complement(chrSeq[p++]);
-                                        if (i < rightSpliceSeq.Count) // Add a guranteed wrong nt.
-                                            rightSpliceSeq[i++] = IupacEncoding.Complement(chrSeq[p++]);
-                                        for (; i < rightSpliceSeq.Count; i++)
-                                            rightSpliceSeq.SetNucleotide(i, fillNts[i % 3]); // Fill out with non-alignable nts
-                                        DnaSequence junction = new ShortDnaSequence(leftSpliceSeq);
-                                        junction.Append(rightSpliceSeq);
-                                        while (gf.Start > gfEnds[lastOverlappingGfIdx])
-                                            lastOverlappingGfIdx++;
-                                        int jLeftStart = (int)jChrSeq.Match(junction, gfJPos[lastOverlappingGfIdx]);
-                                        if (jLeftStart == -1)
-                                        {
-                                            jLeftStart = (int)jChrSeq.Count;
-                                            jChrSeq.Append(junction);
-                                            chrWriter.WriteLine(junction.ToString());
-                                        }
-                                        int jRightStart = jLeftStart + SpliceFlankLen;
-
-                                        jStarts.Add(jLeftStart);
-                                        jEnds.Add(jLeftStart + SpliceFlankLen - 1);
-                                        jIds.Add(leftPartId);
-                                        offsets.Add(startInLeft - jLeftStart);
-
-                                        jStarts.Add(jRightStart);
-                                        jEnds.Add(jRightStart + SpliceFlankLen - 1);
-                                        jIds.Add(rightPartId);
-                                        offsets.Add(startInRight - jRightStart);
-                                    }
-                                    if (gf.ExonStarts.Length > props.MaxExonsForAllJunctions)
-                                        break;
-                                }
-                            }
-                        }
-                        if (jStarts.Count > 0)
-                        {
-                            SplicedGeneFeature jLoc =
-                                new SplicedGeneFeature(gf.Name, junctionsChrId, gf.Strand,
-                                                jStarts.ToArray(), jEnds.ToArray(),
-                                                offsets.ToArray(), jIds.ToArray());
-                            refWriter.WriteLine(jLoc.ToString());
-                        }
-                    }
-                }
-                Background.Progress(++nDone * 100 / nFiles);
-                if (Background.CancellationPending) return;
-            }
-            refWriter.Close();
-            chrWriter.Close();
-            Background.Progress(90);
-            Console.WriteLine(nTooManyExons + " genes with more than " + props.MaxExonsForAllJunctions +
-                                " exons only get coverage of the consecutive exon's junctions.");
-            Background.Progress(100);
-            Console.WriteLine("Length of artificial splice chromosome:" + jChrSeq.Count);
-        }*/
-
         private StreamWriter PrepareJunctionChrFile(StrtGenome genome, string junctionChrId, string newIndexName)
         {
             string jChrPath = (string.IsNullOrEmpty(newIndexName)) ? ph.GetJunctionChrPath(genome) :
@@ -478,7 +309,7 @@ namespace Linnarsson.Strt
         private StreamWriter PrepareAnnotationsFile(StrtGenome genome, string newIndexName)
         {
             string annotationsPath = (string.IsNullOrEmpty(newIndexName)) ? ph.GetAnnotationsPath(genome) :
-                                                Path.Combine(PathHandler.GetGenomeSequenceFolder(genome), "Genes_" + newIndexName + ".txt");
+                                                Path.Combine(PathHandler.GetGenomeSequenceFolder(genome), "Annotations_" + newIndexName + ".txt");
             Console.WriteLine("Annotations file: " + annotationsPath);
             if (File.Exists(annotationsPath))
             {

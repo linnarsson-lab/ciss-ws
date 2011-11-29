@@ -19,9 +19,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectDBProcessor", "..\Pr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BkgFastQMailer", "..\BkgFastQMailer\BkgFastQMailer.csproj", "{9C6BBD24-EFBD-4D02-A4C5-F94B080BD8FC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BkgBackuper", "..\BkgBackuper\BkgBackuper.csproj", "{65D5A557-6C2A-4B3E-9D28-59FF119453FA}"
+EndProject
 Global
 	GlobalSection(SourceCodeControl) = preSolution
-		SccNumberOfProjects = 10
+		SccNumberOfProjects = 11
 		SccProjectName0 = Perforce\u0020Project
 		SccLocalPath0 = ..
 		SccProvider0 = MSSCCI:Perforce\u0020SCM
@@ -44,6 +46,9 @@ Global
 		SccLocalPath8 = ..\\ProjectDBProcessor
 		SccProjectUniqueName9 = ..\\BkgFastQMailer\\BkgFastQMailer.csproj
 		SccLocalPath9 = ..\\BkgFastQMailer
+		SccProjectUniqueName10 = ..\\BkgBackuper\\BkgBackuper.csproj
+		SccLocalPath10 = ..
+		SccProjectFilePathRelativizedFromConnection10 = BkgBackuper\\
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -192,6 +197,21 @@ Global
 		{9C6BBD24-EFBD-4D02-A4C5-F94B080BD8FC}.TestRelease|Mixed Platforms.Build.0 = Release|x86
 		{9C6BBD24-EFBD-4D02-A4C5-F94B080BD8FC}.TestRelease|x86.ActiveCfg = Release|x86
 		{9C6BBD24-EFBD-4D02-A4C5-F94B080BD8FC}.TestRelease|x86.Build.0 = Release|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.Debug|x86.ActiveCfg = Debug|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.Debug|x86.Build.0 = Debug|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.Release|Any CPU.ActiveCfg = Release|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.Release|Mixed Platforms.Build.0 = Release|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.Release|x86.ActiveCfg = Release|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.Release|x86.Build.0 = Release|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.TestRelease|Any CPU.ActiveCfg = Release|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.TestRelease|Mixed Platforms.ActiveCfg = Release|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.TestRelease|Mixed Platforms.Build.0 = Release|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.TestRelease|x86.ActiveCfg = Release|x86
+		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.TestRelease|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

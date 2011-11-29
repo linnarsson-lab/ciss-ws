@@ -50,12 +50,12 @@ namespace Linnarsson.Dna
             if ((markType == MarkStatus.TEST_EXON_MARK_OTHER && AnnotType.IsTranscript(annotType))
                 || markType == MarkStatus.TEST_EXON_SKIP_OTHER)
                 return new MarkResult(annotType, this);
-            int realChrHitPos = offsets[partIdx] + item.HitMidPos;
-            if (realChrHitPos < realFeature.LocusStart || realChrHitPos > realFeature.LocusEnd)
-                Console.WriteLine("ERROR in SplicedGeneLocus.MarkHit: PartIdx=" + partIdx + " MarkType=" + AnnotType.GetName(annotType) + "\n  " 
-                                + "RealChrHitPos=" + realChrHitPos + " Gene=" + realFeature.Name + " LocusStart=" + realFeature.LocusStart + " LocusEnd=" + realFeature.LocusEnd + "\n  "
+            item.splcToRealChrOffset = offsets[partIdx];
+            if (item.HitMidPos < realFeature.Start || item.HitMidPos > realFeature.End)
+                Console.WriteLine("ERROR in SplicedGeneLocus.MarkHit: PartIdx=" + partIdx + "offset[pIdx]=" + offsets[partIdx] + " MarkType=" + AnnotType.GetName(annotType) + "\n  " 
+                                + "Gene=" + realFeature.Name + " LocusStart=" + realFeature.LocusStart + " LocusEnd=" + realFeature.LocusEnd + "\n  "
                                 + "MappedTagItem:" + item.ToString());
-            return realFeature.MarkSpliceHit(realChrHitPos, item, realExonIds[partIdx], junctionIds[partIdx], markType);
+            return realFeature.MarkSpliceHit(item, realExonIds[partIdx], junctionIds[partIdx], markType);
         }
 
         public override IEnumerable<FtInterval> IterIntervals()

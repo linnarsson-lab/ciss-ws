@@ -13,8 +13,6 @@ namespace Linnarsson.Dna
         public readonly static string pseudoGeneIndicator = "_p";
         public readonly static string altLocusIndicator = "_loc";
         public readonly static string nonUTRExtendedIndicator = variantIndicator + "Original";
-        public static bool GenerateTranscriptProfiles = false;
-        public static bool GenerateLocusProfiles = false;
         public static int LocusProfileBinSize = 50;
         public static int LocusFlankLength;
 
@@ -51,11 +49,11 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Start position on chromosome of the gene locus including 5' flank sequence
+        /// Start position on chromosome of the gene locus including 5' flank sequence. Not adjusted for neighboring overlapping genes.
         /// </summary>
         public int LocusStart { get { return Start - LocusFlankLength; } }
         /// <summary>
-        /// End position on chromosome of the gene locus including 3' flank sequence
+        /// End position on chromosome of the gene locus including 3' flank sequence. Not adjusted for neighboring overlapping genes.
         /// </summary>
         public int LocusEnd { get { return End + LocusFlankLength; } }
         /// <summary>
@@ -93,12 +91,20 @@ namespace Linnarsson.Dna
         public List<double> VariationSamples;
         public int[] TranscriptHitsByExonIdx; // Used to analyse exon hit distribution
         public Dictionary<string, int> TranscriptHitsByJunction; // Used to analyse cross-junction hit distribution
-        public int[] HitsByAnnotType;  // Note that EXON/AEXON counts will include SPLC/ASPLC counts
+        /// <summary>
+        /// Total hits for every annotation type. Note that EXON/AEXON counts will include SPLC/ASPLC counts
+        /// </summary>
+        public int[] HitsByAnnotType;
         public int[] NonMaskedHitsByAnnotType;
         public CompactGenePainter cPainter;
 
-        // Will be adjusted to not cover nearby genes in same orientation
+        /// <summary>
+        ///  Adjusted to not cover any nearby gene in same orientation
+        /// </summary>
         public int LeftFlankLength;
+        /// <summary>
+        ///  Adjusted to not cover any nearby gene in same orientation
+        /// </summary>
         public int RightFlankLength;
         public int LeftMatchStart { get { return Start - LeftFlankLength; } }
         public int RightMatchEnd { get { return End + RightFlankLength; } }
@@ -353,7 +359,7 @@ namespace Linnarsson.Dna
             if (markType != MarkStatus.TEST_EXON_MARK_OTHER)
                 return new MarkResult(annotType, this);
             MarkLocusHitPos(item);
-            IncrTotalHits(item.strand == Strand);
+            AddToTotalHits(item);
             HitsByAnnotType[annotType] += item.MolCount;
             if ((undirAnnotType == AnnotType.USTR && !MaskedUSTR) ||
                 (undirAnnotType == AnnotType.DSTR && !MaskedDSTR))
@@ -367,7 +373,7 @@ namespace Linnarsson.Dna
             if (markType != MarkStatus.TEST_EXON_MARK_OTHER)
                 return new MarkResult(annotType, this);
             MarkLocusHitPos(item);
-            IncrTotalHits(item.strand == Strand);
+            AddToTotalHits(item);
             HitsByAnnotType[annotType] += item.MolCount;
             if (!MaskedINTR[intronIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
             return new MarkResult(annotType, this);
@@ -383,7 +389,7 @@ namespace Linnarsson.Dna
                 if (!AnnotType.IsTranscript(annotType))
                 {   // Only happens for directional AEXON reads
                     MarkLocusHitPos(item);
-                    IncrTotalHits(item.strand == Strand);
+                    AddToTotalHits(item);
                     HitsByAnnotType[annotType] += item.MolCount;
                     if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
                     MarkSNPs(item);
@@ -393,7 +399,7 @@ namespace Linnarsson.Dna
             if (AnnotType.IsTranscript(annotType)) //(strand == Strand) // Sense hit
             {
                 MarkLocusHitPos(item);
-                IncrTotalHits(item.strand == Strand);
+                AddToTotalHits(item);
                 TranscriptHitsByExonIdx[exonIdx] += item.MolCount;
                 TranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
                 if (markType == MarkStatus.SINGLE_MAPPING)
@@ -404,7 +410,7 @@ namespace Linnarsson.Dna
             return new MarkResult(annotType, this);
         }
 
-        public MarkResult MarkSpliceHit(int realChrHitPos, MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
+        public MarkResult MarkSpliceHit(MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
         {
             int exonIdx = (Strand == '+') ? exonId - 1 : ExonCount - exonId;
             int annotType = (item.strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
@@ -417,8 +423,7 @@ namespace Linnarsson.Dna
             {
                 if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
             }
-            HitsByAnnotType[annotType]++;
-            item.HitMidPos = realChrHitPos;
+            HitsByAnnotType[annotType] += item.MolCount;
             MarkResult res = MarkExonHit(item, exonIdx, markType);
             return new MarkResult(annotType, this);
         }
@@ -498,15 +503,6 @@ namespace Linnarsson.Dna
             VariationSamples.Add(cv);
         }
 
-        private static int[] SplitField(string field, int nParts, int offset)
-        {
-            int[] parts = new int[nParts];
-            string[] items = field.Split(',');
-            for (int i = 0; i < nParts; i++)
-                parts[i] = int.Parse(items[i]) + offset;
-            return parts;
-        }
-
         /// <summary>
         /// Makes a refFlat file like string
         /// </summary>
@@ -531,6 +527,13 @@ namespace Linnarsson.Dna
             return s.ToString();
         }
 
+        /// <summary>
+        /// Decrease length of flank(s) if ther is a too close neighboring gene in same orientation.
+        /// Also mark up flanks and introns that overlap with some other gene, irrespective of orientation.
+        /// </summary>
+        /// <param name="sortedMaskStarts"></param>
+        /// <param name="sortedMaskEnds"></param>
+        /// <param name="strand"></param>
         public void MaskInterExons(int[] sortedMaskStarts, int[] sortedMaskEnds, char strand)
         {
             if (strand == Strand)
@@ -547,12 +550,12 @@ namespace Linnarsson.Dna
                 {
                     int maskStart = sortedMaskStarts[idx];
                     int maskEnd = sortedMaskEnds[idx];
-                    if (maskStart < Start && maskEnd > LocusStart)
+                    if (maskStart < Start && maskEnd > LocusStart) // Should it not be "...&& maskEnd > LocusMatchStart" ??
                     {
                         if (Strand == '+') MaskedUSTR = true; 
                         else MaskedDSTR = true;
                     }
-                    if (maskStart < LocusEnd && maskEnd > End)
+                    if (maskStart < LocusEnd && maskEnd > End) // Should it not be "maskStart < LocusMatchEnd..." ??
                     {
                         if (Strand == '+') MaskedDSTR = true;
                         else MaskedUSTR = true;

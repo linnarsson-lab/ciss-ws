@@ -13,7 +13,6 @@ namespace Linnarsson.Dna
         int GetLocusLength();
         int GetTotalHits();
         int GetTotalHits(bool sense);
-        void IncrTotalHits(bool sense);
         bool IsExpressed();
         MarkResult MarkHit(MappedTagItem item, int extraData, MarkStatus markType);
     }

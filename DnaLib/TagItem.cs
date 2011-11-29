@@ -29,16 +29,17 @@ namespace Linnarsson.Dna
         public string chr;
         public int hitStartPos;
         public char strand;
+        public int splcToRealChrOffset = 0;
         public int HitLen { get { return AverageReadLen; } }
         public int HitMidPos
         {
-            get { return hitStartPos + HitLen / 2; }
+            get { return hitStartPos + HitLen / 2 + splcToRealChrOffset; }
             set { hitStartPos = value - HitLen / 2; }
         }
 
         public override string ToString()
         {
-            return string.Format("Loc=chr{0}{1}{2} Bc={3} HitMidPos={4} #Mols={5} #Reads={6}", chr, strand, hitStartPos, bcIdx, HitMidPos, MolCount, ReadCount);
+            return string.Format("Loc=chr{0}{1}{2} Bc={3} HitStartPos={4} #Mols={5} #Reads={6}", chr, strand, hitStartPos, bcIdx, hitStartPos, MolCount, ReadCount);
         }
 
         public IEnumerable<LocatedSNPCounter> IterMolSNPCounts()

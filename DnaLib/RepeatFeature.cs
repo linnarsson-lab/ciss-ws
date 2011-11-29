@@ -25,10 +25,6 @@ namespace Linnarsson.Dna
         {
             return TotalHits; // Total from both strands
         }
-        public void IncrTotalHits(bool sense)
-        {
-            TotalHits++;
-        }
         public bool IsExpressed()
         {
             return GetTotalHits() > 0;

@@ -123,8 +123,7 @@ namespace Linnarsson.Strt
         /// <returns>true if the rndTag is new at this position-strand</returns>
         public bool Add(int pos, char strand, int rndTagIdx, bool hasAltMappings, string mismatches, int readLen)
         {
-            int strandIdx = (strand == '+') ? 0 : 1;
-            int posStrand = (pos << 1) | strandIdx;
+            int posStrand = MakePosStrandIdx(pos, strand);
             if (!tagItems.ContainsKey(posStrand))
                 tagItems[posStrand] = new TagItem(false);
             TagItem item = tagItems[posStrand];
@@ -158,16 +157,16 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Use to get the read count profile for a specific genomic position and strand
+        /// Use to get the estimated molCount and read count profile for a specific genomic position and strand
         /// </summary>
         /// <param name="pos"></param>
         /// <param name="strand"></param>
         /// <returns>Number of reads as function of rndTag index at given genomic location, or null if no reads are found</returns>
-        public ushort[] GetReadCounts(int pos, char strand)
+        public void GetReadCounts(int pos, char strand, out int molCount, out ushort[] readProfile)
         {
-            int strandIdx = (strand == '+') ? 0 : 1;
-            int posStrand = (pos << 1) | strandIdx;
-            return tagItems[posStrand].GetReadCountsByRndTag();
+            int posStrand = MakePosStrandIdx(pos, strand);
+            readProfile = tagItems[posStrand].GetReadCountsByRndTag();
+            molCount = tagItems[posStrand].GetNumMolecules();
         }
 
         /// <summary>
@@ -390,6 +389,7 @@ namespace Linnarsson.Strt
                 {
                     item.bcIdx = currentBcIdx;
                     item.chr = chrData.Key;
+                    item.splcToRealChrOffset = 0;
                     yield return item;
                 }
         }
@@ -399,16 +399,16 @@ namespace Linnarsson.Strt
         /// <param name="pos"></param>
         /// <param name="strand"></param>
         /// <returns>Number of reads as function of rndTag index at given genomic location, or null if no reads has hit that location</returns>
-        public ushort[] GetMoleculeCounts(string chr, int pos, char strand)
+        public void GetReadCountProfile(string chr, int pos, char strand, out int molCount, out ushort[] readProfile)
         {
+            molCount = 0;
+            readProfile = null;
             try
             {
-                return chrTagDatas[chr].GetReadCounts(pos, strand);
+                 chrTagDatas[chr].GetReadCounts(pos, strand, out molCount, out readProfile);
             }
             catch (KeyNotFoundException)
-            {
-                return null;
-            }
+            { }
         }
 
         /// <summary>

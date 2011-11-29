@@ -63,10 +63,10 @@ namespace Linnarsson.Dna
         {
             return (sense)? TotalSenseHits : TotalAntiSenseHits;
         }
-        public void IncrTotalHits(bool sense)
+        public void AddToTotalHits(MappedTagItem item)
         {
-            if (sense) TotalSenseHits++;
-            else TotalAntiSenseHits++;
+            if (item.strand == Strand) TotalSenseHits += item.MolCount;
+            else TotalAntiSenseHits += item.MolCount;
         }
         public virtual bool IsExpressed()
         {

@@ -54,7 +54,7 @@ namespace Linnarsson.Strt
         private StreamWriter rndTagProfileByGeneWriter;
 
         Dictionary<string, int> redundantHits = new Dictionary<string, int>();
-        List<Pair<MappedTagItem, FtInterval>> exonsToMark;
+        List<FtInterval> exonsToMark;
         Dictionary<string, Pair<MultiReadMapping, FtInterval>> geneToExonToMark = new Dictionary<string,Pair<MultiReadMapping,FtInterval>>();
         List<string> exonHitGeneNames;
         private string annotationChrId;
@@ -81,7 +81,7 @@ namespace Linnarsson.Strt
             TotalHitsByAnnotType = new int[AnnotType.Count];
             numReadsByBarcode = new int[barcodes.Count];
             numUniqueMolReadsByBarcode = new int[barcodes.Count];
-            exonsToMark = new List<Pair<MappedTagItem, FtInterval>>(100);
+            exonsToMark = new List<FtInterval>(100);
             exonHitGeneNames = new List<string>(100);
             annotationChrId = Annotations.Genome.Annotation;
             string tagMappingFile = PathHandler.GetTagMappingPath(Annotations.Genome);
@@ -137,6 +137,7 @@ namespace Linnarsson.Strt
             long totalReadLength = 0;
             foreach (string mapFilePath in bcMapFilePaths)
             {
+                Console.WriteLine("file: " + mapFilePath);
                 currentMapFilePath = mapFilePath;
                 MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, 1, barcodes);
                 if (mapFileReader == null)
@@ -178,12 +179,14 @@ namespace Linnarsson.Strt
 
         public void Annotate(MappedTagItem item)
         {
+            exonsToMark.Clear();
             exonHitGeneNames.Clear();
             bool someAnnotationHit = false;
             bool someExonHit = false;
             MarkStatus markType = MarkStatus.TEST_EXON_MARK_OTHER;
             foreach (FtInterval ivl in Annotations.GetMatching(item.chr, item.HitMidPos))
             {
+                item.splcToRealChrOffset = 0;
                 MarkResult res = ivl.Mark(item, ivl.ExtraData, markType);
                 if (res.annotType == AnnotType.NOHIT)
                     continue;
@@ -194,7 +197,7 @@ namespace Linnarsson.Strt
                     {
                         someExonHit = true;
                         exonHitGeneNames.Add(res.feature.Name);
-                        exonsToMark.Add(new Pair<MappedTagItem, FtInterval>(item, ivl));
+                        exonsToMark.Add(ivl);
                     }
                 }
                 else // hit is not to EXON or SPLC (neither AEXON/ASPLC for non-directional samples)
@@ -223,13 +226,10 @@ namespace Linnarsson.Strt
                 markStatus = MarkStatus.MARK_ALT_MAPPINGS;
                 nMaxAltMappingsReads++;
             }
-            foreach (Pair<MappedTagItem, FtInterval> exonToMark in exonsToMark)
+            foreach (FtInterval ivl in exonsToMark)
             {
-                MappedTagItem rec = exonToMark.First;
-                FtInterval ivl = exonToMark.Second;
+                item.splcToRealChrOffset = 0;
                 MarkResult res = ivl.Mark(item, ivl.ExtraData, markStatus);
-                //if (rec.tagItem.HasSNPs)
-                //    ((GeneFeature)res.feature).MarkSNPs(item);
                 TotalHitsByAnnotTypeAndBarcode[res.annotType, currentBcIdx] += item.MolCount;
                 TotalHitsByAnnotTypeAndChr[item.chr][res.annotType] += item.MolCount;
                 TotalHitsByAnnotType[res.annotType] += item.MolCount;
@@ -251,7 +251,6 @@ namespace Linnarsson.Strt
             }
             //if (TestReporter != null)
             //    TestReporter.ReportHit(exonHitGeneNames, mappings, exonsToMark);
-            exonsToMark.Clear();
         }
 
         private void MakeGeneRndTagProfiles()
@@ -273,7 +272,9 @@ namespace Linnarsson.Strt
                     for (int trPosInChrDir = 0; trPosInChrDir < gf.Length; trPosInChrDir++)
                     {
                         int chrPos = gf.GetChrPosFromTrPosInChrDir(trPosInChrDir);
-                        ushort[] profile = randomTagFilter.GetMoleculeCounts(gf.Chr, chrPos, gf.Strand);
+                        int estMolCount;
+                        ushort[] profile;
+                        randomTagFilter.GetReadCountProfile(gf.Chr, chrPos, gf.Strand, out estMolCount, out profile);
                         if (profile != null)
                         {
                             if (rndTagProfileByGeneWriter == null)
@@ -282,10 +283,10 @@ namespace Linnarsson.Strt
                                 if (!Directory.Exists(Path.GetDirectoryName(file)))
                                     Directory.CreateDirectory(Path.GetDirectoryName(file));
                                 rndTagProfileByGeneWriter = file.OpenWrite();
-                                rndTagProfileByGeneWriter.WriteLine("Gene\tBarcode\tTrPos\tReadCountsByRndTagIdx");
+                                rndTagProfileByGeneWriter.WriteLine("Gene\tBarcode\tTrPos\tEstMolCount\tReadCountsByRndTagIdx");
                             }
                             int trPos = (gf.Strand == '+') ? 1 + trPosInChrDir : 1 + gf.Length - trPosInChrDir;
-                            rndTagProfileByGeneWriter.Write("{0}\t{1}\t{2}", gf.Name, barcodes.Seqs[currentBcIdx], trPos);
+                            rndTagProfileByGeneWriter.Write("{0}\t{1}\t{2}", gf.Name, barcodes.Seqs[currentBcIdx], trPos, estMolCount);
                             foreach (byte count in profile)
                                 rndTagProfileByGeneWriter.Write("\t" + count);
                             rndTagProfileByGeneWriter.WriteLine();

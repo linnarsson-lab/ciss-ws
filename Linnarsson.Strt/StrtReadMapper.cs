@@ -98,7 +98,7 @@ namespace Linnarsson.Strt
             string genomeFolder = PathHandler.GetGenomeSequenceFolder(genome);
             string spliceChrFile = null;
             List<string> realChrFiles = new List<string>();
-            foreach (string f in Directory.GetFiles(genomeFolder, "*chr*.fa"))
+            foreach (string f in Directory.GetFiles(genomeFolder, "chr*"))
             {
                 string filename = Path.GetFileName(f);
                 if (genome.IsBuildSpliceChr(filename))

@@ -141,6 +141,25 @@ namespace Linnarsson.Strt
         {
         }
 
+        private bool IssueNonQuery(string sql)
+        {
+            bool success = true;
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            try
+            {
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                success = false;
+            }
+            conn.Close();
+            return success;
+        }
+
         private int nextInQueue = 0;
         public void ResetQueue()
         {
@@ -216,20 +235,9 @@ namespace Linnarsson.Strt
 
         public void UpdateDB(ProjectDescription projDescr)
         {
-            MySqlConnection conn = new MySqlConnection(connectionString);
             string sql = string.Format("UPDATE jos_aaaanalysis SET status=\"{0}\" WHERE id=\"{1}\";",
                                        projDescr.status, projDescr.analysisId);
-            try
-            {
-                conn.Open();
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                cmd.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-            conn.Close();
+            IssueNonQuery(sql);
         }
 
         public void PublishResults(ProjectDescription projDescr)
@@ -350,20 +358,51 @@ namespace Linnarsson.Strt
 
         public void UpdateMailTaskStatus(string id, string status)
         {
-            MySqlConnection conn = new MySqlConnection(connectionString);
             string sql = string.Format("UPDATE jos_aaafqmailqueue SET status='{0}' WHERE id='{1}'", status, id);
+            IssueNonQuery(sql);
+        }
+
+        public bool AddToBackupQueue(string readFile, int priority)
+        {
+            string sql = string.Format("INSERT INTO jos_aaabackupqueue (path, status, priority) VALUES ('{0}', 'inqueue', '{1}')", readFile, priority);
+            return IssueNonQuery(sql);
+        }
+
+        public bool SetBackupStatus(string readFile, string status)
+        {
+            string sql = string.Format("UPDATE jos_aaabackupqueue SET status='{0}' WHERE path='{1}'", status, readFile);
+            return IssueNonQuery(sql);
+        }
+
+        public bool RemoveFileToBackup(string readFile)
+        {
+            string sql = string.Format("DELETE FROM jos_aaabackupqueue WHERE path='{0}'", readFile);
+            return IssueNonQuery(sql);
+        }
+
+        public List<string> GetWaitingFilesToBackup()
+        {
+            List<string> waitingFiles = new List<string>();
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            string sql = "SELECT path FROM jos_aaabackupqueue WHERE status='inqueue' ORDER BY priority, id";
             try
             {
                 conn.Open();
                 MySqlCommand cmd = new MySqlCommand(sql, conn);
-                cmd.ExecuteNonQuery();
+                MySqlDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                {
+                    string file = rdr["path"].ToString();
+                    waitingFiles.Add(file);
+                }
+                rdr.Close();
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
             conn.Close();
+            return waitingFiles;
         }
-
     }
 }

@@ -15,7 +15,14 @@ namespace Linnarsson.Strt
 {
     public class UCSCGenomeAnnotations : AbstractGenomeAnnotations
     {
+        /// <summary>
+        /// Keeps number of overlapping exons for counter-orientation overlapping genes.
+        /// The Keys follow the pattern "GeneName1#GeneName2"
+        /// </summary>
         Dictionary<string, int> antisensePairExons = new Dictionary<string, int>();
+        /// <summary>
+        /// Used during gene loading to bind splices correctly to genes
+        /// </summary>
         private string lastLoadedGeneName;
 
         public UCSCGenomeAnnotations(Props props, StrtGenome genome)
@@ -74,9 +81,46 @@ namespace Linnarsson.Strt
         private void MarkUpOverlappingFeatures(string chrId, char strand, out int nMaskedExons,
                                               out int nMaskedGenes, out int totalMaskedLength)
         {
-            int[] exonStarts = new int[30000];
-            int[] exonEnds = new int[30000];
-            GeneFeature[] gFeatureByExon = new GeneFeature[30000];
+            int[] exonStarts;
+            int[] exonEnds;
+            GeneFeature[] geneFeatureByExon;
+            CollectExonsOfAllGenes(chrId, strand, out exonStarts, out exonEnds, out geneFeatureByExon);
+            char revStrand = (strand == '+')? '-' : '+';
+            nMaskedGenes = 0; nMaskedExons = 0; totalMaskedLength = 0;
+            foreach (GeneFeature gf in geneFeatures.Values)
+            {
+                if (gf.Chr == chrId)
+                {
+                    gf.MaskInterExons(exonStarts, exonEnds, strand);
+                    if (gf.Strand == revStrand)
+                    {
+                        List<int> indicesOfMasked = gf.MaskExons(exonStarts, exonEnds);
+                        if (indicesOfMasked.Count > 0)
+                        {
+                            nMaskedExons += indicesOfMasked.Count;
+                            nMaskedGenes++;
+                            totalMaskedLength += gf.GetTranscriptLength() - gf.GetNonMaskedTranscriptLength();
+                            foreach (int idx in indicesOfMasked)
+                            {
+                                string[] names = new string[] { gf.Name, geneFeatureByExon[idx].Name };
+                                Array.Sort(names);
+                                string gfPair = string.Join("#", names);
+                                if (!antisensePairExons.ContainsKey(gfPair))
+                                    antisensePairExons[gfPair] = 1;
+                                else
+                                    antisensePairExons[gfPair]++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private void CollectExonsOfAllGenes(string chrId, char strand, out int[] exonStarts, out int[] exonEnds, out GeneFeature[] gFeatureByExon)
+        {
+            exonStarts = new int[30000];
+            exonEnds = new int[30000];
+            gFeatureByExon = new GeneFeature[30000];
             int exonIdx = 0;
             foreach (GeneFeature gf in geneFeatures.Values)
             {
@@ -98,35 +142,6 @@ namespace Linnarsson.Strt
             Array.Resize(ref exonEnds, exonIdx);
             Array.Resize(ref gFeatureByExon, exonIdx);
             Sort.QuickSort(exonStarts, exonEnds, gFeatureByExon);
-            char revStrand = (strand == '+')? '-' : '+';
-            nMaskedGenes = 0; nMaskedExons = 0; totalMaskedLength = 0;
-            foreach (GeneFeature gf in geneFeatures.Values)
-            {
-                if (gf.Chr == chrId)
-                {
-                    gf.MaskInterExons(exonStarts, exonEnds, strand);
-                    if (gf.Strand == revStrand)
-                    {
-                        List<int> indicesOfMasked = gf.MaskExons(exonStarts, exonEnds);
-                        if (indicesOfMasked.Count > 0)
-                        {
-                            nMaskedExons += indicesOfMasked.Count;
-                            nMaskedGenes++;
-                            totalMaskedLength += gf.GetTranscriptLength() - gf.GetNonMaskedTranscriptLength();
-                            foreach (int idx in indicesOfMasked)
-                            {
-                                string[] names = new string[] { gf.Name, gFeatureByExon[idx].Name };
-                                Array.Sort(names);
-                                string gfPair = string.Join("#", names);
-                                if (!antisensePairExons.ContainsKey(gfPair))
-                                    antisensePairExons[gfPair] = 1;
-                                else
-                                    antisensePairExons[gfPair]++;
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         private void ReadChromsomeSequences(Dictionary<string, string> chrIdToFileMap, int nFiles)
@@ -341,9 +356,9 @@ namespace Linnarsson.Strt
             {
                 CmdCaller.Run("php", "strt2Qsingle.php " + rpmFile);
             }
-            if (GeneFeature.GenerateTranscriptProfiles)
+            if (props.GenerateTranscriptProfiles)
                 WriteTranscriptHitsByGeneLocus(fileNameBase, averageReadLen);
-            if (GeneFeature.GenerateLocusProfiles)
+            if (props.GenerateGeneLocusProfiles)
                 WriteLocusHitsByGeneLocus(fileNameBase);
             WriteExpressedAntisenseGenes(fileNameBase);
             if (props.GenesToPaint != null && props.GenesToPaint.Length > 0)

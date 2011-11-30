@@ -49,29 +49,34 @@ namespace Linnarsson.Strt
         }
     }
 
+    /// <summary>
+    /// Verifies that the same SNP occurs in all reads stemming from the same molecule (i.e. having equal chr, pos, bc, rndTag)
+    /// Requires that props.AnalyzeSNPs is turned on.
+    /// </summary>
     public class SnpRndTagVerifier
     {
         public Dictionary<int, SnpRndTagData[]> data = new Dictionary<int, SnpRndTagData[]>();
         public static string verificationChr;
         private Props props;
-
         /// <summary>
         /// Expecting the same chromosome for all data
         /// </summary>
         /// <param name="pos"></param>
         /// <param name="nBarcodes"></param>
-        public SnpRndTagVerifier(Props props)
+        public SnpRndTagVerifier(Props props, MapFileSnpFinder mfsf)
         {
             this.props = props;
             verificationChr = props.SnpRndTagVerificationChr;
-            int[] verPositions = props.SnpRndTagVerificationPositions;
             int nBarcodes = props.Barcodes.Count;
             int nRndTags = props.Barcodes.RandomBarcodeCount;
-            foreach (int pos in verPositions)
+            foreach (LocatedSNPCounter locSNP in mfsf.IterSNPLocations())
             {
-                data[pos] = new SnpRndTagData[nBarcodes];
-                for (int i = 0; i < nBarcodes; i++)
-                    data[pos][i] = new SnpRndTagData(nRndTags);
+                if (locSNP.chr == verificationChr)
+                {
+                    data[locSNP.chrPos] = new SnpRndTagData[nBarcodes];
+                    for (int i = 0; i < nBarcodes; i++)
+                        data[locSNP.chrPos][i] = new SnpRndTagData(nRndTags);
+                }
             }
         }
 

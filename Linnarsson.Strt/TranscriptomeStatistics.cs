@@ -316,7 +316,7 @@ namespace Linnarsson.Strt
                             }
                             int trPos = (gf.Strand == '+') ? 1 + trPosInChrDir : 1 + gf.Length - trPosInChrDir;
                             rndTagProfileByGeneWriter.Write("{0}\t{1}\t{2}\t{3}", gf.Name, barcodes.Seqs[currentBcIdx], trPos, estMolCount);
-                            foreach (byte count in profile)
+                            foreach (int count in profile)
                                 rndTagProfileByGeneWriter.Write("\t" + count);
                             rndTagProfileByGeneWriter.WriteLine();
                         }

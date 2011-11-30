@@ -144,6 +144,10 @@ namespace Linnarsson.Strt
             return item.Add(rndTagIdx);
         }
 
+        /// <summary>
+        /// Iterate through the TagItem count data for every (position, strand) hit in this chromosome
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<MappedTagItem> IterItems()
         {
             MappedTagItem item = new MappedTagItem();
@@ -280,7 +284,7 @@ namespace Linnarsson.Strt
         /// Histogram of number of times (reads) every molecule has been seen
         /// </summary>
         public int[] moleculeReadCountsHistogram;
-        public static readonly int MaxValueInReadCountHistogram = 255;
+        public static readonly int MaxValueInReadCountHistogram = 1000;
 
         /// <summary>
         /// Number of reads that are copies of a first distinct read in each barcode.
@@ -382,6 +386,10 @@ namespace Linnarsson.Strt
             return isNew | !hasRndTags;
         }
 
+        /// <summary>
+        /// Iterate through the TagItem count data for every (chr, position, strand) hit by some read
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<MappedTagItem> IterItems()
         {
             foreach (KeyValuePair<string, ChrTagData> chrData in chrTagDatas)
@@ -422,17 +430,5 @@ namespace Linnarsson.Strt
                 nAllChr += chrTagData.GetNumDistinctMappings();
             return nAllChr;
         }
-
-        /// <summary>
-        /// </summary>
-        /// <returns>Total number of distinct molecules</returns>
-        public int GetNumUniqueMolecules()
-        {
-            int n = 0;
-            foreach (int c in nUniqueByBarcode)
-                n += c;
-            return n;
-        }
-
     }
 }

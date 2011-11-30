@@ -26,6 +26,11 @@ namespace Linnarsson.Dna
         public static readonly int Count = SenseCount * 2;
 
         public static bool DirectionalReads = true;
+        /// <summary>
+        /// Check if the annotType is a transcript (exon or splice) under the setting for directional read
+        /// </summary>
+        /// <param name="annotType"></param>
+        /// <returns></returns>
         public static bool IsTranscript(int annotType)
         {
             return annotType == EXON || annotType == SPLC

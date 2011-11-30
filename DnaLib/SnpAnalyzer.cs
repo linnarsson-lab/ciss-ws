@@ -6,27 +6,6 @@ using System.IO;
 
 namespace Linnarsson.Dna
 {
-    public struct SNPInfo
-    {
-        private uint bcIdxRndTagNt;
-        public int LocusPos;
-        public char Nt { get { return "ACGT"[(int)(bcIdxRndTagNt & 3)]; } }
-        public int bcIdx { get { return (int)(bcIdxRndTagNt >> 16) & 255; } }
-        public int rndTag { get { return (int)(bcIdxRndTagNt >> 2) & 255; } }
-
-        public SNPInfo(char Nt, int bcIdx, int locusPos, int rndTag)
-        {
-            this.bcIdxRndTagNt = ((uint)bcIdx << 16) | ((uint)rndTag << 2) | (uint)"ACGT".IndexOf(Nt);
-            this.LocusPos = locusPos;
-        }
-        public static int Compare(SNPInfo info1, SNPInfo info2)
-        {
-            if (info1.LocusPos > info2.LocusPos) return 1;
-            if (info1.LocusPos < info2.LocusPos) return -1;
-            return info1.bcIdxRndTagNt.CompareTo(info2.bcIdxRndTagNt);
-        }
-    }
-
     public class SnpAnalyzer
     {
         public static readonly int minAltHitsToTestSnpPos = 10;

@@ -32,7 +32,7 @@ namespace Linnarsson.Dna
                 if (readCounts[i] > 0)
                     AddCount(readWiggle, pos, readCounts[i]);
                 if (molCounts[i] > 0)
-                    AddCount(readWiggle, pos, molCounts[i]);
+                    AddCount(molWiggle, pos, molCounts[i]);
             }
         }
 
@@ -68,18 +68,28 @@ namespace Linnarsson.Dna
         /// Get number of reads spanning across a position.
         /// Note that this implementation requires all reads to be of almost same length for correct wiggle.
         /// </summary>
-        /// <param name="pos"></param>
-        /// <param name="averageReadLength">Since each read's length is not stored, use Ceiling of average read len for complete coverage</param>
-        /// <param name="margin">Sometimes you only want to count reads that are surely spanning the position</param>
-        /// <returns></returns>
+        /// <param name="pos">position on chromosome</param>
+        /// <param name="averageReadLength">Since each read's length is not stored, call with Ceiling(the average readLen) for complete coverage</param>
+        /// <param name="margin">Sometimes you only want to count reads that are surely spanning the position, then specifiy min overhang here</param>
+        /// <returns>Number of reads covering position</returns>
         public int GetReadCount(int pos, int averageReadLength, int margin)
         {
             return GetCount(readWiggle, pos, averageReadLength, margin);
         }
+
+        /// <summary>
+        /// Get number of molecules spanning across a position.
+        /// Note that this implementation requires all reads to be of almost same length for correct wiggle.
+        /// </summary>
+        /// <param name="pos">position on chromosome</param>
+        /// <param name="averageReadLength">Since each read's length is not stored, call with Ceiling(the average readLen) for complete coverage</param>
+        /// <param name="margin">Sometimes you only want to count reads that are surely spanning the position, then specifiy min overhang here</param>
+        /// <returns>Number of molecules covering position</returns>
         public int GetMolCount(int pos, int averageReadLength)
         {
             return GetCount(molWiggle, pos, averageReadLength, 0);
         }
+
         private int GetCount(SortedDictionary<int, int> wData, int pos, int averageReadLength, int margin)
         {
             int count = 0;
@@ -88,10 +98,15 @@ namespace Linnarsson.Dna
             return count;
         }
 
+        /// <summary>
+        /// Get hit positions and respective read count for all reads
+        /// </summary>
+        /// <param name="positions"></param>
+        /// <param name="countAtEachPosition"></param>
         public void GetReadPositionsAndCounts(out int[] positions, out int[] countAtEachPosition)
         {
             positions = readWiggle.Keys.ToArray();
-            countAtEachPosition = readWiggle.Keys.ToArray();
+            countAtEachPosition = readWiggle.Values.ToArray();
         }
 
         public void WriteMolWiggle(StreamWriter writer, string chr, char strand, int averageReadLength, int chrLength)
@@ -106,10 +121,20 @@ namespace Linnarsson.Dna
         {
             int strandSign = (strand == '+') ? 1 : -1;
             int[] positions = wData.Keys.ToArray();
-            int[] countAtEachPosition = wData.Keys.ToArray();
+            int[] countAtEachPosition = wData.Values.ToArray();
             WriteToWigFile(writer, chr, readLength, strandSign, chrLength, positions, countAtEachPosition);
         }
 
+        /// <summary>
+        /// Output wiggle formatted data for one strand of a chromosome
+        /// </summary>
+        /// <param name="writer">output file handler</param>
+        /// <param name="chr">id of chromosome</param>
+        /// <param name="readLength">average read length</param>
+        /// <param name="strandSign">1 for forward, -1 for reverse</param>
+        /// <param name="chrLength">(approximate) length of chromosome</param>
+        /// <param name="positions">start positions of reads on chromomsome</param>
+        /// <param name="countAtEachPosition">number of reads at every start position</param>
         public static void WriteToWigFile(StreamWriter writer, string chr, int readLength, int strandSign, int chrLength,
                                            int[] positions, int[] countAtEachPosition)
         {

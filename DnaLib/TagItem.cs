@@ -5,6 +5,9 @@ using System.Text;
 
 namespace Linnarsson.Dna
 {
+    /// <summary>
+    /// Keeps TagItems together with their location during the annotation step
+    /// </summary>
     public class MappedTagItem
     {
         public static int AverageReadLen;
@@ -60,14 +63,24 @@ namespace Linnarsson.Dna
     
     }
 
+    /// <summary>
+    /// TagItem summarize all reads that map to a specific (chr, pos, strand) combination.
+    /// </summary>
     public class TagItem
     {
         public static int nRndTags;
-
-        // TagItem summarize all reads that map to a specific (chr, pos, strand) combination.
-        private ushort[] molCounts; // Count of reads in each rndTag like before
-        public RndTagSNPData SNPData; // SNP data for known SNP positions by offsets from read startPos. Only valid when hasAltMappings == false
-        public bool hasAltMappings; // true when the (chr, pos, strand) read seq is not unique in genome.
+        /// <summary>
+        /// Counts number of reads in each rndTag
+        /// </summary>
+        private ushort[] readCountsByRndTag;
+        /// <summary>
+        /// SNP data for known SNP positions by offsets from read startPos. Only valid when hasAltMappings == false
+        /// </summary>
+        public RndTagSNPData SNPData;
+        /// <summary>
+        /// true when the read sequence at the (chr, pos, strand) of this TagItem is not unique in genome.
+        /// </summary>
+        public bool hasAltMappings;
 
         // molCount & snpCount can probably be reduced to byte once we know how to detect
         // saturation of reads and mutation rates for mutation removal.
@@ -87,13 +100,6 @@ namespace Linnarsson.Dna
         // The process of first counting all reads before annotating, loses the readLen of each
         // read. Maybe a stronger limit on min readLen should be used, and small A-tails not be removed,
         // so that a constant readLen can be assumed.
-        //
-        // This setup allows only one SNP within the readLen window of this TagItem.
-        // ...handle that e.g. by changing offset and Nt when detecting a new and count is only <= 1.
-        // snpCount should be 0 or equal to molCount, otherwise the molecule is probably really
-        // two mixed molecules, one from each allele (ca.50/50), or due to a mutation during PCR (any ratio).
-        // Whether the SNP is real can be inferred by scanning all rndTags of TagItems spanning the SNP position.
-        // Then, every molecule that spans a SNP can be assigned to either allele.
         
         public TagItem(bool hasAltMappings)
         {
@@ -108,26 +114,26 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Clear data for handling the next barcode
+        /// Clear data before handling the next barcode
         /// </summary>
         public void Clear()
         {
-            molCounts = null;
+            readCountsByRndTag = null;
             if (SNPData != null)
                 SNPData.Clear();
         }
 
         /// <summary>
-        /// Add a read to the data, skipping any SNP annotations
+        /// Add a read to the data, ignoring any SNP annotations
         /// </summary>
         /// <param name="rndTagIdx"></param>
         /// <returns>True if the rndTag is new</returns>
         public bool Add(int rndTagIdx)
         {
-            if (molCounts == null)
-                molCounts = new ushort[nRndTags];
-            int currentCount = molCounts[rndTagIdx];
-            molCounts[rndTagIdx] = (ushort)Math.Min(ushort.MaxValue, currentCount + 1);
+            if (readCountsByRndTag == null)
+                readCountsByRndTag = new ushort[nRndTags];
+            int currentCount = readCountsByRndTag[rndTagIdx];
+            readCountsByRndTag[rndTagIdx] = (ushort)Math.Min(ushort.MaxValue, currentCount + 1);
             return currentCount == 0;
         }
 
@@ -156,7 +162,7 @@ namespace Linnarsson.Dna
             return snpc;
         }
 
-        public bool HasReads { get { return molCounts != null; } }
+        public bool HasReads { get { return readCountsByRndTag != null; } }
         public bool HasSNPs { get { return SNPData != null; } }
 
         /// <summary>
@@ -166,8 +172,8 @@ namespace Linnarsson.Dna
         public int GetNumReads()
         {
             int n = 0;
-            if (molCounts != null)
-                foreach (int c in molCounts) n += c;
+            if (readCountsByRndTag != null)
+                foreach (int c in readCountsByRndTag) n += c;
             return n;
         }
 
@@ -178,12 +184,12 @@ namespace Linnarsson.Dna
         public List<int> GetValidMolRndTags()
         {
             List<int> validTagIndices = new List<int>();
-            if (molCounts != null)
+            if (readCountsByRndTag != null)
             {
-                int maxNumReads = molCounts.Max();
+                int maxNumReads = readCountsByRndTag.Max();
                 int cutOff = maxNumReads / 10;
-                for (int rndTagIdx = 0; rndTagIdx < molCounts.Length; rndTagIdx++)
-                    if (molCounts[rndTagIdx] > cutOff) validTagIndices.Add(rndTagIdx);
+                for (int rndTagIdx = 0; rndTagIdx < readCountsByRndTag.Length; rndTagIdx++)
+                    if (readCountsByRndTag[rndTagIdx] > cutOff) validTagIndices.Add(rndTagIdx);
             }
             return validTagIndices;
         }
@@ -192,15 +198,17 @@ namespace Linnarsson.Dna
         /// Get number of molecules at this position-strand.
         /// Simple % cutoff used to get rid of mutated rndTags.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Number of molecules (mutated rndTags excluded), or number of reads if no rndTags were used.</returns>
         public int GetNumMolecules()
         {
             int n = 0;
-            if (molCounts != null)
+            if (readCountsByRndTag != null)
             {
-                int maxNumReads = molCounts.Max();
+                if (nRndTags == 1)
+                    return readCountsByRndTag[0];
+                int maxNumReads = readCountsByRndTag.Max();
                 int cutOff = maxNumReads / 10;
-                foreach (int c in molCounts)
+                foreach (int c in readCountsByRndTag)
                     if (c > cutOff) n++;
             }
             return n;
@@ -212,7 +220,7 @@ namespace Linnarsson.Dna
         /// <returns>null if no reads have been found</returns>
         public ushort[] GetReadCountsByRndTag()
         {
-            return molCounts;
+            return readCountsByRndTag;
         }
 
     }

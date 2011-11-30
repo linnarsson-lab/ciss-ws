@@ -13,10 +13,11 @@ namespace BkgBackuper
 {
     class Program
     {
-        static int minutesWait = 15;
+        static int minutesWait = 10;
         static string backupDest = "hiseq@130.237.142.75:/mnt/davidson/hiseq/data_reads/";
         static int startHour = 19;
         static int stopHour = 7;
+        static int nExceptions = 0;
         static string readsFolder = Props.props.ReadsFolder;
         static double currentBytesPerHour = 10.0E+9;
 
@@ -59,7 +60,7 @@ namespace BkgBackuper
                                   "-o<scp_dest> - specify a non-standard destination\n" +
                                   "--on <int>   - specify a non-standard start hour (default=" + startHour + ")\n" +
                                   "--off <int>  - specify a non-standard stop hour (default=" + stopHour + ")\n" +
-                                  "Put in crontab for starting every evening on weekdays.\n" +
+                                  "Put in crontab for starting at every reboot.\n" +
                                   "Destination defaults to " + backupDest +
                                   "\nLogfile defaults to a name with Pid included like: " + logFile);
                 return;
@@ -73,18 +74,25 @@ namespace BkgBackuper
             logWriter.WriteLine("Starting BkgBackuper at " + DateTime.Now.ToString());
             logWriter.Flush();
             Console.WriteLine("BkgBackuper started at " + DateTime.Now.ToString() + " and logging to " + logFile);
-
-            DateTime now = DateTime.Now;
-            while (now.DayOfWeek == DayOfWeek.Saturday || now.DayOfWeek == DayOfWeek.Sunday ||
-                   now.Hour > startHour || now.Hour < stopHour)
+            
+            while (nExceptions < 30)
             {
-                bool didSomeCopy = TryCopy(logWriter);
-                if (!didSomeCopy)
-                    Thread.Sleep(1000 * 60 * minutesWait);
-                now = DateTime.Now;
+                bool canCopy = true;
+                while (TimeOfDayOK() && canCopy)
+                {
+                    canCopy = TryCopy(logWriter);
+                }
+                Thread.Sleep(1000 * 60 * minutesWait);
             }
             logWriter.WriteLine("BkgBackuper quit at " + DateTime.Now.ToString());
             logWriter.Close();
+        }
+
+        private static bool TimeOfDayOK()
+        {
+            DateTime now = DateTime.Now;
+            return (now.DayOfWeek == DayOfWeek.Saturday || now.DayOfWeek == DayOfWeek.Sunday ||
+                       now.Hour > startHour || now.Hour < stopHour);
         }
 
         private static bool TryCopy(StreamWriter logWriter)
@@ -95,6 +103,11 @@ namespace BkgBackuper
             {
                 foreach (string readFile in readFiles)
                 {
+                    if (!File.Exists(readFile))
+                    {
+                        new ProjectDB().SetBackupStatus(readFile, "missing");
+                        continue;
+                    }
                     long fileLen = new FileInfo(readFile).Length;
                     long maxLenLeft = GetMaxBytesLeft();
                     Console.WriteLine("Testing " + readFile + " size=" + fileLen + " against maxSize=" + maxLenLeft);
@@ -114,7 +127,7 @@ namespace BkgBackuper
                                 new ProjectDB().RemoveFileToBackup(readFile);
                                 TimeSpan timeTaken = DateTime.Now.Subtract(startTime);
                                 currentBytesPerHour = fileLen / timeTaken.TotalHours;
-                                logWriter.WriteLine("...speed: " + currentBytesPerHour / Math.Pow(2.0, 20) + " Gbytes/hour");
+                                logWriter.WriteLine(DateTime.Now.ToString() + "...speed: " + currentBytesPerHour / Math.Pow(2.0, 30) + " Gbytes/hour");
                                 logWriter.Flush();
                             }
                         }
@@ -123,6 +136,7 @@ namespace BkgBackuper
                             new ProjectDB().SetBackupStatus(readFile, "inqueue");
                             logWriter.WriteLine("*** ERROR: Exception in BkgBackuper: ***\n" + exp);
                             logWriter.Flush();
+                            nExceptions++;
                         }
                     }
                 }

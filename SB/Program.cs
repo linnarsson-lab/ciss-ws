@@ -287,10 +287,10 @@ namespace CmdSilverBullet
 
                         case "synt":
                             CheckArgs(args, 5, 5);
-                            props.BarcodesName = args[1];
-                            mapper = new StrtReadMapper(props);
+                            barcodes = Barcodes.GetBarcodes(args[1]);
+                            SyntReadMaker srm = new SyntReadMaker(barcodes);
                             genome = StrtGenome.GetGenome(args[2], args[3].StartsWith("a"));
-                            mapper.SynthetizeReads(genome, args[4]);
+                            srm.SynthetizeReads(genome, args[4]);
                             break;
 
                         default:

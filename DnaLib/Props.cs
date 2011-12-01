@@ -71,7 +71,7 @@ namespace Linnarsson.Dna
         public string BowtieMultiOptions = "--phred64-quals -a -v MaxAlignmentMismatches -M BowtieMaxNumAltMappings --best";
         public int BowtieMaxNumAltMappings = 5; // Value to replace in BowtieMultiOptions
         public double SyntheticReadsRandomMutationProb = 0.005; // Used only in synthetic data construction
-        public double SyntheticReadsBackgroundFreq = 0.001; // Frequency of random background reads in synthetic data
+        public double SyntheticReadsBackgroundFreq = 0.0001; // Frequency of random background reads in synthetic data
         public bool SynthesizeReadsFromGeneVariants = false; // Used only in synthetic data construction
         public string TestAnalysisFileMarker = "SYNT_READS"; // Indicator in files related to synthesized test reads
         public int MaxFeatureLength = 2500000; // Longer features (loci) are excluded from analysis

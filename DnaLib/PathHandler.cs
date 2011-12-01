@@ -53,7 +53,7 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="genome">Genome to pick sequences from</param>
         /// <returns></returns>
-        public Dictionary<string, string> GetGenomeFilesMap(StrtGenome genome)
+        public static Dictionary<string, string> GetGenomeFilesMap(StrtGenome genome)
         {
             string genomeFolder = GetGenomeSequenceFolder(genome);
             string[] chrFiles = GetFilesOrGz(genomeFolder, "chr*");
@@ -102,12 +102,12 @@ namespace Linnarsson.Dna
             return Path.Combine(projectFolder, "Run00000_L0_1_" + Props.props.TestAnalysisFileMarker + ".levels");
         }
 
-        public string GetAnnotationsPath(StrtGenome genome)
+        public static string GetAnnotationsPath(StrtGenome genome)
         {
             return Path.Combine(GetGenomeSequenceFolder(genome), genome.GetAnnotationsFileName());
         }
 
-        public string GetJunctionChrPath(StrtGenome genome)
+        public static string GetJunctionChrPath(StrtGenome genome)
         {
             return Path.Combine(GetGenomeSequenceFolder(genome), genome.GetJunctionChrFileName());
         }

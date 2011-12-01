@@ -19,7 +19,7 @@ namespace BkgBackuper
         static int stopHour = 7;
         static int nExceptions = 0;
         static string readsFolder = Props.props.ReadsFolder;
-        static double currentBytesPerHour = 10.0E+9;
+        static double currentBytesPerHour = 7.0E+9;
 
         static void Main(string[] args)
         {
@@ -49,6 +49,8 @@ namespace BkgBackuper
                     else throw new ArgumentException("OptionError");
                     i++;
                 }
+                if (startHour <= stopHour)
+                    throw new ArgumentException("Start hour has to be after stop hour!");
             }
             catch (Exception e)
             {
@@ -108,9 +110,12 @@ namespace BkgBackuper
                         new ProjectDB().SetBackupStatus(readFile, "missing");
                         continue;
                     }
+                    int hoursLeft = GetHoursLeft();
+                    long maxLenLeft =  (long)Math.Floor(currentBytesPerHour * hoursLeft);
+                    int maxMbLeft = (int)Math.Floor(maxLenLeft / Math.Pow(2.0, 20));
                     long fileLen = new FileInfo(readFile).Length;
-                    long maxLenLeft = GetMaxBytesLeft();
-                    Console.WriteLine("Testing " + readFile + " size=" + fileLen + " against maxSize=" + maxLenLeft);
+                    int fileMb = (int)Math.Floor(fileLen / Math.Pow(2.0, 20));
+                    Console.WriteLine(hoursLeft + " hours and max " + maxMbLeft + " Mb allowed before stop time.");
                     if (fileLen < maxLenLeft)
                     {
                         triedSomeCopy = true;
@@ -124,7 +129,7 @@ namespace BkgBackuper
                             int cmdResult = CmdCaller.Run("scp", cmdArg);
                             if (cmdResult == 0)
                             {
-                                new ProjectDB().RemoveFileToBackup(readFile);
+                                new ProjectDB().SetBackupStatus(readFile, "copied");
                                 TimeSpan timeTaken = DateTime.Now.Subtract(startTime);
                                 currentBytesPerHour = fileLen / timeTaken.TotalHours;
                                 logWriter.WriteLine(DateTime.Now.ToString() + "...speed: " + currentBytesPerHour / Math.Pow(2.0, 30) + " Gbytes/hour");
@@ -144,14 +149,16 @@ namespace BkgBackuper
             return triedSomeCopy;
         }
 
-        public static long GetMaxBytesLeft()
+        public static int GetHoursLeft()
         {
-            double hoursLeft = 0.0;
-            if (DateTime.Now.DayOfWeek == DayOfWeek.Saturday) hoursLeft = 24.0;
-            else if (DateTime.Now.DayOfWeek == DayOfWeek.Friday && DateTime.Now.Hour > 16) hoursLeft = 48.0;
-            if (DateTime.Now.Hour < stopHour) hoursLeft += DateTime.Now.Hour;
-            else hoursLeft += stopHour + (24 - DateTime.Now.Hour);
-            return (long)Math.Round(currentBytesPerHour * hoursLeft);
+            int hoursLeft = 0;
+            if (DateTime.Now.DayOfWeek == DayOfWeek.Saturday) hoursLeft = 24;
+            else if (DateTime.Now.DayOfWeek == DayOfWeek.Friday && DateTime.Now.Hour >= startHour) hoursLeft = 48;
+            if (DateTime.Now.Hour < stopHour)
+                hoursLeft += stopHour - DateTime.Now.Hour;
+            else if (DateTime.Now.Hour >= startHour)
+                hoursLeft += stopHour + (24 - DateTime.Now.Hour);
+            return hoursLeft;
         }
     }
 }

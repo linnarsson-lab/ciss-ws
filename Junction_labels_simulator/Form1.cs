@@ -140,6 +140,7 @@ namespace Junction_labels_simulator
             double tsp_probability = Convert.ToDouble(tsp_probablt_txt.Text);
             int Discard_percentage = Convert.ToInt32(Discardtxt.Text);
             int Reads_in_million = Convert.ToInt32(ReadmTxt.Text) * 1000000;
+            int maxRead = Convert.ToInt32(maxreadtxt.Text);
             int count_N = 0;
             long molecule_id = 1;
             //MessageBox.Show("Select the Genome/Chromosome sequence files for test Chr21 from hg18");
@@ -250,7 +251,7 @@ namespace Junction_labels_simulator
                     output.Close();
                     // following code will generate a file with  sequence and transposons at each side of a sequence  
                     string Molecules_file =(Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "molecules_info.txt"));
-                    var output2 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones.txt")).OpenWrite();
+                    var output2 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposons.txt")).OpenWrite();
                     output2.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "Seq" + "\t"  + "Common Fragment 9L" + "\t"+ "ME19L"  + "\t" +"ME19R"+ "\t" + "Common Fragment 9R" + "\t" + "Total Seq" + "\t" + "Read Count");
                     string[] Tsp_lines = System.IO.File.ReadAllLines(Molecules_file);
                     
@@ -321,7 +322,7 @@ namespace Junction_labels_simulator
                                         //if (Tsp_N  <= Tsp_len/2)
                                         if (Tsp_N <= len / 2)
                                         {
-                                            readCount = rndRead.Next(10); // Need to change here *************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+                                            readCount = rndRead.Next(maxRead); // Need to change here *************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
                                             output2.WriteLine(Tsp_count - 1 + "\t" + Tsp_count + "\t" + Tsp_lineItems[0] + "\t" + Tsp_lineItems[1] + "\t" + (first_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + (second_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + /*Tsp_len*/len + "\t" + Tsp_ds + "\t" + CF9L + "\t" + ME19L  + "\t" + ME19R  + "\t" + CF9R + "\t" + (/*ME19L +*/ CF9L.ToString() + Tsp_ds + CF9R /*+ME19R*/) + "\t" + readCount);
                                         }
                                         Tsp_count++;
@@ -357,8 +358,8 @@ namespace Junction_labels_simulator
                     output2.Close();
 
                     // this code will introduce a 6bp random sequece at each side of a sequece
-                    string Tsp_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones.txt"));
-                    var output3 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones_N6.txt")).OpenWrite();
+                    string Tsp_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposons.txt"));
+                    var output3 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposons_N6.txt")).OpenWrite();
                     //output3.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "ME1_19" + "\t" + "Common Fragment 9L" + "\t" + "Seq" + "\t" + "Common Fragment 9R" + "\t" + "ME2_19" + "\t" + "Total Seq");
                     output3.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "ME19L" + "\t" + "N6_1" + "\t" + "ComnFrg 9L" + "\t" + "Seq" + "\t" + "ComnFrg 9R" + "\t" + "N6_2" + "\t" + "ME19R" + "\t" + "Read Count" + "\t" + "N6_1&ComnFrg9L" + "\t" + "ComnFrg9R&N6_2" + "\t" + "Total Seq");
                     string[] TspN6_lines = System.IO.File.ReadAllLines(Tsp_file);
@@ -388,7 +389,7 @@ namespace Junction_labels_simulator
                         break;
                     } 
                     // this code will generate 2 fastq files with fixed random quality score. To check the output replace the output4 and output5 with some other name******* 
-                    //string Totseq_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones.txt"));
+                    //string Totseq_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposons.txt"));
                     //var output4 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_1.fq")).OpenWrite();
                     //var output5 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_2.fq")).OpenWrite();
                     //string[] Totseq_lines = System.IO.File.ReadAllLines(Totseq_file);
@@ -470,15 +471,15 @@ namespace Junction_labels_simulator
                     //output4.Close();
                     //output5.Close();
                 qualitysection: ;
-                    string Totseq_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposones_N6.txt"));
+                    string Totseq_file = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_transposons_N6.txt"));
                     //string QualityScore=("\\192.168.1.12\data\reads\Run00007_L1_1_100521_GA2X_0007.fq");
                     FastQFile fq = FastQFile.Load("C:\\Indranil\\2011 work and activity\\denovo\\xaaz.fq", 64);
                     int errorcount = 0;
                     var output4 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_1.fq")).OpenWrite();
                     var output5 = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_reads_2.fq")).OpenWrite();
                     var errorOutput = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_errorOutput.txt")).OpenWrite();
-                    var outputF = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_F_seq.fq")).OpenWrite();
-                    var outputR = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_R_seq.fq")).OpenWrite();
+                    //var outputF = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_F_seq.fq")).OpenWrite();
+                    //var outputR = (Path.Combine(Path.GetDirectoryName(ofd1.FileName), Path.GetFileNameWithoutExtension(ofd1.FileName) + "_R_seq.fq")).OpenWrite();
                     string[] Totseq_lines = System.IO.File.ReadAllLines(Totseq_file);
                     
                     //Random rndReads = new Random();
@@ -627,8 +628,8 @@ namespace Junction_labels_simulator
                     output4.Close();
                     output5.Close();
                     errorOutput.Close();
-                    outputF.Close();
-                    outputR.Close();
+                    //outputF.Close();
+                    //outputR.Close();
                     MessageBox.Show(errorcount.ToString());
                     
 
@@ -982,7 +983,7 @@ namespace Junction_labels_simulator
                     fqRecord++;
                     errorHead2=fq.Records[fqRecord].Header.Split('\t');
                 } while (errorHead[0]!= errorHead2[0]);
-                MessageBox.Show(errorHead[0] + "and " + errorHead2[0]);
+                //MessageBox.Show(errorHead[0] + "and " + errorHead2[0]);
                 ShortDnaSequence errorseq = new ShortDnaSequence(fq.Records[fqRecord].Sequence);
                 char charPosition1=errorseq.GetNucleotide(Convert.ToInt64(errorHead[2])-1);
                 char charPosition2 = Convert.ToChar(errorHead[3]);
@@ -999,6 +1000,14 @@ namespace Junction_labels_simulator
             MessageBox.Show("End of Run!");
 
 
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd1 = new OpenFileDialog();
+            if (ofd1.ShowDialog() != DialogResult.OK) return;
+            FastQFile fq = FastQFile.Load(ofd1.FileName, 64);
+            MessageBox.Show(fq.Records.Count().ToString());
         }
 
        

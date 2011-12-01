@@ -45,6 +45,9 @@
             this.CompErrorbutton = new System.Windows.Forms.Button();
             this.UnConnButton = new System.Windows.Forms.Button();
             this.ButtonErrorCorr = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
+            this.maxreadtxt = new System.Windows.Forms.TextBox();
+            this.label7 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // LoadGenome
@@ -152,7 +155,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(76, 181);
+            this.label5.Location = new System.Drawing.Point(73, 182);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(92, 13);
             this.label5.TabIndex = 11;
@@ -170,7 +173,7 @@
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(79, 222);
+            this.label6.Location = new System.Drawing.Point(73, 219);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(80, 13);
             this.label6.TabIndex = 13;
@@ -206,11 +209,42 @@
             this.ButtonErrorCorr.UseVisualStyleBackColor = true;
             this.ButtonErrorCorr.Click += new System.EventHandler(this.ButtonErrorCorr_Click);
             // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(13, 419);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(184, 23);
+            this.button2.TabIndex = 17;
+            this.button2.Text = "Record Count in FQ file";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
+            // maxreadtxt
+            // 
+            this.maxreadtxt.Location = new System.Drawing.Point(275, 254);
+            this.maxreadtxt.Name = "maxreadtxt";
+            this.maxreadtxt.Size = new System.Drawing.Size(43, 20);
+            this.maxreadtxt.TabIndex = 18;
+            this.maxreadtxt.Text = "10";
+            this.maxreadtxt.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(73, 254);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(154, 13);
+            this.label7.TabIndex = 19;
+            this.label7.Text = "Max no of reads for a fragment ";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(571, 454);
+            this.Controls.Add(this.label7);
+            this.Controls.Add(this.maxreadtxt);
+            this.Controls.Add(this.button2);
             this.Controls.Add(this.ButtonErrorCorr);
             this.Controls.Add(this.UnConnButton);
             this.Controls.Add(this.CompErrorbutton);
@@ -255,6 +289,9 @@
         private System.Windows.Forms.Button CompErrorbutton;
         private System.Windows.Forms.Button UnConnButton;
         private System.Windows.Forms.Button ButtonErrorCorr;
+        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.TextBox maxreadtxt;
+        private System.Windows.Forms.Label label7;
     }
 }
 

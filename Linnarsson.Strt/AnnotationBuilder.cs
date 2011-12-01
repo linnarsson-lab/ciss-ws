@@ -193,7 +193,7 @@ namespace Linnarsson.Strt
             Console.WriteLine(annotationReader.GetPseudogeneCount() + " genes are annotated as pseudogenes.");
             Console.WriteLine("ReadLen=" + ReadLen + " MaxMismatches=" + MaxAlignmentMismatches + " MaxExonsSkip=" + MaxExonsSkip);
             DnaSequence jChrSeq = new LongDnaSequence();
-            Dictionary<string, string> chrIdToFileMap = ph.GetGenomeFilesMap(genome);
+            Dictionary<string, string> chrIdToFileMap = PathHandler.GetGenomeFilesMap(genome);
             StreamWriter annotWriter = PrepareAnnotationsFile(genome, newIndexName);
             StreamWriter chrWriter = PrepareJunctionChrFile(genome, junctionsChrId, newIndexName);
             foreach (string chrId in chrIdToFileMap.Keys)
@@ -293,7 +293,7 @@ namespace Linnarsson.Strt
 
         private StreamWriter PrepareJunctionChrFile(StrtGenome genome, string junctionChrId, string newIndexName)
         {
-            string jChrPath = (string.IsNullOrEmpty(newIndexName)) ? ph.GetJunctionChrPath(genome) :
+            string jChrPath = (string.IsNullOrEmpty(newIndexName)) ? PathHandler.GetJunctionChrPath(genome) :
                                             Path.Combine(PathHandler.GetGenomeSequenceFolder(genome), "chr_" + newIndexName + ".fa");
             Console.WriteLine("Artificial exon junction chromosome: " + jChrPath);
             if (File.Exists(jChrPath))
@@ -308,7 +308,7 @@ namespace Linnarsson.Strt
 
         private StreamWriter PrepareAnnotationsFile(StrtGenome genome, string newIndexName)
         {
-            string annotationsPath = (string.IsNullOrEmpty(newIndexName)) ? ph.GetAnnotationsPath(genome) :
+            string annotationsPath = (string.IsNullOrEmpty(newIndexName)) ? PathHandler.GetAnnotationsPath(genome) :
                                                 Path.Combine(PathHandler.GetGenomeSequenceFolder(genome), "Annotations_" + newIndexName + ".txt");
             Console.WriteLine("Annotations file: " + annotationsPath);
             if (File.Exists(annotationsPath))
@@ -349,7 +349,7 @@ namespace Linnarsson.Strt
             Dictionary<string, int> geneToNewPos = ReadErrorsFile(errorsPath);
             Console.WriteLine("There are {0} genes to have their first/last extended.", geneToNewPos.Count);
             Background.Progress(5);
-            string annotationPath = ph.GetAnnotationsPath(genome);
+            string annotationPath = PathHandler.GetAnnotationsPath(genome);
             long fileSize = new FileInfo(annotationPath).Length;
             string updatedPath = annotationPath + ".extended";
             StreamWriter writer = updatedPath.OpenWrite();

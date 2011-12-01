@@ -33,7 +33,7 @@ namespace Linnarsson.Strt
         public override void Load()
         {
             PathHandler ph = new PathHandler(props);
-            ChrIdToFileMap = ph.GetGenomeFilesMap(genome);
+            ChrIdToFileMap = PathHandler.GetGenomeFilesMap(genome);
             int nFiles = (int)(ChrIdToFileMap.Count * 1.3);
             Background.Progress(0);
             foreach (string chrId in ChrIdToFileMap.Keys)
@@ -252,7 +252,7 @@ namespace Linnarsson.Strt
 
         private void RegisterGenesAndIntervals(PathHandler ph)
         {
-            string annotationsPath = ph.GetAnnotationsPath(genome);
+            string annotationsPath = PathHandler.GetAnnotationsPath(genome);
             annotationsPath = PathHandler.ExistsOrGz(annotationsPath);
             if (annotationsPath == null)
                 throw new NoAnnotationsFileFoundException("Could not find annotation file: " + annotationsPath);
@@ -500,7 +500,7 @@ namespace Linnarsson.Strt
         {
             // Create a normal-form table of hit counts
             var tableFile = (fileNameBase + "_expression_list.tab").OpenWrite();
-            tableFile.WriteLine("Barcode\tFeature\tLevel");
+            tableFile.WriteLine("Barcode\tFeature\t#Hits");
             tableFile.WriteLine();
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             foreach (GeneFeature gf in geneFeatures.Values)
@@ -509,7 +509,7 @@ namespace Linnarsson.Strt
                 {
                     tableFile.Write(barcodes.Seqs[idx] + "\t");
                     tableFile.Write(gf.Name + "\t");
-                    tableFile.WriteLine(gf.TranscriptHitsByBarcode[idx].ToString());
+                    tableFile.WriteLine(gf.TranscriptHitsByBarcode[idx]);
                 }
             }
             tableFile.Close();
@@ -573,7 +573,7 @@ namespace Linnarsson.Strt
                 matrixFile.WriteLine("of AntiSense Exon hits, and the normalized {0} values for main gene transcripts in each barcode.", rpType);
             }
             if (!props.UseRPKM)
-                matrixFile.WriteLine("SingleRead is the RPM value that corresponds to a single read in each barcode.");
+                matrixFile.WriteLine("SingleRead is the RPM value that corresponds to a single molecule(read) in each barcode.");
             WriteBarcodeHeaders(matrixFile, 9);
             matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\tP=0.01\tP=0.001\tAverage\tCV");
             WriteRPMSection(matrixFile, true, null);

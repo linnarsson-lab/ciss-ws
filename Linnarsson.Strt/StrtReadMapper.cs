@@ -736,164 +736,6 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Generates synthetic transcript read data as a FASTA file for testing of the analysis pipeline.
-        /// Will avoid to pick polyA sequences that will not be accepted by the extraction step.
-        /// Generates random mutations depending of the Props settings.
-        /// </summary>
-        /// <param name="genome">Genome to pick reads from</param>
-        /// <param name="outputFolder">Name of file to write Fasta-formatted data to</param>
-        /// <param name="readLengthSamples">Array of read lengths to randomly sample from (lengths excluding barcode+GGG)</param>
-        /// <param name="readSpacing">Distance between sampled positions in transcripts</param>
-        public void SynthetizeReads(StrtGenome genome, string projectFolder)
-        {
-            int[] readLengthSamples = new int[10] {50, 50, 50, 50, 50, 50, 49, 48, 47, 46 };
-            int maxExprLevel = 10000;
-            double exprLevelTiltPower = 7.0;
-            double hotspotProb = 0.1;
-            double trPosTiltPower = 8.0;
-            double backgroundFreq = props.SyntheticReadsBackgroundFreq;
-            double randomMutationProb = props.SyntheticReadsRandomMutationProb;
-            bool variantGenes = genome.GeneVariants;
-            Background.Progress(0);
-            int maxReadLength = DescriptiveStatistics.Max(readLengthSamples);
-            string[] barcodesGGG = barcodes.GetBarcodesWithTSSeq();
-            PathHandler ph = new PathHandler(props);
-            string annotationsPath = ph.GetAnnotationsPath(genome);
-            annotationsPath = PathHandler.ExistsOrGz(annotationsPath);
-            if (annotationsPath == null)
-                throw new NoAnnotationsFileFoundException("Could not find annotation file: " + annotationsPath);
-            Console.WriteLine("Annotations are taken from " + annotationsPath);
-            Dictionary<string, string> chrIdToFileMap = ph.GetGenomeFilesMap(genome);
-            Dictionary<string, List<LocusFeature>> chrIdToFeature = new Dictionary<string, List<LocusFeature>>();
-            foreach (string chrId in chrIdToFileMap.Keys)
-            {
-                if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
-                chrIdToFeature[chrId] = new List<LocusFeature>();
-            }
-            Background.Message("Reading annotations...");
-            foreach (LocusFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(annotationsPath))
-                if (chrIdToFeature.ContainsKey(gf.Chr))
-                    chrIdToFeature[gf.Chr].Add(gf);
-            Random rnd = new Random();
-            int readNumber = 1;
-            projectFolder = PathHandler.GetRootedProjectFolder(projectFolder);
-            string readsFolder = Path.Combine(projectFolder, "Reads");
-            if (!Directory.Exists(readsFolder))
-                Directory.CreateDirectory(readsFolder);
-            string fastaOutput = Path.Combine(readsFolder, "Run00000_L0_1_" + props.TestAnalysisFileMarker + ".fasta");
-            string reportOutput = PathHandler.GetSyntLevelFile(projectFolder);
-            StreamWriter fastaWriter = fastaOutput.OpenWrite();
-            StreamWriter reportWriter = reportOutput.OpenWrite();
-            reportWriter.WriteLine("Synthetic data - parameters:\nBarcodeSet\t{0}\nGenome\t{1}\nMutationProb\t{2}",
-                                   barcodes.Name, genome.GetBowtieIndexName(), randomMutationProb);
-            reportWriter.WriteLine("MaxExprLevel\t{0}\nHotspotProb\t{1}\nBackgroundFreq\t{2}\n\nGeneFeature\tExprLevel",
-                                   maxExprLevel, hotspotProb, backgroundFreq);
-            int nTrSeqs = 0; int nBkgSeqs = 0; int chrIdx = 1;
-            foreach (string chrId in chrIdToFeature.Keys)
-            {
-                Background.Message("Processing chromosome " + chrId + "...");
-                Background.Progress((int)(chrIdx / chrIdToFeature.Keys.Count));
-                Console.Write(chrId + "."); Console.Out.Flush();
-                DnaSequence chrSeq = AbstractGenomeAnnotations.readChromosomeFile(chrIdToFileMap[chrId]);
-                int nChrBkgSeqs = rnd.Next((int)(chrSeq.Count * backgroundFreq));
-                nBkgSeqs += nChrBkgSeqs;
-                for (; nChrBkgSeqs >= 0; nChrBkgSeqs--)
-                {
-                    string extraGs = new String('G', Math.Max(0, rnd.Next(11) - 7));
-                    int bkgPos = rnd.Next((int)chrSeq.Count - maxReadLength);
-                    int seqPartLen = 1 + readLengthSamples[rnd.Next(readLengthSamples.Length)] - extraGs.Length;
-                    while (chrSeq.CountCases('N', bkgPos, bkgPos + seqPartLen) > seqPartLen / 2)
-                        bkgPos = rnd.Next((int)chrSeq.Count - maxReadLength);
-                    DnaSequence bkgSeq = chrSeq.SubSequence(bkgPos, seqPartLen);
-                    char bkgStrand = (rnd.NextDouble() < 0.5)? '+' : '-';
-                    if (bkgStrand == '-') bkgSeq.RevComp();
-                    string bkgReadSeq = bkgSeq.ToString().Replace("-", "N");
-                    string bkgMutations = Mutate(randomMutationProb, rnd, ref bkgReadSeq);
-                    string hdr = string.Format("Synt:BKG:{0}{1}:0:{2}{3}.{4}", chrId, bkgStrand, bkgPos, bkgMutations, readNumber++);
-                    string bcSeq = barcodesGGG[rnd.Next(barcodesGGG.Length)] + extraGs;
-                    fastaWriter.WriteLine(">" + hdr + "\n" + bcSeq + bkgReadSeq);
-                }
-                foreach (LocusFeature f in chrIdToFeature[chrId])
-                {
-                    GeneFeature gf = (GeneFeature)f;
-                    if (!variantGenes && gf.IsVariant())
-                        continue;
-                    if (gf.Length > props.MaxFeatureLength) continue;
-                    DnaSequence gfTrFwSeq = new LongDnaSequence(gf.Length);
-                    for (int exonIdx = 0; exonIdx < gf.ExonCount; exonIdx++)
-                    {
-                        int exonLen = 1 + gf.ExonEnds[exonIdx] - gf.ExonStarts[exonIdx];
-                        gfTrFwSeq.Append(chrSeq.SubSequence(gf.ExonStarts[exonIdx], exonLen));
-                    }
-                    if (gf.Strand == '-')
-                        gfTrFwSeq.RevComp();
-                    int maxPos = (int)gfTrFwSeq.Count - maxReadLength;
-                    if (maxPos < 1) continue;
-                    int targetExprLevel = (int)(Math.Pow(rnd.NextDouble(), exprLevelTiltPower) * maxExprLevel);
-                    int actualExprLevel = 0;
-                    foreach (int trPos in SyntReadPositions(targetExprLevel, trPosTiltPower, hotspotProb, maxPos))
-                    {
-                        string extraGs = new String('G', Math.Max(0, rnd.Next(11) - 7));
-                        int readLen = 1 + readLengthSamples[rnd.Next(readLengthSamples.Length)] - extraGs.Length;
-                        string exonReadSeq = gfTrFwSeq.SubSequence(trPos, readLen).ToString().Replace("-", "N");
-                        int nNonAs = 0;
-                        foreach (char rc in exonReadSeq)
-                            if (!"AaNn".Contains(rc)) nNonAs++;
-                        if (nNonAs <= props.MinExtractionInsertNonAs)
-                            continue;
-                        string mutations = Mutate(randomMutationProb, rnd, ref exonReadSeq);
-                        string hdr = string.Format("Synt:{0}:{1}{2}:{3}:{4}{5}.{6}", gf.Name, 
-                                                    gf.Chr, gf.Strand, gf.Start, trPos, mutations, readNumber++);
-                        string bcSeq = barcodesGGG[rnd.Next(barcodesGGG.Length)] + extraGs;
-                        fastaWriter.WriteLine(">" + hdr + "\n" + bcSeq + exonReadSeq);
-                        actualExprLevel++;
-                        nTrSeqs++;
-                    }
-                    reportWriter.WriteLine(gf.Name + "\t" + actualExprLevel);
-                }
-            }
-            Console.WriteLine("\nWrote " + nTrSeqs + " expressed gene and " + nBkgSeqs + " background reads to fasta file " + fastaOutput);
-            Console.WriteLine("Wrote parameters and levels to " + reportOutput);
-            fastaWriter.Close();
-            reportWriter.Close();
-            Background.Progress(100);
-        }
-
-        private static string Mutate(double randomMutationProb, Random rnd, ref string readSeq)
-        {
-            string mutations = "";
-            while (rnd.NextDouble() < randomMutationProb)
-            {
-                int mPos = rnd.Next(readSeq.Length);
-                int i = "ACGT".IndexOf(readSeq[mPos]);
-                char newNt = "ACGT"[(i + 1 + rnd.Next(3)) % 4];
-                mutations += ":" + mPos + readSeq[mPos] + ">" + newNt;
-                readSeq = readSeq.Substring(0, mPos) + newNt + readSeq.Substring(mPos + 1);
-            }
-            return mutations;
-        }
-
-        private IEnumerable<int> SyntReadPositions(int exprLevel, double tiltPower, double hotspotProb, int maxPos)
-        {
-            Random rnd = new Random();
-            int n = exprLevel;
-            while (n > 1 && rnd.NextDouble() < hotspotProb)
-            {
-                int hotspotPos = rnd.Next(maxPos);
-                int hotspotCount = rnd.Next(n / 5);
-                for (int i = 0; i < hotspotCount; i++)
-                    yield return hotspotPos;
-                n -= hotspotCount;
-            }
-            for (; n >= 0; n--)
-            {
-                double relPos = Math.Pow(rnd.NextDouble(), tiltPower);
-                int pos = (int)(maxPos * relPos);
-                yield return pos;
-            }
-        }
-
-        /// <summary>
         /// If readLength == 0, dumps the whole sequence for each gene, otherwise dumps
         /// all possible subsequences of readLength from each gene.
         /// If barcodes == null, no barcode and GGG sequences will be inserted 
@@ -905,14 +747,14 @@ namespace Linnarsson.Strt
         {
             bool variantGenes = genome.GeneVariants;
             PathHandler ph = new PathHandler(props);
-            string annotationsPath = ph.GetAnnotationsPath(genome);
+            string annotationsPath = PathHandler.GetAnnotationsPath(genome);
             annotationsPath = PathHandler.ExistsOrGz(annotationsPath);
             if (annotationsPath == null)
                 throw new NoAnnotationsFileFoundException("Could not find annotation file: " + annotationsPath);
             Console.WriteLine("Annotations are taken from " + annotationsPath);
             if (makeSplices)
                 Console.WriteLine("Making all splices that have >= " + minOverhang + " bases overhang and max " + maxSkip + " exons excised.");
-            Dictionary<string, string> chrIdToFileMap = ph.GetGenomeFilesMap(genome);
+            Dictionary<string, string> chrIdToFileMap = PathHandler.GetGenomeFilesMap(genome);
             Dictionary<string, List<LocusFeature>> chrIdToFeature = new Dictionary<string, List<LocusFeature>>();
             foreach (string chrId in chrIdToFileMap.Keys)
             {

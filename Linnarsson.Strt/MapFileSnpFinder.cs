@@ -91,14 +91,16 @@ namespace Linnarsson.Strt
 
         public void ProcessMapFiles(List<string> mapFilePaths)
         {
-            int numReadInFile = 0;
-            int nValidReads = 0;
+            Console.Write("Defining SNP positions by scanning map files..");
+            int numReadInFile = 0, nStrangeMismatchAnnot = 0;
+            int nValidReads = 0, nReadsWMismatches = 0;
             long totLen = 0;
             foreach (string mapFilePath in mapFilePaths)
             {
                 MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, 10, barcodes);
                 if (mapFileReader == null)
-                    Console.WriteLine("Skipping " + mapFilePath + "- unknown read map file type.");
+                    Console.WriteLine("\n  Skipping " + mapFilePath + "- unknown read map file type.");
+                Console.Write(".");
                 foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
                 {
                     numReadInFile++;
@@ -117,13 +119,16 @@ namespace Linnarsson.Strt
                     totLen += mrm.SeqLen;
                     if (mrm[0].Mismatches != "")
                     {
+                        nReadsWMismatches++;
                         string[] mms = mrm[0].Mismatches.Split(',');
                         foreach (string snp in mms)
                         {
                             int p = snp.IndexOf(':');
                             if (p == -1)
                             {
-                                Console.WriteLine("Strange SNP: " + snp + " in " + mrm[0].Mismatches);
+                                nStrangeMismatchAnnot++;
+                                if (nStrangeMismatchAnnot < 100)
+                                    Console.WriteLine("\nStrange mismatch annotation: " + snp + " in " + mrm[0].Mismatches + " in " + mapFilePath);
                                 continue;
                             }
                             int posInRead = int.Parse(snp.Substring(0, p));
@@ -137,8 +142,9 @@ namespace Linnarsson.Strt
                 }
             }
             averageReadLength = (int)Math.Ceiling(totLen / (double)nValidReads);
-            Console.WriteLine("Average read length:" + averageReadLength);
-            Console.WriteLine("Counted " + nValidReads + " singleReads on valid chr out of totally " + numReadInFile + " reads in file.");
+            Console.WriteLine("\nTotally " + numReadInFile + " reads in " + mapFilePaths.Count + " files. Average read length:" + averageReadLength);
+            Console.WriteLine(nReadsWMismatches + " reads with SNPs out of " + nValidReads + " singleReads on valid chromosomes");
+            Console.WriteLine(nStrangeMismatchAnnot + " unparsable mismatch annotations were detected in input files.");
         }
 
         public int GetAverageReadLength()

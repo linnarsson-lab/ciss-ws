@@ -116,6 +116,12 @@ namespace Linnarsson.Strt
             statsSampleDistPerBarcode = sampleDistForAccuStats / barcodes.Count;
         }
 
+        /// <summary>
+        /// Order by the barcodeIndex. Filenames expected to start with barcodeIdx followed by "_"
+        /// </summary>
+        /// <param name="path1"></param>
+        /// <param name="path2"></param>
+        /// <returns>1, 0, or -1</returns>
         private static int CompareMapFiles(string path1, string path2)
         {
             string name1 = Path.GetFileName(path1);
@@ -124,6 +130,10 @@ namespace Linnarsson.Strt
             int bc2 = int.Parse(name2.Substring(0, name2.IndexOf('_')));
             return bc1.CompareTo(bc2);
         }
+        /// <summary>
+        /// Annotate the complete set of map files from a study.
+        /// </summary>
+        /// <param name="mapFilePaths"></param>
         public void ProcessMapFiles(List<string> mapFilePaths)
         {
             if (mapFilePaths.Count == 0)
@@ -131,7 +141,6 @@ namespace Linnarsson.Strt
             mapFilePaths.Sort(CompareMapFiles); // Important to have them sorted by barcode
             if (Props.props.AnalyzeSNPs)
             {
-                Console.WriteLine("Defining SNP positions by scanning map files...");
                 MapFileSnpFinder mfsf = new MapFileSnpFinder(barcodes);
                 mfsf.ProcessMapFiles(mapFilePaths);
                 int nSNPs = randomTagFilter.SetupSNPCounters(mfsf.GetAverageReadLength(), mfsf.IterSNPLocations());
@@ -166,7 +175,6 @@ namespace Linnarsson.Strt
             long totalReadLength = 0;
             foreach (string mapFilePath in bcMapFilePaths)
             {
-                Console.WriteLine("file: " + mapFilePath);
                 currentMapFilePath = mapFilePath;
                 MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, 1, barcodes);
                 if (mapFileReader == null)

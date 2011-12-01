@@ -84,7 +84,7 @@ namespace Linnarsson.Strt
         {
             foreach (MultiReadMapping m in mrm.IterMappings())
             {
-                if (m.Chr == verificationChr)
+                if (m.Mismatches != "" && m.Chr == verificationChr)
                     foreach (int snpPos in data.Keys)
                     {
                         if (snpPos >= m.Position && snpPos <= m.Position + mrm.SeqLen)

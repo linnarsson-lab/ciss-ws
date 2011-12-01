@@ -21,7 +21,7 @@ namespace Junction_lables_simulator_console
                 { "per:", "Discard % of the fragment", (v) => smtr.Discard_percentage = int.Parse(v) },
                 { "rl:", "Read lenth in bp", (v) => smtr.readlen = int.Parse(v) },
                 { "reads:", "Total reads in million bp. Given no will be multiplied by 1M", (v) => smtr.Reads_in_million  = int.Parse(v) },
-                //{ "rebuild", "Rebuild all, overwriting any existing files", (v) => lpp.Rebuild = true }
+                { "maxr=", "Maximum no of reads for a single fragment i.e 10 or 20 or 50 etc..", (v) => smtr.maxRead=int.Parse(v) }
             };
             foreach (var x in p.Parse(args)) ;
             if (smtr.refSeqFilepath == null || smtr.snpfilepath == null)

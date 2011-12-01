@@ -25,6 +25,7 @@ namespace Junction_lables_simulator_console
         public long molecule_id { get; set; }
         public long totalLength { get; set; }
         public long Reads_in_million { get; set; }
+        public int maxRead { get; set; }
         public Simulator() 
         {
              count_N = 0;
@@ -127,7 +128,7 @@ namespace Junction_lables_simulator_console
 
             //    // following code will generate a file with  sequence and transposons at each side of a sequence  
             //    string Molecules_file = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "molecules_info.txt"));
-            //    var output2 = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposones.txt")).OpenWrite();
+            //    var output2 = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposons.txt")).OpenWrite();
             //    output2.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "Seq" + "\t" + "ME19L" + "\t" + "ME19R");
             //    string[] Tsp_lines = System.IO.File.ReadAllLines(Molecules_file);
             //    Random Tsp_rnd = new Random();
@@ -235,8 +236,8 @@ namespace Junction_lables_simulator_console
             //    output2.Close();
 
             //    // this code will introduce a 6bp random sequece at each side of a sequece
-            //    string Tsp_file = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposones.txt"));
-            //    var output3 = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposones_N6.txt")).OpenWrite();
+            //    string Tsp_file = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposons.txt"));
+            //    var output3 = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposons_N6.txt")).OpenWrite();
             //    //output3.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "ME1_19" + "\t" + "Common Fragment 9L" + "\t" + "Seq" + "\t" + "Common Fragment 9R" + "\t" + "ME2_19" + "\t" + "Total Seq");
             //    output3.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "ME19L" + "\t" + "N6_1" + "\t" + "ComnFrg 9L" + "\t" + "Seq" + "\t" + "ComnFrg 9R" + "\t" + "N6_2" + "\t" + "ME19R" + "\t" + "Read Count" + "\t" + "N6_1&ComnFrg9L" + "\t" + "ComnFrg9R&N6_2" + "\t" + "Total Seq");
             //    string[] TspN6_lines = System.IO.File.ReadAllLines(Tsp_file);
@@ -263,7 +264,7 @@ namespace Junction_lables_simulator_console
 
 
                 
-            //    string Totseq_file = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposones_N6.txt"));
+            //    string Totseq_file = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposons_N6.txt"));
             //    //string IlluminaSeqError = ("Run0007_Line100.fq");
             //    //FastQFile fq = FastQFile.Load("C:\\Indranil\\2011 work and activity\\denovo\\f100lines.fq", 64);
             //    //FastQFile fq = FastQFile.Load("\\192.168.1.12\\data\\sequtils\\IS\\Simulator\\f100lines.fq", 64);
@@ -454,7 +455,7 @@ namespace Junction_lables_simulator_console
                     output.Close();
                     // following code will generate a file with  sequence and transposons at each side of a sequence  
                     string Molecules_file = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "molecules_info.txt"));
-                    var output2 = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposones.txt")).OpenWrite();
+                    var output2 = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposons.txt")).OpenWrite();
                     output2.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "Seq" + "\t" + "Common Fragment 9L" + "\t" + "ME19L" + "\t" + "ME19R" + "\t" + "Common Fragment 9R" + "\t" + "Total Seq" + "\t" + "Read Count");
                     string[] Tsp_lines = System.IO.File.ReadAllLines(Molecules_file);
 
@@ -525,7 +526,7 @@ namespace Junction_lables_simulator_console
                                         //if (Tsp_N  <= Tsp_len/2)
                                         if (Tsp_N <= len / 2)
                                         {
-                                            readCount = rndRead.Next(100); // Need to change here *************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+                                            readCount = rndRead.Next(maxRead); // Need to change here *************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
                                             output2.WriteLine(Tsp_count - 1 + "\t" + Tsp_count + "\t" + Tsp_lineItems[0] + "\t" + Tsp_lineItems[1] + "\t" + (first_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + (second_Tsp + Convert.ToInt64(Tsp_lineItems[2])) + "\t" + /*Tsp_len*/len + "\t" + Tsp_ds + "\t" + CF9L + "\t" + ME19L + "\t" + ME19R + "\t" + CF9R + "\t" + (/*ME19L +*/ CF9L.ToString() + Tsp_ds + CF9R /*+ME19R*/) + "\t" + readCount);
                                         }
                                         Tsp_count++;
@@ -561,8 +562,8 @@ namespace Junction_lables_simulator_console
                     output2.Close();
 
                     // this code will introduce a 6bp random sequece at each side of a sequece
-                    string Tsp_file = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposones.txt"));
-                    var output3 = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposones_N6.txt")).OpenWrite();
+                    string Tsp_file = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposons.txt"));
+                    var output3 = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposons_N6.txt")).OpenWrite();
                     //output3.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "ME1_19" + "\t" + "Common Fragment 9L" + "\t" + "Seq" + "\t" + "Common Fragment 9R" + "\t" + "ME2_19" + "\t" + "Total Seq");
                     output3.WriteLine("Tsp_id1" + "\t" + "Tsp_id2" + "\t" + "Molecule_id" + "\t" + "Strand" + "\t" + "First Tsp" + "\t" + "Second Tsp" + "\t" + "Seq Len" + "\t" + "ME19L" + "\t" + "N6_1" + "\t" + "ComnFrg 9L" + "\t" + "Seq" + "\t" + "ComnFrg 9R" + "\t" + "N6_2" + "\t" + "ME19R" + "\t" + "Read Count" + "\t" + "N6_1&ComnFrg9L" + "\t" + "ComnFrg9R&N6_2" + "\t" + "Total Seq");
                     string[] TspN6_lines = System.IO.File.ReadAllLines(Tsp_file);
@@ -588,7 +589,7 @@ namespace Junction_lables_simulator_console
                     output3.Close();
                     
                 qualitysection: ;
-                    string Totseq_file = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposones_N6.txt"));
+                    string Totseq_file = (Path.Combine(Path.GetDirectoryName(refSeqFilepath), Path.GetFileNameWithoutExtension(refSeqFilepath) + "_transposons_N6.txt"));
                     //string QualityScore=("\\192.168.1.12\data\reads\Run00007_L1_1_100521_GA2X_0007.fq");
                     FastQFile fq = FastQFile.Load(IlluminaSeqError, 64);
                     int errorcount = 0;

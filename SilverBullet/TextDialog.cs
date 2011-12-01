@@ -17,6 +17,11 @@ namespace SilverBullet
         {
             InitializeComponent();
         }
+        public TextDialog(string qText)
+        {
+            InitializeComponent();
+            this.textEnterHeader.Text = qText;
+        }
 
         private void button1_Click(object sender, EventArgs e)
         {

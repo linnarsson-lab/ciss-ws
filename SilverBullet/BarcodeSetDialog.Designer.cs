@@ -32,7 +32,7 @@
             this.radioButtonV1 = new System.Windows.Forms.RadioButton();
             this.radioButtonV2 = new System.Windows.Forms.RadioButton();
             this.button1 = new System.Windows.Forms.Button();
-            this.radioButtonV3 = new System.Windows.Forms.RadioButton();
+            this.radioButtonV4rnd = new System.Windows.Forms.RadioButton();
             this.radioButtonNobarcodes = new System.Windows.Forms.RadioButton();
             this.radioButtonV4 = new System.Windows.Forms.RadioButton();
             this.SuspendLayout();
@@ -79,15 +79,15 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.OKButton_Click);
             // 
-            // radioButtonV3
+            // radioButtonV4rnd
             // 
-            this.radioButtonV3.AutoSize = true;
-            this.radioButtonV3.Location = new System.Drawing.Point(46, 96);
-            this.radioButtonV3.Name = "radioButtonV3";
-            this.radioButtonV3.Size = new System.Drawing.Size(130, 17);
-            this.radioButtonV3.TabIndex = 4;
-            this.radioButtonV3.Text = "v3 (6-mer/random tag)";
-            this.radioButtonV3.UseVisualStyleBackColor = true;
+            this.radioButtonV4rnd.AutoSize = true;
+            this.radioButtonV4rnd.Location = new System.Drawing.Point(46, 96);
+            this.radioButtonV4rnd.Name = "radioButtonV4rnd";
+            this.radioButtonV4rnd.Size = new System.Drawing.Size(130, 17);
+            this.radioButtonV4rnd.TabIndex = 4;
+            this.radioButtonV4rnd.Text = "v4rnd (6-mer/48/random tag)";
+            this.radioButtonV4rnd.UseVisualStyleBackColor = true;
             // 
             // radioButtonNobarcodes
             // 
@@ -116,7 +116,7 @@
             this.ClientSize = new System.Drawing.Size(339, 193);
             this.Controls.Add(this.radioButtonV4);
             this.Controls.Add(this.radioButtonNobarcodes);
-            this.Controls.Add(this.radioButtonV3);
+            this.Controls.Add(this.radioButtonV4rnd);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.radioButtonV2);
             this.Controls.Add(this.radioButtonV1);
@@ -134,7 +134,7 @@
         private System.Windows.Forms.RadioButton radioButtonV1;
         private System.Windows.Forms.RadioButton radioButtonV2;
         private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.RadioButton radioButtonV3;
+        private System.Windows.Forms.RadioButton radioButtonV4rnd;
         private System.Windows.Forms.RadioButton radioButtonNobarcodes;
         private System.Windows.Forms.RadioButton radioButtonV4;
     }

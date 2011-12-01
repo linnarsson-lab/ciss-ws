@@ -22,7 +22,7 @@ namespace SilverBullet
         {
             if (radioButtonV1.Checked) barcodeSet = "v1";
             else if (radioButtonV2.Checked) barcodeSet = "v2";
-            else if (radioButtonV3.Checked) barcodeSet = "v3";
+            else if (radioButtonV4rnd.Checked) barcodeSet = "v4rnd";
             else if (radioButtonV4.Checked) barcodeSet = "v4";
             else if (radioButtonNobarcodes.Checked) barcodeSet = "none";
         }

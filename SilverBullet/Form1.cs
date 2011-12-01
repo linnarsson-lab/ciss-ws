@@ -367,22 +367,21 @@ namespace SilverBullet
             {
                 if (MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
             }
-			SaveFileDialog ofd = new SaveFileDialog();
-            ofd.Title = "Specify a FASTA file to save the synthetic reads to.";
-            if (ofd.ShowDialog() == DialogResult.OK)
-            {
-                string fastaFile = ofd.FileName;
-                string barcodeSet = SelectBarcodeSet();
-                GenomeDialog gd = new GenomeDialog();
-                gd.ShowDialog();
-                GeneVariantsDialog gvd = new GeneVariantsDialog();
-                gvd.ShowDialog();
-                SetupMapper(barcodeSet);
-                gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
-                Console.WriteLine("Read lengths will be mostly 50bp , but some reads down to 46 bp.");
-                Background.RunAsync(() => 
-                   { mapper.SynthetizeReads(gd.Genome, fastaFile); } );
-            }
+            TextDialog readIdDialog = new TextDialog("Name for the synthetic data:");
+            readIdDialog.ShowDialog();
+            string outputId = readIdDialog.value;
+            string barcodeSet = SelectBarcodeSet();
+            GenomeDialog gd = new GenomeDialog();
+            gd.ShowDialog();
+            GeneVariantsDialog gvd = new GeneVariantsDialog();
+            gvd.ShowDialog();
+            gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
+            Console.WriteLine("Read lengths will be mostly 50bp , but some reads down to 46 bp.");
+            Background.RunAsync(() => 
+                {
+                    SyntReadMaker srm = new SyntReadMaker(Barcodes.GetBarcodes(barcodeSet));
+                    srm.SynthetizeReads(gd.Genome, outputId);
+                });
         }
 
         private void rerunAllToolStripMenuItem_Click(object sender, EventArgs e)

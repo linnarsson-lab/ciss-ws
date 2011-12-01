@@ -33,6 +33,7 @@ namespace TriNucleotideThreading
             int triNId = 0;
             char triN = ' ';
             int triNLen =Convert.ToInt32 (textBox1.Text);
+            
             if (radioButton1.Checked == true) triN = 'C';
             else if (radioButton2.Checked == true) triN = 'G';
             else if (radioButton3.Checked == true) triN = 'T';
@@ -58,7 +59,7 @@ namespace TriNucleotideThreading
                 {
                     totalLength += rec.Sequence.Count;
                     MessageBox.Show(totalLength.ToString());  
-                    DnaSequence ds = new DnaSequence(rec.Sequence);
+                    ShortDnaSequence ds = new ShortDnaSequence(rec.Sequence);
                     //DnaSequence ds_revcom = new DnaSequence(rec.Sequence);
                     //ds_revcom.RevComp();
                     
@@ -115,7 +116,7 @@ namespace TriNucleotideThreading
                                 }
                             
                                 int len2 = 22;
-                                DnaSequence dss_rev = new DnaSequence(dss.ToString ());
+                                ShortDnaSequence dss_rev = new ShortDnaSequence(dss.ToString ());
                                 dss_rev.RevComp();
                                 DnaSequence dssP2 = dss_rev.SubSequence(len2,triNLen);
                            
@@ -142,7 +143,7 @@ namespace TriNucleotideThreading
                         
                     } while( (dss_start +triNLen) <= totalLength ) ;
 
-                    DnaSequence ds_revcom = new DnaSequence(rec.Sequence);
+                    ShortDnaSequence ds_revcom = new ShortDnaSequence(rec.Sequence);
                     ds_revcom.RevComp();
                     //ds_revcom.Complement(); 
                     dss_start = 0;
@@ -200,7 +201,7 @@ namespace TriNucleotideThreading
                                 }
                             
                                 int len2 = 22;
-                                DnaSequence dss_rev = new DnaSequence(dss.ToString());
+                                ShortDnaSequence dss_rev = new ShortDnaSequence(dss.ToString());
                                 dss_rev.RevComp();
                                 DnaSequence dssP2 = dss_rev.SubSequence(len2,triNLen);
                                 TmCalculator tm2 = new TmCalculator();
@@ -257,6 +258,7 @@ namespace TriNucleotideThreading
         private void button2_Click(object sender, EventArgs e)
         {
             string fname = "";
+            byte QSB = 30;
             if (radioButton5.Checked == true) fname = "P1_FastQ.FQ";
             else if (radioButton6.Checked == true) fname = "P2_FastQ.FQ";
              
@@ -276,32 +278,37 @@ namespace TriNucleotideThreading
                 //P2_RevSeq.RevComp(); 
                 if (radioButton5.Checked == true)
                 {
+                    byte[] b = new byte[lineItems[4].Count()];
                     if (lineItems[11].ToString() == "+")
                     {
-                        FastQRecord rec1 = new FastQRecord((lineItems[0] + "_" + lineItems[1] + "_" + lineItems[5] + "_P1" + lineItems[11]), lineItems[4], new string('b', (lineItems[4].Count())));
-                        output.WriteLine(rec1.ToString());
+                        
+                        FastQRecord rec1 = new FastQRecord((lineItems[0] + "_" + lineItems[1] + "_" + lineItems[5] + "_P1" + lineItems[11]), lineItems[4],b);
+                        //output.WriteLine(rec1.ToString());
+                        output.WriteLine(rec1.ToString(QSB));
                     }
                     else 
                     {
-                        FastQRecord rec1 = new FastQRecord((lineItems[0] + "_" + lineItems[1] + "_" + lineItems[3] + "_P1" + lineItems[11]), lineItems[4], new string('b', (lineItems[4].Count())));
-                        output.WriteLine(rec1.ToString());
+                        FastQRecord rec1 = new FastQRecord((lineItems[0] + "_" + lineItems[1] + "_" + lineItems[3] + "_P1" + lineItems[11]), lineItems[4], b);
+                        output.WriteLine(rec1.ToString(QSB));
  
                     }
                 }
                 else if (radioButton6.Checked == true)
                 {
                     string strand="";
+                    byte[] b = new byte[lineItems[8].Count()];
                     if (lineItems[11].ToString() == "+") 
-                    { 
+                    {
+                        
                         strand = "-";
-                        FastQRecord rec1 = new FastQRecord((lineItems[0] + "_" + lineItems[1] + "_" + lineItems[9] + "_P2" + strand), lineItems[8], new string('b', (lineItems[8].Count())));
-                        output.WriteLine(rec1.ToString());
+                        FastQRecord rec1 = new FastQRecord((lineItems[0] + "_" + lineItems[1] + "_" + lineItems[9] + "_P2" + strand), lineItems[8], b);
+                        output.WriteLine(rec1.ToString(QSB));
                     }
                     else if (lineItems[11].ToString() == "-")
                     {
                         strand = "+";
-                        FastQRecord rec1 = new FastQRecord((lineItems[0] + "_" + lineItems[1] + "_" + lineItems[9] + "_P2" + strand), lineItems[8], new string('b', (lineItems[8].Count())));
-                        output.WriteLine(rec1.ToString());
+                        FastQRecord rec1 = new FastQRecord((lineItems[0] + "_" + lineItems[1] + "_" + lineItems[9] + "_P2" + strand), lineItems[8], b);
+                        output.WriteLine(rec1.ToString(QSB));
                     }
                     
                 }

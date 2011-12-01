@@ -37,7 +37,7 @@ namespace IndranilsProject
                     string[] lineItems= oneLine.Split('\t');
                     string selectorFragment = lineItems[0];
                     // code for left selector arm*****************************************
-                    DnaSequence sf = new DnaSequence(selectorFragment);
+                    ShortDnaSequence sf = new ShortDnaSequence(selectorFragment);
                     TmCalculator tm = new TmCalculator();
                     int lss = 0;
                     int len = 15;
@@ -269,7 +269,7 @@ namespace IndranilsProject
                 string oneLine = lines[i];
                 string[] lineItems = oneLine.Split('\t');
                 string RA_and_LA=lineItems [6]+lineItems [4];
-                DnaSequence revcom = new DnaSequence(RA_and_LA );
+                ShortDnaSequence revcom = new ShortDnaSequence(RA_and_LA );
                 revcom.RevComp();
                 string selector = revcom.ToString();
                 output.WriteLine(lineItems[0] + "\t" + lineItems[1] + "\t" + lineItems[2] + "\t" + lineItems[3] + "\t" + lineItems[4] + "\t" + lineItems[5] + "\t" + lineItems[6] + "\t" + lineItems[7] + "\t" + lineItems[8] + "\t" + lineItems[9] + "\t" + lineItems[10] + "\t" + lineItems[11] + "\t" + lineItems[12] + "\t" + RA_and_LA  + "\t" + selector );
@@ -286,10 +286,10 @@ namespace IndranilsProject
         {
             histogram.Clear();
             RestrictionEnzyme MseI = RestrictionEnzymes.MseI;
-            DnaSequence polyG = new DnaSequence("GGGGGGGGGG");
-            DnaSequence polyC = new DnaSequence("CCCCCCCCCC");
-            DnaSequence polyA = new DnaSequence("AAAAAAAAAA");
-            DnaSequence polyT = new DnaSequence("TTTTTTTTTT");
+            ShortDnaSequence polyG = new ShortDnaSequence("GGGGGGGGGG");
+            ShortDnaSequence polyC = new ShortDnaSequence("CCCCCCCCCC");
+            ShortDnaSequence polyA = new ShortDnaSequence("AAAAAAAAAA");
+            ShortDnaSequence polyT = new ShortDnaSequence("TTTTTTTTTT");
 
             MessageBox.Show("Select the FASTA sequence files ");
             OpenFileDialog ofd = new OpenFileDialog();

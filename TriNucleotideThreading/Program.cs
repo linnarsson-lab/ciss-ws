@@ -15,7 +15,8 @@ namespace TriNucleotideThreading
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new triNucleotide   () );
+            //Application.Run(new triNucleotide   () );
+            Application.Run(new Form2());
         }
     }
 }

@@ -71,7 +71,7 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Number of molecules (reads when rndTags missing) that hit the limit of alternative genomic mapping positions in bowtie
         /// </summary>
-        int nMaxAltMappingsMols = 0;
+        int nMaxAltMappingsReads = 0;
 
         private int statsSampleDistPerBarcode;
 
@@ -187,6 +187,7 @@ namespace Linnarsson.Strt
                     totalReadLength += mrm.SeqLen;
                     if ((++numReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
                         SampleReadStatistics(statsSampleDistPerBarcode);
+                    if (mrm.HasAltMappings) nMaxAltMappingsReads++;
                 }
             }
             SampleReadStatistics(numReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
@@ -223,6 +224,8 @@ namespace Linnarsson.Strt
             MarkStatus markType = MarkStatus.TEST_EXON_MARK_OTHER;
             foreach (FtInterval ivl in Annotations.GetMatching(item.chr, item.HitMidPos))
             {
+                if (item.tagItem.hasAltMappings)
+                    markType = MarkStatus.TEST_EXON_SKIP_OTHER; // Exonic position multireads should only be annotated at the exons
                 item.splcToRealChrOffset = 0;
                 MarkResult res = ivl.Mark(item, ivl.ExtraData, markType);
                 if (res.annotType == AnnotType.NOHIT)
@@ -249,7 +252,7 @@ namespace Linnarsson.Strt
                     }
                 }
             }
-            if (item.chr != annotationChrId)
+            if (item.chr != annotationChrId && !item.tagItem.hasAltMappings)
             {
                 // Add to the motif (base 21 in the motif will be the first base of the read)
                 // Subtract one to make it zero-based
@@ -257,12 +260,7 @@ namespace Linnarsson.Strt
                     motifs[currentBcIdx].Add(Annotations.GetChromosome(item.chr), item.hitStartPos - 20 - 1, item.strand);
             }
             // Now when the best alignments have been selected, mark these transcript hits
-            MarkStatus markStatus = (exonsToMark.Count > 1) ? MarkStatus.ALT_MAPPINGS : MarkStatus.SINGLE_MAPPING;
-            if (item.tagItem.hasAltMappings)
-            {
-                markStatus = MarkStatus.MARK_ALT_MAPPINGS;
-                nMaxAltMappingsMols += item.MolCount;
-            }
+            MarkStatus markStatus = (exonsToMark.Count > 1 || item.tagItem.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
             foreach (FtInterval ivl in exonsToMark)
             {
                 item.splcToRealChrOffset = 0;
@@ -524,35 +522,44 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("    <readfile path=\"{0}\" />", path); 
             xmlFile.WriteLine("  </readfiles>");
             xmlFile.WriteLine("  <reads>");
-            string molTitle = (barcodes.HasRandomBarcodes) ? "and annotated molecule " : "";
-            xmlFile.WriteLine("    <title>Read {0}distribution (10^6). [# samples/wells]</title>", molTitle);
+            xmlFile.WriteLine("    <title>Read distribution (10^6). [# samples/wells]</title>");
             xmlFile.WriteLine("    <point x=\"All reads [{0}] (100%)\" y=\"{1}\" />", allBcCount, totalReads / 1.0E6d);
             int validReads = readCounter.GrandCount(ReadStatus.VALID);
             xmlFile.WriteLine("    <point x=\"Valid STRT reads[{0}] ({1:0%})\" y=\"{2}\" />", allBcCount, validReads / totalReads, validReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Multireads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMaxAltMappingsReads / totalReads, nMaxAltMappingsReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Mapped reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numReads / totalReads, numReads / 1.0E6d);
-            xmlFile.WriteLine("    <point x=\"Multireads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMaxAltMappingsMols / totalReads, nMaxAltMappingsMols / 1.0E6d);
+            double dividend = totalReads;
+            double reducer = 1.0E6d;
             if (barcodes.HasRandomBarcodes)
             {
-                xmlFile.WriteLine("    <point x=\"Unique molecules [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numMolecules / totalReads, numMolecules / 1.0E6d);
-                xmlFile.WriteLine("    <point x=\"Duplicate reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numDuplicateReads / totalReads, numDuplicateReads / 1.0E6d);
+                dividend = numMolecules;
+                reducer = 1.0E3d;
+                xmlFile.WriteLine("    <point x=\"Duplicate reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numDuplicateReads / dividend, numDuplicateReads / 1.0E6d);
+                xmlFile.WriteLine("  </reads>");
+                xmlFile.WriteLine("  <molecules>");
+                xmlFile.WriteLine("    <title>Molecule distribution (10^6). [# samples/wells]</title>");
+                xmlFile.WriteLine("    <point x=\"Unique molecules [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numMolecules / dividend, numMolecules / reducer);
             }
-            xmlFile.WriteLine("    <point x=\"Annotated [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numAnnotatedMols / totalReads, numAnnotatedMols / 1.0E6d);
-            xmlFile.WriteLine("    <point x=\"Exon [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numExonAnnotatedMols / totalReads, numExonAnnotatedMols / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Annotated [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numAnnotatedMols / dividend, numAnnotatedMols / reducer);
+            xmlFile.WriteLine("    <point x=\"Exon [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numExonAnnotatedMols / dividend, numExonAnnotatedMols / reducer);
             int numIntronHits = TotalHitsByAnnotType[AnnotType.INTR] + ((Props.props.DirectionalReads) ? 0 : TotalHitsByAnnotType[AnnotType.AINTR]);
-            xmlFile.WriteLine("    <point x=\"Intron [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numIntronHits / totalReads, numIntronHits / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Intron [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numIntronHits / dividend, numIntronHits / reducer);
             int numUstrHits = TotalHitsByAnnotType[AnnotType.USTR] + ((Props.props.DirectionalReads) ? 0 : TotalHitsByAnnotType[AnnotType.AUSTR]);
-            xmlFile.WriteLine("    <point x=\"Upstream [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numUstrHits / totalReads, numUstrHits / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Upstream [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numUstrHits / dividend, numUstrHits / reducer);
             int numDstrHits = TotalHitsByAnnotType[AnnotType.DSTR] + ((Props.props.DirectionalReads) ? 0 : TotalHitsByAnnotType[AnnotType.ADSTR]);
-            xmlFile.WriteLine("    <point x=\"Downstream [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numDstrHits / totalReads, numDstrHits / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Downstream [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numDstrHits / dividend, numDstrHits / reducer);
             if (Props.props.DirectionalReads)
             {
                 int numOtherAS = TotalHitsByAnnotType[AnnotType.AUSTR] + TotalHitsByAnnotType[AnnotType.AEXON] + 
                                  TotalHitsByAnnotType[AnnotType.AINTR] + TotalHitsByAnnotType[AnnotType.ADSTR];
-                xmlFile.WriteLine("    <point x=\"Loci A-sense [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numOtherAS / totalReads, numOtherAS / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Loci A-sense [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numOtherAS / dividend, numOtherAS / reducer);
             }
             xmlFile.WriteLine("    <point x=\"Repeat [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount,
-                               TotalHitsByAnnotType[AnnotType.REPT] / totalReads, TotalHitsByAnnotType[AnnotType.REPT] / 1.0E6d);
-            xmlFile.WriteLine("  </reads>");
+                               TotalHitsByAnnotType[AnnotType.REPT] / dividend, TotalHitsByAnnotType[AnnotType.REPT] / reducer);
+            if (barcodes.HasRandomBarcodes)
+                xmlFile.WriteLine("  </molecules>");
+            else
+                xmlFile.WriteLine("  </reads>");
         }
 
         private void WriteReadsBySpecies(StreamWriter xmlFile)

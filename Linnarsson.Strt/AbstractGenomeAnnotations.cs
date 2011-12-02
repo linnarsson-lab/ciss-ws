@@ -11,7 +11,6 @@ namespace Linnarsson.Strt
 {
     public abstract class AbstractGenomeAnnotations
     {
-        protected int SpliceFlankLen { get; set; }
         public static int annotationBinSize = 30000;
 
         /// <summary>
@@ -43,7 +42,6 @@ namespace Linnarsson.Strt
         protected AbstractGenomeAnnotations(Props props, StrtGenome genome)
 		{
             summaryLines = new List<string>();
-            SpliceFlankLen = props.SpliceFlankLength;
             this.props = props;
             this.genome = genome;
             this.barcodes = props.Barcodes;

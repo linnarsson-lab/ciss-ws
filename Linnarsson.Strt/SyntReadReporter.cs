@@ -34,7 +34,7 @@ namespace Linnarsson.Strt
         public SyntReadMaker(Barcodes barcodes)
         {
             this.barcodes = barcodes;
-            nRndTags = 1 << barcodes.RandomTagLen;
+            nRndTags = 1 << (2 * barcodes.RandomTagLen);
             barcodesGGG = barcodes.GetBarcodesWithTSSeq();
             firstFiller = new string('T', barcodes.RandomTagPos);
             midFiller = new string('T', barcodes.BarcodePos - barcodes.RandomTagLen - barcodes.RandomTagPos);
@@ -74,7 +74,7 @@ namespace Linnarsson.Strt
                 DnaSequence chrSeq = AbstractGenomeAnnotations.readChromosomeFile(chrIdToFileMap[chrId]);
                 int nChrBkgSeqs = rnd.Next((int)(chrSeq.Count * Props.props.SyntheticReadsBackgroundFreq));
                 nBkgSeqs += nChrBkgSeqs;
-                for (; nChrBkgSeqs >= 0; nChrBkgSeqs--)
+                for (; nChrBkgSeqs > 0; nChrBkgSeqs--)
                 {
                     string fqBlock = MakeBkgRead(chrId, chrSeq);
                     fqWriter.WriteLine(fqBlock);
@@ -255,9 +255,9 @@ namespace Linnarsson.Strt
 
         private string MakeBarcodePart(int bcIdx, int rndTagIdx)
         {
-            string extraGs = new String('G', Math.Max(0, rnd.Next(11) - 7));
             if (bcIdx < 0) bcIdx = rnd.Next(barcodesGGG.Length);
-            string bcSeq = barcodesGGG[bcIdx] + extraGs;
+            string extraGs = new String('G', Math.Max(0, rnd.Next(11) - 7));
+            string bcGGGSeq = barcodesGGG[bcIdx] + extraGs;
             string rndTag = "";
             if (barcodes.HasRandomBarcodes)
             {
@@ -265,7 +265,7 @@ namespace Linnarsson.Strt
                     rndTagIdx = rnd.Next(nRndTags);
                 rndTag = barcodes.MakeRandomTag(rndTagIdx);
             }
-            return firstFiller + rndTag + midFiller + bcSeq + extraGs;
+            return firstFiller + rndTag + midFiller + bcGGGSeq;
         }
 
         private string Mutate(ref string readSeq)
@@ -316,7 +316,7 @@ namespace Linnarsson.Strt
         private int nTooManyMappingPositions = 0;
         private int nNoHitToGene = 0;
         private int nHitToWrongGene = 0;
-        private int maxNumMappings = Props.props.BowtieMaxNumAltMappings;
+        private int maxNumMappings = 1;
 
         public SyntReadReporter(string syntLevelFile, bool analyzeGeneVariants, string filenameBase, Dictionary<string, GeneFeature> geneFeatures)
         {

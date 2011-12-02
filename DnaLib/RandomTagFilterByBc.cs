@@ -119,7 +119,7 @@ namespace Linnarsson.Strt
         /// <param name="pos"></param>
         /// <param name="strand"></param>
         /// <param name="rndTagIdx"></param>
-        /// <param name="hasAltMappings">As indicated by the map file</param>
+        /// <param name="hasAltMappings">Should be true whenever the mapping is not unique in genome</param>
         /// <returns>true if the rndTag is new at this position-strand</returns>
         public bool Add(int pos, char strand, int rndTagIdx, bool hasAltMappings, string mismatches, int readLen)
         {

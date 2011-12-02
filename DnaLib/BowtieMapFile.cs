@@ -276,8 +276,7 @@ namespace Linnarsson.Dna
         public int RandomBcIdx = 0;
         public int SeqLen;
         public int AltMappings;
-        public bool HasAltMappings { get { return AltMappings == Props.props.BowtieMaxNumAltMappings; } }
-
+        public bool HasAltMappings { get { return AltMappings >= 1; } }
         public int MappingNumber;
         public bool IsFirstMapping { get { return MappingNumber == 0; } }
         public int NMappings;

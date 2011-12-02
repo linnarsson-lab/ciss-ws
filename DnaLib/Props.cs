@@ -56,7 +56,7 @@ namespace Linnarsson.Dna
         public bool AnalyzeAllGeneVariants = true; // Analyze all alternative splice sites in exons etc.
         public bool DirectionalReads = true; // STRT are always directional reads
         public bool UseRPKM = false; // Give RPKM instead of RPM in output files for non-STRT samples
-        public string DefaultBarcodeSet = "v2"; // This is the default barcode set
+        public string DefaultBarcodeSet = "v4"; // This is the default barcode set
         public int LocusFlankLength = 1000; // Maximum length of UPSTREAM and DOWNSTREAM regions to analyse
         public int SpliceFlankLength = 60; // Bp to join from each of two exons when constructing the artificial splice chromosome
         public int StandardReadLen = 53; // Better not use actual read that are longer - totherwise some junction hits may be missed
@@ -68,9 +68,8 @@ namespace Linnarsson.Dna
         public int LargestPossibleReadLength = 300; // Used for dimensioning extraction quality calculators
         public int CapRegionSize = 200; // Used for elongation efficiency (full length cDNA) estimation.
 		public byte QualityScoreBase = 64; // For ASCII-encoding of phred scores (if you change this, then also change Bowtie options below)
-        public string BowtieMultiOptions = "--phred64-quals -a -v MaxAlignmentMismatches -M BowtieMaxNumAltMappings --best";
-        public int BowtieMaxNumAltMappings = 5; // Value to replace in BowtieMultiOptions
-        public double SyntheticReadsRandomMutationProb = 0.005; // Used only in synthetic data construction
+        public string BowtieOptions = "--phred64-quals -a -v MaxAlignmentMismatches -M 1 --best";
+        public double SyntheticReadsRandomMutationProb = 0.0; // Used only in synthetic data construction
         public double SyntheticReadsBackgroundFreq = 0.0001; // Frequency of random background reads in synthetic data
         public bool SynthesizeReadsFromGeneVariants = false; // Used only in synthetic data construction
         public string TestAnalysisFileMarker = "SYNT_READS"; // Indicator in files related to synthesized test reads

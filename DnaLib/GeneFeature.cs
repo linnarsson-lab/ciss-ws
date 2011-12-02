@@ -402,7 +402,7 @@ namespace Linnarsson.Dna
                 AddToTotalHits(item);
                 TranscriptHitsByExonIdx[exonIdx] += item.MolCount;
                 TranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
-                if (markType == MarkStatus.SINGLE_MAPPING)
+                if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
                     NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
                 HitsByAnnotType[annotType] += item.MolCount;
                 NonMaskedHitsByAnnotType[annotType] += item.MolCount;

@@ -15,7 +15,6 @@ namespace Linnarsson.Dna
     public abstract class AnnotationReader
     {
         protected StrtGenome genome;
-        protected int SpliceFlankLen;
         protected Dictionary<string, GeneFeature> nameToGene;
         protected Dictionary<string, List<GeneFeature>> genesByChr;
         protected int pseudogeneCount = 0;
@@ -23,7 +22,6 @@ namespace Linnarsson.Dna
         public AnnotationReader(StrtGenome genome)
         {
             this.genome = genome;
-            this.SpliceFlankLen = Props.props.SpliceFlankLength;
         }
 
         public abstract Dictionary<string, List<GeneFeature>> BuildGeneModelsByChr();

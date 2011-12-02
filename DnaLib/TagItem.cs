@@ -64,10 +64,11 @@ namespace Linnarsson.Dna
     }
 
     /// <summary>
-    /// TagItem summarize all reads that map to a specific (chr, pos, strand) combination.
+    /// TagItem summarizes all reads that map to a specific [or a set of redundant] (chr, pos, strand) combination[s].
     /// </summary>
     public class TagItem
     {
+        public static int ratioForMutationFilter = 1000; //10
         public static int nRndTags;
         /// <summary>
         /// Counts number of reads in each rndTag
@@ -82,25 +83,22 @@ namespace Linnarsson.Dna
         /// </summary>
         public bool hasAltMappings;
 
-        // molCount & snpCount can probably be reduced to byte once we know how to detect
-        // saturation of reads and mutation rates for mutation removal.
-        //
         // A central Dictionary saves pointers from (pre-calculated) alternative mappings to common
         // TagItems for redundant exons positions, to avoid the multiread issue:
         // Dictionary<int, TagItem> mappings;
-        // where keys are (chr, pos, strand) items. All these pre-ínitialized TagItems will have hasAltMappings == true
-        // For unique mappings, new KeyValuePairs (hasAltMappings == false) are added as new reads are detected.
-        // Save memory by keeping the pre-initialized TagItems count data empty until some actual reads are assigned to them.
-        // Note that SNPs can only be correctly analyzed for mappings that are unique by the
-        // bowtie options used, i.e. hasAltMappings == false, which also controls Max/Min counts for genes during annotation.
-        //
-        // Annotation is performed after each barcode has been exhausted of reads, and goes through all KeyValue pairs in mappings
-        // above, asking every TagItem for (#reads, #molecules, IsSNP?,HasAltMappings?) and annotates all matching features.
+        // where keys are (chr, pos, strand) items. All these pre-initialized TagItems will have hasAltMappings == true
+        // For unique mappings, new KeyValuePairs with hasAltMappings == false are added as new reads are detected.
+        // Note that SNPs can only be correctly analyzed for mappings that are unique, i.e. hasAltMappings == false.
+        // hasAltMappings together with gene-shared exons will affect the Max/Min counts for genes during annotation.
         //
         // The process of first counting all reads before annotating, loses the readLen of each
-        // read. Maybe a stronger limit on min readLen should be used, and small A-tails not be removed,
+        // read. A strong limit on min readLen should be used, and small A-tails not be removed,
         // so that a constant readLen can be assumed.
         
+        /// <summary>
+        /// Setup a TagItem that may be shared by all the mappings of a multiread.
+        /// </summary>
+        /// <param name="hasAltMappings">True indicates that this TagItem is shared by several (chr, pos, strand) locations</param>
         public TagItem(bool hasAltMappings)
         {
             this.hasAltMappings = hasAltMappings;
@@ -187,7 +185,7 @@ namespace Linnarsson.Dna
             if (readCountsByRndTag != null)
             {
                 int maxNumReads = readCountsByRndTag.Max();
-                int cutOff = maxNumReads / 10;
+                int cutOff = maxNumReads / ratioForMutationFilter;
                 for (int rndTagIdx = 0; rndTagIdx < readCountsByRndTag.Length; rndTagIdx++)
                     if (readCountsByRndTag[rndTagIdx] > cutOff) validTagIndices.Add(rndTagIdx);
             }
@@ -207,7 +205,7 @@ namespace Linnarsson.Dna
                 if (nRndTags == 1)
                     return readCountsByRndTag[0];
                 int maxNumReads = readCountsByRndTag.Max();
-                int cutOff = maxNumReads / 10;
+                int cutOff = maxNumReads / ratioForMutationFilter;
                 foreach (int c in readCountsByRndTag)
                     if (c > cutOff) n++;
             }

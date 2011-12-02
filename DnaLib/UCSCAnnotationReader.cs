@@ -31,20 +31,14 @@ namespace Linnarsson.Dna
             return genesByChr;
         }
 
-        delegate IFeature GeneFileLineParser(string line);
-
         public IEnumerable<IFeature> IterAnnotationFile(string refFlatPath)
         {
             StreamReader refReader = refFlatPath.OpenRead();
             string line = refReader.ReadLine();
-            GeneFileLineParser lineParser = FromRefFlatLine;
+            if (!line.StartsWith("@"))
+                throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should start with '@'.");
             while (line.StartsWith("@"))
-            {
-                lineParser = FromGenesFileLine;
-                if (line.StartsWith("@ReadLen="))
-                    SpliceFlankLen = int.Parse(line.Substring(9));
                 line = refReader.ReadLine();
-            }
             string[] f = line.Split('\t');
             if (f.Length < 11)
                 throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should be >= 11 TAB-delimited columns.");
@@ -52,7 +46,7 @@ namespace Linnarsson.Dna
             {
                 if (line != "")
                 {
-                    IFeature ft = lineParser(line);
+                    IFeature ft = FromAnnotationFileLine(line);
                     yield return ft;
                 }
                 line = refReader.ReadLine();
@@ -60,34 +54,7 @@ namespace Linnarsson.Dna
             refReader.Close();
         }
 
-        public IFeature FromRefFlatLine(string refFlatLine)
-        {
-            string[] record = refFlatLine.Split('\t');
-            string name = record[0].Trim();
-            string chr = record[2].Trim();
-            char strand = record[3].Trim()[0];
-            int nExons = int.Parse(record[8]);
-            int[] exonStarts = SplitField(record[9], nExons, 0);
-            int[] exonEnds = SplitField(record[10], nExons, -1);
-            if (record.Length == 11)
-                return new GeneFeature(name, chr, strand, exonStarts, exonEnds);
-            int[] offsets = SplitField(record[11], nExons, 0);
-            string[] spliceIds = record[12].Split(',');
-            Array.Resize(ref spliceIds, nExons);
-            int partLength = exonEnds[0] - exonStarts[0] + 1;
-            if (partLength != SpliceFlankLen)
-                Console.WriteLine("WARNING: Length " + partLength + " of splice chromosome exon (gene " + name +
-                                  ") does not equal SpliceFlankLength (" + SpliceFlankLen + ") as specified in " + Props.configFilename);
-            int[] realExonIds = new int[spliceIds.Length];
-            for (int i = 0; i < spliceIds.Length; i++)
-            {
-                string id = spliceIds[i];
-                realExonIds[i] = (id.Contains('>')) ? int.Parse(id.Split('>')[0]) : int.Parse(id.Split('<')[1]);
-            }
-            return new SplicedGeneFeature(name, chr, strand, exonStarts, exonEnds, offsets, realExonIds, spliceIds);
-        }
-
-        public IFeature FromGenesFileLine(string annotFileLine)
+        public IFeature FromAnnotationFileLine(string annotFileLine)
         {
             string[] record = annotFileLine.Split('\t');
             string name = record[0].Trim();

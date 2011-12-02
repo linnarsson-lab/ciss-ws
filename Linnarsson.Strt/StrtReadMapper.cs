@@ -441,6 +441,7 @@ namespace Linnarsson.Strt
         public List<string> MapAndAnnotateWithLayout(string projectFolderOrName, string defaultSpeciesArg, bool analyzeAllGeneVariants)
         {
             string projectFolder = PathHandler.GetRootedProjectFolder(projectFolderOrName);
+            string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
             string[] speciesArgs = GetSpeciesArgs(projectFolder, defaultSpeciesArg);
             List<string> resultSubFolders = new List<string>();
             foreach (string speciesArg in speciesArgs)
@@ -451,9 +452,8 @@ namespace Linnarsson.Strt
             return resultSubFolders;
         }
 
-        private string[] GetSpeciesArgs(string projectFolder, string defaultSpeciesArg)
+        private string[] GetSpeciesArgs(string sampleLayoutPath, string defaultSpeciesArg)
         {
-            string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
             string[] speciesArgs = new string[] { defaultSpeciesArg };
             if (File.Exists(sampleLayoutPath))
             {

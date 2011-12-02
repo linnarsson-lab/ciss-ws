@@ -71,14 +71,12 @@ namespace Linnarsson.Strt
         public static void ReadMappingsFromFile(string tagMappingFile, Dictionary<string, ChrTagData> chrTagDatas)
         {
             Console.WriteLine("Reading pre-calculated exonic multiread mappings from " + tagMappingFile);
-            int n = 0;
             using (StreamReader reader = new StreamReader(tagMappingFile))
             {
                 string line = reader.ReadLine();
                 while (line.StartsWith("#")) line = reader.ReadLine();
                 while (line != null)
                 {
-                    if (++n % 1000000 == 0) Console.WriteLine(n + "...");
                     TagItem tagItem = new TagItem(true);
                     string[] groups = line.Split('\t');
                     foreach (string group in groups)

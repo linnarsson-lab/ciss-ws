@@ -9,6 +9,9 @@ namespace Linnarsson.Strt
 {
     public class SnpRndTagData
     {
+        /// <summary>
+        /// SNPNt in first index (-,A,C,G,T) and counts in each rndTag in second index 
+        /// </summary>
         public short[,] countsByNtAndRndTagIdx;
 
         public SnpRndTagData(int nRndTags)
@@ -27,25 +30,17 @@ namespace Linnarsson.Strt
             countsByNtAndRndTagIdx[ntIdx, rndTagIdx]++;
         }
 
-        public bool VerifyAndCalcNtAndRndTagCounts(out int nAltNts, out int rndTagCount)
+        public bool HasAllReadsInEachRndTagTheSameNt()
         {
-            bool result = true;
-            int[] ntUsed = new int[5];
-            rndTagCount = 0;
             for (int rndTagIdx = 0; rndTagIdx < countsByNtAndRndTagIdx.GetLength(1); rndTagIdx++)
             {
                 int nAltNtsInRndTag = 0;
                 for (int ntIdx = 0; ntIdx < 5; ntIdx++)
                     if (countsByNtAndRndTagIdx[ntIdx, rndTagIdx] > 0)
-                    {
-                        ntUsed[ntIdx] = 1;
                         nAltNtsInRndTag++;
-                    }
-                if (nAltNtsInRndTag > 0) rndTagCount++;
-                if (nAltNtsInRndTag > 1) result = false;
+                if (nAltNtsInRndTag > 1) return false;
             }
-            nAltNts = ntUsed.Sum();
-            return result;
+            return true;
         }
     }
 
@@ -82,30 +77,30 @@ namespace Linnarsson.Strt
 
         public void Add(MultiReadMappings mrm)
         {
-            foreach (MultiReadMapping m in mrm.IterMappings())
-            {
-                if (m.Mismatches != "" && m.Chr == verificationChr)
-                    foreach (int snpPos in data.Keys)
-                    {
-                        if (snpPos >= m.Position && snpPos <= m.Position + mrm.SeqLen)
-                            data[snpPos][mrm.BarcodeIdx].Add(mrm.RandomBcIdx, GetNtAtPos(snpPos, m.Position, m.Mismatches));
-                    }
-            }
+            if (!mrm.HasAltMappings && mrm[0].Chr == verificationChr)
+                foreach (int snpPos in data.Keys)
+                {
+                    if (snpPos >= mrm[0].Position && snpPos < mrm[0].Position + mrm.SeqLen)
+                        data[snpPos][mrm.BarcodeIdx].Add(mrm.RandomBcIdx, GetNtAtPos(snpPos, mrm[0].Position, mrm[0].Mismatches));
+                }
         }
 
         private char GetNtAtPos(int snpPos, int hitStartPos, string mismatches)
         {
-            foreach (string snp in mismatches.Split(','))
+            if (mismatches != "")
             {
-                int p = snp.IndexOf(':');
-                if (p == -1)
+                foreach (string snp in mismatches.Split(','))
                 {
-                    Console.WriteLine("Strange mismatches: " + mismatches + " at hitStartPos=" + hitStartPos);
-                    continue;
+                    int p = snp.IndexOf(':');
+                    if (p == -1)
+                    {
+                        Console.WriteLine("Strange mismatches: " + mismatches + " at hitStartPos=" + hitStartPos);
+                        continue;
+                    }
+                    int relPos = int.Parse(snp.Substring(0, p));
+                    if (hitStartPos + relPos == snpPos)
+                        return snp[p + 3];
                 }
-                int relPos = int.Parse(snp.Substring(0, p));
-                if (hitStartPos + relPos == snpPos)
-                    return snp[p + 3];
             }
             return '-';
 
@@ -113,45 +108,54 @@ namespace Linnarsson.Strt
 
         public void Verify(string fileNameBase)
         {
-            int nMaxUsedRndTags = 50;
-            string file = fileNameBase + "_snp_rndTag_verification.tab";           
+            int nMaxUsedRndTags = 50; // Errors may occur at rndTag saturation if two different molecules end up in the same rndTag
+            string file = fileNameBase + "_SNP_RndTag_verification.tab";           
             StreamWriter writer = new StreamWriter(file);
-            writer.WriteLine("Only showing problematic positions. (The genome, nonSNP, nt is represented by 0, since seq data is not kept.) Summary at end.");
-            writer.WriteLine("ChrPos\tBarcode\tRndTagIndices...");
-            writer.WriteLine("\tStd/SNPNt\tCounts...");
-            int nWithSnpAndCorrectRndTags = 0, nTotal = 0, nWithSnp = 0;
+            writer.WriteLine("Showing problematic positions on chr " + props.SnpRndTagVerificationChr +
+                             ". (The genome, nonSNP, nt is represented by 0, since seq data is not kept.) Summary at end.");
+            writer.Write("ChrPos\tBarcode\tNt");
+            for (int i = 0; i < props.Barcodes.Count; i++)
+                writer.Write("\t#InTag" + i);
+            writer.WriteLine();
+            int nCorrect = 0, nTotal = 0;
             foreach (int pos in data.Keys)
             {
                 for (int bcIdx = 0; bcIdx < data[pos].Length; bcIdx++)
                 {
                     SnpRndTagData sData = data[pos][bcIdx];
                     nTotal++;
-                    int nAltNts;
-                    int rndTagCounts;
-                    bool correct = sData.VerifyAndCalcNtAndRndTagCounts(out nAltNts, out rndTagCounts);
-                    if (nAltNts < 2 || rndTagCounts > nMaxUsedRndTags) continue;
-                    nWithSnp++;
-                    if (correct) nWithSnpAndCorrectRndTags++;
+                    if (sData.HasAllReadsInEachRndTagTheSameNt())
+                    {
+                        nCorrect++;
+                        continue;
+                    }
                     else
                     {
-                        StringBuilder sb = new StringBuilder();
-                        for (int i = 0; i < sData.countsByNtAndRndTagIdx.GetLength(1); i++)
-                            sb.Append("\t" + i);
-                        writer.WriteLine(pos + "\t" + props.Barcodes.Seqs[bcIdx] + sb.ToString());
+                        string wStart = pos + "\t" + props.Barcodes.Seqs[bcIdx];
                         for (int ntIdx = 0; ntIdx < 5; ntIdx++)
                         {
-                            writer.Write("\t" + "0ACGT"[ntIdx]);
+                            int cInNt = 0;
+                            StringBuilder sbNt = new StringBuilder();
+                            sbNt.Append("\t" + "0ACGT"[ntIdx]);
                             for (int i = 0; i < sData.countsByNtAndRndTagIdx.GetLength(1); i++)
-                                writer.Write("\t" + sData.countsByNtAndRndTagIdx[ntIdx, i].ToString());
-                            writer.WriteLine();
+                            {
+                                int c = sData.countsByNtAndRndTagIdx[ntIdx, i];
+                                cInNt += c;
+                                sbNt.Append("\t" + c.ToString());
+                            }
+                            if (cInNt > 0)
+                            {
+                                writer.Write(wStart);
+                                writer.WriteLine(sbNt.ToString());
+                                wStart = "\t";
+                            }
                         }
                     }
                 }
             }
-            writer.WriteLine("\n\n" + nWithSnpAndCorrectRndTags + " out of totally " + nWithSnp +
+            writer.WriteLine("\n\n" + nCorrect + " out of totally " + nTotal +
                              " chrPosition-barcode combinations containing alternative Nts had the same Nt within every rndTag.");
             writer.WriteLine("Max " + nMaxUsedRndTags + " busy rndTags were allowed for analysis.");
-            writer.WriteLine("Totally " + nWithSnp + " chrPosition-barcode combinations were considered.");
             writer.Close();
         }
     }

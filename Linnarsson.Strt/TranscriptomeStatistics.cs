@@ -18,6 +18,9 @@ namespace Linnarsson.Strt
         public static readonly int maxHotspotCount = 50;
         public static readonly int minHotspotDistance = 5;
 
+        StreamWriter nonAnnotWriter;
+        StreamWriter nonExonWriter;
+
         public bool GenerateWiggle { get; set; }
         public bool DetermineMotifs { get; set; }
         public bool AnalyzeAllGeneVariants { get; set; }
@@ -47,7 +50,7 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Total number of mapped reads
         /// </summary>
-        int numReads { get { return numReadsByBarcode.Sum(); } }
+        int nMappedReads { get { return numReadsByBarcode.Sum(); } }
         /// <summary>
         /// Total number of unique molecules in each barcode
         /// </summary>
@@ -59,7 +62,7 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Total number of duplicated reads when using random Tags
         /// </summary>
-        int numDuplicateReads { get { return numReads - numMolecules; } }
+        int numDuplicateReads { get { return nMappedReads - numMolecules; } }
         /// <summary>
         /// Number of molecules (reads when rndTags missing) that map to some annotation
         /// </summary>
@@ -152,6 +155,12 @@ namespace Linnarsson.Strt
             string mapFileName = Path.GetFileName(mapFilePaths[0]);
             currentBcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
             Console.Write("Annotatating " + mapFilePaths.Count + " map files");
+
+            if (!Directory.Exists(Path.GetDirectoryName(OutputPathbase)))
+                Directory.CreateDirectory(Path.GetDirectoryName(OutputPathbase));
+            nonAnnotWriter = new StreamWriter(OutputPathbase + "_NONANNOTATED.tab");
+            nonExonWriter = new StreamWriter(OutputPathbase + "_NONEXON.tab");
+
             foreach (string mapFilePath in mapFilePaths)
             {
                 Console.Write(".");
@@ -168,6 +177,9 @@ namespace Linnarsson.Strt
             if (bcMapFilePaths.Count > 0)
                 ProcessBarcodeMapFiles(bcMapFilePaths);
             Console.WriteLine();
+
+            nonAnnotWriter.Close();
+            nonExonWriter.Close();
         }
 
         private void ProcessBarcodeMapFiles(List<string> bcMapFilePaths)
@@ -221,15 +233,14 @@ namespace Linnarsson.Strt
             exonHitGeneNames.Clear();
             bool someAnnotationHit = false;
             bool someExonHit = false;
-            MarkStatus markType = MarkStatus.TEST_EXON_MARK_OTHER;
+            // Exonic pre-mapped multireads (i.e. the same TagItem will pass here several times, with different locations) should only be annotated at the exons:
+            MarkStatus markType = (item.tagItem.hasAltMappings) ? MarkStatus.TEST_EXON_SKIP_OTHER : MarkStatus.TEST_EXON_MARK_OTHER;
             foreach (FtInterval ivl in Annotations.GetMatching(item.chr, item.HitMidPos))
             {
-                if (item.tagItem.hasAltMappings)
-                    markType = MarkStatus.TEST_EXON_SKIP_OTHER; // Exonic position multireads should only be annotated at the exons
                 item.splcToRealChrOffset = 0;
                 MarkResult res = ivl.Mark(item, ivl.ExtraData, markType);
-                if (res.annotType == AnnotType.NOHIT)
-                    continue;
+                //if (res.annotType == AnnotType.NOHIT)
+                //    continue; // Happens if trying to Mark a repeat when some other feature is already annotated
                 someAnnotationHit = true;
                 if (AnnotType.IsTranscript(res.annotType))
                 {
@@ -274,7 +285,11 @@ namespace Linnarsson.Strt
             {
                 numAnnotatedMols += item.MolCount;
                 if (someExonHit) numExonAnnotatedMols += item.MolCount;
+                else
+                    nonExonWriter.WriteLine(item.ToString());
             }
+            else
+                nonAnnotWriter.WriteLine(item.ToString());
             if (exonHitGeneNames.Count > 1)
             {
                 exonHitGeneNames.Sort();
@@ -516,7 +531,7 @@ namespace Linnarsson.Strt
         {
             int allBcCount = barcodes.Count;
             int spBcCount = barcodes.GenomeBarcodeIndexes(Annotations.Genome, false).Length;
-            double totalReads = (readCounter.GrandTotal > 0)? readCounter.GrandTotal : numReads; // Default to numReads if extraction summary files are missing
+            double totalReads = (readCounter.GrandTotal > 0)? readCounter.GrandTotal : nMappedReads; // Default to numReads if extraction summary files are missing
             xmlFile.WriteLine("  <readfiles>");
             foreach (string path in readCounter.GetReadFiles())
                 xmlFile.WriteLine("    <readfile path=\"{0}\" />", path); 
@@ -527,17 +542,17 @@ namespace Linnarsson.Strt
             int validReads = readCounter.GrandCount(ReadStatus.VALID);
             xmlFile.WriteLine("    <point x=\"Valid STRT reads[{0}] ({1:0%})\" y=\"{2}\" />", allBcCount, validReads / totalReads, validReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Multireads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMaxAltMappingsReads / totalReads, nMaxAltMappingsReads / 1.0E6d);
-            xmlFile.WriteLine("    <point x=\"Mapped reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numReads / totalReads, numReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Mapped reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMappedReads / totalReads, nMappedReads / 1.0E6d);
             double dividend = totalReads;
             double reducer = 1.0E6d;
             if (barcodes.HasRandomBarcodes)
             {
+                xmlFile.WriteLine("    <point x=\"Duplicate reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numDuplicateReads / totalReads, numDuplicateReads / 1.0E6d);
                 dividend = numMolecules;
                 reducer = 1.0E3d;
-                xmlFile.WriteLine("    <point x=\"Duplicate reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numDuplicateReads / dividend, numDuplicateReads / 1.0E6d);
                 xmlFile.WriteLine("  </reads>");
                 xmlFile.WriteLine("  <molecules>");
-                xmlFile.WriteLine("    <title>Molecule distribution (10^6). [# samples/wells]</title>");
+                xmlFile.WriteLine("    <title>Molecule distribution (10^3). [# samples/wells]</title>");
                 xmlFile.WriteLine("    <point x=\"Unique molecules [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numMolecules / dividend, numMolecules / reducer);
             }
             xmlFile.WriteLine("    <point x=\"Annotated [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numAnnotatedMols / dividend, numAnnotatedMols / reducer);
@@ -659,7 +674,7 @@ namespace Linnarsson.Strt
                 double nAsense = TotalHitsByAnnotTypeAndChr[chr][AnnotType.AEXON];
                 string ratio = (nAsense == 0)? "1:0" : string.Format("{0:0}", nSense / (double)nAsense);
                 xmlFile.WriteLine("    <point x=\"{0}#br#{1}\" y=\"{2:0.###}\" y2=\"{3:0.###}\" />",
-                                  chr, ratio, 100.0d *(nSense / (double)numReads), 100.0d * (nAsense / (double)numReads));
+                                  chr, ratio, 100.0d *(nSense / (double)nMappedReads), 100.0d * (nAsense / (double)nMappedReads));
             }
             xmlFile.WriteLine("  </senseantisensebychr>");
         }

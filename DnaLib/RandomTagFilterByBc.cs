@@ -48,7 +48,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Preapre for analysis of a SNP at specified position
+        /// Prepare for analysis of a SNP at specified position
         /// </summary>
         /// <param name="snpChrPos"></param>
         public void RegisterSNP(int snpChrPos)
@@ -114,12 +114,14 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Add a read and checks weather the specified rndTag has been seen before on the pos and strand.
+        /// Add a read and checks wether the specified rndTag has been seen before on the pos and strand.
         /// </summary>
         /// <param name="pos"></param>
         /// <param name="strand"></param>
         /// <param name="rndTagIdx"></param>
         /// <param name="hasAltMappings">Should be true whenever the mapping is not unique in genome</param>
+        /// <param name="mismatches">Mismatch annotation string from .map file</param>
+        /// <param name="readLen">Length of this mapped sequence. Needed for placement of SNPs when strand=='-'</param>
         /// <returns>true if the rndTag is new at this position-strand</returns>
         public bool Add(int pos, char strand, int rndTagIdx, bool hasAltMappings, string mismatches, int readLen)
         {
@@ -153,10 +155,13 @@ namespace Linnarsson.Strt
             MappedTagItem item = new MappedTagItem();
             foreach (KeyValuePair<int, TagItem> cPair in tagItems)
             {
-                item.tagItem = cPair.Value;
-                item.strand = ((cPair.Key & 1) == 0)? '+' : '-';
-                item.hitStartPos = cPair.Key >> 1;
-                yield return item;
+                if (cPair.Value.HasReads)
+                {
+                    item.tagItem = cPair.Value;
+                    item.strand = ((cPair.Key & 1) == 0) ? '+' : '-';
+                    item.hitStartPos = cPair.Key >> 1;
+                    yield return item;
+                }
             }
         }
 
@@ -318,7 +323,6 @@ namespace Linnarsson.Strt
         public void Setup(string tagMappingFile)
         {
             Console.WriteLine("Reading pre-calculated exonic multiread mappings from " + tagMappingFile);
-            int n = 0;
             using (StreamReader reader = new StreamReader(tagMappingFile))
             {
                 string line = reader.ReadLine();
@@ -326,7 +330,6 @@ namespace Linnarsson.Strt
                 {
                     if (line.IndexOf('\t') > 0 && !line.StartsWith("#"))
                     {
-                        if (++n % 1000000 == 0) Console.WriteLine(n + "...");
                         TagItem tagItem = new TagItem(true);
                         string[] groups = line.Split('\t');
                         foreach (string group in groups)

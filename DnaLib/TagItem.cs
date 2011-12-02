@@ -42,7 +42,8 @@ namespace Linnarsson.Dna
 
         public override string ToString()
         {
-            return string.Format("Loc=chr{0}{1}{2} Bc={3} HitStartPos={4} #Mols={5} #Reads={6}", chr, strand, hitStartPos, bcIdx, hitStartPos, MolCount, ReadCount);
+            return string.Format("MappedLoc=chr{0}{1}.{2} Bc={3} HitMidPos={4} #Mols={5} #Reads={6} HasAltMappings={7}",
+                                 chr, strand, hitStartPos, bcIdx, HitMidPos, MolCount, ReadCount, m_TagItem.hasAltMappings);
         }
 
         public IEnumerable<LocatedSNPCounter> IterMolSNPCounts()
@@ -68,7 +69,7 @@ namespace Linnarsson.Dna
     /// </summary>
     public class TagItem
     {
-        public static int ratioForMutationFilter = 1000; //10
+        public static int ratioForMutationFilter = 1000; // 20 seems a good number, but need to investigate various seq depths before final decision
         public static int nRndTags;
         /// <summary>
         /// Counts number of reads in each rndTag

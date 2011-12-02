@@ -56,12 +56,11 @@ namespace Linnarsson.Dna
         public bool AnalyzeAllGeneVariants = true; // Analyze all alternative splice sites in exons etc.
         public bool DirectionalReads = true; // STRT are always directional reads
         public bool UseRPKM = false; // Give RPKM instead of RPM in output files for non-STRT samples
-        public string DefaultBarcodeSet = "v4"; // This is the default barcode set
+        public string DefaultBarcodeSet = "v2"; // This is the default barcode set
         public int LocusFlankLength = 1000; // Maximum length of UPSTREAM and DOWNSTREAM regions to analyse
-        public int SpliceFlankLength = 60; // Bp to join from each of two exons when constructing the artificial splice chromosome
-        public int StandardReadLen = 53; // Better not use actual read that are longer - totherwise some junction hits may be missed
+        public int StandardReadLen = 53; // Better not use actual read that are longer - otherwise some junction hits may be missed
         public int MaxAlignmentMismatches = 3;  // Should be the value used in bowtie calls
-        public int MaxExonsSkip = 10; // Max number of exons to consider for splice out in junction chromosome
+        public int MaxExonsSkip = 12; // Max number of exons to consider for splice out in junction chromosome
         public bool AnalyzeExtractionQualities = false; // Analyze read quality and color balance
         public int MinExtractionInsertLength = 25; // Min acceptable read length excluding barcode and GGG
 		public int MinExtractionInsertNonAs = 5; // Min number of C/G/T in an acceptable read
@@ -70,7 +69,7 @@ namespace Linnarsson.Dna
 		public byte QualityScoreBase = 64; // For ASCII-encoding of phred scores (if you change this, then also change Bowtie options below)
         public string BowtieOptions = "--phred64-quals -a -v MaxAlignmentMismatches -M 1 --best";
         public double SyntheticReadsRandomMutationProb = 0.0; // Used only in synthetic data construction
-        public double SyntheticReadsBackgroundFreq = 0.0001; // Frequency of random background reads in synthetic data
+        public double SyntheticReadsBackgroundFreq = 0.0; // Frequency of random background reads in synthetic data
         public bool SynthesizeReadsFromGeneVariants = false; // Used only in synthetic data construction
         public string TestAnalysisFileMarker = "SYNT_READS"; // Indicator in files related to synthesized test reads
         public int MaxFeatureLength = 2500000; // Longer features (loci) are excluded from analysis
@@ -89,7 +88,7 @@ namespace Linnarsson.Dna
         public string BarcodesName
         {
             get { if (m_BarcodesName == null) m_BarcodesName = DefaultBarcodeSet; return m_BarcodesName; }
-            set { if (m_BarcodesName != value) { m_BarcodesName = value; m_Barcodes = null; } }
+            set { m_BarcodesName = value; m_Barcodes = null; }
         }
 
         private static Props Read()

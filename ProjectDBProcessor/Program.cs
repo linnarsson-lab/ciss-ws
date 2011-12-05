@@ -236,7 +236,7 @@ namespace ProjectDBProcessor
                     File.Delete(tempTarGzPath);
                 }
                 else
-                    resultLinks.Add(tempTarGzPath);
+                    resultLinks.Add(Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server - contact administrator!");
             }
             return resultLinks;
         }

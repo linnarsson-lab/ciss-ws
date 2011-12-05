@@ -61,7 +61,7 @@ namespace BkgFastQMailer
             string now = DateTime.Now.ToString();
             logWriter.WriteLine("Starting BkgFastQMailer at " + now);
             logWriter.Flush();
-            Console.WriteLine("BkgFastQMailer stated at " + now + " and logging to " + logFile);
+            Console.WriteLine("BkgFastQMailer started at " + now + " and logging to " + logFile);
 
             ReadMailer readMailer = new ReadMailer(readsFolder, logWriter);
             int nExceptions = 0;

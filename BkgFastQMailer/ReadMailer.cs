@@ -82,6 +82,8 @@ namespace BkgFastQMailer
         {
             string readsFileLink = "";
             string tempFqPath = readsFile + ".temp_copy";
+            if (File.Exists(tempFqPath))
+                File.Delete(tempFqPath);
             File.Copy(readsFile, tempFqPath);
             int gzipResult = CmdCaller.Run("gzip", tempFqPath);
             if (gzipResult == 0)

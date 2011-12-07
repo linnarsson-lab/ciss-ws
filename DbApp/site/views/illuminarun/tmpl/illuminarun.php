@@ -52,7 +52,7 @@ defined('_JEXEC') or die('Restricted access'); ?>
 
     echo "<h1>Illumina run $irilluminarunid </h1>
            <div class='illuminarun'><fieldset>   
-             <legend>Run data &nbsp; &nbsp; $editlink $sendlink</legend>";
+             <legend>Run data &nbsp; &nbsp; $editlink</legend>";
     echo "<table>
             <tr><td>Run date:</td><td> $irrundate </td><td rowspan='6'>";
     echo ($irrundocument == "")? "(No run doc loaded)" : "Run document<br/> $irrundocument ";
@@ -70,7 +70,7 @@ defined('_JEXEC') or die('Restricted access'); ?>
          </fieldset></div>";
 
     echo "<div class='lanes'><fieldset>
-           <legend>Lanes in the Illumina run &nbsp; &nbsp; $editlane </legend>";
+           <legend>Lanes in the Illumina run &nbsp; &nbsp; $editlane $sendlink</legend>";
     echo "<table>
            <tr>
             <th>Lane</th>

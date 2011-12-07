@@ -62,8 +62,9 @@ defined('_JEXEC') or die('Restricted access');
                </nobr>
             </legend>
           <table><tr>
-            <th colspan='2'></th>
+            <th></th>
             <th>SampleId&nbsp;<br />" . JHTML::tooltip('Plate L-number or other designation (e.g. S-number) for non-STRT plates/samples') . "</th>
+            <th>BcSet&nbsp;</th>
             <th>Species&nbsp;<br />" . JHTML::tooltip('Only meaningful if no layout file is given') . "</th>
             <th>P.I.&nbsp;</th>
             <th>Contact&nbsp;</th>
@@ -116,25 +117,29 @@ defined('_JEXEC') or die('Restricted access');
     if ($strt == "no" && $project->plateid[0] == "L") continue;
 
     echo "<tr>";
-    $projectlink = "<a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
-           . $project->id . "&Itemid=" . $itemid . ">view</a>";
-    $editlink = "<a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=" 
-           . $project->id . "&Itemid=" . $itemid . ">edit</a>";
-    echo "<td style='padding-right:2px;'>" . $projectlink . "</td><td>" . $editlink . "</td>";
-    echo "<td>" . $project->plateid . "</td>";
-    echo "<td>" . $project->species . "</td>";
-    echo "<td><nobr>" . $project->principalinvestigator . "</nobr></td>";
-    echo "<td><nobr>" . $project->contactperson . "</nobr></td>";
+    $projectlink = "&nbsp; <a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
+           . $project->id . "&Itemid=" . $itemid . ">" . $project->plateid . "</a>&nbsp;";
+    $editlink = "&nbsp; <a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=" 
+           . $project->id . "&Itemid=" . $itemid . ">edit</a>&nbsp;";
+    echo "<td>" . $editlink . "</td>";
+    echo "<td>" . $projectlink . "&nbsp;</td>";
+    echo "<td>" . $project->barcodeset . "&nbsp;</td>";
+    echo "<td>" . $project->species . "&nbsp;</td>";
+    echo "<td><nobr>" . $project->principalinvestigator . "&nbsp;</nobr></td>";
+    echo "<td><nobr>" . $project->contactperson . "&nbsp;</nobr></td>";
 
     $mngr = $project->person;
     if (strpos($mngr, ' ') >= 1)
       $mngr = implode(array_map(create_function('$a', 'return $a[0];'), explode(' ', $project->person)));
     else $mngr = substr($mngr, 0, 5);
-    echo "<td><nobr>" . $mngr . "</nobr></td>";
+    echo "<td><nobr>" . $mngr . "&nbsp;</nobr></td>";
     echo "<td><nobr>" . $project->plannedlanes . "</nobr></td>";
     echo "<td><nobr>" . $project->assignedlanes . "</nobr></td>";
-    echo "<td><nobr>" . (($project->status == 'cancelled')? 'cancelled' : $project->astatus) . "</nobr></td>";
-    echo "<td>" . (($project->analysiscount > 0)? $project->analysiscount : "-") . "</td>";
+    if ($project->status == 'cancelled')
+         echo "<td><nobr>cancelled&nbsp;</nobr></td>";
+    else
+        echo "<td><nobr>" . (($project->astatus == 'cancelled')? '---' : $project->astatus) . "&nbsp;</nobr></td>";
+    echo "<td>&nbsp;" . (($project->analysiscount > 0)? $project->analysiscount : "-") . "&nbsp;</td>";
     $filelink = "";
     if ($project->layoutfile) $filelink = "yes";
     echo "<td><nobr><a href='/uploads/" . $project->layoutfile . "' target='_blank' >" . $filelink . "</a></nobr></td>";
@@ -143,4 +148,3 @@ defined('_JEXEC') or die('Restricted access');
   echo "</table></fieldset></div><br />";
 
 ?>
-

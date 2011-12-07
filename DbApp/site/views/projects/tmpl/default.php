@@ -33,13 +33,16 @@ defined('_JEXEC') or die('Restricted access');
   $cancelledfilter = $cancelhead . $sortKey . ">" . $cancelchange . " cancelled</a>";
 
   if ($strt == "yes") {
+    $strtnow = "only STRT";
     $strtchange = "Only non-STRT";
     $strthead = str_replace("strt=yes", "strt=no", $sorturlhead);
   }
   else if ($strt == "no") {
+    $strtnow = " non-STRT";
     $strtchange = "Show STRT & non-STRT";
     $strthead = str_replace("strt=no", "strt=all", $sorturlhead);
   } else {
+    $strtnow = "";
     $strtchange = "Only STRT";
     $strthead = str_replace("strt=all", "strt=yes", $sorturlhead);
   }
@@ -50,7 +53,7 @@ defined('_JEXEC') or die('Restricted access');
   if ($managerId != "") $filterText .= " for manager " . $managerId;
   if ($contactId != "") $filterText .= " for contact " . $contactId;
   if ($cancelled == "yes") $filterText .= " including cancelled";
-  if ($strt != "all") $filterText .= " " . $strtchange;
+  if ($strt != "all") $filterText .= " " . $strtnow;
 
   echo "<h1>Samples $filterText </h1>";
   echo "<div class='project'>

@@ -12,14 +12,15 @@ function validateForm()
 {
 	var filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
 	var email = document.getElementById("email").value;
-	if (filter.test(email))
-		return true;
-	alert("The email address is invalid!");
-	return false;
+	if (!filter.test(email)) {
+		alert("The email address is invalid!");
+		return false;
+	}
+	adminForm.submit();
 }
 </script>
 
-<form action="<?php echo JText::_('?option=com_dbapp&view=manager&layout=save&id='.(int) $searchid); ?>" onsubmit="return validateForm();" method="post" name="adminForm" id="admin-form" class="form-validate">
+<form action="<?php echo JText::_('?option=com_dbapp&view=manager&layout=save&id='.(int) $searchid); ?>" method="post" name="adminForm" id="admin-form" class="form-validate">
 <h1>Manager - Edit VIEW</h1>
 <div class='manager'><fieldset><legend>
 <?php
@@ -58,7 +59,7 @@ function validateForm()
 </table>
 </fieldset></div>
 <br/>
-<input type="Submit" name="Submit" value="Save">
+<input type="Submit" name="Submit" value="Save" onclick="validateForm(); return false;">
 <input type="Submit" name="Submit" value="Cancel" >
 <?php
     $menus = &JSite::getMenu();

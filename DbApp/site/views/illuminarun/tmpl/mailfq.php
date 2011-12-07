@@ -42,24 +42,26 @@ function updateSelect(i)
   document.getElementById("submitbutton").disabled = (c == 0); 
   return true;
 }
+
 function validateForm()
 {
-	var result = true;
+	if (document.getElementById("submitbutton").value == "Cancel")
+		return true;
 	var filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-	for (l = 1; l <= 8; l++) {
+	for (i = 1; i <= 8; i++) {
 		if (document.getElementById("lanesel" + i).checked) {
 				var email = document.getElementById("email" + i).value;
 			if (!filter.test(email)) {
 				alert("The email address " + email + " is invalid!");
-				result = false;
+				return false;
 			}
 		}
 	}
-	return result;
+	adminForm.submit();
 }
 </script>
 
-<form action="<?php echo JText::_('?option=com_dbapp&view=illuminarun&layout=savemails&id='.(int) $irrunno); ?>" onsubmit="return validateForm();" method="post" name="adminForm" id="admin-form" class="form-validate">
+<form action="<?php echo JText::_('?option=com_dbapp&view=illuminarun&layout=savemails&id='.(int) $irrunno); ?>" method="post" name="adminForm" id="admin-form" class="form-validate">
 
 <?php
     echo "<h1>Email FastQ read files from run $irilluminarunid </h1>";
@@ -119,7 +121,7 @@ function validateForm()
   if ($boxid == "") {
     echo "<p><b>No valid lanes with fastq files ready to send were found!</b></p>";
   } else {
-    echo '<input type="Submit" name="Submit" id="submitbutton" value="Put selected lanes in mail queue" disabled="disabled" />';
+    echo '<input type="Submit" name="Submit" id="submitbutton" value="Put selected lanes in mail queue" onclick="validateForm(); return false;" disabled="disabled" />';
   }
 ?>
 <input type="Submit" name="Submit" value="Cancel" />

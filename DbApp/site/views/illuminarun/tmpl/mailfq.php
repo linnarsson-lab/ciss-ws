@@ -42,8 +42,24 @@ function updateSelect(i)
   document.getElementById("submitbutton").disabled = (c == 0); 
   return true;
 }
+function validateForm()
+{
+	var result = true;
+	var filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+	for (l = 1; l <= 8; l++) {
+		if (document.getElementById("lanesel" + i).checked) {
+				var email = document.getElementById("email" + i).value;
+			if (!filter.test(email)) {
+				alert("The email address " + email + " is invalid!");
+				result = false;
+			}
+		}
+	}
+	return result;
+}
 </script>
-<form action="<?php echo JText::_('?option=com_dbapp&view=illuminarun&layout=savemails&id='.(int) $irrunno); ?>" method="post" name="adminForm" id="admin-form" class="form-validate">
+
+<form action="<?php echo JText::_('?option=com_dbapp&view=illuminarun&layout=savemails&id='.(int) $irrunno); ?>" onsubmit="return validateForm();" method="post" name="adminForm" id="admin-form" class="form-validate">
 
 <?php
     echo "<h1>Email FastQ read files from run $irilluminarunid </h1>";

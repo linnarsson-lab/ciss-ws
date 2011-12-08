@@ -17,6 +17,21 @@ class DbAppModelEntry extends JModel {
 		parent::populateState();
 	}
 
+  public function getBuptasks() {
+    $db =& JFactory::getDBO();
+    $query = ' SELECT id, path, status, priority FROM #__aaabackupqueue ORDER BY status ';
+    $db->setQuery($query);
+    $buptasks = $db->loadObjectList();
+    return $buptasks;  
+  }
+  public function getMailtasks() {
+    $db =& JFactory::getDBO();
+    $query = ' SELECT id, runno, laneno, email, status FROM #__aaafqmailqueue ORDER BY status ';
+    $db->setQuery($query);
+    $mailtasks = $db->loadObjectList();
+    return $mailtasks;  
+  }
+
   public function getProjects() {
     $db =& JFactory::getDBO();
     $query = " SELECT #__aaaproject.id as id, principalinvestigator, #__aaaclient.id as aaaclientid, person, #__aaamanager.id as aaamanagerid, contactperson, #__aaacontact.id as aaacontactid, title, plateid, barcodeset, species, tissue, sampletype, collectionmethod, weightconcentration, fragmentlength, molarconcentration, labbookpage, protocol, #__aaaproject.comment as comment, #__aaaproject.user as user, #__aaaproject.time as time
@@ -30,7 +45,6 @@ class DbAppModelEntry extends JModel {
   }
 
   public function getClients() {
-
     $db =& JFactory::getDBO();
     $query = ' SELECT #__aaaclient.id AS id, principalinvestigator, department, address, vatno, comment, user, time, #__categories.title as category 
                FROM #__aaaclient
@@ -41,3 +55,4 @@ class DbAppModelEntry extends JModel {
   }
 
 }
+?>

@@ -1,64 +1,63 @@
 <?php
 defined('_JEXEC') or die('Restricted access');
-?>
-<?php 
-  $menus = &JSite::getMenu();
-  $menu  = $menus->getActive();
-  $itemid = $menu->id;
-  $newClink = "<a href=index.php?option=com_dbapp&view=client&layout=edit&controller=client&searchid=0&Itemid=" . $itemid . " >&nbsp;Add&nbsp;new&nbsp;client&nbsp;</a>";
-  $newPlink = "<a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=0&Itemid=" . $itemid . " >&nbsp;Add&nbsp;new&nbsp;project&nbsp;</a>";
+JHtml::_('behavior.tooltip');
+JHtml::_('behavior.formvalidation');
+$searchid = JRequest::getVar('searchid', -1) ;
+$menus = JSite::getMenu();
+$db =& JFactory::getDBO();
+$menu  = $menus->getActive();
+$itemid = $menu->id;
 
-  echo "<H1>Illumina Sequencing Database</H1>";
-  echo "<p>This is the database handling our sequencing runs. All sequencing projects should have a responsible Principal Investigator. Make sure that the P.I. exists before you continue. Moreover, each project should have a responsible person running the experiment. This person is the Manager. The client (P.I.) also has an appointed contact person to the project. Client, Manager and Contact should be defined before you define the Project.</p>";
+function checkProcesses($exenames)
+{
+    $processcounts = Array();
+    foreach ($exenames as $exename)
+        $processcounts[$exename] = 0;
+    $cmd = "ps ax";
+    exec($cmd, $lines, $result);
+    foreach ($lines as $line)
+    {
+        foreach ($processcounts as $exename => $count) {
+            if (preg_match("/mono.+$exename/", $line) == 1) {
+                $processcounts[$exename] = $count + 1;
+            }
+        }
+    }
+     return $processcounts;
+}
 
-  echo "<div class='client'><fieldset><legend>List of clients</legend><table>";
-  echo "<tr><th>View</th><th>Edit</th><th>$newClink</th><th></th></tr>";
-  echo "<tr><th>&nbsp;Principal&nbsp;Investigator&nbsp;</th>
-            <th>&nbsp;Department&nbsp;</th>
-            <th>&nbsp;Category&nbsp;</th>
-            <th>&nbsp;Latest&nbsp;edit&nbsp;</th></tr>";
-  foreach ($this->clients as $client) {
-    echo "<tr>";
-    $clientlink = "<a href=index.php?option=com_dbapp&view=client&layout=client&controller=client&searchid=" 
-           . $client->id . "&Itemid=" . $itemid . ">";
-    $editlink = "<a href=index.php?option=com_dbapp&view=client&layout=edit&controller=client&searchid=" 
-           . $client->id . "&Itemid=" . $itemid . ">";
-    echo "<td>" . $clientlink . $client->principalinvestigator . "</a></td>";
-    echo "<td>" . $editlink . $client->department . "</a></td>";
-    echo "<td>" . $client->category . "</td>";
-    echo "<td>" . $client->user . " " ;
-    echo $client->time . "</td>";
-    echo "<tr>";
-  }
-  echo "</table></fieldset></div><br />";
+$waiting = Array();
+$query = ' SELECT COUNT(*) FROM #__aaailluminarun WHERE status != "copied" AND status != "cancelled" ';
+$db->setQuery($query);
+$waiting["Read collector"] = $db->loadResult();
+$query = ' SELECT COUNT(*) FROM #__aaafqmailqueue WHERE status = "inqueue" ';
+$db->setQuery($query);
+$waiting["FastQ mailer"] = $db->loadResult();
+$query = ' SELECT COUNT(*) FROM #__aaabackupqueue WHERE status = "inqueue" ';
+$db->setQuery($query);
+$waiting["Backuper"] = $db->loadResult();
+$query = ' SELECT COUNT(*) FROM #__aaaanalysis WHERE status != "ready" AND status != "cancelled" ';
+$db->setQuery($query);
+$waiting["Analyzer"] = $db->loadResult();
 
-  echo "<div class='project'><fieldset><legend>List of Projects</legend><table>";
-  echo "<tr><th>View</th><th>Edit</th><th></th><th>$newPlink</th><th></th><th></th><th></th></tr>";
-  echo "<tr><th>&nbsp;Plate&nbsp;id&nbsp;</th>
-            <th>&nbsp;Species&nbsp;</th>
-            <th>&nbsp;P.&nbsp;I.&nbsp;</th>
-            <th>&nbsp;Contact&nbsp;person&nbsp;</th>
-            <th>&nbsp;Manager&nbsp;</th>
-            <th>&nbsp;Tissue&nbsp;</th>
-            <th>&nbsp;Latest&nbsp;edit&nbsp;</th></tr>";
-  foreach ($this->projects as $project) {
-    echo "<tr>";
-    $projectlink = "<a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
-           . $project->id . "&Itemid=" . $itemid . ">";
-    $editlink = "<a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=" 
-           . $project->id . "&Itemid=" . $itemid . ">";
-    echo "<td>" . $projectlink . $project->plateid . "</a></td>";
-    echo "<td>" . $editlink . $project->species . "</a></td>";
-    echo "<td>" . $project->principalinvestigator . "</td>";
-    echo "<td>" . $project->contactperson . "</td>";
-    echo "<td>" . $project->person . "</td>";
-    echo "<td>" . $project->tissue . "</td>";
-    echo "<td>" . $project->user . " " ;
-    echo $project->time . "</td>";
-    echo "</tr>";
-  }
-  echo "</table></fieldset></div><br />";
-  echo "<p>This is the main entry point for the database. You can list Projects, Clients, Managers, Contacts, 'Sequencing batches' and 'Illumina runs' using the menu items to the right. From these lists you also have the possibility to view and/or edit individual records. When the Project is defined (including client, manager and contact) you can add a sequencing run. The sequencing run is what the P.I. has to sign and the record include among other things 'planned number of runs'. When sequencing runs have been included you can include them in an Illumina run. First you define run i.e. add run date and any comments you might have. Then you start to add the 'sequencing runs' to the different lanes by 'edit lanes'. </p>";
+$processnames = Array("Backuper" => "BkgBackuper.exe", "Analyzer" => "ProjectDBProcessor.exe",
+                      "FastQ mailer" => "BkgFastQMailer.exe", "Read collector" => "BkgFastQCopier.exe");
+$processcounts = checkProcesses(array_values($processnames));
+$processlinks = Array();
+$processlinks["Backuper"] = "<a href=index.php?option=com_dbapp&view=entry&layout=bupqueue&controller=entry&searchid=" 
+                      . $task->id . "&Itemid=" . $itemid . ">Details</a>";
+$processlinks["FastQ mailer"] = "<a href=index.php?option=com_dbapp&view=entry&layout=mailqueue&controller=entry&searchid=" 
+                      . $task->id . "&Itemid=" . $itemid . ">Details</a>";
+$processlinks["Read collector"] = "<a href=index.php?option=com_dbapp&view=illumina-runs&Itemid=" . $itemid . ">Runs</a>";
+$processlinks["Analyzer"] = "<a href=index.php?option=com_dbapp&view=analysisresults&Itemid=" . $itemid . ">Samples</a>";
 
+echo "<div><fieldset><legend>Overview of running processes</legend><table>";
+echo "<tr><th>Process&nbsp;</th><th>Program&nbsp;</th><th>Running instances&nbsp;</th><th>Tasks in line&nbsp;</th><th></th></tr>\n";
 
+foreach ($processnames as $process => $exename) {
+    echo "<tr><td>$process&nbsp;</td><td>$exename&nbsp;</td><td>" . 
+	              $processcounts[$exename] . "&nbsp;</td><td>" . 
+				  $waiting[$process] ."</td><td>" . $processlinks[$process] . "</td></tr>\n";
+}
+echo "</table></fieldset></div><br />&nbsp;<br />";
 ?>

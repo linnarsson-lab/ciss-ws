@@ -5,13 +5,16 @@ jimport('joomla.application.component.view');
 
 class DbAppViewEntry extends JView {
 
+  function display($tpl = null) {
 
-	function display($tpl = null) {
-
-    $projects = $this->get('Projects');
-    $this->assignRef('projects', $projects);
-    $clients = $this->get('Clients');
-    $this->assignRef('clients', $clients);
+    //$projects = $this->get('Projects');
+    //$this->assignRef('projects', $projects);
+    //$clients = $this->get('Clients');
+    //$this->assignRef('clients', $clients);
+    $mailtasks = $this->get('Mailtasks');
+    $this->assignRef('mailtasks', $mailtasks);
+    $buptasks = $this->get('Buptasks');
+    $this->assignRef('buptasks', $buptasks);
 
     if (count($errors = $this->get('Errors'))) {
       JError::raiseError(500, implode('<br />', $errors));
@@ -19,7 +22,7 @@ class DbAppViewEntry extends JView {
     }
 
     parent::display($tpl);
-
-	}
+  }
 
 }
+?>

@@ -101,7 +101,13 @@ namespace Linnarsson.Strt
         private PathHandler ph;
         private AnnotationReader annotationReader;
 
+        /// <summary>
+        /// ReadLen excludes the barcode and rndTag section.
+        /// </summary>
         private int ReadLen { get; set; }
+        /// <summary>
+        /// Corresponds to the -v option in bowtie
+        /// </summary>
         private int MaxAlignmentMismatches { get; set; }
         private int MatchableLen { get { return ReadLen - MaxAlignmentMismatches; } }
         private int MaxExonsSkip { get; set; }
@@ -116,7 +122,7 @@ namespace Linnarsson.Strt
             ph = new PathHandler(props);
         }
 
-        public IEnumerable<ExonCombination> GenerateSplices(GeneFeature gf, DnaSequence chrSeq)
+        private IEnumerable<ExonCombination> GenerateSplices(GeneFeature gf, DnaSequence chrSeq)
         {
             List<DnaSequence> exonSeqsInChrDir = GetExonSequences(gf, chrSeq);
             foreach (ExonCombination ec in ExonCombinationGenerator.MakeAllExonCombinations(MatchableLen, MaxExonsSkip, exonSeqsInChrDir))
@@ -184,7 +190,8 @@ namespace Linnarsson.Strt
         }
         public void BuildExonSplices(StrtGenome genome, string newIndexName)
         {
-            int smallestReadMatchDistFromEnd = Math.Max(0, props.MinExtractionInsertLength / 2 - MaxAlignmentMismatches);
+            ReadLen = genome.ReadLen;
+            int smallestReadMatchDistFromEnd = Math.Max(0, props.MinExtractionInsertLength / 2 - props.MaxAlignmentMismatches);
             string junctionsChrId = "chr" + genome.Annotation;
             Console.WriteLine("Reading genes for genome {0} and annotations {1}...", genome.Annotation, genome.Build);
             Dictionary<string, List<GeneFeature>> gfByChr = annotationReader.BuildGeneModelsByChr();

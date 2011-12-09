@@ -24,7 +24,7 @@ namespace Linnarsson.Strt
         int hotspotCount;
         double snpProb = 0.001;
         double trPosTiltPower = 8.0;
-        int[] readLengthSamples = new int[10] { 50, 50, 50, 50, 50, 50, 49, 49, 48, 48 };
+        int[] readLengthSamples = new int [4] { 50, 50, 50, 50 };
         private int maxReadLength;
         private int readNumber;
         private string[] barcodesGGG;
@@ -42,9 +42,8 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Generates synthetic transcript read data as a FASTA file for testing of the analysis pipeline.
-        /// Will avoid to pick polyA sequences that will not be accepted by the extraction step.
-        /// Generates random mutations depending of the Props settings.
+        /// Generates synthetic transcript read data as a FastQ file for testing of the analysis pipeline.
+        /// Generates random mutations, batcodes and rndTags depending of the Props settings.
         /// </summary>
         /// <param name="genome">Genome to pick reads from</param>
         /// <param name="dataId">Identifier of output files</param>

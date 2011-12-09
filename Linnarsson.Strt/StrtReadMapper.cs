@@ -305,6 +305,8 @@ namespace Linnarsson.Strt
                     StreamWriter sw_slask = extrInfo.slaskFilePath.OpenWrite();
                     int bcIdx;
                     ExtractionQuality extrQ = (props.AnalyzeExtractionQualities) ? new ExtractionQuality(props.LargestPossibleReadLength) : null;
+                    double totLen = 0.0;
+                    long nRecords = 0;
                     foreach (FastQRecord fastQRecord in FastQFile.Stream(extrInfo.readFilePath, props.QualityScoreBase))
                     {
                         FastQRecord rec = fastQRecord;
@@ -314,6 +316,8 @@ namespace Linnarsson.Strt
                         readCounter.Add(readStatus);
                         if (readStatus == ReadStatus.VALID)
                         {
+                            totLen += rec.Sequence.Length;
+                            nRecords++;
                             sws_barcoded[bcIdx].WriteLine(rec.ToString(props.QualityScoreBase));
                         }
                         else sw_slask.WriteLine(rec.ToString(props.QualityScoreBase));
@@ -321,7 +325,9 @@ namespace Linnarsson.Strt
                     CloseStreamWriters(sws_barcoded);
                     sw_slask.Close();
                     StreamWriter sw_summary = extrInfo.summaryFilePath.OpenWrite();
+                    int averageReadLen = (int)Math.Floor(totLen / nRecords);
                     sw_summary.WriteLine(readCounter.TotalsToTabString());
+                    sw_summary.WriteLine("MEANREADLEN\t" + averageReadLen);
                     sw_summary.WriteLine("\nBelow are the most common words among all reads.\n");
                     sw_summary.WriteLine(wordCounter.GroupsToString(200));
                     sw_summary.Close();
@@ -404,6 +410,7 @@ namespace Linnarsson.Strt
             foreach (string speciesArg in speciesArgs)
             {
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, projDescr.analyzeVariants, projDescr.defaultBuild);
+                genome.ReadLen = GetReadLen(projDescr);
                 SetAvailableBowtieIndexVersion(projDescr, genome);
                 CreateBowtieMaps(genome, projDescr.extractionInfos);
                 List<string> mapFilePaths = GetAllMapFilePaths(projDescr.extractionInfos);
@@ -426,6 +433,29 @@ namespace Linnarsson.Strt
                                     " - trying UCSC instead for " + projDescr.projectName);
                 genome.Annotation = "UCSC";
             }
+        }
+
+        private int GetReadLen(ProjectDescription projDescr)
+        {
+            List<string> extractedByBcFolders = projDescr.extractionInfos.ConvertAll(l => l.extractedFileFolder);
+            return GetReadLen(extractedByBcFolders.ToArray());
+        }
+        private int GetReadLen(string extractedFolder)
+        {
+            string searchIn = Path.Combine(extractedFolder, "fq");
+            string[] extractedByBcFolders = Directory.GetDirectories(searchIn);
+            return GetReadLen(extractedByBcFolders);
+        }
+        private int GetReadLen(string[] extractedByBcFolders)
+        {
+            ReadCounter rc = new ReadCounter();
+            foreach (string extractedByBcFolder in extractedByBcFolders)
+            {
+                string summaryPath = Path.Combine(extractedByBcFolder, "summary.txt");
+                Console.WriteLine(summaryPath);
+                rc.AddExtractionSummary(summaryPath);
+            }
+            return rc.averageReadLen;
         }
 
         /// <summary>
@@ -508,6 +538,8 @@ namespace Linnarsson.Strt
         private static string SetMappedFileFolder(StrtGenome genome, LaneInfo extrInfo)
         {
             string splcIndexVersion = PathHandler.GetIndexVersion(genome); // The current version including date
+            if (splcIndexVersion == "")
+                throw new Exception("Can not find a bowtie splice index corresponding close to ReadLen=" + genome.ReadLen + " for " + genome.GetBowtieIndexName());
             extrInfo.mappedFileFolder = Path.Combine(Path.Combine(extrInfo.extractionTopFolder, splcIndexVersion), extrInfo.ExtractedFileFolderName);
             return splcIndexVersion;
         }
@@ -543,23 +575,30 @@ namespace Linnarsson.Strt
             return true;
         }
 
-        public void Map(string projectOrExtractedFolderOrName, StrtGenome genome)
+        public void Map(string projectOrExtractedFolderOrName, string speciesArg, bool defaultGeneVariants)
         {
-            string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
-            string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
-            string extractedFolder = SetupForLatestExtractedFolder(projectOrExtractedFolder);
-            List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
-            CreateBowtieMaps(genome, laneInfos);
+            StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants);
+            Map(projectOrExtractedFolderOrName, genome);
         }
-
-        public string MapAndAnnotate(string projectOrExtractedFolderOrName, string speciesArg, bool defaultGeneVariants)
+        public void Map(string projectOrExtractedFolderOrName, StrtGenome genome)
         {
             string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
             string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
             string extractedFolder = SetupForLatestExtractedFolder(projectOrExtractedFolder);
             Console.WriteLine("Processing data from " + extractedFolder);
             List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
+            genome.ReadLen = GetReadLen(extractedFolder);
+            CreateBowtieMaps(genome, laneInfos);
+        }
+
+        public string MapAndAnnotate(string projectOrExtractedFolderOrName, string speciesArg, bool defaultGeneVariants)
+        {
             StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants);
+            string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
+            string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
+            string extractedFolder = SetupForLatestExtractedFolder(projectOrExtractedFolder);
+            List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
+            genome.ReadLen = GetReadLen(extractedFolder);
             CreateBowtieMaps(genome, laneInfos);
             List<string> mapFiles = GetAllMapFilePaths(laneInfos);
             return AnnotateMapFiles(genome, projectFolder, extractedFolder, mapFiles);
@@ -650,6 +689,11 @@ namespace Linnarsson.Strt
             string resultSubFolder = projectName + "_" + barcodeSet + "_" + genome.GetBowtieIndexName() + "_" + DateTime.Now.ToPathSafeString();
             string outputFolder = Path.Combine(projectFolder, resultSubFolder);
             ReadCounter readCounter = new ReadCounter();
+            readCounter.AddExtractionSummaries(CollectExtractionSummaryPaths(mapFilePaths, genome));
+            int averageReadLen = readCounter.averageReadLen;
+            if (averageReadLen == 0)
+                averageReadLen = Props.props.StandardReadLen - barcodes.GetInsertStartPos();
+            genome.ReadLen = averageReadLen;
             UpdateGenesToPaint(projectFolder, props);
             AbstractGenomeAnnotations annotations = new UCSCGenomeAnnotations(props, genome);
             annotations.Load();
@@ -659,13 +703,12 @@ namespace Linnarsson.Strt
             string syntLevelFile = PathHandler.GetSyntLevelFile(projectFolder);
             if (File.Exists(syntLevelFile))
                 ts.TestReporter = new SyntReadReporter(syntLevelFile, genome.GeneVariants, outputPathbase, annotations.geneFeatures);
-            ts.ProcessMapFiles(mapFilePaths);
+            ts.ProcessMapFiles(mapFilePaths, averageReadLen);
             if (ts.GetNumMappedReads() == 0)
                 Console.WriteLine("WARNING: contigIds of reads do not seem to match with genome Ids.\n" +
                                   "Was the Bowtie index made on a different genome or contig set?");
             Console.WriteLine("Totally {0} reads were annotated: {1} expressed genes and {2} expressed repeat types.",
                               ts.GetNumMappedReads(), annotations.GetNumExpressedGenes(), annotations.GetNumExpressedRepeats());
-            readCounter.AddExtractionSummaries(CollectExtractionSummaryPaths(mapFilePaths, genome));
             Directory.CreateDirectory(outputFolder);
             Console.WriteLine("Saving to {0}...", outputFolder);
             ts.SaveResult(readCounter, outputPathbase);
@@ -740,8 +783,8 @@ namespace Linnarsson.Strt
         /// If barcodes == null, no barcode and GGG sequences will be inserted 
         /// </summary>
         /// <param name="genome"></param>
-        /// <param name="readLength"></param>
-        public void DumpTranscripts(Barcodes barcodes, StrtGenome genome, int readLength, int step, int maxPerGene, string fqOutput,
+        /// <param name="readLen">length of read seq without barcodes + GGG</param>
+        public void DumpTranscripts(Barcodes barcodes, StrtGenome genome, int readLen, int step, int maxPerGene, string fqOutput,
                                     bool makeSplices, int minOverhang, int maxSkip)
         {
             bool variantGenes = genome.GeneVariants;
@@ -789,7 +832,7 @@ namespace Linnarsson.Strt
                         trLen += exonLen;
                         exonSeqsInChrDir.Add(chrSeq.SubSequence(gf.ExonStarts[exonIdx], exonLen));
                     }
-                    if (readLength == 0)
+                    if (readLen == 0)
                     {
                         DnaSequence gfTrFwSeq = new ShortDnaSequence(gf.Length);
                         foreach (DnaSequence s in exonSeqsInChrDir)
@@ -803,7 +846,7 @@ namespace Linnarsson.Strt
                     else
                     {
                         int n = 0;
-                        List<ReadFrag> readFrags = ReadFragGenerator.MakeAllReadFrags(readLength, step, makeSplices, maxSkip, minOverhang,
+                        List<ReadFrag> readFrags = ReadFragGenerator.MakeAllReadFrags(readLen, step, makeSplices, maxSkip, minOverhang,
                                                                                       exonSeqsInChrDir);
                         foreach (ReadFrag frag in readFrags)
                         {

@@ -29,6 +29,8 @@ namespace Linnarsson.Strt
         private int[] totalCounts = new int[ReadStatus.Length];
         private int[] partialCounts = new int[ReadStatus.Length];
         private List<string> readFiles = new List<string>();
+        private List<int> meanReadLens = new List<int>();
+        public int averageReadLen { get { return (int)Math.Floor(meanReadLens.Sum() / (double)meanReadLens.Count); } }
 
         public int GrandTotal { get { return totalSum; } }
         public int PartialTotal { get { return partialSum; } }
@@ -36,6 +38,7 @@ namespace Linnarsson.Strt
         public int PartialRejected { get { return partialSum - partialCounts[ReadStatus.VALID]; } }
         public int GrandCount(int readStatus) { return totalCounts[readStatus]; }
         public int PartialCount(int readStatus) { return partialCounts[readStatus]; }
+
         public double GrandFraction(int readStatus)
         {
             return (totalSum > 0) ? (totalCounts[readStatus] / (double)totalSum) : 0.0;
@@ -95,8 +98,11 @@ namespace Linnarsson.Strt
         public string TotalsToTabString()
         {
             string s = "#Files included in this read summary:\n";
-            foreach (string readFile in readFiles)
-                s += string.Format("READFILE\t{0}\n", readFile);
+            for (int i = 0; i < readFiles.Count; i++)
+            {
+                s += string.Format("READFILE\t{0}\n", readFiles[i]);
+                s += string.Format("MEANREADLEN\t{0}\n", meanReadLens[i]);
+            }
             s += "#Category\tCount\tPercent\n" +
                  "TOTAL_PASSED_ILLUMINA_FILTER\t" + GrandTotal + "\t100%\n";
             for (int statusCat = 0; statusCat < ReadStatus.Length; statusCat++)
@@ -109,7 +115,7 @@ namespace Linnarsson.Strt
             foreach (string summaryPath in extractionSummaryPaths)
                 AddExtractionSummary(summaryPath);
         }
-        private void AddExtractionSummary(string extractionSummaryPath)
+        public void AddExtractionSummary(string extractionSummaryPath)
         {
             try
             {
@@ -122,6 +128,8 @@ namespace Linnarsson.Strt
                         string[] fields = line.Split('\t');
                         if (line.StartsWith("READFILE"))
                             readFiles.Add(fields[1]);
+                        if (line.StartsWith("MEANREADLEN"))
+                            meanReadLens.Add(int.Parse(fields[1]));
                         else
                         {
                             int statusCategory = ReadStatus.Parse(fields[0]);

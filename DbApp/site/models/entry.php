@@ -26,7 +26,7 @@ class DbAppModelEntry extends JModel {
   }
   public function getMailtasks() {
     $db =& JFactory::getDBO();
-    $query = ' SELECT id, runno, laneno, email, status FROM #__aaafqmailqueue ORDER BY status ';
+    $query = ' SELECT id, runno, laneno, email, status FROM #__aaafqmailqueue ORDER BY status, runno DESC, laneno ';
     $db->setQuery($query);
     $mailtasks = $db->loadObjectList();
     return $mailtasks;  

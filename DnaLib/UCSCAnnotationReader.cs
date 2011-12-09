@@ -35,8 +35,8 @@ namespace Linnarsson.Dna
         {
             StreamReader refReader = refFlatPath.OpenRead();
             string line = refReader.ReadLine();
-            if (!line.StartsWith("@"))
-                throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should start with '@'.");
+            //if (!line.StartsWith("@"))
+            //    throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should start with '@'.");
             while (line.StartsWith("@"))
                 line = refReader.ReadLine();
             string[] f = line.Split('\t');

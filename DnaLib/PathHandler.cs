@@ -38,17 +38,23 @@ namespace Linnarsson.Dna
 
         public static string GetIndexVersion(StrtGenome genome)
         {
-            string buildName = genome.GetBowtieSplcIndexName();
             string indexFolder = GetBowtieIndicesFolder();
-            string testFile = Path.Combine(indexFolder, buildName + ".1.ebwt");
-            if (!File.Exists(testFile))
-                return "";
-            FileInfo fInfo = new FileInfo(testFile);
-            return buildName + fInfo.CreationTime.ToString("yyMMdd");
+            for (int wantedReadLen = genome.ReadLen; wantedReadLen > genome.ReadLen - 10; wantedReadLen--)
+            {
+                string buildName = genome.GetBowtieSplcIndexName(wantedReadLen);
+                string testFile = Path.Combine(indexFolder, buildName + ".1.ebwt");
+                Console.WriteLine(testFile);
+                if (File.Exists(testFile))
+                {
+                    FileInfo fInfo = new FileInfo(testFile);
+                    return buildName + fInfo.CreationTime.ToString("yyMMdd");
+                }
+            }
+            return "";
         }
 
         /// <summary>
-        /// Generates a dictonary from chromosome Ids (without any "chr") to sequences.
+        /// Generates a dictionary from chromosome Ids (without any "chr") to sequences.
         /// The sequences may be .gz compressed.
         /// </summary>
         /// <param name="genome">Genome to pick sequences from</param>
@@ -112,11 +118,22 @@ namespace Linnarsson.Dna
             return Path.Combine(GetGenomeSequenceFolder(genome), genome.GetJunctionChrFileName());
         }
 
-        public static string GetTagMappingPath(StrtGenome genome)
+        public static string GetTagMappingPath(StrtGenome genome, int wantedReadLen)
+        {
+            for (int mapLen = wantedReadLen; mapLen > wantedReadLen - 10; mapLen--)
+            {
+                string redundancyFilename = genome.GetTagMappingFileName(mapLen);
+                string path = Path.Combine(GetGenomeSequenceFolder(genome), redundancyFilename);
+                if (File.Exists(path)) return path;
+            }
+            return "";
+        }
+        public static string MakeTagMappingPath(StrtGenome genome)
         {
             string redundancyFilename = genome.GetTagMappingFileName();
             return Path.Combine(GetGenomeSequenceFolder(genome), redundancyFilename);
         }
+
 
         public string[] GetRepeatMaskFiles(StrtGenome genome)
         {

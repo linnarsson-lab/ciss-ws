@@ -58,7 +58,7 @@ namespace Linnarsson.Dna
         public bool UseRPKM = false; // Give RPKM instead of RPM in output files for non-STRT samples
         public string DefaultBarcodeSet = "v2"; // This is the default barcode set
         public int LocusFlankLength = 1000; // Maximum length of UPSTREAM and DOWNSTREAM regions to analyse
-        public int StandardReadLen = 53; // Better not use actual read that are longer - otherwise some junction hits may be missed
+        public int StandardReadLen = 50; // Better not use actual reads that are longer - otherwise some junction hits may be missed
         public int MaxAlignmentMismatches = 3;  // Should be the value used in bowtie calls
         public int MaxExonsSkip = 12; // Max number of exons to consider for splice out in junction chromosome
         public bool AnalyzeExtractionQualities = false; // Analyze read quality and color balance

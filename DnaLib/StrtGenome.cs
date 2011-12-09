@@ -10,11 +10,13 @@ namespace Linnarsson.Dna
 {
 	public class StrtGenome
 	{
-        public static string SpliceChrFilenamePattern = "chr{0}.splices";
-        public static string AnnotationsFilenamePattern = "Annotations_{0}.txt";
+        public static string SpliceChrFilenamePattern = "chr{0}{1}.splices";
+        public static string AnnotationsFilenamePattern = "Annotations_{0}{1}.txt";
+        public static string TagMappingFilenamePattern = "Mappings_{0}_{1}MM{2}.hmap";
         public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE", "ENSEMBL" };
         public static string chrCTRLId = "CTRL";
 
+        public int ReadLen { get; set; }
 		public string Name { get; set; }
         public string Abbrev { get; set; }
 		public string LatinName { get; set; }
@@ -57,15 +59,22 @@ namespace Linnarsson.Dna
         }
         public string GetJunctionChrFileName()
         {
-            return string.Format(SpliceChrFilenamePattern, VarAnnot);
+            string readLenPart = (ReadLen == Props.props.StandardReadLen) ? "" : string.Format("_{0}bp", ReadLen); 
+            return string.Format(SpliceChrFilenamePattern, VarAnnot, readLenPart);
         }
         public string GetAnnotationsFileName()
         {
-            return string.Format(AnnotationsFilenamePattern, VarAnnot);
+            string readLenPart = (ReadLen == Props.props.StandardReadLen) ? "" : string.Format("_{0}bp", ReadLen);
+            return string.Format(AnnotationsFilenamePattern, VarAnnot, readLenPart);
         }
         public string GetTagMappingFileName()
         {
-            return string.Format("Mappings_{0}_{1}MM.hmap", VarAnnot, Props.props.MaxAlignmentMismatches);
+            return GetTagMappingFileName(ReadLen);
+        }
+        public string GetTagMappingFileName(int readLen)
+        {
+            string readLenPart = (readLen == Props.props.StandardReadLen) ? "" : string.Format("_{0}bp", readLen);
+            return string.Format(TagMappingFilenamePattern, VarAnnot, Props.props.MaxAlignmentMismatches, readLenPart);
         }
         public string GetBowtieIndexName()
         {
@@ -73,7 +82,12 @@ namespace Linnarsson.Dna
         }
         public string GetBowtieSplcIndexName()
         {
-            return Build + "chr" + VarAnnot;
+            return GetBowtieSplcIndexName(ReadLen);
+        }
+        public string GetBowtieSplcIndexName(int readLen)
+        {
+            string readLenPart = (readLen == Props.props.StandardReadLen) ? "" : string.Format("_{0}bp", readLen);
+            return Build + "chr" + VarAnnot + readLenPart;
         }
 
         public bool IsChrInBuild(string filename)
@@ -102,9 +116,13 @@ namespace Linnarsson.Dna
             return chrId;
         }
 
-        private StrtGenome() { }
+        private StrtGenome() 
+        {
+            ReadLen = Props.props.StandardReadLen;
+        }
         private StrtGenome(string build, string abbrev)
         {
+            ReadLen = Props.props.StandardReadLen;
             Abbrev = abbrev;
             Build = build;
             Description = "genome of " + build;

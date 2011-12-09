@@ -10,9 +10,13 @@ namespace Linnarsson.Strt
 {
     public class ChrTagData
     {
+        public ChrTagData(string chr)
+        {
+            this.chr = chr;
+        }
         public static int marginInReadForSNP = 2;
         public static int averageReadLen; // Needed for SNP handling
-
+        public string chr;
         /// <summary>
         /// PosAndStrand_on_Chr -> countsByRndTagIdx
         /// Position stored as "(pos * 2) | strand" where strand in bit0: +/- => 0/1
@@ -63,8 +67,14 @@ namespace Linnarsson.Strt
         private void RegisterSNPOnTagItem(int chrPos, byte snpOffset, int strandIdx)
         {
             int posStrand = chrPos << 1 | strandIdx;
-            if (!tagItems.ContainsKey(posStrand))
-                tagItems[posStrand] = new TagItem(false);
+            TagItem item;
+            if (!tagItems.TryGetValue(posStrand, out item))
+            {
+                item = new TagItem(false);
+                item.AddAltLocation(chr, posStrand);
+                tagItems[posStrand] = item;
+                RandomTagFilterByBc.tagItemList.Add(item);
+            }
             tagItems[posStrand].RegisterSNP(snpOffset);
         }
 
@@ -126,9 +136,14 @@ namespace Linnarsson.Strt
         public bool Add(int pos, char strand, int rndTagIdx, bool hasAltMappings, string mismatches, int readLen)
         {
             int posStrand = MakePosStrandIdx(pos, strand);
-            if (!tagItems.ContainsKey(posStrand))
-                tagItems[posStrand] = new TagItem(false);
-            TagItem item = tagItems[posStrand];
+            TagItem item;
+            if (!tagItems.TryGetValue(posStrand, out item))
+            {
+                item = new TagItem(false);
+                item.AddAltLocation(chr, pos, strand);
+                tagItems[posStrand] = item;
+                RandomTagFilterByBc.tagItemList.Add(item);
+            }
             if (!hasAltMappings && mismatches != "")
             {
                 foreach (string snp in mismatches.Split(','))
@@ -297,7 +312,9 @@ namespace Linnarsson.Strt
         /// </summary>
         public int[] nDuplicatesByBarcode;
 
-        public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds, string tagMappingFile)
+        public static List<TagItem> tagItemList = new List<TagItem>();
+
+        public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds)
         {
             hasRndTags = barcodes.HasRandomBarcodes;
             nRndTags = barcodes.RandomBarcodeCount;
@@ -308,12 +325,10 @@ namespace Linnarsson.Strt
             nUniqueByBarcode = new int[barcodes.AllCount];
             chrTagDatas = new Dictionary<string, ChrTagData>();
             foreach (string chrId in chrIds)
-                chrTagDatas[chrId] = new ChrTagData();
+                chrTagDatas[chrId] = new ChrTagData(chrId);
             currentBcIdx = 0;
             usedBcIdxs = new HashSet<int>();
             moleculeReadCountsHistogram = new int[MaxValueInReadCountHistogram + 1];
-            if (File.Exists(tagMappingFile))
-                Setup(tagMappingFile);
         }
 
         /// <summary>
@@ -322,6 +337,8 @@ namespace Linnarsson.Strt
         /// <param name="tagMappingFile"></param>
         public void Setup(string tagMappingFile)
         {
+            if (tagMappingFile == "" || !File.Exists(tagMappingFile))
+                return;
             Console.WriteLine("Reading pre-calculated exonic multiread mappings from " + tagMappingFile);
             using (StreamReader reader = new StreamReader(tagMappingFile))
             {
@@ -331,11 +348,22 @@ namespace Linnarsson.Strt
                     if (line.IndexOf('\t') > 0 && !line.StartsWith("#"))
                     {
                         TagItem tagItem = new TagItem(true);
+                        tagItemList.Add(tagItem);
                         string[] groups = line.Split('\t');
                         foreach (string group in groups)
                         {
                             string[] parts = group.Split(',');
-                            chrTagDatas[parts[0]].Setup(int.Parse(parts[2]), parts[1][0], tagItem);
+                            string chr = parts[0];
+                            char strand = parts[1][0];
+                            int pos = 0;
+                            if (parts[2].EndsWith("%")) // Indicates doublet of gene that does not need to be annotated.
+                                pos = int.Parse(parts[2].Substring(0, parts[2].Length - 1));
+                            else
+                            {
+                                pos = int.Parse(parts[2]);
+                                tagItem.AddAltLocation(chr, pos, strand);
+                            }
+                            chrTagDatas[chr].Setup(pos, strand, tagItem);
                         }
                     }
                     line = reader.ReadLine();
@@ -432,6 +460,13 @@ namespace Linnarsson.Strt
             foreach (ChrTagData chrTagData in chrTagDatas.Values)
                 nAllChr += chrTagData.GetNumDistinctMappings();
             return nAllChr;
+        }
+
+        public static IEnumerable<TagItem> IterTagItemList()
+        {
+            foreach (TagItem item in tagItemList)
+                if (item.HasReads)
+                    yield return item;
         }
     }
 }

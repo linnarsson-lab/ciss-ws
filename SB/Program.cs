@@ -30,6 +30,7 @@ namespace CmdSilverBullet
                 StrtReadMapper mapper;
                 string projectFolder;
                 List<string> laneArgs;
+                int readLen = props.StandardReadLen;
                 int argOffset = 1;
                 string cmd = args[0];
                 try
@@ -57,19 +58,6 @@ namespace CmdSilverBullet
                                 mapper.MapAndAnnotate(projectFolder, speciesArg, analyzeAllGeneVariants);
                             else
                                 mapper.MapAndAnnotateWithLayout(projectFolder, "NotSpecified", analyzeAllGeneVariants);
-                            break;
-
-                        case "rerunall":
-                            ProjectDB pdb = new ProjectDB();
-                            foreach (ProjectDescription pd in pdb.GetProjectDescriptions())
-                            {
-                                Console.WriteLine("Updating {0}...", pd.projectName);
-                                props.BarcodesName = pd.barcodeSet;
-                                mapper = new StrtReadMapper(props);
-                                mapper.Extract(pd);
-                                mapper.MapAndAnnotateWithLayout(pd.ProjectFolder, pd.defaultSpecies, Props.props.AnalyzeAllGeneVariants);
-                            }
-                            Console.WriteLine("Finished updating.");
                             break;
 
                         case "downloadmart":
@@ -105,11 +93,11 @@ namespace CmdSilverBullet
 
                         case "bt":
                             CheckArgs(args, 4, 4);
+                            speciesArg = args[1];
+                            analyzeAllGeneVariants = (args[2].ToLower().StartsWith("a")) ? true : false;
                             projectFolder = args[3];
-                            genome = StrtGenome.GetGenome(args[1], args[2].StartsWith("a"));
-                            string buildName = genome.GetBowtieIndexName();
                             mapper = new StrtReadMapper(props);
-                            mapper.Map(projectFolder, genome);
+                            mapper.Map(projectFolder, speciesArg, analyzeAllGeneVariants);
                             break;
 
                         case "ab":
@@ -132,29 +120,47 @@ namespace CmdSilverBullet
                                 mapper.MapAndAnnotateWithLayout(projectFolder, "NotSpecified", analyzeAllGeneVariants);
                             break;
 
+                        case "jct":
+                            CheckArgs(args, 3, 6);
+                            argOffset = 1;
+                            if (int.TryParse(args[argOffset], out readLen))
+                                argOffset++;
+                            genome = StrtGenome.GetGenome(args[argOffset++], args[argOffset++].StartsWith("a"));
+                            genome.ReadLen = readLen;
+                            if (args.Length >= argOffset + 2)
+                            {
+                                genome.Build = args[argOffset++];
+                                genome.Annotation = args[argOffset++];
+                            }
+                            mapper = new StrtReadMapper(props);
+                            mapper.BuildJunctions(genome);
+                            break;
+
                         case "idx":
-                            CheckArgs(args, 2, 6);
+                            CheckArgs(args, 2, 7);
+                            if (int.TryParse(args[argOffset], out readLen))
+                                argOffset++;
                             string newBtIdxName = "";
                             bool definedVariants = false;
-                            genome = StrtGenome.GetGenome(args[1]);
-                            if (args[1].IndexOf(genome.GeneVariantsChar + genome.Annotation) > 0)
+                            genome = StrtGenome.GetGenome(args[argOffset]);
+                            if (args[argOffset++].IndexOf(genome.GeneVariantsChar + genome.Annotation) > 0)
                                 definedVariants = true;
-                            if (args.Length > 2)
+                            genome.ReadLen = readLen;
+                            if (args.Length > argOffset)
                             {
-                                int argIdx = 2;
-                                if (args[2] == "single" || args[2] == "all")
+                                if (args[argOffset] == "single" || args[argOffset] == "all")
                                 {
-                                    genome.GeneVariants = (args[2] == "all");
+                                    genome.GeneVariants = (args[argOffset++] == "all");
                                     definedVariants = true;
-                                    argIdx++;
+                                    argOffset++;
                                 }
-                                if (args.Length == argIdx + 1) newBtIdxName = args[argIdx];
-                                else if (args.Length > argIdx + 1)
+                                if (args.Length == argOffset + 1) newBtIdxName = args[argOffset];
+                                else if (args.Length > argOffset + 1)
                                 {
-                                    genome.Build = args[argIdx];
-                                    genome.Annotation = args[argIdx + 1];
-                                    if (args.Length == argIdx + 3)
-                                        newBtIdxName = args[argIdx + 2];
+                                    genome.Build = args[argOffset];
+                                    genome.Annotation = args[argOffset + 1];
+                                    if (args.Length == argOffset + 3)
+                                        newBtIdxName = args[argOffset + 2];
                                 }
                             }
                             mapper = new StrtReadMapper(props);
@@ -197,6 +203,14 @@ namespace CmdSilverBullet
                             mapper.DumpTranscripts(barcodes, genome, readLength, step, maxPerGene, outputPath, makeSplices, minOverhang, maxSkip);
                             break;
 
+                        case "writehitmap":
+                            HitMapAnnotator hma2 = new HitMapAnnotator();
+                            hma2.InitHitMapFromReadMapFile(args[1]);
+                            Console.WriteLine("Writing SilverBullet txt formatted data to " + args[2]);
+                            hma2.WriteHitMapToSbaFile(args[2]);
+                            break;
+
+
                         case "serializehitmap":
                             HitMapAnnotator hma1 = new HitMapAnnotator();
                             hma1.InitHitMapFromReadMapFile(args[1]);
@@ -207,17 +221,16 @@ namespace CmdSilverBullet
                             hma1.WriteHitMapToSbaFile(sbaFile);
                             break;
 
-                        case "translatemapfile":
-                            genome = StrtGenome.GetGenome(args[1]);
-                            string tagMappingPath = PathHandler.GetTagMappingPath(genome);
-                            TagMappingFile.TranslateMapFile(args[2], tagMappingPath);
-                            break;
-
-                        case "writehitmap":
-                            HitMapAnnotator hma2 = new HitMapAnnotator();
-                            hma2.InitHitMapFromReadMapFile(args[1]);
-                            Console.WriteLine("Writing SilverBullet txt formatted data to " + args[2]);
-                            hma2.WriteHitMapToSbaFile(args[2]);
+                        case "makehmap":
+                            readLen = int.Parse(args[argOffset++]);
+                            genome = StrtGenome.GetGenome(args[argOffset++]);
+                            genome.ReadLen = readLen;
+                            string origFqPath = args[argOffset++];
+                            string mapPath = args[argOffset++];
+                            string hmapPath = args[argOffset++];
+                            string remainFqPath = args[argOffset++];
+                            TagMappingFile tmf = new TagMappingFile(genome);
+                            tmf.TranslateMapFile(origFqPath, mapPath, hmapPath, remainFqPath);
                             break;
 
                         case "hitmapannotate":
@@ -248,18 +261,6 @@ namespace CmdSilverBullet
                             mfsf.WriteToFile(args[2]);
                             break;
 
-                        case "jct":
-                            CheckArgs(args, 3, 5);
-                            genome = StrtGenome.GetGenome(args[1], args[2].StartsWith("a"));
-                            if (args.Length == 5)
-                            {
-                                genome.Build = args[3];
-                                genome.Annotation = args[4];
-                            }
-                            mapper = new StrtReadMapper(props);
-                            mapper.BuildJunctions(genome);
-                            break;
-
                         case "split":
                             CheckArgs(args, 2, 3);
                             if (args.Length == 3)
@@ -279,8 +280,11 @@ namespace CmdSilverBullet
                             break;
 
                         case "upd":
-                            CheckArgs(args, 3, 3);
-                            genome = StrtGenome.GetGenome(args[1]);
+                            CheckArgs(args, 3, 4);
+                            if (int.TryParse(args[argOffset], out readLen))
+                                argOffset++;
+                            genome = StrtGenome.GetGenome(args[argOffset++]);
+                            genome.ReadLen = readLen;
                             mapper = new StrtReadMapper(props);
                             mapper.UpdateSilverBulletGenes(genome, args[args.Length - 1]);
                             break;
@@ -316,9 +320,9 @@ namespace CmdSilverBullet
                 {
                     Console.WriteLine("\nFATAL ERROR: " + exp);
                 }
+                return;
             }
             Console.WriteLine("\nUsage:\n\n" +
-                "SB.exe rerunall\n   - reprocesses (with up-to-date software/annotations) all projects in database\n" +
                 "SB.exe q [<RunLaneSpec>]+ [rpkm] <BcSet> [<Sp>|<IdxName>] [all|single] <ProjectPath>\n" +
                 "    - extract data, run Bowtie, and annotate in one sweep using default parameters\n" +
                 "SB.exe x [<RunLaneSpec>]+ <BcSet> <ProjectPath>\n    - extract data from the [common] reads folder\n" +
@@ -328,10 +332,10 @@ namespace CmdSilverBullet
                 "SB.exe download <Genus_species>\n    - download latest genome build and annotations for the given species from UCSC\n" +
                 "SB.exe downloadmart <Genus_species> <GenomeFolderPath>\n" +
                 "    - download BioMart VEGA/ENSEMBL for the given species. Specify the path to folder where chromosomes of same build reside.\n" +
-                "SB.exe idx <Sp_or_Build> [all|single] [<IdxName> | <Build> <Annot> [<IdxName]>]]\n" +
+                "SB.exe idx [<readLen>] <Sp_or_Build> [all|single] [<IdxName> | <Build> <Annot> [<IdxName]>]]\n" +
                 "    - build annotations and Bowtie index [using specified genome build and annotations when Sp is given as first arg]\n" +
                 "      if neither 'all', 'single', nor IdxName is given, both transcript variant versions of index will be built\n" +
-                "SB.exe upd [<Build> <Annot> | <Sp>] <AnnotErrorFile>\n    - update SilverBullet annotations of 5' ends using the specified XXX_annot_errors_xxx.tab file.\n" +
+                "SB.exe upd [<readLen>] [<Build> <Annot> | <Sp>] <AnnotErrorFile>\n    - update SilverBullet annotations of 5' ends using the specified XXX_annot_errors_xxx.tab file.\n" +
                 "SB.exe bt <Sp>|<IdxName> all|single <ProjectPath>|<ExtractedPath>\n    - run Bowtie on latest/specified Extracted folder\n" +
                 "SB.exe aw <Sp> <MapFolderPath>/n    - annotate data from Wiggles .wig files folder\n" +
                 "SB.exe sort <BcSet> [<MapFile>]+ <outFile>\n    - sort and merge specified .map files\n" +
@@ -340,8 +344,9 @@ namespace CmdSilverBullet
                 "SB.exe synt <BcSet> <IdxName> all|single <OutputFolder>\n" +
                 "    - generate synthetic reads from a genome\n" +
                 "SB.exe stats [<BcSet>] <ProjectPath>\n    - calculate barcode statistics\n" +
-                "SB.exe translatemapfile <Genome> <GenomeMapPath>\n    - make .hmap file of multiread mappings using a bowtie mapping of all reads for a genome\n" +
-                "SB.exe mapsnp <BcSet> <outputFile> [<mapFile>]+\n" + 
+                "SB.exe makehmap <readLen> <genome> <origFqFile> <mapFile> <hmapPath> <remainFqFile>\n" +
+                "    - make .hmap file of multiread mappings using a bowtie mapping of all reads for a genome\n" +
+                "SB.exe mapsnp <BcSet> <outputFile> [<mapFile>]+\n    - analyze a set of map files to find potential SNP locations\n" + 
                 "SB.exe dump <IdxName> [<readLen> [<Step> [<MaxPerGene> [<MinOverhang> [Splices|Linear [<bcSet>]]]]]] [<OutputPath>]\n" +
                 "    - make fq file of transcript fragments. Makes all if MaxPerGene=0. Adds barcodes+GGG if bcSet given \n\n" + 
                 "<RunLaneSpec> is e.g. '17:235' indicating lanes 2,3, and 5 of run 17.\n" + 
@@ -351,8 +356,9 @@ namespace CmdSilverBullet
                 "<Build> is 'mm9', 'hg19', or 'gg3', <Annot> is 'UCSC', 'VEGA', or 'ENSE',\n" + 
                 "Annot defaults to 'UCSC' when only species is given.\n" +
                 "<IdxName> is a specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_sVEGA'.\n" +
-                "<BcSet> is 'v1' (5 bases), 'v2' (6 bases, default), or 'no' for no barcodes\n" +
+                "<BcSet> is 'v1' (96x5-mer), 'v2' (96x6-mer), 'v4' (48x6-mer), 'v4rnd' (48x6-mer w. molecule counting), or 'no' for no barcodes\n" +
                 "Define non-standard barcode sets in files in the barcodes directory in the project folder\n" +
+                "<readLen> is the sequence length after barcode and GGG. When omitted, standard len is taken from config.\n" +
                 "Paths are per default rooted in the data directory, so that e.g. 'L006' is enough as a ProjectPath.\n"
             );
         }

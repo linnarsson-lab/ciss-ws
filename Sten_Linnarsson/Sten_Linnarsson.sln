@@ -21,8 +21,35 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "STRT", "STRT", "{DF9888F1-5
 EndProject
 Global
 	GlobalSection(SourceCodeControl) = preSolution
-		SccNumberOfProjects = 1
+		SccNumberOfProjects = 8
 		SccLocalPath0 = .
+		SccProjectUniqueName1 = ..\\DnaLib\\Linnarsson.Dna.csproj
+		SccProjectTopLevelParentUniqueName1 = Sten_Linnarsson.sln
+		SccLocalPath1 = ..\\DnaLib
+		SccProjectUniqueName2 = ..\\MathLib\\Linnarsson.Mathematics.csproj
+		SccProjectTopLevelParentUniqueName2 = Sten_Linnarsson.sln
+		SccLocalPath2 = ..
+		SccProjectFilePathRelativizedFromConnection2 = MathLib\\
+		SccProjectUniqueName3 = ..\\UtilitiesLib\\Linnarsson.Utilities.csproj
+		SccProjectTopLevelParentUniqueName3 = Sten_Linnarsson.sln
+		SccLocalPath3 = ..
+		SccProjectFilePathRelativizedFromConnection3 = UtilitiesLib\\
+		SccProjectUniqueName4 = ..\\Linnarsson.Strt\\Linnarsson.Strt.csproj
+		SccProjectTopLevelParentUniqueName4 = Sten_Linnarsson.sln
+		SccLocalPath4 = ..
+		SccProjectFilePathRelativizedFromConnection4 = Linnarsson.Strt\\
+		SccProjectUniqueName5 = ..\\SB\\SB.csproj
+		SccProjectTopLevelParentUniqueName5 = Sten_Linnarsson.sln
+		SccLocalPath5 = ..
+		SccProjectFilePathRelativizedFromConnection5 = SB\\
+		SccProjectUniqueName6 = ..\\BkgFastQCopier\\BkgFastQCopier.csproj
+		SccProjectTopLevelParentUniqueName6 = Sten_Linnarsson.sln
+		SccLocalPath6 = ..
+		SccProjectFilePathRelativizedFromConnection6 = BkgFastQCopier\\
+		SccProjectUniqueName7 = ..\\BkgFastQMailer\\BkgFastQMailer.csproj
+		SccProjectTopLevelParentUniqueName7 = Sten_Linnarsson.sln
+		SccLocalPath7 = ..
+		SccProjectFilePathRelativizedFromConnection7 = BkgFastQMailer\\
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Crick Release|Any CPU = Crick Release|Any CPU

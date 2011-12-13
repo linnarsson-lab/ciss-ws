@@ -58,7 +58,7 @@ namespace Linnarsson.Strt
         public TagMappingFile(StrtGenome genome)
         {
             GeneIntervals.spliceChrId = genome.Annotation;
-            string annotationsPath = PathHandler.GetAnnotationsPath(genome);
+            string annotationsPath = genome.MakeAnnotationsPath();
             Console.WriteLine("Reading genes from " + annotationsPath);
             foreach (LocusFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(annotationsPath))
             {

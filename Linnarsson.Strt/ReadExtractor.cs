@@ -30,7 +30,9 @@ namespace Linnarsson.Strt
         private int[] partialCounts = new int[ReadStatus.Length];
         private List<string> readFiles = new List<string>();
         private List<int> meanReadLens = new List<int>();
+        private List<int> barcodeReads = new List<int>();
         public int averageReadLen { get { return (int)Math.Floor(meanReadLens.Sum() / (double)meanReadLens.Count); } }
+        public int[] TotalBarcodeReads { get { return barcodeReads.ToArray(); } }
 
         public int GrandTotal { get { return totalSum; } }
         public int PartialTotal { get { return partialSum; } }
@@ -54,9 +56,10 @@ namespace Linnarsson.Strt
             totalCounts[readStatus] += count;
             partialCounts[readStatus] += count;
         }
-        public void AddReadFilename(string path)
+        public void AddReadFile(string path, int averageReadLen)
         {
             readFiles.Add(path);
+            meanReadLens.Add(averageReadLen);
         }
         public List<string> GetReadFiles()
         {
@@ -97,11 +100,10 @@ namespace Linnarsson.Strt
         }
         public string TotalsToTabString()
         {
-            string s = "#Files included in this read summary:\n";
+            string s = "#Files included in this read summary, with average read lengths:\n";
             for (int i = 0; i < readFiles.Count; i++)
             {
-                s += string.Format("READFILE\t{0}\n", readFiles[i]);
-                s += string.Format("MEANREADLEN\t{0}\n", meanReadLens[i]);
+                s += string.Format("READFILE\t{0}\t{1}\n", readFiles[i], meanReadLens[i]);
             }
             s += "#Category\tCount\tPercent\n" +
                  "TOTAL_PASSED_ILLUMINA_FILTER\t" + GrandTotal + "\t100%\n";
@@ -125,17 +127,25 @@ namespace Linnarsson.Strt
                 {
                     if (!line.StartsWith("#"))
                     {
-                        string[] fields = line.Split('\t');
-                        if (line.StartsWith("READFILE"))
-                            readFiles.Add(fields[1]);
-                        if (line.StartsWith("MEANREADLEN"))
-                            meanReadLens.Add(int.Parse(fields[1]));
-                        else
+                        try
                         {
-                            int statusCategory = ReadStatus.Parse(fields[0]);
-                            if (statusCategory >= 0)
-                                Add(statusCategory, int.Parse(fields[1]));
+                            string[] fields = line.Split('\t');
+                            if (line.StartsWith("READFILE"))
+                            {
+                                readFiles.Add(fields[1]);
+                                meanReadLens.Add(int.Parse(fields[2]));
+                            }
+                            else if (line.StartsWith("BARCODEREADS"))
+                                barcodeReads.Add(int.Parse(fields[2]));
+                            else
+                            {
+                                int statusCategory = ReadStatus.Parse(fields[0]);
+                                if (statusCategory >= 0)
+                                    Add(statusCategory, int.Parse(fields[1]));
+                            }
                         }
+                        catch (Exception)
+                        { }
                     }
                     line = extrFile.ReadLine();
                 }

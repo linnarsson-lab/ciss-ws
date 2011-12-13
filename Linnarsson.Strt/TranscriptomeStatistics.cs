@@ -20,6 +20,7 @@ namespace Linnarsson.Strt
 
         StreamWriter nonAnnotWriter;
         StreamWriter nonExonWriter;
+        StreamWriter alsoExonWriter;
 
         public bool GenerateWiggle { get; set; }
         public bool DetermineMotifs { get; set; }
@@ -149,7 +150,7 @@ namespace Linnarsson.Strt
                 if (Props.props.SnpRndTagVerification)
                     snpRndTagVerifier = new SnpRndTagVerifier(Props.props, mfsf);
             }
-            string tagMappingFile = PathHandler.GetTagMappingPath(Annotations.Genome, averageReadLen);
+            string tagMappingFile = Annotations.Genome.GetTagMappingPath(averageReadLen);
             Console.WriteLine("tagMappingFile: ", tagMappingFile);
             randomTagFilter.Setup(tagMappingFile);
             Console.WriteLine("tagItemList.count=" + RandomTagFilterByBc.tagItemList.Count);
@@ -162,6 +163,7 @@ namespace Linnarsson.Strt
                 Directory.CreateDirectory(Path.GetDirectoryName(OutputPathbase));
             nonAnnotWriter = new StreamWriter(OutputPathbase + "_NONANNOTATED.tab");
             nonExonWriter = new StreamWriter(OutputPathbase + "_NONEXON.tab");
+            alsoExonWriter = new StreamWriter(OutputPathbase + "_EXONANDMORE.tab");
 
             foreach (string mapFilePath in mapFilePaths)
             {
@@ -182,6 +184,7 @@ namespace Linnarsson.Strt
 
             nonAnnotWriter.Close();
             nonExonWriter.Close();
+            alsoExonWriter.Close();
         }
 
         private void ProcessBarcodeMapFiles(List<string> bcMapFilePaths)
@@ -230,6 +233,7 @@ namespace Linnarsson.Strt
 
         public void Annotate(TagItem tagItem)
         {
+            int tempAnnotType = -1;
             int molCount = tagItem.GetNumMolecules();
             numMoleculesByBarcode[currentBcIdx] += molCount;
             exonsToMark.Clear();
@@ -258,6 +262,7 @@ namespace Linnarsson.Strt
                     {
                         if (markType == MarkStatus.TEST_EXON_MARK_OTHER)
                         {
+                            tempAnnotType = res.annotType;
                             TotalHitsByAnnotTypeAndBarcode[res.annotType, currentBcIdx] += molCount;
                             TotalHitsByAnnotTypeAndChr[item.chr][res.annotType] += molCount;
                             TotalHitsByAnnotType[res.annotType] += molCount;
@@ -290,9 +295,13 @@ namespace Linnarsson.Strt
             if (someAnnotationHit)
             {
                 numAnnotatedMols += molCount;
-                if (someExonHit) numExonAnnotatedMols += molCount;
+                if (someExonHit)
+                {
+                    numExonAnnotatedMols += molCount;
+                    alsoExonWriter.WriteLine(tagItem.ToString() + " - Also " + AnnotType.GetName(tempAnnotType));
+                }
                 else
-                    nonExonWriter.WriteLine(tagItem.ToString());
+                    nonExonWriter.WriteLine(tagItem.ToString() + " - As " + AnnotType.GetName(tempAnnotType));
             }
             else
                 nonAnnotWriter.WriteLine(tagItem.ToString());
@@ -454,7 +463,7 @@ namespace Linnarsson.Strt
             AddHitProfile(xmlFile);
             //AddSampledCVs(xmlFile); Difficult when running barcode-by-barcode
             AddCVHistogram(xmlFile);
-            WriteBarcodeStats(fileNameBase, xmlFile);
+            WriteBarcodeStats(fileNameBase, xmlFile, readCounter);
             WriteRandomFilterStats(xmlFile);
             xmlFile.WriteLine("</strtSummary>");
             xmlFile.Close();
@@ -903,7 +912,7 @@ namespace Linnarsson.Strt
         /// Write plate layout formatted statistics for hits by barcodes.
         /// </summary>
         /// <param name="fileNameBase"></param>
-        private void WriteBarcodeStats(string fileNameBase, StreamWriter xmlFile)
+        private void WriteBarcodeStats(string fileNameBase, StreamWriter xmlFile, ReadCounter readCounter)
         {
             StreamWriter barcodeStats = new StreamWriter(fileNameBase + "_barcode_summary.tab");
             string molTitle = (barcodes.HasRandomBarcodes) ? "molecules" : "reads";
@@ -921,7 +930,11 @@ namespace Linnarsson.Strt
             int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(Annotations.Genome);
             if (barcodes.SpeciesByWell != null)
                 WriteSpeciesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
-            WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
+            if (readCounter.TotalBarcodeReads.Length == barcodes.Count)
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, readCounter.TotalBarcodeReads,
+                                    "READS", "Total reads by barcode", "reads");
+            WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, TotalHitsByBarcode,
+                                "TOTAL", "Total annotated hits by barcode", "annotated hits");
             WriteDuplicateMoleculesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
             WriteFeaturesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
             barcodeStats.WriteLine("Transcripts detected in each barcode:");
@@ -941,36 +954,11 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </barcodestats>");
         }
 
-        private void WriteFeaturesByBarcode(StreamWriter xmlFile, StreamWriter barcodeStats, StreamWriter bCodeLines, int[] genomeBcIndexes)
+        private void WriteTotalByBarcode(StreamWriter xmlFile, StreamWriter barcodeStats, StreamWriter bCodeLines, int[] genomeBcIndexes,
+                                         int[] values, string bCodeLinesTitle, string barcodeStatsTitle, string xmlFileSection)
         {
-            string molTitle = (barcodes.HasRandomBarcodes) ? "molecules" : "reads";
-            for (var annotType = 0; annotType < AnnotType.Count; annotType++)
-            {
-                if (annotType == AnnotType.AREPT) continue;
-                string annotName = AnnotType.GetName(annotType);
-                barcodeStats.WriteLine("\nTotal {0} mapped to {1}:\n", molTitle, annotName);
-                bCodeLines.Write(annotName);
-                xmlFile.Write("    <barcodestat section=\"{0}\">", annotName);
-                for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
-                {
-                    string annotHits = TotalHitsByAnnotTypeAndBarcode[annotType, bcIdx].ToString();
-                    bCodeLines.Write("\t" + annotHits);
-                    if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
-                    string d = genomeBcIndexes.Contains(bcIdx) ? annotHits : "(" + annotHits.ToString() + ")";
-                    xmlFile.Write("    <d>{0}</d>", d);
-                }
-                bCodeLines.WriteLine();
-                xmlFile.WriteLine("\n    </barcodestat>");
-                barcodeStats.WriteLine(MakeTotalMatrix(annotType));
-                barcodeStats.WriteLine(MakeFracDevStatsMatrix(annotType));
-            }
-        }
-
-        private void WriteTotalByBarcode(StreamWriter xmlFile, StreamWriter barcodeStats, StreamWriter bCodeLines, int[] genomeBcIndexes)
-        {
-            barcodeStats.WriteLine("\nTotal annotated hits by barcode:\n");
-            bCodeLines.Write("TOTAL");
-            xmlFile.Write("    <barcodestat section=\"annotated hits\">");
+            bCodeLines.Write(bCodeLinesTitle);
+            xmlFile.Write("    <barcodestat section=\"" + xmlFileSection + "\">");
             string[] counts = new string[barcodes.Count];
             for (int bcIdx = 0; bcIdx < counts.Length; bcIdx++)
             {
@@ -981,14 +969,39 @@ namespace Linnarsson.Strt
                 xmlFile.Write("    <d>{0}</d>", d);
             }
             xmlFile.WriteLine("\n    </barcodestat>");
-            barcodeStats.WriteLine(MakeDataMatrix(counts, "0"));
             bCodeLines.WriteLine();
+            barcodeStats.WriteLine("\n" + barcodeStatsTitle + ":\n");
+            barcodeStats.WriteLine(MakeDataMatrix(counts, "0"));
+        }
+
+        private void WriteFeaturesByBarcode(StreamWriter xmlFile, StreamWriter barcodeStats, StreamWriter bCodeLines, int[] genomeBcIndexes)
+        {
+            string molTitle = (barcodes.HasRandomBarcodes) ? "molecules" : "reads";
+            for (var annotType = 0; annotType < AnnotType.Count; annotType++)
+            {
+                if (annotType == AnnotType.AREPT) continue;
+                string annotName = AnnotType.GetName(annotType);
+                bCodeLines.Write(annotName);
+                xmlFile.Write("    <barcodestat section=\"{0}\">", annotName);
+                for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                {
+                    string annotHits = TotalHitsByAnnotTypeAndBarcode[annotType, bcIdx].ToString();
+                    bCodeLines.Write("\t" + annotHits);
+                    if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
+                    string d = genomeBcIndexes.Contains(bcIdx) ? annotHits : "(" + annotHits.ToString() + ")";
+                    xmlFile.Write("    <d>{0}</d>", d);
+                }
+                xmlFile.WriteLine("\n    </barcodestat>");
+                bCodeLines.WriteLine();
+                barcodeStats.WriteLine("\nTotal {0} mapped to {1}:\n", molTitle, annotName);
+                barcodeStats.WriteLine(MakeTotalMatrix(annotType));
+                barcodeStats.WriteLine(MakeFracDevStatsMatrix(annotType));
+            }
         }
 
         private void WriteDuplicateMoleculesByBarcode(StreamWriter xmlFile, StreamWriter barcodeStats, StreamWriter bCodeLines, int[] genomeBcIndexes)
         {
             if (!barcodes.HasRandomBarcodes) return;
-            barcodeStats.WriteLine("\nDuplicated reads filtered away due to same random tag and position, by barcode:\n");
             bCodeLines.Write("TOTAL");
             xmlFile.Write("    <barcodestat section=\"duplicated molecules (by position-random tag)\">");
             string[] counts = new string[barcodes.Count];
@@ -1001,8 +1014,9 @@ namespace Linnarsson.Strt
                 xmlFile.Write("    <d>{0}</d>", d);
             }
             xmlFile.WriteLine("\n    </barcodestat>");
-            barcodeStats.WriteLine(MakeDataMatrix(counts, "0"));
             bCodeLines.WriteLine();
+            barcodeStats.WriteLine("\nDuplicated reads filtered away due to same random tag and position, by barcode:\n");
+            barcodeStats.WriteLine(MakeDataMatrix(counts, "0"));
         }
 
         private void WriteBarcodes(StreamWriter xmlFile, StreamWriter barcodeStats, StreamWriter bCodeLines)
@@ -1205,8 +1219,7 @@ namespace Linnarsson.Strt
         {
             StreamWriter snpFile = (fileNameBase + "_SNPs_by_barcode.tab").OpenWrite();
             SnpAnalyzer sa = new SnpAnalyzer();
-            int averageHitLength = MappedTagItem.AverageReadLen;
-            sa.WriteSnpsByBarcode(snpFile, barcodes, Annotations.geneFeatures, averageHitLength);
+            sa.WriteSnpsByBarcode(snpFile, barcodes, Annotations.geneFeatures);
             snpFile.Close();
         }
 

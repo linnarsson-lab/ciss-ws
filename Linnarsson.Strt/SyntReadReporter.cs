@@ -180,11 +180,7 @@ namespace Linnarsson.Strt
 
         private static Dictionary<string, List<GeneFeature>> ReadGenesByChr(StrtGenome genome, List<string> chrIds)
         {
-            string annotationsPath = PathHandler.GetAnnotationsPath(genome);
-            annotationsPath = PathHandler.ExistsOrGz(annotationsPath);
-            if (annotationsPath == null)
-                throw new NoAnnotationsFileFoundException("Could not find annotation file: " + annotationsPath);
-            Console.WriteLine("Annotations are taken from " + annotationsPath);
+            string annotationsPath = genome.VerifyAnAnnotationPath();
             Dictionary<string, List<GeneFeature>> chrIdToFeature = new Dictionary<string, List<GeneFeature>>();
             foreach (string chrId in chrIds)
             {

@@ -95,7 +95,7 @@ namespace Linnarsson.Strt
             DateTime startTime = DateTime.Now;
             if (string.IsNullOrEmpty(newIndexName))
                 newIndexName = genome.Build;
-            string genomeFolder = PathHandler.GetGenomeSequenceFolder(genome);
+            string genomeFolder = genome.GetGenomeFolder();
             string spliceChrFile = null;
             List<string> realChrFiles = new List<string>();
             foreach (string f in Directory.GetFiles(genomeFolder, "chr*"))
@@ -296,7 +296,6 @@ namespace Linnarsson.Strt
 			{
                 extrInfo.extractionTopFolder = outputFolder;
                 ReadCounter readCounter = new ReadCounter();
-                readCounter.AddReadFilename(extrInfo.readFilePath);
                 ExtractionWordCounter wordCounter = new ExtractionWordCounter(props.ExtractionCounterWordLength);
                 GetExtractedFilePaths(outputFolder, extrInfo);
                 if (!AllFilePathsExist(extrInfo.extractedFilePaths) || !File.Exists(extrInfo.summaryFilePath))
@@ -307,6 +306,7 @@ namespace Linnarsson.Strt
                     ExtractionQuality extrQ = (props.AnalyzeExtractionQualities) ? new ExtractionQuality(props.LargestPossibleReadLength) : null;
                     double totLen = 0.0;
                     long nRecords = 0;
+                    int[] nValidReadsByBc = new int[barcodes.Count];
                     foreach (FastQRecord fastQRecord in FastQFile.Stream(extrInfo.readFilePath, props.QualityScoreBase))
                     {
                         FastQRecord rec = fastQRecord;
@@ -318,6 +318,7 @@ namespace Linnarsson.Strt
                         {
                             totLen += rec.Sequence.Length;
                             nRecords++;
+                            nValidReadsByBc[bcIdx]++;
                             sws_barcoded[bcIdx].WriteLine(rec.ToString(props.QualityScoreBase));
                         }
                         else sw_slask.WriteLine(rec.ToString(props.QualityScoreBase));
@@ -326,8 +327,10 @@ namespace Linnarsson.Strt
                     sw_slask.Close();
                     StreamWriter sw_summary = extrInfo.summaryFilePath.OpenWrite();
                     int averageReadLen = (int)Math.Floor(totLen / nRecords);
+                    readCounter.AddReadFile(extrInfo.readFilePath, averageReadLen);
                     sw_summary.WriteLine(readCounter.TotalsToTabString());
-                    sw_summary.WriteLine("MEANREADLEN\t" + averageReadLen);
+                    for (int bc = 0; bc < nValidReadsByBc.Length; bc++)
+                        sw_summary.WriteLine("BARCODEREADS\t" + barcodes.Seqs[bc] + "\t" + nValidReadsByBc[bc].ToString());
                     sw_summary.WriteLine("\nBelow are the most common words among all reads.\n");
                     sw_summary.WriteLine(wordCounter.GroupsToString(200));
                     sw_summary.Close();
@@ -527,7 +530,10 @@ namespace Linnarsson.Strt
                 AssertBowtieOutputFile(genome.Build, fqPath, outputMainPath, fqUnmappedReadsPath, extrInfo.bowtieLogFilePath);
                 mapFiles.Add(outputMainPath);
                 string outputSplcPath = Path.Combine(mapFolder, bcIdx + "_" +  splcIndexVersion + ".map");
-                AssertBowtieOutputFile(genome.GetBowtieSplcIndexName(), fqUnmappedReadsPath, outputSplcPath, "", extrInfo.bowtieLogFilePath);
+                string indexName = genome.GetBowtieSplcIndexName();
+                if (indexName == "")
+                    throw new Exception("Can not find Bowtie index corresponding to " + genome.Build + "/"+ genome.Annotation);
+                AssertBowtieOutputFile(indexName, fqUnmappedReadsPath, outputSplcPath, "", extrInfo.bowtieLogFilePath);
                 mapFiles.Add(outputSplcPath);
                 Background.Progress((int)(++n / extrInfo.extractedFilePaths.Length));
                 if (Background.CancellationPending) break;
@@ -567,7 +573,7 @@ namespace Linnarsson.Strt
                 logWriter.Close();
                 if (cc.ExitCode != 0)
                 {
-                    Console.Error.WriteLine("Failed to run Bowtie on {0}. ExitCode={1}", inputFqReadPath, cc.ExitCode);
+                    Console.Error.WriteLine("bowtie " + arguments + "\nFailed to run Bowtie on {0}. ExitCode={1}", inputFqReadPath, cc.ExitCode);
                     if (File.Exists(outputPath)) File.Delete(outputPath);
                     return false;
                 }
@@ -787,13 +793,10 @@ namespace Linnarsson.Strt
         public void DumpTranscripts(Barcodes barcodes, StrtGenome genome, int readLen, int step, int maxPerGene, string fqOutput,
                                     bool makeSplices, int minOverhang, int maxSkip)
         {
+            if (readLen > 0) genome.ReadLen = readLen;
             bool variantGenes = genome.GeneVariants;
             PathHandler ph = new PathHandler(props);
-            string annotationsPath = PathHandler.GetAnnotationsPath(genome);
-            annotationsPath = PathHandler.ExistsOrGz(annotationsPath);
-            if (annotationsPath == null)
-                throw new NoAnnotationsFileFoundException("Could not find annotation file: " + annotationsPath);
-            Console.WriteLine("Annotations are taken from " + annotationsPath);
+            string annotationsPath = genome.VerifyAnAnnotationPath();
             if (makeSplices)
                 Console.WriteLine("Making all splices that have >= " + minOverhang + " bases overhang and max " + maxSkip + " exons excised.");
             Dictionary<string, string> chrIdToFileMap = PathHandler.GetGenomeFilesMap(genome);

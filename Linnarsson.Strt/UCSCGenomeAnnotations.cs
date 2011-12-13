@@ -252,11 +252,7 @@ namespace Linnarsson.Strt
 
         private void RegisterGenesAndIntervals(PathHandler ph)
         {
-            string annotationsPath = PathHandler.GetAnnotationsPath(genome);
-            annotationsPath = PathHandler.ExistsOrGz(annotationsPath);
-            if (annotationsPath == null)
-                throw new NoAnnotationsFileFoundException("Could not find annotation file: " + annotationsPath);
-            Console.WriteLine("Annotations from " + annotationsPath + ".");
+            string annotationsPath = genome.VerifyAnAnnotationPath();
             LoadAnnotationsFile(annotationsPath);
             MarkUpOverlappingFeatures();
             foreach (GeneFeature gf in geneFeatures.Values) 

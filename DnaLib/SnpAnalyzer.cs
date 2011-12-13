@@ -12,8 +12,13 @@ namespace Linnarsson.Dna
         public static readonly double thresholdFractionAltHitsForMixPos = 0.25;
         public static readonly int MinTotalHitsToShowBarcodedSnps = 10;
 
-        public void WriteSnpsByBarcode(StreamWriter snpFile, Barcodes barcodes,
-                                       Dictionary<string, GeneFeature> geneFeatures, int averageHitLength)
+        /// <summary>
+        /// Outputs SNP positions within all genes with the respective Nts and counts.
+        /// </summary>
+        /// <param name="snpFile">output file</param>
+        /// <param name="barcodes">just needed for header</param>
+        /// <param name="geneFeatures">dictionary of geneNames to GeneFeatures</param>
+        public void WriteSnpsByBarcode(StreamWriter snpFile, Barcodes barcodes, Dictionary<string, GeneFeature> geneFeatures)
         {
             snpFile.Write("#Gene\tTrLen\tChr\tStrand\tChrPos\tTrPos\tNt\tTotal");
             for (int idx = 0; idx < barcodes.Count; idx++)
@@ -54,10 +59,9 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// 
+        /// Analyzes SNPs in a gene and returns lists of positions that are either heterozygous or homozygous with and alternative Nt
         /// </summary>
-        /// <param name="gf"></param>
-        /// <param name="safeSpanWithinRead">Normally readLen - 2 * MaxAlignmentMismatches</param>
+        /// <param name="gf">Gene of interest</param>
         /// <param name="heterozygousPos"></param>
         /// <param name="altPos"></param>
         public static void GetSnpChrPositions(GeneFeature gf, out List<int> heterozygousPos, out List<int> altPos)

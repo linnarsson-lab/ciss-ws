@@ -57,37 +57,76 @@ namespace Linnarsson.Dna
                 return speciesArg.Substring(0, variantPos) + variantChar + speciesArg.Substring(variantPos + 1);
             return speciesArg.Replace("_", "_" + variantChar);
         }
+
+        public string GetGenomeFolder()
+        {
+            return Path.Combine(Path.Combine(Props.props.GenomesFolder, Build), "genome");
+        }
+
+        public string MakeJunctionChrPath()
+        {
+            string pathPattern = Path.Combine(GetGenomeFolder(), "chr" + VarAnnot + "{0}.splices");
+            return ReplaceReadLen(ReadLen, pathPattern);
+        }
         public string GetJunctionChrFileName()
         {
-            string readLenPart = (ReadLen == Props.props.StandardReadLen) ? "" : string.Format("_{0}bp", ReadLen); 
-            return string.Format(SpliceChrFilenamePattern, VarAnnot, readLenPart);
+            return ReplaceReadLen(ReadLen, "chr" + VarAnnot + "{0}.splices");
         }
-        public string GetAnnotationsFileName()
+        public string MakeAnnotationsPath()
         {
-            string readLenPart = (ReadLen == Props.props.StandardReadLen) ? "" : string.Format("_{0}bp", ReadLen);
-            return string.Format(AnnotationsFilenamePattern, VarAnnot, readLenPart);
+            string pathPattern = Path.Combine(GetGenomeFolder(), "Annotations_" + VarAnnot + "{0}.txt");
+            return ReplaceReadLen(ReadLen, pathPattern);
         }
-        public string GetTagMappingFileName()
+        public string GetAnAnnotationsPath()
         {
-            return GetTagMappingFileName(ReadLen);
+            string pathPattern = Path.Combine(GetGenomeFolder(), "Annotations_" + VarAnnot + "{0}.txt");
+            return FindABpVersion(ReadLen, pathPattern);
         }
-        public string GetTagMappingFileName(int readLen)
+        public string VerifyAnAnnotationPath()
         {
-            string readLenPart = (readLen == Props.props.StandardReadLen) ? "" : string.Format("_{0}bp", readLen);
-            return string.Format(TagMappingFilenamePattern, VarAnnot, Props.props.MaxAlignmentMismatches, readLenPart);
+            string tryAnnotationsPath = GetAnAnnotationsPath();
+            string annotationsPath = PathHandler.ExistsOrGz(tryAnnotationsPath);
+            if (annotationsPath == null)
+                throw new Exception("Could not find an annotation file for " + GetBowtieIndexName());
+            Console.WriteLine("Annotations are taken from " + annotationsPath);
+            return annotationsPath;
         }
-        public string GetBowtieIndexName()
+
+        public string GetTagMappingPath(int readLen)
         {
-            return Build + "_" + VarAnnot;
+            string pathPattern = Path.Combine(GetGenomeFolder(), "Mappings_" + VarAnnot + "_" + Props.props.MaxAlignmentMismatches + "MM{0}.hmap");
+            return FindABpVersion(readLen, pathPattern);
         }
+
         public string GetBowtieSplcIndexName()
         {
             return GetBowtieSplcIndexName(ReadLen);
         }
         public string GetBowtieSplcIndexName(int readLen)
         {
+            string pathPattern = Path.Combine(PathHandler.GetBowtieIndicesFolder(), Build + "chr" + VarAnnot + "{0}.1.ebwt");
+            return Path.GetFileName(FindABpVersion(readLen, pathPattern)).Replace(".1.ebwt", "");
+        }
+        private string ReplaceReadLen(int readLen, string pathPattern)
+        {
             string readLenPart = (readLen == Props.props.StandardReadLen) ? "" : string.Format("_{0}bp", readLen);
-            return Build + "chr" + VarAnnot + readLenPart;
+            return string.Format(pathPattern, readLenPart);
+        }
+        private string FindABpVersion(int readLen, string pathPattern)
+        {
+            for (int mapLen = readLen; mapLen > readLen - 10; mapLen--)
+            {
+                string path = ReplaceReadLen(mapLen, pathPattern);
+                Console.WriteLine("Trying " + path);
+                if (File.Exists(path))
+                    return path;
+            }
+            return "";
+        }
+
+        public string GetBowtieIndexName()
+        {
+            return Build + "_" + VarAnnot;
         }
 
         public bool IsChrInBuild(string filename)

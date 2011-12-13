@@ -40,7 +40,7 @@ namespace Linnarsson.Dna
 
         protected string GetAnnotationPath(string annotationFilename)
         {
-            string genomeFolder = PathHandler.GetGenomeSequenceFolder(genome);
+            string genomeFolder = genome.GetGenomeFolder();
             string annotationPath = Path.Combine(genomeFolder, annotationFilename);
             annotationPath = PathHandler.ExistsOrGz(annotationPath);
             if (annotationPath == null)

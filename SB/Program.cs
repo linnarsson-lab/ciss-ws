@@ -203,55 +203,6 @@ namespace CmdSilverBullet
                             mapper.DumpTranscripts(barcodes, genome, readLength, step, maxPerGene, outputPath, makeSplices, minOverhang, maxSkip);
                             break;
 
-                        case "writehitmap":
-                            HitMapAnnotator hma2 = new HitMapAnnotator();
-                            hma2.InitHitMapFromReadMapFile(args[1]);
-                            Console.WriteLine("Writing SilverBullet txt formatted data to " + args[2]);
-                            hma2.WriteHitMapToSbaFile(args[2]);
-                            break;
-
-
-                        case "serializehitmap":
-                            HitMapAnnotator hma1 = new HitMapAnnotator();
-                            hma1.InitHitMapFromReadMapFile(args[1]);
-                            Console.WriteLine("Writing .NET serialized data to " + args[2]);
-                            hma1.Serialize(args[2]);
-                            string sbaFile = Path.GetFileNameWithoutExtension(args[2]) + ".sba";
-                            Console.WriteLine("Writing SilverBullet txt formatted data to " + sbaFile);
-                            hma1.WriteHitMapToSbaFile(sbaFile);
-                            break;
-
-                        case "makehmap":
-                            readLen = int.Parse(args[argOffset++]);
-                            genome = StrtGenome.GetGenome(args[argOffset++]);
-                            genome.ReadLen = readLen;
-                            string origFqPath = args[argOffset++];
-                            string mapPath = args[argOffset++];
-                            string hmapPath = args[argOffset++];
-                            string remainFqPath = args[argOffset++];
-                            TagMappingFile tmf = new TagMappingFile(genome);
-                            tmf.TranslateMapFile(origFqPath, mapPath, hmapPath, remainFqPath);
-                            break;
-
-                        case "hitmapannotate":
-                            HitMapAnnotator hma = new HitMapAnnotator();
-                            hma.InitHitMapFromFile(args[1]);
-                            Console.WriteLine("Setting barcodes to " + args[2]);
-                            props.BarcodesName = args[2];
-                            hma.InitAnalysis(props.Barcodes);
-                            string[] mapFiles = Directory.GetFiles(args[3], args[4]);
-                            hma.AnnotatateMapFiles(args[3], mapFiles);
-                            hma.WriteSummary();
-                            Console.WriteLine("Writing output to " + args[args.Length - 1]);
-                            hma.WriteRawCounts(args[args.Length - 1]);
-                            if (args[1].EndsWith(".map"))
-                            {
-                                string outf = args[1].Replace(".map", ".sba");
-                                Console.WriteLine("Saving annotations to SilverBullet formatted txt file " + outf);
-                                hma.WriteHitMapToSbaFile(outf);
-                            }
-                            break;
-
                         case "mapsnp":
                             MapFileSnpFinder mfsf = new MapFileSnpFinder(Barcodes.GetBarcodes(args[1]));
                             List<string> files = new List<string>();
@@ -349,13 +300,10 @@ namespace CmdSilverBullet
                 "SB.exe bt <Sp>|<IdxName> all|single <ProjectPath>|<ExtractedPath>\n    - run Bowtie on latest/specified Extracted folder\n" +
                 "SB.exe aw <Sp> <MapFolderPath>/n    - annotate data from Wiggles .wig files folder\n" +
                 "SB.exe sort <BcSet> [<MapFile>]+ <outFile>\n    - sort and merge specified .map files\n" +
-                "SB.exe hitmapannotate <annotFile> <BcSet> <MapFilesFolder> <MapFilePattern> <outputFile>\n" +
                 "SB.exe split [<BcSet>] <ProjectPath>\n    - split data by barcode\n" +
                 "SB.exe synt <BcSet> <IdxName> all|single <OutputFolder>\n" +
                 "    - generate synthetic reads from a genome\n" +
                 "SB.exe stats [<BcSet>] <ProjectPath>\n    - calculate barcode statistics\n" +
-                "SB.exe makehmap <readLen> <genome> <origFqFile> <mapFile> <hmapPath> <remainFqFile>\n" +
-                "    - make .hmap file of multiread mappings using a bowtie mapping of all reads for a genome\n" +
                 "SB.exe mapsnp <BcSet> <outputFile> [<mapFile>]+\n    - analyze a set of map files to find potential SNP locations\n" +
                 "SB.exe maskchr <genome> <minLocusFlank> <minIntronFlank> <maxIntronSizeToSaveFully> <outputFolder>\n    - mask non-exon regions of chromosomes with 'N':s\n" +
                 "SB.exe dump <IdxName> [<readLen> [<Step> [<MaxPerGene> [<MinOverhang> [Splices|Linear [<bcSet>]]]]]] [<OutputPath>]\n" +

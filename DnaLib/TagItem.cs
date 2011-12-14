@@ -33,6 +33,7 @@ namespace Linnarsson.Dna
         public int hitStartPos;
         public char strand;
         public int splcToRealChrOffset = 0;
+        public bool hasAltMappings { get { return m_TagItem.hasAltMappings; } }
         public int HitLen { get { return AverageReadLen; } }
         public int HitMidPos
         {
@@ -84,20 +85,6 @@ namespace Linnarsson.Dna
         /// </summary>
         public bool hasAltMappings;
 
-        public List<string> altChr = new List<string>();
-        public List<int> altPosStrand = new List<int>();
-        // A central Dictionary saves pointers from (pre-calculated) alternative mappings to common
-        // TagItems for redundant exons positions, to avoid the multiread issue:
-        // Dictionary<int, TagItem> mappings;
-        // where keys are (chr, pos, strand) items. All these pre-initialized TagItems will have hasAltMappings == true
-        // For unique mappings, new KeyValuePairs with hasAltMappings == false are added as new reads are detected.
-        // Note that SNPs can only be correctly analyzed for mappings that are unique, i.e. hasAltMappings == false.
-        // hasAltMappings together with gene-shared exons will affect the Max/Min counts for genes during annotation.
-        //
-        // The process of first counting all reads before annotating, loses the readLen of each
-        // read. A strong limit on min readLen should be used, and small A-tails not be removed,
-        // so that a constant readLen can be assumed.
-        
         /// <summary>
         /// Setup a TagItem that may be shared by all the mappings of a multiread.
         /// </summary>
@@ -107,37 +94,9 @@ namespace Linnarsson.Dna
             this.hasAltMappings = hasAltMappings;
         }
 
-        public void AddAltLocation(string chr, int pos, char strand)
-        {
-            altChr.Add(chr);
-            int strandBit = (strand == '+')? 1 : 0;
-            altPosStrand.Add((pos << 1) | strandBit);
-        }
-        public void AddAltLocation(string chr, int posStrand)
-        {
-            altChr.Add(chr);
-            altPosStrand.Add(posStrand);
-        }
-
-        public IEnumerable<MappedTagItem> IterAltLocations(int currentBcIdx)
-        {
-            for (int i = 0; i < altChr.Count; i++)
-            {
-                MappedTagItem mappedTagItem = new MappedTagItem();
-                mappedTagItem.bcIdx = currentBcIdx;
-                mappedTagItem.tagItem = this;
-                mappedTagItem.chr = altChr[i];
-                mappedTagItem.hitStartPos = altPosStrand[i] >> 1;
-                mappedTagItem.strand = ((altPosStrand[i] & 1) == 1) ? '+' : '-';
-                yield return mappedTagItem;
-            }
-        }
-
         public override string ToString()
         {
             string res = string.Format("TagItem: #Mols={0} #Reads={1} HasAltMappings={2}\n  Locations:", GetNumMolecules(), GetNumReads(), hasAltMappings);
-            for (int i = 0; i < altChr.Count; i++)
-                res += string.Format(" (Chr={0} Pos={1} Strand={2})", altChr[i], altPosStrand[i] >> 1, ((altPosStrand[i] & 1) == 1)? '+' : '-');
             return res;
         }
 

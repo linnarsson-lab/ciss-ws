@@ -17,6 +17,10 @@ namespace Linnarsson.Dna
             this.props = props;
         }
 
+        /// <summary>
+        /// Locates the folder where bowtie stores its indexes
+        /// </summary>
+        /// <returns>Folder for bowtie indexes</returns>
         public static string GetBowtieIndicesFolder()
         {
             string pathVar = Environment.GetEnvironmentVariable("PATH");
@@ -26,6 +30,11 @@ namespace Linnarsson.Dna
             return Props.props.BowtieIndexFolder;
         }
 
+        /// <summary>
+        /// Tries to find a bowtie index version, including create date, with read length matchin or close below genome.ReadLen
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <returns>Empty string if none found</returns>
         public static string GetIndexVersion(StrtGenome genome)
         {
             string indexName = genome.GetBowtieSplcIndexName();

@@ -33,6 +33,11 @@ namespace Linnarsson.Dna
             this.laneNo = laneNo;
         }
 
+        public void SetMappedFileFolder(string splcIndexVersion)
+        {
+            mappedFileFolder = Path.Combine(Path.Combine(extractionTopFolder, splcIndexVersion), ExtractedFileFolderName);
+        }
+
         public override string ToString()
         {
             string s = "ExtrInfo: runId=" + runId + " laneNo=" + laneNo + "\n" +

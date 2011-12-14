@@ -64,7 +64,7 @@ namespace Linnarsson.Dna
             {
                 int pStart = exonStarts[pIdx];
                 int pEnd = exonEnds[pIdx];
-                yield return new FtInterval(pStart, pEnd, MarkHit, pIdx);
+                yield return new FtInterval(pStart, pEnd, MarkHit, pIdx, this, AnnotType.SPLC, Strand);
             }
             yield break;
         }

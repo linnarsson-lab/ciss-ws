@@ -265,7 +265,19 @@ namespace Linnarsson.Dna
         public string Chr;
         public char Strand;
         public int Position;
+        public int HitMidPos { get { return Position + parent.SeqLen / 2; } }
         public string Mismatches;
+        public string ReadId { get { return parent.ReadId; } }
+        public int BcIdx { get { return parent.BarcodeIdx; } }
+        public int RndTagIdx { get { return parent.RandomBcIdx; } }
+        public int SeqLen { get { return parent.SeqLen; } }
+        public bool HasAltMappings { get { return parent.HasAltMappings; } }
+
+        private MultiReadMappings parent;
+        public MultiReadMapping(MultiReadMappings parent)
+        {
+            this.parent = parent;
+        }
     }
     public class MultiReadMappings
     {
@@ -280,13 +292,13 @@ namespace Linnarsson.Dna
         public int MappingNumber;
         public bool IsFirstMapping { get { return MappingNumber == 0; } }
         public int NMappings;
-        private MultiReadMapping[] Mappings;
+        public MultiReadMapping[] Mappings;
 
         public MultiReadMappings(int maxNMappings, Barcodes barcodes)
         {
             Mappings = new MultiReadMapping[maxNMappings];
             for (int i = 0; i < maxNMappings; i++)
-                Mappings[i] = new MultiReadMapping();
+                Mappings[i] = new MultiReadMapping(this);
             Barcodes = barcodes;
         }
         public void Init(string readId, int bcIdx, int randomBcIdx, int seqLen, int mappingNumber, int altMappings)

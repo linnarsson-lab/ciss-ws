@@ -12,16 +12,21 @@ namespace Linnarsson.Dna
     {
         public int Start;
         public int End;
-        //public DoMarkHit Mark;
         public NewMarkHit Mark;
         public int ExtraData;
+        public IFeature Feature;
+        public int AnnotType;
+        public char Strand;
 
-        public FtInterval(int start, int end, NewMarkHit item, int extraData)
+        public FtInterval(int start, int end, NewMarkHit item, int extraData, IFeature feature, int annotType, char strand)
         {
             Start = start;
             End = end;
             Mark = item;
             ExtraData = extraData;
+            Feature = feature;
+            AnnotType = annotType;
+            Strand = strand;
         }
 
         public bool Contains(int pt)

@@ -98,10 +98,19 @@ namespace Linnarsson.Dna
             return FindABpVersion(readLen, pathPattern);
         }
 
+        /// <summary>
+        /// Tries to find a splice chr index that has read length as close as possible below genome.ReadLen.
+        /// </summary>
+        /// <returns>Empty string if none found</returns>
         public string GetBowtieSplcIndexName()
         {
             return GetBowtieSplcIndexName(ReadLen);
         }
+        /// <summary>
+        /// Tries to find a splice chr index that has read length as close as possible below readLen.
+        /// </summary>
+        /// <param name="readLen">Desired readLen</param>
+        /// <returns>Empty string if none found</returns>
         public string GetBowtieSplcIndexName(int readLen)
         {
             string pathPattern = Path.Combine(PathHandler.GetBowtieIndicesFolder(), Build + "chr" + VarAnnot + "{0}.1.ebwt");

@@ -88,8 +88,6 @@ namespace Linnarsson.Dna
 
         public virtual MarkResult MarkHit(MappedTagItem item, int junk, MarkStatus markType)
         {
-            if (markType != MarkStatus.TEST_EXON_MARK_OTHER)
-                return new MarkResult(AnnotType.NOHIT, this);
             int annotType = AnnotType.USTR;
             if (item.strand == Strand)
                 TotalSenseHits += item.MolCount;
@@ -108,7 +106,7 @@ namespace Linnarsson.Dna
 
         public virtual IEnumerable<FtInterval> IterIntervals()
         {
-            yield return new FtInterval(Start, End, MarkHit, 0);
+            yield return new FtInterval(Start, End, MarkHit, 0, this, AnnotType.USTR, Strand);
             yield break;
         }
 

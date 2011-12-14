@@ -265,9 +265,10 @@ namespace CmdSilverBullet
                             NonExonRepeatMasker nerm = new NonExonRepeatMasker();
                             genome = StrtGenome.GetGenome(args[argOffset++]);
                             int minFlank = int.Parse(args[argOffset++]);
+                            int minIntronFlank = int.Parse(args[argOffset++]);
                             int maxIntronToKeep = int.Parse(args[argOffset++]);
                             string outFolder = args[argOffset++];
-                            nerm.Mask(genome, outFolder, minFlank, maxIntronToKeep);
+                            nerm.Mask(genome, outFolder, minFlank, minIntronFlank, maxIntronToKeep);
                             break;
 
                         case "split":
@@ -356,7 +357,7 @@ namespace CmdSilverBullet
                 "SB.exe makehmap <readLen> <genome> <origFqFile> <mapFile> <hmapPath> <remainFqFile>\n" +
                 "    - make .hmap file of multiread mappings using a bowtie mapping of all reads for a genome\n" +
                 "SB.exe mapsnp <BcSet> <outputFile> [<mapFile>]+\n    - analyze a set of map files to find potential SNP locations\n" +
-                "SB.exe maskchr <genome> <minLocusFlank> <maxIntronSizeToSave> <outputFolder>\n    - mask non-exon regions of chromosomes with 'N':s\n" +
+                "SB.exe maskchr <genome> <minLocusFlank> <minIntronFlank> <maxIntronSizeToSaveFully> <outputFolder>\n    - mask non-exon regions of chromosomes with 'N':s\n" +
                 "SB.exe dump <IdxName> [<readLen> [<Step> [<MaxPerGene> [<MinOverhang> [Splices|Linear [<bcSet>]]]]]] [<OutputPath>]\n" +
                 "    - make fq file of transcript fragments. Makes all if MaxPerGene=0. Adds barcodes+GGG if bcSet given \n\n" + 
                 "<RunLaneSpec> is e.g. '17:235' indicating lanes 2,3, and 5 of run 17.\n" + 

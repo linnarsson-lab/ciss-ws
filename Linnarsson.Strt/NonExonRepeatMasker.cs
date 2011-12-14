@@ -15,14 +15,16 @@ namespace Linnarsson.Strt
     {
         private int minFlank;
         private int maxIntronToKeep;
+        private int minIntronFlank;
         private List<int> maskStarts = new List<int>();
         private List<int> maskEnds = new List<int>();
 
         public int Count { get { return maskStarts.Count; } }
 
-        public ChrIntervals(int minFlank, int maxIntronToKeep)
+        public ChrIntervals(int minFlank, int minIntronFlank, int maxIntronToKeep)
         {
             this.maxIntronToKeep = maxIntronToKeep;
+            this.minIntronFlank = minIntronFlank;
             this.minFlank = minFlank;
         }
 
@@ -74,8 +76,8 @@ namespace Linnarsson.Strt
                 int intronLen = exonStarts[i + 1] - exonEnds[i];
                 if (intronLen > maxIntronToKeep)
                 {
-                    Add(maskStart, exonEnds[i] + 1);
-                    maskStart = exonStarts[i + 1];
+                    Add(maskStart, exonEnds[i] + 1 + minIntronFlank);
+                    maskStart = exonStarts[i + 1] - minIntronFlank;
                 }
             }
             Add(maskStart, exonEnds[exonEnds.Length - 1] + minFlank + 1);
@@ -110,14 +112,16 @@ namespace Linnarsson.Strt
     /// </summary>
     public class NonExonRepeatMasker
     {
-        public void Mask(StrtGenome genome, string outputFolder, int minFlank, int maxIntronToKeep)
+        public void Mask(StrtGenome genome, string outputFolder, int minFlank, int minIntronFlank, int maxIntronToKeep)
         {
+            if (maxIntronToKeep < minIntronFlank * 2)
+                maxIntronToKeep = minIntronFlank * 2;
             Dictionary<string, string> chrIdToFileMap = ReadChrData(genome, outputFolder);
             Dictionary<string, ChrIntervals> chrIntervals = new Dictionary<string, ChrIntervals>();
             foreach (string chrId in chrIdToFileMap.Keys)
             {
                 if (!StrtGenome.IsASpliceAnnotationChr(chrId))
-                    chrIntervals[chrId] = new ChrIntervals(minFlank, maxIntronToKeep);
+                    chrIntervals[chrId] = new ChrIntervals(minFlank, minIntronFlank, maxIntronToKeep);
             }
             DefineChrIntervals(genome, chrIntervals);
             foreach (string chrId in chrIntervals.Keys)
@@ -141,8 +145,7 @@ namespace Linnarsson.Strt
                 int n = 0;
                 foreach (Pair<int, int> nonExons in chrIntervals[chrId].IterSpaces())
                 {
-                    if (n++ < 20)
-                        Console.WriteLine("Space: " + nonExons.First + " - " + nonExons.Second);
+                    n++;
                     for (int idx = nonExons.First; idx <= Math.Min(seq.Length - 1, nonExons.Second); idx++)
                     {
                         if ("acgt".IndexOf(seq[idx]) >= 0)

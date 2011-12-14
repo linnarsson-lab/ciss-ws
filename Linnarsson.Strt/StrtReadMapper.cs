@@ -458,7 +458,7 @@ namespace Linnarsson.Strt
                 Console.WriteLine(summaryPath);
                 rc.AddExtractionSummary(summaryPath);
             }
-            return rc.averageReadLen;
+            return rc.AverageReadLen;
         }
 
         /// <summary>
@@ -696,7 +696,7 @@ namespace Linnarsson.Strt
             string outputFolder = Path.Combine(projectFolder, resultSubFolder);
             ReadCounter readCounter = new ReadCounter();
             readCounter.AddExtractionSummaries(CollectExtractionSummaryPaths(mapFilePaths, genome));
-            int averageReadLen = readCounter.averageReadLen;
+            int averageReadLen = readCounter.AverageReadLen;
             if (averageReadLen == 0)
                 averageReadLen = Props.props.StandardReadLen - barcodes.GetInsertStartPos();
             genome.ReadLen = averageReadLen;

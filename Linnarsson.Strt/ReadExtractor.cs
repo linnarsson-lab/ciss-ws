@@ -31,7 +31,15 @@ namespace Linnarsson.Strt
         private List<string> readFiles = new List<string>();
         private List<int> meanReadLens = new List<int>();
         private List<int> barcodeReads = new List<int>();
-        public int averageReadLen { get { return (int)Math.Floor(meanReadLens.Sum() / (double)meanReadLens.Count); } }
+        private Dictionary<string, int> barcodeToReadsIdx = new Dictionary<string, int>();
+
+        /// <summary>
+        /// Average read length over all files
+        /// </summary>
+        public int AverageReadLen { get { return (int)Math.Floor(meanReadLens.Sum() / (double)meanReadLens.Count); } }
+        /// <summary>
+        /// Total read counts over all files, per barcode
+        /// </summary>
         public int[] TotalBarcodeReads { get { return barcodeReads.ToArray(); } }
 
         public int GrandTotal { get { return totalSum; } }
@@ -136,7 +144,17 @@ namespace Linnarsson.Strt
                                 meanReadLens.Add(int.Parse(fields[2]));
                             }
                             else if (line.StartsWith("BARCODEREADS"))
-                                barcodeReads.Add(int.Parse(fields[2]));
+                            {
+                                string bc = fields[1];
+                                int idx;
+                                if (!barcodeToReadsIdx.TryGetValue(bc, out idx))
+                                {
+                                    idx = barcodeToReadsIdx.Count;
+                                    barcodeToReadsIdx[bc] = idx;
+                                    barcodeReads.Add(0);
+                                }
+                                barcodeReads[idx] += int.Parse(fields[2]);
+                            }
                             else
                             {
                                 int statusCategory = ReadStatus.Parse(fields[0]);

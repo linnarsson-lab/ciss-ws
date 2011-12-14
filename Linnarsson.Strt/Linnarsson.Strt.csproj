@@ -67,7 +67,6 @@
     <Compile Include="StrtReadMapper.cs" />
     <Compile Include="StrtReport.cs" />
     <Compile Include="SyntReadReporter.cs" />
-    <Compile Include="TagMappingFile.cs" />
     <Compile Include="TranscriptomeStatistics.cs" />
     <Compile Include="UCSCGenomeAnnotations.cs" />
     <Compile Include="UCSCGenomeDownloader.cs" />

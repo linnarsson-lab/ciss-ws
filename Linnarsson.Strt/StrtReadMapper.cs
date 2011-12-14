@@ -507,19 +507,23 @@ namespace Linnarsson.Strt
 
         private void CreateBowtieMaps(StrtGenome genome, List<LaneInfo> extrInfos)
         {
+            string splcIndexVersion = GetSplcIndexVersion(genome);
             foreach (LaneInfo extrInfo in extrInfos)
-                CreateBowtieMaps(genome, extrInfo);
+                CreateBowtieMaps(genome, extrInfo, splcIndexVersion);
         }
-        private void CreateBowtieMaps(StrtGenome genome, LaneInfo extrInfo)
+        private void CreateBowtieMaps(StrtGenome genome, LaneInfo extrInfo, string splcIndexVersion)
         {
             int n = 0;
-            string splcIndexVersion = SetMappedFileFolder(genome, extrInfo);
+            extrInfo.SetMappedFileFolder(splcIndexVersion);
             string mapFolder = extrInfo.mappedFileFolder;
             if (!Directory.Exists(mapFolder))
                 Directory.CreateDirectory(mapFolder);
             extrInfo.bowtieLogFilePath = Path.Combine(mapFolder, "bowtie_output.txt");
             List<string> mapFiles = new List<string>();
             int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            string indexName = genome.GetBowtieSplcIndexName();
+            if (indexName == "")
+                throw new Exception("Can not find Bowtie index corresponding to " + genome.Build + "/" + genome.Annotation);
             foreach (string fqPath in extrInfo.extractedFilePaths)
             {
                 int bcIdx = int.Parse(Path.GetFileNameWithoutExtension(fqPath));
@@ -530,9 +534,6 @@ namespace Linnarsson.Strt
                 AssertBowtieOutputFile(genome.Build, fqPath, outputMainPath, fqUnmappedReadsPath, extrInfo.bowtieLogFilePath);
                 mapFiles.Add(outputMainPath);
                 string outputSplcPath = Path.Combine(mapFolder, bcIdx + "_" +  splcIndexVersion + ".map");
-                string indexName = genome.GetBowtieSplcIndexName();
-                if (indexName == "")
-                    throw new Exception("Can not find Bowtie index corresponding to " + genome.Build + "/"+ genome.Annotation);
                 AssertBowtieOutputFile(indexName, fqUnmappedReadsPath, outputSplcPath, "", extrInfo.bowtieLogFilePath);
                 mapFiles.Add(outputSplcPath);
                 Background.Progress((int)(++n / extrInfo.extractedFilePaths.Length));
@@ -541,12 +542,12 @@ namespace Linnarsson.Strt
             extrInfo.mappedFilePaths = mapFiles.ToArray();
         }
 
-        private static string SetMappedFileFolder(StrtGenome genome, LaneInfo extrInfo)
+        private static string GetSplcIndexVersion(StrtGenome genome)
         {
             string splcIndexVersion = PathHandler.GetIndexVersion(genome); // The current version including date
             if (splcIndexVersion == "")
-                throw new Exception("Can not find a bowtie splice index corresponding close to ReadLen=" + genome.ReadLen + " for " + genome.GetBowtieIndexName());
-            extrInfo.mappedFileFolder = Path.Combine(Path.Combine(extrInfo.extractionTopFolder, splcIndexVersion), extrInfo.ExtractedFileFolderName);
+                throw new Exception("Please use idx function to make a bowtie splice index with ReadLen=" + genome.ReadLen
+                                    + "or at least " + (genome.ReadLen - 5) + " for " + genome.GetBowtieIndexName());
             return splcIndexVersion;
         }
 
@@ -573,7 +574,7 @@ namespace Linnarsson.Strt
                 logWriter.Close();
                 if (cc.ExitCode != 0)
                 {
-                    Console.Error.WriteLine("bowtie " + arguments + "\nFailed to run Bowtie on {0}. ExitCode={1}", inputFqReadPath, cc.ExitCode);
+                    Console.Error.WriteLine("bowtie " + arguments + "\nFailed to run Bowtie on {0}. ExitCode={1}. Check logFile.", inputFqReadPath, cc.ExitCode);
                     if (File.Exists(outputPath)) File.Delete(outputPath);
                     return false;
                 }
@@ -642,10 +643,11 @@ namespace Linnarsson.Strt
 
         private static List<string> SetExistingMapFilePaths(StrtGenome genome, List<LaneInfo> laneInfos)
         {
+            string splcIndexVersion = GetSplcIndexVersion(genome);
             List<string> mapFiles = new List<string>();
             foreach (LaneInfo info in laneInfos)
             {
-                SetMappedFileFolder(genome, info);
+                info.SetMappedFileFolder(splcIndexVersion);
                 info.mappedFilePaths = Directory.GetFiles(info.mappedFileFolder, "*.map");
                 mapFiles.AddRange(info.mappedFilePaths);
             }

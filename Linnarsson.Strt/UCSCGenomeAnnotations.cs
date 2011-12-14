@@ -34,13 +34,11 @@ namespace Linnarsson.Strt
         {
             PathHandler ph = new PathHandler(props);
             ChrIdToFileMap = PathHandler.GetGenomeFilesMap(genome);
-            int nFiles = (int)(ChrIdToFileMap.Count * 1.3);
-            Background.Progress(0);
             foreach (string chrId in ChrIdToFileMap.Keys)
-                QuickAnnotations[chrId] = new QuickAnnotationMap(annotationBinSize);
+                ExonAnnotations[chrId] = new QuickAnnotationMap(annotationBinSize);
             RegisterGenesAndIntervals(ph);
             if (needChromosomeSequences || needChromosomeLengths)
-                ReadChromsomeSequences(ChrIdToFileMap, nFiles);
+                ReadChromsomeSequences(ChrIdToFileMap);
             if (Background.CancellationPending) return;
             string[] rmskFiles = ph.GetRepeatMaskFiles(genome);
             Console.Write("Reading {0} masking files..", rmskFiles.Length);
@@ -51,18 +49,17 @@ namespace Linnarsson.Strt
             }
             Console.WriteLine("{0} annotated repeat types.", repeatFeatures.Count);
             summaryLines.Add(repeatFeatures.Count + " repeat types analyzed using " + rmskFiles.Length + " repeat mask files.\n");
-            Background.Progress(100);
         }
 
-        public override string[] GetChromosomeNames()
+        public override string[] GetChromosomeIds()
         {
- 	        return QuickAnnotations.Keys.ToArray();
+ 	        return ExonAnnotations.Keys.ToArray();
         }
 
         private void MarkUpOverlappingFeatures()
         {
             int nMarkedExons = 0, nMarkedGenes = 0, totalMarkedLen = 0;
-            foreach (string chrId in QuickAnnotations.Keys)
+            foreach (string chrId in GetChromosomeIds())
             {
                 int nStrandExons, nStrandGenes, totalStrandLen;
                 MarkUpOverlappingFeatures(chrId, '+', out nStrandExons, out nStrandGenes, out totalStrandLen);
@@ -144,9 +141,8 @@ namespace Linnarsson.Strt
             Sort.QuickSort(exonStarts, exonEnds, gFeatureByExon);
         }
 
-        private void ReadChromsomeSequences(Dictionary<string, string> chrIdToFileMap, int nFiles)
+        private void ReadChromsomeSequences(Dictionary<string, string> chrIdToFileMap)
         {
-            int nDone = 0;
             string[] selectedChrIds = props.SeqStatsChrIds;
             if (selectedChrIds == null || selectedChrIds[0] == "")
                 selectedChrIds = chrIdToFileMap.Keys.ToArray();
@@ -174,7 +170,6 @@ namespace Linnarsson.Strt
                 {
                     Console.WriteLine("\nERROR: Could not read chromosome {0} - {1}", chrId, e.Message);
                 }
-                Background.Progress(++nDone * 100 / nFiles);
                 if (Background.CancellationPending) return;
             }
             summaryLines.Add("Read " + ChromosomeSequences.Count + 
@@ -223,24 +218,20 @@ namespace Linnarsson.Strt
                 nLines++;
                 record = Regex.Split(line.Trim(), " +|\t");
                 string chr = record[5 + fileTypeOffset].Substring(3);
-                if (QuickAnnotations.ContainsKey(chr))
+                if (NonExonAnnotations.ContainsKey(chr))
                 {
                     int start = int.Parse(record[6 + fileTypeOffset]);
                     int end = int.Parse(record[7 + fileTypeOffset]);
                     nRepeatFeatures++;
                     string name = record[10 + fileTypeOffset];
-                    RepeatFeature mappedFeature;
-                    try
+                    RepeatFeature reptFeature;
+                    if (!repeatFeatures.TryGetValue(name, out reptFeature))
                     {
-                        mappedFeature = repeatFeatures[name];
-                        mappedFeature.Length += end - start + 1;
+                        reptFeature = new RepeatFeature(name, start, end);
+                        repeatFeatures[name] = reptFeature;
                     }
-                    catch (KeyNotFoundException)
-                    {
-                        mappedFeature = new RepeatFeature(name, start, end);
-                        repeatFeatures[name] = mappedFeature;
-                    }
-                    AddInterval(chr, start, end, mappedFeature.MarkHit, 0);
+                    reptFeature.Length += end - start + 1;
+                    NonExonAnnotations[chr].Add(new FtInterval(start, end, reptFeature.MarkHit, 0, reptFeature, AnnotType.REPT, '0'));
                 }
                 line = reader.ReadLine();
             }
@@ -256,7 +247,7 @@ namespace Linnarsson.Strt
             LoadAnnotationsFile(annotationsPath);
             MarkUpOverlappingFeatures();
             foreach (GeneFeature gf in geneFeatures.Values) 
-                AddIntervals((GeneFeature)gf);
+                AddGeneIntervals((GeneFeature)gf);
         }
 
         private void LoadAnnotationsFile(string annotationsPath)
@@ -292,7 +283,7 @@ namespace Linnarsson.Strt
                 if (lastLoadedGeneName == gf.Name)
                 {    // Link from artificial splice chromosome to real locus
                     ((SplicedGeneFeature)gf).BindToRealFeature(geneFeatures[gf.Name]);
-                    AddIntervals((SplicedGeneFeature)gf);
+                    AddGeneIntervals((SplicedGeneFeature)gf);
                 }
                 lastLoadedGeneName = "";
                 return false;

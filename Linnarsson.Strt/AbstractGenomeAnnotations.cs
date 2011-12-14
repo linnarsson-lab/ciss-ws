@@ -25,7 +25,8 @@ namespace Linnarsson.Strt
         /// <summary>
         /// A dictionary of annotations indexed by chromosome Id
         /// </summary>
-        protected Dictionary<string, QuickAnnotationMap> QuickAnnotations { get; set; }
+        protected Dictionary<string, QuickAnnotationMap> ExonAnnotations { get; set; }
+        protected Dictionary<string, QuickAnnotationMap> NonExonAnnotations { get; set; }
         public Dictionary<string, GeneFeature> geneFeatures;
         public Dictionary<string, RepeatFeature> repeatFeatures;
 
@@ -52,14 +53,15 @@ namespace Linnarsson.Strt
             CompactGenePainter.SetMaxLocusLen(props.MaxFeatureLength);
             ChromosomeSequences = new Dictionary<string, DnaSequence>();
             ChromosomeLengths = new Dictionary<string, int>();
-            QuickAnnotations = new Dictionary<string, QuickAnnotationMap>();
+            ExonAnnotations = new Dictionary<string, QuickAnnotationMap>();
+            NonExonAnnotations = new Dictionary<string, QuickAnnotationMap>();
             geneFeatures = new Dictionary<string, GeneFeature>(60000);
             repeatFeatures = new Dictionary<string, RepeatFeature>(1500);
 		}
 
         public abstract void Load();
 
-        public abstract string[] GetChromosomeNames();
+        public abstract string[] GetChromosomeIds();
         public abstract int GetTotalAnnotLength(int annotType);
         public abstract int GetTotalAnnotLength(int annotType, bool excludeMasked);
         public abstract int GetTotalAnnotCounts(int annotType, bool excludeMasked);
@@ -77,37 +79,86 @@ namespace Linnarsson.Strt
         public virtual void SaveResult(string fileBaseName, int averageReadLen)
         { }
 
-        public IEnumerable<FtInterval> GetMatching(string chr, int hitPos)
+        /// <summary>
+        /// Finds the matching annotated intervals that correspond to (forward strand for directional reads) transcripts.
+        /// </summary>
+        /// <param name="chr">Chromosome of hit</param>
+        /// <param name="strand">Strand of hit (for directional reads)</param>
+        /// <param name="hitPos">Middle position of hit on chromosome</param>
+        /// <returns></returns>
+        public IEnumerable<FtInterval> GetTranscriptMatches(string chr, char strand, int hitPos)
         {
-            try
-            {
-                return QuickAnnotations[chr].GetItems(hitPos);
-            }
-            catch (KeyNotFoundException)
-            {
-                throw new ChromosomeMissingException("Got matches to missing chromosome " + chr);
-            }
+            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitPos))
+                if (ivl.Strand == strand || !AnnotType.DirectionalReads) yield return ivl; 
         }
 
-        protected void AddIntervals(LocusFeature ft)
+        /// <summary>
+        /// Finds the matching annotated intervals that do NOT correspond to (forward strand for directional reads) transcripts,
+        /// like USTR, INTR, DSTR and REPT.
+        /// </summary>
+        /// <param name="chr">Chromosome of hit</param>
+        /// <param name="strand">Strand of hit (for directional reads)</param>
+        /// <param name="hitPos">Middle position of hit on chromosome</param>
+        /// <returns></returns>
+        public IEnumerable<FtInterval> GetNonTrMatches(string chr, char strand, int hitPos)
+        {
+            if (AnnotType.DirectionalReads)
+                foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitPos))
+                    if (ivl.Strand != strand) yield return ivl;
+            foreach (FtInterval ivl in NonExonAnnotations[chr].GetItems(hitPos))
+                yield return ivl;
+        }
+
+        /// <summary>
+        /// Checks if there is a matching interval annotated as transcript or repeat
+        /// </summary>
+        /// <param name="chr"></param>
+        /// <param name="strand"></param>
+        /// <param name="hitPos"></param>
+        /// <returns>True if any matching interval defines an (forward) exon or repeat</returns>
+        public bool HasTrOrRepeatMatches(string chr, char strand, int hitPos)
+        {
+            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitPos))
+                if (ivl.Strand == strand || !AnnotType.DirectionalReads) return true;
+            foreach (FtInterval ivl in NonExonAnnotations[chr].GetItems(hitPos))
+                if (ivl.AnnotType == AnnotType.REPT) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Chreck if a matching interval is an exon (forward for directional reads)
+        /// </summary>
+        /// <param name="chr"></param>
+        /// <param name="strand"></param>
+        /// <param name="hitPos"></param>
+        /// <returns>True if an annotation says exon (sense)</returns>
+        public bool IsTranscript(string chr, char strand, int hitPos)
+        {
+            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitPos))
+                if (ivl.Strand == strand || !AnnotType.DirectionalReads) return true;
+            return false;
+        }
+
+        protected void AddGeneIntervals(LocusFeature ft)
         {
             foreach (FtInterval ivl in ft.IterIntervals())
             {
-                try
-                {
-                    AddInterval(ft.Chr, ivl.Start, ivl.End, ivl.Mark, ivl.ExtraData);
-                }
-                catch (KeyNotFoundException)
-                {
-                    QuickAnnotations[ft.Chr] = new QuickAnnotationMap(annotationBinSize);
-                    Console.Error.WriteLine("The sequence file for chr " + ft.Chr + " seems to be missing.");
-                    AddInterval(ft.Chr, ivl.Start, ivl.End, ivl.Mark, ivl.ExtraData);
-                }
+                if (AnnotType.IsTranscript(ivl.AnnotType))
+                    AddGeneInterval(ft.Chr, ivl, ExonAnnotations);
+                else
+                    AddGeneInterval(ft.Chr, ivl, NonExonAnnotations);
             }
         }
-        protected void AddInterval(string chr, int start, int end, NewMarkHit marker, int extraData)
+
+        private void AddGeneInterval(string chr, FtInterval ivl, Dictionary<string, QuickAnnotationMap> annotMaps)
         {
-            QuickAnnotations[chr].Add(new FtInterval(start, end, marker, extraData));
+            QuickAnnotationMap qMap;
+            if (!annotMaps.TryGetValue(chr, out qMap))
+            {
+                qMap = new QuickAnnotationMap(annotationBinSize);
+                annotMaps[chr] = qMap;
+            }
+            qMap.Add(ivl);
         }
 
         public bool HasChromosome(string chr)

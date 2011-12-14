@@ -106,7 +106,7 @@ namespace Linnarsson.Strt
             TotalHitsByBarcode = new int[barcodes.Count];
             TotalHitsByAnnotTypeAndBarcode = new int[AnnotType.Count, barcodes.Count];
             TotalHitsByAnnotTypeAndChr = new Dictionary<string, int[]>();
-            foreach (string chr in Annotations.GetChromosomeNames())
+            foreach (string chr in Annotations.GetChromosomeIds())
                 TotalHitsByAnnotTypeAndChr[chr] = new int[AnnotType.Count];
             TotalHitsByAnnotType = new int[AnnotType.Count];
             numReadsByBarcode = new int[barcodes.Count];
@@ -114,7 +114,7 @@ namespace Linnarsson.Strt
             exonsToMark = new List<Pair<MappedTagItem, FtInterval>>();
             exonHitGeneNames = new List<string>(100);
             annotationChrId = Annotations.Genome.Annotation;
-            randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeNames());
+            randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
             statsSampleDistPerBarcode = sampleDistForAccuStats / barcodes.Count;
         }
 
@@ -150,10 +150,6 @@ namespace Linnarsson.Strt
                 if (Props.props.SnpRndTagVerification)
                     snpRndTagVerifier = new SnpRndTagVerifier(Props.props, mfsf);
             }
-            string tagMappingFile = Annotations.Genome.GetTagMappingPath(averageReadLen);
-            Console.WriteLine("tagMappingFile: ", tagMappingFile);
-            randomTagFilter.Setup(tagMappingFile);
-            Console.WriteLine("tagItemList.count=" + RandomTagFilterByBc.tagItemList.Count);
             List<string> bcMapFilePaths = new List<string>();
             string mapFileName = Path.GetFileName(mapFilePaths[0]);
             currentBcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
@@ -196,9 +192,19 @@ namespace Linnarsson.Strt
                 MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, 1, barcodes);
                 if (mapFileReader == null)
                     throw new Exception("Unknown read map file type : " + mapFilePath);
-                foreach (MultiReadMappings mrm in mapFileReader.SingleMappings(mapFilePath))
+                foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
                 {
-                    randomTagFilter.Add(mrm);
+                    bool someExonHit = false;
+                    foreach (MultiReadMapping m in mrm.Mappings)
+                    {
+                        if (Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
+                        {
+                            someExonHit = true;
+                            randomTagFilter.Add(m);                            
+                        }
+                    }
+                    if (!someExonHit)
+                        randomTagFilter.Add(mrm[0]);
                     if (snpRndTagVerifier != null)
                         snpRndTagVerifier.Add(mrm);
                     totalReadLength += mrm.SeqLen;
@@ -209,8 +215,8 @@ namespace Linnarsson.Strt
             }
             SampleReadStatistics(numReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
             MappedTagItem.AverageReadLen = (int)Math.Round((double)totalReadLength / numReadsByBarcode[currentBcIdx]);
-            foreach (TagItem tagItem in RandomTagFilterByBc.IterTagItemList()) // (MappedTagItem item in randomTagFilter.IterItems())
-                Annotate(tagItem);
+            foreach (MappedTagItem mtitem in randomTagFilter.IterItems())
+                Annotate(mtitem);
             FinishBarcode();
         }
 
@@ -231,44 +237,55 @@ namespace Linnarsson.Strt
             sampledUniqueHitPositionsByBcIdx[currentBcIdx].Add(randomTagFilter.GetNumDistinctMappings());
         }
 
-        public void Annotate(TagItem tagItem)
+        public void Annotate(MappedTagItem item)
         {
-            int tempAnnotType = -1;
-            int molCount = tagItem.GetNumMolecules();
+            int molCount = item.MolCount;
             numMoleculesByBarcode[currentBcIdx] += molCount;
             exonsToMark.Clear();
             exonHitGeneNames.Clear();
+            bool[] annotMatches = new bool[AnnotType.Count];
             bool someAnnotationHit = false;
             bool someExonHit = false;
-            MarkStatus markType = (tagItem.hasAltMappings) ? MarkStatus.TEST_EXON_SKIP_OTHER : MarkStatus.TEST_EXON_MARK_OTHER;
-            foreach (MappedTagItem item in tagItem.IterAltLocations(currentBcIdx))
-            {
-                foreach (FtInterval ivl in Annotations.GetMatching(item.chr, item.HitMidPos))
+                List<FtInterval> trMatches = Annotations.GetTranscriptMatches(item.chr, item.strand, item.HitMidPos).ToList();
+                if (trMatches.Count > 0)
                 {
-                    MarkResult res = ivl.Mark(item, ivl.ExtraData, markType);
-                    if (res.annotType == AnnotType.NOHIT)
-                        continue; // Happens if trying to Mark a repeat when some other feature is already annotated
-                    someAnnotationHit = true;
-                    if (AnnotType.IsTranscript(res.annotType))
+                    someExonHit = someAnnotationHit = true;
+                    MarkStatus markStatus = (trMatches.Count > 1 || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
+                    foreach (FtInterval trMatch in trMatches)
                     {
-                        if (!exonHitGeneNames.Contains(res.feature.Name))
+                        if (!exonHitGeneNames.Contains(trMatch.Feature.Name))
                         { // If a gene is hit multiple times (internal repeats, hit both real and splice chr...), we should still annotate it only one time
                             someExonHit = true;
-                            exonHitGeneNames.Add(res.feature.Name);
-                            exonsToMark.Add(new Pair<MappedTagItem, FtInterval>(item, ivl));
-                        }
-                    }
-                    else // hit is not to EXON or SPLC (neither AEXON/ASPLC for non-directional samples)
-                    {
-                        if (markType == MarkStatus.TEST_EXON_MARK_OTHER)
-                        {
-                            tempAnnotType = res.annotType;
+                            exonHitGeneNames.Add(trMatch.Feature.Name);
+                            item.splcToRealChrOffset = 0;
+                            MarkResult res = trMatch.Mark(item, trMatch.ExtraData, markStatus);
+                            annotMatches[res.annotType] = true;
                             TotalHitsByAnnotTypeAndBarcode[res.annotType, currentBcIdx] += molCount;
                             TotalHitsByAnnotTypeAndChr[item.chr][res.annotType] += molCount;
                             TotalHitsByAnnotType[res.annotType] += molCount;
                             TotalHitsByBarcode[currentBcIdx] += molCount;
-                            markType = MarkStatus.TEST_EXON_SKIP_OTHER;
                         }
+                    }
+                    if (exonHitGeneNames.Count > 1)
+                    {
+                        exonHitGeneNames.Sort();
+                        string combNames = string.Join("#", exonHitGeneNames.ToArray());
+                        if (!redundantHits.ContainsKey(combNames))
+                            redundantHits[combNames] = molCount;
+                        else
+                            redundantHits[combNames] += molCount;
+                    }
+                }
+                if (!someExonHit && item.chr != annotationChrId)
+                {
+                    foreach (FtInterval nonTrMatch in Annotations.GetNonTrMatches(item.chr, item.strand, item.HitMidPos))
+                    {
+                        someAnnotationHit = true;
+                        MarkResult res = nonTrMatch.Mark(item, nonTrMatch.ExtraData, MarkStatus.TEST_EXON_MARK_OTHER);
+                        annotMatches[res.annotType] = true;
+                        TotalHitsByAnnotTypeAndBarcode[res.annotType, currentBcIdx] += molCount;
+                        TotalHitsByAnnotTypeAndChr[item.chr][res.annotType] += molCount;
+                        TotalHitsByAnnotType[res.annotType] += molCount;
                     }
                 }
                 if (item.chr != annotationChrId && !item.tagItem.hasAltMappings)
@@ -278,42 +295,23 @@ namespace Linnarsson.Strt
                     if (DetermineMotifs && someAnnotationHit && Annotations.HasChromosome(item.chr))
                         motifs[currentBcIdx].Add(Annotations.GetChromosome(item.chr), item.hitStartPos - 20 - 1, item.strand);
                 }
-            }
-            // Now when the best alignments have been selected, mark these transcript hits
-            MarkStatus markStatus = (exonsToMark.Count > 1 || tagItem.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
-            foreach (Pair<MappedTagItem, FtInterval> mfPair in exonsToMark)
-            {
-                MappedTagItem item = mfPair.First;
-                FtInterval ivl = mfPair.Second;
-                item.splcToRealChrOffset = 0;
-                MarkResult res = ivl.Mark(item, ivl.ExtraData, markStatus);
-                TotalHitsByAnnotTypeAndBarcode[res.annotType, currentBcIdx] += molCount;
-                TotalHitsByAnnotTypeAndChr[item.chr][res.annotType] += molCount;
-                TotalHitsByAnnotType[res.annotType] += molCount;
-                TotalHitsByBarcode[currentBcIdx] += molCount;
-            }
-            if (someAnnotationHit)
-            {
-                numAnnotatedMols += molCount;
-                if (someExonHit)
+                if (someAnnotationHit)
                 {
-                    numExonAnnotatedMols += molCount;
-                    alsoExonWriter.WriteLine(tagItem.ToString() + " - Also " + AnnotType.GetName(tempAnnotType));
+                    numAnnotatedMols += molCount;
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < annotMatches.Length; i++)
+                        if (annotMatches[i] == true)
+                            sb.Append(" " + AnnotType.GetName(i));
+                    if (someExonHit)
+                    {
+                        numExonAnnotatedMols += molCount;
+                        alsoExonWriter.WriteLine(item.ToString() + " Annotations: " + sb.ToString());
+                    }
+                    else
+                        nonExonWriter.WriteLine(item.ToString() + " - Annotations: " + sb.ToString());
                 }
                 else
-                    nonExonWriter.WriteLine(tagItem.ToString() + " - As " + AnnotType.GetName(tempAnnotType));
-            }
-            else
-                nonAnnotWriter.WriteLine(tagItem.ToString());
-            if (exonHitGeneNames.Count > 1)
-            {
-                exonHitGeneNames.Sort();
-                string combNames = string.Join("#", exonHitGeneNames.ToArray());
-                if (!redundantHits.ContainsKey(combNames))
-                    redundantHits[combNames] = molCount;
-                else
-                    redundantHits[combNames]+= molCount;
-            }
+                    nonAnnotWriter.WriteLine(item.ToString());
         }
 
         private void MakeGeneRndTagProfiles()
@@ -1291,7 +1289,7 @@ namespace Linnarsson.Strt
             {
                 int c = counts[hitIdx];
                 i = positions[hitIdx++];
-                if (Annotations.GetMatching(chr, i).Count() == 0)
+                if (Annotations.HasTrOrRepeatMatches(chr, strand, i))
                 {
                     for (int cc = 0; cc < c; cc++)
                         stops.Enqueue(i + averageReadLength);

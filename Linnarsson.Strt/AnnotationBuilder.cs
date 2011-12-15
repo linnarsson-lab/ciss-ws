@@ -184,10 +184,6 @@ namespace Linnarsson.Strt
             return exonSeqsInChrDir;
         }
 
-        public void BuildExonSplices(StrtGenome genome)
-        {
-            BuildExonSplices(genome, "");
-        }
         public void BuildExonSplices(StrtGenome genome, string newIndexName)
         {
             ReadLen = genome.ReadLen;

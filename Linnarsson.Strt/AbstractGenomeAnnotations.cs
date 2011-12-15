@@ -55,7 +55,7 @@ namespace Linnarsson.Strt
             ChromosomeLengths = new Dictionary<string, int>();
             ExonAnnotations = new Dictionary<string, QuickAnnotationMap>();
             NonExonAnnotations = new Dictionary<string, QuickAnnotationMap>();
-            geneFeatures = new Dictionary<string, GeneFeature>(60000);
+            geneFeatures = new Dictionary<string, GeneFeature>(50000);
             repeatFeatures = new Dictionary<string, RepeatFeature>(1500);
 		}
 
@@ -103,10 +103,15 @@ namespace Linnarsson.Strt
         public IEnumerable<FtInterval> GetNonTrMatches(string chr, char strand, int hitPos)
         {
             if (AnnotType.DirectionalReads)
+            {
                 foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitPos))
                     if (ivl.Strand != strand) yield return ivl;
-            foreach (FtInterval ivl in NonExonAnnotations[chr].GetItems(hitPos))
-                yield return ivl;
+            }
+            if (!NonExonAnnotations.ContainsKey(chr))
+                yield break;
+            else
+                foreach (FtInterval ivl in NonExonAnnotations[chr].GetItems(hitPos))
+                    yield return ivl;
         }
 
         /// <summary>

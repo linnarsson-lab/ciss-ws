@@ -111,7 +111,7 @@ namespace Linnarsson.Strt
             string arguments = String.Format("{0} {1}", chrFilesArg, outfileHead);
             string cmd = "bowtie-build";
             if (Directory.GetFiles(PathHandler.GetBowtieIndicesFolder(), newIndexName + ".*.ebwt").Length == 6)
-                Console.WriteLine("Main index " + newIndexName + " already exists. Delete index files to force rebuild.");
+                Console.WriteLine("NOTE: Main index " + newIndexName + " already exists. Delete index files to force rebuild.");
             else
             {
                 Console.WriteLine("*** Build of Bowtie index {0} started at {1} ***", newIndexName, DateTime.Now);
@@ -122,7 +122,7 @@ namespace Linnarsson.Strt
             }
             if (spliceChrFile != null)
             {
-                string spliceIndexName = genome.GetBowtieSplcIndexName().Replace(genome.Build, newIndexName);
+                string spliceIndexName = genome.MakeBowtieSplcIndexName().Replace(genome.Build, newIndexName);
                 Console.WriteLine("*** Build of Bowtie splice index {0} started at {1} ***", spliceIndexName, DateTime.Now);
                 outfileHead = Path.Combine(PathHandler.GetBowtieIndicesFolder(), spliceIndexName);
                 arguments = String.Format("{0} {1}", spliceChrFile, outfileHead);
@@ -455,7 +455,6 @@ namespace Linnarsson.Strt
             foreach (string extractedByBcFolder in extractedByBcFolders)
             {
                 string summaryPath = Path.Combine(extractedByBcFolder, "summary.txt");
-                Console.WriteLine(summaryPath);
                 rc.AddExtractionSummary(summaryPath);
             }
             return rc.AverageReadLen;

@@ -197,6 +197,8 @@ namespace Linnarsson.Strt
                     bool someExonHit = false;
                     foreach (MultiReadMapping m in mrm.Mappings)
                     {
+                        if (m.Position == 320484)
+                            Console.WriteLine(mrm.ToString());
                         if (Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
                         {
                             someExonHit = true;

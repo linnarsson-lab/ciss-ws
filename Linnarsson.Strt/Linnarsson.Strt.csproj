@@ -55,7 +55,6 @@
     <Compile Include="BowtieMapFileSorter.cs" />
     <Compile Include="HitMapAnnotator.cs" />
     <Compile Include="MapFileSnpFinder.cs" />
-    <Compile Include="MapMergeSorter.cs" />
     <Compile Include="NonExonRepeatMasker.cs" />
     <Compile Include="ProjectDB.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

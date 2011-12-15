@@ -112,6 +112,14 @@ namespace Linnarsson.Strt
     /// </summary>
     public class NonExonRepeatMasker
     {
+        private static readonly int defaultMinFlank = 500;
+        private static readonly int defaultMinIntronFlank = 50;
+        private static readonly int defaultMaxIntronToKeep = 400;
+
+        public void Mask(StrtGenome genome, string outputFolder)
+        {
+            Mask(genome, outputFolder, defaultMinFlank, defaultMinIntronFlank, defaultMaxIntronToKeep);
+        }
         public void Mask(StrtGenome genome, string outputFolder, int minFlank, int minIntronFlank, int maxIntronToKeep)
         {
             if (maxIntronToKeep < minIntronFlank * 2)

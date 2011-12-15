@@ -78,7 +78,7 @@ namespace Linnarsson.Strt
             Directory.CreateDirectory(strtDir);
             NonExonRepeatMasker nerm = new NonExonRepeatMasker();
             Console.WriteLine("*** Making STRT genome by masking non-exonic repeat sequences ***");
-            nerm.Mask(genome, strtDir, 500, 50, 400);
+            nerm.Mask(genome, strtDir);
         }
 
         /// <summary>

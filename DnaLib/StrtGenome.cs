@@ -116,6 +116,11 @@ namespace Linnarsson.Dna
             string pathPattern = Path.Combine(PathHandler.GetBowtieIndicesFolder(), Build + "chr" + VarAnnot + "{0}.1.ebwt");
             return Path.GetFileName(FindABpVersion(readLen, pathPattern)).Replace(".1.ebwt", "");
         }
+        public string MakeBowtieSplcIndexName()
+        {
+            return ReplaceReadLen(ReadLen, Build + "chr" + VarAnnot + "{0}");
+        }
+
         private string ReplaceReadLen(int readLen, string pathPattern)
         {
             string readLenPart = (readLen == Props.props.StandardReadLen) ? "" : string.Format("_{0}bp", readLen);

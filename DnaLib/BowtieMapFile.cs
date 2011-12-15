@@ -19,8 +19,6 @@ namespace Linnarsson.Dna
 
         public static MapFile GetMapFile(string file, int maxNMappings, Barcodes barcodes)
         {
-            if (file.EndsWith(".smap"))
-                return new SortedMapFile(maxNMappings, barcodes);
             if (file.EndsWith(".map"))
                 return new BowtieMapFile(maxNMappings, barcodes);
             if (file.EndsWith(".bam") || file.EndsWith(".sbam"))
@@ -131,60 +129,6 @@ namespace Linnarsson.Dna
         }
 	}
 
-    public class SortedMapFile : MapFile
-    {
-        public SortedMapFile(int maxNMappings, Barcodes barcodes)
-            : base(maxNMappings, barcodes)
-        { 
-            m_RedundantSecondaryMappings = true;
-        }
-
-        public override IEnumerable<MultiReadMappings> MultiMappings(string file)
-        {
-            StreamReader reader = new StreamReader(file);
-            string line = reader.ReadLine();
-            if (line == null) yield break;
-            string[] fields = line.Split('\t');
-            if (fields.Length < 7)
-                throw new FormatException("Too few columns in input sorted map file");
-            while (line != null)
-            {
-                ParseFileItem(line, ref mrm);
-                yield return mrm;
-                line = reader.ReadLine();
-            }
-            reader.Close();
-            yield break;
-        }
-
-        public override IEnumerable<MultiReadMappings> SingleMappings(string file)
-        {
-            throw new NotImplementedException("Not meaningful for this filetype");
-        }
-
-        public static void ParseFileItem(string line, ref MultiReadMappings mrm)
-        {
-            // ReadId \t BcIdx \t RndBcIdx \t SeqLen \t MappingNo \t AltMappings [\t ChrId/Strand/Pos/Mismatches ] +
-            string[] fields = line.Split('\t');
-            mrm.Init(fields[0], int.Parse(fields[1]), int.Parse(fields[2]), int.Parse(fields[3]),
-                     int.Parse(fields[4]), int.Parse(fields[5]));
-            for (int fIdx = 6; fIdx < fields.Length; fIdx++)
-            {
-                string[] m = fields[fIdx].Split('/');
-                mrm.AddMapping(m[0], m[1][0], int.Parse(m[2]), m[3]);
-            }
-        }
-
-        public static string ToFileItem(MultiReadMappings mrm)
-        {
-            string line = mrm.ReadId + "\t" + mrm.BarcodeIdx + "\t" + mrm.RandomBcIdx + "\t" + mrm.SeqLen + "\t" + 
-                          mrm.MappingNumber + "\t" + mrm.AltMappings;
-            for (int mIdx = 0; mIdx < mrm.NMappings; mIdx++)
-                line += "\t" + mrm[mIdx].Chr + "/" + mrm[mIdx].Strand + "/" + mrm[mIdx].Position + "/" + mrm[mIdx].Mismatches;
-            return line;
-        }
-    }
-
     public class BamMapFile : MapFile
     {
         private int bamFileWindowSize;
@@ -278,7 +222,13 @@ namespace Linnarsson.Dna
         {
             this.parent = parent;
         }
+
+        public override string ToString()
+        {
+            return "MultiReadMapping: Chr=" + Chr + Strand + " Pos=" + Position + " HitMidPos=" + HitMidPos + " Mismatches=" + Mismatches;
+        }
     }
+
     public class MultiReadMappings
     {
         private Barcodes Barcodes;
@@ -289,8 +239,6 @@ namespace Linnarsson.Dna
         public int SeqLen;
         public int AltMappings;
         public bool HasAltMappings { get { return AltMappings >= 1; } }
-        public int MappingNumber;
-        public bool IsFirstMapping { get { return MappingNumber == 0; } }
         public int NMappings;
         public MultiReadMapping[] Mappings;
 
@@ -301,13 +249,23 @@ namespace Linnarsson.Dna
                 Mappings[i] = new MultiReadMapping(this);
             Barcodes = barcodes;
         }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("MultiReadMappings: ReadID=" + ReadId + " BcIdx=" + BarcodeIdx + " RndTagIdx=" + RandomBcIdx);
+            sb.Append("\n      NMappings=" + NMappings + " HasAltMappings=" + HasAltMappings);
+            foreach (MultiReadMapping m in Mappings)
+                sb.Append("\n    " + m.ToString());
+            return sb.ToString();
+        }
+
         public void Init(string readId, int bcIdx, int randomBcIdx, int seqLen, int mappingNumber, int altMappings)
         {
             ReadId = readId;
             BarcodeIdx = bcIdx;
             RandomBcIdx = randomBcIdx;
             SeqLen = seqLen;
-            MappingNumber = mappingNumber;
             AltMappings = altMappings;
         }
         public void Init(string combinedReadId, int seqLen, int altMappings)
@@ -316,7 +274,6 @@ namespace Linnarsson.Dna
             SeqLen = seqLen;
             AltMappings = altMappings;
             NMappings = 0;
-            MappingNumber = 0;
         }
         public void AddMapping(string chr, char strand, int pos, string mismatches)
         {

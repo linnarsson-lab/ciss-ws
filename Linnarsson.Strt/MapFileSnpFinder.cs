@@ -97,7 +97,7 @@ namespace Linnarsson.Strt
             long totLen = 0;
             foreach (string mapFilePath in mapFilePaths)
             {
-                MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, 10, barcodes);
+                MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, barcodes);
                 if (mapFileReader == null)
                     Console.WriteLine("\n  Skipping " + mapFilePath + "- unknown read map file type.");
                 Console.Write(".");

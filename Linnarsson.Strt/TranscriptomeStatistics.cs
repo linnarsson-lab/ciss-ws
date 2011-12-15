@@ -87,7 +87,6 @@ namespace Linnarsson.Strt
         private StreamWriter rndTagProfileByGeneWriter;
 
         Dictionary<string, int> redundantHits = new Dictionary<string, int>();
-        List<Pair<MappedTagItem, FtInterval>> exonsToMark;
         List<string> exonHitGeneNames;
         private string annotationChrId;
 
@@ -111,7 +110,6 @@ namespace Linnarsson.Strt
             TotalHitsByAnnotType = new int[AnnotType.Count];
             numReadsByBarcode = new int[barcodes.Count];
             numMoleculesByBarcode = new int[barcodes.Count];
-            exonsToMark = new List<Pair<MappedTagItem, FtInterval>>();
             exonHitGeneNames = new List<string>(100);
             annotationChrId = Annotations.Genome.Annotation;
             randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
@@ -183,13 +181,17 @@ namespace Linnarsson.Strt
             alsoExonWriter.Close();
         }
 
+        /// <summary>
+        /// Annotate a set of map files that have the same barcode
+        /// </summary>
+        /// <param name="bcMapFilePaths">Paths to files where all reads have the sanme barcode</param>
         private void ProcessBarcodeMapFiles(List<string> bcMapFilePaths)
         {
             long totalReadLength = 0;
             foreach (string mapFilePath in bcMapFilePaths)
             {
                 currentMapFilePath = mapFilePath;
-                MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, 1, barcodes);
+                MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, barcodes);
                 if (mapFileReader == null)
                     throw new Exception("Unknown read map file type : " + mapFilePath);
                 foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
@@ -206,7 +208,7 @@ namespace Linnarsson.Strt
                         }
                     }
                     if (!someExonHit)
-                        randomTagFilter.Add(mrm[0]);
+                        randomTagFilter.Add(mrm[0]); // If no exon-mapping is found, add the read to the first mapping it happened to get
                     if (snpRndTagVerifier != null)
                         snpRndTagVerifier.Add(mrm);
                     totalReadLength += mrm.SeqLen;
@@ -243,7 +245,6 @@ namespace Linnarsson.Strt
         {
             int molCount = item.MolCount;
             numMoleculesByBarcode[currentBcIdx] += molCount;
-            exonsToMark.Clear();
             exonHitGeneNames.Clear();
             bool[] annotMatches = new bool[AnnotType.Count];
             bool someAnnotationHit = false;
@@ -256,8 +257,7 @@ namespace Linnarsson.Strt
                     foreach (FtInterval trMatch in trMatches)
                     {
                         if (!exonHitGeneNames.Contains(trMatch.Feature.Name))
-                        { // If a gene is hit multiple times (internal repeats, hit both real and splice chr...), we should still annotate it only one time
-                            someExonHit = true;
+                        { // If a gene is hit multiple times (internal repeats, hit to both real and splice chr...), we should still annotate it only one time
                             exonHitGeneNames.Add(trMatch.Feature.Name);
                             item.splcToRealChrOffset = 0;
                             MarkResult res = trMatch.Mark(item, trMatch.ExtraData, markStatus);
@@ -279,7 +279,7 @@ namespace Linnarsson.Strt
                     }
                 }
                 if (!someExonHit && item.chr != annotationChrId)
-                {
+                { // Annotate all features of molecules that do not map to any transcript
                     foreach (FtInterval nonTrMatch in Annotations.GetNonTrMatches(item.chr, item.strand, item.HitMidPos))
                     {
                         someAnnotationHit = true;
@@ -290,7 +290,7 @@ namespace Linnarsson.Strt
                         TotalHitsByAnnotType[res.annotType] += molCount;
                     }
                 }
-                if (item.chr != annotationChrId && !item.tagItem.hasAltMappings)
+                if (item.chr != annotationChrId && !item.hasAltMappings)
                 {
                     // Add to the motif (base 21 in the motif will be the first base of the read)
                     // Subtract one to make it zero-based

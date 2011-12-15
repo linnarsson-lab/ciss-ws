@@ -88,6 +88,7 @@ namespace Linnarsson.Strt
                     DnaSequence origTrSeq = ExtractTranscriptSeq(chrSeq, gf);
                     int maxPos = (int)origTrSeq.Count - maxReadLength;
                     int[] nMolsPerBc = new int[barcodes.Count];
+                    int[] nDistinctRndTagsPerBc = new int[barcodes.Count];
                     int[] nReadsPerBc = new int[barcodes.Count];
                     DnaSequence snpTrSeq = new ShortDnaSequence(origTrSeq);
                     List<Pair<int, char>> SNPs = new List<Pair<int, char>>();
@@ -116,19 +117,25 @@ namespace Linnarsson.Strt
                             if (p > 0.75) useSNPSeqForThisBcP = 1.0;
                             else if (p > 0.5) useSNPSeqForThisBcP = 0.5;
                         }
+                        int[] rndTagsUsed = new int[nRndTags];
                         for (int molIdx = 0; molIdx < nGfMols; molIdx++)
                         {
                             int nReadsFromMol = new PoissonDistribution(meanReadsPerMolecule).Sample();
                             nReadsPerBc[bcIdx] += nReadsFromMol;
                             int rndTagIdx = rnd.Next(nRndTags);
+                            rndTagsUsed[rndTagIdx] = 1;
                             int trPos = GetNextHitPosition(maxPos, nGfMols - molIdx);
                             WriteExonReadForOneMolecules(fqWriter, bcIdx, rndTagIdx, gf, origTrSeq, snpTrSeq, trPos,
                                                          nReadsFromMol, useSNPSeqForThisBcP, SNPs);
                         }
+                        nDistinctRndTagsPerBc[bcIdx] = rndTagsUsed.Sum();
                     }
                     if (barcodes.HasRandomBarcodes)
-                        WriteExprReportLine(molWriter, gf, nMolsPerBc);
-                    WriteExprReportLine(readWriter, gf, nReadsPerBc);
+                    {
+                        WriteExprReportLine(molWriter, gf.Name, nMolsPerBc);
+                        WriteExprReportLine(molWriter, "(distinct RndTags)", nDistinctRndTagsPerBc);
+                    }
+                    WriteExprReportLine(readWriter, gf.Name, nReadsPerBc);
                     Console.WriteLine(gf.Name + ":" + nReadsPerBc.Sum() + " reads in " + nMolsPerBc.Sum() + " molecules.");
                     nReads += nReadsPerBc.Sum();
                     nMols += nMolsPerBc.Sum();
@@ -170,9 +177,9 @@ namespace Linnarsson.Strt
             return gfTrFwSeq;
         }
 
-        private static void WriteExprReportLine(StreamWriter reportWriter, GeneFeature gf, int[] nPerBc)
+        private static void WriteExprReportLine(StreamWriter reportWriter, string name, int[] nPerBc)
         {
-            reportWriter.WriteLine(gf.Name + "\t" + nPerBc.Sum() + "\t");
+            reportWriter.WriteLine(name + "\t" + nPerBc.Sum() + "\t");
             foreach (int n in nPerBc)
                 reportWriter.Write("\t" + n);
             reportWriter.WriteLine();

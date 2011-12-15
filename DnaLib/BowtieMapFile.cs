@@ -10,17 +10,15 @@ namespace Linnarsson.Dna
     public abstract class MapFile
     {
         public static readonly int SortedAnalysisWindowSize = 10000000;
-        protected bool m_RedundantSecondaryMappings = false;
-        public bool RedundantSecondaryMappings { get { return m_RedundantSecondaryMappings; } }
+        public static readonly int MaxNMappings = 500;
 
-        public int MaxNMAppings = 20;
         protected Barcodes barcodes;
         protected MultiReadMappings mrm;
 
-        public static MapFile GetMapFile(string file, int maxNMappings, Barcodes barcodes)
+        public static MapFile GetMapFile(string file, Barcodes barcodes)
         {
             if (file.EndsWith(".map"))
-                return new BowtieMapFile(maxNMappings, barcodes);
+                return new BowtieMapFile(MaxNMappings, barcodes);
             if (file.EndsWith(".bam") || file.EndsWith(".sbam"))
                 return new BamMapFile(barcodes, SortedAnalysisWindowSize);
             return null;
@@ -206,21 +204,31 @@ namespace Linnarsson.Dna
 
     public class MultiReadMapping
     {
+        private MultiReadMappings parent;
+
         public string Chr;
         public char Strand;
         public int Position;
-        public int HitMidPos { get { return Position + parent.SeqLen / 2; } }
         public string Mismatches;
+
+        public int HitMidPos { get { return Position + parent.SeqLen / 2; } }
         public string ReadId { get { return parent.ReadId; } }
         public int BcIdx { get { return parent.BarcodeIdx; } }
         public int RndTagIdx { get { return parent.RandomBcIdx; } }
         public int SeqLen { get { return parent.SeqLen; } }
         public bool HasAltMappings { get { return parent.HasAltMappings; } }
 
-        private MultiReadMappings parent;
         public MultiReadMapping(MultiReadMappings parent)
         {
             this.parent = parent;
+        }
+        public void Copy(MultiReadMapping other)
+        {
+            Chr = other.Chr;
+            Strand = other.Strand;
+            Position = other.Position;
+            Mismatches = other.Mismatches;
+            parent = other.parent;
         }
 
         public override string ToString()
@@ -254,20 +262,12 @@ namespace Linnarsson.Dna
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("MultiReadMappings: ReadID=" + ReadId + " BcIdx=" + BarcodeIdx + " RndTagIdx=" + RandomBcIdx);
-            sb.Append("\n      NMappings=" + NMappings + " HasAltMappings=" + HasAltMappings);
+            sb.Append("\n      Mappings.Length=" + Mappings.Length + " NMappings=" + NMappings + " HasAltMappings=" + HasAltMappings);
             foreach (MultiReadMapping m in Mappings)
                 sb.Append("\n    " + m.ToString());
             return sb.ToString();
         }
 
-        public void Init(string readId, int bcIdx, int randomBcIdx, int seqLen, int mappingNumber, int altMappings)
-        {
-            ReadId = readId;
-            BarcodeIdx = bcIdx;
-            RandomBcIdx = randomBcIdx;
-            SeqLen = seqLen;
-            AltMappings = altMappings;
-        }
         public void Init(string combinedReadId, int seqLen, int altMappings)
         {
             ReadId = Barcodes.ExtractBarcodesFromReadId(combinedReadId, out BarcodeIdx, out RandomBcIdx);
@@ -278,15 +278,16 @@ namespace Linnarsson.Dna
         public void AddMapping(string chr, char strand, int pos, string mismatches)
         {
             if (NMappings < Mappings.Length)
-            { // Keep mappings ordered by position, irrespective of chr or strand.
+            { 
                 int idx = NMappings;
+                /* // Keep mappings ordered by position, irrespective of chr or strand.
                 while (idx > 0)
                 {
                     if (Mappings[idx - 1].Position <= pos)
                         break;
-                    Mappings[idx] = Mappings[idx - 1];
+                    Mappings[idx].Copy(Mappings[idx - 1]);
                     idx--;
-                }
+                }*/
                 Mappings[idx].Chr = chr.StartsWith("chr") ? chr.Substring(3) : chr;
                 Mappings[idx].Strand = strand;
                 Mappings[idx].Position = pos;
@@ -306,15 +307,5 @@ namespace Linnarsson.Dna
             yield break;
         }
 
-        public void InitSingleMapping(string readId, string chr, char strand, int position, int seqLen, int altMappings, string mismatches)
-        {
-            ReadId = readId;
-            SeqLen = seqLen;
-            AltMappings = altMappings;
-            NMappings = 1;
-            Mappings[0].Chr = chr.StartsWith("chr") ? chr.Substring(3) : chr;
-            Mappings[0].Strand = strand;
-            Mappings[0].Mismatches = mismatches;
-        }
     }
 }

@@ -248,7 +248,7 @@ namespace Linnarsson.Dna
         public int AltMappings;
         public bool HasAltMappings { get { return AltMappings >= 1; } }
         public int NMappings;
-        public MultiReadMapping[] Mappings;
+        private MultiReadMapping[] Mappings;
 
         public MultiReadMappings(int maxNMappings, Barcodes barcodes)
         {
@@ -263,7 +263,7 @@ namespace Linnarsson.Dna
             StringBuilder sb = new StringBuilder();
             sb.Append("MultiReadMappings: ReadID=" + ReadId + " BcIdx=" + BarcodeIdx + " RndTagIdx=" + RandomBcIdx);
             sb.Append("\n      Mappings.Length=" + Mappings.Length + " NMappings=" + NMappings + " HasAltMappings=" + HasAltMappings);
-            foreach (MultiReadMapping m in Mappings)
+            foreach (MultiReadMapping m in IterMappings())
                 sb.Append("\n    " + m.ToString());
             return sb.ToString();
         }
@@ -304,7 +304,6 @@ namespace Linnarsson.Dna
         {
             for (int idx = 0; idx < NMappings; idx++)
                 yield return Mappings[idx];
-            yield break;
         }
 
     }

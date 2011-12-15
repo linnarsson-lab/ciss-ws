@@ -11,13 +11,20 @@ namespace Linnarsson.Dna
     public struct FtInterval
     {
         public int Start;
+        /// <summary>
+        /// Inclusive end position
+        /// </summary>
         public int End;
         public NewMarkHit Mark;
         public int ExtraData;
         public IFeature Feature;
-        public int AnnotType;
+        public int annotType;
         public char Strand;
 
+        public override string ToString()
+        {
+            return "FtInterval: Start=" + Start + " End=" + End + " Strand= " + Strand + "Name=" + Feature.Name + " AnnotType=" + AnnotType.GetName(annotType);
+        }
         public FtInterval(int start, int end, NewMarkHit item, int extraData, IFeature feature, int annotType, char strand)
         {
             Start = start;
@@ -25,7 +32,7 @@ namespace Linnarsson.Dna
             Mark = item;
             ExtraData = extraData;
             Feature = feature;
-            AnnotType = annotType;
+            this.annotType = annotType;
             Strand = strand;
         }
 

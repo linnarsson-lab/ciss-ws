@@ -35,8 +35,6 @@ namespace Linnarsson.Dna
         {
             StreamReader refReader = refFlatPath.OpenRead();
             string line = refReader.ReadLine();
-            //if (!line.StartsWith("@"))
-            //    throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should start with '@'.");
             while (line.StartsWith("@"))
                 line = refReader.ReadLine();
             string[] f = line.Split('\t');
@@ -62,7 +60,7 @@ namespace Linnarsson.Dna
             char strand = record[3].Trim()[0];
             int nExons = int.Parse(record[8]);
             int[] exonStarts = SplitField(record[9], nExons, 0);
-            int[] exonEnds = SplitField(record[10], nExons, -1);
+            int[] exonEnds = SplitField(record[10], nExons, -1); // Convert to inclusive ends
             if (record.Length == 11)
                 return new GeneFeature(name, chr, strand, exonStarts, exonEnds);
             int[] offsets = SplitField(record[11], nExons, 0);

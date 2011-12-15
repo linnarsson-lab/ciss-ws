@@ -356,8 +356,6 @@ namespace Linnarsson.Dna
         {
             int undirAnnotType = annotType;
             if (item.strand != Strand) annotType = AnnotType.MakeAntisense(annotType);
-            if (markType != MarkStatus.TEST_EXON_MARK_OTHER)
-                return new MarkResult(annotType, this);
             MarkLocusHitPos(item);
             AddToTotalHits(item);
             HitsByAnnotType[annotType] += item.MolCount;
@@ -370,8 +368,6 @@ namespace Linnarsson.Dna
         private MarkResult MarkIntronHit(MappedTagItem item, int intronIdx, MarkStatus markType)
         {
             int annotType = (item.strand == Strand) ? AnnotType.INTR : AnnotType.AINTR;
-            if (markType != MarkStatus.TEST_EXON_MARK_OTHER)
-                return new MarkResult(annotType, this);
             MarkLocusHitPos(item);
             AddToTotalHits(item);
             HitsByAnnotType[annotType] += item.MolCount;
@@ -382,8 +378,6 @@ namespace Linnarsson.Dna
         public MarkResult MarkExonHit(MappedTagItem item, int exonIdx, MarkStatus markType)
         {
             int annotType = (item.strand == Strand) ? AnnotType.EXON : AnnotType.AEXON;
-            if (markType == MarkStatus.TEST_EXON_SKIP_OTHER)
-                return new MarkResult(annotType, this);
             if (markType == MarkStatus.TEST_EXON_MARK_OTHER)
             {
                 if (!AnnotType.IsTranscript(annotType))

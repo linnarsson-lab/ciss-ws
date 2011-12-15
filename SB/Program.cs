@@ -73,15 +73,6 @@ namespace CmdSilverBullet
                             gd.DownloadGenome(args[argOffset]);
                             break;
 
-                        case "sort":
-                            props.BarcodesName = args[argOffset++];
-                            MapMergeSorter bmfs = new MapMergeSorter(props.Barcodes);
-                            List<string> inFiles = new List<string>();
-                            for (int i = argOffset; i < args.Length - 1; i++)
-                                inFiles.Add(args[i]);
-                            bmfs.MergeSort(inFiles, args[args.Length - 1]);
-                            break;
-
                         case "x":
                             laneArgs = ExtractLaneArgs(args, ref argOffset);
                             CheckArgs(args, argOffset + 2, argOffset + 2);

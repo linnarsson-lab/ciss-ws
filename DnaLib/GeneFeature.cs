@@ -435,12 +435,12 @@ namespace Linnarsson.Dna
             if (Strand == '+')
             {
                 yield return new FtInterval(LeftMatchStart, Start - 1, MarkUpstreamFlankHit, 0, this, AnnotType.USTR, Strand);
-                yield return new FtInterval(End, RightMatchEnd, MarkDownstreamFlankHit, 0, this, AnnotType.DSTR, Strand);
+                yield return new FtInterval(End + 1, RightMatchEnd, MarkDownstreamFlankHit, 0, this, AnnotType.DSTR, Strand);
             }
             else
             {
                 yield return new FtInterval(LeftMatchStart, Start - 1, MarkDownstreamFlankHit, 0, this, AnnotType.DSTR, Strand);
-                yield return new FtInterval(End, RightMatchEnd, MarkUpstreamFlankHit, 0, this, AnnotType.USTR, Strand);
+                yield return new FtInterval(End + 1, RightMatchEnd, MarkUpstreamFlankHit, 0, this, AnnotType.USTR, Strand);
             }
             for (int eIdx = 0; eIdx < ExonStarts.Length; eIdx++)
                 yield return new FtInterval(ExonStarts[eIdx], ExonEnds[eIdx], MarkExonHit, eIdx, this, AnnotType.EXON, Strand);

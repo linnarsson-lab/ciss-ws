@@ -58,14 +58,18 @@ namespace Linnarsson.Dna
             return speciesArg.Replace("_", "_" + variantChar);
         }
 
-        public string GetGenomeFolder()
+        public string GetOriginalGenomeFolder()
         {
             return Path.Combine(Path.Combine(Props.props.GenomesFolder, Build), "genome");
+        }
+        public string GetStrtGenomesFolder()
+        {
+            return Path.Combine(Path.Combine(Props.props.GenomesFolder, Build), "strt");
         }
 
         public string MakeJunctionChrPath()
         {
-            string pathPattern = Path.Combine(GetGenomeFolder(), "chr" + VarAnnot + "{0}.splices");
+            string pathPattern = Path.Combine(GetStrtGenomesFolder(), "chr" + VarAnnot + "{0}.splices");
             return ReplaceReadLen(ReadLen, pathPattern);
         }
         public string GetJunctionChrFileName()
@@ -74,12 +78,12 @@ namespace Linnarsson.Dna
         }
         public string MakeAnnotationsPath()
         {
-            string pathPattern = Path.Combine(GetGenomeFolder(), "Annotations_" + VarAnnot + "{0}.txt");
+            string pathPattern = Path.Combine(GetStrtGenomesFolder(), "Annotations_" + VarAnnot + "{0}.txt");
             return ReplaceReadLen(ReadLen, pathPattern);
         }
         public string GetAnAnnotationsPath()
         {
-            string pathPattern = Path.Combine(GetGenomeFolder(), "Annotations_" + VarAnnot + "{0}.txt");
+            string pathPattern = Path.Combine(GetStrtGenomesFolder(), "Annotations_" + VarAnnot + "{0}.txt");
             return FindABpVersion(ReadLen, pathPattern);
         }
         public string VerifyAnAnnotationPath()
@@ -90,12 +94,6 @@ namespace Linnarsson.Dna
                 throw new Exception("Could not find an annotation file for " + GetBowtieIndexName());
             Console.WriteLine("Annotations are taken from " + annotationsPath);
             return annotationsPath;
-        }
-
-        public string GetTagMappingPath(int readLen)
-        {
-            string pathPattern = Path.Combine(GetGenomeFolder(), "Mappings_" + VarAnnot + "_" + Props.props.MaxAlignmentMismatches + "MM{0}.hmap");
-            return FindABpVersion(readLen, pathPattern);
         }
 
         /// <summary>

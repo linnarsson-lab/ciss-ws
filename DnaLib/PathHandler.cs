@@ -50,10 +50,11 @@ namespace Linnarsson.Dna
         /// The sequences may be .gz compressed.
         /// </summary>
         /// <param name="genome">Genome to pick sequences from</param>
+        /// <param name="strtFiles">True to map chr:s from strt genome mao, false for original chr:s</param>
         /// <returns></returns>
-        public static Dictionary<string, string> GetGenomeFilesMap(StrtGenome genome)
+        public static Dictionary<string, string> GetGenomeFilesMap(StrtGenome genome, bool strtFiles)
         {
-            string genomeFolder = genome.GetGenomeFolder();
+            string genomeFolder = (strtFiles)? genome.GetStrtGenomesFolder() : genome.GetOriginalGenomeFolder();
             string[] chrFiles = GetFilesOrGz(genomeFolder, "chr*");
             Dictionary<string, string> chrIdToFileMap = new Dictionary<string, string>();
             foreach (string filePath in chrFiles)
@@ -102,7 +103,7 @@ namespace Linnarsson.Dna
 
         public string[] GetRepeatMaskFiles(StrtGenome genome)
         {
-            string genomeFolder = genome.GetGenomeFolder();
+            string genomeFolder = genome.GetOriginalGenomeFolder();
             string[] rmskFiles = Directory.GetFiles(genomeFolder, "*rmsk.txt.gz");
             if (rmskFiles.Length == 0)
                 rmskFiles = Directory.GetFiles(genomeFolder, "*rmsk.txt");

@@ -53,7 +53,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Construct the artificial splice junction chromosome and transcript annotation file.
+        /// Construct the repeat-masked genome, artificial splice junction chromosome and transcript annotation file.
         /// </summary>
         /// <param name="genome"></param>
         public void BuildJunctions(StrtGenome genome)
@@ -62,11 +62,23 @@ namespace Linnarsson.Strt
         }
         public void BuildJunctions(StrtGenome genome, string newIndexName)
         {
+            AssertStrtGenomeFolder(genome);
             DateTime startTime = DateTime.Now;
             Console.WriteLine("*** Build of spliced exon junctions for {0} started at {1} ***", genome.GetBowtieIndexName(), DateTime.Now);
             AnnotationBuilder builder = AnnotationBuilder.GetAnnotationBuilder(props, genome);
             builder.BuildExonSplices(genome, newIndexName);
             Console.WriteLine("*** Splice build completed at {0} ***", DateTime.Now);
+        }
+
+        public void AssertStrtGenomeFolder(StrtGenome genome)
+        {
+            string strtDir = genome.GetStrtGenomesFolder();
+            if (Directory.Exists(strtDir))
+                return;
+            Directory.CreateDirectory(strtDir);
+            NonExonRepeatMasker nerm = new NonExonRepeatMasker();
+            Console.WriteLine("*** Making STRT genome by masking non-exonic repeat sequences ***");
+            nerm.Mask(genome, strtDir, 500, 50, 400);
         }
 
         /// <summary>
@@ -95,7 +107,7 @@ namespace Linnarsson.Strt
             DateTime startTime = DateTime.Now;
             if (string.IsNullOrEmpty(newIndexName))
                 newIndexName = genome.Build;
-            string genomeFolder = genome.GetGenomeFolder();
+            string genomeFolder = genome.GetOriginalGenomeFolder();
             string spliceChrFile = null;
             List<string> realChrFiles = new List<string>();
             foreach (string f in Directory.GetFiles(genomeFolder, "chr*"))
@@ -800,7 +812,7 @@ namespace Linnarsson.Strt
             string annotationsPath = genome.VerifyAnAnnotationPath();
             if (makeSplices)
                 Console.WriteLine("Making all splices that have >= " + minOverhang + " bases overhang and max " + maxSkip + " exons excised.");
-            Dictionary<string, string> chrIdToFileMap = PathHandler.GetGenomeFilesMap(genome);
+            Dictionary<string, string> chrIdToFileMap = PathHandler.GetGenomeFilesMap(genome, false);
             Dictionary<string, List<LocusFeature>> chrIdToFeature = new Dictionary<string, List<LocusFeature>>();
             foreach (string chrId in chrIdToFileMap.Keys)
             {

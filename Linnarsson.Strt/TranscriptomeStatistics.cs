@@ -20,7 +20,6 @@ namespace Linnarsson.Strt
 
         StreamWriter nonAnnotWriter;
         StreamWriter nonExonWriter;
-        StreamWriter alsoExonWriter;
 
         public bool GenerateWiggle { get; set; }
         public bool DetermineMotifs { get; set; }
@@ -157,7 +156,6 @@ namespace Linnarsson.Strt
                 Directory.CreateDirectory(Path.GetDirectoryName(OutputPathbase));
             nonAnnotWriter = new StreamWriter(OutputPathbase + "_NONANNOTATED.tab");
             nonExonWriter = new StreamWriter(OutputPathbase + "_NONEXON.tab");
-            alsoExonWriter = new StreamWriter(OutputPathbase + "_EXONANDMORE.tab");
 
             foreach (string mapFilePath in mapFilePaths)
             {
@@ -178,7 +176,6 @@ namespace Linnarsson.Strt
 
             nonAnnotWriter.Close();
             nonExonWriter.Close();
-            alsoExonWriter.Close();
         }
 
         /// <summary>
@@ -303,10 +300,7 @@ namespace Linnarsson.Strt
                         if (annotMatches[i] == true)
                             sb.Append(" " + AnnotType.GetName(i));
                     if (someExonHit)
-                    {
                         numExonAnnotatedMols += molCount;
-                        alsoExonWriter.WriteLine(item.ToString() + " Annotations: " + sb.ToString());
-                    }
                     else
                         nonExonWriter.WriteLine(item.ToString() + " - Annotations: " + sb.ToString());
                 }

@@ -33,7 +33,7 @@ namespace Linnarsson.Strt
         public override void Load()
         {
             PathHandler ph = new PathHandler(props);
-            ChrIdToFileMap = PathHandler.GetGenomeFilesMap(genome);
+            ChrIdToFileMap = PathHandler.GetGenomeFilesMap(genome, true);
             foreach (string chrId in ChrIdToFileMap.Keys)
                 ExonAnnotations[chrId] = new QuickAnnotationMap(annotationBinSize);
             RegisterGenesAndIntervals(ph);
@@ -258,12 +258,14 @@ namespace Linnarsson.Strt
             foreach (LocusFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(annotationsPath))
             {
                 nLines++;
-                if (noGeneVariants && gf.Name.Contains(GeneFeature.variantIndicator))
+                if (noGeneVariants && gf.IsVariant())
                     continue;
                 if (gf.Length > props.MaxFeatureLength)
                     nTooLongFeatures++;
                 else if (RegisterGeneFeature(gf))
+                {
                     nGeneFeatures++;
+                }
             }
             string exclV = noGeneVariants ? "main" : "complete";
             Console.WriteLine("{0} {1} gene variants will be mapped. (Excluding {2} spanning > {3} bp.)",

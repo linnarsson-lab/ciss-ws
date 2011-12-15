@@ -196,7 +196,7 @@ namespace Linnarsson.Strt
             Console.WriteLine(annotationReader.GetPseudogeneCount() + " genes are annotated as pseudogenes.");
             Console.WriteLine("ReadLen=" + ReadLen + " MaxMismatches=" + MaxAlignmentMismatches + " MaxExonsSkip=" + MaxExonsSkip);
             DnaSequence jChrSeq = new LongDnaSequence();
-            Dictionary<string, string> chrIdToFileMap = PathHandler.GetGenomeFilesMap(genome);
+            Dictionary<string, string> chrIdToFileMap = PathHandler.GetGenomeFilesMap(genome, false);
             StreamWriter annotWriter = PrepareAnnotationsFile(genome, newIndexName);
             StreamWriter chrWriter = PrepareJunctionChrFile(genome, junctionsChrId, newIndexName);
             foreach (string chrId in chrIdToFileMap.Keys)
@@ -297,7 +297,7 @@ namespace Linnarsson.Strt
         private StreamWriter PrepareJunctionChrFile(StrtGenome genome, string junctionChrId, string newIndexName)
         {
             string jChrPath = (string.IsNullOrEmpty(newIndexName)) ? genome.MakeJunctionChrPath() :
-                                            Path.Combine(genome.GetGenomeFolder(), "chr_" + newIndexName + ".fa");
+                                            Path.Combine(genome.GetOriginalGenomeFolder(), "chr_" + newIndexName + ".fa");
             Console.WriteLine("Artificial exon junction chromosome: " + jChrPath);
             if (File.Exists(jChrPath))
             {
@@ -312,7 +312,7 @@ namespace Linnarsson.Strt
         private StreamWriter PrepareAnnotationsFile(StrtGenome genome, string newIndexName)
         {
             string annotationsPath = (string.IsNullOrEmpty(newIndexName)) ? genome.MakeAnnotationsPath() :
-                                                Path.Combine(genome.GetGenomeFolder(), "Annotations_" + newIndexName + ".txt");
+                                                Path.Combine(genome.GetOriginalGenomeFolder(), "Annotations_" + newIndexName + ".txt");
             Console.WriteLine("Annotations file: " + annotationsPath);
             if (File.Exists(annotationsPath))
             {
@@ -333,7 +333,7 @@ namespace Linnarsson.Strt
             if (File.Exists(chrCTRLPath))
             {
                 Console.WriteLine("Adding control chromosome and annotations.");
-                string chrDest = Path.Combine(genome.GetGenomeFolder(), Path.GetFileName(chrCTRLPath));
+                string chrDest = Path.Combine(genome.GetOriginalGenomeFolder(), Path.GetFileName(chrCTRLPath));
                 if (!File.Exists(chrDest))
                     File.Copy(chrCTRLPath, chrDest);
                 using (StreamReader CTRLReader = ph.GetCTRLGenesPath().OpenRead())

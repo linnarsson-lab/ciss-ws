@@ -191,7 +191,7 @@ namespace Linnarsson.Strt
 
         private static Dictionary<string, string> ReadChrData(StrtGenome genome, string outputFolder)
         {
-            Dictionary<string, string> chrIdToFileMap = PathHandler.GetGenomeFilesMap(genome);
+            Dictionary<string, string> chrIdToFileMap = PathHandler.GetGenomeFilesMap(genome, false);
             foreach (string chrId in chrIdToFileMap.Keys)
             {
                 if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;

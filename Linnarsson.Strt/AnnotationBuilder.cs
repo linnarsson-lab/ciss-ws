@@ -281,7 +281,7 @@ namespace Linnarsson.Strt
                 s.Append(exonStart.ToString() + ",");
             s.Append("\t");
             foreach (int exonEnd in jEnds)
-                s.Append(exonEnd.ToString() + ",");
+                s.Append((exonEnd + 1).ToString() + ",");
             s.Append("\t");
             foreach (int offset in offsets)
                 s.Append(offset.ToString() + ",");

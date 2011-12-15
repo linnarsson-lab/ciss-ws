@@ -84,12 +84,14 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="chr">Chromosome of hit</param>
         /// <param name="strand">Strand of hit (for directional reads)</param>
-        /// <param name="hitPos">Middle position of hit on chromosome</param>
+        /// <param name="hitMidPos">Middle position of hit on chromosome</param>
         /// <returns></returns>
-        public IEnumerable<FtInterval> GetTranscriptMatches(string chr, char strand, int hitPos)
+        public IEnumerable<FtInterval> GetTranscriptMatches(string chr, char strand, int hitMidPos)
         {
-            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitPos))
-                if (ivl.Strand == strand || !AnnotType.DirectionalReads) yield return ivl; 
+            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitMidPos))
+            {
+                if (ivl.Strand == strand || !AnnotType.DirectionalReads) yield return ivl;
+            }
         }
 
         /// <summary>
@@ -126,7 +128,7 @@ namespace Linnarsson.Strt
             foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitPos))
                 if (ivl.Strand == strand || !AnnotType.DirectionalReads) return true;
             foreach (FtInterval ivl in NonExonAnnotations[chr].GetItems(hitPos))
-                if (ivl.AnnotType == AnnotType.REPT) return true;
+                if (ivl.annotType == AnnotType.REPT) return true;
             return false;
         }
 
@@ -148,7 +150,7 @@ namespace Linnarsson.Strt
         {
             foreach (FtInterval ivl in ft.IterIntervals())
             {
-                if (AnnotType.IsTranscript(ivl.AnnotType))
+                if (AnnotType.IsTranscript(ivl.annotType))
                     AddGeneInterval(ft.Chr, ivl, ExonAnnotations);
                 else
                     AddGeneInterval(ft.Chr, ivl, NonExonAnnotations);

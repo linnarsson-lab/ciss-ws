@@ -197,10 +197,8 @@ namespace Linnarsson.Strt
                 foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
                 {
                     bool someExonHit = false;
-                    foreach (MultiReadMapping m in mrm.Mappings)
+                    foreach (MultiReadMapping m in mrm.IterMappings())
                     {
-                        if (m.Position == 320484)
-                            Console.WriteLine(mrm.ToString());
                         if (Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
                         {
                             someExonHit = true;

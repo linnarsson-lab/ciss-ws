@@ -338,7 +338,7 @@ namespace Linnarsson.Strt
                     CloseStreamWriters(sws_barcoded);
                     sw_slask.Close();
                     StreamWriter sw_summary = extrInfo.summaryFilePath.OpenWrite();
-                    int averageReadLen = (int)Math.Floor(totLen / nRecords);
+                    int averageReadLen = (int)Math.Round(totLen / nRecords);
                     readCounter.AddReadFile(extrInfo.readFilePath, averageReadLen);
                     sw_summary.WriteLine(readCounter.TotalsToTabString());
                     for (int bc = 0; bc < nValidReadsByBc.Length; bc++)

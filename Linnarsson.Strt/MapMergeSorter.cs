@@ -244,7 +244,6 @@ namespace Linnarsson.Strt
                 foreach (Item j in items)
                 {
                     BowtieMapFile.ParseFileItem(j.GetLines(), ref mrm);
-                    mrm.MappingNumber = j.mappingIndex;
                     w.WriteLine(SortedMapFile.ToFileItem(mrm));
                 }
             Console.WriteLine("Wrote " + items.Length + " items to " + tempFile);

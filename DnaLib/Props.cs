@@ -36,6 +36,7 @@ namespace Linnarsson.Dna
         public string QueueProjectsFolder = "\\\\192.168.1.12\\data\\strt"; // Folder where projects and results are stored
         public string OutputDocFile = "\\\\192.168.1.12\\data\\strt\\STRTOutputManual.pdf";
 
+        public bool DebugAnnotation = false; // Will give output files of non-annotated and non-exon reads
         public bool GenerateWiggle = true; // Generate wiggle files for upload to UCSC Genome Browser
         public bool GenerateBarcodedWiggle = false; // Generate wiggle files per barcode for upload to UCSC Genome Browser
         public bool AnalyzeSNPs = true;

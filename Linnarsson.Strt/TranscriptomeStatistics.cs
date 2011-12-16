@@ -558,7 +558,7 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("    <point x=\"Valid STRT reads[{0}] ({1:0%})\" y=\"{2}\" />", allBcCount, validReads / totalReads, validReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Multireads [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nMaxAltMappingsReads / totalReads, nMaxAltMappingsReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Mapped reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMappedReads / totalReads, nMappedReads / 1.0E6d);
-            xmlFile.WriteLine("    <point x=\"Exon/Splc reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numExonAnnotatedReads / totalReads, nMappedReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Exon/Splc reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numExonAnnotatedReads / totalReads, numExonAnnotatedReads / 1.0E6d);
             if (barcodes.HasRandomBarcodes)
                 xmlFile.WriteLine("    <point x=\"Duplicate reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, numDuplicateReads / totalReads, numDuplicateReads / 1.0E6d);
             xmlFile.WriteLine("  </reads>");

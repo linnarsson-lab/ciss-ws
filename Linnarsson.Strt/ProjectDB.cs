@@ -169,8 +169,12 @@ namespace Linnarsson.Strt
         {
             ProjectDescription pd = null;
             List<ProjectDescription> queue = GetProjectDescriptions("WHERE a.status=\"" + ProjectDescription.STATUS_INQUEUE + "\"");
-            if (queue.Count > nextInQueue)
+            Console.WriteLine("queue.Count=" + queue.Count + " nextInQueue=" + nextInQueue);
+            if (nextInQueue < queue.Count)
+            {
+                Console.WriteLine("   queue[nextInQueue].Proj= " + queue[nextInQueue].projectName);
                 pd = queue[nextInQueue++];
+            }
             return pd;
         }
 

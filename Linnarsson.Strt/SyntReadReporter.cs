@@ -10,6 +10,11 @@ using Linnarsson.Utilities;
 
 namespace Linnarsson.Strt
 {
+    /// <summary>
+    /// Maker of synthetic data for pipeline test.
+    /// Output consists of a FastQ reads file, and files giving the true expression levels (molecules and reads),
+    /// as well as positions where SNPs are simulated.
+    /// </summary>
     public class SyntReadMaker
     {
         private Barcodes barcodes;
@@ -22,14 +27,23 @@ namespace Linnarsson.Strt
         double hotspotProb = 0.1;
         int hotspotPos;
         int hotspotCount;
+        /// <summary>
+        /// Probability of generating a SNP at each Nt in transcripts
+        /// </summary>
         double snpProb = 0.001;
+        /// <summary>
+        /// The higher the value, the more 5' will reads be
+        /// </summary>
         double trPosTiltPower = 8.0;
+        /// <summary>
+        /// To mimic truncated reads
+        /// </summary>
         int[] readLengthSamples = new int [4] { 50, 50, 50, 50 };
         private int maxReadLength;
         private int readNumber;
         private string[] barcodesGGG;
-        string firstFiller;
-        string midFiller;
+        private string firstFiller;
+        private string midFiller;
 
         public SyntReadMaker(Barcodes barcodes)
         {
@@ -43,7 +57,7 @@ namespace Linnarsson.Strt
 
         /// <summary>
         /// Generates synthetic transcript read data as a FastQ file for testing of the analysis pipeline.
-        /// Generates random mutations, batcodes and rndTags depending of the Props settings.
+        /// Generates random mutations, SNPs, barcodes and rndTags depending on the settings.
         /// </summary>
         /// <param name="genome">Genome to pick reads from</param>
         /// <param name="dataId">Identifier of output files</param>

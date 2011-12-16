@@ -127,8 +127,9 @@ namespace Linnarsson.Strt
         {
             foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitPos))
                 if (ivl.Strand == strand || !AnnotType.DirectionalReads) return true;
-            foreach (FtInterval ivl in NonExonAnnotations[chr].GetItems(hitPos))
-                if (ivl.annotType == AnnotType.REPT) return true;
+            if (NonExonAnnotations.ContainsKey(chr))
+                foreach (FtInterval ivl in NonExonAnnotations[chr].GetItems(hitPos))
+                    if (ivl.annotType == AnnotType.REPT) return true;
             return false;
         }
 

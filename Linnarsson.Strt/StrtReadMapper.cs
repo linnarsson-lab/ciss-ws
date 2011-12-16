@@ -68,6 +68,7 @@ namespace Linnarsson.Strt
             AnnotationBuilder builder = AnnotationBuilder.GetAnnotationBuilder(props, genome);
             builder.BuildExonSplices(genome, newIndexName);
             Console.WriteLine("*** Splice build completed at {0} ***", DateTime.Now);
+            MakeMaskedStrtChromosomes(genome);
         }
 
         public void AssertStrtGenomeFolder(StrtGenome genome)
@@ -76,6 +77,13 @@ namespace Linnarsson.Strt
             if (Directory.Exists(strtDir))
                 return;
             Directory.CreateDirectory(strtDir);
+        }
+
+        public void MakeMaskedStrtChromosomes(StrtGenome genome)
+        {
+            string strtDir = genome.GetStrtGenomesFolder();
+            if (Directory.GetFiles(strtDir, "chr2*.fa").Length > 0 || Directory.GetFiles(strtDir, "chrX*.fa").Length > 0)
+                return;
             NonExonRepeatMasker nerm = new NonExonRepeatMasker();
             Console.WriteLine("*** Making STRT genome by masking non-exonic repeat sequences ***");
             nerm.Mask(genome, strtDir);
@@ -107,7 +115,7 @@ namespace Linnarsson.Strt
             DateTime startTime = DateTime.Now;
             if (string.IsNullOrEmpty(newIndexName))
                 newIndexName = genome.Build;
-            string genomeFolder = genome.GetOriginalGenomeFolder();
+            string genomeFolder = genome.GetStrtGenomesFolder();
             string spliceChrFile = null;
             List<string> realChrFiles = new List<string>();
             foreach (string f in Directory.GetFiles(genomeFolder, "chr*"))
@@ -519,10 +527,14 @@ namespace Linnarsson.Strt
         private void CreateBowtieMaps(StrtGenome genome, List<LaneInfo> extrInfos)
         {
             string splcIndexVersion = GetSplcIndexVersion(genome);
+            string indexName = genome.GetBowtieSplcIndexName();
+            if (indexName == "")
+                throw new Exception("Can not find Bowtie index corresponding to " + genome.Build + "/" + genome.Annotation);
+            Console.WriteLine("Using bowtie index " + indexName + " with version" + splcIndexVersion);
             foreach (LaneInfo extrInfo in extrInfos)
-                CreateBowtieMaps(genome, extrInfo, splcIndexVersion);
+                CreateBowtieMaps(genome, extrInfo, splcIndexVersion, indexName);
         }
-        private void CreateBowtieMaps(StrtGenome genome, LaneInfo extrInfo, string splcIndexVersion)
+        private void CreateBowtieMaps(StrtGenome genome, LaneInfo extrInfo, string splcIndexVersion, string indexName)
         {
             int n = 0;
             extrInfo.SetMappedFileFolder(splcIndexVersion);
@@ -532,9 +544,6 @@ namespace Linnarsson.Strt
             extrInfo.bowtieLogFilePath = Path.Combine(mapFolder, "bowtie_output.txt");
             List<string> mapFiles = new List<string>();
             int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-            string indexName = genome.GetBowtieSplcIndexName();
-            if (indexName == "")
-                throw new Exception("Can not find Bowtie index corresponding to " + genome.Build + "/" + genome.Annotation);
             foreach (string fqPath in extrInfo.extractedFilePaths)
             {
                 int bcIdx = int.Parse(Path.GetFileNameWithoutExtension(fqPath));

@@ -41,6 +41,8 @@ if (empty($layout_filename)) {
     $fileok = checkFormat(file($target_path));
     if ($fileok != "OK") {
       unlink($target_path);
+	  if (strpos($layout_filename, ".xls") > 0)
+	    $fileok .= "<br /> - Are you sure this is a tab-delimited file?";
       JError::raiseWarning('Message', JText::_("Layout file has errors - please correct and upload again!<br/>" . $fileok));
       $fileresult = "Layout file had error(s): " . $fileok;
     } else {

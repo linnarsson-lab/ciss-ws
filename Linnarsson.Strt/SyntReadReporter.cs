@@ -110,7 +110,7 @@ namespace Linnarsson.Strt
                     {
                         int nGfMols = (int)(Math.Max(0.0, new ExponentialDistribution(3.0).Sample() * 3.0 * (2.0 + thisGfMeanMolsPerBc) - 2.0));
                         nMolsPerBc[bcIdx] = nGfMols;
-                        double useSNPSeqForThisBcP = 0;
+                        double useSNPSeqForThisBcP = 0.0;
                         if (SNPs.Count > 0 && rnd.NextDouble() > 0.9)
                         {
                             double p = rnd.NextDouble();
@@ -120,13 +120,14 @@ namespace Linnarsson.Strt
                         int[] rndTagsUsed = new int[nRndTags];
                         for (int molIdx = 0; molIdx < nGfMols; molIdx++)
                         {
+                            double useSNPSeqForThisMolP = (rnd.NextDouble() < useSNPSeqForThisBcP) ? 0.99 : 0.01; 
                             int nReadsFromMol = new PoissonDistribution(meanReadsPerMolecule).Sample();
                             nReadsPerBc[bcIdx] += nReadsFromMol;
                             int rndTagIdx = rnd.Next(nRndTags);
                             rndTagsUsed[rndTagIdx] = 1;
                             int trPos = GetNextHitPosition(maxPos, nGfMols - molIdx);
-                            WriteExonReadForOneMolecules(fqWriter, bcIdx, rndTagIdx, gf, origTrSeq, snpTrSeq, trPos,
-                                                         nReadsFromMol, useSNPSeqForThisBcP, SNPs);
+                            WriteExonReadsForOneMolecule(fqWriter, bcIdx, rndTagIdx, gf, origTrSeq, snpTrSeq, trPos,
+                                                         nReadsFromMol, useSNPSeqForThisMolP, SNPs);
                         }
                         nDistinctRndTagsPerBc[bcIdx] = rndTagsUsed.Sum();
                     }
@@ -200,7 +201,7 @@ namespace Linnarsson.Strt
             return chrIdToFeature;
         }
 
-        private void WriteExonReadForOneMolecules(StreamWriter fqWriter, int bcIdx, int rndTagIdx, GeneFeature gf,
+        private void WriteExonReadsForOneMolecule(StreamWriter fqWriter, int bcIdx, int rndTagIdx, GeneFeature gf,
                                                   DnaSequence origTrSeq, DnaSequence snpTrSeq, int trPos, int nReads, double useSNPSeqP,
                                                   List<Pair<int, char>> SNPs)
         {

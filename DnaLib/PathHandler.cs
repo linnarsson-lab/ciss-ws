@@ -60,7 +60,7 @@ namespace Linnarsson.Dna
             foreach (string filePath in chrFiles)
             {
                 string filename = Path.GetFileName(filePath);
-                if (genome.IsChrInBuild(Path.GetFileName(filename)))
+                if (genome.IsChrInBuild(Path.GetFileName(filename)) && !filename.Contains("rmsk"))
                 {
                     string chrId = ExtractChrId(filename);
                     chrId = StrtGenome.ConvertIfAnnotation(chrId);

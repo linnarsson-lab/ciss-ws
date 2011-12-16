@@ -97,22 +97,13 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Tries to find a splice chr index that has read length as close as possible below genome.ReadLen.
+        /// Tries to find a splice chr index that has read length as close as possible below ReadLen.
         /// </summary>
         /// <returns>Empty string if none found</returns>
         public string GetBowtieSplcIndexName()
         {
-            return GetBowtieSplcIndexName(ReadLen);
-        }
-        /// <summary>
-        /// Tries to find a splice chr index that has read length as close as possible below readLen.
-        /// </summary>
-        /// <param name="readLen">Desired readLen</param>
-        /// <returns>Empty string if none found</returns>
-        public string GetBowtieSplcIndexName(int readLen)
-        {
             string pathPattern = Path.Combine(PathHandler.GetBowtieIndicesFolder(), Build + "chr" + VarAnnot + "{0}.1.ebwt");
-            return Path.GetFileName(FindABpVersion(readLen, pathPattern)).Replace(".1.ebwt", "");
+            return Path.GetFileName(FindABpVersion(ReadLen, pathPattern)).Replace(".1.ebwt", "");
         }
         public string MakeBowtieSplcIndexName()
         {
@@ -129,7 +120,6 @@ namespace Linnarsson.Dna
             for (int mapLen = readLen; mapLen > readLen - 10; mapLen--)
             {
                 string path = ReplaceReadLen(mapLen, pathPattern);
-                Console.WriteLine("Trying " + path);
                 if (File.Exists(path))
                     return path;
             }

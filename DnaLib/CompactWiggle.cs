@@ -13,9 +13,12 @@ namespace Linnarsson.Dna
     public class Wiggle
     {
         /// <summary>
-        /// Wiggle data, i.e. total counts (all barcodes) of reads and molecules for each position on the chromosome
+        /// Total counts (all barcodes) of molecules for each position on one strand of the chromosome
         /// </summary>
         private SortedDictionary<int, int> molWiggle = new SortedDictionary<int, int>();
+        /// <summary>
+        /// Total counts (all barcodes) of reads for each position on one strand of the chromosome
+        /// </summary>
         private SortedDictionary<int, int> readWiggle = new SortedDictionary<int, int>();
 
         /// <summary>
@@ -36,6 +39,14 @@ namespace Linnarsson.Dna
             }
         }
 
+        private void AddCount(SortedDictionary<int, int> wData, int pos, int count)
+        {
+            if (!wData.ContainsKey(pos))
+                wData[pos] = count;
+            else
+                wData[pos] += count;
+        }
+
         /// <summary>
         /// Add some molecules at a hit position
         /// </summary>
@@ -54,14 +65,6 @@ namespace Linnarsson.Dna
         public void AddReads(int pos, int count)
         {
             AddCount(readWiggle, pos, count);
-        }
-
-        private void AddCount(SortedDictionary<int, int> wData, int pos, int count)
-        {
-            if (!wData.ContainsKey(pos))
-                wData[pos] = count;
-            else
-                wData[pos] += count;
         }
 
         /// <summary>
@@ -99,7 +102,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Get hit positions and respective read count for all reads
+        /// Get hit positions and respective read count for all reads added to the Wiggle instance
         /// </summary>
         /// <param name="positions"></param>
         /// <param name="countAtEachPosition"></param>

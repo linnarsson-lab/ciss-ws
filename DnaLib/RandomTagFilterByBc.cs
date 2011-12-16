@@ -210,10 +210,10 @@ namespace Linnarsson.Strt
         /// <returns>Counts of distinct mappings by rndTagIdx</returns>
         public int[] GetCasesByRndTagCount()
         {
-            int[] nCasesByRndTagCount = new int[RandomTagFilterByBc.nRndTags + 1];
+            int[] nCasesByRndTagCount = new int[Math.Max(2, RandomTagFilterByBc.nRndTags + 1)];
             foreach (TagItem molCountsAtPos in tagItems.Values)
             {
-                int nUsedRndTags = molCountsAtPos.GetNumMolecules();
+                int nUsedRndTags = Math.Min(RandomTagFilterByBc.nRndTags, molCountsAtPos.GetNumMolecules());
                 if (nUsedRndTags > 0)
                     nCasesByRndTagCount[nUsedRndTags]++;
             }
@@ -248,8 +248,9 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
+        /// Summarizes all hit positions and the the respective read and molecule count
         /// </summary>
-        /// <param name="strand"></param>
+        /// <param name="strand">Strand to analyze</param>
         /// <param name="positions">All positions with some mapped read on given strand</param>
         /// <param name="molCountAtEachPosition">Number of distinct rndTags (=molecules) mapped at each of these positions</param>
         /// <param name="readCountAtEachPosition">Number of reads mapped at each of these positions</param>

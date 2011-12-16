@@ -18,8 +18,8 @@ namespace Linnarsson.Strt
         public static readonly int maxHotspotCount = 50;
         public static readonly int minHotspotDistance = 5;
 
-        StreamWriter nonAnnotWriter;
-        StreamWriter nonExonWriter;
+        StreamWriter nonAnnotWriter = null;
+        StreamWriter nonExonWriter = null;
 
         public bool DetermineMotifs { get; set; }
         public bool AnalyzeAllGeneVariants { get; set; }
@@ -155,10 +155,13 @@ namespace Linnarsson.Strt
             currentBcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
             Console.Write("Annotatating " + mapFilePaths.Count + " map files");
 
-            if (!Directory.Exists(Path.GetDirectoryName(OutputPathbase)))
-                Directory.CreateDirectory(Path.GetDirectoryName(OutputPathbase));
-            nonAnnotWriter = new StreamWriter(OutputPathbase + "_NONANNOTATED.tab");
-            nonExonWriter = new StreamWriter(OutputPathbase + "_NONEXON.tab");
+            if (Props.props.DebugAnnotation)
+            {
+                if (!Directory.Exists(Path.GetDirectoryName(OutputPathbase)))
+                    Directory.CreateDirectory(Path.GetDirectoryName(OutputPathbase));
+                nonAnnotWriter = new StreamWriter(OutputPathbase + "_NONANNOTATED.tab");
+                nonExonWriter = new StreamWriter(OutputPathbase + "_NONEXON.tab");
+            }
 
             foreach (string mapFilePath in mapFilePaths)
             {
@@ -177,8 +180,11 @@ namespace Linnarsson.Strt
                 ProcessBarcodeMapFiles(bcMapFilePaths);
             Console.WriteLine();
 
-            nonAnnotWriter.Close();
-            nonExonWriter.Close();
+            if (Props.props.DebugAnnotation)
+            {
+                nonAnnotWriter.Close();
+                nonExonWriter.Close();
+            }
         }
 
         /// <summary>
@@ -300,10 +306,10 @@ namespace Linnarsson.Strt
                         sb.Append(" " + AnnotType.GetName(i));
                 if (someExonHit)
                     numExonAnnotations += molCount;
-                else
+                else if (nonExonWriter != null)
                     nonExonWriter.WriteLine(item.ToString() + " - Annotations: " + sb.ToString());
             }
-            else
+            else if (nonAnnotWriter != null)
                 nonAnnotWriter.WriteLine(item.ToString());
         }
 

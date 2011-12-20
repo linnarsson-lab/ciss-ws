@@ -331,10 +331,7 @@ namespace Linnarsson.Strt
                     else if (Annotations.geneFeatures.ContainsKey(geneName.ToUpper()))
                         gf = Annotations.geneFeatures[geneName.ToUpper()];
                     else
-                    {
-                        Console.WriteLine("Can not locate a gene named " + geneName + " for rndTag profile writing.");
                         continue;
-                    }
                     for (int trPosInChrDir = 0; trPosInChrDir < gf.Length; trPosInChrDir++)
                     {
                         int chrPos = gf.GetChrPosFromTrPosInChrDir(trPosInChrDir);

@@ -35,7 +35,10 @@ namespace Linnarsson.Strt
             PathHandler ph = new PathHandler(props);
             ChrIdToFileMap = PathHandler.GetGenomeFilesMap(genome, true);
             foreach (string chrId in ChrIdToFileMap.Keys)
+            {
                 ExonAnnotations[chrId] = new QuickAnnotationMap(annotationBinSize);
+                NonExonAnnotations[chrId] = new QuickAnnotationMap(annotationBinSize);
+            }
             RegisterGenesAndIntervals(ph);
             if (needChromosomeSequences || needChromosomeLengths)
                 ReadChromsomeSequences(ChrIdToFileMap);

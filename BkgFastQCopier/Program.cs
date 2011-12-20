@@ -68,7 +68,7 @@ namespace BkgFastQCopier
             }
             StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
             string now = DateTime.Now.ToString();
-            logWriter.WriteLine("Starting BkgFastQCopier at " + now);
+            logWriter.WriteLine(DateTime.Now.ToString() + " Starting BkgFastQCopier");
             logWriter.Flush();
             Console.WriteLine("BkgFastQCopier started at " + now + " and logging to " + logFile);
             ReadCopier readCopier = new ReadCopier(illuminaRunsFolder, outputReadsFolder, logWriter);
@@ -107,7 +107,7 @@ namespace BkgFastQCopier
                 catch (Exception exp)
                 {
                     nExceptions++;
-                    logWriter.WriteLine("*** ERROR: Exception in BkgFastQCopier: ***\n" + exp);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: Exception in BkgFastQCopier: ***\n" + exp);
                     logWriter.Flush();
                 }
                 Thread.Sleep(1000 * 60 * minutesWait);

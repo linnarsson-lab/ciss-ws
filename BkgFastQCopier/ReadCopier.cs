@@ -59,7 +59,7 @@ namespace BkgFastQCopier
                 if (rls1 == 255 && (rls2 == 0 || rls2 == 255) && (rls3 == 0 || rls3 == 255))
                     copiedRunIds[runId] = null;
             }
-            logWriter.WriteLine(copiedRunIds.Count + " completely copied runs already in " + statsFolder);
+            logWriter.WriteLine(DateTime.Now.ToString() + " " + copiedRunIds.Count + " completely copied runs already in " + statsFolder);
             logWriter.Flush();
         }
 
@@ -139,7 +139,7 @@ namespace BkgFastQCopier
             string qseqFolder = Path.Combine(runFolder, PathHandler.MakeRunDataSubPath());
             if (!Directory.Exists(qseqFolder))
             {
-                logWriter.WriteLine("*** ERROR: qseq folder does not exist: {0}", qseqFolder);
+                logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: qseq folder does not exist: {0}", qseqFolder);
                 logWriter.Flush();
                 return new List<string>();
             }
@@ -149,7 +149,7 @@ namespace BkgFastQCopier
                 readFiles = CopyBclFiles(runId, readsFolder, runFolder, runName, laneFrom, laneTo);
             if (readFiles.Count == 0)
             {
-                logWriter.WriteLine("*** ERROR: No qseq or bcl files found in {0}", qseqFolder);
+                logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: No qseq or bcl files found in {0}", qseqFolder);
                 logWriter.Flush();
             }
             return readFiles;
@@ -158,7 +158,7 @@ namespace BkgFastQCopier
         private List<string> CopyBclFiles(int runId, string readsFolder, string runFolder, string runName, int laneFrom, int laneTo)
         {
             List<string> readPaths = new List<string>();
-            logWriter.WriteLine("Processing bcl files from " + runFolder + ".");
+            logWriter.WriteLine(DateTime.Now.ToString() + " Processing bcl files from " + runFolder + ".");
             logWriter.Flush();
 			for (int lane = laneFrom; lane <= laneTo; lane++)
 				{
@@ -191,7 +191,7 @@ namespace BkgFastQCopier
             string[] files = Directory.GetFiles(qseqFolder, "*s_*_qseq.txt");
             if (files.Length == 0)
                 return readPaths;
-            logWriter.WriteLine("Processing {0} qseq files from {1}.", files.Length, qseqFolder);
+            logWriter.WriteLine(DateTime.Now.ToString() + " Processing {0} qseq files from {1}.", files.Length, qseqFolder);
             logWriter.Flush();
             Array.Sort(files);
             string currLane = "";

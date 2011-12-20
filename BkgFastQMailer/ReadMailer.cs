@@ -45,7 +45,7 @@ namespace BkgFastQMailer
                             string url = PublishReadsForDownload(readsFile);
                             if (url == "")
                             {
-                                logWriter.WriteLine("*** ERROR: Could not publish " + readsFile + " on www server!");
+                                logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: Could not publish " + readsFile + " on www server!");
                                 logWriter.Flush();
                                 status = "failed";
                             }
@@ -66,7 +66,7 @@ namespace BkgFastQMailer
                 }
                 catch (Exception e)
                 {
-                    logWriter.WriteLine("*** ERROR mailing " + email + ":" + e);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR mailing " + email + ":" + e);
                     logWriter.Flush();
                     allStatus = "emailfailure";
                 }

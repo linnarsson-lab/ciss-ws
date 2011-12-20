@@ -59,7 +59,7 @@ namespace BkgFastQMailer
             }
             StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
             string now = DateTime.Now.ToString();
-            logWriter.WriteLine("Starting BkgFastQMailer at " + now);
+            logWriter.WriteLine(DateTime.Now.ToString() + " Starting BkgFastQMailer");
             logWriter.Flush();
             Console.WriteLine("BkgFastQMailer started at " + now + " and logging to " + logFile);
 
@@ -74,12 +74,12 @@ namespace BkgFastQMailer
                 catch (Exception exp)
                 {
                     nExceptions++;
-                    logWriter.WriteLine("*** ERROR: Exception in BkgFastQMailer: ***\n" + exp);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: Exception in BkgFastQMailer: ***\n" + exp);
                     logWriter.Flush();
                 }
                 Thread.Sleep(1000 * 60 * minutesWait);
             }
-            logWriter.WriteLine("BkgFastQMailer quit at " + DateTime.Now.ToPathSafeString());
+            logWriter.WriteLine(DateTime.Now.ToString() + " BkgFastQMailer quit");
             logWriter.Close();
         }
 

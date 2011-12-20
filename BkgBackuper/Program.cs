@@ -73,7 +73,7 @@ namespace BkgBackuper
                 File.Create(logFile).Close();
             }
             StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
-            logWriter.WriteLine("Starting BkgBackuper at " + DateTime.Now.ToString());
+            logWriter.WriteLine(DateTime.Now.ToString() + " Starting BkgBackuper");
             logWriter.Flush();
             Console.WriteLine("BkgBackuper started at " + DateTime.Now.ToString() + " and logging to " + logFile);
             
@@ -86,7 +86,7 @@ namespace BkgBackuper
                 }
                 Thread.Sleep(1000 * 60 * minutesWait);
             }
-            logWriter.WriteLine("BkgBackuper quit at " + DateTime.Now.ToString());
+            logWriter.WriteLine(DateTime.Now.ToString() + "BkgBackuper quit");
             logWriter.Close();
         }
 
@@ -115,7 +115,6 @@ namespace BkgBackuper
                     int maxMbLeft = (int)Math.Floor(maxLenLeft / Math.Pow(2.0, 20));
                     long fileLen = new FileInfo(readFile).Length;
                     int fileMb = (int)Math.Floor(fileLen / Math.Pow(2.0, 20));
-                    Console.WriteLine(hoursLeft + " hours and max " + maxMbLeft + " Mb allowed before stop time.");
                     if (fileLen < maxLenLeft)
                     {
                         triedSomeCopy = true;
@@ -124,7 +123,7 @@ namespace BkgBackuper
                             DateTime startTime = DateTime.Now;
                             new ProjectDB().SetBackupStatus(readFile, "copying");
                             string cmdArg = string.Format("{0} {1}", readFile, backupDest);
-                            logWriter.WriteLine(DateTime.Now.ToString() + ": scp " + cmdArg);
+                            logWriter.WriteLine(DateTime.Now.ToString() + " scp " + cmdArg);
                             logWriter.Flush();
                             int cmdResult = CmdCaller.Run("scp", cmdArg);
                             if (cmdResult == 0)
@@ -132,14 +131,14 @@ namespace BkgBackuper
                                 new ProjectDB().SetBackupStatus(readFile, "copied");
                                 TimeSpan timeTaken = DateTime.Now.Subtract(startTime);
                                 currentBytesPerHour = fileLen / timeTaken.TotalHours;
-                                logWriter.WriteLine(DateTime.Now.ToString() + "...speed: " + currentBytesPerHour / Math.Pow(2.0, 30) + " Gbytes/hour");
+                                logWriter.WriteLine(DateTime.Now.ToString() + " ...speed: " + currentBytesPerHour / Math.Pow(2.0, 30) + " Gbytes/hour");
                                 logWriter.Flush();
                             }
                         }
                         catch (Exception exp)
                         {
                             new ProjectDB().SetBackupStatus(readFile, "inqueue");
-                            logWriter.WriteLine("*** ERROR: Exception in BkgBackuper: ***\n" + exp);
+                            logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: Exception in BkgBackuper: ***\n" + exp);
                             logWriter.Flush();
                             nExceptions++;
                         }

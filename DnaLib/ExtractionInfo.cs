@@ -6,6 +6,7 @@ using System.IO;
 
 namespace Linnarsson.Dna
 {
+    [Serializable()]
     public class LaneInfo
     {
         public string runId { get; set; }
@@ -25,6 +26,9 @@ namespace Linnarsson.Dna
         public string[] mappedFilePaths { get; set; }
         public string mappedFileFolder { get; set; }
         public string bowtieLogFilePath { get; set; }
+
+        public LaneInfo()
+        { }
 
         public LaneInfo(string readFilePath, string runId, char laneNo)
         {

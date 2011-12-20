@@ -57,8 +57,8 @@ namespace ProjectDBProcessor
             }
             logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
             string now = DateTime.Now.ToString();
-            logWriter.WriteLine("ProjectDBProcessor started at " + now +
-                                " ScanInterval=" + minutesWait + " minutes. Max#Exceptions=" + maxExceptions);
+            logWriter.WriteLine(DateTime.Now.ToString() + " ProjectDBProcessor started. ScanInterval=" + minutesWait +
+                                " minutes. Max#Exceptions=" + maxExceptions);
             logWriter.Flush();
             Console.WriteLine("ProjectDBProcessor started " + now + " and logging to " + logFile);
 
@@ -79,11 +79,11 @@ namespace ProjectDBProcessor
                 catch (Exception exp)
                 {
                     nExceptions++;
-                    logWriter.WriteLine("*** ERROR: ProjectDBProcessor ***\n" + exp);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor ***\n" + exp);
                     logWriter.Flush();
                 }
             }
-            logWriter.WriteLine("ProjectDBProcessor quit at " + DateTime.Now.ToString());
+            logWriter.WriteLine(DateTime.Now.ToString() + " ProjectDBProcessor quit.");
         }
 
         private static bool CheckAllReadsCollected(ref ProjectDescription projDescr)
@@ -131,20 +131,19 @@ namespace ProjectDBProcessor
             {
                 projDescr.status = ProjectDescription.STATUS_FAILED;
                 projDescr.managerEmails = Props.props.FailureReportEmail;
-                logWriter.WriteLine("*** ERROR: ProjectDBProcessor processing " + projDescr.projectName + " ***\n" + e);
+                logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.projectName + " ***\n" + e);
                 logWriter.Flush();
                 results.Add(e.ToString());
             }
             NotifyManager(projDescr, results);
             projectDB.UpdateDB(projDescr);
-            logWriter.WriteLine(projDescr.projectName + "[analysisId=" + projDescr.analysisId + "] finished with status " + projDescr.status);
-            Console.WriteLine(projDescr.projectName + "[analysisId=" + projDescr.analysisId + "] finished with status " + projDescr.status);
+            logWriter.WriteLine(DateTime.Now.ToString() + " " + projDescr.projectName + "[analysisId=" + projDescr.analysisId + "] finished with status " + projDescr.status);
             logWriter.Flush();
         }
 
         private static void ProcessItem(ProjectDescription projDescr)
         {
-            logWriter.WriteLine("Processing " + projDescr.projectName + " - " + projDescr.LaneCount + " lanes [DBId=" + projDescr.analysisId + "]...");
+            logWriter.WriteLine(DateTime.Now.ToString() + " Processing " + projDescr.projectName + " - " + projDescr.LaneCount + " lanes [DBId=" + projDescr.analysisId + "]...");
             logWriter.Flush();
             DateTime d = DateTime.Now;
             if (projDescr.layoutFile != "")
@@ -161,12 +160,15 @@ namespace ProjectDBProcessor
                     File.Copy(layoutSrcPath, layoutDestPath, true);
                 }
                 else
-                    logWriter.WriteLine("*** WARNING: " + projDescr.projectName + " - layout file does not exist: " + layoutSrcPath);
+                {
+                    logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: " + projDescr.projectName + " - layout file does not exist: " + layoutSrcPath);
+                    logWriter.Flush();
+                }
             }
             Props.props.BarcodesName = projDescr.barcodeSet;
             StrtReadMapper mapper = new StrtReadMapper(Props.props);
             mapper.Process(projDescr);
-            logWriter.WriteLine("..." + projDescr.projectName + " done after " + DateTime.Now.Subtract(d) + ".");
+            logWriter.WriteLine(DateTime.Now.ToString() + " ..." + projDescr.projectName + " done after " + DateTime.Now.Subtract(d) + ".");
             logWriter.Flush();
         }
 
@@ -236,7 +238,11 @@ namespace ProjectDBProcessor
                     File.Delete(tempTarGzPath);
                 }
                 else
+                {
                     resultLinks.Add(Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server - contact administrator!");
+                    logWriter.WriteLine(DateTime.Now.ToString() + Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server");
+                    logWriter.Flush();
+                }
             }
             return resultLinks;
         }

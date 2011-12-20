@@ -74,8 +74,8 @@ if ($submit != 'Save') {
         || ($key == 'time') || ($key == '#__aaamanagerid')
         || ($key == '#__aaacontactid') || ($key == '#__aaaclientid')) {
       $columns .= $key . ", ";
-      $vcolumn .= $db->Quote($value) . ", ";
-      $query .= $key . " = " . $db->Quote($value) . ", ";
+      $vcolumn .= $db->Quote(trim($value)) . ", ";
+      $query .= $key . " = " . $db->Quote(trim($value)) . ", ";
     }
     if ($key == 'id') {
       $searchid = $value;
@@ -89,10 +89,10 @@ if ($submit != 'Save') {
 
   foreach ($plateids AS $plateid) {
     $title = ($afteredit['title'] == "")? $plateid : $afteredit['title'];
-    $updquery = $query . " hits='1', title=" . $db->Quote($title) . ", plateid=" 
-                . $db->Quote($plateid) . $addtoquery . " WHERE id = '" . $searchid . "' ";
-    $insquery = $newquery . "$columns title, plateid, hits) VALUES ($vcolumn " . $db->Quote($title) . ", "
-                . $db->Quote($plateid) . ", '1' ) ";
+    $updquery = $query . " hits='1', title=" . $db->Quote(trim($title)) . ", plateid=" 
+                . $db->Quote(trim($plateid)) . $addtoquery . " WHERE id = '" . $searchid . "' ";
+    $insquery = $newquery . "$columns title, plateid, hits) VALUES ($vcolumn " . $db->Quote(trim($title)) . ", "
+                . $db->Quote(trim($plateid)) . ", '1' ) ";
     if ($searchid == 0) {
       $db->setQuery($insquery);
     } else {
@@ -112,7 +112,7 @@ if ($submit != 'Save') {
               ($key == 'labbookpage') || ($key == 'invoice') || ($key == 'signed') ||
               ($key == 'batchcomment') || ($key == 'user') || ($key == 'time')) {
             $bkeycols .= ($key == 'batchcomment')? 'comment, ' : $key . ", ";
-            $bvalcols .= $db->Quote($value) . ", ";
+            $bvalcols .= $db->Quote(trim($value)) . ", ";
           }
         }
         $aaaprojectid = $db->insertid();
@@ -193,7 +193,9 @@ function checkFormat($fileContent, $validBuilds = array()) {
          return "Sample layout file does not have Species as second column of header";
      unset($lines[0]);
      $lineNo = 2;
-      foreach ($lines as $line) {
+     foreach ($lines as $line) {
+         if (trim($line) == '')
+             continue;
          $fields = explode("\t", $line);
          if (count($fields) < 2)
              return "Sample layout has too few columns at line " . $lineNo;

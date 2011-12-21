@@ -384,23 +384,6 @@ namespace SilverBullet
                 });
         }
 
-        private void rerunAllToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (Background.IsBusy)
-            {
-                if (MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
-            }
-            ProjectDB pdb = new ProjectDB();
-            foreach (ProjectDescription pd in pdb.GetProjectDescriptions())
-            {
-                Console.WriteLine("Updating {0}...", pd.projectName);
-                Props.props.BarcodesName = pd.barcodeSet;
-                mapper = new StrtReadMapper(Props.props);
-                mapper.Extract(pd);
-                mapper.MapAndAnnotateWithLayout(pd.ProjectFolder, pd.defaultSpecies, Props.props.AnalyzeAllGeneVariants);
-            }
-        }
-
         private void sortMapFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (Background.IsBusy)

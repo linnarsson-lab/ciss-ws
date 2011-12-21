@@ -40,7 +40,6 @@
             this.analyzeMapSNPsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.mergeAndNormalizeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.rerunAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.qCAnalysisToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.buildIndexToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -104,8 +103,7 @@
             this.mapPhaseTwoannotationsToolStripMenuItem,
             this.analyzeMapSNPsToolStripMenuItem,
             this.toolStripMenuItem2,
-            this.mergeAndNormalizeToolStripMenuItem,
-            this.rerunAllToolStripMenuItem});
+            this.mergeAndNormalizeToolStripMenuItem});
             this.pipelineIIToolStripMenuItem.Name = "pipelineIIToolStripMenuItem";
             this.pipelineIIToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
             this.pipelineIIToolStripMenuItem.Text = "Pipeline";
@@ -154,13 +152,6 @@
             this.mergeAndNormalizeToolStripMenuItem.Size = new System.Drawing.Size(256, 22);
             this.mergeAndNormalizeToolStripMenuItem.Text = "Merge and Normalize...";
             this.mergeAndNormalizeToolStripMenuItem.Click += new System.EventHandler(this.mergeAndNormalizeToolStripMenuItem_Click);
-            // 
-            // rerunAllToolStripMenuItem
-            // 
-            this.rerunAllToolStripMenuItem.Name = "rerunAllToolStripMenuItem";
-            this.rerunAllToolStripMenuItem.Size = new System.Drawing.Size(256, 22);
-            this.rerunAllToolStripMenuItem.Text = "Rerun all...";
-            this.rerunAllToolStripMenuItem.Click += new System.EventHandler(this.rerunAllToolStripMenuItem_Click);
             // 
             // toolsToolStripMenuItem
             // 
@@ -333,7 +324,6 @@
         private System.Windows.Forms.ToolStripMenuItem updateAnnotationsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem importFastaFileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem synthesizeReadsFileToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem rerunAllToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem testToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem mySQLConnectionToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem projectFileToolStripMenuItem;

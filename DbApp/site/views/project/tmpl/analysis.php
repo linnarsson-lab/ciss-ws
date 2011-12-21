@@ -111,6 +111,12 @@ foreach ($allxml->childNodes AS $graphdata) {
          $graph = plot_reads($d["title"], $d["xvalues"], $d["yvalues"]);
          addGraph($graph);
          break;
+       case "molecules":
+       case "hits":
+         $d = parseSingleCurve($graphdata);
+         $graph = plot_reads($d["title"], $d["xvalues"], $d["yvalues"]);
+         addGraph($graph);
+         break;
        case "features":
          $d = parseSingleCurve($graphdata);
          $graph = plot_reads($d["title"], $d["xvalues"], $d["yvalues"]);
@@ -127,6 +133,16 @@ foreach ($allxml->childNodes AS $graphdata) {
          addGraph($graph);
          break;
        case "librarydepth":
+         $d = parseCurves($graphdata);
+         $graph = plotLines("linlin", "", $d["title"], $d["curves"], $d["xtitle"]);
+         addGraph($graph);
+         break;
+       case "librarydepthbybc":
+         $d = parseCurves($graphdata);
+         $graph = plotLines("linlin", "", $d["title"], $d["curves"], $d["xtitle"]);
+         addGraph($graph);
+         break;
+       case "transcriptdepthbybc":
          $d = parseCurves($graphdata);
          $graph = plotLines("linlin", "", $d["title"], $d["curves"], $d["xtitle"]);
          addGraph($graph);
@@ -162,6 +178,11 @@ foreach ($allxml->childNodes AS $graphdata) {
         addGraph($graph);
         break;
       case "nuniqueateachrandomtagcoverage":
+        $d = parseSingleCurve($graphdata);
+        $graph = plotBarsByCategory("textlog", $d["title"], $d["xtitle"], $d["xvalues"], $d["yvalues"]);
+        addGraph($graph);
+        break;
+      case "moleculereadscountshistogram":
         $d = parseSingleCurve($graphdata);
         $graph = plotBarsByCategory("textlog", $d["title"], $d["xtitle"], $d["xvalues"], $d["yvalues"]);
         addGraph($graph);

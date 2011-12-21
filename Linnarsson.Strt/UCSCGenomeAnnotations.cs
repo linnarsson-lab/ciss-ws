@@ -209,6 +209,7 @@ namespace Linnarsson.Strt
             int nRepeatFeatures = 0;
             int nTooLongFeatures = 0;
             string[] record;
+            RepeatFeature reptFeature;
             int fileTypeOffset = 0;
             if (rmskPath.EndsWith("out"))
                 fileTypeOffset = -1;
@@ -225,15 +226,12 @@ namespace Linnarsson.Strt
                 {
                     int start = int.Parse(record[6 + fileTypeOffset]);
                     int end = int.Parse(record[7 + fileTypeOffset]);
-                    nRepeatFeatures++;
                     string name = record[10 + fileTypeOffset];
-                    RepeatFeature reptFeature;
-                    if (!repeatFeatures.TryGetValue(name, out reptFeature))
-                    {
-                        reptFeature = new RepeatFeature(name, start, end);
-                        repeatFeatures[name] = reptFeature;
-                    }
-                    reptFeature.Length += end - start + 1;
+                    nRepeatFeatures++;
+                    if (!repeatFeatures.ContainsKey(name))
+                        repeatFeatures[name] = new RepeatFeature(name);
+                    reptFeature = repeatFeatures[name];
+                    reptFeature.AddRegion(start, end);
                     NonExonAnnotations[chr].Add(new FtInterval(start, end, reptFeature.MarkHit, 0, reptFeature, AnnotType.REPT, '0'));
                 }
                 line = reader.ReadLine();
@@ -460,6 +458,14 @@ namespace Linnarsson.Strt
                 matrixFile.WriteLine("NOTE: This is non-STRT analysis with non-directional reads.");
             WriteBarcodeHeaders(matrixFile, 6);
             matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\tMaxExonHits");
+            StreamWriter readFile = null;
+            if (barcodes.HasRandomBarcodes)
+            {
+                readFile = new StreamWriter(fileNameBase + "_reads.tab");
+                readFile.WriteLine("Total maximal read counts in barcodes for each gene and repeat.");
+                WriteBarcodeHeaders(readFile, 5);
+                readFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMaxExonReads");
+            }
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             foreach (GeneFeature gf in geneFeatures.Values)
             {
@@ -470,6 +476,18 @@ namespace Linnarsson.Strt
                 foreach (int idx in speciesBcIndexes)
                     matrixFile.Write("\t" + gf.TranscriptHitsByBarcode[idx]);
                 matrixFile.WriteLine();
+                if (readFile != null)
+                {
+                    int totReads = 0;
+                    StringBuilder sb = new StringBuilder();
+                    foreach (int idx in speciesBcIndexes)
+                    {
+                        totReads += gf.TranscriptReadsByBarcode[idx];
+                        sb.Append("\t" + gf.TranscriptReadsByBarcode[idx]);
+                    }
+                    readFile.Write(gf.Name + "\t" + gf.Chr + "\t" + gf.Start + "\t" +
+                                   gf.Strand + "\t" + gf.GetTranscriptLength() + "\t" + totReads + sb.ToString() + "\n");
+                }
             }
             foreach (RepeatFeature rf in repeatFeatures.Values)
             {
@@ -478,8 +496,21 @@ namespace Linnarsson.Strt
                 foreach (int idx in speciesBcIndexes)
                     matrixFile.Write("\t" + rf.TotalHitsByBarcode[idx]);
                 matrixFile.WriteLine();
+                if (readFile != null)
+                {
+                    int totReads = 0;
+                    StringBuilder sb = new StringBuilder();
+                    foreach (int idx in speciesBcIndexes)
+                    {
+                        totReads += rf.TotalReadsByBarcode[idx];
+                        sb.Append("\t" + rf.TotalReadsByBarcode[idx]);
+                    }
+                    readFile.Write(rf.Name + "\t\t\t\t" + rf.GetLocusLength() + "\t" + totReads + sb.ToString() + "\n");
+                }
             }
             matrixFile.Close();
+            if (readFile != null)
+                readFile.Close();
             summaryLines.Add("For raw counts of " + geneFeatures.Count + " genes/variants and " +
                              repeatFeatures.Count +  "expressed repeat types view the expression.tab file.");
         }

@@ -176,10 +176,6 @@ namespace Linnarsson.Strt
             return pd;
         }
 
-        public List<ProjectDescription> GetProjectDescriptions()
-        {
-            return GetProjectDescriptions("");
-        }
         private List<ProjectDescription> GetProjectDescriptions(string whereClause)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
@@ -194,43 +190,36 @@ namespace Linnarsson.Strt
                          "LEFT JOIN jos_aaailluminarun r ON l.jos_aaailluminarunid = r.id " +
                          whereClause + 
                          " GROUP BY a.id, runid ORDER BY a.id, p.plateid, runid;";
-            try
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            List<string> laneInfos = new List<string>();
+            string currAnalysisId = "", plateId = "", bcSet = "", defaultSpecies = "", layoutFile = "", plateStatus = "",
+                    emails = "", defaultBuild = "", variant = "";
+            while (rdr.Read())
             {
-                conn.Open();
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                MySqlDataReader rdr = cmd.ExecuteReader();
-                List<string> laneInfos = new List<string>();
-                string currAnalysisId = "", plateId = "", bcSet = "", defaultSpecies = "", layoutFile = "", plateStatus = "",
-                       emails = "", defaultBuild = "", variant = "";
-                while (rdr.Read())
+                string analysisId = rdr["id"].ToString();
+                if (currAnalysisId != "" && analysisId != currAnalysisId)
                 {
-                    string analysisId = rdr["id"].ToString();
-                    if (currAnalysisId != "" && analysisId != currAnalysisId)
-                    {
-                        pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
-                                                       emails, defaultBuild, variant, currAnalysisId));
-                        laneInfos = new List<string>();
-                    }
-                    currAnalysisId = analysisId;
-                    string laneInfo = rdr["runid"].ToString() + ":" + rdr.GetString("lanenos").Replace(",", "");
-                    laneInfos.Add(laneInfo);
-                    plateId = rdr["plateid"].ToString();
-                    bcSet = rdr["barcodeset"].ToString();
-                    defaultSpecies = rdr["species"].ToString();
-                    layoutFile = rdr["layoutfile"].ToString();
-                    plateStatus = rdr["status"].ToString();
-                    emails = rdr["emails"].ToString();
-                    defaultBuild = rdr["transcript_db_version"].ToString();
-                    variant = rdr["transcript_variant"].ToString();
+                    pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
+                                                    emails, defaultBuild, variant, currAnalysisId));
+                    laneInfos = new List<string>();
                 }
-                if (currAnalysisId != "") pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
-                                                                         emails, defaultBuild, variant, currAnalysisId));
-                rdr.Close();
+                currAnalysisId = analysisId;
+                string laneInfo = rdr["runid"].ToString() + ":" + rdr.GetString("lanenos").Replace(",", "");
+                laneInfos.Add(laneInfo);
+                plateId = rdr["plateid"].ToString();
+                bcSet = rdr["barcodeset"].ToString();
+                defaultSpecies = rdr["species"].ToString();
+                layoutFile = rdr["layoutfile"].ToString();
+                plateStatus = rdr["status"].ToString();
+                emails = rdr["emails"].ToString();
+                defaultBuild = rdr["transcript_db_version"].ToString();
+                variant = rdr["transcript_variant"].ToString();
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
+            if (currAnalysisId != "") pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
+                                                                        emails, defaultBuild, variant, currAnalysisId));
+            rdr.Close();
             conn.Close();
             return pds;
         }

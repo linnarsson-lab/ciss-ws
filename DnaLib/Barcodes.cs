@@ -618,7 +618,6 @@ namespace Linnarsson.Dna
             m_WellIds = sampleIds.ToArray();
             m_Seqs = barcodes.ToArray();
             m_FirstNegBarcodeIndex = m_Seqs.Length;
-            Console.WriteLine("{0} custom {1}-mer barcodes imported from {2}.", Seqs.Length, SeqLength, path);
         }
     }
 

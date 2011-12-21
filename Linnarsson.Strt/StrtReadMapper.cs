@@ -530,7 +530,7 @@ namespace Linnarsson.Strt
             string indexName = genome.GetBowtieSplcIndexName();
             if (indexName == "")
                 throw new Exception("Can not find Bowtie index corresponding to " + genome.Build + "/" + genome.Annotation);
-            Console.WriteLine("Using bowtie index " + indexName + " with version" + splcIndexVersion);
+            Console.WriteLine("Using bowtie index " + indexName + " with version " + splcIndexVersion);
             foreach (LaneInfo extrInfo in extrInfos)
                 CreateBowtieMaps(genome, extrInfo, splcIndexVersion, indexName);
         }

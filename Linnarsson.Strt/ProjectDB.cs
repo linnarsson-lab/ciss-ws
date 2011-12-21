@@ -237,7 +237,7 @@ namespace Linnarsson.Strt
 
         public void UpdateDB(ProjectDescription projDescr)
         {
-            string sql = string.Format("UPDATE jos_aaaanalysis SET status=\"{0}\" WHERE id=\"{1}\";",
+            string sql = string.Format("UPDATE jos_aaaanalysis SET status=\"{0}\", time=NOW() WHERE id=\"{1}\";",
                                        projDescr.status, projDescr.analysisId);
             IssueNonQuery(sql);
         }
@@ -266,7 +266,7 @@ namespace Linnarsson.Strt
                     {
                         sql = string.Format("UPDATE jos_aaaanalysis " +
                                 "SET extraction_version=\"{0}\", annotation_version=\"{1}\", genome=\"{2}\", transcript_db_version=\"{3}\", " +
-                                "transcript_variant=\"{4}\", resultspath=\"{5}\", status=\"{6}\" WHERE id=\"{7}\" ",
+                                "transcript_variant=\"{4}\", resultspath=\"{5}\", status=\"{6}\", time=NOW() WHERE id=\"{7}\" ",
                                 projDescr.extractionVersion, projDescr.annotationVersion, genome, dbbuild,
                                 variants, resultDescr.resultFolder, projDescr.status, projDescr.analysisId);
                     }
@@ -274,8 +274,8 @@ namespace Linnarsson.Strt
                     {
                         sql = string.Format("INSERT INTO jos_aaaanalysis " +
                                            "(jos_aaaprojectid, extraction_version, annotation_version, genome, " +
-                                           "transcript_db_version, transcript_variant, lanecount, resultspath, status) " +
-                                           "VALUES (\"{0}\", \"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\", \"{8}\");",
+                                           "transcript_db_version, transcript_variant, lanecount, resultspath, status, time) " +
+                                           "VALUES (\"{0}\", \"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\", \"{8}\", NOW());",
                                            projectId, projDescr.extractionVersion, projDescr.annotationVersion, genome,
                                            dbbuild, variants, laneCount, resultDescr.resultFolder, projDescr.status);
                     }
@@ -287,7 +287,7 @@ namespace Linnarsson.Strt
                 {
                     if (extrInfo.nReads == 0)
                         continue; // Has been extracted earlier - no data to update
-                    sql = string.Format(string.Format("UPDATE jos_aaalane SET yield=\"{0}\", pfyield=\"{1}\" WHERE laneno=\"{2]\" AND " + 
+                    sql = string.Format(string.Format("UPDATE jos_aaalane SET yield=\"{0}\", pfyield=\"{1}\" WHERE laneno=\"{2}\" AND " + 
                                            "jos_aaailluminarunid= (SELECT id FROM jos_aaailluminarun WHERE illuminarunid=\"{3}\") ",
                                            extrInfo.nReads, extrInfo.nPFReads, extrInfo.laneNo, extrInfo.runId));
                     Console.WriteLine(sql);
@@ -360,7 +360,7 @@ namespace Linnarsson.Strt
 
         public void UpdateMailTaskStatus(string id, string status)
         {
-            string sql = string.Format("UPDATE jos_aaafqmailqueue SET status='{0}' WHERE id='{1}'", status, id);
+            string sql = string.Format("UPDATE jos_aaafqmailqueue SET status='{0}', time=NOW() WHERE id='{1}'", status, id);
             IssueNonQuery(sql);
         }
 

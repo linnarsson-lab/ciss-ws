@@ -401,10 +401,6 @@ namespace Linnarsson.Strt
             writerByRead.Close();
         }
 
-        public void SaveResult(ReadCounter readCounter)
-        {
-            SaveResult(readCounter, OutputPathbase);
-        }
 		/// <summary>
 		///  Save all the statistics to a set of files
 		/// </summary>
@@ -962,7 +958,7 @@ namespace Linnarsson.Strt
             string[] counts = new string[barcodes.Count];
             for (int bcIdx = 0; bcIdx < counts.Length; bcIdx++)
             {
-                counts[bcIdx] = TotalHitsByBarcode[bcIdx].ToString();
+                counts[bcIdx] = values[bcIdx].ToString();
                 bCodeLines.Write("\t" + counts[bcIdx]);
                 if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
                 string d = genomeBcIndexes.Contains(bcIdx) ? counts[bcIdx] : "(" + counts[bcIdx] + ")";

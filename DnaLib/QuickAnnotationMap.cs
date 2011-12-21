@@ -19,7 +19,7 @@ namespace Linnarsson.Dna
 
 		public QuickAnnotationMap(int binSize)
 		{
-            bins = new List<List<FtInterval>>();
+            bins = new List<List<FtInterval>>(300000000 / binSize);
 			BinSize = binSize;
 		}
 

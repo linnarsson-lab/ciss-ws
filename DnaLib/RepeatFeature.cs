@@ -30,19 +30,27 @@ namespace Linnarsson.Dna
             return GetTotalHits() > 0;
         }
 
+        /// <summary>
+        /// Either molecules per barcode after rndTag mutation filtering, or total reads per barcode when no rndTag are used.
+        /// </summary>
         public int[] TotalHitsByBarcode;
+        /// <summary>
+        /// Always total reads per barcode
+        /// </summary>
+        public int[] TotalReadsByBarcode;
 
         /// <summary>
         /// </summary>
         /// <param name="name"></param>
         /// <param name="start"></param>
         /// <param name="end"></param>
-        public RepeatFeature(string name, int start, int end)
+        public RepeatFeature(string name)
         {
             Name = name;
-            Length = end - start + 1;
+            Length = 0;
             TotalHits = 0;
             TotalHitsByBarcode = new int[Barcodes.MaxCount];
+            TotalReadsByBarcode = new int[Barcodes.MaxCount];
         }
 
         public static RmskLine rmskLine = new RmskLine();
@@ -58,20 +66,16 @@ namespace Linnarsson.Dna
             return rmskLine;
         }
 
-        public static RepeatFeature NewFromParsed()
+        public void AddRegion(int start, int end)
         {
-            return new RepeatFeature(rmskLine.Name, rmskLine.Start, rmskLine.End);
-        }
-
-        public void AddLength(int length)
-        {
-            Length += length;
+            Length += end - start + 1;
         }
 
         public MarkResult MarkHit(MappedTagItem item, int extraData, MarkStatus markType)
         {
             TotalHits += item.MolCount;
             TotalHitsByBarcode[item.bcIdx] += item.MolCount;
+            TotalReadsByBarcode[item.bcIdx] += item.ReadCount;
             return new MarkResult(AnnotType.REPT, this); // Do not care about orientation for repeats
         }
 

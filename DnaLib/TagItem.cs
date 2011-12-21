@@ -70,7 +70,7 @@ namespace Linnarsson.Dna
     /// </summary>
     public class TagItem
     {
-        public static int ratioForMutationFilter = 1000; // 20 seems a good number, but need to investigate various seq depths before final decision
+        public static int ratioForMutationFilter = 50; // 20 seems a good number, but need to investigate various seq depths before final decision
         public static int nRndTags;
         /// <summary>
         /// Counts number of reads in each rndTag
@@ -160,7 +160,7 @@ namespace Linnarsson.Dna
         public bool HasSNPs { get { return SNPData != null; } }
 
         /// <summary>
-        /// Return the total number of reads at this position-strand
+        /// Return the total number of reads at this position-strand. (Molecule mutation filter not applied for rndTag data.)
         /// </summary>
         /// <returns></returns>
         public int GetNumReads()
@@ -209,7 +209,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Get number of reads in each rndTag
+        /// Get number of reads in each rndTag. (Mutated molecule reads are not filtered when rndTags are used.)
         /// </summary>
         /// <returns>null if no reads have been found</returns>
         public ushort[] GetReadCountsByRndTag()

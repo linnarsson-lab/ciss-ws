@@ -86,7 +86,15 @@ namespace Linnarsson.Dna
                 ExonEnds[ExonEnds.Length - 1] = value;
             }
         }
+
+        /// <summary>
+        /// Either molecules per barcode after rndTag mutation filtering, or total reads per barcode when no rndTag are used.
+        /// </summary>
         public int[] TranscriptHitsByBarcode;
+        /// <summary>
+        /// Always total reads per barcode
+        /// </summary>
+        public int[] TranscriptReadsByBarcode;
         public int[] NonConflictingTranscriptHitsByBarcode;
         public List<double> VariationSamples;
         public int[] TranscriptHitsByExonIdx; // Used to analyse exon hit distribution
@@ -145,6 +153,7 @@ namespace Linnarsson.Dna
             MaskedAEXON = new bool[exonEnds.Length];
             MaskedINTR = new bool[exonEnds.Length - 1];
             TranscriptHitsByBarcode = new int[Props.props.Barcodes.Count];
+            TranscriptReadsByBarcode = new int[Props.props.Barcodes.Count];
             NonConflictingTranscriptHitsByBarcode = new int[Props.props.Barcodes.Count];
             VariationSamples = new List<double>();
             TranscriptHitsByExonIdx = new int[exonStarts.Length];
@@ -396,6 +405,7 @@ namespace Linnarsson.Dna
                 AddToTotalHits(item);
                 TranscriptHitsByExonIdx[exonIdx] += item.MolCount;
                 TranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
+                TranscriptReadsByBarcode[item.bcIdx] += item.ReadCount;
                 if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
                     NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
                 HitsByAnnotType[annotType] += item.MolCount;

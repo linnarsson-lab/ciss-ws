@@ -60,7 +60,7 @@ namespace Linnarsson.Strt
         public string status;
         public static readonly string STATUS_INQUEUE = "inqueue";
         public static readonly string STATUS_PROCESSING = "processing";
-        public static readonly string STATUS_DONE = "ready";
+        public static readonly string STATUS_READY = "ready";
         public static readonly string STATUS_FAILED = "failed";
 
         public ProjectDescription()
@@ -135,7 +135,7 @@ namespace Linnarsson.Strt
     
     public class ProjectDB
     {
-        private readonly static string connectionString = "server=192.168.1.12;uid=cuser;pwd=3pmknHQyl;database=joomla;";
+        private readonly static string connectionString = "server=192.168.1.12;uid=cuser;pwd=3pmknHQyl;database=joomla;Connect Timeout=300;";
 
         public ProjectDB()
         {
@@ -245,61 +245,54 @@ namespace Linnarsson.Strt
         public void PublishResults(ProjectDescription projDescr)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
-            try
+            conn.Open();
+            string sql = string.Format("SELECT jos_aaaprojectid, lanecount FROM jos_aaaanalysis WHERE id=\"{0}\";", projDescr.analysisId);
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            rdr.Read();
+            string projectId = rdr["jos_aaaprojectid"].ToString();
+            string laneCount = rdr["lanecount"].ToString();
+            rdr.Close();
+            bool firstResult = true;
+            foreach (ResultDescription resultDescr in projDescr.resultDescriptions)
             {
-                conn.Open();
-                string sql = string.Format("SELECT jos_aaaprojectid, lanecount FROM jos_aaaanalysis WHERE id=\"{0}\";", projDescr.analysisId);
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                MySqlDataReader rdr = cmd.ExecuteReader();
-                rdr.Read();
-                string projectId = rdr["jos_aaaprojectid"].ToString();
-                string laneCount = rdr["lanecount"].ToString();
-                rdr.Close();
-                bool firstResult = true;
-                foreach (ResultDescription resultDescr in projDescr.resultDescriptions)
+                string[] idxParts = resultDescr.bowtieIndexVersion.Split('_');
+                string genome = idxParts[0];
+                string variants = (idxParts[1][0] == 'a') ? "all" : "single";
+                string dbbuild = idxParts[1].Substring(1);
+                if (firstResult)
                 {
-                    string[] idxParts = resultDescr.bowtieIndexVersion.Split('_');
-                    string genome = idxParts[0];
-                    string variants = (idxParts[1][0] == 'a') ? "all" : "single";
-                    string dbbuild = idxParts[1].Substring(1);
-                    if (firstResult)
-                    {
-                        sql = string.Format("UPDATE jos_aaaanalysis " +
-                                "SET extraction_version=\"{0}\", annotation_version=\"{1}\", genome=\"{2}\", transcript_db_version=\"{3}\", " +
-                                "transcript_variant=\"{4}\", resultspath=\"{5}\", status=\"{6}\", time=NOW() WHERE id=\"{7}\" ",
-                                projDescr.extractionVersion, projDescr.annotationVersion, genome, dbbuild,
-                                variants, resultDescr.resultFolder, projDescr.status, projDescr.analysisId);
-                    }
-                    else
-                    {
-                        sql = string.Format("INSERT INTO jos_aaaanalysis " +
-                                           "(jos_aaaprojectid, extraction_version, annotation_version, genome, " +
-                                           "transcript_db_version, transcript_variant, lanecount, resultspath, status, time) " +
-                                           "VALUES (\"{0}\", \"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\", \"{8}\", NOW());",
-                                           projectId, projDescr.extractionVersion, projDescr.annotationVersion, genome,
-                                           dbbuild, variants, laneCount, resultDescr.resultFolder, projDescr.status);
-                    }
-                    cmd = new MySqlCommand(sql, conn);
-                    cmd.ExecuteNonQuery();
-                    firstResult = false;
+                    sql = string.Format("UPDATE jos_aaaanalysis " +
+                            "SET extraction_version=\"{0}\", annotation_version=\"{1}\", genome=\"{2}\", transcript_db_version=\"{3}\", " +
+                            "transcript_variant=\"{4}\", resultspath=\"{5}\", status=\"{6}\", time=NOW() WHERE id=\"{7}\" ",
+                            projDescr.extractionVersion, projDescr.annotationVersion, genome, dbbuild,
+                            variants, resultDescr.resultFolder, projDescr.status, projDescr.analysisId);
                 }
-                foreach (LaneInfo extrInfo in projDescr.extractionInfos)
+                else
                 {
-                    if (extrInfo.nReads == 0)
-                        continue; // Has been extracted earlier - no data to update
-                    sql = string.Format(string.Format("UPDATE jos_aaalane SET yield=\"{0}\", pfyield=\"{1}\" WHERE laneno=\"{2}\" AND " + 
-                                           "jos_aaailluminarunid= (SELECT id FROM jos_aaailluminarun WHERE illuminarunid=\"{3}\") ",
-                                           extrInfo.nReads, extrInfo.nPFReads, extrInfo.laneNo, extrInfo.runId));
-                    Console.WriteLine(sql);
-                    cmd = new MySqlCommand(sql, conn);
-                    cmd.ExecuteNonQuery();
+                    sql = string.Format("INSERT INTO jos_aaaanalysis " +
+                                        "(jos_aaaprojectid, extraction_version, annotation_version, genome, " +
+                                        "transcript_db_version, transcript_variant, lanecount, resultspath, status, time) " +
+                                        "VALUES (\"{0}\", \"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\", \"{8}\", NOW());",
+                                        projectId, projDescr.extractionVersion, projDescr.annotationVersion, genome,
+                                        dbbuild, variants, laneCount, resultDescr.resultFolder, projDescr.status);
                 }
-                conn.Close();
+                cmd = new MySqlCommand(sql, conn);
+                cmd.ExecuteNonQuery();
+                firstResult = false;
             }
-            catch (Exception ex)
+            foreach (LaneInfo extrInfo in projDescr.extractionInfos)
             {
-                Console.WriteLine(ex.ToString());
+                if (extrInfo.nReads == 0)
+                    continue; // Has been extracted earlier - no data to update
+                sql = string.Format(string.Format("UPDATE jos_aaalane SET yield=\"{0}\", pfyield=\"{1}\" WHERE laneno=\"{2}\" AND " + 
+                                        "jos_aaailluminarunid= (SELECT id FROM jos_aaailluminarun WHERE illuminarunid=\"{3}\") ",
+                                        extrInfo.nReads, extrInfo.nPFReads, extrInfo.laneNo, extrInfo.runId));
+                Console.WriteLine(sql);
+                cmd = new MySqlCommand(sql, conn);
+                cmd.ExecuteNonQuery();
             }
+            conn.Close();
         }
 
         /// <summary>

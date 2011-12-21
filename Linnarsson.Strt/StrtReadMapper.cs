@@ -425,8 +425,10 @@ namespace Linnarsson.Strt
         /// Annotation is always performed and data put in a dated result folder.
         /// </summary>
         /// <param name="projDescr"></param>
-        public void Process(ProjectDescription projDescr)
+        /// <param name="logWriter">File for log information</param>
+        public void Process(ProjectDescription projDescr, StreamWriter logWriter)
         {
+            logWriter.WriteLine(DateTime.Now.ToString() + " Extracting " + projDescr.runIdsLanes.Length + " lanes with barcodes " + projDescr.barcodeSet + "...");
             Extract(projDescr);
             string[] speciesArgs = GetSpeciesArgs(projDescr.SampleLayoutPath, projDescr.defaultSpecies);
             projDescr.annotationVersion = ANNOTATION_VERSION;
@@ -435,8 +437,10 @@ namespace Linnarsson.Strt
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, projDescr.analyzeVariants, projDescr.defaultBuild);
                 genome.ReadLen = GetReadLen(projDescr);
                 SetAvailableBowtieIndexVersion(projDescr, genome);
+                logWriter.WriteLine(DateTime.Now.ToString() + " Mapping to " + genome.GetBowtieIndexName() + "...");
                 CreateBowtieMaps(genome, projDescr.extractionInfos);
                 List<string> mapFilePaths = GetAllMapFilePaths(projDescr.extractionInfos);
+                logWriter.WriteLine(DateTime.Now.ToString() + " Annotating " + mapFilePaths.Count + " map files...");
                 ResultDescription resultDescr = ProcessAnnotation(projDescr.barcodeSet, genome, projDescr.ProjectFolder, 
                                                                   projDescr.projectName, mapFilePaths);
                 projDescr.resultDescriptions.Add(resultDescr);
@@ -444,6 +448,7 @@ namespace Linnarsson.Strt
                 StreamWriter writer = new StreamWriter(Path.Combine(resultDescr.resultFolder, "config.xml"));
                 x.Serialize(writer, projDescr);
                 writer.Close();
+                logWriter.WriteLine(DateTime.Now.ToString() + " Results stored in " + resultDescr.resultFolder + ".");
             }
         }
 

@@ -124,7 +124,7 @@ namespace ProjectDBProcessor
             {
                 ProcessItem(projDescr);
                 results = PublishResultsForDownload(projDescr);
-                projDescr.status = ProjectDescription.STATUS_DONE;
+                projDescr.status = ProjectDescription.STATUS_READY;
                 projectDB.PublishResults(projDescr);
             }
             catch (Exception e)
@@ -167,7 +167,7 @@ namespace ProjectDBProcessor
             }
             Props.props.BarcodesName = projDescr.barcodeSet;
             StrtReadMapper mapper = new StrtReadMapper(Props.props);
-            mapper.Process(projDescr);
+            mapper.Process(projDescr, logWriter);
             logWriter.WriteLine(DateTime.Now.ToString() + " ..." + projDescr.projectName + " done after " + DateTime.Now.Subtract(d) + ".");
             logWriter.Flush();
         }
@@ -177,7 +177,7 @@ namespace ProjectDBProcessor
             if (projDescr.managerEmails == "") return;
             string from = Props.props.ProjectDBProcessorNotifierEmailSender;
             string smtp = "localhost";
-            bool success = (projDescr.status == ProjectDescription.STATUS_DONE);
+            bool success = (projDescr.status == ProjectDescription.STATUS_READY);
             string subject = (success)? "Results ready from STRT project " + projDescr.projectName :
                                         "Failure processing STRT project " + projDescr.projectName;
             StringBuilder sb = new StringBuilder();

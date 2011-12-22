@@ -1056,17 +1056,17 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void WriteElongationHitCurve(StreamWriter capHitsFile, int trLenBinSize, int nSections, int averageReadLen)
+        private void WriteElongationHitCurve(StreamWriter capHitsFile, int trLenBinSize, int nSectionsOverTranscipt, int averageReadLen)
         {
             int nTrSizeBins = 10000 / trLenBinSize;
-            int minHitsPerGene = nSections * 10;
-            DescriptiveStatistics[,] binnedEfficiencies = new DescriptiveStatistics[nTrSizeBins, nSections];
+            int minHitsPerGene = nSectionsOverTranscipt * 10;
+            DescriptiveStatistics[,] binnedEfficiencies = new DescriptiveStatistics[nTrSizeBins, nSectionsOverTranscipt];
             for (int di = 0; di < nTrSizeBins; di++)
             {
-                for (int section = 0; section < nSections; section++)
+                for (int section = 0; section < nSectionsOverTranscipt; section++)
                     binnedEfficiencies[di, section] = new DescriptiveStatistics();
             }
-            int[] geneCounts = new int[nTrSizeBins];
+            int[] nGenesPerSizeClass = new int[nTrSizeBins];
             foreach (GeneFeature gf in geneFeatures.Values)
             {
                 if (gf.Name.StartsWith("RNA_SPIKE"))
@@ -1075,22 +1075,20 @@ namespace Linnarsson.Strt
                     continue;
                 int trLen = gf.GetTranscriptLength();
                 int trLenBin = Math.Min(nTrSizeBins - 1, trLen / trLenBinSize);
-                double posBinSize = (trLen - averageReadLen) / (double)nSections;
+                double posBinSize = (trLen - averageReadLen) / (double)nSectionsOverTranscipt;
                 int[] trBinCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, posBinSize, props.DirectionalReads, averageReadLen);
-                double allCounts = 0.0;
-                foreach (int c in trBinCounts) allCounts += c;
-                int trIdx = nSections - 1;
-                for (int section = 0; section < nSections; section++)
-                    binnedEfficiencies[trLenBin, section].Add(trBinCounts[trIdx--] / allCounts);
-                geneCounts[trLenBin]++;
+                int trIdx = trBinCounts.Length - 1;
+                for (int section = 0; section < Math.Min(nSectionsOverTranscipt, trBinCounts.Length); section++)
+                    binnedEfficiencies[trLenBin, section].Add(trBinCounts[trIdx--] / (double)trBinCounts.Sum());
+                nGenesPerSizeClass[trLenBin]++;
             }
             capHitsFile.WriteLine("Hit distribution across gene transcripts, group averages by transcript length classes.");
             capHitsFile.WriteLine("\nMidLength\tnGenes\t5' -> 3' hit distribution");
             for (int di = 0; di < nTrSizeBins; di++)
             {
                 int binMid = averageReadLen + di * trLenBinSize + trLenBinSize / 2;
-                capHitsFile.Write(binMid + "\t" + geneCounts[di]);
-                for (int section = 0; section < nSections; section++)
+                capHitsFile.Write(binMid + "\t" + nGenesPerSizeClass[di]);
+                for (int section = 0; section < nSectionsOverTranscipt; section++)
                     capHitsFile.Write("\t{0:0.####}", binnedEfficiencies[di, section].Mean());
                 capHitsFile.WriteLine();
             }

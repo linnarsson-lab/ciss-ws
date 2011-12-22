@@ -37,6 +37,8 @@ namespace ConsoleApplication1
             return (0);
         }
 
+
+
         private static void TraverseDirs(DirectoryInfo dir, string Pattern)
         {
             // Subdirs

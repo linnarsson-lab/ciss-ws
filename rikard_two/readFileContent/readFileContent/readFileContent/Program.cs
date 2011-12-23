@@ -64,6 +64,31 @@ namespace readFileContent
                 {
                     List<BamAlignedRead> MyList = BF.Fetch(BF.Chromosomes[i], 1, 5000000);
                     Console.WriteLine("\t\t" + BF.Chromosomes[i] + " - " + BF.ChromosomeLengths[i] + " - " + MyList.Count);
+                    string outputL = "";
+                    if (!(MyList.Count < 1))
+                    {
+                        for (int ii = 0; ii < MyList.Count; ii++)
+                        {
+                            if (MyList[ii].ExtraFields.Length != 0) 
+                            {
+                                outputL += "\t\t" + i;
+                                for (int iii = 0; iii < MyList[ii].ExtraFields.Length; iii++)
+                    			{
+                                    outputL += " " + iii + MyList[ii].ExtraFields[iii];
+			                    }
+                                outputL += " >CIGAR->" + MyList[ii].Cigar + Environment.NewLine;                            }
+                        }
+                     }
+                    if (outputL.Length == 0)
+                    {
+                        Console.WriteLine("\t\tno mapped reads in interval OR no extra lines");
+                    } 
+                    else
+                    {
+                        Console.WriteLine(outputL);
+                    }
+
+
                 }
                 Console.WriteLine();
             }
@@ -76,7 +101,7 @@ namespace readFileContent
         static void usage()
         {
             Console.WriteLine(Environment.NewLine + "\treadFileContent Usage:");
-            Console.WriteLine("\treadFileContent <path-to-variantDectionDir>");
+            Console.WriteLine("\treadFileContent <path-to-variantDectionDir>" + Environment.NewLine);
         }
     }
 }

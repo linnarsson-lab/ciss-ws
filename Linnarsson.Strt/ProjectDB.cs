@@ -245,10 +245,12 @@ namespace Linnarsson.Strt
             bool firstResult = true;
             foreach (ResultDescription resultDescr in projDescr.resultDescriptions)
             {
-                string[] idxParts = resultDescr.bowtieIndexVersion.Split('_');
-                string genome = idxParts[0];
-                string variants = (idxParts[1][0] == 'a') ? "all" : "single";
-                string dbbuild = idxParts[1].Substring(1);
+                int i = 3;
+                int p = resultDescr.bowtieIndexVersion.IndexOf("chr");
+                if (p == -1) { i = 1; p = resultDescr.bowtieIndexVersion.IndexOf("_"); } // Backward compability
+                string genome = resultDescr.bowtieIndexVersion.Substring(0, p);
+                string variants = (resultDescr.bowtieIndexVersion[p + i] == 'a') ? "all" : "single";
+                string dbbuild = resultDescr.bowtieIndexVersion.Substring(p + i + 1);
                 if (firstResult)
                 {
                     sql = string.Format("UPDATE jos_aaaanalysis " +

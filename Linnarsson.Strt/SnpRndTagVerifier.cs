@@ -21,13 +21,24 @@ namespace Linnarsson.Strt
 
         public static int GetNtIdx(char nt)
         {
-            return "-ACGT".IndexOf(nt);
+            int idx = "NACGT".IndexOf(nt);
+            if (idx >= 0) return idx;
+            idx = "nacgt".IndexOf(nt);
+            if (idx == -1) idx = 0;
+            return idx;
         }
 
         public void Add(int rndTagIdx, char nt)
         {
             int ntIdx = GetNtIdx(nt);
-            countsByNtAndRndTagIdx[ntIdx, rndTagIdx]++;
+            try
+            {
+                countsByNtAndRndTagIdx[ntIdx, rndTagIdx]++;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("AddERROR: Nt=" + nt + " ntIDx=" + ntIdx + " rndTagIdx=" + rndTagIdx);
+            }
         }
 
         public bool HasAllReadsInEachRndTagTheSameNt()
@@ -114,10 +125,7 @@ namespace Linnarsson.Strt
                     SnpRndTagData sData = data[pos][bcIdx];
                     nTotal++;
                     if (sData.HasAllReadsInEachRndTagTheSameNt())
-                    {
                         nCorrect++;
-                        continue;
-                    }
                     else
                     {
                         string wStart = pos + "\t" + props.Barcodes.Seqs[bcIdx];

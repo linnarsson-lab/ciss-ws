@@ -81,29 +81,18 @@ namespace Linnarsson.Strt
                 foreach (int snpPos in data.Keys)
                 {
                     if (snpPos >= mrm[0].Position && snpPos < mrm[0].Position + mrm.SeqLen)
-                        data[snpPos][mrm.BarcodeIdx].Add(mrm.RandomBcIdx, GetNtAtPos(snpPos, mrm[0].Position, mrm[0].Mismatches));
+                        data[snpPos][mrm.BarcodeIdx].Add(mrm.RandomBcIdx, GetNtAtPos(snpPos, mrm[0]));
                 }
         }
 
-        private char GetNtAtPos(int snpPos, int hitStartPos, string mismatches)
+        private char GetNtAtPos(int snpPos, MultiReadMapping mrm)
         {
-            if (mismatches != "")
+            foreach (Mismatch mm in mrm.IterMismatches())
             {
-                foreach (string snp in mismatches.Split(','))
-                {
-                    int p = snp.IndexOf(':');
-                    if (p == -1)
-                    {
-                        Console.WriteLine("Strange mismatches: " + mismatches + " at hitStartPos=" + hitStartPos);
-                        continue;
-                    }
-                    int relPos = int.Parse(snp.Substring(0, p));
-                    if (hitStartPos + relPos == snpPos)
-                        return snp[p + 3];
-                }
+                if (mrm.Position + mm.relPosInChrDir == snpPos)
+                    return mm.ntInChrDir;
             }
             return '-';
-
         }
 
         public void Verify(string fileNameBase)

@@ -202,6 +202,18 @@ namespace Linnarsson.Dna
 
     }
 
+    public struct Mismatch
+    {
+        public int relPosInChrDir;
+        public char ntInChrDir;
+
+        public Mismatch(int relPosInChrDir, char ntInChrDir)
+        {
+            this.relPosInChrDir = relPosInChrDir;
+            this.ntInChrDir = ntInChrDir;
+        }
+    }
+
     public class MultiReadMapping
     {
         private MultiReadMappings parent;
@@ -217,6 +229,7 @@ namespace Linnarsson.Dna
         public int RndTagIdx { get { return parent.RandomBcIdx; } }
         public int SeqLen { get { return parent.SeqLen; } }
         public bool HasAltMappings { get { return parent.HasAltMappings; } }
+        public bool HasMismatches { get { return Mismatches != ""; } }
 
         public MultiReadMapping(MultiReadMappings parent)
         {
@@ -235,6 +248,24 @@ namespace Linnarsson.Dna
         {
             return "MultiReadMapping: Chr=" + Chr + Strand + " Pos=" + Position + " HitMidPos=" + HitMidPos + " Mismatches=" + Mismatches;
         }
+
+        public IEnumerable<Mismatch> IterMismatches()
+        {
+            if (!HasMismatches) yield break;
+            foreach (string snp in Mismatches.Split(','))
+            {
+                int p = snp.IndexOf(':');
+                if (p == -1)
+                {
+                    Console.WriteLine("Strange mismatches in mapping:\n" + ToString());
+                    continue;
+                }
+                int posInRead = int.Parse(snp.Substring(0, p));
+                int relPos = (Strand == '+') ? posInRead : parent.SeqLen - 1 - posInRead;
+                yield return new Mismatch(posInRead, snp[p + 3]);
+            }
+        }
+
     }
 
     public class MultiReadMappings
@@ -246,7 +277,7 @@ namespace Linnarsson.Dna
         public int RandomBcIdx = 0;
         public int SeqLen;
         public int AltMappings;
-        public bool HasAltMappings { get { return AltMappings >= 1; } }
+        public bool HasAltMappings { get { return AltMappings >= 1 || NMappings > 1; } }
         public int NMappings;
         private MultiReadMapping[] Mappings;
 

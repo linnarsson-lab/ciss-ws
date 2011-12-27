@@ -140,18 +140,12 @@ namespace Linnarsson.Strt
                 item = new TagItem(false);
                 tagItems[posStrand] = item;
             }
-            if (!m.HasAltMappings && m.Mismatches != "")
+            if (!m.HasAltMappings)
             {
-                foreach (string snp in m.Mismatches.Split(','))
+                foreach (Mismatch mm in m.IterMismatches())
                 {
-                    int p = snp.IndexOf(':');
-                    if (p == -1)
-                        continue;
-                    int posInRead = int.Parse(snp.Substring(0, p));
-                    if (posInRead < marginInReadForSNP || posInRead > m.SeqLen - marginInReadForSNP) continue;
-                    byte relPos = (byte)((m.Strand == '+') ? posInRead : m.SeqLen - 1 - posInRead);
-                    char snpNt = snp[p + 3];
-                    item.AddSNP(m.RndTagIdx, relPos, snpNt);
+                    if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
+                    item.AddSNP(m.RndTagIdx, (byte)mm.relPosInChrDir, mm.ntInChrDir);
                 }
             }
             return item.Add(m.RndTagIdx);

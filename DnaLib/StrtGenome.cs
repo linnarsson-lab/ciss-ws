@@ -112,7 +112,7 @@ namespace Linnarsson.Dna
 
         private string ReplaceReadLen(int readLen, string pathPattern)
         {
-            string readLenPart = (readLen == Props.props.StandardReadLen) ? "" : string.Format("_{0}bp", readLen);
+            string readLenPart = string.Format("_{0}bp", readLen);
             return string.Format(pathPattern, readLenPart);
         }
         private string FindABpVersion(int readLen, string pathPattern)

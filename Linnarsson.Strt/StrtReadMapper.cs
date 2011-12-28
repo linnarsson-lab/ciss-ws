@@ -636,7 +636,7 @@ namespace Linnarsson.Strt
             return AnnotateMapFiles(genome, projectFolder, extractedFolder, mapFiles);
         }
 
-        public static readonly string ANNOTATION_VERSION = "35";
+        public static readonly string ANNOTATION_VERSION = "36";
         /// <summary>
         /// Annotate output from Bowtie alignment
         /// </summary>

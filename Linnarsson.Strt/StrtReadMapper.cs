@@ -67,7 +67,6 @@ namespace Linnarsson.Strt
             Console.WriteLine("*** Build of spliced exon junctions for {0} started at {1} ***", genome.GetBowtieIndexName(), DateTime.Now);
             AnnotationBuilder builder = AnnotationBuilder.GetAnnotationBuilder(props, genome);
             builder.BuildExonSplices(genome, newIndexName);
-            Console.WriteLine("*** Splice build completed at {0} ***", DateTime.Now);
             MakeMaskedStrtChromosomes(genome);
         }
 
@@ -152,8 +151,7 @@ namespace Linnarsson.Strt
                     Console.Error.WriteLine("Failed to run bowtie-build. ExitCode={0}", exitCode);
             }
             else
-                Console.WriteLine("WARNING: No splice chromosome found for " + genome.GetBowtieIndexName() + " indexing skipped.");
-            Console.WriteLine("*** Bowtie index build completed at {0} ***", DateTime.Now);
+                Console.Error.WriteLine("WARNING: No splice chromosome found for " + genome.GetBowtieIndexName() + " indexing skipped.");
         }
 
         /// <summary>

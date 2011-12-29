@@ -13,6 +13,7 @@ namespace Linnarsson.Strt
         /// SNPNt in first index (-,A,C,G,T) and counts in each rndTag in second index 
         /// </summary>
         public short[,] countsByNtAndRndTagIdx;
+        public int refNtIdx = 0;
 
         public SnpRndTagData(int nRndTags)
         {
@@ -28,16 +29,18 @@ namespace Linnarsson.Strt
             return idx;
         }
 
-        public void Add(int rndTagIdx, char nt)
+        public void Add(int rndTagIdx, Mismatch mm)
         {
-            int ntIdx = GetNtIdx(nt);
+            int ntIdx = GetNtIdx(mm.ntInChrDir);
             try
             {
                 countsByNtAndRndTagIdx[ntIdx, rndTagIdx]++;
+                if (refNtIdx == 0 && mm.refNtInChrDir != '-') refNtIdx = GetNtIdx(mm.refNtInChrDir);
             }
             catch (Exception e)
             {
-                Console.WriteLine("AddERROR: Nt=" + nt + " ntIDx=" + ntIdx + " rndTagIdx=" + rndTagIdx);
+                Console.WriteLine("SnpRndTagData.Add() ERROR: RefNt=" + mm.refNtInChrDir + " AltNt=" + mm.ntInChrDir +
+                                  " (local) ntIdx=" + ntIdx + " rndTagIdx=" + rndTagIdx + "\n  " + e);
             }
         }
 
@@ -62,8 +65,9 @@ namespace Linnarsson.Strt
     public class SnpRndTagVerifier
     {
         public Dictionary<int, SnpRndTagData[]> data = new Dictionary<int, SnpRndTagData[]>();
+        public HashSet<int> snpPosOnChr = new HashSet<int>();
         public static string verificationChr;
-        private Props props;
+        private Barcodes barcodes;
         /// <summary>
         /// Expecting the same chromosome for all data
         /// </summary>
@@ -71,39 +75,43 @@ namespace Linnarsson.Strt
         /// <param name="nBarcodes"></param>
         public SnpRndTagVerifier(Props props, MapFileSnpFinder mfsf)
         {
-            this.props = props;
+            barcodes = props.Barcodes;
             verificationChr = props.SnpRndTagVerificationChr;
-            int nBarcodes = props.Barcodes.Count;
-            int nRndTags = props.Barcodes.RandomBarcodeCount;
             foreach (LocatedSNPCounter locSNP in mfsf.IterSNPLocations())
-            {
                 if (locSNP.chr == verificationChr)
-                {
-                    data[locSNP.chrPos] = new SnpRndTagData[nBarcodes];
-                    for (int i = 0; i < nBarcodes; i++)
-                        data[locSNP.chrPos][i] = new SnpRndTagData(nRndTags);
-                }
-            }
+                    snpPosOnChr.Add(locSNP.chrPos);
         }
 
         public void Add(MultiReadMappings mrm)
         {
-            if (!mrm.HasAltMappings && mrm[0].Chr == verificationChr)
-                foreach (int snpPos in data.Keys)
+            if (mrm.HasAltMappings || mrm[0].Chr != verificationChr)
+                return;
+            foreach (int snpPos in snpPosOnChr)
+            {
+                if (snpPos >= mrm[0].Position && snpPos < mrm[0].Position + mrm.SeqLen)
                 {
-                    if (snpPos >= mrm[0].Position && snpPos < mrm[0].Position + mrm.SeqLen)
-                        data[snpPos][mrm.BarcodeIdx].Add(mrm.RandomBcIdx, GetNtAtPos(snpPos, mrm[0]));
+                    int strandBit = (mrm[0].Strand == '+') ? 0 : 1;
+                    int posStrand = (mrm[0].Position << 1) | strandBit;
+                    if (!data.ContainsKey(posStrand))
+                    {
+                        data[posStrand] = new SnpRndTagData[barcodes.Count];
+                        for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                            data[posStrand][bcIdx] = new SnpRndTagData(barcodes.RandomBarcodeCount);
+                    }
+                    data[posStrand][mrm.BarcodeIdx].Add(mrm.RandomBcIdx, GetMismatchAtPos(snpPos, mrm[0]));
+                    break; // Ensure only count one snpPos per molecule
                 }
+            }
         }
 
-        private char GetNtAtPos(int snpPos, MultiReadMapping mrm)
+        private Mismatch GetMismatchAtPos(int snpPos, MultiReadMapping mrm)
         {
             foreach (Mismatch mm in mrm.IterMismatches())
             {
                 if (mrm.Position + mm.relPosInChrDir == snpPos)
-                    return mm.ntInChrDir;
+                    return mm;
             }
-            return '-';
+            return new Mismatch(0, '-', '-');
         }
 
         public void Verify(string fileNameBase)
@@ -111,10 +119,9 @@ namespace Linnarsson.Strt
             int nMaxUsedRndTags = 50; // Errors may occur at rndTag saturation if two different molecules end up in the same rndTag
             string file = fileNameBase + "_SNP_RndTag_verification.tab";           
             StreamWriter writer = new StreamWriter(file);
-            writer.WriteLine("Showing problematic positions on chr " + props.SnpRndTagVerificationChr +
-                             ". (The genome, nonSNP, nt is represented by 0, since seq data is not kept.) Summary at end.");
+            writer.WriteLine("Showing problematic positions on chr " + verificationChr + ". Summary at end.");
             writer.Write("ChrPos\tBarcode\tNt");
-            for (int i = 0; i < props.Barcodes.Count; i++)
+            for (int i = 0; i < barcodes.Count; i++)
                 writer.Write("\t#InTag" + i);
             writer.WriteLine();
             int nCorrect = 0, nTotal = 0;
@@ -128,19 +135,26 @@ namespace Linnarsson.Strt
                         nCorrect++;
                     else
                     {
-                        string wStart = pos + "\t" + props.Barcodes.Seqs[bcIdx];
-                        for (int ntIdx = 0; ntIdx < 5; ntIdx++)
+                        string[] ntLabels = new string[] { "0", "A", "C", "G", "T" };
+                        int ntIdx = 0;
+                        if (sData.refNtIdx > 0)
                         {
-                            int cInNt = 0;
+                            ntLabels[sData.refNtIdx] = "ref" + "0ACGT"[sData.refNtIdx];
+                            ntIdx = 1;
+                        }
+                        string wStart = pos + "\t" + barcodes.Seqs[bcIdx];
+                        for (; ntIdx < 5; ntIdx++)
+                        {
+                            int totCountInNt = 0;
                             StringBuilder sbNt = new StringBuilder();
-                            sbNt.Append("\t" + "0ACGT"[ntIdx]);
-                            for (int i = 0; i < sData.countsByNtAndRndTagIdx.GetLength(1); i++)
+                            sbNt.Append("\t" + ntLabels[ntIdx]);
+                            for (int rndTagIdx = 0; rndTagIdx < sData.countsByNtAndRndTagIdx.GetLength(1); rndTagIdx++)
                             {
-                                int c = sData.countsByNtAndRndTagIdx[ntIdx, i];
-                                cInNt += c;
+                                int c = sData.countsByNtAndRndTagIdx[ntIdx, rndTagIdx];
+                                totCountInNt += c;
                                 sbNt.Append("\t" + c.ToString());
                             }
-                            if (cInNt > 0)
+                            if (totCountInNt > 0)
                             {
                                 writer.Write(wStart);
                                 writer.WriteLine(sbNt.ToString());

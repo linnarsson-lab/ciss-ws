@@ -46,9 +46,10 @@ namespace ProjectDBProcessor
             }
             catch (Exception)
             {
-                Console.WriteLine("Usage:  nohup mono ProjectDBProcessor.exe [options] &");
+                Console.WriteLine("Typical usage:  nohup mono ProjectDBProcessor.exe [options] > PDBP.out &");
                 Console.WriteLine("Options: -t N   scan for new data every N  minutes.");
                 Console.WriteLine("         -e N   exit if more than N exceptions occured.");
+                Console.WriteLine("         -l F   log to file F instead of default logfile.");
                 return;
             }
             if (!File.Exists(logFile))

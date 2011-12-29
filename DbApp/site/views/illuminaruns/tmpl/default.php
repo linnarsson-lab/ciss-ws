@@ -21,14 +21,16 @@ defined('_JEXEC') or die('Restricted access');
                  <nobr> Sort: $runidsorter $runnosorter $datesorter </nobr>
          </legend>
          <table>
-           <tr><th colspan='2'></th>
-            <th>RunId&nbsp;</th>
-            <th>Title&nbsp;<br />" . JHTML::tooltip('Your free designation of the run') . "</th>
-            <th><nobr>Run date&nbsp;</nobr></th>
-            <th>Status&nbsp;<br />" . JHTML::tooltip('n/a=No data exists, copying=making read files, copied=ready for analysis, copyfail=error during read file making') . "</th>
-            <th>RunNo&nbsp;<br />" . JHTML::tooltip('Run number created by Illumina machine') . "</th>
-            <th>Run doc&nbsp;</th>
-            <th>Samples&nbsp;</th>    
+           <tr>
+             <th></th>
+             <th>RunId&nbsp;</th>
+             <th>Title&nbsp;<br />" . JHTML::tooltip('Your free designation of the run') . "</th>
+             <th><nobr>Run date&nbsp;</nobr></th>
+             <th>Cycles&nbsp;</th>
+             <th>Status&nbsp;<br />" . JHTML::tooltip('n/a=No data exists, copying=making read files, copied=ready for analysis, copyfail=error during read file making') . "</th>
+             <th>RunNo&nbsp;<br />" . JHTML::tooltip('Run number created by Illumina machine') . "</th>
+             <th>Doc&nbsp;</th>
+             <th>Samples&nbsp;</th>    
            </tr>"; 
 
   function datesort($a, $b) { if ($a->rundate == $b->rundate) { return 0; }
@@ -47,14 +49,15 @@ defined('_JEXEC') or die('Restricted access');
 
   foreach ($this->illuminaruns as $run) {
     echo "<tr>";
-    $runlink = "<a href=index.php?option=com_dbapp&view=illuminarun&layout=illuminarun&controller=illuminarun&searchid=" 
-               . $run->id . "&Itemid=" . $itemid . ">view</a>&nbsp;";
     $editlink = "<a href=index.php?option=com_dbapp&view=illuminarun&layout=edit&controller=illuminarun&searchid=" 
            . $run->id . "&Itemid=" . $itemid . ">edit</a>&nbsp;";
-    echo "<td>&nbsp;" . $runlink . "</td><td>" . $editlink . "</td>";
-    echo "<td><nobr>&nbsp;" . $run->illuminarunid . "</nobr></td>";
+    echo "<td>" . $editlink . "</td>";
+    $viewlink = "<a href=index.php?option=com_dbapp&view=illuminarun&layout=illuminarun&controller=illuminarun&searchid=" 
+               . $run->id . "&Itemid=" . $itemid . ">" . $run->illuminarunid . "</a>&nbsp;";
+    echo "<td><nobr>&nbsp;" . $viewlink . "</nobr></td>";
     echo "<td><nobr>&nbsp;" . $run->title . "</nobr></td>";
     echo "<td><nobr>&nbsp;" . $run->rundate . "</nobr></td>";
+    echo "<td><nobr>&nbsp;" . $run->cycles . " / " . $run->indexcycles . "</nobr></td>";
     echo "<td><nobr>&nbsp;" . $run->status . "</nobr></td>";
     echo "<td><nobr>&nbsp;" . $run->runno . "</nobr></td>";
     $RUNDOC = "";

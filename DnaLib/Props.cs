@@ -50,7 +50,6 @@ namespace Linnarsson.Dna
             new string[] { "Sox2" ,"Actb", "Nanog" };
         public bool SnpRndTagVerification = false;
         public string SnpRndTagVerificationChr = "1";
-        public int[] SnpRndTagVerificationPositions = new int[] { };
         public bool GenerateTranscriptProfiles = false;
         public bool GenerateGeneLocusProfiles = false;
         public bool GenerateGeneProfilesByBarcode = false;

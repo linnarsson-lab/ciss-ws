@@ -205,11 +205,13 @@ namespace Linnarsson.Dna
     public struct Mismatch
     {
         public int relPosInChrDir;
+        public char refNtInChrDir;
         public char ntInChrDir;
 
-        public Mismatch(int relPosInChrDir, char ntInChrDir)
+        public Mismatch(int relPosInChrDir, char refNtInChrDir, char ntInChrDir)
         {
             this.relPosInChrDir = relPosInChrDir;
+            this.refNtInChrDir = refNtInChrDir;
             this.ntInChrDir = ntInChrDir;
         }
     }
@@ -262,7 +264,7 @@ namespace Linnarsson.Dna
                 }
                 int posInRead = int.Parse(snp.Substring(0, p));
                 int relPos = (Strand == '+') ? posInRead : parent.SeqLen - 1 - posInRead;
-                yield return new Mismatch(posInRead, snp[p + 3]);
+                yield return new Mismatch(posInRead, snp[p + 1], snp[p + 3]);
             }
         }
 

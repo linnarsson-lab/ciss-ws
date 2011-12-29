@@ -152,7 +152,7 @@ namespace ProjectDBProcessor
                 if (File.Exists(layoutSrcPath))
                 {
                     string layoutDestPath = Path.Combine(projDescr.ProjectFolder, projDescr.layoutFile);
-                    logWriter.WriteLine("cp " + layoutSrcPath + " -> " + layoutDestPath);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " cp " + layoutSrcPath + " -> " + layoutDestPath); logWriter.Flush();
                     if (!Directory.Exists(Path.GetDirectoryName(layoutDestPath)))
                         Directory.CreateDirectory(Path.GetDirectoryName(layoutDestPath));
                     if (File.Exists(layoutDestPath))

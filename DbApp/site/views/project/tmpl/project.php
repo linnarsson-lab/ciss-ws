@@ -146,7 +146,8 @@ if (count($this->seqbatches) != 0) {
                 <th>DBVer&nbsp;" . JHTML::tooltip('Source and creation date of genome and annotation database. Source may change after analysis if unavailable at processing time') . "&nbsp;</th>
                 <th>Type&nbsp;" . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "&nbsp;</th>
                 <th>ResultsPath&nbsp;</th>
-                <th>Comment</th>
+                <th>Rpt@</th>
+                <th>Cmnt</th>
               </tr>";
 
       foreach ($this->analysis as $analys) {
@@ -181,9 +182,13 @@ if (count($this->seqbatches) != 0) {
         echo "<td>" . $analys->transcript_db_version . "&nbsp;</td>";
         echo "<td>" . $analys->transcript_variant . "&nbsp;</td>";
         echo "<td>" . $resultname . "</td>";
+        if (strlen($analys->emails) > 2)
+            echo "<td>&nbsp;" . JHTML::tooltip($analys->emails) . "</td>";
+        else
+            echo "<td>" . $analys->emails . "</td>";
         $comment = $analys->comment;
         if (strlen($comment) > 8)
-            echo "<td>&nbsp;" . substr($comment, 0, 8) . JHTML::tooltip($comment) . "</td></tr>";
+            echo "<td>&nbsp;" . JHTML::tooltip($comment) . "</td></tr>";
         else
             echo "<td>&nbsp;" . $comment . "</td></tr>";
       }

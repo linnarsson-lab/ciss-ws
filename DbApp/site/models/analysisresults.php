@@ -27,7 +27,7 @@ class DbAppModelAnalysisresults extends JModel {
                a.status AS status, p.title AS projecttitle, p.tissue, p.sampletype
                FROM #__aaaanalysis a
                LEFT JOIN #__aaaproject p ON a.#__aaaprojectid = p.id
-               ORDER BY projectid DESC';
+               ORDER BY id DESC';
     $db->setQuery($query);
 //    $statement = $db->loadResult();
     $item = $db->loadObjectList();

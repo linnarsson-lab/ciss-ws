@@ -196,6 +196,11 @@ if ($allowinqueue) {
         </table>
         </fieldset>
       </div>
+      <div>
+        <fieldset><legend>Comment</legend>
+          <input type="text" id="comment" name="comment" size="60" />
+        </fieldset>
+      </div>
 <br/>
 <input type="submit" name="submit" id="submitbutton"
        value="Put selected lanes in analysis pipeline" />

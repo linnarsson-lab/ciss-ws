@@ -22,14 +22,14 @@ defined('_JEXEC') or die('Restricted access');
          <tr>
           <th>&nbsp;</th>
           <th>Sample</th>
-          <th><nobr>Status" . JHTML::tooltip('If "ready" - link to export in Qlucore format [.gedata]') . "</nobr></th>
-          <th><nobr>Path " . JHTML::tooltip('Not displayed until results are ready') . "</nobr></th>
-          <th><nobr>Lanes " . JHTML::tooltip('Total no. of lanes included in analysis') . "</nobr></th>
-          <th><nobr>Extr " . JHTML::tooltip('Version of read filter and barcoded extraction software') . "</nobr></th>
-          <th><nobr>Annot " . JHTML::tooltip('Version of feature annotation software') . "</nobr></th>
-          <th><nobr>Genome " . JHTML::tooltip('Not displayed until results are ready') . "</nobr></th>
-          <th><nobr>DBVer " . JHTML::tooltip('Source and creation date of genome and annotation database. Note that source may have changed if the requested build was not available at processing time.') . "</nobr></th>
-          <th><nobr>Type " . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "</nobr></th>
+          <th>Status<br />" . JHTML::tooltip('If "ready" - link to export in Qlucore format [.gedata]') . "</th>
+          <th>Path<br />" . JHTML::tooltip('Not displayed until results are ready') . "</th>
+          <th>Lanes<br />" . JHTML::tooltip('Total no. of lanes included in analysis') . "</th>
+          <th>Extr<br />" . JHTML::tooltip('Version of read filter and barcoded extraction software') . "</th>
+          <th>Annot<br />" . JHTML::tooltip('Version of feature annotation software') . "</th>
+          <th>Genome<br /> " . JHTML::tooltip('Not displayed until results are ready') . "</th>
+          <th>DBVer<br />" . JHTML::tooltip('Source and creation date of genome and annotation database. Note that source may have changed if the requested build was not available at processing time.') . "</th>
+          <th>Type<br />" . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "</th>
           <th>Cmnt</th>
          </tr>";
 
@@ -48,36 +48,35 @@ defined('_JEXEC') or die('Restricted access');
         continue;
     $rpath = $result->resultspath;
     $cpath = $result->resultspath;
-    if (!file_exists($rpath) && $result->status == "ready") {
-      $rpath = "<i>" . substr($rpath, 19, 26) . " - missing! </i>"; 
-      $qlink = "<td>" . $result->status . "</td>";
-    } elseif ($result->status != "ready") {
-      $qlink = "<td>" . $result->status . "</td>";
-    } else {
-      $rpath = substr($rpath, 15, 28);
-//       $qlink = "<td>" . $result->status . "</td>";
-//       add link here for the Qlucore download things
-$qlink = "<td><a href=index.php?option=com_dbapp&view=analysisresults&layout=download&analysisid=" . $result->id . "  \"target=_blank\" >" . $result->status . "</a></td>";
-    }
+    $qlink = "<td>" . $result->status . "&nbsp;</td>";
     $viewlink = "";
-    if (file_exists($rpath) && $result->status == "ready") {
-      $viewlink = "&nbsp;<a href=index.php?option=com_dbapp&view=project&controller=project&layout=analysis&searchid="
-                  . $result->id . "&Itemid=" . $itemid . ">view</a>";
+    if ($result->status == "ready") {
+      if (!file_exists($rpath)) {
+        $rpath = "<i>" . pathinfo($rpath, PATHINFO_BASENAME) . " - missing! </i>"; 
+      } else {
+        $rpath = pathinfo($rpath, PATHINFO_BASENAME);
+        $viewlink = "&nbsp;<a href=index.php?option=com_dbapp&view=project&controller=project&layout=analysis&searchid="
+                    . $result->id . "&Itemid=" . $itemid . ">view</a>";
+        $qlink = "<td><a href=index.php?option=com_dbapp&view=analysisresults&layout=download&analysisid=" . $result->id . "  \"target=_blank\" >" . $result->status . "</a></td>";
+      }
     }
-    if (strlen($result->project) < 7) {
-    $projectlink = "&nbsp;<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid="
+    if (strlen($result->project) < 8) {
+      $projectlink = "&nbsp;<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid="
            . $result->projectid . "&Itemid=" . $itemid
            . "\" title=\"$result->projecttitle / $result->tissue / $result->sampletype\">" . $result->project . "</a>";
     } else {
-    $projectlink = "&nbsp;<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid="
+      $projectlink = "&nbsp;<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid="
            . $result->projectid . "&Itemid=" . $itemid
-           . "\" title=\"$result->projecttitle / $result->tissue / $result->sampletype\">" . substr($result->project, 1, 5) . "&nbsp&.&nbsp&.</a>";
+           . "\" title=\"$result->projecttitle / $result->tissue / $result->sampletype\">" . substr($result->project, 0, 5) . "...</a>";
     }
     echo "\n    <tr>";
     echo "<td>" . $viewlink . "&nbsp;</td>";
     echo "<td>" . $projectlink . "&nbsp;</td>"; 
     echo $qlink;
-    echo "<td><nobr>" . JHTML::tooltip($cpath) . " &nbsp; " . $rpath . "</nobr></td>";
+    if (strlen($cpath) > 0)
+      echo "<td><nobr>" . JHTML::tooltip($cpath) . " &nbsp; " . $rpath . "</nobr></td>";
+    else
+      echo "<td><nobr>&nbsp;&nbsp;&nbsp;" . $rpath . "</nobr></td>";
     echo "<td>" . $result->lanecount . "&nbsp;</td>";
     echo "<td>" . $result->extraction_version . "&nbsp;</td>";
     echo "<td>" . $result->annotation_version . "&nbsp;</td>";

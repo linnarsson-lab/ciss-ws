@@ -18,9 +18,10 @@ if ($submit == 'Cancel') {
   $build = $db->Quote($afteredit['build']);
   $variants = $db->Quote($afteredit['variants']);
   $emails = $db->Quote($afteredit['emails']);
+  $comment = $db->Quote($afteredit['comment']);
   $query = " INSERT INTO #__aaaanalysis 
-                (#__aaaprojectid, transcript_db_version, transcript_variant, emails, status, lanecount)
-                VALUES ($projectid, $build, $variants, $emails, 'inqueue', $nlanes) ";
+                (#__aaaprojectid, transcript_db_version, transcript_variant, emails, status, lanecount, comment, time)
+                VALUES ($projectid, $build, $variants, $emails, 'inqueue', $nlanes, $comment, NOW()) ";
   $db->setQuery($query);
   if ($db->query()) {
     JError::raiseNotice('Message', JText::_('The analysis setup was saved!'));

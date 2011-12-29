@@ -111,9 +111,8 @@ class DbAppModelProject extends JModel {
     $searchid = JRequest::getVar('searchid') ;
     $query = " SELECT id, #__aaaprojectid, lanecount, extraction_version, annotation_version,
                genome, transcript_db_version, transcript_variant, comment, resultspath, emails, status
-               FROM #__aaaanalysis
-               WHERE #__aaaprojectid = '" . $searchid . "'  
-                   ";
+               FROM #__aaaanalysis WHERE #__aaaprojectid = '" . $searchid . "'  
+               ORDER BY status DESC, id DESC ";
 
     $db->setQuery($query);
     $item = $db->loadObjectList();

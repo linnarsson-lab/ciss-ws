@@ -426,7 +426,7 @@ namespace Linnarsson.Strt
         /// <param name="logWriter">File for log information</param>
         public void Process(ProjectDescription projDescr, StreamWriter logWriter)
         {
-            logWriter.WriteLine(DateTime.Now.ToString() + " Extracting " + projDescr.runIdsLanes.Length + " lanes with barcodes " + projDescr.barcodeSet + "...");
+            logWriter.WriteLine(DateTime.Now.ToString() + " Extracting " + projDescr.runIdsLanes.Length + " lanes with barcodes " + projDescr.barcodeSet + "..."); logWriter.Flush();
             Extract(projDescr);
             string[] speciesArgs = GetSpeciesArgs(projDescr.SampleLayoutPath, projDescr.defaultSpecies);
             projDescr.annotationVersion = ANNOTATION_VERSION;
@@ -435,10 +435,10 @@ namespace Linnarsson.Strt
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, projDescr.analyzeVariants, projDescr.defaultBuild);
                 genome.ReadLen = GetReadLen(projDescr);
                 SetAvailableBowtieIndexVersion(projDescr, genome);
-                logWriter.WriteLine(DateTime.Now.ToString() + " Mapping to " + genome.GetBowtieIndexName() + "...");
+                logWriter.WriteLine(DateTime.Now.ToString() + " Mapping to " + genome.GetBowtieIndexName() + "..."); logWriter.Flush();
                 CreateBowtieMaps(genome, projDescr.extractionInfos);
                 List<string> mapFilePaths = GetAllMapFilePaths(projDescr.extractionInfos);
-                logWriter.WriteLine(DateTime.Now.ToString() + " Annotating " + mapFilePaths.Count + " map files...");
+                logWriter.WriteLine(DateTime.Now.ToString() + " Annotating " + mapFilePaths.Count + " map files..."); logWriter.Flush();
                 ResultDescription resultDescr = ProcessAnnotation(projDescr.barcodeSet, genome, projDescr.ProjectFolder, 
                                                                   projDescr.projectName, mapFilePaths);
                 projDescr.resultDescriptions.Add(resultDescr);
@@ -446,7 +446,7 @@ namespace Linnarsson.Strt
                 StreamWriter writer = new StreamWriter(Path.Combine(resultDescr.resultFolder, "config.xml"));
                 x.Serialize(writer, projDescr);
                 writer.Close();
-                logWriter.WriteLine(DateTime.Now.ToString() + " Results stored in " + resultDescr.resultFolder + ".");
+                logWriter.WriteLine(DateTime.Now.ToString() + " Results stored in " + resultDescr.resultFolder + "."); logWriter.Flush();
             }
         }
 

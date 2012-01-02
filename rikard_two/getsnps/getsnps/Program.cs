@@ -6,27 +6,30 @@ using System.IO;
 
 namespace getsnps
 {
-    public class Project
+    public class Project: Dictionary<string, Position>
     {
-        public Dictionary<string, Position> PROJ { get; set; }
         public string projectName { get; set; }
         public int basecounts;
+        public int homozygotes;
 
-        public Project(string PROJNAME)
+        public Project(string PROJNAME) : base()
         {
             projectName = PROJNAME;
             basecounts = 0;
+            homozygotes = 0;
         }
 
         public void addbase(string snp, Position POS)
         {
-            PROJ.Add(snp, POS);
+            this.Add(snp, POS);
+            if (POS.homo)
+                homozygotes++;
             basecounts++;
         }
 
         public void removebase(string snp)
         {
-            PROJ.Remove(snp);
+            this.Remove(snp);
             basecounts--;
         }
     }    
@@ -47,6 +50,7 @@ namespace getsnps
         public int C_used { get; set; }
         public int G_used { get; set; }
         public int T_used { get; set; }
+        public bool homo;
 
         public Position(string Seq_name, int Pos, int Bcalls_used, int Bcalls_filt, char Reference, int QSnp, string Max_gt,
                       int QMax_gt, string Poly_site, int QPoly_site, int A_Used, int C_Used, int G_Used, int T_Used)
@@ -65,9 +69,34 @@ namespace getsnps
             C_used = C_Used;
             G_used = G_Used;
             T_used = T_Used;
+            char[] c = new char[2];
+            c[0] = reference;
+            c[1] = reference;
+            string s = new string(c);
+            if ((String.Compare(Max_gt, 0, Poly_site, 0, 2, true) == 0) && (String.Compare(Max_gt, 0, s, 0, 2, true) == 0))
+                homo = true;
+            else
+                homo = false;
         }
 
     }
+
+    public class snpContent
+    {
+        public string name { get; set; }
+        public int projCount { get; set; }
+        public bool toUse { get; set; }
+
+        public snpContent(string Name)
+        {
+            name = Name;
+            projCount = 0;
+            toUse = false;
+        }
+
+
+    }
+
     
     class Program
     {
@@ -91,9 +120,7 @@ namespace getsnps
                 return(2);
             }
 
-
             List<string> allsitefiles = new List<string>();
-
             Console.WriteLine();
 
             try
@@ -131,7 +158,8 @@ namespace getsnps
             }
 
 
-            Console.WriteLine();
+            Dictionary<string, snpContent> allsites = new Dictionary<string, snpContent>();
+            snpContent slask = null;
             Dictionary<string, Project> TheProjects = new Dictionary<string, Project>();
             foreach (string element in allsitefiles)
             {
@@ -141,28 +169,40 @@ namespace getsnps
                 Project tmproj = new Project ("null");
                 if (TheProjects.TryGetValue(TheProject, out tmproj))
                 {
-                    Console.WriteLine(element);
+//                    Console.WriteLine(element);
                     using (StreamReader r = new StreamReader(element))
                     {
                         string line;
                         while ((line = r.ReadLine()) != null)
                         {
-                            string[] entries = line.Split(new Char[] { '\t', ' ' });
-                            Position temp = new Position(entries[0], Int32.Parse(entries[1]), Int32.Parse(entries[2]), Int32.Parse(entries[3]),
-                                          Char.Parse(entries[4]), Int32.Parse(entries[5]), entries[6], Int32.Parse(entries[7]), entries[8],
-                                          Int32.Parse(entries[9]), Int32.Parse(entries[10]), Int32.Parse(entries[11]), Int32.Parse(entries[12]),
-                                          Int32.Parse(entries[13]));
-                            tmproj.addbase(entries[0] + entries[1], temp);
+                            if (line.Substring(0, 1) != "#")
+                            {
+                                string[] entries = line.Split(new Char[] { '\t', ' ' });
+                                Position temp = new Position(entries[0], Int32.Parse(entries[1]), Int32.Parse(entries[2]), Int32.Parse(entries[3]),
+                                              Char.Parse(entries[4]), Int32.Parse(entries[5]), entries[6], Int32.Parse(entries[7]), entries[8],
+                                              Int32.Parse(entries[9]), Int32.Parse(entries[10]), Int32.Parse(entries[11]), Int32.Parse(entries[12]),
+                                              Int32.Parse(entries[13]));
+                                snpContent thisSite = new snpContent(entries[0] + entries[1]);
+                                if (!temp.homo)
+                                    thisSite.toUse = true;
+                                if (!allsites.TryGetValue(entries[0] + entries[1], out slask))
+                                    allsites.Add(entries[0] + entries[1], thisSite);
+                                else
+                                    if (!temp.homo)
+                                        slask.toUse = true;
+                                tmproj.addbase(entries[0] + entries[1], temp);
+                            }
                         }
                     }
+                    Console.Write(" .");
                 }
                 else
                 {
-                    Console.WriteLine(TheProject);
+                    Console.Write(Environment.NewLine + " . . reading .  " + TheProject);
                     Project NewProject = new Project(TheProject);
                     TheProjects.Add(TheProject, NewProject);
-                    Console.WriteLine("[" + element + "]");
-                    Console.WriteLine(NewProject);
+//                    Console.WriteLine("[" + element + "]");
+//                    Console.WriteLine(NewProject);
                     using (StreamReader r = new StreamReader(element))
                     {
                         string line;
@@ -170,32 +210,68 @@ namespace getsnps
                         while ((line = r.ReadLine()) != null)
                         {
                             linecounter++;
-                            Console.WriteLine(linecounter + " " + line);
+//                            Console.WriteLine(linecounter + " " + line);
                             if (line.Substring(0, 1) != "#")
                             {
-                                Console.WriteLine(linecounter + " " + line);
+//                                Console.WriteLine(linecounter + " " + line);
                                 string[] entries = line.Split(new Char[] { '\t', ' ' });
                                 Position temp = new Position(entries[0], Int32.Parse(entries[1]), Int32.Parse(entries[2]), Int32.Parse(entries[3]),
                                               Char.Parse(entries[4]), Int32.Parse(entries[5]), entries[6], Int32.Parse(entries[7]), entries[8],
                                               Int32.Parse(entries[9]), Int32.Parse(entries[10]), Int32.Parse(entries[11]), Int32.Parse(entries[12]),
                                               Int32.Parse(entries[13]));
-                                Console.WriteLine(NewProject);
-                                Console.WriteLine(NewProject.projectName + "  counts: " + NewProject.basecounts);
-                                Console.WriteLine(temp + " " + entries[0] + entries[1]);
+//                                Console.WriteLine(NewProject);
+//                                Console.WriteLine(NewProject.projectName + "  counts: " + NewProject.basecounts);
+//                                Console.WriteLine(temp + " " + entries[0] + entries[1]);
+                                snpContent thisSite = new snpContent(entries[0] + entries[1]);
+                                if (!temp.homo)
+                                    thisSite.toUse = true;
+                                if (!allsites.TryGetValue(entries[0] + entries[1], out slask))
+                                    allsites.Add(entries[0] + entries[1], thisSite);
+                                else
+                                    if (!temp.homo)
+                                        slask.toUse = true;
                                 NewProject.addbase(entries[0] + entries[1], temp);
                             }
                         }
                     }
                 }
             }
-            Console.WriteLine();
-            foreach(KeyValuePair<string, Project> entry in TheProjects)
-	        {
-		        Console.WriteLine(entry.Key + " " + entry.Value.basecounts);
-	        }
-            Console.WriteLine();
 
-            return(0);
+            Console.WriteLine(Environment.NewLine + Environment.NewLine + "             Project           sites    homoz");
+            foreach (KeyValuePair<string, Project> entry in TheProjects)
+	        {
+                Console.WriteLine("{0,-26} {1,10:G} {2,8:G}", entry.Key, entry.Value.basecounts, entry.Value.homozygotes);
+                foreach (KeyValuePair<string, Position> kvp in entry.Value)
+                {
+                    allsites[kvp.Value.seq_name + kvp.Value.pos].projCount++;
+                }
+	        }
+            Console.WriteLine("Total number of different sites are " + allsites.Count);
+
+            int[] withSite = new int[12] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+            int allAgain = 0;
+            Console.WriteLine();
+            foreach (var item in withSite)
+            {
+                int Counting = allsites.Count(p => p.Value.projCount == item);
+                allAgain += Counting;
+                if (item < 2)
+                {
+                    Console.WriteLine("There are {0,10:G} Sites present in only one Project", Counting);
+                }
+                else
+                {
+                    Console.WriteLine("There are {0,10:G} Sites present in exactly {1,2:G} Projects", Counting, item);
+                }
+            }
+            Console.WriteLine("There are {0,10:G} different Sites present in all Projects", allAgain);
+
+            int countToUse = allsites.Count(p => p.Value.toUse == true);
+            Console.WriteLine(Environment.NewLine + "Counting done, starting statistical evaluation. Using only sites present in all Projects.");
+            Console.WriteLine("Will use {0} sites", countToUse);
+
+
+            return (0);
         }
 
 
@@ -208,12 +284,3 @@ namespace getsnps
 }
 
 
-
-/*
-Unhandled Exception: System.NullReferenceException: Object reference not set to an instance of an object
-  at getsnps.Project.addbase (System.String snp, getsnps.Position POS) [0x00000] in <filename unknown>:0
-  at getsnps.Program.Main (System.String[] args) [0x00000] in <filename unknown>:0
-[ERROR] FATAL UNHANDLED EXCEPTION: System.NullReferenceException: Object reference not set to an instance of an object
-  at getsnps.Project.addbase (System.String snp, getsnps.Position POS) [0x00000] in <filename unknown>:0
-  at getsnps.Program.Main (System.String[] args) [0x00000] in <filename unknown>:0
-*/

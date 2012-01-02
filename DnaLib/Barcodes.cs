@@ -609,6 +609,8 @@ namespace Linnarsson.Dna
                     if (m_SeqLength == 0) m_SeqLength = bc.Length;
                     else if (m_SeqLength != bc.Length)
                         throw new BarcodeFileException("ERROR: Barcodes have different lengths: " + path);
+                    if (sampleIds.Contains(sampleId))
+                        throw new BarcodeFileException("ERROR: SampledIds in barcode file must be unique: " + sampleId);
                     sampleIds.Add(sampleId);
                     barcodes.Add(bc);
                 }

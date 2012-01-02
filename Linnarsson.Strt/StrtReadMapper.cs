@@ -559,7 +559,7 @@ namespace Linnarsson.Strt
                 string outputSplcPath = Path.Combine(mapFolder, bcIdx + "_" +  splcIndexVersion + ".map");
                 AssertBowtieOutputFile(indexName, fqUnmappedReadsPath, outputSplcPath, "", extrInfo.bowtieLogFilePath);
                 mapFiles.Add(outputSplcPath);
-                Background.Progress((int)(++n / extrInfo.extractedFilePaths.Length));
+                if (File.Exists(fqUnmappedReadsPath)) File.Delete(fqUnmappedReadsPath);
                 if (Background.CancellationPending) break;
             }
             extrInfo.mappedFilePaths = mapFiles.ToArray();

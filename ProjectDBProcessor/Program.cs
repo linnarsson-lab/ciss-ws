@@ -152,7 +152,7 @@ namespace ProjectDBProcessor
                 string layoutSrcPath = Path.Combine(Props.props.UploadsFolder, projDescr.layoutFile);
                 if (File.Exists(layoutSrcPath))
                 {
-                    string layoutDestPath = Path.Combine(projDescr.ProjectFolder, projDescr.layoutFile);
+                    string layoutDestPath = projDescr.SampleLayoutPath;
                     logWriter.WriteLine(DateTime.Now.ToString() + " cp " + layoutSrcPath + " -> " + layoutDestPath); logWriter.Flush();
                     if (!Directory.Exists(Path.GetDirectoryName(layoutDestPath)))
                         Directory.CreateDirectory(Path.GetDirectoryName(layoutDestPath));
@@ -166,7 +166,6 @@ namespace ProjectDBProcessor
                     logWriter.Flush();
                 }
             }
-            Props.props.BarcodesName = projDescr.barcodeSet;
             StrtReadMapper mapper = new StrtReadMapper(Props.props);
             mapper.Process(projDescr, logWriter);
             logWriter.WriteLine(DateTime.Now.ToString() + " ..." + projDescr.projectName + " done after " + DateTime.Now.Subtract(d) + ".");

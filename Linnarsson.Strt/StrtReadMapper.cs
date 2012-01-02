@@ -426,6 +426,7 @@ namespace Linnarsson.Strt
         /// <param name="logWriter">File for log information</param>
         public void Process(ProjectDescription projDescr, StreamWriter logWriter)
         {
+            SetBarcodeSet(projDescr.barcodeSet);
             logWriter.WriteLine(DateTime.Now.ToString() + " Extracting " + projDescr.runIdsLanes.Length + " lanes with barcodes " + projDescr.barcodeSet + "..."); logWriter.Flush();
             Extract(projDescr);
             string[] speciesArgs = GetSpeciesArgs(projDescr.SampleLayoutPath, projDescr.defaultSpecies);
@@ -439,8 +440,7 @@ namespace Linnarsson.Strt
                 CreateBowtieMaps(genome, projDescr.extractionInfos);
                 List<string> mapFilePaths = GetAllMapFilePaths(projDescr.extractionInfos);
                 logWriter.WriteLine(DateTime.Now.ToString() + " Annotating " + mapFilePaths.Count + " map files..."); logWriter.Flush();
-                ResultDescription resultDescr = ProcessAnnotation(projDescr.barcodeSet, genome, projDescr.ProjectFolder, 
-                                                                  projDescr.projectName, mapFilePaths);
+                ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.projectName, mapFilePaths);
                 projDescr.resultDescriptions.Add(resultDescr);
                 System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(projDescr.GetType());
                 StreamWriter writer = new StreamWriter(Path.Combine(resultDescr.resultFolder, "config.xml"));
@@ -634,7 +634,7 @@ namespace Linnarsson.Strt
             return AnnotateMapFiles(genome, projectFolder, extractedFolder, mapFiles);
         }
 
-        public static readonly string ANNOTATION_VERSION = "36";
+        public static readonly string ANNOTATION_VERSION = "37";
         /// <summary>
         /// Annotate output from Bowtie alignment
         /// </summary>
@@ -682,7 +682,7 @@ namespace Linnarsson.Strt
             string barcodeSet = PathHandler.ParseBarcodeSet(extractedFolder);
             SetBarcodeSet(barcodeSet);
             string projectName = Path.GetFileName(projectFolder);
-            ResultDescription resultDescr = ProcessAnnotation(barcodeSet, genome, projectFolder, projectName, mapFiles);
+            ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, mapFiles);
             Console.WriteLine("Annotated " + mapFiles.Count + " map files from " + projectName + " to " + resultDescr.bowtieIndexVersion);
             return resultDescr.resultFolder;
         }
@@ -711,13 +711,11 @@ namespace Linnarsson.Strt
             return bc1.CompareTo(bc2);
         }
 
-        private ResultDescription ProcessAnnotation(string barcodeSet, StrtGenome genome, string projectFolder,
-                                                    string projectName, List<string> mapFilePaths)
+        private ResultDescription ProcessAnnotation(StrtGenome genome, string projectFolder, string projectName, List<string> mapFilePaths)
         {
             if (mapFilePaths.Count == 0)
                 return null;
-            SetBarcodeSet(barcodeSet);
-            string resultSubFolder = projectName + "_" + barcodeSet + "_" + genome.GetBowtieIndexName() + "_" + DateTime.Now.ToPathSafeString();
+            string resultSubFolder = projectName + "_" + barcodes.Name + "_" + genome.GetBowtieIndexName() + "_" + DateTime.Now.ToPathSafeString();
             string outputFolder = Path.Combine(projectFolder, resultSubFolder);
             ReadCounter readCounter = new ReadCounter();
             readCounter.AddExtractionSummaries(CollectExtractionSummaryPaths(mapFilePaths, genome));

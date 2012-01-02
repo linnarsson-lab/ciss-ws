@@ -67,7 +67,7 @@ defined('_JEXEC') or die('Restricted access');
           <table><tr>
             <th></th>
             <th>SampleId&nbsp;<br />" . JHTML::tooltip('Plate L-number or other designation (e.g. S-number) for non-STRT plates/samples') . "</th>
-            <th>BcSet&nbsp;</th>
+            <th>BcSet&nbsp;<br />" . JHTML::tooltip('v4=48best wells w mol.counting, v4r=48best wells w/o mol.counting, v2=6-mer STRTver3, v1=5-mer STRTver1 no=single sample') . "</th>
             <th>Species&nbsp;<br />" . JHTML::tooltip('Only meaningful if no layout file is given') . "</th>
             <th>P.I.&nbsp;</th>
             <th>Contact&nbsp;</th>

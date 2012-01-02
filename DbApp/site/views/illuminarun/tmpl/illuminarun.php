@@ -12,7 +12,8 @@ defined('_JEXEC') or die('Restricted access'); ?>
     $irrundate = $lane->rundate;
     $irrunno = $lane->runno;
     $ircycles = $lane->cycles;
-    $irindexcycles = $lane->indexcycles; 
+    $irindexcycles = $lane->indexcycles;
+    $irpairedcycles = $lane->pairedcycles;
     $ircopystatus = $lane->status;
     $irtitle = $lane->title;
     $irlabbookpage = $lane->labbookpage;
@@ -60,8 +61,10 @@ defined('_JEXEC') or die('Restricted access'); ?>
             <tr><td>Title:&nbsp;</td><td> $irtitle </td></tr>
             <tr><td>RunNo:&nbsp;</td><td> $irrunno </td></tr>
             <tr><td>Cycles:&nbsp;</td><td> $ircycles </td></tr>
-            <tr><td>Index cycles:&nbsp;</td><td> $irindexcycles </td></tr>
-            <tr><td>Status:&nbsp;</td><td> $ircopystatus </td></tr>
+            <tr><td>Index cycles:&nbsp;</td><td> $irindexcycles </td></tr>";
+    if ($irpairedcycles > 0)
+        echo "  <tr><td>PE cycles:&nbsp;</td><td> $irpairedcycles </td></tr>";
+    echo "  <tr><td>Status:&nbsp;</td><td> $ircopystatus </td></tr>
 <!--            <tr><td>Lab book/page:</td><td> $irlabbookpage </td></tr> -->
             <tr><td>Comment:&nbsp;</td><td> $ircomment </td></tr>
             <tr><td>User:&nbsp;</td><td> $iruser </td</tr>

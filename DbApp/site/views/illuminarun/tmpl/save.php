@@ -47,8 +47,9 @@ if (file_exists($target_path)) {
   echo "<table>$showoutput";
   foreach ($afteredit as $key => $value) {
     echo "<tr><td>" . $key . "</td><td>" . $value . "</td></tr>";
-    if (($key == 'illuminarunid') || ($key == 'rundate') || ($key == 'title') || ($key == 'labbookpage') || ($key == 'comment')
-        || ($key == 'user') || ($key == 'time') || ($key == 'cycles') || ($key == 'indexcycles')) {
+    if (($key == 'illuminarunid') || ($key == 'rundate') || ($key == 'title') || ($key == 'labbookpage')
+        || ($key == 'comment') || ($key == 'user') || ($key == 'time') || ($key == 'cycles')
+        || ($key == 'indexcycles') || ($key == 'pairedcycles')) {
       $columns .= $key . ", ";
       $vcolumn .= $db->Quote($value) . ", ";
       $query .= $key . " = " . $db->Quote($value) . ", ";

@@ -11,7 +11,7 @@ class DbAppModelIlluminaRun extends JModel {
     $db =& JFactory::getDBO();
     $searchid = JRequest::getVar('searchid');
     $query = " SELECT r.id AS id, illuminarunid, r.comment, rundate, r.user AS user, r.time AS time, r.status AS status,
-                      r.title AS title, r.labbookpage AS labbookpage, r.cycles, r.indexcycles, plateid, rundocument, runno,
+                      r.title AS title, r.labbookpage AS labbookpage, r.cycles, r.indexcycles, r.pairedcycles, plateid, rundocument, runno,
                       p.id AS projectid, c.principalinvestigator AS pi, contactperson, contactemail, l.id AS Lid,
                       laneno, l.molarconcentration AS molarconcentration, b.title AS batchtitle, b.id AS batchid,
                       b.plannednumberofcycles AS plannedcycles, b.plannedindexcycles AS plannedindexcycles,
@@ -46,7 +46,7 @@ class DbAppModelIlluminaRun extends JModel {
     $searchid = JRequest::getVar('searchid') ;
     // echo $searchid;
     $query = " SELECT id, illuminarunid, runno, status, title, labbookpage, rundocument, comment, rundate, 
-                      user, time, cycles, indexcycles
+                      user, time, cycles, indexcycles, pairedcycles
                FROM #__aaailluminarun     
                WHERE id = '" . $searchid . "'    ";
 

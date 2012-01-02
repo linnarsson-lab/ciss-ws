@@ -40,8 +40,13 @@ JHtml::_('behavior.formvalidation');
       </tr>
       <tr>
         <td>Index cycles&nbsp;
-               <?php echo JHTML::tooltip('Number of index cycles in the run'); ?></td>
+               <?php echo JHTML::tooltip('Number of index cycles in the run (optional)'); ?></td>
         <td><input type="text" name="indexcycles" id="indexcycles" value="<?php if ($searchid > 0) echo $item->indexcycles; ?>" class="inputbox required" size="40"/></td>
+      </tr>
+      <tr>
+        <td>PE cycles&nbsp;
+               <?php echo JHTML::tooltip('Number of paired-end cycles in the run (optional)'); ?></td>
+        <td><input type="text" name="pairedcycles" id="pairedcycles" value="<?php if ($searchid > 0) echo $item->pairedcycles; ?>" class="inputbox required" size="40"/></td>
       </tr>
       <tr>
         <td>Lab&nbsp;book&nbsp;(page)</td>

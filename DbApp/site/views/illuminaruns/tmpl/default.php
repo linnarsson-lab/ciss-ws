@@ -26,7 +26,7 @@ defined('_JEXEC') or die('Restricted access');
              <th>RunId&nbsp;</th>
              <th>Title&nbsp;<br />" . JHTML::tooltip('Your free designation of the run') . "</th>
              <th><nobr>Run date&nbsp;</nobr></th>
-             <th>Cycles&nbsp;</th>
+             <th>Cycles&nbsp;<br />" . JHTML::tooltip('first / index / paired-end') . "</th>
              <th>Status&nbsp;<br />" . JHTML::tooltip('n/a=No data exists, copying=making read files, copied=ready for analysis, copyfail=error during read file making') . "</th>
              <th>RunNo&nbsp;<br />" . JHTML::tooltip('Run number created by Illumina machine') . "</th>
              <th>Doc&nbsp;</th>
@@ -57,7 +57,12 @@ defined('_JEXEC') or die('Restricted access');
     echo "<td><nobr>&nbsp;" . $viewlink . "</nobr></td>";
     echo "<td><nobr>&nbsp;" . $run->title . "</nobr></td>";
     echo "<td><nobr>&nbsp;" . $run->rundate . "</nobr></td>";
-    echo "<td><nobr>&nbsp;" . $run->cycles . " / " . $run->indexcycles . "</nobr></td>";
+    echo "<td><nobr>&nbsp;" . (is_numeric($run->cycles)? $run->cycles : " ? ");
+    if (is_numeric($run->indexcycles) || $run->pairedcycles > 0)
+        echo " / " . $run->indexcycles;
+    if ($run->pairedcycles > 0)
+        echo " / " . $run->pairedcycles;
+    echo "</nobr></td>";
     echo "<td><nobr>&nbsp;" . $run->status . "</nobr></td>";
     echo "<td><nobr>&nbsp;" . $run->runno . "</nobr></td>";
     $RUNDOC = "";

@@ -65,11 +65,12 @@ defined('_JEXEC') or die('Restricted access');
                                $primer2sorter $cycles2sorter $pisorter</nobr>
           </legend>
           <table>
-            <tr><th colspan='2'></th>
+            <tr>
+            <th></th>
             <th>&nbsp;SampleId</th>
             <th><nobr>Batch (DB&nbsp;id)&nbsp;</nobr></th>
             <th>#Cycles&nbsp;<br />/Primer</th>
-            <th>#IdxCycles&nbsp;/Primer</th>
+            <th>#IdxCycles&nbsp;<br />/Primer</th>
             <th>Plan&nbsp;<br />" . JHTML::tooltip('Total # lanes that are planned') . "</th>
             <th>Asgn&nbsp;<br />" . JHTML::tooltip('Total # lanes that have been assigned to runs') . "</th>
             <th>IlluminaRuns&nbsp;</th>
@@ -129,15 +130,13 @@ defined('_JEXEC') or die('Restricted access');
     if ($assignedStatus == "completed" && ($batch->plannednumberoflanes - $batch->assignedlanes) > 0) continue;
     if ($assignedStatus == "incomplete" && ($batch->plannednumberoflanes - $batch->assignedlanes) <= 0) continue;
 
-    echo "<tr>";
-    $batchviewlink = "<a href=index.php?option=com_dbapp&view=sequencingbatch&layout=sequencingbatch&controller=sequencingbatch&searchid=" . $batch->id . "&Itemid=" . $itemid . ">view</a>";
-    $batcheditlink = "<a href=index.php?option=com_dbapp&view=sequencingbatch&layout=edit&controller=sequencingbatch&searchid=" . $batch->id . "&Itemid=" . $itemid . ">edit</a>";
-//    echo "<td>" . $batch->title . "</td>";
-    echo "<td style='padding-right=2px;' >$batchviewlink</td><td>$batcheditlink</td>";
+    $batchviewlink = "<a href=index.php?option=com_dbapp&view=sequencingbatch&layout=sequencingbatch&controller=sequencingbatch&searchid=" . $batch->id . "&Itemid=" . $itemid . ">" . $batch->batchno . " (" . $batch->id . ")</a>";
+    $batcheditlink = "<a href=index.php?option=com_dbapp&view=sequencingbatch&layout=edit&controller=sequencingbatch&searchid=" . $batch->id . "&Itemid=" . $itemid . ">edit</a>&nbsp;";
     $plateviewlink = "<a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" . $batch->platedbid . "&Itemid=" . $itemid . ">" . $batch->plateid . "</a>";
+    echo "<tr>";
+    echo "<td>$batcheditlink</td>";
     echo "<td><nobr>$plateviewlink</nobr></td>";
-    //echo "<td>" . $batch->plateid . "</td>";
-    echo "<td>" . $batch->batchno . " (" . $batch->id . ")</td>";
+    echo "<td><nobr>$batchviewlink</nobr></td>";
     if ($batch->primer == "") $seqprimer = "?";
     else {
       $seqprimer = explode(' ', $batch->primer);

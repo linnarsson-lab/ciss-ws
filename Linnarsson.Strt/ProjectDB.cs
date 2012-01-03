@@ -153,7 +153,7 @@ namespace Linnarsson.Strt
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine(DateTime.Now.ToString() + ": " + ex.ToString());
                 success = false;
             }
             conn.Close();
@@ -334,7 +334,7 @@ namespace Linnarsson.Strt
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine(DateTime.Now.ToString() + ": " + ex.ToString());
             }
             conn.Close();
             return mds;
@@ -383,7 +383,7 @@ namespace Linnarsson.Strt
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine(DateTime.Now.ToString() + ": " + ex.ToString());
             }
             conn.Close();
             return waitingFiles;

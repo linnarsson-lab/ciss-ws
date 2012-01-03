@@ -116,52 +116,24 @@ namespace CmdSilverBullet
                             argOffset = 1;
                             if (int.TryParse(args[argOffset], out readLen))
                                 argOffset++;
-                            genome = StrtGenome.GetGenome(args[argOffset++], args[argOffset++].StartsWith("a"));
-                            genome.ReadLen = readLen;
-                            if (args.Length >= argOffset + 2)
-                            {
-                                genome.Build = args[argOffset++];
+                            genome = StrtGenome.GetGenome(args[argOffset++]);
+                            if (args.Length > argOffset + 1)
                                 genome.Annotation = args[argOffset++];
-                            }
+                            genome.ReadLen = readLen;
                             mapper = new StrtReadMapper(props);
                             mapper.BuildJunctions(genome);
                             break;
 
                         case "idx":
-                            CheckArgs(args, 2, 7);
+                            CheckArgs(args, 2, 6);
                             if (int.TryParse(args[argOffset], out readLen))
                                 argOffset++;
-                            string newBtIdxName = "";
-                            bool definedVariants = false;
-                            genome = StrtGenome.GetGenome(args[argOffset]);
-                            if (args[argOffset++].IndexOf(genome.GeneVariantsChar + genome.Annotation) > 0)
-                                definedVariants = true;
+                            genome = StrtGenome.GetGenome(args[argOffset++]);
+                            if (args.Length > argOffset + 1)
+                                genome.Annotation = args[argOffset + 1];
                             genome.ReadLen = readLen;
-                            if (args.Length > argOffset)
-                            {
-                                if (args[argOffset] == "single" || args[argOffset] == "all")
-                                {
-                                    genome.GeneVariants = (args[argOffset++] == "all");
-                                    definedVariants = true;
-                                    argOffset++;
-                                }
-                                if (args.Length == argOffset + 1) newBtIdxName = args[argOffset];
-                                else if (args.Length > argOffset + 1)
-                                {
-                                    genome.Build = args[argOffset];
-                                    genome.Annotation = args[argOffset + 1];
-                                    if (args.Length == argOffset + 3)
-                                        newBtIdxName = args[argOffset + 2];
-                                }
-                            }
                             mapper = new StrtReadMapper(props);
-                            if (!definedVariants && newBtIdxName == "")
-                            {
-                                genome.GeneVariants = true;
-                                mapper.BuildJunctionsAndIndex(genome, newBtIdxName);
-                                genome.GeneVariants = false;
-                            }
-                            mapper.BuildJunctionsAndIndex(genome, newBtIdxName);
+                            mapper.BuildJunctionsAndIndex(genome);
                             break;
 
                         case "dump":
@@ -284,9 +256,8 @@ namespace CmdSilverBullet
                 "SB.exe download <Genus_species>\n    - download latest genome build and annotations for the given species from UCSC\n" +
                 "SB.exe downloadmart <Genus_species> <GenomeFolderPath>\n" +
                 "    - download BioMart VEGA/ENSEMBL for the given species. Specify the path to folder where chromosomes of same build reside.\n" +
-                "SB.exe idx [<readLen>] <Sp_or_Build> [all|single] [<IdxName> | <Build> <Annot> [<IdxName]>]]\n" +
-                "    - build annotations and Bowtie index [using specified genome build and annotations when Sp is given as first arg]\n" +
-                "      if neither 'all', 'single', nor IdxName is given, both transcript variant versions of index will be built\n" +
+                "SB.exe idx [<readLen>] <Sp_or_Build> [<Annot>]\n" +
+                "    - build annotations and Bowtie index. Both transcript variant versions of index will be built.\n" +
                 "SB.exe upd [<readLen>] [<Build> <Annot> | <Sp>] <AnnotErrorFile>\n    - update SilverBullet annotations of 5' ends using the specified XXX_annot_errors_xxx.tab file.\n" +
                 "SB.exe bt <Sp>|<IdxName> all|single <ProjectPath>|<ExtractedPath>\n    - run Bowtie on latest/specified Extracted folder\n" +
                 "SB.exe aw <Sp> <MapFolderPath>/n    - annotate data from Wiggles .wig files folder\n" +

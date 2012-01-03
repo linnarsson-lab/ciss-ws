@@ -66,11 +66,56 @@ namespace Linnarsson.Dna
         {
             return Path.Combine(Path.Combine(Props.props.GenomesFolder, Build), "strt");
         }
+        public string MakeMaskedChrFileName(string chrId)
+        {
+            return "chr" + chrId + "_" + Annotation + "Masked.fa";
+        }
+        public string[] GetMaskedChrPaths()
+        {
+            return Directory.GetFiles(GetStrtGenomesFolder(), "chr*_" + Annotation + "Masked.fa");
+        }
+
+        public Dictionary<string, string> GetStrtChrFilesMap()
+        {
+            Dictionary<string, string> chrIdToFileMap = new Dictionary<string, string>();
+            foreach (string filePath in GetMaskedChrPaths())
+            {
+                Match m = Regex.Match(filePath, "chr([^_]+)_");
+                string chrId = m.Groups[1].Value;
+                chrIdToFileMap[chrId] = filePath;
+            }
+            chrIdToFileMap[Annotation] = MakeJunctionChrPath();
+            return chrIdToFileMap;
+        }
+
+        public Dictionary<string, string> GetOriginalGenomeFilesMap()
+        {
+            string[] chrFiles = Directory.GetFiles(GetOriginalGenomeFolder(), "chr*");
+            Dictionary<string, string> chrIdToFileMap = new Dictionary<string, string>();
+            foreach (string filePath in chrFiles)
+            {
+                string filename = Path.GetFileName(filePath);
+                if (IsChrInBuild(Path.GetFileName(filename)) && !filename.Contains("rmsk"))
+                {
+                    string chrId = ExtractChrId(filename);
+                    chrIdToFileMap[chrId] = filePath;
+                }
+            }
+            return chrIdToFileMap;
+        }
+        private string ExtractChrId(string filename)
+        {
+            Match m = Regex.Match(filename, "chromosome\\.([^\\.]+)\\.");
+            if (!m.Success)
+                m = Regex.Match(filename, "chr_?([^\\.]+)\\.");
+            string chrId = m.Groups[1].Value;
+            if (chrId.IndexOf(Annotation) >= 0) chrId = Annotation;
+            return chrId;
+        }
 
         public string MakeJunctionChrPath()
         {
-            string pathPattern = Path.Combine(GetStrtGenomesFolder(), "chr" + VarAnnot + "{0}.splices");
-            return ReplaceReadLen(ReadLen, pathPattern);
+            return Path.Combine(GetStrtGenomesFolder(), GetJunctionChrFileName());
         }
         public string GetJunctionChrFileName()
         {
@@ -91,9 +136,14 @@ namespace Linnarsson.Dna
             string tryAnnotationsPath = GetAnAnnotationsPath();
             string annotationsPath = PathHandler.ExistsOrGz(tryAnnotationsPath);
             if (annotationsPath == null)
-                throw new Exception("Could not find an annotation file for " + GetBowtieIndexName());
+                throw new Exception("Could not find an annotation file for " + GetBowtieMainIndexName());
             Console.WriteLine("Annotations are taken from " + annotationsPath);
             return annotationsPath;
+        }
+
+        public string GetBowtieMainIndexName()
+        {
+            return Build + "_" + Annotation;
         }
 
         /// <summary>
@@ -126,19 +176,11 @@ namespace Linnarsson.Dna
             return "";
         }
 
-        public string GetBowtieIndexName()
-        {
-            return Build + "_" + VarAnnot;
-        }
-
         public bool IsChrInBuild(string filename)
         {
-            return IsBuildSpliceChr(filename) || !IsASpliceAnnotationChr(filename);
+            return filename.Equals(GetJunctionChrFileName()) || !IsASpliceAnnotationChr(filename);
         }
-        public bool IsBuildSpliceChr(string filename)
-        {
-            return filename.Equals(GetJunctionChrFileName());
-        }
+
         public static bool IsASpliceAnnotationChr(string chrIdOrFilename)
         {
             foreach (string a in AnnotationSources)
@@ -148,13 +190,6 @@ namespace Linnarsson.Dna
         public static bool IsSyntheticChr(string chrId)
         {
             return chrId.EndsWith(chrCTRLId) || IsASpliceAnnotationChr(chrId);
-        }
-
-        public static string ConvertIfAnnotation(string chrId)
-        {
-            foreach (string a in AnnotationSources)
-                if (chrId.IndexOf(a) >= 0) return a;
-            return chrId;
         }
 
         private StrtGenome() 

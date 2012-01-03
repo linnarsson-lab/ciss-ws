@@ -10,13 +10,6 @@ namespace Linnarsson.Dna
 {
     public class PathHandler
     {
-        private Props props;
-
-        public PathHandler(Props props)
-        {
-            this.props = props;
-        }
-
         /// <summary>
         /// Locates the folder where bowtie stores its indexes
         /// </summary>
@@ -45,47 +38,6 @@ namespace Linnarsson.Dna
             return indexName + fInfo.CreationTime.ToString("yyMMdd");
         }
 
-        /// <summary>
-        /// Generates a dictionary from chromosome Ids (without any "chr") to sequences.
-        /// The sequences may be .gz compressed.
-        /// </summary>
-        /// <param name="genome">Genome to pick sequences from</param>
-        /// <param name="strtFiles">True to map chr:s from strt genome mao, false for original chr:s</param>
-        /// <returns></returns>
-        public static Dictionary<string, string> GetGenomeFilesMap(StrtGenome genome, bool strtFiles)
-        {
-            string genomeFolder = (strtFiles)? genome.GetStrtGenomesFolder() : genome.GetOriginalGenomeFolder();
-            string[] chrFiles = GetFilesOrGz(genomeFolder, "chr*");
-            Dictionary<string, string> chrIdToFileMap = new Dictionary<string, string>();
-            foreach (string filePath in chrFiles)
-            {
-                string filename = Path.GetFileName(filePath);
-                if (genome.IsChrInBuild(Path.GetFileName(filename)) && !filename.Contains("rmsk"))
-                {
-                    string chrId = ExtractChrId(filename);
-                    chrId = StrtGenome.ConvertIfAnnotation(chrId);
-                    chrIdToFileMap[chrId] = filePath;
-                }
-            }
-            return chrIdToFileMap;
-        }
-        private static string[] GetFilesOrGz(string folder, string pattern)
-        {
-            string[] chrFiles = Directory.GetFiles(folder, pattern);
-            string[] chrGzFiles = Directory.GetFiles(folder, pattern + ".gz");
-            if (chrGzFiles.Length > chrFiles.Length)
-                return chrGzFiles;
-            return chrFiles;
-        }
-        private static string ExtractChrId(string filename)
-        {
-            Match m = Regex.Match(filename, "chromosome\\.([^\\.]+)\\.");
-            if (!m.Success)
-                m = Regex.Match(filename, "chr_?([^\\.]+)\\.");
-            string chrId = m.Groups[1].Value;
-            return chrId;
-        }
-
         public static string GetSampleLayoutPath(string projectNameOrFolder)
         {
             string layoutFolder = Props.props.SampleLayoutFileFolder;
@@ -101,7 +53,7 @@ namespace Linnarsson.Dna
             return Path.Combine(projectFolder, "Run00000_L0_1_" + Props.props.TestAnalysisFileMarker + ".levels");
         }
 
-        public string[] GetRepeatMaskFiles(StrtGenome genome)
+        public static string[] GetRepeatMaskFiles(StrtGenome genome)
         {
             string genomeFolder = genome.GetOriginalGenomeFolder();
             string[] rmskFiles = Directory.GetFiles(genomeFolder, "*rmsk.txt.gz");
@@ -229,7 +181,7 @@ namespace Linnarsson.Dna
 
         public static string extractedFolderMakePattern = "{0}_ExtractionVer{1}_{2}";
         public static string extractedFolderMatchPattern = "^[^_]+_ExtractionVer([0-9]+)_[^_]+$";
-        public string MakeExtractedFolder(string projectFolder, string barcodeSet, string extractionVersion)
+        public static string MakeExtractedFolder(string projectFolder, string barcodeSet, string extractionVersion)
         {
             string projectName = Path.GetFileName(projectFolder);
             return Path.Combine(projectFolder, string.Format(extractedFolderMakePattern, projectName, extractionVersion, barcodeSet));
@@ -307,14 +259,14 @@ namespace Linnarsson.Dna
             return Props.props.DefaultBarcodeSet;
         }
 
-        public string GetChrCTRLPath()
+        public static string GetChrCTRLPath()
         {
-            return Path.Combine(props.GenomesFolder, "chr" + StrtGenome.chrCTRLId + ".fa");
+            return Path.Combine(Props.props.GenomesFolder, "chr" + StrtGenome.chrCTRLId + ".fa");
         }
 
-        public string GetCTRLGenesPath()
+        public static string GetCTRLGenesPath()
         {
-            return Path.Combine(props.GenomesFolder, "SilverBulletCTRL.txt");
+            return Path.Combine(Props.props.GenomesFolder, "SilverBulletCTRL.txt");
         }
 
         public static string MakeSafeFilename(string name)

@@ -613,8 +613,9 @@ namespace Linnarsson.Strt
             }
             xmlFile.WriteLine("  <reads species=\"{0}\">", speciesName);
             string molTitle = (barcodes.HasRandomBarcodes)? "molecule": "read";
-            xmlFile.WriteLine("    <title>Distribution of {0} hits (10^6) by categories in {1} {2} wells</title>", molTitle, speciesBcIndexes.Length, speciesName);
-            xmlFile.WriteLine("    <point x=\"Mapped {0}s ({100%})\" y=\"{1}\" />", molTitle, nUniqueMolecules / 1.0E6d);
+            xmlFile.WriteLine("    <title>Distribution of {0} hits (10^6) by categories in {1} {2} wells</title>",
+                              molTitle, speciesBcIndexes.Length, speciesName);
+            xmlFile.WriteLine("    <point x=\"Mapped {0}s (100%)\" y=\"{1}\" />", molTitle, nUniqueMolecules / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Annotations ({0:0%})\" y=\"{1}\" />", nAnnotationsHits / nUniqueMolecules, nAnnotationsHits / 1.0E6d);
             foreach (int annotType in new int[] { AnnotType.EXON, AnnotType.INTR, AnnotType.USTR, AnnotType.DSTR, AnnotType.REPT })
             {

@@ -32,18 +32,17 @@ namespace Linnarsson.Strt
 
         public override void Load()
         {
-            PathHandler ph = new PathHandler(props);
-            ChrIdToFileMap = PathHandler.GetGenomeFilesMap(genome, true);
+            ChrIdToFileMap = genome.GetStrtChrFilesMap();
             foreach (string chrId in ChrIdToFileMap.Keys)
             {
                 ExonAnnotations[chrId] = new QuickAnnotationMap(annotationBinSize);
                 NonExonAnnotations[chrId] = new QuickAnnotationMap(annotationBinSize);
             }
-            RegisterGenesAndIntervals(ph);
+            RegisterGenesAndIntervals();
             if (needChromosomeSequences || needChromosomeLengths)
                 ReadChromsomeSequences(ChrIdToFileMap);
             if (Background.CancellationPending) return;
-            string[] rmskFiles = ph.GetRepeatMaskFiles(genome);
+            string[] rmskFiles = PathHandler.GetRepeatMaskFiles(genome);
             Console.Write("Reading {0} masking files..", rmskFiles.Length);
             foreach (string rmskFile in rmskFiles)
             {
@@ -242,7 +241,7 @@ namespace Linnarsson.Strt
                   rmskPath, nLines, nRepeatFeatures, nTooLongFeatures, props.MaxFeatureLength);
         }
 
-        private void RegisterGenesAndIntervals(PathHandler ph)
+        private void RegisterGenesAndIntervals()
         {
             string annotationsPath = genome.VerifyAnAnnotationPath();
             LoadAnnotationsFile(annotationsPath);
@@ -388,7 +387,7 @@ namespace Linnarsson.Strt
 
         private void WritePotentialErronousAnnotations(string fileNameBase)
         {
-            string warnFilename = fileNameBase + "_annot_errors_" + genome.GetBowtieIndexName() + ".tab";
+            string warnFilename = fileNameBase + "_annot_errors_" + genome.GetBowtieMainIndexName() + ".tab";
             var warnFile = warnFilename.OpenWrite();
             warnFile.WriteLine("Feature\tExonHits\tPart\tPartHits\tPartLocation\tNewLeftExonStart\tNewRightExonStart");
             int nErr = 0;

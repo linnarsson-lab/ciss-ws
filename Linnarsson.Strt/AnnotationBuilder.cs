@@ -90,7 +90,6 @@ namespace Linnarsson.Strt
     {
         public static AnnotationBuilder GetAnnotationBuilder(Props props, StrtGenome genome)
         {
-            PathHandler ph = new PathHandler(props);
             if (genome.Annotation == "VEGA")
                 return new AnnotationBuilder(props, new BioMartAnnotationReader(genome, "VEGA"));
             if (genome.Annotation.StartsWith("ENSE"))
@@ -98,7 +97,6 @@ namespace Linnarsson.Strt
             return new AnnotationBuilder(props, new UCSCAnnotationReader(genome));
         }
         private Props props;
-        private PathHandler ph;
         private AnnotationReader annotationReader;
 
         /// <summary>
@@ -119,7 +117,6 @@ namespace Linnarsson.Strt
             MaxExonsSkip = props.MaxExonsSkip;
             this.annotationReader = annotationReader;
             this.props = props;
-            ph = new PathHandler(props);
         }
 
         private IEnumerable<ExonCombination> GenerateSplices(GeneFeature gf, DnaSequence chrSeq)
@@ -184,7 +181,7 @@ namespace Linnarsson.Strt
             return exonSeqsInChrDir;
         }
 
-        public void BuildExonSplices(StrtGenome genome, string newIndexName)
+        public void BuildExonSplices(StrtGenome genome)
         {
             ReadLen = genome.ReadLen;
             int smallestReadMatchDistFromEnd = Math.Max(0, props.MinExtractionInsertLength / 2 - props.MaxAlignmentMismatches);
@@ -196,9 +193,9 @@ namespace Linnarsson.Strt
             Console.WriteLine(annotationReader.GetPseudogeneCount() + " genes are annotated as pseudogenes.");
             Console.WriteLine("ReadLen=" + ReadLen + " MaxMismatches=" + MaxAlignmentMismatches + " MaxExonsSkip=" + MaxExonsSkip);
             DnaSequence jChrSeq = new LongDnaSequence();
-            Dictionary<string, string> chrIdToFileMap = PathHandler.GetGenomeFilesMap(genome, false);
-            StreamWriter annotWriter = PrepareAnnotationsFile(genome, newIndexName);
-            StreamWriter chrWriter = PrepareJunctionChrFile(genome, junctionsChrId, newIndexName);
+            Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
+            StreamWriter annotWriter = PrepareAnnotationsFile(genome);
+            StreamWriter chrWriter = PrepareJunctionChrFile(genome, junctionsChrId);
             foreach (string chrId in chrIdToFileMap.Keys)
             {
                 if (!gfByChr.ContainsKey(chrId))
@@ -294,10 +291,9 @@ namespace Linnarsson.Strt
             return s.ToString();
         }
 
-        private StreamWriter PrepareJunctionChrFile(StrtGenome genome, string junctionChrId, string newIndexName)
+        private StreamWriter PrepareJunctionChrFile(StrtGenome genome, string junctionChrId)
         {
-            string jChrPath = (string.IsNullOrEmpty(newIndexName)) ? genome.MakeJunctionChrPath() :
-                                            Path.Combine(genome.GetOriginalGenomeFolder(), "chr_" + newIndexName + ".fa");
+            string jChrPath = genome.MakeJunctionChrPath();
             Console.WriteLine("Artificial exon junction chromosome: " + jChrPath);
             if (File.Exists(jChrPath))
             {
@@ -309,10 +305,9 @@ namespace Linnarsson.Strt
             return chrWriter;
         }
 
-        private StreamWriter PrepareAnnotationsFile(StrtGenome genome, string newIndexName)
+        private StreamWriter PrepareAnnotationsFile(StrtGenome genome)
         {
-            string annotationsPath = (string.IsNullOrEmpty(newIndexName)) ? genome.MakeAnnotationsPath() :
-                                                Path.Combine(genome.GetOriginalGenomeFolder(), "Annotations_" + newIndexName + ".txt");
+            string annotationsPath = genome.MakeAnnotationsPath();
             Console.WriteLine("Annotations file: " + annotationsPath);
             if (File.Exists(annotationsPath))
             {
@@ -329,14 +324,14 @@ namespace Linnarsson.Strt
 
         private void CopyCTRLData(StrtGenome genome, StreamWriter refWriter)
         {
-            string chrCTRLPath = ph.GetChrCTRLPath();
+            string chrCTRLPath = PathHandler.GetChrCTRLPath();
             if (File.Exists(chrCTRLPath))
             {
                 Console.WriteLine("Adding control chromosome and annotations.");
                 string chrDest = Path.Combine(genome.GetOriginalGenomeFolder(), Path.GetFileName(chrCTRLPath));
                 if (!File.Exists(chrDest))
                     File.Copy(chrCTRLPath, chrDest);
-                using (StreamReader CTRLReader = ph.GetCTRLGenesPath().OpenRead())
+                using (StreamReader CTRLReader = PathHandler.GetCTRLGenesPath().OpenRead())
                 {
                     string CTRLData = CTRLReader.ReadToEnd();
                     foreach (string line in CTRLData.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
@@ -347,7 +342,7 @@ namespace Linnarsson.Strt
 
         public void UpdateSilverBulletGenes(StrtGenome genome, string errorsPath)
         {
-            if (!errorsPath.Contains(genome.GetBowtieIndexName()))
+            if (!errorsPath.Contains(genome.GetBowtieMainIndexName()))
                 throw new ArgumentException("The update has to be of the same build as the updated genome");
             Dictionary<string, int> geneToNewPos = ReadErrorsFile(errorsPath);
             Console.WriteLine("There are {0} genes to have their first/last extended.", geneToNewPos.Count);

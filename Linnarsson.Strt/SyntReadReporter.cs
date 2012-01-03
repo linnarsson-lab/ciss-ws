@@ -66,7 +66,7 @@ namespace Linnarsson.Strt
             int nMols = 0;
             readNumber = 1;
             bool variantGenes = genome.GeneVariants;
-            Dictionary<string, string> chrIdToFileMap = PathHandler.GetGenomeFilesMap(genome, false);
+            Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
             Dictionary<string, List<GeneFeature>> chrIdToFeature = ReadGenesByChr(genome, chrIdToFileMap.Keys.ToList());
             string outFileHead = Path.Combine(Props.props.ReadsFolder, "Run00000_L0_1_" + DateTime.Now.ToString("yyMMdd") + "_" + dataId + "_00000");
             string fqOutput = outFileHead + ".fq";
@@ -173,7 +173,7 @@ namespace Linnarsson.Strt
         {
             StreamWriter reportWriter = outputFile.OpenWrite();
             reportWriter.WriteLine("Synthetic data - parameters:\nBarcodeSet\t{0}\nGenome\t{1}\nMutationProb\t{2}",
-                                   barcodes.Name, genome.GetBowtieIndexName(), Props.props.SyntheticReadsRandomMutationProb);
+                                   barcodes.Name, genome.GetBowtieMainIndexName(), Props.props.SyntheticReadsRandomMutationProb);
             reportWriter.WriteLine("MaxExprLevel\t{0}\nHotspotProb\t{1}\nBackgroundFreq\t{2}\n\nGeneFeature\tExprLevel",
                                    meanMolExprLevelPerBc, hotspotProb, Props.props.SyntheticReadsBackgroundFreq);
             return reportWriter;

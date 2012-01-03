@@ -124,7 +124,9 @@ namespace Linnarsson.Strt
         {
             if (maxIntronToKeep < minIntronFlank * 2)
                 maxIntronToKeep = minIntronFlank * 2;
-            Dictionary<string, string> chrIdToFileMap = ReadChrData(genome, outputFolder);
+            Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
+            if (!Directory.Exists(outputFolder))
+                Directory.CreateDirectory(outputFolder);
             Dictionary<string, ChrIntervals> chrIntervals = new Dictionary<string, ChrIntervals>();
             foreach (string chrId in chrIdToFileMap.Keys)
             {
@@ -137,7 +139,7 @@ namespace Linnarsson.Strt
                 int nChanged = 0;
                 string infile = chrIdToFileMap[chrId];
                 StreamReader fastaReader = new StreamReader(infile);
-                string outfile = Path.Combine(outputFolder, Path.GetFileName(infile));
+                string outfile = Path.Combine(outputFolder, genome.MakeMaskedChrFileName(chrId));
                 StreamWriter writer = new StreamWriter(outfile);
                 string line = fastaReader.ReadLine();
                 writer.WriteLine(line); // Header
@@ -195,21 +197,6 @@ namespace Linnarsson.Strt
                     GeneFeature gf = (GeneFeature)f;
                     chrIntervals[gf.Chr].Add(gf.ExonStarts, gf.ExonEnds);
                 }
-        }
-
-        private static Dictionary<string, string> ReadChrData(StrtGenome genome, string outputFolder)
-        {
-            Dictionary<string, string> chrIdToFileMap = PathHandler.GetGenomeFilesMap(genome, false);
-            foreach (string chrId in chrIdToFileMap.Keys)
-            {
-                if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
-                string outfile = Path.Combine(outputFolder, Path.GetFileName(chrIdToFileMap[chrId]));
-                if (File.Exists(outfile))
-                    throw new Exception("First delete outfile " + outfile);
-            }
-            if (!Directory.Exists(outputFolder))
-                Directory.CreateDirectory(outputFolder);
-            return chrIdToFileMap;
         }
 
     }

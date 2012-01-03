@@ -57,6 +57,11 @@ namespace BkgFastQMailer
                         }
                     }
                     if (status != "copied") allStatus = "";
+                    if (status == "filemissing")
+                    {
+                        logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: Can not locate a fq file for run=" + md.runNo + " and lane=" + md.laneNo);
+                        logWriter.Flush();
+                    }
                     resultByTaskId[md.id] = status;
                 }
                 try
@@ -93,7 +98,7 @@ namespace BkgFastQMailer
                 string destFilename = Path.GetFileName(readsFile) + ".gz";
                 string destPath = Path.Combine(Props.props.ResultDownloadUrl, destFilename);
                 string scpArg = string.Format("-P 9952 {0} {1}", tempGzPath, destPath);
-                Console.WriteLine("scp " + scpArg);
+                Console.WriteLine(DateTime.Now.ToString() + ": scp " + scpArg);
                 int scpResult = CmdCaller.Run("scp", scpArg);
                 if (scpResult == 0)
                 {

@@ -179,7 +179,7 @@ namespace SilverBullet
 			{
                 try
                 {
-                    mapper.BuildJunctionsAndIndex(gd.Genome, "");
+                    mapper.BuildJunctionsAndIndex(gd.Genome);
                 }
 				catch (Exception exp)
 				{
@@ -323,7 +323,7 @@ namespace SilverBullet
             gd.ShowDialog();
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.Title = "Locate errors file in an Annotation folder for build "
-                         + gd.Genome.GetBowtieIndexName();
+                         + gd.Genome.GetBowtieMainIndexName();
             if (ofd.ShowDialog() == DialogResult.OK)
             {
                 Background.RunAsync(() =>

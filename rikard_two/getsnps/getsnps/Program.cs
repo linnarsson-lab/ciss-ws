@@ -9,12 +9,14 @@ namespace getsnps
     public class Project: Dictionary<string, Position>
     {
         public string projectName { get; set; }
+        public long totalbcalls { get; set; }
         public int basecounts;
         public int homozygotes;
 
         public Project(string PROJNAME) : base()
         {
             projectName = PROJNAME;
+            totalbcalls = 0;
             basecounts = 0;
             homozygotes = 0;
         }
@@ -86,14 +88,15 @@ namespace getsnps
         public string name { get; set; }
         public int projCount { get; set; }
         public bool toUse { get; set; }
+        public bool isSNP { get; set; }
 
         public snpContent(string Name)
         {
             name = Name;
             projCount = 0;
             toUse = false;
+            isSNP = false;
         }
-
 
     }
 
@@ -156,6 +159,105 @@ namespace getsnps
             {
                 Console.WriteLine("The process failed: {0}", e.ToString());
             }
+
+            // read in snps from USCS 
+            Dictionary<string, bool> dbSNP = new Dictionary<string, bool>(); 
+            using (StreamReader r = new StreamReader("snp135codingdbsnpall.txt"))
+            {
+                string line;
+                while ((line = r.ReadLine()) != null)
+                {
+                    if (line.Substring(0, 1) != "#")
+                    {
+                        string[] snpcols = line.Split(new Char[] { '\t', ' ' });
+                        string chrpos = "";
+                        switch (snpcols[1])
+                        {
+                            case "chr1":
+                                chrpos = "1.fa" + snpcols[3];
+                                break;
+                            case "chr2":
+                                chrpos = "2.fa" + snpcols[3];
+                                break;
+                            case "chr3":
+                                chrpos = "3.fa" + snpcols[3];
+                                break;
+                            case "chr4":
+                                chrpos = "4.fa" + snpcols[3];
+                                break;
+                            case "chr5":
+                                chrpos = "5.fa" + snpcols[3];
+                                break;
+                            case "chr6":
+                                chrpos = "6.fa" + snpcols[3];
+                                break;
+                            case "chr7":
+                                chrpos = "7.fa" + snpcols[3];
+                                break;
+                            case "chr8":
+                                chrpos = "8.fa" + snpcols[3];
+                                break;
+                            case "chr9":
+                                chrpos = "9.fa" + snpcols[3];
+                                break;
+                            case "chr10":
+                                chrpos = "10.fa" + snpcols[3];
+                                break;
+                            case "chr11":
+                                chrpos = "11.fa" + snpcols[3];
+                                break;
+                            case "chr12":
+                                chrpos = "12.fa" + snpcols[3];
+                                break;
+                            case "chr13":
+                                chrpos = "13.fa" + snpcols[3];
+                                break;
+                            case "chr14":
+                                chrpos = "14.fa" + snpcols[3];
+                                break;
+                            case "chr15":
+                                chrpos = "15.fa" + snpcols[3];
+                                break;
+                            case "chr16":
+                                chrpos = "16.fa" + snpcols[3];
+                                break;
+                            case "chr17":
+                                chrpos = "17.fa" + snpcols[3];
+                                break;
+                            case "chr18":
+                                chrpos = "18.fa" + snpcols[3];
+                                break;
+                            case "chr19":
+                                chrpos = "19.fa" + snpcols[3];
+                                break;
+                            case "chr20":
+                                chrpos = "20.fa" + snpcols[3];
+                                break;
+                            case "chr21":
+                                chrpos = "21.fa" + snpcols[3];
+                                break;
+                            case "chr22":
+                                chrpos = "22.fa" + snpcols[3];
+                                break;
+                            case "chrX":
+                                chrpos = "X.fa" + snpcols[3];
+                                break;
+                            case "chrY":
+                                chrpos = "Y.fa" + snpcols[3];
+                                break;
+                            default:
+                                break;
+                        }
+                        if (chrpos.Length > 3)
+                        {
+                            bool slsk = false;
+                            if (!dbSNP.TryGetValue(chrpos, out slsk))
+                                dbSNP.Add(chrpos, true);
+                        }
+                    }
+                }
+            }
+
 
 
             Dictionary<string, snpContent> allsites = new Dictionary<string, snpContent>();
@@ -237,14 +339,22 @@ namespace getsnps
                 }
             }
 
-            Console.WriteLine(Environment.NewLine + Environment.NewLine + "             Project           sites    homoz");
+            Console.WriteLine(Environment.NewLine + Environment.NewLine + "             Project           sites    homoz     bcallsusedTotal");
             foreach (KeyValuePair<string, Project> entry in TheProjects)
 	        {
-                Console.WriteLine("{0,-26} {1,10:G} {2,8:G}", entry.Key, entry.Value.basecounts, entry.Value.homozygotes);
+                long bcallsused = 0;
                 foreach (KeyValuePair<string, Position> kvp in entry.Value)
                 {
                     allsites[kvp.Value.seq_name + kvp.Value.pos].projCount++;
+                    bcallsused += (long)kvp.Value.bcalls_used;
+                    bool slsk = false;
+                    if (dbSNP.TryGetValue(kvp.Key, out slsk))
+                    {
+                        allsites[kvp.Key].isSNP = true;
+                    }
                 }
+                entry.Value.totalbcalls = bcallsused;
+                Console.WriteLine("{0,-26} {1,10:G} {2,8:G} {3,14:G}", entry.Key, entry.Value.basecounts, entry.Value.homozygotes, entry.Value.totalbcalls);
 	        }
             Console.WriteLine("Total number of different sites are " + allsites.Count);
 
@@ -267,8 +377,20 @@ namespace getsnps
             Console.WriteLine("There are {0,10:G} different Sites present in all Projects", allAgain);
 
             int countToUse = allsites.Count(p => p.Value.toUse == true);
+            int countisSNP = allsites.Count(p => (p.Value.isSNP == true && p.Value.toUse == true));
             Console.WriteLine(Environment.NewLine + "Counting done, starting statistical evaluation. Using only sites present in all Projects.");
-            Console.WriteLine("Will use {0} sites", countToUse);
+            Console.WriteLine("Will use {0} sites - [{1} found in dbSNP]", countToUse, countisSNP);
+
+            // start to compare the projects, designate one project as reference and one project to compare
+            TextWriter tw = new StreamWriter("unaett.txt");
+            tw.WriteLine(DateTime.Now);
+            foreach (var kvp in allsites)
+            {
+
+
+                tw.WriteLine("");
+            }
+            tw.Close();
 
 
             return (0);

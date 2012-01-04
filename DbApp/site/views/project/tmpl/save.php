@@ -150,11 +150,10 @@ echo "<br /><a href=index.php?option=com_dbapp&view=projects&Itemid="
 // Returns an array of all valid genome designations.
 // $genomesLocation is the path to the folder where the genomes directory is located.
 function getValidBuilds($genomesLocation) {
-     $genomesDir = rtrim($genomesLocation, "/");
-     $buildsGlob = $genomesDir . DS . "genomes" . DS . "*" . DS . "genome" . DS . "SilverBulletGenes_*.txt";
-     //$buildsGlob = $genomesDir . "\\" . "genomes\\*\\genome\\SilverBulletGenes_*.txt"; // Windows version
+     $genomesDir = rtrim($genomesLocation, DS);
+     $buildsGlob = $genomesDir . DS . "genomes" . DS . "*" . DS . "strt" . DS . "Annotations_*.txt";
      $annotPaths = glob($buildsGlob);
-     $matchPath = "/genomes.(.+).genome.SilverBulletGenes_(.+)\.txt/";
+     $matchPath = "/genomes.(.+).strt.Annotations_.(.+)\.txt/";
      $validBuilds = array("empty" => 1);
      foreach ($annotPaths as $annotPath) {
          if (preg_match($matchPath, $annotPath, $matches)) {
@@ -182,7 +181,7 @@ function getValidBuilds($genomesLocation) {
 // Use $validBuilds to allow additional builds (e.g. "dm3") apart from the standard species "mm", "hs", "gg", and "empty".
 function checkFormat($fileContent, $validBuilds = array()) {
      $validSpecies = array();
-     foreach (getValidBuilds("/data") as $validBuild)
+     foreach (getValidBuilds(DS . "data") as $validBuild)
          $validSpecies[] = strtolower($validBuild);
      $validSpecies[] = "chicken";
      if (stripos($fileContent[0], "SampleID", 0) != 0)

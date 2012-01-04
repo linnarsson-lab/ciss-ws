@@ -39,15 +39,16 @@ function confirmRemove() {
   foreach ($mailtasks as $task) {
     if ($task->id == $searchid && $action == 'cancel') continue;
     if ($task->id == $searchid && $action == 'retry') $task->status = 'inqueue';
-    $actionlink = "";
-    if ($task->status == "inqueue")
-        $actionlink = "<a href=\"index.php?option=com_dbapp&view=entry&layout=mailqueue&controller=entry&searchid=" 
+    $retrylink = "";
+    $canclink = "";
+    if ($task->status != "sent" && $task-status != "processing")
+        $canclink = "&nbsp;<a href=\"index.php?option=com_dbapp&view=entry&layout=mailqueue&controller=entry&searchid=" 
                       . $task->id . "&action=cancel&Itemid=" . $itemid . "\" onclick=\"return confirmRemove();\">Remove</a>";
     if ($task->status == "failed" || $task->status == "filemissing")
-        $actionlink = "<a href=\"index.php?option=com_dbapp&view=entry&layout=mailqueue&controller=entry&searchid="
+        $retrylink = "&nbsp;<a href=\"index.php?option=com_dbapp&view=entry&layout=mailqueue&controller=entry&searchid="
                       . $task->id . "&action=retry&Itemid=$itemid\">Retry</a>";
     echo "<tr><td>" . $task->runno . "</td><td>" . $task->laneno . "</td><td>" . $task->email 
-	     . "&nbsp;</td><td>" . $task->status . "&nbsp;</td><td>" . $actionlink . "&nbsp;</td></tr>\n";
+	     . "&nbsp;</td><td>" . $task->status . "&nbsp;</td><td>$canclink $retrylink&nbsp;</td></tr>\n";
   }
   echo "</table></fieldset></div>";
   echo "<br />\n";

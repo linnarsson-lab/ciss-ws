@@ -71,7 +71,6 @@ namespace Linnarsson.Utilities
         public static int Run(string command, string arguments)
         {
 			var cmd = new CmdCaller(command, arguments, true);
-
             if (cmd.ExitCode != 0) Console.Error.WriteLine(cmd.StdError);
             return cmd.ExitCode;
         }

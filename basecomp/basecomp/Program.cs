@@ -73,8 +73,10 @@ namespace basecomp
         public int nextcount { get; set; }
         public double relhigh { get; set; }
         public double relnext { get; set; }
+        public int[] rds { get; set; }
         public double comp { get; set; }
         public bool homo { get; set; }
+        public double[] relreadcount { get; set; }
 
         public Position(string Seq_name, int Pos, int Bcalls_used, int Bcalls_filt, char Reference, int QSnp, string Max_gt,
                       int QMax_gt, string Poly_site, int QPoly_site, int A_Used, int C_Used, int G_Used, int T_Used, int QSCORE)
@@ -99,9 +101,16 @@ namespace basecomp
             highcount = rds.Max();
             relhigh = (double)highcount / ((double)A_used + (double)C_used + (double)G_used + (double)T_used);
             relnext = (double)nextcount / ((double)A_used + (double)C_used + (double)G_used + (double)T_used);
+            relreadcount = new double[4];
+            relreadcount[0] = (double)rds[0] / ((double)bcalls_used + 0.0001);
+            relreadcount[1] = (double)rds[1] / ((double)bcalls_used + 0.0001);
+            relreadcount[2] = (double)rds[2] / ((double)bcalls_used + 0.0001);
+            relreadcount[3] = (double)rds[3] / ((double)bcalls_used + 0.0001);
             comp = -1;
             homo = poly_site.Substring(0, 1).Equals(poly_site.Substring(1, 1)) && Qpoly_site > QSCORE;
         }
+
+
     }
 
 
@@ -111,6 +120,7 @@ namespace basecomp
 
         {
             List<RefProject> projectsL = new List<RefProject>();
+            List<string> positionsToUse = new List<string>();
             int qscore = 200;
 
             if (args.Length != 1)
@@ -147,6 +157,9 @@ namespace basecomp
                             case "COMP":
                                 RefProject tmp = new RefProject(param[1]);
                                 projectsL.Add(tmp);
+                                break;
+                            case "POS":
+                                positionsToUse.Add(param[1]);
                                 break;
                             case "QSCORE":
                                 qscore = int.Parse(param[1]);
@@ -250,44 +263,153 @@ namespace basecomp
                     for (int i = 1; i < projectsA.Length; i++)
                     {
                         if (projectsA[0][site.Key].poly_site.Equals(projectsA[i][site.Key].poly_site))
-                            projectsA[i][site.Key].comp = (double)projectsA[0][site.Key].Qpoly_site / (double)projectsA[0][site.Key].Qpoly_site;
+                            projectsA[i][site.Key].comp = (double)projectsA[i][site.Key].Qpoly_site / (double)projectsA[0][site.Key].Qpoly_site;
                         else
                             projectsA[i][site.Key].comp = 0.0;
 //                        Console.Write(projectsA[i][site.Key].comp + " " + projectsA[0][site.Key].Qpoly_site + " ");
                     }
                 }
 
+            Console.Write("\tCounts based on relative Qscore" + Environment.NewLine +"\tc|h|l");
             for (int i = 0; i < projectsA.Length; i++)
                 Console.Write("\t" + i);
-            Console.Write(Environment.NewLine + "\t.99-1\t" + projectsA[0].Count(p => (p.Value.homo == true)));
+            Console.Write(Environment.NewLine + "\t>1.01\t" + projectsA[0].Count(p => (p.Value.homo == true)));
+            // count number of bases in 'comp' that have the same homozygote bases as 'ref' at this level [=compQpolyscore/refQpolyscore]
             for (int i = 1; i < projectsA.Length; i++)
             {
-                Console.Write("\t" + projectsA[i].countComp(0.99, 1.1));
+                Console.Write("\t" + projectsA[i].countComp(1.01, 99999999));
             }
-            Console.Write(Environment.NewLine + "\t.9-.99\t" + projectsA[0].Count(p => (p.Value.homo == true)));
+            Console.Write(Environment.NewLine + "\t1\t" + projectsA[0].Count(p => (p.Value.homo == true)));
+            // count number of bases in 'comp' that have the same homozygote bases as 'ref' at this level [=compQpolyscore/refQpolyscore]
+            for (int i = 1; i < projectsA.Length; i++)
+            {
+                Console.Write("\t" + projectsA[i].countComp(0.99, 1.01));
+            }
+            Console.Write(Environment.NewLine + "\t.9-.99\t0");// + projectsA[0].Count(p => (p.Value.homo == true)));
+            // Count high scoring positions
             for (int i = 1; i < projectsA.Length; i++)
             {
                 Console.Write("\t" + projectsA[i].countComp(0.9, 0.99));
             }
-            Console.Write(Environment.NewLine + "\t001-01\t" + projectsA[0].Count(p => (p.Value.homo == true)));
+            Console.Write(Environment.NewLine + "\t001-01\t0");// + projectsA[0].Count(p => (p.Value.homo == true)));
+            // Count low scoring positions
             for (int i = 1; i < projectsA.Length; i++)
             {
                 Console.Write("\t" + projectsA[i].countComp(0.001, 0.1));
             }
-            Console.Write(Environment.NewLine + "\t0\t" + projectsA[0].Count(p => (p.Value.homo == true)));
+            Console.Write(Environment.NewLine + "\tother\t0");//  + projectsA[0].Count(p => (p.Value.homo == true)));
+            // Count positions with diferent base count
             for (int i = 1; i < projectsA.Length; i++)
             {
                 Console.Write("\t" + projectsA[i].countComp(-0.01, 0.01));
             }
-            Console.Write(Environment.NewLine + "\trelh\t" + projectsA[0].Count(p => (p.Value.relhigh < .9)));
+            Console.Write(Environment.NewLine + "\tHiN<90%\t" + projectsA[0].Count(p => (p.Value.relhigh < .9)));
+            // Count of positions where the highest base has at least 90% of the reads 
             for (int i = 1; i < projectsA.Length; i++)
             {
                 Console.Write("\t" + projectsA[i].Count(p => (p.Value.relhigh < .9)));
             }
+            Console.Write(Environment.NewLine + "\t2dN>20%\t" + projectsA[0].Count(p => (p.Value.relnext > .2)));
+            // Count of positions where the second highest base has at least 90% of the reads 
+            for (int i = 1; i < projectsA.Length; i++)
+            {
+                Console.Write("\t" + projectsA[i].Count(p => (p.Value.relnext > .2)));
+            }
             Console.WriteLine(Environment.NewLine);
 
+            // print used bases to file
+            StreamWriter writeTo = new StreamWriter("output.txt");
+            // print used bases to file
+            StreamWriter write2dTop = new StreamWriter("output2dTop.txt");
+
+            // Take out the interesting positions
+            Console.Write("\tQscore at the suggested positions" + Environment.NewLine + "\tposition");
+            for (int i = 0; i < projectsA.Length; i++)
+            {
+                Console.Write("\t" + i);
+                write2dTop.Write("\t" + i);
+            }
+            Console.WriteLine();
+            write2dTop.WriteLine();
+            foreach (string pos in positionsToUse)
+            {
+                Console.Write("\t" + pos);
+                Boolean toout = false;
+                writeTo.WriteLine(pos);
+                for (int i = 0; i < projectsA.Length; i++)
+                {
+                    Console.Write("\t{0} {1}", projectsA[i][pos].poly_site, projectsA[i][pos].Qpoly_site);
+                    writeTo.Write("\t" + projectsA[i][pos].A_used);
+                    writeTo.Write("\t" + projectsA[i][pos].C_used);
+                    writeTo.Write("\t" + projectsA[i][pos].G_used);
+                    writeTo.Write("\t" + projectsA[i][pos].T_used);
+                    writeTo.WriteLine("\t{0}\t{1}", projectsA[i][pos].A_used + projectsA[i][pos].C_used + projectsA[i][pos].G_used + projectsA[i][pos].T_used,
+                        projectsA[i].basecounts);
+                    if (projectsA[i][pos].relreadcount[2] > .2)
+                        toout = true;
+                }
+                Console.WriteLine();
+                if ((projectsA[0][pos].relreadcount[2] < .1 || projectsA[0][pos].relreadcount[2] > .3) && toout)
+                {
+                    write2dTop.Write(pos);
+                    for (int i = 0; i < projectsA.Length; i++)
+                    {
+                        write2dTop.Write("\t" + projectsA[i][pos].relreadcount[2].ToString());
+                    }
+                    write2dTop.WriteLine();
+                }
+            }
+            writeTo.Close();
+            write2dTop.Close();
+            Console.Write("\tTotalReads");
+            for (int i = 0; i < projectsA.Length; i++)
+                {
+                    Console.Write("\t{0}", projectsA[i].basecounts/100);
+                }
+            Console.WriteLine();
+
+            // print used bases to file
+            StreamWriter writeall = new StreamWriter("outputall.txt");
+            foreach (KeyValuePair<string, int> kvp in allsites)
+            {
+                if (kvp.Value == 6)
+                {
+                    bool toout = false;
+                    bool allbelow = true;
+                    bool counthigh = true;
+                    for (int i = 1; i < projectsA.Length; i++)
+                    {
+                        if (projectsA[i][kvp.Key].relreadcount[2] > .2)
+                            allbelow = false;
+                        if (projectsA[i][kvp.Key].bcalls_used < 1000)
+                            counthigh = false;
+
+                    }
+                    if ((projectsA[0][kvp.Key].relreadcount[2] < .1 || projectsA[0][kvp.Key].relreadcount[2] > .35) && !(allbelow) && counthigh)
+                        toout = true;
+                    if (toout)
+                    {
+                        writeall.Write(kvp.Key);
+                        for (int ii = 0; ii < projectsA.Length; ii++)
+                        {
+                            writeall.Write("\t" + projectsA[ii][kvp.Key].relreadcount[2].ToString());
+                        }
+                        for (int ii = 0; ii < projectsA.Length; ii++)
+                        {
+                            writeall.Write("\t" + projectsA[ii][kvp.Key].bcalls_used);
+                        }
+                        writeall.WriteLine();
+                    }
+                }
+
+            }
+            writeall.Close();
+
+            Console.WriteLine();
             return (0);
         }
+
+
 
         static void usage()
         {

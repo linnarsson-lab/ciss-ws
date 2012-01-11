@@ -25,6 +25,7 @@ for ($i = 1; $i <= 8; $i++) {
   $query[$i] .= " #__aaasequencingbatchid = " . $batchid . ", ";
   $query[$i] .= " molarconcentration  = " . $db->Quote($afteredit['molarconcentration' . $i]) . ", ";
   $query[$i] .= " yield  = " . $db->Quote($afteredit['yield' . $i]) . ", ";
+  $query[$i] .= " status  = " . $db->Quote(($afteredit['status' . $i]? "valid" : "invalid")) . ", ";
   $query[$i] .= " comment  = " . $db->Quote($afteredit['comment' . $i]) . ", ";
   $query[$i] .= " user  = " . $db->Quote($afteredit['user' . $i]) . ", ";
   $query[$i] .= " time  = " . $db->Quote($afteredit['time' . $i]) . " ";

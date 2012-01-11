@@ -11,11 +11,11 @@ class DbAppModelIlluminaRun extends JModel {
     $db =& JFactory::getDBO();
     $searchid = JRequest::getVar('searchid');
     $query = " SELECT r.id AS id, illuminarunid, r.comment, rundate, r.user AS user, r.time AS time, r.status AS status,
-                      r.title AS title, r.labbookpage AS labbookpage, r.cycles, r.indexcycles, r.pairedcycles, plateid, rundocument, runno,
-                      p.id AS projectid, c.principalinvestigator AS pi, contactperson, contactemail, l.id AS Lid,
-                      laneno, l.molarconcentration AS molarconcentration, b.title AS batchtitle, b.id AS batchid,
-                      b.plannednumberofcycles AS plannedcycles, b.plannedindexcycles AS plannedindexcycles,
-                      yield, pfyield, l.comment AS Lcomment, l.user AS Luser, l.time AS Ltime, b.id AS Sid
+                r.title AS title, r.labbookpage AS labbookpage, r.cycles, r.indexcycles, r.pairedcycles, plateid, 
+                rundocument, runno, p.id AS projectid, c.principalinvestigator AS pi, contactperson, contactemail, 
+                l.id AS Lid, laneno, l.molarconcentration AS molarconcentration, b.title AS batchtitle, b.id AS batchid,
+                b.plannednumberofcycles AS plannedcycles, b.plannedindexcycles AS plannedindexcycles, yield, 
+                pfyield, l.status AS Lstatus, l.comment AS Lcomment, l.user AS Luser, l.time AS Ltime, b.id AS Sid
                FROM #__aaailluminarun r
                LEFT JOIN #__aaalane l ON l.#__aaailluminarunid = r.id 
                LEFT JOIN #__aaasequencingbatch b ON l.#__aaasequencingbatchid = b.id 

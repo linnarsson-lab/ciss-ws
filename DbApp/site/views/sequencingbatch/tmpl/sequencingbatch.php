@@ -44,12 +44,22 @@ defined('_JEXEC') or die('Restricted access'); ?>
     echo "<div class='illuminarun'><fieldset><legend>Associated sequencing lanes</legend>";
 if (count($this->illuminaruns) > 0) {
     echo "<table>
-            <tr><th>Run&nbsp;</th><th>Lane numbers&nbsp;</th></tr>";
+            <tr><th>RunNo&nbsp;</th>
+                <th>RunId&nbsp;</th>
+                <th>Status</th>
+                <th>LaneNo&nbsp;</th>
+                <th>Valid&nbsp;</th>
+                <th>Comment&nbsp;</th>
+            </tr>";
     foreach ($this->illuminaruns as $ills) {
-      echo "<tr><td>
-             <a href=index.php?option=com_dbapp&view=illuminarun&layout=illuminarun&controller=illuminarun&searchid=" 
-               . $ills->id . "&Itemid=" . $itemid . ">" . $ills->RunNo . "</a>&nbsp;</td><td>"
-               . $ills->lanes . "&nbsp;</td></tr>";
+      echo "<tr>
+              <td><a href=index.php?option=com_dbapp&view=illuminarun&layout=illuminarun&controller=illuminarun&searchid=" . $ills->id . "&Itemid=" . $itemid . ">" . $ills->runnumber . "</a>&nbsp;</td>
+              <td><a href=index.php?option=com_dbapp&view=illuminarun&layout=illuminarun&controller=illuminarun&searchid=" . $ills->id . "&Itemid=" . $itemid . ">" . $ills->RunNo . "</a>&nbsp;</td>
+              <td>" . $ills->Rstatus . "&nbsp;</td>
+              <td>" . $ills->laneno . "&nbsp;</td>
+              <td>" . (($ills->Lstatus == "invalid")? "---" : "Yes") . "&nbsp;</td>
+              <td>" . $ills->Lcomment . "&nbsp;</td>
+            </tr>";
     }
     echo "</table><br />";
 

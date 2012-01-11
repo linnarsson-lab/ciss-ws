@@ -85,6 +85,7 @@ defined('_JEXEC') or die('Restricted access'); ?>
             <th>Conc</th>
             <th>Yield<br />" . JHTML::tooltip('Total millions of reads in lane.') . "</th>
             <th>%PF<br />" . JHTML::tooltip('Reads that passed Illumina quality filter.') . "</th>
+            <th>Valid</th>
             <th>Comment</th>
 <!--            <th>User</th>
             <th>Last change</th> -->
@@ -122,6 +123,7 @@ defined('_JEXEC') or die('Restricted access'); ?>
             <td>" . $lane->molarconcentration . "</td>
             <td>" . number_format($lane->yield / 1000000.0, 1) . "</td>
             <td>" . number_format($lane->pfyield / $lane->yield, 2) . "</td>
+            <td>" . (($lane->Lstatus == "invalid")? "---" : "Yes") . "</td>
             <td>" . $lane->Lcomment . "</td>
        <!--     <td>" . $lane->Luser . "</td>
             <td>&nbsp;" . $lane->Ltime . "</td> -->";

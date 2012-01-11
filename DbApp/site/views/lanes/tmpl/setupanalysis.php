@@ -114,6 +114,7 @@ if ($allowinqueue) {
             <th>Batch&nbsp;</th>
             <th>Mngr&nbsp;</th>
             <th>Status</th>
+            <th>Valid</th>
             <th>Comment&nbsp;</th>
            </tr>";
   $boxid = "";
@@ -122,15 +123,18 @@ if ($allowinqueue) {
     $boxid = "lanesel" . $laneidx;
     $valueid = "laneid" . $laneidx;
     echo '<tr>
-            <td><input type="checkbox" checked="checked" value="' . $lane->id . '" name="' . $boxid . '" id="' . $boxid
-         . '" onClick="return updateSelect();" />
-         <input type="hidden" name="' . $valueid . '" id="' . $valueid . '" value="' . $lane->id . '" />&nbsp;</td>';
+            <td><input type="checkbox"' .
+                   (($lane->Lstatus == "invalid")? '' : ' checked="checked"') . ' value="' . $lane->id .
+                   '" name="' . $boxid . '" id="' . $boxid . '" onClick="return updateSelect();" />
+                <input type="hidden" name="' . $valueid . '" id="' . $valueid . '" value="' . $lane->id .
+                   '" />&nbsp;</td>';
     echo "  <td><nobr> $lane->illuminarunid &nbsp;</nobr></td>
             <td> $lane->laneno &nbsp;</td>
             <td> $lane->batchtitle &nbsp;</td>
             <td> $lane->person &nbsp;</td>
             <td> $lane->runstatus &nbsp;</td>
-            <td> $lane->Lcomment &nbsp;</td>";
+            <td>" . (($lane->Lstatus == "invalid")? "---" : "Yes") . "&nbsp;</td>
+            <td> $lane->comment &nbsp;</td>";
     echo "</tr>";
     $laneidx = $laneidx + 1;
   }

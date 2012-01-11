@@ -31,14 +31,13 @@ class DbAppModelSequencingBatch extends JModel {
   public function getIlluminaRuns() {
     $db =& JFactory::getDBO();
     $searchid = JRequest::getVar('searchid') ;
-    $query = " SELECT #__aaailluminarun.id AS id, #__aaailluminarun.illuminarunid AS RunNo,
-                      GROUP_CONCAT(laneno) AS lanes
-               FROM #__aaasequencingbatch     
-            LEFT JOIN #__aaaproject ON #__aaasequencingbatch.#__aaaprojectid = #__aaaproject.id
-            LEFT JOIN #__aaalane ON #__aaalane.#__aaasequencingbatchid = #__aaasequencingbatch.id
-            INNER JOIN #__aaailluminarun ON #__aaalane.#__aaailluminarunid = #__aaailluminarun.id
-               WHERE #__aaasequencingbatch.id = '" . $searchid . "' 
-            GROUP BY RunNo ORDER BY RunNo, laneno ";
+    $query = " SELECT r.id AS id, r.illuminarunid AS RunNo, r.runno AS runnumber, r.status AS Rstatus,
+                  laneno, l.status AS Lstatus, l.comment AS Lcomment
+               FROM #__aaasequencingbatch b    
+            LEFT JOIN #__aaaproject p ON b.#__aaaprojectid = p.id
+            LEFT JOIN #__aaalane l ON l.#__aaasequencingbatchid = b.id
+            INNER JOIN #__aaailluminarun r ON l.#__aaailluminarunid = r.id
+            WHERE b.id = '" . $searchid . "' ORDER BY runnumber, laneno ";
 
     $db->setQuery($query);
     $item = $db->loadObjectList();

@@ -7,6 +7,7 @@ JHtml::_('behavior.formvalidation');
   $lanebatches = array();
   foreach ($this->illuminaruns as $lane) {
     $irilluminarunid = $lane->illuminarunid;
+    $irrunno = $lane->runno;
     $irdbid = $lane->id;
     $irrundate = $lane->rundate;
     $ircycles = $lane->cycles;
@@ -92,6 +93,7 @@ function validateCycles()
   </legend>
   <table>
     <tr><th>Run&nbsp;date&nbsp;</th><td><?php if ($searchid > 0) echo $irrundate; ?></td></tr>
+    <tr><th>Run&nbsp;no&nbsp;</th><td><?php if ($searchid > 0) echo $irrunno; ?></td></tr>
     <tr><th>Cycles&nbsp;</th><td><?php if ($searchid > 0) echo $ircycles; ?></td></tr>
     <tr><th>Index cycles&nbsp;</th><td><?php if ($searchid > 0) echo $irindexcycles; ?></td></tr>
     <tr><th>Comment&nbsp;</th><td><?php if ($searchid > 0) echo $ircomment; ?></td></tr>
@@ -108,6 +110,7 @@ function validateCycles()
       <th>Seq.&nbsp;batch</th>
       <th>Conc&nbsp;[pM]&nbsp;</th>
       <th>Yield&nbsp;</th>
+      <th>Valid&nbsp;</th>
       <th>Comment&nbsp;</th>
       <th>User&nbsp;</th>
       <th>Last change&nbsp;</th>
@@ -130,6 +133,7 @@ function validateCycles()
       </td>
       <td><input type="text" name="molarconcentration<?php if ($searchid > 0) echo $lane->laneno; ?>" id="molarconcentration<?php if ($searchid > 0) echo $lane->laneno; ?>" value="<?php if ($searchid > 0) echo $lane->molarconcentration; ?>" class="inputbox" size="8"/></td>
       <td><input type="text" name="yield<?php if ($searchid > 0) echo $lane->laneno; ?>" id="yield<?php if ($searchid > 0) echo $lane->laneno; ?>" value="<?php if ($searchid > 0) echo $lane->yield; ?>" class="inputbox" size="6"/></td>
+      <td><input type="checkbox" name="status<?php if ($searchid > 0) echo $lane->laneno; ?>" id="status<?php if ($searchid > 0) echo $lane->laneno; ?>"<?php if (!($searchid > 0 && $lane->Lstatus =="invalid")) echo ' checked="checked"'; ?>" /></td>
       <td><input type="text" name="comment<?php if ($searchid > 0) echo $lane->laneno; ?>" id="comment<?php if ($searchid > 0) echo $lane->laneno; ?>" value="<?php if ($searchid > 0) echo $lane->Lcomment; ?>" class="inputbox" size="20"/></td>
       <td> &nbsp;<?php if ($searchid > 0) echo $lane->Luser; ?></td>
       <td> &nbsp;<?php if ($searchid > 0) echo $lane->Ltime; ?></td>

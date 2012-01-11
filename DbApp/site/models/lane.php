@@ -11,13 +11,13 @@ class DbAppModelLane extends JModel {
     $db =& JFactory::getDBO();
     $searchid = JRequest::getVar('searchid') ;
 //    echo $searchid;                  aaasequencingbatchid
-    $query = " SELECT #__aaalane.id as id, #__aaailluminarun.id as aaailluminarunid, illuminarunid, rundate, 
-            #__aaasequencingbatch.id as aaasequencingbatchid, laneno, cycles,
-            molarconcentration, yield, #__aaalane.comment as comment, #__aaalane.user as user, #__aaalane.time as time
-               FROM #__aaalane 
-               LEFT JOIN #__aaailluminarun ON #__aaalane.#__aaailluminarunid = #__aaailluminarun.id
-               LEFT JOIN #__aaasequencingbatch ON #__aaalane.#__aaasequencingbatchid = #__aaasequencingbatch.id
-               WHERE #__aaalane.id = '" . $searchid . "' ";
+    $query = " SELECT l.id as id, r.id as aaailluminarunid, illuminarunid, rundate, 
+                b.id as aaasequencingbatchid, laneno, cycles, molarconcentration, 
+                yield, l.status AS Lstatus, l.comment as comment, l.user as user, l.time as time
+               FROM #__aaalane l 
+               LEFT JOIN #__aaailluminarun r ON l.#__aaailluminarunid = r.id
+               LEFT JOIN #__aaasequencingbatch b ON l.#__aaasequencingbatchid = b.id
+               WHERE l.id = '" . $searchid . "' ";
 
     $db->setQuery($query);
 //    echo $query;

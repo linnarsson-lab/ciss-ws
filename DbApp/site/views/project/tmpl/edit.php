@@ -217,7 +217,7 @@ function changeBatchGen() {
       <td><input type="text" name="protocol" id="protocol" value="<?php if ($searchid > 0) echo $project->protocol; ?>" class="inputbox required" size="40"/></td>
     </tr>
     <tr>
-      <th>Barcode&nbsp;set&nbsp; <?php echo JHTML::tooltip('v4=48best wells w mol.counting, v4r=48best wells w/o mol.counting, v2=6-mer STRTver3, v1=5-mer STRTver1 no=single sample'); ?> </th>
+      <th>Barcode&nbsp;set&nbsp; <?php echo JHTML::tooltip('v4=48best wells w mol.counting, v4r=48best wells w/o mol.counting, v2=6-mer STRTver3, v1=5-mer STRTver1 no=single sample, TruSeq'); ?> </th>
       <td><input type="text" name="barcodeset" id="barcodeset" value="<?php if ($searchid > 0) echo $project->barcodeset; ?>" class="inputbox required" size="40"/></td>
     </tr>
     <tr>

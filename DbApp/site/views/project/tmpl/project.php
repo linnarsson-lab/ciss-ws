@@ -145,6 +145,7 @@ if (count($this->seqbatches) != 0) {
                 <th>Genome&nbsp;</th>
                 <th>DBVer&nbsp;" . JHTML::tooltip('Source and creation date of genome and annotation database. Source may change after analysis if unavailable at processing time') . "&nbsp;</th>
                 <th>Type&nbsp;" . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "&nbsp;</th>
+                <th>RPKM&nbsp;</th>
                 <th>ResultsPath&nbsp;</th>
                 <th>Rpt@</th>
                 <th>Cmnt</th>
@@ -181,6 +182,7 @@ if (count($this->seqbatches) != 0) {
         echo "<td>" . $analys->genome . "&nbsp;</td>";
         echo "<td>" . $analys->transcript_db_version . "&nbsp;</td>";
         echo "<td>" . $analys->transcript_variant . "&nbsp;</td>";
+        echo "<td>" . (($analys->rpkm == "1")? "Yes" : "---") . "&nbsp;</td>";
         echo "<td>" . $resultname . "</td>";
         if (strlen($analys->emails) > 2)
             echo "<td>&nbsp;" . JHTML::tooltip($analys->emails) . "</td>";

@@ -17,11 +17,12 @@ if ($submit == 'Cancel') {
   $projectid = $db->Quote($afteredit['projectid']);
   $build = $db->Quote($afteredit['build']);
   $variants = $db->Quote($afteredit['variants']);
+  $rpkm = ($afteredit['rpkm'])? "1" : "0";
   $emails = $db->Quote($afteredit['emails']);
   $comment = $db->Quote($afteredit['comment']);
   $query = " INSERT INTO #__aaaanalysis 
-                (#__aaaprojectid, transcript_db_version, transcript_variant, emails, status, lanecount, comment, time)
-                VALUES ($projectid, $build, $variants, $emails, 'inqueue', $nlanes, $comment, NOW()) ";
+                (#__aaaprojectid, transcript_db_version, transcript_variant, rpkm, emails, status, lanecount, comment, time)
+                VALUES ($projectid, $build, $variants, $rpkm, $emails, 'inqueue', $nlanes, $comment, NOW()) ";
   $db->setQuery($query);
   if ($db->query()) {
     JError::raiseNotice('Message', JText::_('The analysis setup was saved!'));

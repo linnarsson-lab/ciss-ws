@@ -109,7 +109,7 @@ class DbAppModelProject extends JModel {
 
     $db =& JFactory::getDBO();
     $searchid = JRequest::getVar('searchid') ;
-    $query = " SELECT id, #__aaaprojectid, lanecount, extraction_version, annotation_version,
+    $query = " SELECT id, #__aaaprojectid, lanecount, extraction_version, annotation_version, rpkm,
                genome, transcript_db_version, transcript_variant, comment, resultspath, emails, status
                FROM #__aaaanalysis WHERE #__aaaprojectid = '" . $searchid . "'  
                ORDER BY status DESC, id DESC ";

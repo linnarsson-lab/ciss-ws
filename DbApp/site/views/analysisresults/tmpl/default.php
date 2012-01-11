@@ -24,10 +24,11 @@ defined('_JEXEC') or die('Restricted access');
           <th>Sample</th>
           <th>Status<br />" . JHTML::tooltip('If "ready" - link to export in Qlucore format [.gedata]') . "</th>
           <th>Path<br />" . JHTML::tooltip('Not displayed until results are ready') . "</th>
-          <th>Lanes<br />" . JHTML::tooltip('Total no. of lanes included in analysis') . "</th>
+          <th>L<br />" . JHTML::tooltip('Total no. of lanes included in analysis') . "</th>
           <th>Extr<br />" . JHTML::tooltip('Version of read filter and barcoded extraction software') . "</th>
-          <th>Annot<br />" . JHTML::tooltip('Version of feature annotation software') . "</th>
-          <th>Genome<br /> " . JHTML::tooltip('Not displayed until results are ready') . "</th>
+          <th>Ann<br />" . JHTML::tooltip('Version of feature annotation software') . "</th>
+          <th>RPKM</th>
+          <th>Gnm<br /> " . JHTML::tooltip('Not displayed until results are ready') . "</th>
           <th>DBVer<br />" . JHTML::tooltip('Source and creation date of genome and annotation database. Note that source may have changed if the requested build was not available at processing time.') . "</th>
           <th>Type<br />" . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "</th>
           <th>Cmnt</th>
@@ -80,6 +81,7 @@ defined('_JEXEC') or die('Restricted access');
     echo "<td>" . $result->lanecount . "&nbsp;</td>";
     echo "<td>" . $result->extraction_version . "&nbsp;</td>";
     echo "<td>" . $result->annotation_version . "&nbsp;</td>";
+    echo "<td>" . (($result->rpkm == "1")? "Yes" : "---") . "&nbsp;</td>";
     echo "<td>" . $result->genome . "&nbsp;</td>";
     echo "<td>" . $result->transcript_db_version . "&nbsp;</td>";
     echo "<td>" . $result->transcript_variant . "&nbsp;</td>";

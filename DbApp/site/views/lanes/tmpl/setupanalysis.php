@@ -197,6 +197,10 @@ if ($allowinqueue) {
                   <option value="all">All known transcript variants</option>
                 </select></td>
           </tr>
+          <tr>
+           <td>Use RPKM:</td>
+           <td><input type="checkbox" name="rpkm" id="rpkm" />&nbsp;(assumes non-directional reads)</td>
+          </tr>
         </table>
         </fieldset>
       </div>

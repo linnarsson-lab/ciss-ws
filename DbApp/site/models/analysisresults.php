@@ -23,7 +23,7 @@ class DbAppModelAnalysisresults extends JModel {
 
     $db =& JFactory::getDBO();
     $query = ' SELECT a.id, #__aaaprojectid AS projectid, p.plateid AS project, extraction_version, annotation_version,
-               genome, transcript_db_version, transcript_variant, a.comment, lanecount, resultspath, a.user, a.time,
+               genome, transcript_db_version, transcript_variant, rpkm, a.comment, lanecount, resultspath, a.user, a.time,
                a.status AS status, p.title AS projecttitle, p.tissue, p.sampletype
                FROM #__aaaanalysis a
                LEFT JOIN #__aaaproject p ON a.#__aaaprojectid = p.id

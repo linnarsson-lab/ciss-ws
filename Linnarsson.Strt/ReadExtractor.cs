@@ -14,11 +14,13 @@ namespace Linnarsson.Strt
         public readonly static int BARCODE_ERROR = 1;
         public readonly static int LENGTH_ERROR = 2;
         public readonly static int COMPLEXITY_ERROR = 3;
-        public readonly static int N_IN_RANDOM_BC = 4;
+        public readonly static int N_IN_RANDOM_TAG = 4;
         public readonly static int NEGATIVE_BARCODE_ERROR = 5;
-        public readonly static int Length = 6;
+        public readonly static int LOW_QUALITY_IN_RANDOM_TAG = 6;
+        public readonly static int Length = 7;
         public readonly static string[] categories = new string[] { "VALID", "BARCODE_ERROR", "LENGTH_ERROR", 
-                                                                   "COMPLEXITY_ERROR", "N_IN_RANDOM_BC", "NEGATIVE_BARCODE_ERROR" };
+                                                                   "COMPLEXITY_ERROR", "N_IN_RANDOM_TAG", "NEGATIVE_BARCODE_ERROR",
+                                                                   "LOW_QUALITY_IN_RANDOM_TAG" };
         public static int Parse(string category) { return Array.IndexOf(categories, category.ToUpper()); }
     }
 
@@ -85,8 +87,8 @@ namespace Linnarsson.Strt
                            PartialCount(ReadStatus.VALID) + " accepted, " + PartialRejected + " rejected. (" +
                            PartialCount(ReadStatus.BARCODE_ERROR) + " wrong barcode, " + PartialCount(ReadStatus.LENGTH_ERROR) + " too short, " +
                            PartialCount(ReadStatus.COMPLEXITY_ERROR) + " polyA-like";
-            if (PartialCount(ReadStatus.N_IN_RANDOM_BC) > 0)
-                stats += ", " + PartialCount(ReadStatus.N_IN_RANDOM_BC) + " unparseable random barcodes";
+            if (PartialCount(ReadStatus.N_IN_RANDOM_TAG) > 0)
+                stats += ", " + PartialCount(ReadStatus.N_IN_RANDOM_TAG) + " unparseable random barcodes";
             stats += ").";
             return stats;
         }
@@ -100,8 +102,8 @@ namespace Linnarsson.Strt
                  "\n- wrong barcode/Gs missing: " + GrandCount(ReadStatus.BARCODE_ERROR) +
                  "\n- too short: " + GrandCount(ReadStatus.LENGTH_ERROR) +
                  "\n- polyA/low complexity: " + GrandCount(ReadStatus.COMPLEXITY_ERROR);
-            if (GrandCount(ReadStatus.N_IN_RANDOM_BC) > 0)
-                s += "\nRejected reads due to unparseable random tags: " + GrandCount(ReadStatus.N_IN_RANDOM_BC);
+            if (GrandCount(ReadStatus.N_IN_RANDOM_TAG) > 0)
+                s += "\nRejected reads due to unparseable random tags: " + GrandCount(ReadStatus.N_IN_RANDOM_TAG);
             if (GrandCount(ReadStatus.NEGATIVE_BARCODE_ERROR) > 0)
                 s += "\nRejected reads due to negative barcodes: " + GrandCount(ReadStatus.NEGATIVE_BARCODE_ERROR);
             return s;
@@ -217,6 +219,7 @@ namespace Linnarsson.Strt
         /// <returns>A ReadStatus that indicates if the read was valid</returns>
         public int Extract(ref FastQRecord rec, out int bcIdx)
         {
+            int minQualityInRandomTag = Props.props.MinPhredScoreInRandomTag;
             bcIdx = 0;
             rec.TrimBBB();
             string rSeq = rec.Sequence;
@@ -231,9 +234,12 @@ namespace Linnarsson.Strt
             string bcRandomPart = "";
             if (rndBcLen > 0)
             {
+                for (int i = rndBcPos; i < rndBcPos + rndBcLen; i++)
+                    if (rec.Qualities[i] < minQualityInRandomTag)
+                        return ReadStatus.LOW_QUALITY_IN_RANDOM_TAG;
                 bcRandomPart = rSeq.Substring(rndBcPos, rndBcLen) + ".";
                 if (bcRandomPart.Contains('N'))
-                    return ReadStatus.N_IN_RANDOM_BC;
+                    return ReadStatus.N_IN_RANDOM_TAG;
             }
             int insertStart = insertStartPos;
             insertLength -= insertStart;

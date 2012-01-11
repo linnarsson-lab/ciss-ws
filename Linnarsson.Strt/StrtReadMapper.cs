@@ -286,7 +286,7 @@ namespace Linnarsson.Strt
             Extract(pd.extractionInfos, outputFolder);
         }
 
-        public static readonly string EXTRACTION_VERSION = "29";
+        public static readonly string EXTRACTION_VERSION = "30";
         private void Extract(List<LaneInfo> extrInfos, string outputFolder)
         {
             DateTime start = DateTime.Now;
@@ -306,7 +306,7 @@ namespace Linnarsson.Strt
                     double totLen = 0.0;
                     long nRecords = 0;
                     int[] nValidReadsByBc = new int[barcodes.Count];
-                    foreach (FastQRecord fastQRecord in FastQFile.Stream(extrInfo.readFilePath, props.QualityScoreBase))
+                    foreach (FastQRecord fastQRecord in BarcodedReadStream.Stream(barcodes, extrInfo.readFilePath, props.QualityScoreBase))
                     {
                         FastQRecord rec = fastQRecord;
                         if (extrQ != null) extrQ.Add(rec);
@@ -409,6 +409,8 @@ namespace Linnarsson.Strt
         {
             SetBarcodeSet(projDescr.barcodeSet);
             logWriter.WriteLine(DateTime.Now.ToString() + " Extracting " + projDescr.runIdsLanes.Length + " lanes with barcodes " + projDescr.barcodeSet + "..."); logWriter.Flush();
+            if (barcodes.HasRandomBarcodes)
+                logWriter.WriteLine(DateTime.Now.ToString() + "   MinPhredScoreInRandomTag=" + props.MinPhredScoreInRandomTag);
             Extract(projDescr);
             string[] speciesArgs = GetSpeciesArgs(projDescr.SampleLayoutPath, projDescr.defaultSpecies);
             projDescr.annotationVersion = ANNOTATION_VERSION;
@@ -420,7 +422,10 @@ namespace Linnarsson.Strt
                 logWriter.WriteLine(DateTime.Now.ToString() + " Mapping to " + genome.GetBowtieSplcIndexName() + "..."); logWriter.Flush();
                 CreateBowtieMaps(genome, projDescr.extractionInfos);
                 List<string> mapFilePaths = GetAllMapFilePaths(projDescr.extractionInfos);
+                props.UseRPKM = projDescr.rpkm;
+                props.DirectionalReads = !projDescr.rpkm;
                 logWriter.WriteLine(DateTime.Now.ToString() + " Annotating " + mapFilePaths.Count + " map files..."); logWriter.Flush();
+                logWriter.WriteLine(DateTime.Now.ToString() + "   DirectionalReads=" + props.DirectionalReads + " RPKM=" + props.UseRPKM);
                 ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.projectName, mapFilePaths);
                 projDescr.resultDescriptions.Add(resultDescr);
                 System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(projDescr.GetType());
@@ -551,7 +556,7 @@ namespace Linnarsson.Strt
             string splcIndexVersion = PathHandler.GetIndexVersion(genome); // The current version including date
             if (splcIndexVersion == "")
                 throw new Exception("Please use idx function to make a bowtie splice index with ReadLen=" + genome.ReadLen
-                                    + "or at least " + (genome.ReadLen - 5) + " for " + genome.GetBowtieMainIndexName());
+                                    + " or at least " + (genome.ReadLen - 5) + " for " + genome.GetBowtieMainIndexName());
             return splcIndexVersion;
         }
 

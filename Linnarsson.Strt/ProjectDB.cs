@@ -46,6 +46,7 @@ namespace Linnarsson.Strt
         public bool analyzeVariants { get; set; }
         public string extractionVersion { get; set; }
         public string annotationVersion { get; set; }
+        public bool rpkm { get; set; }
         public string layoutFile { get; set; }
         public string defaultBuild { get; set; }
         public List<LaneInfo> extractionInfos { get; set; }
@@ -71,11 +72,11 @@ namespace Linnarsson.Strt
         }
         public ProjectDescription(string projectName, string barcodesName, string defaultSpecies, List<string> laneInfos,
                                   string layoutFile, string status, string managerEmail) :
-            this(projectName, barcodesName, defaultSpecies, laneInfos, layoutFile, status, managerEmail, "UCSC", "single", "0")
+            this(projectName, barcodesName, defaultSpecies, laneInfos, layoutFile, status, managerEmail, "UCSC", "single", "0", false)
         { }
 
         public ProjectDescription(string projectName, string barcodesName, string defaultSpecies, List<string> laneInfos,
-                          string layoutFile, string status, string emails, string defaultBuild, string variants, string analysisId)
+                          string layoutFile, string status, string emails, string defaultBuild, string variants, string analysisId, bool rpkm)
         {
             this.projectName = projectName;
             this.barcodeSet = barcodesName;
@@ -87,6 +88,7 @@ namespace Linnarsson.Strt
             this.managerEmails = emails;
             this.defaultBuild = defaultBuild;
             this.analyzeVariants = (variants == "all");
+            this.rpkm = rpkm;
             this.analysisId = analysisId;
             this.resultDescriptions = new List<ResultDescription>();
         }
@@ -180,7 +182,7 @@ namespace Linnarsson.Strt
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             List<ProjectDescription> pds = new List<ProjectDescription>();
-            string sql = "SELECT a.id, a.genome, a.transcript_db_version, a.transcript_variant, a.emails, " +
+            string sql = "SELECT a.id, a.genome, a.transcript_db_version, a.transcript_variant, a.rpkm, a.emails, " +
                          " p.plateid, p.barcodeset, p.species, p.layoutfile, a.status, " +
                          " r.illuminarunid AS runid, GROUP_CONCAT(l.laneno ORDER BY l.laneno) AS lanenos " +
                          "FROM jos_aaaanalysis a " + 
@@ -196,13 +198,14 @@ namespace Linnarsson.Strt
             List<string> laneInfos = new List<string>();
             string currAnalysisId = "", plateId = "", bcSet = "", defaultSpecies = "", layoutFile = "", plateStatus = "",
                     emails = "", defaultBuild = "", variant = "";
+            bool rpkm = false;
             while (rdr.Read())
             {
                 string analysisId = rdr["id"].ToString();
                 if (currAnalysisId != "" && analysisId != currAnalysisId)
                 {
                     pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
-                                                    emails, defaultBuild, variant, currAnalysisId));
+                                                    emails, defaultBuild, variant, currAnalysisId, rpkm));
                     laneInfos = new List<string>();
                 }
                 currAnalysisId = analysisId;
@@ -216,9 +219,10 @@ namespace Linnarsson.Strt
                 emails = rdr["emails"].ToString();
                 defaultBuild = rdr["transcript_db_version"].ToString();
                 variant = rdr["transcript_variant"].ToString();
+                rpkm = (rdr["rpkm"].ToString() == "1");
             }
             if (currAnalysisId != "") pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
-                                                                        emails, defaultBuild, variant, currAnalysisId));
+                                                                        emails, defaultBuild, variant, currAnalysisId, rpkm));
             rdr.Close();
             conn.Close();
             return pds;

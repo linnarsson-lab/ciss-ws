@@ -145,11 +145,13 @@ namespace Linnarsson.Strt
             {
                 MapFileSnpFinder mfsf = new MapFileSnpFinder(barcodes);
                 mfsf.ProcessMapFiles(mapFilePaths);
-                int nSNPs = randomTagFilter.SetupSNPCounters(averageReadLen, mfsf.IterSNPLocations());
+                int nSNPs = randomTagFilter.SetupSNPCounters(averageReadLen, mfsf.IterSNPLocations(10));
                 Console.WriteLine("Registered " + nSNPs + " potential SNP positions.");
-                if (Props.props.SnpRndTagVerification)
-                    snpRndTagVerifier = new SnpRndTagVerifier(Props.props, mfsf);
+                //if (Props.props.SnpRndTagVerification)
+                //    snpRndTagVerifier = new SnpRndTagVerifier(Props.props, mfsf);
             }
+            if (Props.props.SnpRndTagVerification)
+                snpRndTagVerifier = new SnpRndTagVerifier(Props.props, Annotations.Genome);
             List<string> bcMapFilePaths = new List<string>();
             string mapFileName = Path.GetFileName(mapFilePaths[0]);
             currentBcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
@@ -246,7 +248,7 @@ namespace Linnarsson.Strt
             int molCount = item.MolCount;
             nMoleculesByBarcode[currentBcIdx] += molCount;
             exonHitGeneNames.Clear();
-            bool[] annotMatches = new bool[AnnotType.Count];
+            /*bool[] annotMatches = new bool[AnnotType.Count];*/
             bool someAnnotationHit = false;
             bool someExonHit = false;
             List<FtInterval> trMatches = Annotations.GetTranscriptMatches(item.chr, item.strand, item.HitMidPos).ToList();
@@ -261,7 +263,7 @@ namespace Linnarsson.Strt
                         exonHitGeneNames.Add(trMatch.Feature.Name);
                         item.splcToRealChrOffset = 0;
                         MarkResult res = trMatch.Mark(item, trMatch.ExtraData, markStatus);
-                        annotMatches[res.annotType] = true;
+                        /*annotMatches[res.annotType] = true;*/
                         TotalHitsByAnnotTypeAndBarcode[res.annotType, currentBcIdx] += molCount;
                         TotalHitsByAnnotTypeAndChr[item.chr][res.annotType] += molCount;
                         TotalHitsByAnnotType[res.annotType] += molCount;
@@ -283,8 +285,8 @@ namespace Linnarsson.Strt
                 foreach (FtInterval nonTrMatch in Annotations.GetNonTrMatches(item.chr, item.strand, item.HitMidPos))
                 {
                     someAnnotationHit = true;
-                    MarkResult res = nonTrMatch.Mark(item, nonTrMatch.ExtraData, MarkStatus.TEST_EXON_MARK_OTHER);
-                    annotMatches[res.annotType] = true;
+                    MarkResult res = nonTrMatch.Mark(item, nonTrMatch.ExtraData, MarkStatus.NONEXONIC_MAPPING);
+                    /*annotMatches[res.annotType] = true;*/
                     TotalHitsByAnnotTypeAndBarcode[res.annotType, currentBcIdx] += molCount;
                     TotalHitsByAnnotTypeAndChr[item.chr][res.annotType] += molCount;
                     TotalHitsByAnnotType[res.annotType] += molCount;
@@ -301,17 +303,19 @@ namespace Linnarsson.Strt
             if (someAnnotationHit)
             {
                 nAnnotatedMappings += molCount;
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < annotMatches.Length; i++)
-                    if (annotMatches[i] == true)
-                        sb.Append(" " + AnnotType.GetName(i));
                 if (someExonHit)
                     nExonMappings += molCount;
-                else if (nonExonWriter != null)
+                /*else if (nonExonWriter != null)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < annotMatches.Length; i++)
+                        if (annotMatches[i] == true)
+                            sb.Append(" " + AnnotType.GetName(i));
                     nonExonWriter.WriteLine(item.ToString() + " - Annotations: " + sb.ToString());
+                }*/
             }
-            else if (nonAnnotWriter != null)
-                nonAnnotWriter.WriteLine(item.ToString());
+            /*else if (nonAnnotWriter != null)
+                nonAnnotWriter.WriteLine(item.ToString());*/
         }
 
         public void FinishBarcode()

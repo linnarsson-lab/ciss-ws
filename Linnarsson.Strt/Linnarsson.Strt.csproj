@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="AbstractGenomeAnnotations.cs" />
     <Compile Include="AnnotationBuilder.cs" />
+    <Compile Include="BarcodedReadStream.cs" />
     <Compile Include="BowtieMapFileSorter.cs" />
     <Compile Include="MapFileSnpFinder.cs" />
     <Compile Include="NonExonRepeatMasker.cs" />

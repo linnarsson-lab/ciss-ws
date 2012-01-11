@@ -54,8 +54,11 @@ namespace Linnarsson.Strt
         ///  Iterate over all SNPs on the chromosome.
         ///  Will set the total read counts from the internal wiggle plot.
         /// </summary>
+        /// <param name="averageReadLength">Needed for read count estimation across SNP pos</param>
+        /// <param name="marginForWiggle">Min distance from read end to SNP pos</param>
+        /// <param name="minNSNPs">Minimum number of reads with a SNPed based</param>
         /// <returns></returns>
-        public IEnumerable<LocatedSNPCounter> SNPItems(int averageReadLength, int marginForWiggle)
+        public IEnumerable<LocatedSNPCounter> SNPItems(int averageReadLength, int marginForWiggle, int minNSNPs)
         {
             LocatedSNPCounter locCounter = new LocatedSNPCounter();
             locCounter.chr = chr;
@@ -63,6 +66,7 @@ namespace Linnarsson.Strt
             {
                 int chrPos = pair.Key;
                 SNPCounter counter = pair.Value;
+                if (counter.nSnps < minNSNPs) continue;
                 if (!totalsSet)
                     counter.nTotal = wiggle.GetReadCount(chrPos, averageReadLength, marginForWiggle);
                 locCounter.chrPos = chrPos;
@@ -91,7 +95,7 @@ namespace Linnarsson.Strt
 
         public void ProcessMapFiles(List<string> mapFilePaths)
         {
-            Console.Write("Defining SNP positions by scanning map files..");
+            Console.Write("Defining SNP positions by scanning " + mapFilePaths.Count + " map files..");
             int numReadInFile = 0;
             int nValidReads = 0, nReadsWMismatches = 0;
             long totLen = 0;
@@ -140,29 +144,29 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Iterate over all SNPs that have at least 10 hits
+        /// Iterate over all SNPs that have at least minNSNPHits hits to the SNP Nt
         /// </summary>
+        /// <param name="minNSNPHits">Minimum number of hits to the SNP:ed Nt</param>
         /// <returns>Reused container of SNP data</returns>
-        public IEnumerable<LocatedSNPCounter> IterSNPLocations()
+        public IEnumerable<LocatedSNPCounter> IterSNPLocations(int minNSNPHits)
         {
             foreach (ChrSNPCounter chrSNPCounter in dataByChr.Values)
             {
-                foreach (LocatedSNPCounter item in chrSNPCounter.SNPItems(averageReadLength, marginForWiggle))
-                    if (item.counter.nSnps > 9)
-                        yield return item;
+                foreach (LocatedSNPCounter item in chrSNPCounter.SNPItems(averageReadLength, marginForWiggle, minNSNPHits))
+                    yield return item;
             }
         }
 
         public void WriteToFile(string file)
         {
             StreamWriter writer = new StreamWriter(file);
-            writer.WriteLine("Showing positions with at least 4% SNP:ed reads and totally >= 10 reads.");
+            writer.WriteLine("Showing positions with >= 10 reads of which >= 4% and at least 2 are SNP:ed.");
             writer.WriteLine(LocatedSNPCounter.Header);
             foreach (ChrSNPCounter chrSNPCounter in dataByChr.Values)
             {
-                foreach (LocatedSNPCounter item in chrSNPCounter.SNPItems(averageReadLength, marginForWiggle))
+                foreach (LocatedSNPCounter item in chrSNPCounter.SNPItems(averageReadLength, marginForWiggle, 2))
                 {
-                    if ((item.counter.nTotal >= 10) && (item.counter.nSnps * 25 / item.counter.nTotal >= 1))
+                    if ((item.counter.nTotal >= 10) && (item.counter.nSnps / (double)item.counter.nTotal >= 0.04))
                         writer.WriteLine(item.ToString());
                 }
             }

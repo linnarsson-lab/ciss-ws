@@ -77,9 +77,27 @@ namespace Linnarsson.Strt
         {
             barcodes = props.Barcodes;
             verificationChr = props.SnpRndTagVerificationChr;
-            foreach (LocatedSNPCounter locSNP in mfsf.IterSNPLocations())
+            foreach (LocatedSNPCounter locSNP in mfsf.IterSNPLocations(5))
                 if (locSNP.chr == verificationChr)
                     snpPosOnChr.Add(locSNP.chrPos);
+            Console.WriteLine("Found " + snpPosOnChr.Count + " potential SNPs to verify on chr " + verificationChr);
+        }
+        public SnpRndTagVerifier(Props props, StrtGenome genome)
+        {
+            barcodes = props.Barcodes;
+            verificationChr = props.SnpRndTagVerificationChr;
+            string GVFPath = PathHandler.GetGVFFile(genome);
+            if (GVFPath == "")
+                Console.WriteLine("Can not find a GVF file for " + genome.Build + ". Skipping SNP verification.");
+            else
+            {
+                foreach (GVFRecord rec in new GVFFile(GVFPath).Iterate())
+                {
+                    if (rec.type == "SNV" && rec.AnyTranscriptEffect() && rec.seqid == verificationChr)
+                        snpPosOnChr.Add(rec.start - 1);
+                }
+                Console.WriteLine("Registered " + snpPosOnChr.Count + " SNPs to verify on chr " + verificationChr + " using GVF file.");
+            }
         }
 
         public void Add(MultiReadMappings mrm)

@@ -320,6 +320,12 @@ namespace Linnarsson.Strt
             moleculeReadCountsHistogram = new int[MaxValueInReadCountHistogram + 1];
         }
 
+        /// <summary>
+        /// Prepare for analysis of SNPs during annotation step
+        /// </summary>
+        /// <param name="averageReadLen">Needed to check that SNPs are surely within reads</param>
+        /// <param name="snpDatas">Iterator to get all positions where SNPs should be analyzed</param>
+        /// <returns></returns>
         public int SetupSNPCounters(int averageReadLen, IEnumerable<LocatedSNPCounter> snpDatas)
         {
             int nSNPs = 0;

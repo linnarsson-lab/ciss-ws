@@ -102,6 +102,7 @@
     <Compile Include="GeneOntology\GoAnnotation.cs" />
     <Compile Include="GeneOntology\GoTerm.cs" />
     <Compile Include="GeneOntology\GoViewFilter.cs" />
+    <Compile Include="GVFFile.cs" />
     <Compile Include="HotspotFinder.cs" />
     <Compile Include="AnnotationReader.cs" />
     <Compile Include="IFeature.cs" />

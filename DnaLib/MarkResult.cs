@@ -6,7 +6,7 @@ using System.Text;
 namespace Linnarsson.Dna
 {
     public enum MarkStatus
-    { TEST_EXON_MARK_OTHER, TEST_EXON_SKIP_OTHER, UNIQUE_EXON_MAPPING, NONUNIQUE_EXON_MAPPING, MARK_ALT_MAPPINGS };
+    { NONEXONIC_MAPPING, UNIQUE_EXON_MAPPING, NONUNIQUE_EXON_MAPPING };
 
     public struct MarkResult
     {

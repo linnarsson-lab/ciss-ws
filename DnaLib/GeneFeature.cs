@@ -386,46 +386,40 @@ namespace Linnarsson.Dna
 
         public MarkResult MarkExonHit(MappedTagItem item, int exonIdx, MarkStatus markType)
         {
-            int annotType = (item.strand == Strand) ? AnnotType.EXON : AnnotType.AEXON;
-            if (markType == MarkStatus.TEST_EXON_MARK_OTHER)
-            {
-                if (!AnnotType.IsTranscript(annotType))
-                {   // Only happens for directional AEXON reads
-                    MarkLocusHitPos(item);
-                    AddToTotalHits(item);
-                    HitsByAnnotType[annotType] += item.MolCount;
-                    if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
-                    MarkSNPs(item);
-                }
-                return new MarkResult(annotType, this);
-            } // Now hit should be marked
-            if (AnnotType.IsTranscript(annotType)) //(strand == Strand) // Sense hit
-            {
+            MarkSNPs(item);
+            if (markType == MarkStatus.NONEXONIC_MAPPING)
+            { // Only happens for directional AEXON reads
                 MarkLocusHitPos(item);
                 AddToTotalHits(item);
-                TranscriptHitsByExonIdx[exonIdx] += item.MolCount;
-                TranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
-                TranscriptReadsByBarcode[item.bcIdx] += item.ReadCount;
-                if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
-                    NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
-                HitsByAnnotType[annotType] += item.MolCount;
-                NonMaskedHitsByAnnotType[annotType] += item.MolCount;
-            }
-            return new MarkResult(annotType, this);
+                HitsByAnnotType[AnnotType.AEXON] += item.MolCount;
+                if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[AnnotType.AEXON] += item.MolCount;
+                return new MarkResult(AnnotType.AEXON, this);
+            } 
+            // Now hit is to transcript and should be marked as EXON
+            MarkLocusHitPos(item);
+            AddToTotalHits(item);
+            TranscriptHitsByExonIdx[exonIdx] += item.MolCount;
+            TranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
+            TranscriptReadsByBarcode[item.bcIdx] += item.ReadCount;
+            if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
+                NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
+            HitsByAnnotType[AnnotType.EXON] += item.MolCount;
+            NonMaskedHitsByAnnotType[AnnotType.EXON] += item.MolCount;
+            return new MarkResult(AnnotType.EXON, this);
         }
 
         public MarkResult MarkSpliceHit(MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
         {
             int exonIdx = (Strand == '+') ? exonId - 1 : ExonCount - exonId;
             int annotType = (item.strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
-            if (AnnotType.IsTranscript(annotType))
+            if (markType == MarkStatus.NONEXONIC_MAPPING)
+            { // Now we have a directional ASPLC hit
+                if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
+            }
+            else
             {
                 MarkJunctionHit(junctionId, item.MolCount);
                 NonMaskedHitsByAnnotType[annotType] += item.MolCount;
-            }
-            else // Only happens for directional ASPLC hits
-            {
-                if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
             }
             HitsByAnnotType[annotType] += item.MolCount;
             MarkResult res = MarkExonHit(item, exonIdx, markType);

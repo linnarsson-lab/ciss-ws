@@ -39,6 +39,7 @@ namespace Linnarsson.Dna
         public int FirstNegBarcodeIndex { get { return m_FirstNegBarcodeIndex; } }
 
         public bool HasRandomBarcodes { get { return m_RandomTagLen > 0; } }
+        public bool BarcodesInIndexReads { get; set; }
         public int RandomBarcodeCount { get { return 1 << (2 * m_RandomTagLen); } }
         protected int m_RandomTagPos = 0;
         public int RandomTagPos { get { return m_RandomTagPos; } }
@@ -80,6 +81,10 @@ namespace Linnarsson.Dna
         {
             return SeqLength + m_TSSeq.Length;
         }
+        /// <summary>
+        /// Find the position after rndTag, barcode and any GGG-triple, whichever is highest
+        /// </summary>
+        /// <returns>Positions where actual sequence should start</returns>
         public virtual int GetInsertStartPos()
         {
             return Math.Max(m_BarcodePos + GetLengthOfBarcodesWithTSSeq(), m_RandomTagPos + m_RandomTagLen); 
@@ -577,10 +582,10 @@ namespace Linnarsson.Dna
             string line = reader.ReadLine();
             while (line.StartsWith("#"))
             {
-                line = line.Trim().Replace(" ", "");
-                if (line.StartsWith("#remove="))
+                line = line.Trim().ToLower().Replace(" ", "");
+                if (line.StartsWith("#remove=") && line.Length > 8)
                     m_TSSeq = line.Substring(8);
-                else if (line.StartsWith("#trim="))
+                else if (line.StartsWith("#trim=") & line.Length > 6)
                     m_TSTrimNt = line[6];
                 else if (line.StartsWith("#randomtagpos="))
                 {
@@ -592,6 +597,8 @@ namespace Linnarsson.Dna
                 }
                 else if (line.StartsWith("#barcodepos="))
                     m_BarcodePos = int.Parse(line.Substring(12));
+                else if (line.StartsWith("#indexfile"))
+                    BarcodesInIndexReads = true;
                 line = reader.ReadLine();
             }
             List<string> sampleIds = new List<string>();

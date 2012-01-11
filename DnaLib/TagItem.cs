@@ -47,6 +47,10 @@ namespace Linnarsson.Dna
                                  chr, strand, hitStartPos, bcIdx, HitMidPos, MolCount, ReadCount, m_TagItem.hasAltMappings);
         }
 
+        /// <summary>
+        /// Iterate over all SNPs that have been found within this read mapping
+        /// </summary>
+        /// <returns>LocatedSNPCounter:s with the chr position and SNPCounter defined</returns>
         public IEnumerable<LocatedSNPCounter> IterMolSNPCounts()
         {
             if (tagItem.SNPData == null) yield break;

@@ -97,8 +97,15 @@ namespace Linnarsson.Dna
         }
     }
 
+    /// <summary>
+    /// Keeps track of SNPs by molecule and relative offset within read for reads mapping at the same genomic position
+    /// </summary>
     public class RndTagSNPData
     {
+        /// <summary>
+        /// At each offset relative to the 5' pos of reads' alignment where some SNPs appear,
+        /// keep an array by rndTag of counts for each SNP nt. 
+        /// </summary>
         private Dictionary<byte, SNPCounter[]> SNPData;
 
         public RndTagSNPData()
@@ -110,6 +117,10 @@ namespace Linnarsson.Dna
             SNPData[snpOffset] = null;
         }
 
+        /// <summary>
+        /// Get all offsets that have been defined as SNP positions
+        /// </summary>
+        /// <returns></returns>
         public byte[] GetSNPOffsets()
         {
             return SNPData.Keys.ToArray();
@@ -122,6 +133,13 @@ namespace Linnarsson.Dna
                     SNPData[snpOffset] = null;
         }
 
+        /// <summary>
+        /// Add the Nt at a SNP position from a read.
+        /// Requires that the position has been defined as a SNP pos by call to RegisterSNP()
+        /// </summary>
+        /// <param name="rndTagIdx">The rndTag of the read</param>
+        /// <param name="snpOffset">Offset within the read of the SNP</param>
+        /// <param name="snpNt">The reads' Nt at the SNP positions</param>
         public void AddSNP(int rndTagIdx, byte snpOffset, char snpNt)
         {
             SNPCounter[] snpCounterByRndTag = SNPData[snpOffset];
@@ -134,6 +152,12 @@ namespace Linnarsson.Dna
             snpCounterByRndTag[rndTagIdx].Add(snpNt);
         }
 
+        /// <summary>
+        /// Summarize the Nt distribution at a SNP position
+        /// </summary>
+        /// <param name="snpOffset"></param>
+        /// <param name="validRndTagIndices"></param>
+        /// <returns>A SNPCounter holding the number of molecules with each Nt at the SNP pos</returns>
         public SNPCounter GetMolSNPCounts(byte snpOffset, List<int> validRndTagIndices)
         {
             SNPCounter counts = new SNPCounter();

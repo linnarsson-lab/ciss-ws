@@ -168,7 +168,6 @@ namespace Linnarsson.Dna
 
 		public FastQRecord(string hdr, string seq, byte[] phredQualities, bool passedFilter)
 		{
-			PassedFilter = true;
 			Header = hdr;
 			Sequence = seq;
 			Qualities = phredQualities;
@@ -239,6 +238,20 @@ namespace Linnarsson.Dna
            Array.Copy(Qualities, start, newQualities, 0, len);
            Qualities = newQualities;
            Sequence = Sequence.Substring(start, len);
+        }
+
+        public void Insert(int pos, string insertSeq, byte[] insertQualities)
+        {
+            if (insertSeq.Length != insertQualities.Length)
+                throw new FormatException("FastQRecord.Insert(" + pos + ", " + insertSeq + ",[ " + insertQualities.Length +
+                                          "]): Sequence and qualities must have matching length!");
+            if (pos > insertQualities.Length) pos = insertQualities.Length;
+            Sequence = Sequence.Substring(0, pos) + insertSeq + Sequence.Substring(pos);
+            byte[] newQualities = new byte[insertQualities.Length + Qualities.Length];
+            Array.Copy(Qualities, 0, newQualities, 0, pos);
+            Array.Copy(insertQualities, 0, newQualities, pos, insertQualities.Length);
+            Array.Copy(Qualities, pos, newQualities, pos + insertQualities.Length, Qualities.Length - pos);
+            Qualities = newQualities;
         }
 
         /// <summary>

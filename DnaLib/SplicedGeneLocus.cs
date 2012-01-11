@@ -46,12 +46,12 @@ namespace Linnarsson.Dna
 
         public override MarkResult MarkHit(MappedTagItem item, int partIdx, MarkStatus markType)
         {
-            int annotType = (item.strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
             item.splcToRealChrOffset = offsets[partIdx];
             if (item.HitMidPos < realFeature.Start || item.HitMidPos > realFeature.End)
-                Console.WriteLine("ERROR in SplicedGeneLocus.MarkHit: PartIdx=" + partIdx + "offset[pIdx]=" + offsets[partIdx] + " MarkType=" + AnnotType.GetName(annotType) + "\n  " 
-                                + "Gene=" + realFeature.Name + " LocusStart=" + realFeature.LocusStart + " LocusEnd=" + realFeature.LocusEnd + "\n  "
-                                + "MappedTagItem:" + item.ToString());
+                Console.WriteLine("ERROR in SplicedGeneLocus.MarkHit: PartIdx=" + partIdx + "offset[pIdx]=" + offsets[partIdx] +
+                                  " Strand=" + Strand + "\n  " + "Gene=" + realFeature.Name +
+                                  " LocusStart=" + realFeature.LocusStart + " LocusEnd=" + realFeature.LocusEnd + "\n" +
+                                  " MappedTagItem:" + item.ToString());
             return realFeature.MarkSpliceHit(item, realExonIds[partIdx], junctionIds[partIdx], markType);
         }
 

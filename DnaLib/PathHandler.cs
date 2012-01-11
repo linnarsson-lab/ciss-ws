@@ -62,6 +62,15 @@ namespace Linnarsson.Dna
             return rmskFiles;
         }
 
+        public static string GetGVFFile(StrtGenome genome)
+        {
+            string genomeFolder = genome.GetOriginalGenomeFolder();
+            string[] gvfFiles = Directory.GetFiles(genomeFolder, "*_incl_consequences.gvf");
+            if (gvfFiles.Length == 0)
+                return "";
+            return gvfFiles[0];
+        }
+
         private static string GetReadFileMatchPattern(string runNoOrFlowcellId)
         {
             string matchPat = "Run*_L{0}_1_*_?" + runNoOrFlowcellId + ".*"; // FlowcellId pattern

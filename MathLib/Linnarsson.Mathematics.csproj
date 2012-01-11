@@ -77,7 +77,7 @@
     <Compile Include="Automata\FiniteStateAutomaton.cs" />
     <Compile Include="Automata\RegularExpression.cs" />
     <Compile Include="Core\Correlation.cs" />
-    <Compile Include="Core\DownhillSimplexMethod.cs" />
+    <Compile Include="Optimization\DownhillSimplexMethod.cs" />
     <Compile Include="Core\Polynomial.cs" />
     <Compile Include="DataFrame\DataFrame.cs" />
     <Compile Include="ImageAnalysis.cs" />

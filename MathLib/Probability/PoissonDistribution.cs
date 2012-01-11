@@ -34,6 +34,12 @@ namespace Linnarsson.Mathematics
 			return Math.Exp(-Lambda + x * Math.Log(Lambda) - SpecialFunctions.LogGamma(x + 1));
 		}
 
+		public double LogPDF(int x)
+		{
+			return -Lambda + x * Math.Log(Lambda) - SpecialFunctions.LogGamma(x + 1);
+
+		}
+
 		/// <summary>
 		/// CDF for values up to x *inclusive*.
 		/// </summary>

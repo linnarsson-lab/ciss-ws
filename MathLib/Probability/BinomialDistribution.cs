@@ -102,10 +102,25 @@ namespace Linnarsson.Mathematics
 		public double PDF(int x)
 		{
 			if(x < 0 || x > N) throw new ArgumentOutOfRangeException("BinomialDistribution.PDF: x must be >= 0 and <= N");
-			if(P == 0 && x == N) return 0;
+			if (N == 0 && x == 0) return 1;
 			if(P == 0 && x == 0) return 1;
+			if (P == 0) return 0;
 
-			return SpecialFunctions.BinomialCoefficient(N, x) * Math.Pow(P, x) * Math.Pow(1d - P, N-x);
+			return SpecialFunctions.BinomialCoefficientContinuous(N, x) * Math.Pow(P, x) * Math.Pow(1d - P, N-x);
+		}
+
+		public double LogPDF(int x)
+		{
+			if (x < 0 || x > N) throw new ArgumentOutOfRangeException("BinomialDistribution.PDF: x must be >= 0 and <= N");
+			if(N == 0 && x == 0) return 0;
+			if(P == 0 && x == 0) return 0;
+			if(P == 0) return double.NegativeInfinity;
+
+			return SpecialFunctions.LogGamma(N + 1)
+					- SpecialFunctions.LogGamma(x + 1)
+					- SpecialFunctions.LogGamma(N - x + 1)
+					+ x * Math.Log(P)
+					+ (N - x) * Math.Log(1d - P);
 		}
 
 		public double CDF(int x)

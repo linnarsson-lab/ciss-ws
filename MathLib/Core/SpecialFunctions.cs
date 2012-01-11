@@ -6,6 +6,17 @@ namespace Linnarsson.Mathematics
 {
 	public class SpecialFunctions
 	{
+
+		#region Constants
+		
+		public static double GoldenRatio = 1.6180339887498948482045868343656381177;
+		/// <summary>
+		/// The Fibonacci series up to the largest Fibonacci number that fits in an int (which is Fibonacci[33] = 3524578)
+		/// </summary>
+		public static int[] Fibonacci = { 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040, 1346269, 2178309, 3524578 };
+
+		#endregion
+
 		#region Range checks
 		public static bool IsInteger(double x)
 		{
@@ -25,10 +36,17 @@ namespace Linnarsson.Mathematics
 		#endregion
 
 		#region Combinatorial
+
 		public static double BinomialCoefficient(int n, int k)
 		{
 			return Math.Floor(0.5d + Math.Exp(LogFactorial(n) - LogFactorial(k) - LogFactorial(n - k)));
 		}
+
+		public static double BinomialCoefficientContinuous(double n, double k)
+		{
+			return Math.Exp(LogGamma(n + 1) / (LogGamma(k + 1) * LogGamma(n - k + 1)));
+		}
+
 		/// <summary>
 		/// Returns the number of unordered combinations of k elements chosen from n. Equivalent
 		/// to BinomialCoefficient(n, k)
@@ -151,6 +169,25 @@ namespace Linnarsson.Mathematics
 		#endregion
 
 		#region Gamma and related
+
+		static SpecialFunctions()
+		{
+			// Precompute some values for speed
+
+			// Log gamma for integers up to 999
+			logGammaPrecomputed = new double[1000];
+			for (int i = 0; i < 1000; i++)
+			{
+				logGammaPrecomputed[i] = LogGamma((double)i);
+			}
+		}
+
+		private static double[] logGammaPrecomputed;
+		public static double LogGamma(int xx)
+		{
+			if (xx < 1000) return logGammaPrecomputed[xx];
+			else return LogGamma((double)xx);
+		}
 
 		public static double LogGamma(double xx)
 		{

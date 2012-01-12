@@ -582,22 +582,22 @@ namespace Linnarsson.Dna
             string line = reader.ReadLine();
             while (line.StartsWith("#"))
             {
-                line = line.Trim().ToLower().Replace(" ", "");
-                if (line.StartsWith("#remove=") && line.Length > 8)
+                line = line.Trim().Replace(" ", "");
+                if (line.ToLower().StartsWith("#remove=") && line.Length > 8)
                     m_TSSeq = line.Substring(8);
-                else if (line.StartsWith("#trim=") & line.Length > 6)
+                else if (line.ToLower().StartsWith("#trim=") & line.Length > 6)
                     m_TSTrimNt = line[6];
-                else if (line.StartsWith("#randomtagpos="))
+                else if (line.ToLower().StartsWith("#randomtagpos="))
                 {
                     m_RandomTagPos = int.Parse(line.Substring(14));
                 }
-                else if (line.StartsWith("#randomtaglen="))
+                else if (line.ToLower().StartsWith("#randomtaglen="))
                 {
                     m_RandomTagLen = int.Parse(line.Substring(14));
                 }
-                else if (line.StartsWith("#barcodepos="))
+                else if (line.ToLower().StartsWith("#barcodepos="))
                     m_BarcodePos = int.Parse(line.Substring(12));
-                else if (line.StartsWith("#indexfile"))
+                else if (line.ToLower().StartsWith("#indexfile"))
                     BarcodesInIndexReads = true;
                 line = reader.ReadLine();
             }

@@ -76,17 +76,18 @@ namespace Linnarsson.Dna
             if (fields.Length < 8)
                 throw new FormatException("Too few columns in input bowtie map file");
             string combinedReadId = fields[0];
-            mrm.Init(combinedReadId, fields[4].Length, int.Parse(fields[6]));
+            mrm.Init(combinedReadId, fields[4].Length, fields[5], fields[1][0], int.Parse(fields[6]));
             while (line != null)
             {
                 fields = line.Split('\t');
+                char strand = fields[1][0];
                 if (!line.StartsWith(combinedReadId))
                 {
                     yield return mrm;
                     combinedReadId = fields[0];
-                    mrm.Init(combinedReadId, fields[4].Length, int.Parse(fields[6]));
+                    mrm.Init(combinedReadId, fields[4].Length, fields[5], strand, int.Parse(fields[6]));
                 }
-                mrm.AddMapping(fields[2], fields[1][0], int.Parse(fields[3]), fields[7]);
+                mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);
                 line = reader.ReadLine();
             }
             reader.Close();
@@ -105,25 +106,14 @@ namespace Linnarsson.Dna
             while (line != null)
             {
                 fields = line.Split('\t');
-                mrm.Init(fields[0], fields[4].Length, int.Parse(fields[6]));
-                mrm.AddMapping(fields[2], fields[1][0], int.Parse(fields[3]), fields[7]);
+                char strand = fields[1][0];
+                mrm.Init(fields[0], fields[4].Length, fields[5], strand, int.Parse(fields[6]));
+                mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);
                 yield return mrm;
                 line = reader.ReadLine();
             }
             reader.Close();
             yield break;
-        }
-
-        public static void ParseFileItem(string linesBlock, ref MultiReadMappings mrm)
-        {
-            string[] lines = linesBlock.Split('\n');
-            string[] fields = lines[0].Split('\t');
-            mrm.Init(fields[0], fields[4].Length, int.Parse(fields[6]));
-            for (int lIdx = 0; lIdx < lines.Length; lIdx++)
-            {
-                fields = lines[lIdx].Split('\t');
-                mrm.AddMapping(fields[2], fields[1][0], int.Parse(fields[3]), fields[7]);
-            }
         }
 	}
 
@@ -173,8 +163,8 @@ namespace Linnarsson.Dna
                                 break;
                             }
                         }
-                        mrm.Init(fields[0], fields[9].Length, altMappings);
                         char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
+                        mrm.Init(fields[0], fields[9].Length, fields[10], strand, altMappings);
                         mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
                         yield return mrm;
                     }
@@ -188,7 +178,7 @@ namespace Linnarsson.Dna
             string chr = (a.Chromosome.StartsWith("chr")) ? a.Chromosome.Substring(3) : a.Chromosome;
             char strand = (a.Strand == DnaStrand.Forward) ? '+' : '-';
             //int altMappings = ParseAltMappings(a.ExtraFields);
-            mrm.Init(a.QueryName, (int)a.QuerySequence.Count, 0);
+            mrm.Init(a.QueryName, (int)a.QuerySequence.Count, a.QueryQuality, strand, 0);
             mrm.AddMapping(chr, strand, a.Position - 1, "");
         }
 
@@ -253,6 +243,10 @@ namespace Linnarsson.Dna
 
         public IEnumerable<Mismatch> IterMismatches()
         {
+            return IterMismatches(0);
+        }
+        public IEnumerable<Mismatch> IterMismatches(int minPhredScore)
+        {
             if (!HasMismatches) yield break;
             foreach (string snp in Mismatches.Split(','))
             {
@@ -263,8 +257,11 @@ namespace Linnarsson.Dna
                     continue;
                 }
                 int posInRead = int.Parse(snp.Substring(0, p));
-                int relPos = (Strand == '+') ? posInRead : parent.SeqLen - 1 - posInRead;
-                yield return new Mismatch(posInRead, snp[p + 1], snp[p + 3]);
+                if (parent.GetQuality(posInRead) >= minPhredScore)
+                {
+                    int relPos = (Strand == '+') ? posInRead : parent.SeqLen - 1 - posInRead;
+                    yield return new Mismatch(posInRead, snp[p + 1], snp[p + 3]);
+                }
             }
         }
 
@@ -278,6 +275,12 @@ namespace Linnarsson.Dna
         public int BarcodeIdx;
         public int RandomBcIdx = 0;
         public int SeqLen;
+        private string qualityString;
+        private char qualityDir;
+        public char GetQuality(int posInRead)
+        {
+            return qualityString[(qualityDir == '+')? posInRead : qualityString.Length - 1 - posInRead];
+        }
         public int AltMappings;
         public bool HasAltMappings { get { return AltMappings >= 1 || NMappings > 1; } }
         public int NMappings;
@@ -301,12 +304,14 @@ namespace Linnarsson.Dna
             return sb.ToString();
         }
 
-        public void Init(string combinedReadId, int seqLen, int altMappings)
+        public void Init(string combinedReadId, int seqLen, string qualityString, char qualityDirection, int altMappings)
         {
             ReadId = Barcodes.ExtractBarcodesFromReadId(combinedReadId, out BarcodeIdx, out RandomBcIdx);
             SeqLen = seqLen;
             AltMappings = altMappings;
             NMappings = 0;
+            this.qualityDir = qualityDirection;
+            this.qualityString = qualityString;
         }
         public void AddMapping(string chr, char strand, int pos, string mismatches)
         {

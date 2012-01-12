@@ -50,6 +50,7 @@ namespace Linnarsson.Dna
             new string[] { "Sox2" ,"Actb", "Nanog" };
         public bool SnpRndTagVerification = false;
         public string SnpRndTagVerificationChr = "1";
+        public int SnpRndTagVerificationMinQAscii = 33; // Bowtie map file lowest Q-value is 33 ('!')
         public int MinPhredScoreInRandomTag = 17;
         public bool GenerateTranscriptProfiles = false;
         public bool GenerateGeneLocusProfiles = false;
@@ -127,6 +128,7 @@ namespace Linnarsson.Dna
             }
             internal static readonly Props instance = Read();
         }
+
     }
 
 }

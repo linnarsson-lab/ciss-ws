@@ -55,9 +55,7 @@
     <Compile Include="BarcodedReadStream.cs" />
     <Compile Include="BowtieMapFileSorter.cs" />
     <Compile Include="MapFileSnpFinder.cs" />
-    <Compile Include="MapMergeSorter.cs" />
     <Compile Include="NonExonRepeatMasker.cs" />
-    <Compile Include="MapMergeSorter.cs" />
     <Compile Include="MoleculeCounter.cs" />
     <Compile Include="ProjectDB.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -90,9 +88,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="MySql.Data.dll" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram1.cd" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

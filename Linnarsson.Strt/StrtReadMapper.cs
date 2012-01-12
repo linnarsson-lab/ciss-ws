@@ -422,7 +422,7 @@ namespace Linnarsson.Strt
                 props.UseRPKM = projDescr.rpkm;
                 props.DirectionalReads = !projDescr.rpkm;
                 logWriter.WriteLine(DateTime.Now.ToString() + " Annotating " + mapFilePaths.Count + " map files..."); logWriter.Flush();
-                logWriter.WriteLine(DateTime.Now.ToString() + "   DirectionalReads=" + props.DirectionalReads + " RPKM=" + props.UseRPKM);
+                logWriter.WriteLine(DateTime.Now.ToString() + "   AllTrVariants=" + projDescr.analyzeVariants + " DirectionalReads=" + props.DirectionalReads + " RPKM=" + props.UseRPKM);
                 ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.projectName, mapFilePaths);
                 projDescr.resultDescriptions.Add(resultDescr);
                 System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(projDescr.GetType());

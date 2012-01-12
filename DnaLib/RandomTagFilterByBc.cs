@@ -86,7 +86,7 @@ namespace Linnarsson.Strt
         {
             SNPCounter totalCounts = new SNPCounter();
             TagItem tagItem;
-            for (byte snpOffset = (byte)(averageReadLen - marginInReadForSNP); snpOffset <= (byte)marginInReadForSNP; snpOffset--)
+            for (byte snpOffset = (byte)(averageReadLen - marginInReadForSNP); snpOffset >= (byte)marginInReadForSNP; snpOffset--)
             {
                 int readStartPos = snpChrPos - snpOffset;
                 int posStrand = MakePosStrandIdx(readStartPos, strand);

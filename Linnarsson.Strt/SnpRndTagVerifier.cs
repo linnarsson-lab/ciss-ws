@@ -68,6 +68,7 @@ namespace Linnarsson.Strt
         public HashSet<int> snpPosOnChr = new HashSet<int>();
         public static string verificationChr;
         private Barcodes barcodes;
+        private int minBowtieQAscii;
         /// <summary>
         /// Expecting the same chromosome for all data
         /// </summary>
@@ -76,6 +77,7 @@ namespace Linnarsson.Strt
         public SnpRndTagVerifier(Props props, MapFileSnpFinder mfsf)
         {
             barcodes = props.Barcodes;
+            minBowtieQAscii = props.SnpRndTagVerificationMinQAscii;
             verificationChr = props.SnpRndTagVerificationChr;
             foreach (LocatedSNPCounter locSNP in mfsf.IterSNPLocations(5))
                 if (locSNP.chr == verificationChr)
@@ -124,7 +126,7 @@ namespace Linnarsson.Strt
 
         private Mismatch GetMismatchAtPos(int snpPos, MultiReadMapping mrm)
         {
-            foreach (Mismatch mm in mrm.IterMismatches())
+            foreach (Mismatch mm in mrm.IterMismatches(minBowtieQAscii))
             {
                 if (mrm.Position + mm.relPosInChrDir == snpPos)
                     return mm;

@@ -200,10 +200,10 @@ foreach ($allxml->getElementsByTagName("barcodestat") as $platedata) {
 if ($xlabels != null) {
     foreach ($allxml->getElementsByTagName("barcodestat") as $platedata) {
         $d = parsePlate($platedata);
-        if (is_numeric($d["values"][0]) || $d["values"][0] == "(0)") {
+        if (is_numeric($d["values"][0]) || preg_match('/\([0-9]+\)/', $d["values"][0]) == 1) {
             $numvals = array();
             foreach ($d["values"] as $val) {
-              $numvals[] = ($val == "(0)")? "0" : $val;
+              $numvals[] = (preg_match('/\([0-9]+\)/', $val) == 1)? "0" : $val;
             }
             $graph = plotBars($d["title"], $xlabels, $numvals);
             addGraph($graph);

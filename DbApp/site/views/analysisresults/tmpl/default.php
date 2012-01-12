@@ -23,12 +23,12 @@ defined('_JEXEC') or die('Restricted access');
           <th>&nbsp;</th>
           <th>Sample</th>
           <th>Status<br />" . JHTML::tooltip('If "ready" - link to export in Qlucore format [.gedata]') . "</th>
-          <th>Path<br />" . JHTML::tooltip('Not displayed until results are ready') . "</th>
-          <th>L<br />" . JHTML::tooltip('Total no. of lanes included in analysis') . "</th>
+          <th>Path & Analysis date&nbsp;<br />" . JHTML::tooltip('Not displayed until results are ready') . "</th>
+          <th>#Lanes<br />" . JHTML::tooltip('Total no. of lanes included in analysis') . "</th>
           <th>Extr<br />" . JHTML::tooltip('Version of read filter and barcoded extraction software') . "</th>
           <th>Ann<br />" . JHTML::tooltip('Version of feature annotation software') . "</th>
           <th>RPKM</th>
-          <th>Gnm<br /> " . JHTML::tooltip('Not displayed until results are ready') . "</th>
+          <th>Build<br /> " . JHTML::tooltip('Not displayed until results are ready') . "</th>
           <th>DBVer<br />" . JHTML::tooltip('Source and creation date of genome and annotation database. Note that source may have changed if the requested build was not available at processing time.') . "</th>
           <th>Type<br />" . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "</th>
           <th>Cmnt</th>
@@ -53,9 +53,10 @@ defined('_JEXEC') or die('Restricted access');
     $viewlink = "";
     if ($result->status == "ready") {
       if (!file_exists($rpath)) {
-        $rpath = "<i>" . pathinfo($rpath, PATHINFO_BASENAME) . " - missing! </i>"; 
+        $rpath = "<i>Folder is missing! </i>"; 
       } else {
-        $rpath = pathinfo($rpath, PATHINFO_BASENAME);
+        preg_match('/[0-9]+_[0-9]+/', pathinfo($rpath, PATHINFO_BASENAME), $m);
+        $rpath = $m[0];
         $viewlink = "&nbsp;<a href=index.php?option=com_dbapp&view=project&controller=project&layout=analysis&searchid="
                     . $result->id . "&Itemid=" . $itemid . ">view</a>";
         $qlink = "<td><a href=index.php?option=com_dbapp&view=analysisresults&layout=download&analysisid=" . $result->id . "  \"target=_blank\" >" . $result->status . "</a></td>";

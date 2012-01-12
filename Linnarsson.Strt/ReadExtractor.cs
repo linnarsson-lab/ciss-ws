@@ -92,22 +92,7 @@ namespace Linnarsson.Strt
             stats += ").";
             return stats;
         }
-        public string TotalsToString()
-        {
-            string s = "The following read files are included in this read summary:\n" +
-                       string.Join("\n", readFiles.ToArray());
-            s += "\n\nTotal reads that passed Illumina filters: " + GrandTotal +
-                 "\nAccepted reads: " + GrandCount(ReadStatus.VALID) + " (" + string.Format("{0:0.#%}",  GrandFraction(ReadStatus.VALID)) + ")" +
-                 "\nRejected reads (barcode error/Gs missing/too short/polyA): " + GrandRejected +
-                 "\n- wrong barcode/Gs missing: " + GrandCount(ReadStatus.BARCODE_ERROR) +
-                 "\n- too short: " + GrandCount(ReadStatus.LENGTH_ERROR) +
-                 "\n- polyA/low complexity: " + GrandCount(ReadStatus.COMPLEXITY_ERROR);
-            if (GrandCount(ReadStatus.N_IN_RANDOM_TAG) > 0)
-                s += "\nRejected reads due to unparseable random tags: " + GrandCount(ReadStatus.N_IN_RANDOM_TAG);
-            if (GrandCount(ReadStatus.NEGATIVE_BARCODE_ERROR) > 0)
-                s += "\nRejected reads due to negative barcodes: " + GrandCount(ReadStatus.NEGATIVE_BARCODE_ERROR);
-            return s;
-        }
+
         public string TotalsToTabString()
         {
             string s = "#Files included in this read summary, with average read lengths:\n";

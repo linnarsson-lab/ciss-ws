@@ -226,7 +226,6 @@ namespace Linnarsson.Strt
             int insertLength = TrimTrailingNAndCheckAs(rSeq);
             if (insertLength < minReadLength)
                 return ReadStatus.LENGTH_ERROR;
-             //int bcIdx = Array.IndexOf(barcodesWithTSSeq, rSeq.Substring(barcodePos, bcWithTSSeqLen));
             if (!barcodesWithTSSeq.TryGetValue(rSeq.Substring(barcodePos, bcWithTSSeqLen), out bcIdx))
                 return ReadStatus.BARCODE_ERROR;
             if (bcIdx >= firstNegBarcodeIndex)
@@ -235,8 +234,10 @@ namespace Linnarsson.Strt
             if (rndBcLen > 0)
             {
                 for (int i = rndBcPos; i < rndBcPos + rndBcLen; i++)
+                {
                     if (rec.Qualities[i] < minQualityInRandomTag)
                         return ReadStatus.LOW_QUALITY_IN_RANDOM_TAG;
+                }
                 bcRandomPart = rSeq.Substring(rndBcPos, rndBcLen) + ".";
                 if (bcRandomPart.Contains('N'))
                     return ReadStatus.N_IN_RANDOM_TAG;

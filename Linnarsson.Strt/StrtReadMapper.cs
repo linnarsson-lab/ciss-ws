@@ -384,7 +384,7 @@ namespace Linnarsson.Strt
         private List<string> CollectExtractionSummaryPaths(List<string> mapFilePaths, StrtGenome genome)
         {
             Dictionary<string, object> summaryPaths = new Dictionary<string, object>();
-            string splcIndexVersion = PathHandler.GetIndexVersion(genome);
+            string splcIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
             foreach (string mapFilePath in mapFilePaths)
             {
                 string summaryFolder = Path.GetDirectoryName(mapFilePath).Replace(splcIndexVersion, "fq");
@@ -418,7 +418,7 @@ namespace Linnarsson.Strt
                 SetAvailableBowtieIndexVersion(projDescr, genome);
                 logWriter.WriteLine(DateTime.Now.ToString() + " Mapping to " + genome.GetBowtieSplcIndexName() + "..."); logWriter.Flush();
                 CreateBowtieMaps(genome, projDescr.extractionInfos);
-                List<string> mapFilePaths = GetAllMapFilePaths(projDescr.extractionInfos);
+                List<string> mapFilePaths = LaneInfo.RetrieveAllMapFilePaths(projDescr.extractionInfos);
                 props.UseRPKM = projDescr.rpkm;
                 props.DirectionalReads = !projDescr.rpkm;
                 logWriter.WriteLine(DateTime.Now.ToString() + " Annotating " + mapFilePaths.Count + " map files..."); logWriter.Flush();
@@ -435,7 +435,7 @@ namespace Linnarsson.Strt
 
         private static void SetAvailableBowtieIndexVersion(ProjectDescription projDescr, StrtGenome genome)
         {
-            string bowtieIndexVersion = PathHandler.GetIndexVersion(genome);
+            string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
             if (bowtieIndexVersion == "" && genome.Annotation != "UCSC")
             {
                 Console.WriteLine("Could not find a Bowtie index for " + genome.Annotation +
@@ -502,14 +502,6 @@ namespace Linnarsson.Strt
             return speciesArgs;
         }
 
-        private static List<string> GetAllMapFilePaths(List<LaneInfo> laneInfos)
-        {
-            List<string> mapFiles = new List<string>();
-            foreach (LaneInfo info in laneInfos)
-                mapFiles.AddRange(info.mappedFilePaths);
-            return mapFiles;
-        }
-
         private void CreateBowtieMaps(StrtGenome genome, List<LaneInfo> extrInfos)
         {
             string splcIndexVersion = GetSplcIndexVersion(genome);
@@ -520,16 +512,24 @@ namespace Linnarsson.Strt
             foreach (LaneInfo extrInfo in extrInfos)
                 CreateBowtieMaps(genome, extrInfo, splcIndexVersion, splcIndexName);
         }
-        private void CreateBowtieMaps(StrtGenome genome, LaneInfo extrInfo, string splcIndexVersion, string splcIndexName)
+
+        /// <summary>
+        /// Create any missing .map files needed for given genome and wells defined by barcodes/species.
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <param name="laneInfo">Paths to all needed map files will be stored in laneInfo.mappedFilePaths</param>
+        /// <param name="splcIndexVersion"></param>
+        /// <param name="splcIndexName"></param>
+        private void CreateBowtieMaps(StrtGenome genome, LaneInfo laneInfo, string splcIndexVersion, string splcIndexName)
         {
-            extrInfo.SetMappedFileFolder(splcIndexVersion);
-            string mapFolder = extrInfo.mappedFileFolder;
+            laneInfo.SetMappedFileFolder(splcIndexVersion);
+            string mapFolder = laneInfo.mappedFileFolder;
             if (!Directory.Exists(mapFolder))
                 Directory.CreateDirectory(mapFolder);
-            extrInfo.bowtieLogFilePath = Path.Combine(mapFolder, "bowtie_output.txt");
+            laneInfo.bowtieLogFilePath = Path.Combine(mapFolder, "bowtie_output.txt");
             List<string> mapFiles = new List<string>();
             int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-            foreach (string fqPath in extrInfo.extractedFilePaths)
+            foreach (string fqPath in laneInfo.extractedFilePaths)
             {
                 int bcIdx = int.Parse(Path.GetFileNameWithoutExtension(fqPath));
                 if (Array.IndexOf(genomeBcIndexes, bcIdx) == -1)
@@ -537,20 +537,25 @@ namespace Linnarsson.Strt
                 string mainIndex = genome.GetBowtieMainIndexName();
                 string fqUnmappedReadsPath = Path.Combine(mapFolder, bcIdx + ".fq-" + mainIndex);
                 string outputMainPath = Path.Combine(mapFolder, bcIdx + "_" + mainIndex + ".map");
-                AssertBowtieOutputFile(mainIndex, fqPath, outputMainPath, fqUnmappedReadsPath, extrInfo.bowtieLogFilePath);
+                AssertBowtieOutputFile(mainIndex, fqPath, outputMainPath, fqUnmappedReadsPath, laneInfo.bowtieLogFilePath);
                 mapFiles.Add(outputMainPath);
                 string outputSplcPath = Path.Combine(mapFolder, bcIdx + "_" +  splcIndexVersion + ".map");
-                AssertBowtieOutputFile(splcIndexName, fqUnmappedReadsPath, outputSplcPath, "", extrInfo.bowtieLogFilePath);
+                AssertBowtieOutputFile(splcIndexName, fqUnmappedReadsPath, outputSplcPath, "", laneInfo.bowtieLogFilePath);
                 mapFiles.Add(outputSplcPath);
-                if (File.Exists(fqUnmappedReadsPath)) File.Delete(fqUnmappedReadsPath);
                 if (Background.CancellationPending) break;
             }
-            extrInfo.mappedFilePaths = mapFiles.ToArray();
+            laneInfo.mappedFilePaths = mapFiles.ToArray();
         }
 
+        /// <summary>
+        /// Gets the current bowtie index version (including date) for genome.
+        /// throws exception if it does not exist
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <returns></returns>
         private static string GetSplcIndexVersion(StrtGenome genome)
         {
-            string splcIndexVersion = PathHandler.GetIndexVersion(genome); // The current version including date
+            string splcIndexVersion = PathHandler.GetSpliceIndexVersion(genome); // The current version including date
             if (splcIndexVersion == "")
                 throw new Exception("Please use idx function to make a bowtie splice index with ReadLen=" + genome.ReadLen
                                     + " or at least " + (genome.ReadLen - 5) + " for " + genome.GetBowtieMainIndexName());
@@ -613,7 +618,7 @@ namespace Linnarsson.Strt
             List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
             genome.ReadLen = GetReadLen(extractedFolder);
             CreateBowtieMaps(genome, laneInfos);
-            List<string> mapFiles = GetAllMapFilePaths(laneInfos);
+            List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(laneInfos);
             return AnnotateMapFiles(genome, projectFolder, extractedFolder, mapFiles);
         }
 
@@ -650,14 +655,19 @@ namespace Linnarsson.Strt
         private static List<string> SetExistingMapFilePaths(StrtGenome genome, List<LaneInfo> laneInfos)
         {
             string splcIndexVersion = GetSplcIndexVersion(genome);
-            List<string> mapFiles = new List<string>();
+            string mainPattern = "*_" + genome.GetBowtieMainIndexName() + ".map";
+            string splcPattern = "*_" + splcIndexVersion + ".map";
+            List<string> allLanesMapFiles = new List<string>();
             foreach (LaneInfo info in laneInfos)
             {
                 info.SetMappedFileFolder(splcIndexVersion);
-                info.mappedFilePaths = Directory.GetFiles(info.mappedFileFolder, "*.map");
-                mapFiles.AddRange(info.mappedFilePaths);
+                List<string> laneMapFiles = new List<string>();
+                laneMapFiles.AddRange(Directory.GetFiles(info.mappedFileFolder, mainPattern));
+                laneMapFiles.AddRange(Directory.GetFiles(info.mappedFileFolder, splcPattern));
+                info.mappedFilePaths = laneMapFiles.ToArray();
+                allLanesMapFiles.AddRange(laneMapFiles);
             }
-            return mapFiles;
+            return allLanesMapFiles;
         }
 
         private string AnnotateMapFiles(StrtGenome genome, string projectFolder, string extractedFolder, List<string> mapFiles)
@@ -724,7 +734,7 @@ namespace Linnarsson.Strt
             Directory.CreateDirectory(outputFolder);
             Console.WriteLine("Saving to {0}...", outputFolder);
             ts.SaveResult(readCounter, outputPathbase);
-            string bowtieIndexVersion = PathHandler.GetIndexVersion(genome);
+            string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
             return new ResultDescription(mapFilePaths, bowtieIndexVersion, outputFolder);
         }
 

@@ -135,14 +135,16 @@ namespace Linnarsson.Dna
 
         /// <summary>
         /// Add the Nt at a SNP position from a read.
-        /// Requires that the position has been defined as a SNP pos by call to RegisterSNP()
+        /// If the position has not been defined as a SNP by a previous call to RegisterSNP(), it will be skipped
         /// </summary>
         /// <param name="rndTagIdx">The rndTag of the read</param>
         /// <param name="snpOffset">Offset within the read of the SNP</param>
         /// <param name="snpNt">The reads' Nt at the SNP positions</param>
         public void AddSNP(int rndTagIdx, byte snpOffset, char snpNt)
         {
-            SNPCounter[] snpCounterByRndTag = SNPData[snpOffset];
+            SNPCounter[] snpCounterByRndTag;
+            if (!SNPData.TryGetValue(snpOffset, out snpCounterByRndTag))
+                return;
             if (snpCounterByRndTag == null)
             {
                 snpCounterByRndTag = new SNPCounter[TagItem.nRndTags];

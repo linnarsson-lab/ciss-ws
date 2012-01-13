@@ -147,7 +147,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Tries to find a splice chr index that has read length as close as possible below ReadLen.
+        /// Tries to find an existing splice chr bowtie index that has read length as close as possible below ReadLen.
         /// </summary>
         /// <returns>Empty string if none found</returns>
         public string GetBowtieSplcIndexName()

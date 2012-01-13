@@ -57,7 +57,7 @@ namespace Linnarsson.Strt
         /// <param name="snpChrPos"></param>
         public void RegisterSNP(int snpChrPos)
         {
-            for (byte snpOffset = (byte)(averageReadLen - marginInReadForSNP); snpOffset <= (byte)marginInReadForSNP; snpOffset--)
+            for (byte snpOffset = (byte)(averageReadLen - marginInReadForSNP); snpOffset >= (byte)marginInReadForSNP; snpOffset--)
             {
                 int readStartPos = snpChrPos - snpOffset;
                 RegisterSNPOnTagItem(readStartPos, snpOffset, 0);

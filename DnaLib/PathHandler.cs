@@ -28,7 +28,7 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="genome"></param>
         /// <returns>Empty string if none found</returns>
-        public static string GetIndexVersion(StrtGenome genome)
+        public static string GetSpliceIndexVersion(StrtGenome genome)
         {
             string indexName = genome.GetBowtieSplcIndexName();
             if (indexName == "")
@@ -36,6 +36,16 @@ namespace Linnarsson.Dna
             string testFile = Path.Combine(GetBowtieIndicesFolder(), indexName + ".1.ebwt");
             FileInfo fInfo = new FileInfo(testFile);
             return indexName + fInfo.CreationTime.ToString("yyMMdd");
+        }
+        /// <summary>
+        /// Convert e.g. "mm9chrsUCSC_42bp120112" to "mm9_UCSC_120112"
+        /// </summary>
+        /// <param name="spliceIndexVersion"></param>
+        /// <returns></returns>
+        public static string MakeMapFolder(string spliceIndexVersion)
+        {
+            Match m = Regex.Match(spliceIndexVersion, "(.+)chr[as](.+)_.+bp([0-9]+)");
+            return m.Groups[1].Value + "_" + m.Groups[2].Value + "_" + m.Groups[3].Value;
         }
 
         public static string GetSampleLayoutPath(string projectNameOrFolder)

@@ -39,7 +39,16 @@ namespace Linnarsson.Dna
 
         public void SetMappedFileFolder(string splcIndexVersion)
         {
-            mappedFileFolder = Path.Combine(Path.Combine(extractionTopFolder, splcIndexVersion), ExtractedFileFolderName);
+            string mapFolderName = PathHandler.MakeMapFolder(splcIndexVersion);
+            mappedFileFolder = Path.Combine(Path.Combine(extractionTopFolder, mapFolderName), ExtractedFileFolderName);
+        }
+
+        public static List<string> RetrieveAllMapFilePaths(List<LaneInfo> laneInfos)
+        {
+            List<string> mapFiles = new List<string>();
+            foreach (LaneInfo info in laneInfos)
+                mapFiles.AddRange(info.mappedFilePaths);
+            return mapFiles;
         }
 
         public override string ToString()

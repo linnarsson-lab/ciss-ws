@@ -172,57 +172,72 @@ namespace readFileContent
 
             }
 */
+            // start to compare the projects, designate one project as reference and one project to compare
+            TextWriter tw = new StreamWriter("readCount.txt");
 
             foreach (string bFile in TheBams)
             {
                 Console.WriteLine("\t" + bFile);
                 BamFile BF = new BamFile(bFile);
-                Console.WriteLine(bFile);
-                for (int i = 0; i < BF.Chromosomes.Length; i++)
+                tw.WriteLine(DateTime.Now);
+                //                for (int i = 0; i < BF.Chromosomes.Length; i++)
+//                {
+                Dictionary<string, int> onposcounter = new Dictionary<string, int>();
+                List<string>   posexist = new List<string>();
+                //                    Console.WriteLine(BF.Chromosomes[i] + " - " + BF.ChromosomeLengths[i]);
+                foreach (KeyValuePair<string, Fragment> KVP in Design)
                 {
-                    Dictionary<int, int> onposcounter = new Dictionary<int, int>();
-                    Console.WriteLine(BF.Chromosomes[i] + " - " + BF.ChromosomeLengths[i]);
-                    foreach (KeyValuePair<string, Fragment> KVP in Design)
+                    //                        string[] CHbam = BF.Chromosomes[i].Split('.');
+                    string[] CHgff = KVP.Value.seqname.Split('r');
+                    string CHROM = CHgff[1] + ".fa";
+                    int strt = KVP.Value.start - 250;
+                    if (strt < 1)
+                        strt = 1;
+                    int ende = KVP.Value.end + 250;
+                    //                        if (ende > BF.ChromosomeLengths[i])
+                    //                            ende = BF.ChromosomeLengths[i];
+                    List<BamAlignedRead> MyList = BF.Fetch(CHROM, strt, ende);
+                    //                        Console.WriteLine("\t\t" + BF.Chromosomes[i] + " - " + BF.ChromosomeLengths[i] + " - " + MyList.Count);
+                    List<string> tmp = new List<string>();
+                    if (!(MyList.Count < 1))
                     {
-                        string[] CHbam = BF.Chromosomes[i].Split('.');
-                        string[] CHgff = KVP.Value.seqname.Split('r');
-                        if (CHbam[0] != CHgff[1]) continue;
-                        int strt = KVP.Value.start - 250;
-                        if (strt < 1)
-                            strt = 1;
-                        int ende = KVP.Value.end + 250;
-                        if (ende > BF.ChromosomeLengths[i])
-                            ende = BF.ChromosomeLengths[i];
-                        List<BamAlignedRead> MyList = BF.Fetch(BF.Chromosomes[i], strt, ende);
-                        Console.WriteLine("\t\t" + BF.Chromosomes[i] + " - " + BF.ChromosomeLengths[i] + " - " + MyList.Count);
-                        if (!(MyList.Count < 1))
+
+                        for (int ii = 0; ii < MyList.Count; ii++)
                         {
-                            for (int ii = 0; ii < MyList.Count; ii++)
+                            if (posexist.Contains(CHROM + MyList[ii].Position)) continue;
+                            if (onposcounter.ContainsKey(CHROM + MyList[ii].Position))
+                                onposcounter[CHROM + MyList[ii].Position]++;
+                            else
                             {
-                                if (onposcounter.ContainsKey(MyList[ii].Position))
-                                    onposcounter[MyList[ii].Position]++;
-                                else
-                                    onposcounter.Add(MyList[ii].Position, 1);
-                                //                  Console.WriteLine("{0}, {1}, {2}, {3}, {4}, {5}", i, BF.Chromosomes[i], , MyList[ii].MappingQuality, 
-                                //                                                     MyList[ii].Strand, MyList[ii].IsMatePair, MyList[ii].MateStrand);
-
+                                tmp.Add(CHROM + MyList[ii].Position);
+                                onposcounter.Add(CHROM + MyList[ii].Position, 1);
                             }
+                            //                  Console.WriteLine("{0}, {1}, {2}, {3}, {4}, {5}", i, BF.Chromosomes[i], , MyList[ii].MappingQuality, 
+                            //                                                     MyList[ii].Strand, MyList[ii].IsMatePair, MyList[ii].MateStrand);
                         }
-
-                        foreach (KeyValuePair<int, int> kvp in onposcounter)
-                            Console.WriteLine("{0}, {1,10:G}, {2,10:G}", BF.Chromosomes[i], kvp.Key, kvp.Value);
-                        onposcounter.Clear();
-                        MyList.Clear();
                     }
+                    foreach (string str in tmp)
+                        posexist.Add(str);
+                    tmp.Clear();
+                    Console.SetCursorPosition(0, Console.CursorTop);
+                    Console.Write(" " + CHROM + " " + KVP.Key + " " + MyList.Count);
+                    MyList.Clear();
                 }
-
+//                }
+                foreach (KeyValuePair<string, int> kvp in onposcounter)
+                {
+                    string[] genomepos = kvp.Key.Split('.');
+                    tw.WriteLine("{0,2:G} {1,10:G} {2,10:G}", genomepos[0], kvp.Key, kvp.Value);
+                }
+                onposcounter.Clear();
                 Console.WriteLine();
             }
-
+            tw.Close();
 
             Console.WriteLine();
             return (0);
         }
+                    
 
         static void usage()
         {

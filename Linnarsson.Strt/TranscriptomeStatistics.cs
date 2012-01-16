@@ -34,6 +34,7 @@ namespace Linnarsson.Strt
         /// Number of hits to distinct annotations in each barcode (multireads can get a count for each mapping)
         /// </summary>
         int[] TotalHitsByBarcode;
+        double[] labelingEfficiencyByBc;
 
         AbstractGenomeAnnotations Annotations;
         Barcodes barcodes;
@@ -112,6 +113,7 @@ namespace Linnarsson.Strt
             TotalHitsByAnnotType = new int[AnnotType.Count];
             nMappedReadsByBarcode = new int[barcodes.Count];
             nMoleculesByBarcode = new int[barcodes.Count];
+            labelingEfficiencyByBc = new double[barcodes.Count];
             exonHitGeneNames = new List<string>(100);
             annotationChrId = Annotations.Genome.Annotation;
             randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
@@ -175,6 +177,7 @@ namespace Linnarsson.Strt
                     ProcessBarcodeMapFiles(bcMapFilePaths);
                     bcMapFilePaths.Clear();
                     currentBcIdx = bcIdx;
+                    randomTagFilter.ChangeBcIdx(currentBcIdx);
                 }
                 bcMapFilePaths.Add(mapFilePath);
             }
@@ -227,7 +230,17 @@ namespace Linnarsson.Strt
             }
             SampleReadStatistics(nMappedReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
             MappedTagItem.AverageReadLen = (int)Math.Round((double)totalReadLength / nMappedReadsByBarcode[currentBcIdx]);
-            foreach (MappedTagItem mtitem in randomTagFilter.IterItems())
+            List<string> ctrlChrId = new List<string>();
+            if (randomTagFilter.chrTagDatas.ContainsKey("CTRL"))
+            {
+                ctrlChrId.Add("CTRL");
+                foreach (MappedTagItem mtitem in randomTagFilter.IterItems(ctrlChrId, true))
+                    Annotate(mtitem);
+                double labelingEfficiency = Annotations.GetEfficiencyFromSpikes(currentBcIdx);
+                TagItem.LabelingEfficiency = labelingEfficiency;
+                labelingEfficiencyByBc[currentBcIdx] = labelingEfficiency;
+            }
+            foreach (MappedTagItem mtitem in randomTagFilter.IterItems(ctrlChrId, false))
                 Annotate(mtitem);
             FinishBarcode();
         }
@@ -248,7 +261,6 @@ namespace Linnarsson.Strt
             int molCount = item.MolCount;
             nMoleculesByBarcode[currentBcIdx] += molCount;
             exonHitGeneNames.Clear();
-            /*bool[] annotMatches = new bool[AnnotType.Count];*/
             bool someAnnotationHit = false;
             bool someExonHit = false;
             List<FtInterval> trMatches = Annotations.GetTranscriptMatches(item.chr, item.strand, item.HitMidPos).ToList();

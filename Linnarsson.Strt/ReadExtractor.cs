@@ -8,6 +8,9 @@ using Linnarsson.Utilities;
 
 namespace Linnarsson.Strt
 {
+    public class ReadFileEmptyException : Exception
+    { }
+
     public class ReadStatus
     {
         public readonly static int VALID = 0;
@@ -127,8 +130,11 @@ namespace Linnarsson.Strt
                             string[] fields = line.Split('\t');
                             if (line.StartsWith("READFILE"))
                             {
+                                int meanReadLen = int.Parse(fields[2]);
+                                if (meanReadLen == 0)
+                                    throw new ReadFileEmptyException();
                                 readFiles.Add(fields[1]);
-                                meanReadLens.Add(int.Parse(fields[2]));
+                                meanReadLens.Add(meanReadLen);
                             }
                             else if (line.StartsWith("BARCODEREADS"))
                             {
@@ -148,6 +154,11 @@ namespace Linnarsson.Strt
                                 if (statusCategory >= 0)
                                     Add(statusCategory, int.Parse(fields[1]));
                             }
+                        }
+                        catch (ReadFileEmptyException)
+                        {
+                            readFiles.Add(extractionSummaryPath + " - EMPTY: No valid reads in this file.");
+                            break;
                         }
                         catch (Exception)
                         { }
@@ -211,6 +222,7 @@ namespace Linnarsson.Strt
             int insertLength = TrimTrailingNAndCheckAs(rSeq);
             if (insertLength < minReadLength)
                 return ReadStatus.LENGTH_ERROR;
+            //Console.WriteLine(bcWithTSSeqLen + " " + barcodePos + " " + rSeq.Substring(barcodePos, bcWithTSSeqLen) + " " + barcodesWithTSSeq.Count);
             if (!barcodesWithTSSeq.TryGetValue(rSeq.Substring(barcodePos, bcWithTSSeqLen), out bcIdx))
                 return ReadStatus.BARCODE_ERROR;
             if (bcIdx >= firstNegBarcodeIndex)

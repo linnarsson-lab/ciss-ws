@@ -214,6 +214,14 @@ namespace Linnarsson.Strt
             yield break;
         }
 
+        public double GetEfficiencyFromSpikes(int bcIdx)
+        {
+            int nMols = 0;
+            foreach (GeneFeature gf in IterTranscripts(true))
+                nMols += gf.TranscriptHitsByBarcode[bcIdx];
+            return nMols / (double)Props.props.TotalNumberOfAddedSpikeMolecules;
+        }
+
         /// <summary>
         /// Summarize the total count that stem from transcripts or spikes within each barcode.
         /// Gene main variants contribute their Max count and secondary variants their Min count.

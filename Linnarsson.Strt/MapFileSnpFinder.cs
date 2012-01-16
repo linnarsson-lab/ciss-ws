@@ -124,7 +124,7 @@ namespace Linnarsson.Strt
                     if (mrm[0].HasMismatches)
                     {
                         nReadsWMismatches++;
-                        foreach (Mismatch mm in mrm[0].IterMismatches())
+                        foreach (Mismatch mm in mrm[0].IterMismatches(0))
                         {
                             if (mm.relPosInChrDir < marginForWiggle || mm.relPosInChrDir >= mrm.SeqLen - marginForWiggle) continue;
                             int chrSnpPos = hitStartPos + mm.relPosInChrDir;

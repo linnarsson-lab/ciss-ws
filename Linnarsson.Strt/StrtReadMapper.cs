@@ -407,7 +407,7 @@ namespace Linnarsson.Strt
             SetBarcodeSet(projDescr.barcodeSet);
             logWriter.WriteLine(DateTime.Now.ToString() + " Extracting " + projDescr.runIdsLanes.Length + " lanes with barcodes " + projDescr.barcodeSet + "..."); logWriter.Flush();
             if (barcodes.HasRandomBarcodes)
-                logWriter.WriteLine(DateTime.Now.ToString() + "   MinPhredScoreInRandomTag=" + props.MinPhredScoreInRandomTag);
+                logWriter.WriteLine(DateTime.Now.ToString() + " MinPhredScoreInRandomTag=" + props.MinPhredScoreInRandomTag);
             Extract(projDescr);
             string[] speciesArgs = GetSpeciesArgs(projDescr.SampleLayoutPath, projDescr.defaultSpecies);
             projDescr.annotationVersion = ANNOTATION_VERSION;

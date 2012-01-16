@@ -10,6 +10,14 @@ namespace Linnarsson.Dna
     /// </summary>
     public class SNPCounter
     {
+        public int posOnChr; // temporary use
+
+        public SNPCounter() {}
+        public SNPCounter(int posOnChr)
+        {
+            this.posOnChr = posOnChr;
+        }
+
         /// <summary>
         /// Total sampling (read/molecule) count. Can be set after SNP analysis.
         /// </summary>
@@ -100,37 +108,29 @@ namespace Linnarsson.Dna
     /// <summary>
     /// Keeps track of SNPs by molecule and relative offset within read for reads mapping at the same genomic position
     /// </summary>
-    public class RndTagSNPData
+    public class TagSNPCounters
     {
         /// <summary>
         /// At each offset relative to the 5' pos of reads' alignment where some SNPs appear,
         /// keep an array by rndTag of counts for each SNP nt. 
         /// </summary>
-        private Dictionary<byte, SNPCounter[]> SNPData;
+        private Dictionary<byte, SNPCounter[]> m_SNPCountersByOffset;
+        public Dictionary<byte, SNPCounter[]> SNPCountersByOffset { get { return m_SNPCountersByOffset; } }
 
-        public RndTagSNPData()
+        public TagSNPCounters()
         {
-            SNPData = new Dictionary<byte, SNPCounter[]>();
+            m_SNPCountersByOffset = new Dictionary<byte, SNPCounter[]>();
         }
-        public void RegisterSNP(byte snpOffset)
+        public void RegisterSNPAtOffset(byte snpOffset)
         {
-            SNPData[snpOffset] = null;
-        }
-
-        /// <summary>
-        /// Get all offsets that have been defined as SNP positions
-        /// </summary>
-        /// <returns></returns>
-        public byte[] GetSNPOffsets()
-        {
-            return SNPData.Keys.ToArray();
+            m_SNPCountersByOffset[snpOffset] = null;
         }
 
         public void Clear()
         {
-            if (SNPData != null)
-                foreach (byte snpOffset in SNPData.Keys)
-                    SNPData[snpOffset] = null;
+            if (m_SNPCountersByOffset != null)
+                foreach (byte snpOffset in m_SNPCountersByOffset.Keys.ToArray())
+                    m_SNPCountersByOffset[snpOffset] = null;
         }
 
         /// <summary>
@@ -143,32 +143,17 @@ namespace Linnarsson.Dna
         public void AddSNP(int rndTagIdx, byte snpOffset, char snpNt)
         {
             SNPCounter[] snpCounterByRndTag;
-            if (!SNPData.TryGetValue(snpOffset, out snpCounterByRndTag))
+            if (!m_SNPCountersByOffset.TryGetValue(snpOffset, out snpCounterByRndTag))
                 return;
             if (snpCounterByRndTag == null)
             {
                 snpCounterByRndTag = new SNPCounter[TagItem.nRndTags];
                 for (int n = 0; n < TagItem.nRndTags; n++)
                     snpCounterByRndTag[n] = new SNPCounter();
+                m_SNPCountersByOffset[snpOffset] = snpCounterByRndTag;
             }
             snpCounterByRndTag[rndTagIdx].Add(snpNt);
         }
 
-        /// <summary>
-        /// Summarize the Nt distribution at a SNP position
-        /// </summary>
-        /// <param name="snpOffset"></param>
-        /// <param name="validRndTagIndices"></param>
-        /// <returns>A SNPCounter holding the number of molecules with each Nt at the SNP pos</returns>
-        public SNPCounter GetMolSNPCounts(byte snpOffset, List<int> validRndTagIndices)
-        {
-            SNPCounter counts = new SNPCounter();
-            foreach (int rndTagIdx in validRndTagIndices)
-            {
-                char snpNt = SNPData[snpOffset][rndTagIdx].GetNt();
-                counts.Add(snpNt);
-            }
-            return counts;
-        }
     }
 }

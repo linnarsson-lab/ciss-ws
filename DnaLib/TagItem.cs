@@ -14,8 +14,13 @@ namespace Linnarsson.Dna
 
         private int cachedMolCount;
         private int cachedReadCount;
+        private int cachedEstTrueMolCount;
+        private List<SNPCounter> cachedMolSNPCounts;
+
         public int MolCount { get { return cachedMolCount; } }
         public int ReadCount { get { return cachedReadCount; } }
+        public int EstTrueMolCount { get { return cachedEstTrueMolCount; } }
+        public List<SNPCounter> MolSNPCounts { get { return cachedMolSNPCounts; } }
 
         private TagItem m_TagItem;
         public TagItem tagItem
@@ -26,8 +31,15 @@ namespace Linnarsson.Dna
                 m_TagItem = value;
                 cachedMolCount = m_TagItem.GetNumMolecules();
                 cachedReadCount = m_TagItem.GetNumReads();
+                cachedEstTrueMolCount = EstimateFromSaturatedLabels(cachedMolCount);
+                cachedMolSNPCounts = m_TagItem.GetTotalSNPCounts(hitStartPos);
             }
         }
+        public static int EstimateFromSaturatedLabels(int numMolecules)
+        {
+            return (int)Math.Round(Math.Log(1 - numMolecules / TagItem.nRndTags) / Math.Log(1 - TagItem.LabelingEfficiency / TagItem.nRndTags));
+        }
+
         public int bcIdx;
         public string chr;
         public int hitStartPos;
@@ -47,52 +59,35 @@ namespace Linnarsson.Dna
                                  chr, strand, hitStartPos, bcIdx, HitMidPos, MolCount, ReadCount, m_TagItem.hasAltMappings);
         }
 
-        /// <summary>
-        /// Iterate over all SNPs that have been found within this read mapping
-        /// </summary>
-        /// <returns>LocatedSNPCounter:s with the chr position and SNPCounter defined</returns>
-        public IEnumerable<LocatedSNPCounter> IterMolSNPCounts()
-        {
-            if (tagItem.SNPData == null) yield break;
-            List<int> validRndTags = tagItem.GetValidMolRndTags();
-            LocatedSNPCounter locCounter = new LocatedSNPCounter();
-            locCounter.chr = chr;
-            foreach (byte snpOffset in tagItem.SNPData.GetSNPOffsets())
-            {
-                SNPCounter snpc = tagItem.SNPData.GetMolSNPCounts(snpOffset, validRndTags);
-                snpc.nTotal = tagItem.GetNumMolecules();
-                locCounter.chrPos = hitStartPos + snpOffset;
-                locCounter.counter = snpc;
-                yield return locCounter;
-            }
-        }
-    
     }
 
     /// <summary>
-    /// TagItem summarizes all reads that map to a specific [or a set of redundant] (chr, pos, strand) combination[s].
+    /// TagItem summarizes all reads that map to a specific (possibly redundant when hasAltMappings==true) (chr, pos, strand) combination[s].
     /// </summary>
     public class TagItem
     {
         public static int ratioForMutationFilter = 50; // 20 seems a good number, but need to investigate various seq depths before final decision
         public static int nRndTags;
+        public static double LabelingEfficiency;
+
         /// <summary>
         /// Counts number of reads in each rndTag
         /// </summary>
         private ushort[] readCountsByRndTag;
         /// <summary>
-        /// SNP data for known SNP positions by offsets from read startPos. Only valid when hasAltMappings == false
+        /// SNP data for SNP positions by offsets from read startPos. Should only be affected when hasAltMappings == false
+        /// The final SNP status of a chromosomal position has to be calculated from the tagSNPData:s of all spanning TagItems
         /// </summary>
-        public RndTagSNPData SNPData;
+        public TagSNPCounters tagSNPData;
         /// <summary>
         /// true when the read sequence at the (chr, pos, strand) of this TagItem is not unique in genome.
         /// </summary>
         public bool hasAltMappings;
 
         /// <summary>
-        /// Setup a TagItem that may be shared by all the mappings of a multiread.
+        /// TagItem summarizes all reads that map to a specific (possibly redundant when hasAltMappings==true) (chr, pos, strand) combination[s].
         /// </summary>
-        /// <param name="hasAltMappings">True indicates that this TagItem is shared by several (chr, pos, strand) locations</param>
+        /// <param name="hasAltMappings">True indicates that the location is not unique in the genome</param>
         public TagItem(bool hasAltMappings)
         {
             this.hasAltMappings = hasAltMappings;
@@ -104,11 +99,15 @@ namespace Linnarsson.Dna
             return res;
         }
 
+        /// <summary>
+        /// Prepare for analyzing potential SNPs at specified offset within the reads
+        /// </summary>
+        /// <param name="snpOffset"></param>
         public void RegisterSNP(byte snpOffset)
         {
-            if (SNPData == null)
-                SNPData = new RndTagSNPData();
-            SNPData.RegisterSNP(snpOffset);
+            if (tagSNPData == null)
+                tagSNPData = new TagSNPCounters();
+            tagSNPData.RegisterSNPAtOffset(snpOffset);
         }
 
         /// <summary>
@@ -117,8 +116,8 @@ namespace Linnarsson.Dna
         public void Clear()
         {
             readCountsByRndTag = null;
-            if (SNPData != null)
-                SNPData.Clear();
+            if (tagSNPData != null)
+                tagSNPData.Clear();
         }
 
         /// <summary>
@@ -136,32 +135,48 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Register a SNP within a read
+        /// Mark a SNP within a read
         /// </summary>
-        /// <param name="rndTagIdx"></param>
+        /// <param name="rndTagIdx">rndTag of the read</param>
         /// <param name="snpOffset">0-based offset within the read, counting in chromosome direction</param>
         /// <param name="snpNt"></param>
         public void AddSNP(int rndTagIdx, byte snpOffset, char snpNt)
         {
-            if (SNPData == null) return;
-            SNPData.AddSNP(rndTagIdx, snpOffset, snpNt);
+            tagSNPData.AddSNP(rndTagIdx, snpOffset, snpNt);
         }
 
         /// <summary>
-        /// Count number of molecules with various bases at given SNP offset in read (offset in chromosome direction)
+        /// Get Nt counts at all positions where there is SNP data available
         /// </summary>
-        /// <param name="snpOffset"></param>
-        /// <returns></returns>
-        public SNPCounter GetMolSNPCounts(byte snpOffset)
+        /// <param name="readPosOnChr">Only to set the actual SNP pos correctly</param>
+        /// <returns>SNPCounters that summarize the (winning, if some mutated read) Nts found at each offset in the given rndTags</returns>
+        public List<SNPCounter> GetTotalSNPCounts(int readPosOnChr)
         {
-            if (SNPData == null) return null;
-            SNPCounter snpc = SNPData.GetMolSNPCounts(snpOffset, GetValidMolRndTags());
-            snpc.nTotal = GetNumMolecules();
-            return snpc;
+            List<SNPCounter> totalCounters = new List<SNPCounter>();
+            if (tagSNPData != null)
+            {
+                List<int> validRndTags = GetValidMolRndTags();
+                int nTotal = GetNumMolecules();
+                foreach (KeyValuePair<byte, SNPCounter[]> p in tagSNPData.SNPCountersByOffset)
+                {
+                    if (p.Value != null)
+                    {
+                        SNPCounter countsAtOffset = new SNPCounter(readPosOnChr + p.Key);
+                        foreach (int rndTagIdx in validRndTags)
+                        {
+                            char winningNtInRndTag = p.Value[rndTagIdx].GetNt();
+                            countsAtOffset.Add(winningNtInRndTag);
+                        }
+                        countsAtOffset.nTotal = nTotal;
+                        totalCounters.Add(countsAtOffset);
+                    }
+                }
+            }
+            return totalCounters;
         }
 
         public bool HasReads { get { return readCountsByRndTag != null; } }
-        public bool HasSNPs { get { return SNPData != null; } }
+        public bool HasSNPs { get { return tagSNPData != null; } }
 
         /// <summary>
         /// Return the total number of reads at this position-strand. (Molecule mutation filter not applied for rndTag data.)

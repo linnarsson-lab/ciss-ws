@@ -241,10 +241,6 @@ namespace Linnarsson.Dna
             return "MultiReadMapping: Chr=" + Chr + Strand + " Pos=" + Position + " HitMidPos=" + HitMidPos + " Mismatches=" + Mismatches;
         }
 
-        public IEnumerable<Mismatch> IterMismatches()
-        {
-            return IterMismatches(0);
-        }
         public IEnumerable<Mismatch> IterMismatches(int minPhredScore)
         {
             if (!HasMismatches) yield break;

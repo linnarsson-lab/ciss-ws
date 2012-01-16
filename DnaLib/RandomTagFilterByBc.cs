@@ -52,7 +52,8 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Prepare for analysis of a SNP at specified position
+        /// Prepare for analysis of a SNP at specified position.
+        /// We expect that the position is uniquely identifiable in the genome
         /// </summary>
         /// <param name="snpChrPos"></param>
         public void RegisterSNP(int snpChrPos)
@@ -74,30 +75,6 @@ namespace Linnarsson.Strt
                 tagItems[posStrand] = item;
             }
             tagItems[posStrand].RegisterSNP(snpOffset);
-        }
-
-        /// <summary>
-        /// Count, for each SNP nt at given position, the number of mapped molecules
-        /// </summary>
-        /// <param name="chrPos"></param>
-        /// <param name="strand"></param>
-        /// <returns>SNPCounter with totals of each nt</returns>
-        public SNPCounter GetMolSNPData(int snpChrPos, char strand)
-        {
-            SNPCounter totalCounts = new SNPCounter();
-            TagItem tagItem;
-            for (byte snpOffset = (byte)(averageReadLen - marginInReadForSNP); snpOffset >= (byte)marginInReadForSNP; snpOffset--)
-            {
-                int readStartPos = snpChrPos - snpOffset;
-                int posStrand = MakePosStrandIdx(readStartPos, strand);
-                if (tagItems.TryGetValue(posStrand, out tagItem))
-                {
-                    SNPCounter mapPosCounts = tagItem.GetMolSNPCounts(snpOffset);
-                    if (mapPosCounts != null)
-                        totalCounts.Add(mapPosCounts);
-                }
-            }
-            return totalCounts;
         }
 
         public void ChangeBcIdx()
@@ -124,12 +101,7 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Add a read and checks wether the specified rndTag has been seen before on the pos and strand.
         /// </summary>
-        /// <param name="pos"></param>
-        /// <param name="strand"></param>
-        /// <param name="rndTagIdx"></param>
-        /// <param name="hasAltMappings">Should be true whenever the mapping is not unique in genome</param>
-        /// <param name="mismatches">Mismatch annotation string from .map file</param>
-        /// <param name="readLen">Length of this mapped sequence. Needed for placement of SNPs when strand=='-'</param>
+        /// <param name="m">A multireadmapping to analyze</param>
         /// <returns>true if the rndTag is new at this position-strand</returns>
         public bool Add(MultiReadMapping m)
         {
@@ -137,15 +109,15 @@ namespace Linnarsson.Strt
             TagItem item;
             if (!tagItems.TryGetValue(posStrand, out item))
             {
-                item = new TagItem(false);
+                item = new TagItem(m.HasAltMappings);
                 tagItems[posStrand] = item;
             }
-            if (!m.HasAltMappings)
+            if (!m.HasAltMappings && item.HasSNPs)
             {
-                foreach (Mismatch mm in m.IterMismatches())
+                foreach (Mismatch mm in m.IterMismatches(0))
                 {
                     if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
-                    item.AddSNP(m.RndTagIdx, (byte)mm.relPosInChrDir, mm.ntInChrDir);
+                    item.tagSNPData.AddSNP(m.RndTagIdx, (byte)mm.relPosInChrDir, mm.ntInChrDir);
                 }
             }
             return item.Add(m.RndTagIdx);
@@ -155,9 +127,11 @@ namespace Linnarsson.Strt
         /// Iterate through the TagItem count data for every (position, strand) hit in this chromosome
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<MappedTagItem> IterItems()
+        public IEnumerable<MappedTagItem> IterItems(int bcIdx, string chrId)
         {
             MappedTagItem item = new MappedTagItem();
+            item.bcIdx = bcIdx;
+            item.chr = chrId;
             foreach (KeyValuePair<int, TagItem> cPair in tagItems)
             {
                 if (cPair.Value.HasReads)
@@ -165,9 +139,11 @@ namespace Linnarsson.Strt
                     item.tagItem = cPair.Value;
                     item.strand = ((cPair.Key & 1) == 0) ? '+' : '-';
                     item.hitStartPos = cPair.Key >> 1;
+                    item.splcToRealChrOffset = 0; // Need always reset this
                     yield return item;
                 }
             }
+            yield break;
         }
 
         /// <summary>
@@ -338,7 +314,11 @@ namespace Linnarsson.Strt
             return nSNPs;
         }
 
-        private void ChangeBcIdx(int newBcIdx)
+        /// <summary>
+        /// Need to call this inbetween every series of reads from the same barcode
+        /// </summary>
+        /// <param name="newBcIdx"></param>
+        public void ChangeBcIdx(int newBcIdx)
         {
             if (usedBcIdxs.Contains(newBcIdx))
                 throw new Exception("Program or map file naming error: Revisiting an already analyzed barcode (" + newBcIdx + ") is not allowed.");
@@ -362,8 +342,6 @@ namespace Linnarsson.Strt
         /// <returns>True if the chr-strand-pos-randomTag combination is new</returns>
         public bool Add(MultiReadMapping m)
         {
-            if (m.BcIdx != currentBcIdx)
-                ChangeBcIdx(m.BcIdx);
             nReadsByRandomTag[m.RndTagIdx]++;
             bool isNew = chrTagDatas[m.Chr].Add(m);
             if (isNew) nUniqueByBarcode[m.BcIdx]++;
@@ -374,18 +352,20 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Iterate through the TagItem count data for every (chr, position, strand) hit by some read
         /// </summary>
+        /// <param name="filterChrIds">Ids to select either for exclusion or inclusion</param>
+        /// <param name="includeFilter">true to only iterate specified chrs, false to iterate all but specified chrs</param>
         /// <returns></returns>
-        public IEnumerable<MappedTagItem> IterItems()
+        public IEnumerable<MappedTagItem> IterItems(List<string> filterChrIds, bool includeFilter)
         {
-            foreach (KeyValuePair<string, ChrTagData> chrData in chrTagDatas)
-                foreach (MappedTagItem item in chrData.Value.IterItems())
-                {
-                    item.bcIdx = currentBcIdx;
-                    item.chr = chrData.Key;
-                    item.splcToRealChrOffset = 0;
-                    yield return item;
-                }
+            foreach (string chrId in chrTagDatas.Keys)
+            {
+                if (filterChrIds.Contains(chrId) == includeFilter)
+                    foreach (MappedTagItem item in chrTagDatas[chrId].IterItems(currentBcIdx, chrId))
+                        yield return item;
+            }
+            yield break;
         }
+
         /// <summary>
         /// Use to get the read count profile for a specific genomic location
         /// </summary>

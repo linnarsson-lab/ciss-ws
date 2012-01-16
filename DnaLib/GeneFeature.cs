@@ -95,6 +95,7 @@ namespace Linnarsson.Dna
         /// Always total reads per barcode
         /// </summary>
         public int[] TranscriptReadsByBarcode;
+        public int[] EstimatedTrueMolsByBarcode;
         public int[] NonConflictingTranscriptHitsByBarcode;
         public List<double> VariationSamples;
         public int[] TranscriptHitsByExonIdx; // Used to analyse exon hit distribution
@@ -154,6 +155,7 @@ namespace Linnarsson.Dna
             MaskedINTR = new bool[exonEnds.Length - 1];
             TranscriptHitsByBarcode = new int[Props.props.Barcodes.Count];
             TranscriptReadsByBarcode = new int[Props.props.Barcodes.Count];
+            EstimatedTrueMolsByBarcode = new int[Props.props.Barcodes.Count];
             NonConflictingTranscriptHitsByBarcode = new int[Props.props.Barcodes.Count];
             VariationSamples = new List<double>();
             TranscriptHitsByExonIdx = new int[exonStarts.Length];
@@ -401,6 +403,7 @@ namespace Linnarsson.Dna
             TranscriptHitsByExonIdx[exonIdx] += item.MolCount;
             TranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
             TranscriptReadsByBarcode[item.bcIdx] += item.ReadCount;
+            EstimatedTrueMolsByBarcode[item.bcIdx] += item.EstTrueMolCount;
             if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
                 NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
             HitsByAnnotType[AnnotType.EXON] += item.MolCount;
@@ -629,21 +632,17 @@ namespace Linnarsson.Dna
         /// <param name="item"></param>
         private void MarkSNPs(MappedTagItem item)
         {
-            foreach (LocatedSNPCounter locCounter in item.IterMolSNPCounts())
+            foreach (SNPCounter snpCounter in item.MolSNPCounts)
             {
-                int chrPos = locCounter.chrPos;
+                int chrPos = snpCounter.posOnChr;
                 if (!SNPCountersByBcIdx.ContainsKey(chrPos))
                 {
                     SNPCountersByBcIdx[chrPos] = new SNPCounter[Props.props.Barcodes.Count];
                     for (int bcIdx = 0; bcIdx < Props.props.Barcodes.Count; bcIdx++)
                         SNPCountersByBcIdx[chrPos][bcIdx] = new SNPCounter();
                 }
-                SNPCountersByBcIdx[chrPos][item.bcIdx].Add(locCounter.counter);
+                SNPCountersByBcIdx[chrPos][item.bcIdx].Add(snpCounter);
             }
-        }
-
-        public void GetSNPData()
-        {
         }
     }
 }

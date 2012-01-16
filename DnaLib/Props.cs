@@ -79,6 +79,7 @@ namespace Linnarsson.Dna
         public int ExtractionCounterWordLength = 12; // Used for over-representation analysis by ExtractionWordCounter
         public string SampleLayoutFileFolder = ""; // If empty, the PlateLayout file is looked for in the project folder
         public string SampleLayoutFileFormat = "{0}_SampleLayout.txt"; // Formatter for sample layout filenames. Arg0 is project name
+        public double TotalNumberOfAddedSpikeMolecules = 2500;
 
         [NonSerialized]
         private Barcodes m_Barcodes;

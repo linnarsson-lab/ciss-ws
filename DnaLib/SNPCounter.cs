@@ -27,6 +27,22 @@ namespace Linnarsson.Dna
         public int nG = 0;
         public int nT = 0;
 
+        public static string Header { get { return "Total\tMut-A\tMut-C\tMut-G\tMut-T"; } }
+        public string ToLine()
+        {
+            return ToLine(nTotal, nA, nC, nG, nT);
+        }
+        public static string ToLine(int nTotal, int nA, int nC, int nG, int nT)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(nTotal + "\t");
+            sb.Append((nA > 0)? (nA + "\t") : "\t");
+            sb.Append((nC > 0) ? (nC + "\t") : "\t");
+            sb.Append((nG > 0) ? (nG + "\t") : "\t");
+            sb.Append((nT > 0) ? (nT.ToString()) : "");
+            return sb.ToString();
+        }
+
         public int nAlt { get { return nA + nC + nG + nT; } }
 
         public int GetCount(char snpNt)
@@ -75,9 +91,9 @@ namespace Linnarsson.Dna
         public int nSnps { get { return nA + nC + nG + nT; } }
 
         /// <summary>
-        /// Find the most common SNP nt
+        /// Find the most common SNP Nt
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The most common alternative Nt, or '-' if no non-ref Nt has been observed</returns>
         public char GetNt()
         {
             int maxN = nA;
@@ -85,7 +101,7 @@ namespace Linnarsson.Dna
             if (nC > maxN) { maxC = 'C'; maxN = nC; }
             if (nG > maxN) { maxC = 'G'; maxN = nG; }
             if (nT > maxN) return 'T';
-            return maxC;
+            return (maxN > 0)? maxC : '-'; // return maxC;
         }
     }
 

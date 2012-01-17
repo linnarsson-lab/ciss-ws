@@ -112,8 +112,8 @@ namespace Linnarsson.Strt
                 item = new TagItem(m.HasAltMappings);
                 tagItems[posStrand] = item;
             }
-            if (!m.HasAltMappings && item.HasSNPs)
-            {
+            if (!m.HasAltMappings && item.HasSNPs) // Should maybe move this code into new TagItem.Add(MultiReadMapping m)
+            {                                      // and do IterMismatches(minPhredScore).
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {
                     if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;

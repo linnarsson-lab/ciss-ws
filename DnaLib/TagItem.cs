@@ -148,7 +148,7 @@ namespace Linnarsson.Dna
         /// <summary>
         /// Get Nt counts at all positions where there is SNP data available
         /// </summary>
-        /// <param name="readPosOnChr">Only to set the actual SNP pos correctly</param>
+        /// <param name="readPosOnChr">Needed to convert the SNP offset to position within chromosome</param>
         /// <returns>SNPCounters that summarize the (winning, if some mutated read) Nts found at each offset in the given rndTags</returns>
         public List<SNPCounter> GetTotalSNPCounts(int readPosOnChr)
         {

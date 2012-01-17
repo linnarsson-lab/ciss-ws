@@ -18,7 +18,7 @@ namespace Linnarsson.Dna
         /// <param name="snpFile">output file</param>
         /// <param name="barcodes">just needed for header</param>
         /// <param name="geneFeatures">dictionary of geneNames to GeneFeatures</param>
-        public void WriteSnpsByBarcode(StreamWriter snpFile, Barcodes barcodes, Dictionary<string, GeneFeature> geneFeatures)
+        public static void WriteSnpsByBarcode(StreamWriter snpFile, Barcodes barcodes, Dictionary<string, GeneFeature> geneFeatures)
         {
             snpFile.Write("#Gene\tTrLen\tChr\tStrand\tChrPos\tTrPos\tNt\tTotal");
             for (int idx = 0; idx < barcodes.Count; idx++)
@@ -58,36 +58,40 @@ namespace Linnarsson.Dna
             }
         }
 
+        public static readonly int REFERENCE = 0;
+        public static readonly int ALTERNATIVE = 1;
+        public static readonly int HETEROZYGOUS = 2;
+        public static int TestSNP(SNPCounter sumCounter)
+        {
+            if (sumCounter.nAlt >= minAltHitsToTestSnpPos)
+            {
+                double ratio = sumCounter.nAlt / (double)sumCounter.nTotal;
+                if (ratio > (1 - thresholdFractionAltHitsForMixPos))
+                    return ALTERNATIVE;
+                else if (ratio > thresholdFractionAltHitsForMixPos)
+                    return HETEROZYGOUS;
+            }
+            return REFERENCE;
+        }
+
         /// <summary>
-        /// Analyzes SNPs in a gene and returns lists of positions that are either heterozygous or homozygous with and alternative Nt
+        /// Summarize SNP data across all barcodes for gven gene
         /// </summary>
         /// <param name="gf">Gene of interest</param>
-        /// <param name="heterozygousPos"></param>
-        /// <param name="altPos"></param>
-        public static void GetSnpChrPositions(GeneFeature gf, out List<int> heterozygousPos, out List<int> altPos)
+        /// <returns>SNPCounters that summarize Nt:s at each considered position. Each counter's posOnChr is set</returns>
+        public static List<SNPCounter> GetSnpChrPositions(GeneFeature gf)
         {
-            heterozygousPos = new List<int>();
-            altPos = new List<int>();
-            if (gf.SNPCountersByBcIdx.Count == 0) return;
+            List<SNPCounter> sumCounters = new List<SNPCounter>();
+            if (gf.SNPCountersByBcIdx.Count == 0) return sumCounters;
             foreach (KeyValuePair <int, SNPCounter[]> posCounts in gf.SNPCountersByBcIdx)
             {
                 int chrPos = posCounts.Key;
-                int altCount = 0;
-                int totCount = 0;
+                SNPCounter sumCounter = new SNPCounter(chrPos);
                 foreach (SNPCounter counter in posCounts.Value)
-                {
-                    totCount += counter.nTotal;
-                    altCount += counter.nAlt;
-                }
-                if (altCount >= minAltHitsToTestSnpPos)
-                {
-                    double ratio = altCount / (double)totCount;
-                    if (ratio > (1 - thresholdFractionAltHitsForMixPos))
-                        altPos.Add(chrPos);
-                    else if (ratio > thresholdFractionAltHitsForMixPos)
-                        heterozygousPos.Add(chrPos);
-                }
+                    sumCounter.Add(counter);
+                sumCounters.Add(sumCounter);
             }
+            return sumCounters;
         }
     }
 }

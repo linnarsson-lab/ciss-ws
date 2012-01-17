@@ -970,6 +970,17 @@ namespace Linnarsson.Strt
                 xmlFile.Write("    <d>{0}</d>", d);
             }
             xmlFile.WriteLine("\n    </barcodestat>");
+            if (barcodes.HasRandomBarcodes)
+            {
+                xmlFile.Write("    <barcodestat section=\"labeling efficiency\">");
+                for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                {
+                    if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
+                    if (genomeBcIndexes.Contains(bcIdx)) xmlFile.Write("    <d>{0:0.###}</d>", labelingEfficiencyByBc[bcIdx]);
+                    else xmlFile.Write("    <d>({0:0.###})</d>", labelingEfficiencyByBc[bcIdx]);
+                }
+                xmlFile.WriteLine("\n    </barcodestat>");
+            }
             xmlFile.WriteLine("  </barcodestats>");
         }
 
@@ -1212,22 +1223,20 @@ namespace Linnarsson.Strt
         private void WriteSnps(string fileNameBase)
         {
             StreamWriter snpFile = (fileNameBase + "_SNPs.tab").OpenWrite();
-            snpFile.WriteLine("#Gene\tChr\tmRNAStartChrPosition\tHetero_eSNPChrPositions\tAlt_eSNPChrPositions");
             int thres = (int)(SnpAnalyzer.thresholdFractionAltHitsForMixPos * 100);
-            snpFile.WriteLine("#(>={0} AltNtReads/Pos required)\t\t\t({1}-{2}% AltNt)\t(>{2}% Alt Nt)", SnpAnalyzer.minAltHitsToTestSnpPos, thres, 100 - thres);
+            snpFile.WriteLine("#(minimum {0} AltNtReads/Pos required to check, limits used heterozygous: {1}-{2}% AltNt and homozygous: >{2}% Alt Nt)",
+                              SnpAnalyzer.minAltHitsToTestSnpPos, thres, 100 - thres);
+            snpFile.WriteLine("#Gene\tChr\tmRNAStartChrPosition\tChrPositions\tType\t" + SNPCounter.Header);
             foreach (GeneFeature gf in Annotations.geneFeatures.Values)
             {
-                List<int> mixChrPos, altChrPos;
-                SnpAnalyzer.GetSnpChrPositions(gf, out mixChrPos, out altChrPos);
-                int nNeededOutputLines = Math.Max(mixChrPos.Count, altChrPos.Count);
-                if (nNeededOutputLines == 0) continue;
+                List<SNPCounter> sumSNPCounters = SnpAnalyzer.GetSnpChrPositions(gf);
                 string first = gf.Name + "\t" + gf.Chr + "\t" + gf.Start + "\t";
-                for (int i = 0; i < nNeededOutputLines; i++)
+                foreach (SNPCounter sumCounter in sumSNPCounters)
                 {
-                    snpFile.Write(first);
-                    if (i < mixChrPos.Count) snpFile.Write(mixChrPos[i]);
-                    if (i < altChrPos.Count) snpFile.Write("\t" + altChrPos[i].ToString());
-                    snpFile.WriteLine();
+                    int type = SnpAnalyzer.TestSNP(sumCounter);
+                    if (type == SnpAnalyzer.REFERENCE) continue;
+                    string typeName = (type == SnpAnalyzer.ALTERNATIVE) ? "AltNt" : "MixNt";
+                    snpFile.Write(first + sumCounter.posOnChr + "\t" + type + "\t" + sumCounter.ToLine());
                     first = "\t\t\t";
                 }
             }
@@ -1237,8 +1246,7 @@ namespace Linnarsson.Strt
         private void WriteSnpsByBarcode(string fileNameBase)
         {
             StreamWriter snpFile = (fileNameBase + "_SNPs_by_barcode.tab").OpenWrite();
-            SnpAnalyzer sa = new SnpAnalyzer();
-            sa.WriteSnpsByBarcode(snpFile, barcodes, Annotations.geneFeatures);
+            SnpAnalyzer.WriteSnpsByBarcode(snpFile, barcodes, Annotations.geneFeatures);
             snpFile.Close();
         }
 

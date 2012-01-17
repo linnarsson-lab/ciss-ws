@@ -381,20 +381,6 @@ namespace Linnarsson.Strt
             return true;
         }
 
-        private List<string> CollectExtractionSummaryPaths(List<string> mapFilePaths, StrtGenome genome)
-        {
-            Dictionary<string, object> summaryPaths = new Dictionary<string, object>();
-            string splcIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
-            foreach (string mapFilePath in mapFilePaths)
-            {
-                string summaryFolder = Path.GetDirectoryName(mapFilePath).Replace(splcIndexVersion, "fq");
-                string summaryPath = Path.Combine(summaryFolder, "summary.txt");
-                if (!summaryPaths.ContainsKey(summaryPath))
-                    summaryPaths[summaryPath] = null;
-            }
-            return summaryPaths.Keys.ToList();
-        }
-
         /// <summary>
         /// Performs extraction, mapping, and annotation on the lanes, bc, and layout/species defined by projDescr.
         /// Extraction and mapping are done if no data are available with the current software/index versions.
@@ -422,7 +408,7 @@ namespace Linnarsson.Strt
                 props.UseRPKM = projDescr.rpkm;
                 props.DirectionalReads = !projDescr.rpkm;
                 logWriter.WriteLine(DateTime.Now.ToString() + " Annotating " + mapFilePaths.Count + " map files..."); logWriter.Flush();
-                logWriter.WriteLine(DateTime.Now.ToString() + "   AllTrVariants=" + projDescr.analyzeVariants + " DirectionalReads=" + props.DirectionalReads + " RPKM=" + props.UseRPKM);
+                logWriter.WriteLine(DateTime.Now.ToString() + " setting: AllTrVariants=" + projDescr.analyzeVariants + " DirectionalReads=" + props.DirectionalReads + " RPKM=" + props.UseRPKM);
                 ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.projectName, mapFilePaths);
                 projDescr.resultDescriptions.Add(resultDescr);
                 System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(projDescr.GetType());
@@ -704,6 +690,22 @@ namespace Linnarsson.Strt
             return bc1.CompareTo(bc2);
         }
 
+        private List<string> CollectExtractionSummaryPaths(List<string> mapFilePaths, StrtGenome genome)
+        {
+            Dictionary<string, object> summaryPaths = new Dictionary<string, object>();
+            foreach (string mapFilePath in mapFilePaths)
+            {
+                string laneMapFolder = Path.GetDirectoryName(mapFilePath);
+                string laneName = Path.GetFileName(laneMapFolder);
+                string extrFolder = Path.GetDirectoryName(Path.GetDirectoryName(laneMapFolder));
+                string summaryFolder = Path.Combine(Path.Combine(extrFolder, "fq"), laneName);
+                string summaryPath = Path.Combine(summaryFolder, "summary.txt");
+                if (!summaryPaths.ContainsKey(summaryPath))
+                    summaryPaths[summaryPath] = null;
+            }
+            return summaryPaths.Keys.ToList();
+        }
+
         private ResultDescription ProcessAnnotation(StrtGenome genome, string projectFolder, string projectName, List<string> mapFilePaths)
         {
             if (mapFilePaths.Count == 0)
@@ -714,7 +716,10 @@ namespace Linnarsson.Strt
             readCounter.AddExtractionSummaries(CollectExtractionSummaryPaths(mapFilePaths, genome));
             int averageReadLen = readCounter.AverageReadLen;
             if (averageReadLen == 0)
+            {
                 averageReadLen = Props.props.StandardReadLen - barcodes.GetInsertStartPos();
+                Console.WriteLine("WARNING: Could not read any extraction summary files - using default readLen " + averageReadLen);
+            }
             genome.ReadLen = averageReadLen;
             UpdateGenesToPaint(projectFolder, props);
             AbstractGenomeAnnotations annotations = new UCSCGenomeAnnotations(props, genome);

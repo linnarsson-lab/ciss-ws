@@ -37,7 +37,7 @@ namespace Linnarsson.Dna
         }
         public static int EstimateFromSaturatedLabels(int numMolecules)
         {
-            return (int)Math.Round(Math.Log(1 - numMolecules / TagItem.nRndTags) / Math.Log(1 - TagItem.LabelingEfficiency / TagItem.nRndTags));
+            return (int)Math.Round(Math.Log(1 - numMolecules / (double)TagItem.nRndTags) / Math.Log(1 - TagItem.LabelingEfficiency / (double)TagItem.nRndTags));
         }
 
         public int bcIdx;

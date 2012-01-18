@@ -1235,7 +1235,7 @@ namespace Linnarsson.Strt
                     int type = SnpAnalyzer.TestSNP(sumCounter);
                     if (type == SnpAnalyzer.REFERENCE) continue;
                     string typeName = (type == SnpAnalyzer.ALTERNATIVE) ? "AltNt" : "MixNt";
-                    snpFile.Write(first + sumCounter.posOnChr + "\t" + type + "\t" + sumCounter.ToLine());
+                    snpFile.WriteLine(first + sumCounter.posOnChr + "\t" + typeName + "\t" + sumCounter.ToLine());
                     first = "\t\t\t";
                 }
             }

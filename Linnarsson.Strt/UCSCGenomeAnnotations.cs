@@ -465,8 +465,8 @@ namespace Linnarsson.Strt
                 readFile.WriteLine("Total maximal read counts in barcodes for each gene and repeat.");
                 WriteBarcodeHeaders(readFile, 5);
                 readFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMaxExonReads");
-                trueFile = new StreamWriter(fileNameBase + "_reads.tab");
-                trueFile.WriteLine("Estimated true read counts.");
+                trueFile = new StreamWriter(fileNameBase + "_true_counts.tab");
+                trueFile.WriteLine("Estimated true molecule counts.");
                 WriteBarcodeHeaders(trueFile, 5);
                 trueFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMaxExonReads");
             }
@@ -575,6 +575,8 @@ namespace Linnarsson.Strt
             StringBuilder sbf = new StringBuilder();
             foreach (GeneFeature gf in IterTranscripts(true))
             {
+                if (!gf.IsExpressed())
+                    continue;
                 int total = 0;
                 int detected = 0;
                 for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)

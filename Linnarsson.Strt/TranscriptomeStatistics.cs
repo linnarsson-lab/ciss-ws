@@ -740,10 +740,9 @@ namespace Linnarsson.Strt
             bool anySpikeDetected = false;
             foreach (GeneFeature gf in Annotations.geneFeatures.Values)
             {
-                if (gf.Name.StartsWith("RNA_SPIKE_"))
+                if (gf.Name.StartsWith("RNA_SPIKE_") && gf.IsExpressed())
                 {
-                    if (gf.IsExpressed())
-                        anySpikeDetected = true;
+                    anySpikeDetected = true;
                     DescriptiveStatistics ds = new DescriptiveStatistics();
                     foreach (int bcIdx in barcodes.GenomeAndEmptyBarcodeIndexes(Annotations.Genome))
                     {

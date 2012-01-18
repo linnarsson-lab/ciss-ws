@@ -63,7 +63,7 @@ namespace Linnarsson.Strt
 		/// <returns></returns>
 		public static int EstimateFromSaturatedLabels(int numberOfLabelsObserved, int totalNumberOfLabels, double labelingEfficiency)
 		{
-			return (int)Math.Round(Math.Log(1 - numberOfLabelsObserved / totalNumberOfLabels) / Math.Log(1 - labelingEfficiency / totalNumberOfLabels));
+            return (int)Math.Round(Math.Log(1 - numberOfLabelsObserved / (double)totalNumberOfLabels) / Math.Log(1 - labelingEfficiency / (double)totalNumberOfLabels));
 		}
 
 		/// <summary>

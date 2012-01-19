@@ -972,7 +972,7 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("\n    </barcodestat>");
             if (barcodes.HasRandomBarcodes)
             {
-                xmlFile.Write("    <barcodestat section=\"labeling efficiency\">");
+                xmlFile.Write("    <barcodestat section=\"labeling efficiency (based on {0} spike mols)\">", Props.props.TotalNumberOfAddedSpikeMolecules);
                 for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                 {
                     if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");

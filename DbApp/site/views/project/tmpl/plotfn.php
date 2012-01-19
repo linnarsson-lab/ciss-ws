@@ -92,8 +92,20 @@ function plotHistogram($title, $xtitle, $barmids, $counts) {
 }
 
 function plotBarsByCategory($scaletypes, $title, $xtitle, $categories, $yvalues) {
-    $width = 1024;
-    #if (count($categories) > 6) $width += (count($categories) - 6) * 18;
+    $width = 800;
+    $cc = count($categories);
+    while ($cc > 400)
+    {
+        $ncat = array(); $nyv = array();
+        for ($i = 0; $i < $cc; $i += 2)
+        {
+            $ncat[] = $categories[$i];
+            $nyv[] = $yvalues[$i];
+        }
+        $categories = $ncat;
+        $yvalues = $nyv;
+        $cc = count($categories);
+    }
     $graph = new Graph($width, 500, 'auto');
     $graph->SetScale($scaletypes);
     $theme_class=new UniversalTheme;
@@ -121,7 +133,7 @@ function plotBarsByCategory($scaletypes, $title, $xtitle, $categories, $yvalues)
 }
 
 function plotBars($title, $labels, $values) {
-	$graph = new Graph(40 + 9 * count($values), 400, 'auto');
+	$graph = new Graph(160 + 8 * count($values), 400, 'auto');
 	$graph->SetScale("textlin");
 	$theme_class=new UniversalTheme;
 	$graph->SetTheme($theme_class);

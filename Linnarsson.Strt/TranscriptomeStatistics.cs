@@ -629,19 +629,20 @@ namespace Linnarsson.Strt
             }
             xmlFile.WriteLine("  <reads species=\"{0}\">", speciesName);
             string molTitle = (barcodes.HasRandomBarcodes)? "molecule": "read";
-            xmlFile.WriteLine("    <title>Distribution of {0} hits (10^6) by categories in {1} {2} wells</title>",
-                              molTitle, speciesBcIndexes.Length, speciesName);
-            xmlFile.WriteLine("    <point x=\"Mapped {0}s (100%)\" y=\"{1}\" />", molTitle, nUniqueMolecules / 1.0E6d);
-            xmlFile.WriteLine("    <point x=\"Annotations ({0:0%})\" y=\"{1}\" />", nAnnotationsHits / nUniqueMolecules, nAnnotationsHits / 1.0E6d);
+            double reducer = (barcodes.HasRandomBarcodes)? 1.0E6d : 1.0E3d;
+            xmlFile.WriteLine("    <title>Distribution of {0} hits (10^{3}) by categories in {1} {2} wells</title>",
+                              molTitle, speciesBcIndexes.Length, speciesName, (int)Math.Log10(reducer));
+            xmlFile.WriteLine("    <point x=\"Mapped {0}s (100%)\" y=\"{1}\" />", molTitle, nUniqueMolecules / reducer);
+            xmlFile.WriteLine("    <point x=\"Annotations ({0:0%})\" y=\"{1}\" />", nAnnotationsHits / nUniqueMolecules, nAnnotationsHits / reducer);
             foreach (int annotType in new int[] { AnnotType.EXON, AnnotType.INTR, AnnotType.USTR, AnnotType.DSTR, AnnotType.REPT })
             {
                 int numOfType = GetSpeciesAnnotHitCount(speciesBcIndexes, annotType);
-                xmlFile.WriteLine("    <point x=\"{0} ({1:0%})\" y=\"{2}\" />", AnnotType.GetName(annotType), numOfType / nUniqueMolecules, numOfType / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"{0} ({1:0%})\" y=\"{2}\" />", AnnotType.GetName(annotType), numOfType / nUniqueMolecules, numOfType / reducer);
             }
             if (Props.props.DirectionalReads)
             {
                 int numAEXON = GetSpeciesAnnotHitCount(speciesBcIndexes, AnnotType.AEXON);
-                xmlFile.WriteLine("    <point x=\"AEXON ({0:0%})\" y=\"{1}\" />", numAEXON / nUniqueMolecules, numAEXON / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"AEXON ({0:0%})\" y=\"{1}\" />", numAEXON / nUniqueMolecules, numAEXON / reducer);
             }
             xmlFile.WriteLine("  </reads>");
         }

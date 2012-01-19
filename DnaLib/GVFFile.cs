@@ -19,14 +19,14 @@ namespace Linnarsson.Dna
         public string attributes;
 
         public void Init(string seqid, string source, string type, int start, int end,
-                         double score, char strand, string phase, string attributes)
+                         string score, char strand, string phase, string attributes)
         {
             this.seqid = seqid;
             this.source = source;
             this.type = type;
             this.start = start;
             this.end = end;
-            this.score = score;
+            this.score = (score == ".")? 0.0 : double.Parse(score);
             this.strand = strand;
             this.phase = phase;
             this.attributes = attributes;
@@ -35,7 +35,7 @@ namespace Linnarsson.Dna
         {
             string[] f = line.Split('\t');
             GFF3Record rec = new GFF3Record();
-            rec.Init(f[0], f[1], f[2], int.Parse(f[3]), int.Parse(f[4]), double.Parse(f[5]), f[6][0], f[7], f[8]);
+            rec.Init(f[0], f[1], f[2], int.Parse(f[3]), int.Parse(f[4]), f[5], f[6][0], f[7], f[8]);
         }
 
         /// <summary>
@@ -113,8 +113,10 @@ namespace Linnarsson.Dna
                 rec.InitFromLine(line);
                 return rec;
             }
-            catch
-            { }
+            catch (Exception e)
+            {
+                Console.WriteLine("Parsing GVF line: " + line + " " + e); 
+            }
             return rec;
         }
 
@@ -204,8 +206,11 @@ namespace Linnarsson.Dna
             {
                 while ((line = reader.ReadLine()) != null)
                 {
-                    GVFRecord rec = GVFRecord.MakeGVFFromLine(line);
-                    if (rec != null) yield return rec;
+                    if (!line.StartsWith("##"))
+                    {
+                        GVFRecord rec = GVFRecord.MakeGVFFromLine(line);
+                        if (rec != null) yield return rec;
+                    }
                 }
             }
         }

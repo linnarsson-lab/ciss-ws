@@ -118,7 +118,7 @@ namespace readFileContent
             }
 
             string path = args[0];
-            GFFfile Design = new GFFfile("/media/ext5tb1/runs/111111_SN893_0092_BD036JACXX/Design-Report-id-488-1314174777.gff");
+            GFFfile Design = new GFFfile("/media/ext5tb1/runs/111111_SN893_0092_BD036JACXX/UnaGenes1v2.gff");
             if (Directory.Exists(path))
             {
                 Console.WriteLine(Environment.NewLine + "\tThe '" + path + "' is set as root.");
@@ -168,46 +168,57 @@ namespace readFileContent
                 BamFile BF = new BamFile(bFile);
                 tw.WriteLine(bFile);
                 tw.WriteLine(DateTime.Now);
-//                Dictionary<string, int> onposcounter = new Dictionary<string, int>();
-//                List<string>   posexist = new List<string>();
+                Dictionary<string, int> onposcounter = new Dictionary<string, int>();
+                List<string>   posexist = new List<string>();
                 foreach (KeyValuePair<string, Fragment> KVP in Design)
                 {
                     string[] CHgff = KVP.Value.seqname.Split('r');
                     string CHROM = CHgff[1] + ".fa";
-//                    int strt = KVP.Value.start - 250;
-//                    if (strt < 1)
-//                        strt = 1;
-//                    int ende = KVP.Value.end + 250;
-                    List<BamAlignedRead> MyList = BF.Fetch(CHROM, KVP.Value.start, KVP.Value.end);
-//                    List<string> tmp = new List<string>();
+                    int strt = KVP.Value.start - 250;
+                    if (strt < 1)
+                        strt = 1;
+                    int ende = KVP.Value.end + 250;
+//                    List<BamAlignedRead> MyList = BF.Fetch(CHROM, KVP.Value.start, KVP.Value.end);
+                    IEnumerable<string> MList = BF.IterLines(CHROM, strt, ende);
+//                    Console.WriteLine(MList); 
+                    List<string> tmp = new List<string>();
+                    foreach (string item in MList)
+                    {
+                        string[] readinfo = item.Split('\t');
+                        //                RNAME[=chr]                 POS                MAPQ   
+                        Console.WriteLine(readinfo[2] + " " + readinfo[3] + " " + readinfo[4]);
+
 //                    if (!(MyList.Count < 1))
 //                    {
 //
 //                        for (int ii = 0; ii < MyList.Count; ii++)
 //                        {
-//                            if (posexist.Contains(CHROM + MyList[ii].Position)) continue;
-//                            if (onposcounter.ContainsKey(CHROM + MyList[ii].Position))
-//                                onposcounter[CHROM + MyList[ii].Position]++;
-//                            else
-//                            {
-//                                tmp.Add(CHROM + MyList[ii].Position);
-//                                onposcounter.Add(CHROM + MyList[ii].Position, 1);
-//                            }
+                            if (posexist.Contains(CHROM + readinfo[3])) continue;
+                            if (onposcounter.ContainsKey(CHROM + readinfo[3]))
+                                onposcounter[CHROM + readinfo[3]]++;
+                            else
+                            {
+                                tmp.Add(CHROM + readinfo[3]);
+                                onposcounter.Add(CHROM + readinfo[3], 1);
+                            }
 //                        }
-                    //                    }
-                    //                    foreach (string str in tmp)
-                    //                        posexist.Add(str);
-//                    tmp.Clear();
+//                                        }
+                                        foreach (string str in tmp)
+                                            posexist.Add(str);
+                    }
+
+                    tmp.Clear();
+
 //                    Console.SetCursorPosition(0, Console.CursorTop);
 //                    Console.Write(" " + CHROM + " " + KVP.Key + " " + MyList.Count);
-                    tw.WriteLine("{0,4:G} {1,10:G} {2,10:G} {3,10:G}", CHROM, KVP.Value.start, KVP.Value.end, MyList.Count);
-                    MyList.Clear();
+                    Console.WriteLine("{0,4:G} {1,10:G} {2,10:G} {3,10:G}", CHROM, KVP.Value.source, KVP.Value.start, KVP.Value.end);
+//                    MyList.Clear();
                 }
-//                foreach (KeyValuePair<string, int> kvp in onposcounter)
-//                {
-//                    string[] genomepos = kvp.Key.Split('.');
-//                    tw.WriteLine("{0,2:G} {1,10:G} {2,10:G}", genomepos[0], kvp.Key, kvp.Value);
-//                }
+                foreach (KeyValuePair<string, int> kvp in onposcounter)
+                {
+                    string[] genomepos = kvp.Key.Split('.');
+                    Console.WriteLine("{0,2:G} {1,10:G} {2,10:G}", genomepos[0], kvp.Key, kvp.Value);
+                }
 //                onposcounter.Clear();
                 Console.WriteLine();
             }

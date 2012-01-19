@@ -34,8 +34,7 @@ namespace Linnarsson.Dna
         public virtual void InitFromLine(string line)
         {
             string[] f = line.Split('\t');
-            GFF3Record rec = new GFF3Record();
-            rec.Init(f[0], f[1], f[2], int.Parse(f[3]), int.Parse(f[4]), f[5], f[6][0], f[7], f[8]);
+            Init(f[0], f[1], f[2], int.Parse(f[3]), int.Parse(f[4]), f[5], f[6][0], f[7], f[8]);
         }
 
         /// <summary>
@@ -90,11 +89,10 @@ namespace Linnarsson.Dna
         public int[] Variant_reads;
         public int Total_reads;
         public double[] Variant_freq;
-        public List<GVFVariantEffect> variant_effects;
+        public List<GVFVariantEffect> variant_effects = new List<GVFVariantEffect>();
 
         public override void InitFromLine(string line)
         {
-            GVFRecord rec =  new GVFRecord();
             base.InitFromLine(line);
             ParseAttributes();
         }
@@ -115,7 +113,7 @@ namespace Linnarsson.Dna
             }
             catch (Exception e)
             {
-                Console.WriteLine("Parsing GVF line: " + line + " " + e); 
+                Console.WriteLine("Parsing GVF line: " + line + " " + e + " " + e.StackTrace); 
             }
             return rec;
         }
@@ -129,7 +127,7 @@ namespace Linnarsson.Dna
         {
             foreach (string attribute in attributes.Split(';'))
             {
-                string[] keyValPair = attributes.Split('=');
+                string[] keyValPair = attribute.Split('=');
                 switch (keyValPair[0])
                 {
                     case "ID":

@@ -128,10 +128,10 @@ namespace Linnarsson.Strt
         {
             foreach (Mismatch mm in mrm.IterMismatches(minBowtieQAscii))
             {
-                if (mrm.Position + mm.relPosInChrDir == snpPos)
+                if (mm.posInChr == snpPos)
                     return mm;
             }
-            return new Mismatch(0, '-', '-');
+            return new Mismatch(0, 0, '-', '-');
         }
 
         public void Verify(string fileNameBase)

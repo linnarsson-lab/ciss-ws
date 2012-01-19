@@ -43,11 +43,11 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="snpPos"></param>
         /// <param name="snpNt"></param>
-        public void AddSNP(int snpPos, char snpNt)
+        public void AddSNP(Mismatch mm)
         {
-            if (!snpItems.ContainsKey(snpPos))
-                snpItems[snpPos] = new SNPCounter();
-            snpItems[snpPos].Add(snpNt);
+            if (!snpItems.ContainsKey(mm.posInChr))
+                snpItems[mm.posInChr] = new SNPCounter(mm.refNtInChrDir);
+            snpItems[mm.posInChr].Add(mm.ntInChrDir);
             totalsSet = false;
         }
         /// <summary>
@@ -128,7 +128,7 @@ namespace Linnarsson.Strt
                         {
                             if (mm.relPosInChrDir < marginForWiggle || mm.relPosInChrDir >= mrm.SeqLen - marginForWiggle) continue;
                             int chrSnpPos = hitStartPos + mm.relPosInChrDir;
-                            chrSNPData.AddSNP(chrSnpPos, mm.ntInChrDir);
+                            chrSNPData.AddSNP(mm); //(chrSnpPos, mm.ntInChrDir);
                         }
                     }
                 }

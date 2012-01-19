@@ -435,7 +435,7 @@ namespace Linnarsson.Strt
             if (snpRndTagVerifier != null)
                 snpRndTagVerifier.Verify(fileNameBase);
             if (Props.props.AnalyzeSNPs)
-                WriteSnps(fileNameBase);
+                WriteSNPPositions(fileNameBase);
             if (DetermineMotifs)
                 WriteSequenceLogos(fileNameBase);
             WriteWriggle(fileNameBase);
@@ -1220,7 +1220,7 @@ namespace Linnarsson.Strt
             sharedFile.Close();
         }
 
-        private void WriteSnps(string fileNameBase)
+        private void WriteSNPPositions(string fileNameBase)
         {
             StreamWriter snpFile = (fileNameBase + "_SNPs.tab").OpenWrite();
             int thres = (int)(SnpAnalyzer.thresholdFractionAltHitsForMixPos * 100);

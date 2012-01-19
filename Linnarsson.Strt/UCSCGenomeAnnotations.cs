@@ -450,11 +450,11 @@ namespace Linnarsson.Strt
         private void WriteExpressionTable(string fileNameBase)
         {
             var matrixFile = (fileNameBase + "_expression.tab").OpenWrite();
-            matrixFile.WriteLine("Length, total and per barcode maximum exon hits for transcripts, and total length, total and per barcode (both sense & antisense) hits for repeat regions grouped by type.");
+            matrixFile.WriteLine("Length, total and per barcode maximum transcript hits for transcripts, and total length, total and per barcode (both sense & antisense) hits for repeat regions grouped by type.");
             matrixFile.WriteLine("MinExonHits have a unique genome mapping, MaxExonHits includes hits with alternative mapping(s) to genome.");
             matrixFile.WriteLine("NOTE: Gene variants occupying the same locus share counts in the table.");
-            if (!AnnotType.DirectionalReads)
-                matrixFile.WriteLine("NOTE: This is non-STRT analysis with non-directional reads.");
+            if (!props.DirectionalReads)
+                matrixFile.WriteLine("NOTE: This is a non-STRT analysis with non-directional reads.");
             WriteBarcodeHeaders(matrixFile, 6);
             matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\tMaxExonHits");
             StreamWriter readFile = null;
@@ -569,8 +569,6 @@ namespace Linnarsson.Strt
 
         public override void WriteSpikeDetection(StreamWriter xmlFile)
         {
-            xmlFile.WriteLine("  <spikedetection>");
-            xmlFile.WriteLine("    <title>Detection of spikes across all {0} wells</title>", barcodes.Count);
             StringBuilder sbt = new StringBuilder();
             StringBuilder sbf = new StringBuilder();
             foreach (GeneFeature gf in IterTranscripts(true))
@@ -590,13 +588,18 @@ namespace Linnarsson.Strt
                 sbt.Append(string.Format("      <point x=\"#{0}\" y=\"{1:0}\" />\n", spikeId, total));
                 sbf.Append(string.Format("      <point x=\"#{0}\" y=\"{1:0.###}\" />\n", spikeId, fraction));
             }
-            xmlFile.WriteLine("    <curve legend=\"total reads\" yaxis=\"right\" color=\"black\">");
-            xmlFile.Write(sbt.ToString());
-            xmlFile.WriteLine("    </curve>");
-            xmlFile.WriteLine("    <curve legend=\"frac. of wells\" yaxis=\"left\" color=\"blue\">");
-            xmlFile.Write(sbf.ToString());
-            xmlFile.WriteLine("    </curve>");
-            xmlFile.WriteLine("  </spikedetection>");
+            if (sbt.Length > 0)
+            {
+                xmlFile.WriteLine("  <spikedetection>");
+                xmlFile.WriteLine("    <title>Detection of spikes across all {0} wells</title>", barcodes.Count);
+                xmlFile.WriteLine("    <curve legend=\"total reads\" yaxis=\"right\" color=\"black\">");
+                xmlFile.Write(sbt.ToString());
+                xmlFile.WriteLine("    </curve>");
+                xmlFile.WriteLine("    <curve legend=\"frac. of wells\" yaxis=\"left\" color=\"blue\">");
+                xmlFile.Write(sbf.ToString());
+                xmlFile.WriteLine("    </curve>");
+                xmlFile.WriteLine("  </spikedetection>");
+            }
         }
 
         private string WriteBarcodedRPM(string fileNameBase)
@@ -612,7 +615,10 @@ namespace Linnarsson.Strt
             if (!props.UseRPKM)
                 matrixFile.WriteLine("SingleRead is the RPM value that corresponds to a single molecule(read) in each barcode.");
             WriteBarcodeHeaders(matrixFile, 9);
-            matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\tP=0.01\tP=0.001\tAverage\tCV");
+            if (props.DirectionalReads)
+                matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\tP=0.01\tP=0.001\tAverage\tCV");
+            else
+                matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\tAverage\tCV");
             WriteRPMSection(matrixFile, true, null);
             matrixFile.WriteLine();
             StreamWriter simpleTableFile = (fileNameBase + "_" + rpType + "_simple.txt").OpenWrite();
@@ -641,21 +647,23 @@ namespace Linnarsson.Strt
             double[] normFactors = CalcRPMNormFactors(totCountsByBarcode);
             if (!props.UseRPKM)
             {
-                matrixFile.Write("SingleRead\t\t\t\t\t\t\t\t\t");
+                matrixFile.Write("SingleRead\t\t\t\t\t\t\t");
+                if (props.DirectionalReads) matrixFile.Write("\t\t");
                 foreach (int idx in speciesBcIndexes) matrixFile.Write("\t{0:G6}", normFactors[idx]);
                 matrixFile.WriteLine();
             }
             foreach (GeneFeature gf in IterTranscripts(selectSpikes))
             {
                 double kFactor = (props.UseRPKM) ? gf.GetTranscriptLength() : 1.0;
-                string RPMThres01 = "-", RPMThres001 = "-";
+                matrixFile.Write(gf.Name + "\t" + gf.Chr + "\t" + gf.Start + "\t" + gf.Strand + "\t" + gf.GetTranscriptLength() + "\t" +
+                                 gf.GetTranscriptHits());
                 if (props.DirectionalReads)
                 {
+                    string RPMThres01 = "-", RPMThres001 = "-";
                     RPMThres01 = string.Format("{0:G6}", RPBM99 * gf.GetNonMaskedTranscriptLength() / kFactor);
                     RPMThres001 = string.Format("{0:G6}", RPBM999 * gf.GetNonMaskedTranscriptLength() / kFactor);
+                    matrixFile.Write("\t" + RPMThres01 + "\t" + RPMThres001);
                 }
-                matrixFile.Write(gf.Name + "\t" + gf.Chr + "\t" + gf.Start + "\t" + gf.Strand + "\t" + gf.GetTranscriptLength() + "\t" +
-                                 gf.GetTranscriptHits() + "\t" + RPMThres01 + "\t" + RPMThres001);
                 StringBuilder sb = new StringBuilder();
                 DescriptiveStatistics ds = new DescriptiveStatistics();
                 foreach (int idx in speciesBcIndexes)

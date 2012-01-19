@@ -407,8 +407,9 @@ namespace Linnarsson.Strt
                 List<string> mapFilePaths = LaneInfo.RetrieveAllMapFilePaths(projDescr.extractionInfos);
                 props.UseRPKM = projDescr.rpkm;
                 props.DirectionalReads = !projDescr.rpkm;
-                logWriter.WriteLine(DateTime.Now.ToString() + " Annotating " + mapFilePaths.Count + " map files..."); logWriter.Flush();
+                logWriter.WriteLine(DateTime.Now.ToString() + " Annotating " + mapFilePaths.Count + " map files...");
                 logWriter.WriteLine(DateTime.Now.ToString() + " setting: AllTrVariants=" + projDescr.analyzeVariants + " DirectionalReads=" + props.DirectionalReads + " RPKM=" + props.UseRPKM);
+                logWriter.Flush();
                 ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.projectName, mapFilePaths);
                 projDescr.resultDescriptions.Add(resultDescr);
                 System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(projDescr.GetType());

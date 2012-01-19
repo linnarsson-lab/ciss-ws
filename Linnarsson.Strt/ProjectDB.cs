@@ -64,17 +64,6 @@ namespace Linnarsson.Strt
         public static readonly string STATUS_READY = "ready";
         public static readonly string STATUS_FAILED = "failed";
 
-        public ProjectDescription()
-        {
-            this.defaultBuild = "UCSC";
-            this.analyzeVariants = false;
-            this.resultDescriptions = new List<ResultDescription>();
-        }
-        public ProjectDescription(string projectName, string barcodesName, string defaultSpecies, List<string> laneInfos,
-                                  string layoutFile, string status, string managerEmail) :
-            this(projectName, barcodesName, defaultSpecies, laneInfos, layoutFile, status, managerEmail, "UCSC", "single", "0", false)
-        { }
-
         public ProjectDescription(string projectName, string barcodesName, string defaultSpecies, List<string> laneInfos,
                           string layoutFile, string status, string emails, string defaultBuild, string variants, string analysisId, bool rpkm)
         {
@@ -219,7 +208,7 @@ namespace Linnarsson.Strt
                 emails = rdr["emails"].ToString();
                 defaultBuild = rdr["transcript_db_version"].ToString();
                 variant = rdr["transcript_variant"].ToString();
-                rpkm = (rdr["rpkm"].ToString() == "1");
+                rpkm = (rdr["rpkm"].ToString() == "True");
             }
             if (currAnalysisId != "") pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
                                                                         emails, defaultBuild, variant, currAnalysisId, rpkm));

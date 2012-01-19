@@ -91,6 +91,7 @@ namespace Linnarsson.Dna
                     sumCounter.Add(counter);
                 sumCounters.Add(sumCounter);
             }
+            sumCounters.Sort((x, y) => x.posOnChr.CompareTo(y));
             return sumCounters;
         }
     }

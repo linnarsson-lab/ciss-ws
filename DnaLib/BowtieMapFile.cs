@@ -194,12 +194,14 @@ namespace Linnarsson.Dna
 
     public struct Mismatch
     {
-        public int relPosInChrDir;
-        public char refNtInChrDir;
-        public char ntInChrDir;
+        public int posInChr; // Position within the chr of the mismatch
+        public byte relPosInChrDir; // Position relative to the start of the aligned read, in chr direction
+        public char refNtInChrDir; // The reference chr seq nucleotide
+        public char ntInChrDir; // The alternative nucleotide on chr as told by the read
 
-        public Mismatch(int relPosInChrDir, char refNtInChrDir, char ntInChrDir)
+        public Mismatch(int posInChr, byte relPosInChrDir, char refNtInChrDir, char ntInChrDir)
         {
+            this.posInChr = posInChr;
             this.relPosInChrDir = relPosInChrDir;
             this.refNtInChrDir = refNtInChrDir;
             this.ntInChrDir = ntInChrDir;
@@ -252,11 +254,11 @@ namespace Linnarsson.Dna
                     Console.WriteLine("Strange mismatches in mapping:\n" + ToString());
                     continue;
                 }
-                int posInRead = int.Parse(snp.Substring(0, p));
-                if (parent.GetQuality(posInRead) >= minPhredScore)
+                byte relPosInReadDir = byte.Parse(snp.Substring(0, p));
+                if (parent.GetQuality(relPosInReadDir) >= minPhredScore)
                 {
-                    int relPos = (Strand == '+') ? posInRead : parent.SeqLen - 1 - posInRead;
-                    yield return new Mismatch(posInRead, snp[p + 1], snp[p + 3]);
+                    byte relPosInChrDir = (Strand == '+') ? relPosInReadDir : (byte)(parent.SeqLen - 1 - relPosInReadDir);
+                    yield return new Mismatch(Position + relPosInChrDir, relPosInChrDir, snp[p + 1], snp[p + 3]);
                 }
             }
         }

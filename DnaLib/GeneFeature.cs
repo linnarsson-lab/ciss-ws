@@ -634,14 +634,14 @@ namespace Linnarsson.Dna
         {
             foreach (SNPCounter snpCounter in item.MolSNPCounts)
             {
-                int chrPos = snpCounter.posOnChr;
-                if (!SNPCountersByBcIdx.ContainsKey(chrPos))
+                int posOnRealChr = item.splcToRealChrOffset + snpCounter.posOnChr;
+                if (!SNPCountersByBcIdx.ContainsKey(posOnRealChr))
                 {
-                    SNPCountersByBcIdx[chrPos] = new SNPCounter[Props.props.Barcodes.Count];
+                    SNPCountersByBcIdx[posOnRealChr] = new SNPCounter[Props.props.Barcodes.Count];
                     for (int bcIdx = 0; bcIdx < Props.props.Barcodes.Count; bcIdx++)
-                        SNPCountersByBcIdx[chrPos][bcIdx] = new SNPCounter();
+                        SNPCountersByBcIdx[posOnRealChr][bcIdx] = new SNPCounter(snpCounter.refNt);
                 }
-                SNPCountersByBcIdx[chrPos][item.bcIdx].Add(snpCounter);
+                SNPCountersByBcIdx[posOnRealChr][item.bcIdx].Add(snpCounter);
             }
         }
     }

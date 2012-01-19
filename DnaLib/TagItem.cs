@@ -140,9 +140,9 @@ namespace Linnarsson.Dna
         /// <param name="rndTagIdx">rndTag of the read</param>
         /// <param name="snpOffset">0-based offset within the read, counting in chromosome direction</param>
         /// <param name="snpNt"></param>
-        public void AddSNP(int rndTagIdx, byte snpOffset, char snpNt)
+        public void AddSNP(int rndTagIdx, Mismatch mm)
         {
-            tagSNPData.AddSNP(rndTagIdx, snpOffset, snpNt);
+            tagSNPData.AddSNP(rndTagIdx, mm);
         }
 
         /// <summary>

@@ -117,7 +117,7 @@ namespace Linnarsson.Strt
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {
                     if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
-                    item.tagSNPData.AddSNP(m.RndTagIdx, (byte)mm.relPosInChrDir, mm.ntInChrDir);
+                    item.tagSNPData.AddSNP(m.RndTagIdx, mm);
                 }
             }
             return item.Add(m.RndTagIdx);

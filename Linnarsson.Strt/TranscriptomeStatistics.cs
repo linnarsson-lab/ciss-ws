@@ -1260,14 +1260,14 @@ namespace Linnarsson.Strt
         {
             string strandString = (strand == '+') ? "fw" : "rev";
             StreamWriter readWriter = (fileNameBase + "_" + strandString + "_byread.wig.gz").OpenWrite();
-            readWriter.WriteLine("track type=wiggle_0 name=\"{0} (+)\" description=\"{0} (+)\" visibility=full",
-                Path.GetFileNameWithoutExtension(fileNameBase) + "_byread");
+            readWriter.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full",
+                Path.GetFileNameWithoutExtension(fileNameBase) + "_byread", strand);
             StreamWriter molWriter = null;
             if (barcodes.HasRandomBarcodes)
             {
                 molWriter = (fileNameBase + "_" + strandString + "_bymolecule.wig.gz").OpenWrite();
-                molWriter.WriteLine("track type=wiggle_0 name=\"{0} (+)\" description=\"{0} (+)\" visibility=full",
-                    Path.GetFileNameWithoutExtension(fileNameBase) + "_bymolecule");
+                molWriter.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full",
+                    Path.GetFileNameWithoutExtension(fileNameBase) + "_bymolecule", strand);
             }
             int averageReadLength = MappedTagItem.AverageReadLen;
             foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)

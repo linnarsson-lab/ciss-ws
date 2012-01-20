@@ -6,7 +6,16 @@ using System.IO;
 
 namespace Linnarsson.Dna
 {
-    public class GFF3Record
+    /// <summary>
+    /// All GFF3-derived record types have to keep this interface in order to be read and iterated from files
+    /// </summary>
+    public interface IGFF3Record
+    {
+        void InitFromLine(string line);
+        IGFF3Record New();
+    }
+
+    public class GFF3Record : IGFF3Record
     {
         public string seqid;
         public string source;
@@ -31,33 +40,63 @@ namespace Linnarsson.Dna
             this.phase = phase;
             this.attributes = attributes;
         }
+
+        /// <summary>
+        /// Factory for new instances of this class
+        /// </summary>
+        /// <returns></returns>
+        public virtual IGFF3Record New()
+        {
+            return new GFF3Record();
+        }
+        /// <summary>
+        /// Parse mandatory fields. Calls a file-type dependent method to parse specialized attributes field
+        /// </summary>
+        /// <param name="line"></param>
         public virtual void InitFromLine(string line)
         {
             string[] f = line.Split('\t');
             Init(f[0], f[1], f[2], int.Parse(f[3]), int.Parse(f[4]), f[5], f[6][0], f[7], f[8]);
-        }
-
-        /// <summary>
-        /// Parse a GFF3 file record
-        /// </summary>
-        /// <param name="line"></param>
-        /// <returns>null if line is not a valid GFF3 file record</returns>
-        public static GFF3Record MakeGFF3FromLine(string line)
-        {
-            GFF3Record rec = null;
-            try
-            {
-                rec = new GFF3Record();
-                rec.InitFromLine(line);
-            }
-            catch
-            { }
-            return rec;
+            ParseAttributes();
         }
 
         protected virtual void ParseAttributes()
         {
-            // Not implemented
+            // Add some parsing for standard GFF3 file
+        }
+
+    }
+
+    public class GFF3CompatibleFile
+    {
+        /// <summary>
+        /// Iterate through all records of a GFF3-type file
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="typeGFF3Class">Use this class' New() method to create new record instances</param>
+        /// <returns></returns>
+        public static IEnumerable<IGFF3Record> Iterate(string path, IGFF3Record typeGFF3Class)
+        {
+            string line;
+            using (StreamReader reader = new StreamReader(path))
+            {
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (!line.StartsWith("##"))
+                    {
+                        IGFF3Record rec = typeGFF3Class.New();
+                        try
+                        {
+                            rec.InitFromLine(line);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("Parsing GFF3 line: " + line + " " + e + " " + e.StackTrace);
+                        }
+                        if (rec != null) yield return rec;
+                    }
+                }
+            }
         }
     }
 
@@ -81,7 +120,7 @@ namespace Linnarsson.Dna
         }
     }
 
-    public class GVFRecord : GFF3Record
+    public class GVFRecord : GFF3Record, IGFF3Record
     {
         public string ID;
         public string[] Variant_seq;
@@ -91,33 +130,15 @@ namespace Linnarsson.Dna
         public double[] Variant_freq;
         public List<GVFVariantEffect> variant_effects = new List<GVFVariantEffect>();
 
-        public override void InitFromLine(string line)
+        public override IGFF3Record New()
         {
-            base.InitFromLine(line);
-            ParseAttributes();
+            return new GVFRecord();
         }
 
         /// <summary>
-        /// Parse a GVF file record
+        /// Has the variant of this record any effect on a trancribed sequence?
         /// </summary>
-        /// <param name="line"></param>
-        /// <returns>null if line is not a valid GVF file record</returns>
-        public static GVFRecord MakeGVFFromLine(string line)
-        {
-            GVFRecord rec = null;
-            try
-            {
-                rec = new GVFRecord();
-                rec.InitFromLine(line);
-                return rec;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Parsing GVF line: " + line + " " + e + " " + e.StackTrace); 
-            }
-            return rec;
-        }
-
+        /// <returns></returns>
         public bool AnyTranscriptEffect()
         {
             return variant_effects.Any(ve => ve.IsTranscriptEffect());
@@ -165,52 +186,4 @@ namespace Linnarsson.Dna
         }
     }
 
-    public class GFF3File
-    {
-        private string path;
-
-        public GFF3File(string path)
-        {
-            this.path = path;
-        }
-
-        public IEnumerable<GFF3Record> Iterate()
-        {
-            string line;
-            using (StreamReader reader = new StreamReader(path))
-            {
-                while ((line = reader.ReadLine()) != null)
-                {
-                    GFF3Record rec = GFF3Record.MakeGFF3FromLine(line);
-                    if (rec != null) yield return rec;
-                }
-            }
-        }
-    }
-
-    public class GVFFile
-    {
-        private string path;
-
-        public GVFFile(string path)
-        {
-            this.path = path;
-        }
-
-        public IEnumerable<GVFRecord> Iterate()
-        {
-            string line;
-            using (StreamReader reader = new StreamReader(path))
-            {
-                while ((line = reader.ReadLine()) != null)
-                {
-                    if (!line.StartsWith("##"))
-                    {
-                        GVFRecord rec = GVFRecord.MakeGVFFromLine(line);
-                        if (rec != null) yield return rec;
-                    }
-                }
-            }
-        }
-    }
 }

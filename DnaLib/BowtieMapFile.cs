@@ -206,6 +206,11 @@ namespace Linnarsson.Dna
             this.refNtInChrDir = refNtInChrDir;
             this.ntInChrDir = ntInChrDir;
         }
+
+        public override string ToString()
+        {
+            return "Mismatch(PosInChr=" + posInChr + ", RelPos=" + relPosInChrDir + ", RefNt=" + refNtInChrDir + ", AltNt=" + ntInChrDir + ")";
+        }
     }
 
     public class MultiReadMapping

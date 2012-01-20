@@ -75,7 +75,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Summarize SNP data across all barcodes for gven gene
+        /// Summarize SNP data across all barcodes for a gene
         /// </summary>
         /// <param name="gf">Gene of interest</param>
         /// <returns>SNPCounters that summarize Nt:s at each considered position. Each counter's posOnChr is set</returns>
@@ -91,7 +91,7 @@ namespace Linnarsson.Dna
                     sumCounter.Add(counter);
                 sumCounters.Add(sumCounter);
             }
-            sumCounters.Sort((x, y) => x.posOnChr.CompareTo(y));
+            sumCounters.Sort((x, y) => x.posOnChr.CompareTo(y.posOnChr));
             return sumCounters;
         }
     }

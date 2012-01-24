@@ -111,14 +111,14 @@ namespace readFileContent
 
         static int Main(string[] args)
         {
-            if (args.Length != 1)
+            if (args.Length != 2)
             {
                 usage();
                 return (1);
             }
 
             string path = args[0];
-            GFFfile Design = new GFFfile("/media/ext5tb1/runs/111111_SN893_0092_BD036JACXX/UnaGenes1v2.gff");
+            GFFfile Design = new GFFfile(args[1]);
             if (Directory.Exists(path))
             {
                 Console.WriteLine(Environment.NewLine + "\tThe '" + path + "' is set as root.");
@@ -160,7 +160,7 @@ namespace readFileContent
             Console.WriteLine("\tStarting " + now + " memory allocated " + proc.PrivateMemorySize64);
             Console.WriteLine();
 
-            TextWriter tw = new StreamWriter("readCount.txt");
+            TextWriter tw = new StreamWriter("readCount4.txt");
 
             foreach (string bFile in TheBams)
             {
@@ -168,6 +168,7 @@ namespace readFileContent
                 BamFile BF = new BamFile(bFile);
                 tw.WriteLine(bFile);
                 tw.WriteLine(DateTime.Now);
+                tw.Flush();
                 Dictionary<string, int> onposcounter = new Dictionary<string, int>();
                 List<string>   posexist = new List<string>();
                 foreach (KeyValuePair<string, Fragment> KVP in Design)
@@ -186,41 +187,42 @@ namespace readFileContent
                     {
                         string[] readinfo = item.Split('\t');
                         //                RNAME[=chr]                 POS                MAPQ   
-                        Console.WriteLine(readinfo[2] + " " + readinfo[3] + " " + readinfo[4]);
+//                        Console.WriteLine(readinfo[2] + " " + readinfo[3] + " " + readinfo[4]);
 
 //                    if (!(MyList.Count < 1))
 //                    {
 //
 //                        for (int ii = 0; ii < MyList.Count; ii++)
 //                        {
-                            if (posexist.Contains(CHROM + readinfo[3])) continue;
-                            if (onposcounter.ContainsKey(CHROM + readinfo[3]))
-                                onposcounter[CHROM + readinfo[3]]++;
+                        string poskey = CHROM + " " + KVP.Value.source + " " + readinfo[3];
+                        if (posexist.Contains(poskey)) continue;
+                            if (onposcounter.ContainsKey(poskey))
+                                onposcounter[poskey]++;
                             else
                             {
-                                tmp.Add(CHROM + readinfo[3]);
-                                onposcounter.Add(CHROM + readinfo[3], 1);
+                                tmp.Add(poskey);
+                                onposcounter.Add(poskey, 1);
                             }
 //                        }
 //                                        }
-                                        foreach (string str in tmp)
-                                            posexist.Add(str);
                     }
+                    foreach (string str in tmp)
+                        posexist.Add(str);
 
                     tmp.Clear();
 
 //                    Console.SetCursorPosition(0, Console.CursorTop);
 //                    Console.Write(" " + CHROM + " " + KVP.Key + " " + MyList.Count);
-                    Console.WriteLine("{0,4:G} {1,10:G} {2,10:G} {3,10:G}", CHROM, KVP.Value.source, KVP.Value.start, KVP.Value.end);
+//                    Console.WriteLine("{0,4:G} {1,10:G} {2,10:G} {3,10:G}", CHROM, KVP.Value.source, KVP.Value.start, KVP.Value.end);
 //                    MyList.Clear();
                 }
                 foreach (KeyValuePair<string, int> kvp in onposcounter)
                 {
                     string[] genomepos = kvp.Key.Split('.');
-                    Console.WriteLine("{0,2:G} {1,10:G} {2,10:G}", genomepos[0], kvp.Key, kvp.Value);
+                    tw.WriteLine("{0,25:G} {1,10:G} {2,10:G}", genomepos[0], kvp.Key, kvp.Value);
                 }
 //                onposcounter.Clear();
-                Console.WriteLine();
+//                Console.WriteLine();
             }
             tw.Close();
 
@@ -232,7 +234,7 @@ namespace readFileContent
         static void usage()
         {
             Console.WriteLine(Environment.NewLine + "\treadFileContent Usage:");
-            Console.WriteLine("\treadFileContent <path-to-variantDectionDir>" + Environment.NewLine);
+            Console.WriteLine("\treadFileContent <path-to-variantDectionDir> <path-to-gff-design-file>" + Environment.NewLine);
         }
     }
 }

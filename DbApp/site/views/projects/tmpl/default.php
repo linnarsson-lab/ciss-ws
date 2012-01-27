@@ -24,6 +24,8 @@ defined('_JEXEC') or die('Restricted access');
   $nonasgnsorter = ($sortKey == "nonasgn")? "#Non-assigned" : ($sorturlhead . "nonasgn>#Non-assigned</a>");
   $managersorter = ($sortKey == "manager")? "Mngr" : ($sorturlhead . "manager>Mngr</a>");
   $contactsorter = ($sortKey == "contact")? "Contact" : ($sorturlhead . "contact>Contact</a>");
+  $bcsetsorter = ($sortKey == "bcset")? "BcSet" : ($sorturlhead . "bcset>BcSet</a>");
+  $speciessorter = ($sortKey == "species")? "Species" : ($sorturlhead . "species>Species</a>");
 
   $cancelchange = ($cancelled == "yes")? "Hide" : "Show";
   if ($cancelled == "yes")
@@ -60,21 +62,21 @@ defined('_JEXEC') or die('Restricted access');
           <fieldset>
             <legend>
                <nobr> $cancelledfilter $strtfilter &nbsp;&nbsp; $newlink </nobr><br /><br />
-               <nobr>Sort: $newsorter $platesorter $nonasgnsorter $pisorter
+               <nobr>Sort: $newsorter $platesorter $nonasgnsorter $bcsetsorter $speciessorter $pisorter
                            $contactsorter $managersorter $statussorter
                </nobr>
             </legend>
           <table><tr>
             <th></th>
-            <th>SampleId&nbsp;<br />" . JHTML::tooltip('Plate L-number or other designation (e.g. S-number) for non-STRT plates/samples') . "</th>
-            <th>BcSet&nbsp;<br />" . JHTML::tooltip('v4=48best wells w mol.counting, v4r=48best wells w/o mol.counting, v2=6-mer STRTver3, v1=5-mer STRTver1 no=single sample, TruSeq') . "</th>
-            <th>Species&nbsp;<br />" . JHTML::tooltip('Only meaningful if no layout file is given') . "</th>
-            <th>P.I.&nbsp;</th>
-            <th>Contact&nbsp;</th>
-            <th>Mngr&nbsp;<br />" . JHTML::tooltip('The manager receives email when analysis results are available') . "</th>
+            <th>$platesorter&nbsp;<br />" . JHTML::tooltip('Plate L-number or other designation (e.g. S-number) for non-STRT plates/samples') . "</th>
+            <th>$bcsetsorter&nbsp;<br />" . JHTML::tooltip('v4=48best wells w mol.counting, v4r=48best wells w/o mol.counting, v2=6-mer STRTver3, v1=5-mer STRTver1 no=single sample, TruSeq') . "</th>
+            <th>$speciessorter&nbsp;<br />" . JHTML::tooltip('Only meaningful if no layout file is given') . "</th>
+            <th>$pisorter&nbsp;</th>
+            <th>$contactsorter&nbsp;</th>
+            <th>$managersorter&nbsp;<br />" . JHTML::tooltip('The manager receives email when analysis results are available') . "</th>
             <th>Plan&nbsp;<br />" . JHTML::tooltip('Total no. of lanes that are planned') . "</th>
             <th>Asgn&nbsp;<br />" . JHTML::tooltip('Total no. of lanes that have been assigned to runs') . "</th>
-            <th>Status&nbsp;</th>
+            <th>$statussorter&nbsp;<br />" . JHTML::tooltip('--- is shown if last analysis was cancelled') . "</th>
             <th>Res&nbsp;<br />" . JHTML::tooltip('Number of analysis setup') . "</th>
             <th>Layout&nbsp;<br />" . JHTML::tooltip('Click to view layout file') . "</th>";
 
@@ -91,6 +93,8 @@ defined('_JEXEC') or die('Restricted access');
     function statussort($a, $b) { if ($a->astatus == $b->astatus)
                                   { return ($a->analysiscount > $b->analysiscount)? -1 : 1; }
                                   return (($a->astatus . "z") < ($b->astatus . "z")) ? -1 : 1; }; 
+    function bcsetsort($a, $b) { return -strnatcasecmp($a->barcodeset, $b->barcodeset); }
+    function speciessort($a, $b) { return -strnatcasecmp($a->species, $b->species); }
     function nonasgnsort($a, $b) { $an = $a->plannedlanes - $a->assignedlanes;
                                    $bn = $b->plannedlanes - $b->assignedlanes;
                                    if ($an == $bn) { return 0; }
@@ -109,6 +113,10 @@ defined('_JEXEC') or die('Restricted access');
     usort($this->projects, "statussort");
   } else if ($sortKey == "nonasgn") {
     usort($this->projects, "nonasgnsort");
+  } else if ($sortKey == "bcset") {
+    usort($this->projects, "bcsetsort");
+  } else if ($sortKey == "species") {
+    usort($this->projects, "speciessort");
   }
 
   foreach ($this->projects as $project) {
@@ -120,12 +128,12 @@ defined('_JEXEC') or die('Restricted access');
     if ($strt == "no" && $project->plateid[0] == "L") continue;
 
     echo "<tr>";
-    $projectlink = "&nbsp; <a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
-           . $project->id . "&Itemid=" . $itemid . ">" . $project->plateid . "</a>&nbsp;";
-    $editlink = "&nbsp; <a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=" 
-           . $project->id . "&Itemid=" . $itemid . ">edit</a>&nbsp;";
+    $projectlink = "<nobr>&nbsp;<a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
+           . $project->id . "&Itemid=" . $itemid . ">" . $project->plateid . "</a>&nbsp;</nobr>";
+    $editlink = "<nobr>&nbsp;<a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=" 
+           . $project->id . "&Itemid=" . $itemid . ">edit</a>&nbsp;</nobr>";
     echo "<td>" . $editlink . "</td>";
-    echo "<td>" . $projectlink . "&nbsp;</td>";
+    echo "<td>" . $projectlink . "</td>";
     echo "<td>" . $project->barcodeset . "&nbsp;</td>";
     echo "<td>" . $project->species . "&nbsp;</td>";
     echo "<td><nobr>" . $project->principalinvestigator . "&nbsp;</nobr></td>";

@@ -20,9 +20,11 @@ if ($submit == 'Cancel') {
   $rpkm = ($afteredit['rpkm'])? "1" : "0";
   $emails = $db->Quote($afteredit['emails']);
   $comment = $db->Quote($afteredit['comment']);
+  $user =& JFactory::getUser();
+  $username = $db->Quote($user->username);
   $query = " INSERT INTO #__aaaanalysis 
-                (#__aaaprojectid, transcript_db_version, transcript_variant, rpkm, emails, status, lanecount, comment, time)
-                VALUES ($projectid, $build, $variants, $rpkm, $emails, 'inqueue', $nlanes, $comment, NOW()) ";
+                (#__aaaprojectid, transcript_db_version, transcript_variant, rpkm, emails, status, lanecount, comment, time, user)
+                VALUES ($projectid, $build, $variants, $rpkm, $emails, 'inqueue', $nlanes, $comment, NOW(), $username) ";
   $db->setQuery($query);
   if ($db->query()) {
     JError::raiseNotice('Message', JText::_('The analysis setup was saved!'));

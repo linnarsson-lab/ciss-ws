@@ -170,7 +170,7 @@ namespace BkgFastQCopier
 					for (int read = 1; read <= 3; read++)
 					{
                         if (Outputter.DataExists(readsFolder, runId, lane, read, runName))
-                            break;
+                            continue;
 						Outputter outputter = null;
 						foreach (FastQRecord rec in BclFile.Stream(runFolder, lane, read))
 						{

@@ -15,14 +15,16 @@ namespace BkgBackuper
     {
         static int minutesWait = 10;
         static string backupDest = "hiseq@130.237.142.75:/mnt/davidson/hiseq/data_reads/";
-        static int startHour = 19;
-        static int stopHour = 7;
+        static int startHour = 17;
+        static int stopHour = 8;
         static int nExceptions = 0;
         static string readsFolder = Props.props.ReadsFolder;
         static double currentBytesPerHour = 7.0E+9;
 
         static void Main(string[] args)
         {
+            startHour = Props.props.BkgBackuperStartHour;
+            stopHour = Props.props.BkgBackuperStopHour;
             string logFile = new FileInfo("BBUP_" + Process.GetCurrentProcess().Id + ".log").FullName;
             try
             {
@@ -94,7 +96,7 @@ namespace BkgBackuper
         {
             DateTime now = DateTime.Now;
             return (now.DayOfWeek == DayOfWeek.Saturday || now.DayOfWeek == DayOfWeek.Sunday ||
-                       now.Hour > startHour || now.Hour < stopHour);
+                       now.Hour >= startHour || now.Hour < stopHour);
         }
 
         private static bool TryCopy(StreamWriter logWriter)

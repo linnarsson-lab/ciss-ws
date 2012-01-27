@@ -128,7 +128,9 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Iterate through the TagItem count data for every (position, strand) hit in this chromosome
         /// </summary>
-        /// <returns></returns>
+        /// <param name="bcIdx">barcode to analyze - only used to set the return values properly</param>
+        /// <param name="chrId">chromosome to analyze</param>
+        /// <returns>A reused(!) MappedTagItem for every mapped position on the chromosome</returns>
         public IEnumerable<MappedTagItem> IterItems(int bcIdx, string chrId)
         {
             MappedTagItem item = new MappedTagItem();
@@ -154,7 +156,8 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="pos"></param>
         /// <param name="strand"></param>
-        /// <returns>Number of reads as function of rndTag index at given genomic location, or null if no reads are found</returns>
+        /// <param name="molCount">Number of reads as function of rndTag index at given genomic location, or null if no reads are found</param>
+        /// <param name="readProfile">Array with number of reads in each random label</param>
         public void GetReadCounts(int pos, char strand, out int molCount, out ushort[] readProfile)
         {
             int posStrand = MakePosStrandIdx(pos, strand);

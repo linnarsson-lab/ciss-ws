@@ -285,6 +285,11 @@ namespace Linnarsson.Strt
             return firstFiller + rndTag + midFiller + bcGGGSeq;
         }
 
+        /// <summary>
+        /// Simulate random mismatches in read sequence
+        /// </summary>
+        /// <param name="readSeq"></param>
+        /// <returns></returns>
         private string Mutate(ref string readSeq)
         {
             List<string> mutations = new List<string>();

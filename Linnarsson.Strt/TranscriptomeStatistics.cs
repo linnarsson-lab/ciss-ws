@@ -17,6 +17,7 @@ namespace Linnarsson.Strt
 
         public static readonly int maxHotspotCount = 50;
         public static readonly int minHotspotDistance = 5;
+        public static readonly int minMismatchReadCountForSNPDetection = 10;
 
         StreamWriter nonAnnotWriter = null;
         StreamWriter nonExonWriter = null;
@@ -147,12 +148,10 @@ namespace Linnarsson.Strt
             {
                 MapFileSnpFinder mfsf = new MapFileSnpFinder(barcodes);
                 mfsf.ProcessMapFiles(mapFilePaths);
-                int nSNPs = randomTagFilter.SetupSNPCounters(averageReadLen, mfsf.IterSNPLocations(10));
-                Console.WriteLine("Registered " + nSNPs + " potential SNP positions.");
-                //if (Props.props.SnpRndTagVerification)
-                //    snpRndTagVerifier = new SnpRndTagVerifier(Props.props, mfsf);
+                int nSNPs = randomTagFilter.SetupSNPCounters(averageReadLen, mfsf.IterSNPLocations(minMismatchReadCountForSNPDetection));
+                Console.WriteLine("Registered " + nSNPs + " potential expressed SNPs (positions with >=" + minMismatchReadCountForSNPDetection + " mismatch reads).");
             }
-            if (Props.props.SnpRndTagVerification)
+            if (Props.props.SnpRndTagVerification && barcodes.HasRandomBarcodes)
                 snpRndTagVerifier = new SnpRndTagVerifier(Props.props, Annotations.Genome);
             List<string> bcMapFilePaths = new List<string>();
             string mapFileName = Path.GetFileName(mapFilePaths[0]);
@@ -1224,20 +1223,25 @@ namespace Linnarsson.Strt
         {
             StreamWriter snpFile = (fileNameBase + "_SNPs.tab").OpenWrite();
             int thres = (int)(SnpAnalyzer.thresholdFractionAltHitsForMixPos * 100);
-            snpFile.WriteLine("#(minimum {0} AltNtReads/Pos required to check, limits used heterozygous: {1}-{2}% AltNt and homozygous: >{2}% Alt Nt)",
-                              SnpAnalyzer.minAltHitsToTestSnpPos, thres, 100 - thres);
-            snpFile.WriteLine("#Gene\tChr\tmRNAStartChrPosition\tChrPositions\tType\t" + SNPCounter.Header);
+            int minHitsToTestSNP = (barcodes.HasRandomBarcodes) ? Props.props.MinMoleculesToTestSnp : Props.props.MinReadsToTestSnp;
+            string minTxt = (barcodes.HasRandomBarcodes) ? "Molecules" : "Reads";
+            snpFile.WriteLine("#(minimum {0} {3}/Pos required to check, limits used heterozygous: {1}-{2}% AltNt and homozygous: >{2}% Alt Nt)",
+                              minHitsToTestSNP, thres, 100 - thres, minTxt);
+            snpFile.WriteLine("#Gene\tChr\tmRNALeftChrPos\tSNPChrPos\tType\t" + SNPCounter.Header);
             foreach (GeneFeature gf in Annotations.geneFeatures.Values)
             {
                 List<SNPCounter> sumSNPCounters = SnpAnalyzer.GetSnpChrPositions(gf);
                 string first = gf.Name + "\t" + gf.Chr + "\t" + gf.Start + "\t";
                 foreach (SNPCounter sumCounter in sumSNPCounters)
                 {
-                    int type = SnpAnalyzer.TestSNP(sumCounter);
-                    if (type == SnpAnalyzer.REFERENCE) continue;
-                    string typeName = (type == SnpAnalyzer.ALTERNATIVE) ? "AltNt" : "MixNt";
-                    snpFile.WriteLine(first + sumCounter.posOnChr + "\t" + typeName + "\t" + sumCounter.ToLine());
-                    first = "\t\t\t";
+                    if (sumCounter.nTotal >= minHitsToTestSNP)
+                    {
+                        int type = SnpAnalyzer.TestSNP(sumCounter);
+                        if (type == SnpAnalyzer.REFERENCE) continue;
+                        string typeName = (type == SnpAnalyzer.ALTERNATIVE) ? "AltNt" : "MixNt";
+                        snpFile.WriteLine(first + sumCounter.posOnChr + "\t" + typeName + "\t" + sumCounter.ToLine());
+                        first = "\t\t\t";
+                    }
                 }
             }
             snpFile.Close();

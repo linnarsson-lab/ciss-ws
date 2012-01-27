@@ -64,6 +64,12 @@ namespace Linnarsson.Strt
         public static readonly string STATUS_READY = "ready";
         public static readonly string STATUS_FAILED = "failed";
 
+        /// <summary>
+        /// Default constructor needed only for serialization!!
+        /// </summary>
+        public ProjectDescription()
+        { }
+
         public ProjectDescription(string projectName, string barcodesName, string defaultSpecies, List<string> laneInfos,
                           string layoutFile, string status, string emails, string defaultBuild, string variants, string analysisId, bool rpkm)
         {

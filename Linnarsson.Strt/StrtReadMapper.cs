@@ -735,7 +735,7 @@ namespace Linnarsson.Strt
             if (ts.GetNumMappedReads() == 0)
                 Console.WriteLine("WARNING: contigIds of reads do not seem to match with genome Ids.\n" +
                                   "Was the Bowtie index made on a different genome or contig set?");
-            Console.WriteLine("Totally {0} reads were annotated: {1} expressed genes and {2} expressed repeat types.",
+            Console.WriteLine("Totally {0} annotations: {1} expressed genes and {2} expressed repeat types.",
                               ts.GetNumMappedReads(), annotations.GetNumExpressedGenes(), annotations.GetNumExpressedRepeats());
             Directory.CreateDirectory(outputFolder);
             Console.WriteLine("Saving to {0}...", outputFolder);

@@ -30,6 +30,7 @@ namespace Linnarsson.Strt
         }
         /// <summary>
         /// Register an investigated read starting at given position. Then call AddSNP() for every SNP in the read.
+        /// This step is needed to calculate the coverage of every SNP base.
         /// </summary>
         /// <param name="hitStartPos"></param>
         /// <param name="hitLen"></param>
@@ -39,17 +40,25 @@ namespace Linnarsson.Strt
             totalsSet = false;
         }
         /// <summary>
-        /// Register a SNP at a specific position.
+        /// Register a potential SNP (mismatch) at a specific position.
         /// </summary>
-        /// <param name="snpPos"></param>
-        /// <param name="snpNt"></param>
-        public void AddSNP(Mismatch mm)
+        /// <param name="mm">A mismatch parsed from the (bowtie) read mapping</param>
+        /// <returns>True if this was a new position</returns>
+        public bool AddSNP(Mismatch mm)
         {
-            if (!snpItems.ContainsKey(mm.posInChr))
-                snpItems[mm.posInChr] = new SNPCounter(mm.refNtInChrDir);
-            snpItems[mm.posInChr].Add(mm.ntInChrDir);
+            bool result = false;
+            SNPCounter snpCounter;
+            if (!snpItems.TryGetValue(mm.posInChr, out snpCounter))
+            {
+                result = true;
+                snpCounter = new SNPCounter(mm.posInChr, mm.refNtInChrDir);
+                snpItems[mm.posInChr] = snpCounter;
+            }
+            snpCounter.Add(mm.ntInChrDir);
             totalsSet = false;
+            return result;
         }
+
         /// <summary>
         ///  Iterate over all SNPs on the chromosome.
         ///  Will set the total read counts from the internal wiggle plot.
@@ -97,7 +106,7 @@ namespace Linnarsson.Strt
         {
             Console.Write("Defining SNP positions by scanning " + mapFilePaths.Count + " map files..");
             int numReadInFile = 0;
-            int nValidReads = 0, nReadsWMismatches = 0;
+            int nValidReads = 0, nReadsWMismatches = 0, nDistinctPositions = 0;
             long totLen = 0;
             foreach (string mapFilePath in mapFilePaths)
             {
@@ -128,14 +137,16 @@ namespace Linnarsson.Strt
                         {
                             if (mm.relPosInChrDir < marginForWiggle || mm.relPosInChrDir >= mrm.SeqLen - marginForWiggle) continue;
                             int chrSnpPos = hitStartPos + mm.relPosInChrDir;
-                            chrSNPData.AddSNP(mm); //(chrSnpPos, mm.ntInChrDir);
+                            if (chrSNPData.AddSNP(mm)) nDistinctPositions++;
                         }
                     }
                 }
             }
             averageReadLength = (int)Math.Ceiling(totLen / (double)nValidReads);
-            Console.WriteLine("\nTotally " + numReadInFile + " reads in " + mapFilePaths.Count + " files. Average read length:" + averageReadLength);
-            Console.WriteLine(nReadsWMismatches + " reads with SNPs out of " + nValidReads + " singleReads on valid chromosomes");
+            Console.WriteLine("\nTotally " + numReadInFile + " reads in " + mapFilePaths.Count + 
+                              " files. Average readLen:" + averageReadLength + ".");
+            Console.WriteLine(nReadsWMismatches + " / " + nValidReads + " singleReads had some mismatch. " + 
+                              nDistinctPositions + " distinct expressed genomic mismatch positions were found.");
         }
 
         public int GetAverageReadLength()

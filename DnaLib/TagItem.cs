@@ -23,17 +23,17 @@ namespace Linnarsson.Dna
         public List<SNPCounter> MolSNPCounts { get { return cachedMolSNPCounts; } }
 
         private TagItem m_TagItem;
-        public TagItem tagItem
+        public TagItem tagItem { get { return m_TagItem; } }
+
+        public void Update(int hitStartPos, char strand, TagItem tagItem)
         {
-            get { return m_TagItem; }
-            set
-            {
-                m_TagItem = value;
-                cachedMolCount = m_TagItem.GetNumMolecules();
-                cachedReadCount = m_TagItem.GetNumReads();
-                cachedEstTrueMolCount = EstimateFromSaturatedLabels(cachedMolCount);
-                cachedMolSNPCounts = m_TagItem.GetTotalSNPCounts(hitStartPos);
-            }
+            this.m_HitStartPos = hitStartPos;
+            this.m_Strand = strand;
+            this.m_TagItem = tagItem;
+            cachedMolCount = m_TagItem.GetNumMolecules();
+            cachedReadCount = m_TagItem.GetNumReads();
+            cachedEstTrueMolCount = EstimateFromSaturatedLabels(cachedMolCount);
+            cachedMolSNPCounts = m_TagItem.GetTotalSNPCounts(m_HitStartPos);
         }
         public static int EstimateFromSaturatedLabels(int numMolecules)
         {
@@ -42,21 +42,19 @@ namespace Linnarsson.Dna
 
         public int bcIdx;
         public string chr;
-        public int hitStartPos;
-        public char strand;
+        private int m_HitStartPos;
+        public int hitStartPos { get { return m_HitStartPos; } }
+        private char m_Strand;
+        public char strand { get { return m_Strand; } }
         public int splcToRealChrOffset = 0;
         public bool hasAltMappings { get { return m_TagItem.hasAltMappings; } }
         public int HitLen { get { return AverageReadLen; } }
-        public int HitMidPos
-        {
-            get { return hitStartPos + HitLen / 2 + splcToRealChrOffset; }
-            set { hitStartPos = value - HitLen / 2; }
-        }
+        public int HitMidPos { get { return hitStartPos + HitLen / 2 + splcToRealChrOffset; } }
 
         public override string ToString()
         {
-            return string.Format("MappedLoc=chr{0}{1}.{2} Bc={3} HitMidPos={4} #Mols={5} #Reads={6} HasAltMappings={7}",
-                                 chr, strand, hitStartPos, bcIdx, HitMidPos, MolCount, ReadCount, m_TagItem.hasAltMappings);
+            return string.Format("MappedTagItem(chr={0} strand={1} hitStartPos={2} [Average]HitLen={3} bcIdx={4} HitMidPos={5} MolCount={6} ReadCount={7} HasAltMappings={8})",
+                                 chr, strand, hitStartPos, HitLen, bcIdx, HitMidPos, MolCount, ReadCount, m_TagItem.hasAltMappings);
         }
 
     }
@@ -135,17 +133,6 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Mark a SNP within a read
-        /// </summary>
-        /// <param name="rndTagIdx">rndTag of the read</param>
-        /// <param name="snpOffset">0-based offset within the read, counting in chromosome direction</param>
-        /// <param name="snpNt"></param>
-        public void AddSNP(int rndTagIdx, Mismatch mm)
-        {
-            tagSNPData.AddSNP(rndTagIdx, mm);
-        }
-
-        /// <summary>
         /// Get Nt counts at all positions where there is SNP data available
         /// </summary>
         /// <param name="readPosOnChr">Needed to convert the SNP offset to position within chromosome</param>
@@ -161,13 +148,16 @@ namespace Linnarsson.Dna
                 {
                     if (p.Value != null)
                     {
-                        SNPCounter countsAtOffset = new SNPCounter(readPosOnChr + p.Key);
+                        int snpPosOnChr = readPosOnChr + p.Key;
+                        SNPCounter countsAtOffset = new SNPCounter(snpPosOnChr);
                         foreach (int rndTagIdx in validRndTags)
                         {
-                            char winningNtInRndTag = p.Value[rndTagIdx].GetNt();
-                            countsAtOffset.Add(winningNtInRndTag);
+                            SNPCounter counterAtRndTag = p.Value[rndTagIdx];
+                            countsAtOffset.Add(counterAtRndTag.GetNt(), counterAtRndTag.refNt);
                         }
                         countsAtOffset.nTotal = nTotal;
+                        //Console.WriteLine("TagItem.GetTotalSNPCounts: readPosOnChr=" + readPosOnChr + " p.Key= " + p.Key +
+                        //                  " spCountsAtOffset after sum over rndTags= " + countsAtOffset.ToString());
                         totalCounters.Add(countsAtOffset);
                     }
                 }

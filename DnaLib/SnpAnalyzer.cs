@@ -8,7 +8,6 @@ namespace Linnarsson.Dna
 {
     public class SnpAnalyzer
     {
-        public static readonly int minAltHitsToTestSnpPos = 10;
         public static readonly double thresholdFractionAltHitsForMixPos = 0.25;
         public static readonly int MinTotalHitsToShowBarcodedSnps = 10;
 
@@ -27,7 +26,7 @@ namespace Linnarsson.Dna
             foreach (GeneFeature gf in geneFeatures.Values)
             {
                 int trLen = gf.GetTranscriptLength();
-                foreach (KeyValuePair<int, SNPCounter[]> posCounts in gf.SNPCountersByBcIdx)
+                foreach (KeyValuePair<int, SNPCounter[]> posCounts in gf.bcSNPCountersByRealChrPos)
                 {
                     int chrPos = posCounts.Key;
                     int trPos = gf.GetTranscriptPos(chrPos);
@@ -35,6 +34,7 @@ namespace Linnarsson.Dna
                                       + "\t" + trPos + "\tACGT\t" + gf.GetTranscriptHits());
                     Dictionary<char, StringBuilder> bcBcIdxStr = new Dictionary<char, StringBuilder>(5);
                     Dictionary<char, int> totals = new Dictionary<char, int>(5);
+                    int total = 0;
                     foreach (char nt in new char[] { '0', 'A', 'C', 'G', 'T' })
                     {
                         bcBcIdxStr[nt] = new StringBuilder();
@@ -43,10 +43,11 @@ namespace Linnarsson.Dna
                         {
                             int count = snpc.GetCount(nt);
                             totals[nt] += count;
+                            total += count;
                             bcBcIdxStr[nt].Append("\t" + count.ToString());
                         }
                     }
-                    if (trPos >= 0 && totals['T'] >= SnpAnalyzer.MinTotalHitsToShowBarcodedSnps)
+                    if (trPos >= 0 && total >= SnpAnalyzer.MinTotalHitsToShowBarcodedSnps)
                     {
                         snpFile.WriteLine(gf.Name + "\t" + trLen + "\t" + gf.Chr + "\t" + gf.Strand + "\t" + chrPos
                                           + "\t" + trPos + "\tACGT\t" + totals['0'] + bcBcIdxStr['0']);
@@ -63,7 +64,7 @@ namespace Linnarsson.Dna
         public static readonly int HETEROZYGOUS = 2;
         public static int TestSNP(SNPCounter sumCounter)
         {
-            if (sumCounter.nAlt >= minAltHitsToTestSnpPos)
+            if (sumCounter.nTotal > 0)
             {
                 double ratio = sumCounter.nAlt / (double)sumCounter.nTotal;
                 if (ratio > (1 - thresholdFractionAltHitsForMixPos))
@@ -82,14 +83,15 @@ namespace Linnarsson.Dna
         public static List<SNPCounter> GetSnpChrPositions(GeneFeature gf)
         {
             List<SNPCounter> sumCounters = new List<SNPCounter>();
-            if (gf.SNPCountersByBcIdx.Count == 0) return sumCounters;
-            foreach (KeyValuePair <int, SNPCounter[]> posCounts in gf.SNPCountersByBcIdx)
+            if (gf.bcSNPCountersByRealChrPos.Count == 0) return sumCounters;
+            foreach (KeyValuePair <int, SNPCounter[]> posCounts in gf.bcSNPCountersByRealChrPos)
             {
                 int chrPos = posCounts.Key;
                 SNPCounter sumCounter = new SNPCounter(chrPos);
                 foreach (SNPCounter counter in posCounts.Value)
                     sumCounter.Add(counter);
                 sumCounters.Add(sumCounter);
+                //Console.WriteLine("SnpAnalyzer.GetSnpChrPositions: Next sumCounter at chrPos=" + chrPos + ": " + sumCounter.ToString());
             }
             sumCounters.Sort((x, y) => x.posOnChr.CompareTo(y.posOnChr));
             return sumCounters;

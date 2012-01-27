@@ -117,6 +117,8 @@ namespace Linnarsson.Strt
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {
                     if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
+                    //Console.WriteLine("ChrTagData.Add: MultiReadMapping.Position=" + m.Position + " Strand=" + m.Strand 
+                    //                  + " RndTagIdx=" + m.RndTagIdx + " " + mm.ToString());
                     item.tagSNPData.AddSNP(m.RndTagIdx, mm);
                 }
             }
@@ -136,10 +138,11 @@ namespace Linnarsson.Strt
             {
                 if (cPair.Value.HasReads)
                 {
-                    item.tagItem = cPair.Value;
-                    item.strand = ((cPair.Key & 1) == 0) ? '+' : '-';
-                    item.hitStartPos = cPair.Key >> 1;
+                    int hitStartPos = cPair.Key >> 1;
+                    char strand = ((cPair.Key & 1) == 0) ? '+' : '-';
+                    item.Update(hitStartPos, strand, cPair.Value);
                     item.splcToRealChrOffset = 0; // Need always reset this
+                    //Console.WriteLine("ChrTagData.IterItems(bcIdx=" + bcIdx + " chrId=" + chrId + ") yield: " + item.ToString());
                     yield return item;
                 }
             }

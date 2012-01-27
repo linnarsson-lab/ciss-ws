@@ -35,6 +35,8 @@ namespace Linnarsson.Dna
         public string MailerLogFile = "SilverBulletMailerLog.txt";
         public string QueueProjectsFolder = "\\\\192.168.1.12\\data\\strt"; // Folder where projects and results are stored
         public string OutputDocFile = "\\\\192.168.1.12\\data\\strt\\STRTOutputManual.pdf";
+        public int BkgBackuperStartHour = 17;
+        public int BkgBackuperStopHour = 8;
 
         public bool DebugAnnotation = false; // Will give output files of non-annotated and non-exon reads
         public bool GenerateWiggle = true; // Generate wiggle files for upload to UCSC Genome Browser
@@ -52,6 +54,8 @@ namespace Linnarsson.Dna
         public string SnpRndTagVerificationChr = "1";
         public int SnpRndTagVerificationMinQAscii = 33; // Bowtie map file lowest Q-value is 33 ('!')
         public int MinPhredScoreInRandomTag = 17;
+        public int MinMoleculesToTestSnp = 4; // SNP analysis minimum coverage to test a potential SNP positions (when using random labels)
+        public int MinReadsToTestSnp = 10; // SNP analysis minimum coverage to test a potential SNP positions (without random labeled barcodes)
         public bool GenerateTranscriptProfiles = false;
         public bool GenerateGeneLocusProfiles = false;
         public bool GenerateGeneProfilesByBarcode = false;

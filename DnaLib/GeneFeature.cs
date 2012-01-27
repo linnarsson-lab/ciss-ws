@@ -41,7 +41,7 @@ namespace Linnarsson.Dna
         /// <summary>
         /// SNPCounter arrays by bcIdx for every SNP positions
         /// </summary>
-        public Dictionary<int,  SNPCounter[]> SNPCountersByBcIdx;
+        public Dictionary<int,  SNPCounter[]> bcSNPCountersByRealChrPos;
 
         public override int GetLocusLength()
         {
@@ -164,7 +164,7 @@ namespace Linnarsson.Dna
             NonMaskedHitsByAnnotType = new int[AnnotType.Count];
             m_LocusHits = new int[1000];
             locusHitIdx = 0;
-            SNPCountersByBcIdx = new Dictionary<int, SNPCounter[]>();
+            bcSNPCountersByRealChrPos = new Dictionary<int, SNPCounter[]>();
         }
 
         public int GetExonLength(int i)
@@ -389,15 +389,16 @@ namespace Linnarsson.Dna
         public MarkResult MarkExonHit(MappedTagItem item, int exonIdx, MarkStatus markType)
         {
             MarkSNPs(item);
+            int annotType = (item.strand == Strand) ? AnnotType.EXON : AnnotType.AEXON;
             if (markType == MarkStatus.NONEXONIC_MAPPING)
             { // Only happens for directional AEXON reads
                 MarkLocusHitPos(item);
                 AddToTotalHits(item);
-                HitsByAnnotType[AnnotType.AEXON] += item.MolCount;
-                if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[AnnotType.AEXON] += item.MolCount;
-                return new MarkResult(AnnotType.AEXON, this);
+                HitsByAnnotType[annotType] += item.MolCount;
+                if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
+                return new MarkResult(annotType, this);
             } 
-            // Now hit is to transcript and should be marked as EXON
+            // Now hit is to transcript and should be marked as EXON, or AEXON for antisense undirectional reads
             MarkLocusHitPos(item);
             AddToTotalHits(item);
             TranscriptHitsByExonIdx[exonIdx] += item.MolCount;
@@ -406,9 +407,9 @@ namespace Linnarsson.Dna
             EstimatedTrueMolsByBarcode[item.bcIdx] += item.EstTrueMolCount;
             if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
                 NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
-            HitsByAnnotType[AnnotType.EXON] += item.MolCount;
-            NonMaskedHitsByAnnotType[AnnotType.EXON] += item.MolCount;
-            return new MarkResult(AnnotType.EXON, this);
+            HitsByAnnotType[annotType] += item.MolCount;
+            NonMaskedHitsByAnnotType[annotType] += item.MolCount;
+            return new MarkResult(annotType, this);
         }
 
         public MarkResult MarkSpliceHit(MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
@@ -634,14 +635,18 @@ namespace Linnarsson.Dna
         {
             foreach (SNPCounter snpCounter in item.MolSNPCounts)
             {
-                int posOnRealChr = item.splcToRealChrOffset + snpCounter.posOnChr;
-                if (!SNPCountersByBcIdx.ContainsKey(posOnRealChr))
+                int snpPosOnRealChr = item.splcToRealChrOffset + snpCounter.posOnChr;
+                SNPCounter[] bcSnpCounters;
+                if (!bcSNPCountersByRealChrPos.TryGetValue(snpPosOnRealChr, out bcSnpCounters))
                 {
-                    SNPCountersByBcIdx[posOnRealChr] = new SNPCounter[Props.props.Barcodes.Count];
+                    bcSnpCounters = new SNPCounter[Props.props.Barcodes.Count];
                     for (int bcIdx = 0; bcIdx < Props.props.Barcodes.Count; bcIdx++)
-                        SNPCountersByBcIdx[posOnRealChr][bcIdx] = new SNPCounter(snpCounter.refNt);
+                        bcSnpCounters[bcIdx] = new SNPCounter(snpPosOnRealChr, snpCounter.refNt);
+                    bcSNPCountersByRealChrPos[snpPosOnRealChr] = bcSnpCounters;
                 }
-                SNPCountersByBcIdx[posOnRealChr][item.bcIdx].Add(snpCounter);
+                //Console.WriteLine("Gf.MarkSNPs: snpPosOnRealChr:" + snpPosOnRealChr + " spliceOffset:" + item.splcToRealChrOffset + " " + snpCounter.ToString());
+                //Console.WriteLine("             " + item.ToString());
+                bcSnpCounters[item.bcIdx].Add(snpCounter);
             }
         }
     }

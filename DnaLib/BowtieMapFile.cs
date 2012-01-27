@@ -192,12 +192,24 @@ namespace Linnarsson.Dna
 
     }
 
-    public struct Mismatch
+    public class Mismatch
     {
-        public int posInChr; // Position within the chr of the mismatch
-        public byte relPosInChrDir; // Position relative to the start of the aligned read, in chr direction
-        public char refNtInChrDir; // The reference chr seq nucleotide
-        public char ntInChrDir; // The alternative nucleotide on chr as told by the read
+        /// <summary>
+        /// Position within the chr of the mismatch
+        /// </summary>
+        public int posInChr;
+        /// <summary>
+        /// Position relative to the start of the aligned read, in chr direction
+        /// </summary>
+        public byte relPosInChrDir;
+        /// <summary>
+        /// The reference chr seq nucleotide
+        /// </summary>
+        public char refNtInChrDir;
+        /// <summary>
+        /// The alternative nucleotide on chr as told by the read
+        /// </summary>
+        public char ntInChrDir;
 
         public Mismatch(int posInChr, byte relPosInChrDir, char refNtInChrDir, char ntInChrDir)
         {
@@ -248,7 +260,7 @@ namespace Linnarsson.Dna
             return "MultiReadMapping: Chr=" + Chr + Strand + " Pos=" + Position + " HitMidPos=" + HitMidPos + " Mismatches=" + Mismatches;
         }
 
-        public IEnumerable<Mismatch> IterMismatches(int minPhredScore)
+        public IEnumerable<Mismatch> IterMismatches(int minPhredAsciiVal)
         {
             if (!HasMismatches) yield break;
             foreach (string snp in Mismatches.Split(','))
@@ -260,12 +272,21 @@ namespace Linnarsson.Dna
                     continue;
                 }
                 byte relPosInReadDir = byte.Parse(snp.Substring(0, p));
-                if (parent.GetQuality(relPosInReadDir) >= minPhredScore)
+                if (parent.GetQuality(relPosInReadDir) >= minPhredAsciiVal)
                 {
                     byte relPosInChrDir = (Strand == '+') ? relPosInReadDir : (byte)(parent.SeqLen - 1 - relPosInReadDir);
                     yield return new Mismatch(Position + relPosInChrDir, relPosInChrDir, snp[p + 1], snp[p + 3]);
                 }
             }
+        }
+        public bool Contains(int posOnChr, int margin)
+        {
+            return (posOnChr >= (Position + margin) && posOnChr < (Position + SeqLen - margin));
+        }
+
+        public char GetQuality(int posOnChr)
+        {
+            return parent.GetQualityByAlignmentPos(posOnChr - Position);
         }
 
     }
@@ -280,9 +301,19 @@ namespace Linnarsson.Dna
         public int SeqLen;
         private string qualityString;
         private char qualityDir;
-        public char GetQuality(int posInRead)
+        public char GetQuality(int relPosInRead)
         {
-            return qualityString[(qualityDir == '+')? posInRead : qualityString.Length - 1 - posInRead];
+            return qualityString[(qualityDir == '+')? relPosInRead : qualityString.Length - 1 - relPosInRead];
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="relPosInAlignment"></param>
+        /// <returns>If outside read, returns the lowest possible ascii value in phred strings: '!'</returns>
+        public char GetQualityByAlignmentPos(int relPosInAlignment)
+        {
+            if (relPosInAlignment < 0 || relPosInAlignment >= qualityString.Length) return '!';
+            return qualityString[relPosInAlignment];
         }
         public int AltMappings;
         public bool HasAltMappings { get { return AltMappings >= 1 || NMappings > 1; } }
@@ -321,14 +352,6 @@ namespace Linnarsson.Dna
             if (NMappings < Mappings.Length)
             { 
                 int idx = NMappings;
-                /* // Keep mappings ordered by position, irrespective of chr or strand.
-                while (idx > 0)
-                {
-                    if (Mappings[idx - 1].Position <= pos)
-                        break;
-                    Mappings[idx].Copy(Mappings[idx - 1]);
-                    idx--;
-                }*/
                 Mappings[idx].Chr = chr.StartsWith("chr") ? chr.Substring(3) : chr;
                 Mappings[idx].Strand = strand;
                 Mappings[idx].Position = pos;

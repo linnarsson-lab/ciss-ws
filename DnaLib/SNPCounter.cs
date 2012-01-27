@@ -11,15 +11,16 @@ namespace Linnarsson.Dna
     public class SNPCounter
     {
         public int posOnChr; // Position on chr of SNP. Can refer to Splice chr - GeneFeature fixes this by adding splcOffset when marking SNP
-        public char refNt; // Nucleotide on reference chromosome
+        public char refNt = '0'; // Nucleotide on reference chromosome
 
-        public SNPCounter(char refNt)
-        {
-            this.refNt = refNt;
-        }
         public SNPCounter(int posOnChr)
         {
             this.posOnChr = posOnChr;
+        }
+        public SNPCounter(int posOnChr, char refNt)
+        {
+            this.posOnChr = posOnChr;
+            this.refNt = refNt;
         }
 
         /// <summary>
@@ -47,6 +48,11 @@ namespace Linnarsson.Dna
             return sb.ToString();
         }
 
+        public override string ToString()
+        {
+            return "SNPCounter(refNt=" + refNt + " nTotal=" + nTotal + " nA=" + nA + "/C=" + nC + "/G=" + nG + "/nT=" + nT +
+                               " posOnChr=" + posOnChr + ")";
+        }
         public int nAlt { get { return nA + nC + nG + nT; } }
 
         public int GetCount(char snpNt)
@@ -60,12 +66,21 @@ namespace Linnarsson.Dna
                 default: return nTotal;
             }
         }
+
+        public void Add(char snpNt)
+        {
+            Add(snpNt, refNt);
+        }
+
         /// <summary>
         /// Register a SNP at this position
         /// </summary>
         /// <param name="snpNt"></param>
-        public void Add(char snpNt)
+        /// <param name="refNt">reference Nt, if known</param>
+        public void Add(char snpNt, char refNt)
         {
+            //Console.WriteLine("SNPCounter.Add(snpNt=" + snpNt + " refNt=" + refNt + ") this.refNt=" + this.refNt + " this.posOnChr=" + this.posOnChr);
+            if (refNt != '0') this.refNt = refNt;
             switch (snpNt)
             {
                 case 'A': nA++;
@@ -82,6 +97,7 @@ namespace Linnarsson.Dna
         public void Add(SNPCounter other)
         {
             nTotal += other.nTotal;
+            if (refNt == '0') refNt = other.refNt;
             nA += other.nA;
             nC += other.nC;
             nG += other.nG;
@@ -131,16 +147,20 @@ namespace Linnarsson.Dna
     public class TagSNPCounters
     {
         /// <summary>
-        /// At each offset relative to the 5' pos of reads' alignment where some SNPs appear,
+        /// At each offset relative to the 5' pos on chr of the reads' alignment where some SNPs appear,
         /// keep an array by rndTag of counts for each SNP nt. 
         /// </summary>
-        private Dictionary<byte, SNPCounter[]> m_SNPCountersByOffset;
         public Dictionary<byte, SNPCounter[]> SNPCountersByOffset { get { return m_SNPCountersByOffset; } }
+        private Dictionary<byte, SNPCounter[]> m_SNPCountersByOffset;
 
         public TagSNPCounters()
         {
             m_SNPCountersByOffset = new Dictionary<byte, SNPCounter[]>();
         }
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="snpOffset">Offset from 5' pos on chr of reads' alignment</param>
         public void RegisterSNPAtOffset(byte snpOffset)
         {
             m_SNPCountersByOffset[snpOffset] = null;
@@ -155,7 +175,7 @@ namespace Linnarsson.Dna
 
         /// <summary>
         /// Add the Nt at a SNP position from a read.
-        /// If the position has not been defined as a SNP by a previous call to RegisterSNP(), it will be skipped
+        /// If the position has not been defined as a SNP by a previous call to RegisterSNPAtOffset(), it will be skipped
         /// </summary>
         /// <param name="rndTagIdx">The rndTag of the read</param>
         /// <param name="snpOffset">Offset within the read of the SNP</param>
@@ -169,7 +189,7 @@ namespace Linnarsson.Dna
             {
                 snpCounterByRndTag = new SNPCounter[TagItem.nRndTags];
                 for (int n = 0; n < TagItem.nRndTags; n++)
-                    snpCounterByRndTag[n] = new SNPCounter(mm.refNtInChrDir);
+                    snpCounterByRndTag[n] = new SNPCounter(mm.posInChr, mm.refNtInChrDir);
                 m_SNPCountersByOffset[mm.relPosInChrDir] = snpCounterByRndTag;
             }
             snpCounterByRndTag[rndTagIdx].Add(mm.ntInChrDir);

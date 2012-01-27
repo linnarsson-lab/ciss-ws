@@ -14,21 +14,24 @@ defined('_JEXEC') or die('Restricted access');
                  . $itemid . "&sortKey=";
   $runidsorter = ($sortKey == "runid")? "RunId" : ($sorturlhead . "runid>RunId</a>");
   $runnosorter = ($sortKey == "runno")? "RunNo" : ($sorturlhead . "runno>RunNo</a>");
-  $datesorter = ($sortKey == "date")? "Newest first" : ($sorturlhead . "date>Newest first</a>");
+  $datesorter = ($sortKey == "date")? "RunDate" : ($sorturlhead . "date>RunDate</a>");
+  $statussorter = ($sortKey == "status")? "Status" : ($sorturlhead . "status>Status</a>");
+  $titlesorter = ($sortKey == "title")? "Title" : ($sorturlhead . "title>Title</a>");
+  $cyclessorter = ($sortKey == "cycles")? "Cycles" : ($sorturlhead . "cycles>Cycles</a>");
 
   echo "<div class='illuminarun'><fieldset>
          <legend><nobr> $newlink </nobr><br /><br />
-                 <nobr> Sort: $runidsorter $runnosorter $datesorter </nobr>
+                 <nobr> Sort: $runnosorter $datesorter $runidsorter $titlesorter $statussorter $cyclessorter </nobr>
          </legend>
          <table>
            <tr>
              <th></th>
-             <th>RunId&nbsp;</th>
-             <th>Title&nbsp;<br />" . JHTML::tooltip('Your free designation of the run') . "</th>
-             <th><nobr>Run date&nbsp;</nobr></th>
-             <th>Cycles&nbsp;<br />" . JHTML::tooltip('first / index / paired-end') . "</th>
-             <th>Status&nbsp;<br />" . JHTML::tooltip('n/a=No data exists, copying=making read files, copied=ready for analysis, copyfail=error during read file making') . "</th>
-             <th>RunNo&nbsp;<br />" . JHTML::tooltip('Run number created by Illumina machine') . "</th>
+             <th>$runidsorter&nbsp;</th>
+             <th>$titlesorter&nbsp;<br />" . JHTML::tooltip('Your free designation of the run') . "</th>
+             <th><nobr>$datesorter&nbsp;</nobr></th>
+             <th>$cyclessorter&nbsp;<br />" . JHTML::tooltip('first / index / paired-end') . "</th>
+             <th>$statussorter&nbsp;<br />" . JHTML::tooltip('n/a=No data exists, copying=making read files, copied=ready for analysis, copyfail=error during read file making') . "</th>
+             <th>$runnosorter&nbsp;<br />" . JHTML::tooltip('Run number created by Illumina machine') . "</th>
              <th>Doc&nbsp;</th>
              <th>Samples&nbsp;</th>    
            </tr>"; 
@@ -39,12 +42,24 @@ defined('_JEXEC') or die('Restricted access');
                                 return ($a->illuminarunid > $b->illuminarunid) ? -1 : 1; };
   function runnosort($a, $b) { if ($a->runno == $b->runno) { return 0; }
                                 return ($a->runno > $b->runno) ? -1 : 1; };
+  function statussort($a, $b) { return strpos("n/a copyfail copying copied", $a->status) - strpos("n/a copyfail copied", $b->status); }
+  function titlesort($a, $b) { return strnatcasecmp($b->title, $a->title); }
+  function cyclessort($a, $b) { $ac = $a->cycles . "/" . $a->indexcycles . "/" . $a->pairedcycles;
+                                $bc = $b->cycles . "/" . $b->indexcycles . "/" . $b->pairedcycles;
+                                return strnatcasecmp($bc, $ac); }
+
   if ($sortKey == "date") {
     usort($this->illuminaruns, "datesort");
   } else  if ($sortKey == "runid") {
     usort($this->illuminaruns, "runidsort");
   } else  if ($sortKey == "runno") {
     usort($this->illuminaruns, "runnosort");
+  } else  if ($sortKey == "status") {
+    usort($this->illuminaruns, "statussort");
+  } else  if ($sortKey == "cycles") {
+    usort($this->illuminaruns, "cyclessort");
+  } else  if ($sortKey == "title") {
+    usort($this->illuminaruns, "titlesort");
   }
 
   foreach ($this->illuminaruns as $run) {

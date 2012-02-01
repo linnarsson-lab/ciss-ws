@@ -9,12 +9,12 @@ using Linnarsson.Mathematics;
 namespace Linnarsson.Strt
 {
     /// <summary>
-    /// Holds counts of each Nt in every rnd label for one single known SNP position, of reads mapped at a specific position & strand 
+    /// Holds counts for one barcode of each Nt in every rnd label for one single known SNP position, of reads mapped at a specific position & strand 
     /// </summary>
     public class SnpRndTagVerifierData
     {
-        public static readonly int MinCountForValidAltNt = 2;
-        public static readonly int MaxRatioToTopCountForValidAltNt = 4;
+        public static readonly int MinCountForValidNtWithinRndTag = 5;
+        public static readonly int MinCountFactorToLessCommonNtWithinRndTag = 10;
 
         /// <summary>
         /// SNPNt in first index (-,A,C,G,T) and counts in each rndTag in second index 
@@ -56,9 +56,15 @@ namespace Linnarsson.Strt
             countsByNtAndRndTagIdx[ntIdx, rndTagIdx]++;
         }
 
+        /// <summary>
+        /// Checks that within a random label (representing one original molecule) the same Nt is used at the SNP position in all reads.
+        /// </summary>
+        /// <param name="sameNtInEachRndTag">True indicates correctness</param>
+        /// <param name="nUsedRndTags">Number of random labels containing data (i.e. number of original molecules)</param>
+        /// <returns>Total number of reads</returns>
         public int HasAllReadsInEachRndTagTheSameNt(out bool sameNtInEachRndTag, out int nUsedRndTags)
         {
-            int nTotal = 0;
+            int nTotalReads = 0;
             nUsedRndTags = 0;
             sameNtInEachRndTag = true;
             for (int rndTagIdx = 0; rndTagIdx < countsByNtAndRndTagIdx.GetLength(1); rndTagIdx++)
@@ -66,50 +72,46 @@ namespace Linnarsson.Strt
                 int nAltNtsInRndTag = 0;
                 for (int ntIdx = 0; ntIdx < 5; ntIdx++)
                 {
-                    nTotal += countsByNtAndRndTagIdx[ntIdx, rndTagIdx];
+                    nTotalReads += countsByNtAndRndTagIdx[ntIdx, rndTagIdx];
                     if (countsByNtAndRndTagIdx[ntIdx, rndTagIdx] > 0)
                         nAltNtsInRndTag++;
                 }
                 if (nAltNtsInRndTag > 1) sameNtInEachRndTag = false;
                 if (nAltNtsInRndTag > 0) nUsedRndTags++;
             }
-            return nTotal;
+            return nTotalReads;
         }
 
         /// <summary>
-        /// Returns the Nts that can be considered correct alternative bases at this position. They consist of
-        /// the most common one, as well as the other ones that
-        /// have read counts >= a defined fraction of the the most common one, and also >= a minimum lower threshold.
-        /// If more than the most common one are returned, the position can be considered heterozygot.
+        /// Returns the Nts that appear correct alternative bases at this position in the barcode.
+        /// They consist of the set of the clearly most dominant Nt in each random label.
+        /// If more than one is returned, the barcode can be considered heterozygot at this position.
         /// </summary>
         /// <returns></returns>
-        public List<char> GetValidNts()
+        public HashSet<char> GetValidNtsInBarcode()
         {
+            HashSet<char> validNts = new HashSet<char>();
             int[] sumsPerNt = new int[5];
-            for (int ntIdx = 0; ntIdx < 5; ntIdx++)
+            for (int rndTagIdx = 0; rndTagIdx < countsByNtAndRndTagIdx.GetLength(1); rndTagIdx++)
             {
-                for (int rndTagIdx = 0; rndTagIdx < countsByNtAndRndTagIdx.GetLength(1); rndTagIdx++)
-                    sumsPerNt[ntIdx] += countsByNtAndRndTagIdx[ntIdx, rndTagIdx];
-            }
-            int maxPerNt = sumsPerNt.Max();
-            int minValidPerNt = Math.Min(MinCountForValidAltNt, maxPerNt / MaxRatioToTopCountForValidAltNt);
-            List<char> validNts = new List<char>();
-            //Console.Write("In GetValidNts. refNtIdx=" + refNtIdx);
-            for (int ntIdx = 0; ntIdx < 5; ntIdx++)
-            {
-                //Console.Write(" sum[" + ntIdx + "]: " + sumsPerNt[ntIdx]);
-                if (sumsPerNt[ntIdx] > minValidPerNt)
+                int maxCount = 0; char maxNt = '-';
+                for (int ntIdx = 0; ntIdx < 5; ntIdx++)
                 {
-                    validNts.Add((ntIdx == 0) ? refNt : "0ACGT"[ntIdx]);
+                    int n = countsByNtAndRndTagIdx[ntIdx, rndTagIdx];
+                    if (n > maxCount * MinCountFactorToLessCommonNtWithinRndTag)
+                    {
+                        maxCount = n;
+                        maxNt = "-ACGT"[ntIdx];
+                    }
                 }
+                if (maxNt != '-' && maxCount >= MinCountForValidNtWithinRndTag) validNts.Add(maxNt);
             }
-            //Console.WriteLine();
             return validNts;
         }
     }
 
     /// <summary>
-    /// Holds all data for one particular read position-strand mapping and its (maybe selected out of several) snp position
+    /// Holds data across all barcodes for one particular read position-strand mapping and its (maybe selected out of several) snp position
     /// </summary>
     public class SnpVerPosDatas
     {
@@ -125,6 +127,25 @@ namespace Linnarsson.Strt
         public void Add(int bc, int rndTagIdx, Mismatch m)
         {
             dataByBc[bc].Add(rndTagIdx, m);
+        }
+
+        /// <summary>
+        /// Returns the valid alternative Nts at this position across all barcodes
+        /// </summary>
+        /// <param name="heterozygotBarcodes">Indexes of barcodes that are themselves heterozygot</param>
+        /// <returns>List of Nts that occur in this position</returns>
+        public List<char> GetValidNtsAtPos(out List<int> heterozygotBarcodes)
+        {
+            heterozygotBarcodes = new List<int>();
+            HashSet<char> allValidNts = new HashSet<char>();
+            for (int bcIdx = 0; bcIdx < dataByBc.Length; bcIdx++)
+            {
+                HashSet<char> validNtsInBc = dataByBc[bcIdx].GetValidNtsInBarcode();
+                if (validNtsInBc.Count > 1)
+                    heterozygotBarcodes.Add(bcIdx);
+                allValidNts.UnionWith(validNtsInBc);
+            }
+            return allValidNts.ToList();
         }
     }
 
@@ -230,6 +251,9 @@ namespace Linnarsson.Strt
             foreach (int posStrand in data.Keys)
             {
                 SnpVerPosDatas posDatas = data[posStrand];
+                List<int> heterzygotBcIndexes;
+                string validNtsAtPos = new string(posDatas.GetValidNtsAtPos(out heterzygotBcIndexes).ToArray());
+                bool heteroPosition = validNtsAtPos.Length> 1;
                 for (int bcIdx = 0; bcIdx < posDatas.dataByBc.Length; bcIdx++)
                 {
                     SnpRndTagVerifierData sData = posDatas.dataByBc[bcIdx];
@@ -241,19 +265,19 @@ namespace Linnarsson.Strt
                         nSkipped++;
                         continue;
                     }
-                    bool hetero = sData.GetValidNts().Count > 1;
                     nTotal++;
-                    if (hetero)
-                        WriteOnePosData(heterozygotSNPWriter, posStrand, posDatas.snpPos, bcIdx, sData, sameNtInEachRndTag);
+                    bool heteroInBc = heterzygotBcIndexes.Contains(bcIdx);
+                    if (heteroPosition)
+                        WriteOnePosData(heterozygotSNPWriter, posStrand, posDatas.snpPos, bcIdx, sData, sameNtInEachRndTag, validNtsAtPos, heteroInBc);
                     if (sameNtInEachRndTag)
                     {
-                        if (hetero) nCorrectHetero++;
+                        if (heteroPosition) nCorrectHetero++;
                         nCorrect++;
                     }
                     else
                     {
-                        if (hetero) nWrongHetero++;
-                        WriteOnePosData(problemWriter, posStrand, posDatas.snpPos, bcIdx, sData, false);
+                        if (heteroPosition) nWrongHetero++;
+                        WriteOnePosData(problemWriter, posStrand, posDatas.snpPos, bcIdx, sData, false, validNtsAtPos, heteroInBc);
                     }
                 }
             }
@@ -267,8 +291,8 @@ namespace Linnarsson.Strt
             writer.WriteLine("\n\nKnown SNP position from GVF file and reads with PhredScore >=" + minMismatchPhredAsciiVal + " on the read Nt were considered.");
             writer.WriteLine("Skipped " + nSkipped + " pos-strand-barcodes with >" + nMaxUsedRndTags + " used rnd labels or <" + minReads + " reads.");
             writer.WriteLine(nCorrect + " / " + nTotal + " positions with mapped alternative Nts had correctly the same Nt within every rnd label.");
-            writer.WriteLine(nCorrectHetero + " of these were also found to be heterozygous (altNt with >= " + SnpRndTagVerifierData.MinCountForValidAltNt +
-                             " reads and at least 1/" + SnpRndTagVerifierData.MaxRatioToTopCountForValidAltNt + " as many reads as the most common Nt)");
+            writer.WriteLine(nCorrectHetero + " of these were also found to be heterozygous (altNt with >= " + SnpRndTagVerifierData.MinCountForValidNtWithinRndTag +
+                             " reads.)");
             writer.WriteLine(nWrongHetero + " of the " + (nTotal - nCorrect) + " problematic read cases appear to be true heterozygous.");
             writer.Close();
         }
@@ -276,17 +300,19 @@ namespace Linnarsson.Strt
         private void InitOutfile(StreamWriter writer, string header)
         {
             writer.WriteLine(header);
-            writer.Write("ChrPos\tSNPPos\tStrand\tBarcode\tProblem\tUsedNts\tNt\tTotal");
+            writer.Write("ChrPos\tSNPPos\tStrand\tAltNts\tBarcode\tProblem\tAltNtsInBc\tTotal\tNt");
             for (int i = 0; i < barcodes.RandomBarcodeCount; i++)
                 writer.Write("\t#InTag" + i);
             writer.WriteLine();
         }
 
-        private void WriteOnePosData(StreamWriter writer, int posStrand, int snpPos, int bcIdx, SnpRndTagVerifierData sData, bool correct)
+        private void WriteOnePosData(StreamWriter writer, int posStrand, int snpPos, int bcIdx, SnpRndTagVerifierData sData,
+                                     bool correct, string validNtsAtPos, bool heteroInBc)
         {
             int pos = posStrand >> 1;
             char strand = ((posStrand & 1) == 0) ? '+' : '-';
-            string wStart = pos + "\t" + snpPos + "\t" + strand + "\t" + barcodes.Seqs[bcIdx] + "\t" + (correct? "\t":"!!!\t") + new string(sData.GetValidNts().ToArray());
+            string wStart = pos + "\t" + snpPos + "\t" + strand + "\t" + validNtsAtPos + "\t" + 
+                barcodes.Seqs[bcIdx] + "\t" + (correct? "\t":"!!!\t") + (heteroInBc? "X\t" : "\t");
             for (int ntIdx = 0; ntIdx < 5; ntIdx++)
             {
                 char nt = "0ACGT"[ntIdx];

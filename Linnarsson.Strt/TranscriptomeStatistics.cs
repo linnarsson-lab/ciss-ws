@@ -377,7 +377,7 @@ namespace Linnarsson.Strt
 
         private void MakeBcWigglePlots()
         {
-            if (!Props.props.GenerateBarcodedWiggle) return;
+            if (!Props.props.GenerateBarcodedWiggle && !Props.props.UseRPKM) return;
             int readLength = MappedTagItem.AverageReadLen;
             WriteBcWiggleStrand(readLength, '+');
             WriteBcWiggleStrand(readLength, '-');

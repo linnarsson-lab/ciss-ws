@@ -605,7 +605,7 @@ namespace Linnarsson.Strt
         private string WriteBarcodedRPM(string fileNameBase)
         {
             string rpType = (props.UseRPKM) ? "RPKM" : "RPM";
-            string rpmPath = fileNameBase + "_" + rpType + ".tab";
+            string rpmPath = fileNameBase + "_normalized.tab";
             var matrixFile = rpmPath.OpenWrite();
             if (props.DirectionalReads)
             {
@@ -614,14 +614,19 @@ namespace Linnarsson.Strt
             }
             if (!props.UseRPKM)
                 matrixFile.WriteLine("SingleRead is the RPM value that corresponds to a single molecule(read) in each barcode.");
-            WriteBarcodeHeaders(matrixFile, 9);
             if (props.DirectionalReads)
+            {
+                WriteBarcodeHeaders(matrixFile, 9);
                 matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\tP=0.01\tP=0.001\tAverage\tCV");
+            }
             else
+            {
+                WriteBarcodeHeaders(matrixFile, 7);
                 matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\tAverage\tCV");
+            }
             WriteRPMSection(matrixFile, true, null);
             matrixFile.WriteLine();
-            StreamWriter simpleTableFile = (fileNameBase + "_" + rpType + "_simple.txt").OpenWrite();
+            StreamWriter simpleTableFile = (fileNameBase + "_normalized_simple.txt").OpenWrite();
             foreach (int idx in barcodes.GenomeAndEmptyBarcodeIndexes(genome))
                 simpleTableFile.Write("\t" + barcodes.GetWellId(idx));
             simpleTableFile.WriteLine();
@@ -637,43 +642,42 @@ namespace Linnarsson.Strt
             int[] totCountsByBarcode = GetTotalTranscriptCountsByBarcode(selectSpikes);
             int totCount = totCountsByBarcode.Sum();
             List<double> ASReadsPerBase = GetExonASOrderedReadsPerBase(selectSpikes);
-            Double RPBM999 = Double.NaN;
-            Double RPBM99 = Double.NaN;
+            Double RPkbM999 = Double.NaN;
+            Double RPkbM99 = Double.NaN;
             if (!selectSpikes && totCount > 0 && ASReadsPerBase.Count > 0)
             {
-                RPBM99 = 1.0E+6 * ASReadsPerBase[(int)Math.Floor(ASReadsPerBase.Count * 0.99)] / (double)totCount;
-                RPBM999 = 1.0E+6 * ASReadsPerBase[(int)Math.Floor(ASReadsPerBase.Count * 0.999)] / (double)totCount;
+                RPkbM99 = 1000 * 1.0E+6 * ASReadsPerBase[(int)Math.Floor(ASReadsPerBase.Count * 0.99)] / (double)totCount;
+                RPkbM999 = 1000 * 1.0E+6 * ASReadsPerBase[(int)Math.Floor(ASReadsPerBase.Count * 0.999)] / (double)totCount;
             }
             double[] normFactors = CalcRPMNormFactors(totCountsByBarcode);
-            if (!props.UseRPKM)
-            {
-                matrixFile.Write("SingleRead\t\t\t\t\t\t\t");
-                if (props.DirectionalReads) matrixFile.Write("\t\t");
-                foreach (int idx in speciesBcIndexes) matrixFile.Write("\t{0:G6}", normFactors[idx]);
-                matrixFile.WriteLine();
-            }
+            string normName = (props.UseRPKM) ? "Normalizer" : (barcodes.HasRandomBarcodes) ? "SingleMol" : "SingleRead";
+            matrixFile.Write(normName + "\t\t\t\t\t\t\t");
+            if (props.DirectionalReads) matrixFile.Write("\t\t");
+            foreach (int idx in speciesBcIndexes) matrixFile.Write("\t{0:G6}", normFactors[idx]);
+            matrixFile.WriteLine();
             foreach (GeneFeature gf in IterTranscripts(selectSpikes))
             {
-                double kFactor = (props.UseRPKM) ? gf.GetTranscriptLength() : 1.0;
-                matrixFile.Write(gf.Name + "\t" + gf.Chr + "\t" + gf.Start + "\t" + gf.Strand + "\t" + gf.GetTranscriptLength() + "\t" +
-                                 gf.GetTranscriptHits());
+                double trLenFactor = (props.UseRPKM)? gf.GetTranscriptLength() : 1000.0;
+                matrixFile.Write(gf.Name + "\t" + gf.Chr + "\t" + gf.Start + "\t" + gf.Strand + "\t" +
+                                 gf.GetTranscriptLength() + "\t" + gf.GetTranscriptHits());
                 if (props.DirectionalReads)
                 {
-                    string RPMThres01 = "-", RPMThres001 = "-";
-                    RPMThres01 = string.Format("{0:G6}", RPBM99 * gf.GetNonMaskedTranscriptLength() / kFactor);
-                    RPMThres001 = string.Format("{0:G6}", RPBM999 * gf.GetNonMaskedTranscriptLength() / kFactor);
-                    matrixFile.Write("\t" + RPMThres01 + "\t" + RPMThres001);
+                    string RPkbMThres01 = "-", RPkbMThres001 = "-";
+                    RPkbMThres01 = string.Format("{0:G6}", RPkbM99 * gf.GetNonMaskedTranscriptLength() / trLenFactor);
+                    RPkbMThres001 = string.Format("{0:G6}", RPkbM999 * gf.GetNonMaskedTranscriptLength() / trLenFactor);
+                    matrixFile.Write("\t" + RPkbMThres01 + "\t" + RPkbMThres001);
                 }
                 StringBuilder sb = new StringBuilder();
                 DescriptiveStatistics ds = new DescriptiveStatistics();
                 foreach (int idx in speciesBcIndexes)
                 {
-                    double RPkM = (normFactors[idx] * gf.TranscriptHitsByBarcode[idx]) / kFactor;
+                    double RPkM = (normFactors[idx] * gf.TranscriptHitsByBarcode[idx]) * 1000.0 / trLenFactor;
                     ds.Add(RPkM);
                     sb.AppendFormat("\t{0:G6}", RPkM);
                 }
                 string CV = "N/A";
-                if (ds.Count > 2) CV = string.Format("{0:G6}", (ds.StandardDeviation() / ds.Mean()));
+                if (ds.Count > 2 && gf.GetTranscriptHits() > 0)
+                    CV = string.Format("{0:G6}", (ds.StandardDeviation() / ds.Mean()));
                 matrixFile.WriteLine("\t{0:G6}\t{1}{2}", ds.Mean(), CV, sb.ToString());
                 if (simpleTableFile != null)
                     simpleTableFile.WriteLine(gf.Name + sb.ToString());

@@ -199,7 +199,7 @@ namespace Linnarsson.Dna
         }
 
         public static string extractedFolderMakePattern = "{0}_ExtractionVer{1}_{2}";
-        public static string extractedFolderMatchPattern = "^[^_]+_ExtractionVer([0-9]+)_[^_]+$";
+        public static string extractedFolderMatchPattern = "_ExtractionVer([0-9]+)_[^_]+$";
         public static string MakeExtractedFolder(string projectFolder, string barcodeSet, string extractionVersion)
         {
             string projectName = Path.GetFileName(projectFolder);

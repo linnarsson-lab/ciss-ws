@@ -386,18 +386,18 @@ namespace Linnarsson.Strt
         private void WriteBcWiggleStrand(int readLength, char strand)
         {
             int strandSign = (strand == '+') ? 1 : -1;
-            string fileNameHead = string.Format("{0}_{1}_{2}", currentBcIdx, Annotations.Genome.Build, ((strand == '+') ? "_fw" : "_rev"));
+            string fileNameHead = string.Format("{0}_{1}_{2}", currentBcIdx, Annotations.Genome.Build, ((strand == '+') ? "fw" : "rev"));
             string filePathHead = Path.Combine(Path.GetDirectoryName(currentMapFilePath), fileNameHead);
             string fileByRead = filePathHead + "_byread.wig.gz";
             if (File.Exists(fileByRead)) return;
             StreamWriter writerByRead = fileByRead.OpenWrite();
-            writerByRead.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} (+)\" visibility=full", fileNameHead + "_byread", strand);
+            writerByRead.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full", fileNameHead + "_byread", strand);
             StreamWriter writerByMol = null;
             string fileByMol = filePathHead + "_bymolecule.wig.gz";
             if (barcodes.HasRandomBarcodes && !File.Exists(fileByMol))
             {
                 writerByMol = fileByMol.OpenWrite();
-                writerByMol.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} (+)\" visibility=full", fileNameHead + "_bymolecule", strand);
+                writerByMol.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full", fileNameHead + "_bymolecule", strand);
             }
             foreach (KeyValuePair<string, ChrTagData> tagDataPair in randomTagFilter.chrTagDatas)
             {

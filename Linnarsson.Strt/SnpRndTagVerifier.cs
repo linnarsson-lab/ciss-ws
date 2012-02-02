@@ -101,10 +101,11 @@ namespace Linnarsson.Strt
                     if (n > maxCount * MinCountFactorToLessCommonNtWithinRndTag)
                     {
                         maxCount = n;
-                        maxNt = "-ACGT"[ntIdx];
+                        maxNt = (ntIdx == 0)? refNt : "-ACGT"[ntIdx];
                     }
                 }
-                if (maxNt != '-' && maxCount >= MinCountForValidNtWithinRndTag) validNts.Add(maxNt);
+                if (maxNt != '-' && maxCount >= MinCountForValidNtWithinRndTag)
+                    validNts.Add(maxNt);
             }
             return validNts;
         }
@@ -300,7 +301,7 @@ namespace Linnarsson.Strt
         private void InitOutfile(StreamWriter writer, string header)
         {
             writer.WriteLine(header);
-            writer.Write("ChrPos\tSNPPos\tStrand\tAltNts\tBarcode\tProblem\tAltNtsInBc\tTotal\tNt");
+            writer.Write("ChrPos\tSNPPos\tStrand\tAltNts\tBarcode\tProblem\tBcIsHeZ\tTotal\tNt");
             for (int i = 0; i < barcodes.RandomBarcodeCount; i++)
                 writer.Write("\t#InTag" + i);
             writer.WriteLine();
@@ -331,7 +332,7 @@ namespace Linnarsson.Strt
                 {
                     writer.Write(wStart + "\t" + totCountInNt);
                     writer.WriteLine(sbNt.ToString());
-                    wStart = "\t\t\t\t\t";
+                    wStart = "\t\t\t\t\t\t\t";
                 }
             }
         }

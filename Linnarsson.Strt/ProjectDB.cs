@@ -278,7 +278,7 @@ namespace Linnarsson.Strt
                 sql = string.Format(string.Format("UPDATE jos_aaalane SET yield=\"{0}\", pfyield=\"{1}\" WHERE laneno=\"{2}\" AND " + 
                                         "jos_aaailluminarunid= (SELECT id FROM jos_aaailluminarun WHERE illuminarunid=\"{3}\") ",
                                         extrInfo.nReads, extrInfo.nPFReads, extrInfo.laneNo, extrInfo.runId));
-                Console.WriteLine(sql);
+                //Console.WriteLine(sql);
                 cmd = new MySqlCommand(sql, conn);
                 cmd.ExecuteNonQuery();
             }

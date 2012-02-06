@@ -455,7 +455,8 @@ namespace Linnarsson.Strt
             matrixFile.WriteLine("NOTE: Gene variants occupying the same locus share counts in the table.");
             if (!props.DirectionalReads)
                 matrixFile.WriteLine("NOTE: This is a non-STRT analysis with non-directional reads.");
-            WriteBarcodeHeaders(matrixFile, 6);
+            string matrixValType = barcodes.HasRandomBarcodes ? "(Values are molecule counts)" : "(Values are read counts)";
+            WriteBarcodeHeaders(matrixFile, 6, matrixValType);
             matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\tMaxExonHits");
             StreamWriter readFile = null;
             StreamWriter trueFile = null;
@@ -463,11 +464,11 @@ namespace Linnarsson.Strt
             {
                 readFile = new StreamWriter(fileNameBase + "_reads.tab");
                 readFile.WriteLine("Total maximal read counts in barcodes for each gene and repeat.");
-                WriteBarcodeHeaders(readFile, 5);
+                WriteBarcodeHeaders(readFile, 5, "");
                 readFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMaxExonReads");
                 trueFile = new StreamWriter(fileNameBase + "_true_counts.tab");
                 trueFile.WriteLine("Estimated true molecule counts.");
-                WriteBarcodeHeaders(trueFile, 5);
+                WriteBarcodeHeaders(trueFile, 5, "");
                 trueFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMaxExonReads");
             }
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
@@ -550,10 +551,10 @@ namespace Linnarsson.Strt
             tableFile.Close();
         }
 
-        private void WriteBarcodeHeaders(StreamWriter matrixFile, int nTabs)
+        private void WriteBarcodeHeaders(StreamWriter matrixFile, int nTabs, string firstField)
         {
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-            matrixFile.Write(new String('\t', nTabs) + "Barcode:");
+            matrixFile.Write(firstField + new String('\t', nTabs) + "Barcode:");
             foreach (int idx in speciesBcIndexes) matrixFile.Write("\t" + barcodes.Seqs[idx]);
             matrixFile.WriteLine();
             matrixFile.Write(new String('\t', nTabs) + "Sample:");
@@ -605,7 +606,7 @@ namespace Linnarsson.Strt
         private string WriteBarcodedRPM(string fileNameBase)
         {
             string rpType = (props.UseRPKM) ? "RPKM" : "RPM";
-            string rpmPath = fileNameBase + "_normalized.tab";
+            string rpmPath = fileNameBase + "_" + rpType + ".tab";
             var matrixFile = rpmPath.OpenWrite();
             if (props.DirectionalReads)
             {
@@ -616,12 +617,12 @@ namespace Linnarsson.Strt
                 matrixFile.WriteLine("SingleRead is the RPM value that corresponds to a single molecule(read) in each barcode.");
             if (props.DirectionalReads)
             {
-                WriteBarcodeHeaders(matrixFile, 9);
+                WriteBarcodeHeaders(matrixFile, 9, "(Values are " + rpType + ")");
                 matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\tP=0.01\tP=0.001\tAverage\tCV");
             }
             else
             {
-                WriteBarcodeHeaders(matrixFile, 7);
+                WriteBarcodeHeaders(matrixFile, 7, "(Values are " + rpType + ")");
                 matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\tAverage\tCV");
             }
             WriteRPMSection(matrixFile, true, null);

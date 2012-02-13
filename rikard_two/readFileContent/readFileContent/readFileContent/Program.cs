@@ -141,6 +141,9 @@ namespace readFileContent
                 int i = 0;
                 foreach (string dir in dirs)
                 {
+                    if (dir.Contains("Project_A")) continue;
+                    if (dir.Contains("Project_B")) continue;
+//                    if (dir.Contains("Project_C")) continue;
                     Console.WriteLine("\t" + dir);
                     if (File.Exists(dir + "/genome/bam/sorted.bam"))
                     {
@@ -160,7 +163,7 @@ namespace readFileContent
             Console.WriteLine("\tStarting " + now + " memory allocated " + proc.PrivateMemorySize64);
             Console.WriteLine();
 
-            TextWriter tw = new StreamWriter("readCount4.txt");
+            TextWriter tw = new StreamWriter("readCount6.txt");
 
             foreach (string bFile in TheBams)
             {
@@ -179,21 +182,11 @@ namespace readFileContent
                     if (strt < 1)
                         strt = 1;
                     int ende = KVP.Value.end + 250;
-//                    List<BamAlignedRead> MyList = BF.Fetch(CHROM, KVP.Value.start, KVP.Value.end);
                     IEnumerable<string> MList = BF.IterLines(CHROM, strt, ende);
-//                    Console.WriteLine(MList); 
                     List<string> tmp = new List<string>();
                     foreach (string item in MList)
                     {
                         string[] readinfo = item.Split('\t');
-                        //                RNAME[=chr]                 POS                MAPQ   
-//                        Console.WriteLine(readinfo[2] + " " + readinfo[3] + " " + readinfo[4]);
-
-//                    if (!(MyList.Count < 1))
-//                    {
-//
-//                        for (int ii = 0; ii < MyList.Count; ii++)
-//                        {
                         string poskey = CHROM + " " + KVP.Value.source + " " + readinfo[3];
                         if (posexist.Contains(poskey)) continue;
                             if (onposcounter.ContainsKey(poskey))
@@ -203,26 +196,17 @@ namespace readFileContent
                                 tmp.Add(poskey);
                                 onposcounter.Add(poskey, 1);
                             }
-//                        }
-//                                        }
                     }
                     foreach (string str in tmp)
                         posexist.Add(str);
 
                     tmp.Clear();
-
-//                    Console.SetCursorPosition(0, Console.CursorTop);
-//                    Console.Write(" " + CHROM + " " + KVP.Key + " " + MyList.Count);
-//                    Console.WriteLine("{0,4:G} {1,10:G} {2,10:G} {3,10:G}", CHROM, KVP.Value.source, KVP.Value.start, KVP.Value.end);
-//                    MyList.Clear();
                 }
                 foreach (KeyValuePair<string, int> kvp in onposcounter)
                 {
                     string[] genomepos = kvp.Key.Split('.');
                     tw.WriteLine("{0,25:G} {1,10:G} {2,10:G}", genomepos[0], kvp.Key, kvp.Value);
                 }
-//                onposcounter.Clear();
-//                Console.WriteLine();
             }
             tw.Close();
 
@@ -238,3 +222,43 @@ namespace readFileContent
         }
     }
 }
+
+
+
+/*    INSTEAD OF          To use the IEnumerable<string> MList = BF.IterLines(CHROM, strt, ende) 
+                foreach (KeyValuePair<string, Fragment> KVP in Design)
+                {
+                    string[] CHgff = KVP.Value.seqname.Split('r');
+                    string CHROM = CHgff[1] + ".fa";
+                    int strt = KVP.Value.start - 250;
+                    if (strt < 1)
+                        strt = 1;
+                    int ende = KVP.Value.end + 250;
+                    Console.WriteLine(CHROM + KVP.Value.start + KVP.Value.end);
+                    List<BamAlignedRead> MyList = BF.FetchFaster(CHROM, KVP.Value.start, KVP.Value.end);
+                    Console.WriteLine(CHROM + " " + KVP.Value.start + " " + KVP.Value.end + " " + MyList.Count);
+                    List<string> tmp = new List<string>();
+                    foreach (BamAlignedRead item in MyList)
+                    {
+                        for (int ii = 0; ii < MyList.Count; ii++)
+                        {
+                        string poskey = CHROM + " " + KVP.Value.source + " " + item.Position;
+                        if (posexist.Contains(poskey)) continue;
+                            if (onposcounter.ContainsKey(poskey))
+                                onposcounter[poskey]++;
+                            else
+                            {
+                                tmp.Add(poskey);
+                                onposcounter.Add(poskey, 1);
+                                Console.WriteLine(poskey);
+                            }
+                        }
+                    }
+                    Console.WriteLine("          -" + tmp.Count);
+                    foreach (string str in tmp)
+                        posexist.Add(str);
+
+                    tmp.Clear();
+                    MyList.Clear();
+                }
+*/

@@ -64,6 +64,12 @@ namespace Linnarsson.Strt
         public abstract string[] GetChromosomeIds();
         public abstract int GetTotalAnnotLength(int annotType);
         public abstract int GetTotalAnnotLength(int annotType, bool excludeMasked);
+        /// <summary>
+        /// Return the total hit (read or molecule) count.
+        /// </summary>
+        /// <param name="annotType">Selected annotation type</param>
+        /// <param name="excludeMasked">True to only count hits to regions without overlap with other genes</param>
+        /// <returns></returns>
         public abstract int GetTotalAnnotCounts(int annotType, bool excludeMasked);
         public abstract void WriteSpikeDetection(StreamWriter xmlFile);
 

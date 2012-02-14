@@ -664,7 +664,7 @@ namespace Linnarsson.Strt
         private void WriteSenseAntisenseStats(StreamWriter xmlFile)
         {
             xmlFile.WriteLine("  <senseantisense>");
-            xmlFile.WriteLine("    <title>Sense and Antisense reads per kb feature length</title>");
+            xmlFile.WriteLine("    <title>Sense and Antisense hits per kb feature length</title>");
             foreach (int t in AnnotType.GetSenseTypes())
             {
                 int totSense = Annotations.GetTotalAnnotCounts(t, true);

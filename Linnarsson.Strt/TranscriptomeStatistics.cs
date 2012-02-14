@@ -686,7 +686,7 @@ namespace Linnarsson.Strt
         private void WriteHitsByChromosome(StreamWriter xmlFile)
         {
             xmlFile.WriteLine("  <senseantisensebychr>");
-            xmlFile.WriteLine("    <title>% of reads mapped to Sense/Antisense exons [ratio below] by chromosome</title>");
+            xmlFile.WriteLine("    <title>% of hits to Sense/Antisense exons [ratio below] by chromosome</title>");
             List<int> numkeys = new List<int>();
             List<string> alphakeys = new List<string>();
             int v;

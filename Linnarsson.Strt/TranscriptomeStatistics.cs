@@ -952,7 +952,7 @@ namespace Linnarsson.Strt
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, readCounter.TotalBarcodeReads,
                                     "READS", "Total reads by barcode", "reads");
             WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, TotalHitsByBarcode,
-                                "TOTAL", "Total annotated hits by barcode", "annotated hits");
+                                "HITS", "Total annotated hits by barcode", "annotated hits");
             WriteDuplicateMoleculesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
             WriteFeaturesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
             barcodeStats.WriteLine("Transcripts detected in each barcode:");
@@ -1031,7 +1031,7 @@ namespace Linnarsson.Strt
         private void WriteDuplicateMoleculesByBarcode(StreamWriter xmlFile, StreamWriter barcodeStats, StreamWriter bCodeLines, int[] genomeBcIndexes)
         {
             if (!barcodes.HasRandomBarcodes) return;
-            bCodeLines.Write("TOTAL");
+            bCodeLines.Write("DUPLICATE_READS");
             xmlFile.Write("    <barcodestat section=\"duplicated molecules (by position-random tag)\">");
             string[] counts = new string[barcodes.Count];
             for (int bcIdx = 0; bcIdx < counts.Length; bcIdx++)

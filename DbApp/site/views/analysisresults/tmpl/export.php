@@ -31,7 +31,11 @@ require_once ('strt2Qsingle.php');
       $line = stream_get_line($fh, 100, "\n\n");
       $line = stream_get_line($fh, 100, "\n\n");
       preg_match_all('(\d+)', $line, $out);
-      $gnm = (preg_match('/^v[0-9]/', $gnms[1]) == 0)? $gnms[1] : $gnms[2];
+      if (count($gnms) >= 5) {
+        $gnm = $gnms[count($gnms) - 4];
+      } else {
+        $gnm = (preg_match('/^v[0-9].*/', $gnms[1]) == 0 || $gnms[1] != 'TruSeq')? $gnms[1] : $gnms[2];
+      }
       $outstring = "<tr><td colspan=7 bgcolor=yellow>Genome <b>" . $gnm . "</b> Variables <b>" . $out[0][2] . "</b></td></tr>_CUT_";
       $outstring .= "<tr><th>" . $qlucoreFile . "</th>";
       $outstring .= "<td align=center><input type=checkbox name=file" . $count . " value='" . $filePath . "/" . $qlucoreFile . "' /></td>";

@@ -16,6 +16,7 @@ require_once ('strt2Qsingle.php');
          <form  name=input  action='index.php?option=com_dbapp&view=analysisresults&layout=joindata'  method=post   ><table>";
   echo "<p>To download <b>Standard results files [.tab]</b> just click the link in the analysis column.</p>";
   echo "<p>To download data for <b>Qlucore [.gedata]</b> tick the boxes from relevant runs and click a submit button. You can only combine data from one genome type (identified by sub-tables), variables refer to gene count.</p>";
+  echo "<p>N.B.: If you want to combine data, but they are within groups with different number of variables, it means they have been run against different database versions. Check up under the samples and rerun analysis of the older one.</p>";
   $outstrings  = array();
   $count = 0;
   foreach ($this->items as $result) {
@@ -23,8 +24,11 @@ require_once ('strt2Qsingle.php');
         continue;
     $filePath = $result->resultspath;
     $dirs = explode("/", $filePath);
-    $qlucoreFile = $dirs[3] . "_RPM.gedata";
-    $gnms = explode("_", $dirs[4]);
+    $gnms = explode("_", $dirs[count($dirs) - 1]);
+    $sampleId = $dirs[count($dirs) - 2];
+    $qlucoreFile = $sampleId . "_RPM.gedata";
+    if (!file_exists($filePath . "/" . $qlucoreFile))
+      $qlucoreFile = $sampleId . "_RPKM.gedata";
     if (file_exists($filePath . "/" . $qlucoreFile)) {
       $count++;
       $fh = fopen($filePath . "/" . $qlucoreFile, 'r');

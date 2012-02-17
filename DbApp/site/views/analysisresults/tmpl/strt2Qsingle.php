@@ -2,20 +2,20 @@
 /* Run the php script using
 $ php test.php */
 
-function toQlucore ($filename) {
+function toQlucore ($infilePath) {
 
+  $infileName = basename($infilePath);
   $tmpPath = "/srv/www/htdocs/joomla16/tmp/";
-  print "<br />Will parse $filename for glucore.\n";
+  $outfileName = substr($infileName, 0, strrpos($infileName, ".")) . ".gedata";
+  $outfilePath = $tmpPath . "/" . $outfileName;
+  print "<br />Will parse $infilePath for Qlucore.\n";
   $dirs = explode("/", $filename);
   $noPath = $dirs[count($dirs) - 1];
-
-//  print "$noPath is the short.\n";
-
   $noPathArray = explode("_", $noPath);
   $lNo = $noPathArray[0];
 
 $samples = array();
-$lines = file($filename);
+$lines = file($infilePath);
 $count = 0;
 $preresults = 1;
 $sampleAnnotationIds = array();
@@ -29,34 +29,36 @@ foreach($lines as $line) {
   $count++;
 //  echo($line);
   $words = explode("\t", $line);
-  if (count($words) > 9) {
+  if (count($words) > 7) {
 //    if ($count > 200) break;
     if ($preresults) {
-      if (preg_match("/:$/", $words[9])) {
-        if ($words[9] == "Sample:") {
-          for ($cnt = 10; $cnt < count($words); $cnt++) {
+      if (preg_match("/:$/", $words[7])) $annotidx = 7;
+      else if (preg_match("/:$/", $words[9])) $annotidx = 9;
+      if ($annotidx > 0) {
+        if ($words[$annotidx] == "Sample:") {
+          for ($cnt = $annotidx + 1; $cnt < count($words); $cnt++) {
             array_push($samples, $lNo . "_" . trim($words[$cnt]));
           }
         } else {
-          $sampleAnnotationId = str_replace(":", "", $words[9]);
+          $sampleAnnotationId = str_replace(":", "", $words[$annotidx]);
           if (strlen(trim($sampleAnnotationId)) > 0) {
             array_push($sampleAnnotationIds, $sampleAnnotationId);
             $sampleAnnotations[$sampleAnnotationId] = array();
-            for ($cnt = 10; $cnt < count($words); $cnt++) {
+            for ($cnt = $annotidx + 1; $cnt < count($words); $cnt++) {
               array_push($sampleAnnotations[$sampleAnnotationId], trim($words[$cnt]));
             }
           }
         }
 //        print count($samples) . $samples[45] . $words[9] . $fet;
       }
-    } else {
+    } else if ($words[0] != "Normalizer" && $words[0] != "SingleRead") {
 //      print ("$count ");
       $variableAnnotations[$words[0]] = array();
       for ($cnt = 0; $cnt < 5; $cnt++) {
         array_push($variableAnnotations[$words[0]], $words[$cnt]);
       }
       $variables[$words[0]] = array();
-      for ($cnt = 10; $cnt < count($words); $cnt++) {
+      for ($cnt = $annotIdx + 1; $cnt < count($words); $cnt++) {
         array_push($variables[$words[0]], trim($words[$cnt]));
       }
 
@@ -95,7 +97,7 @@ $variableAnnotationCount = count($variableAnnotationIds);
 // print "          variableCount $variableCount\n";
 // print "variableAnnotationCount $variableAnnotationCount\n";
 
-$fh = fopen($tmpPath . $lNo . "_RPM.gedata", 'w') or die("can't open file");
+$fh = fopen($outfilePath, 'w') or die("Can't open file for writing");
 // print header
 fwrite($fh, "Qlucore\tgedata\tversion 1.0\n");
 fwrite($fh, "\n");
@@ -138,8 +140,7 @@ foreach ($variables as $var => $arr) {
 }
 fclose($fh);
 
-return($tmpPath . $lNo . "_RPM.gedata");
-
+return($outfileName);
 }
 
 

@@ -17,9 +17,16 @@ if (1) {
     if ($result->id == $analysisid) {
       $filePath = $result->resultspath;
       $dirs = explode("/", $filePath);
-      $fileName = $filePath . "/" . $dirs[3] . "_RPM.tab";
-      $shortName = $dirs[3] . "_RPM.tab";
-      $qlucoreFile = $dirs[3] . "_RPM.gedata";
+      $sampleId = $dirs[count($dirs) - 2];
+      $countType = "RPM";
+      $testPath = $filePath . "/" . $sampleId . "_" . $countType . ".tab";
+      //echo "Testing " . $testPath; 
+      if (!file_exists($testPath))
+        $countType = "RPKM";
+      $nameHead = $sampleId . "_" . $countType;
+      $shortName = $nameHead . ".tab";
+      $fileName = $filePath . "/" . $shortName;
+      $qlucoreFile = $nameHead . ".gedata";
     }
   }
 

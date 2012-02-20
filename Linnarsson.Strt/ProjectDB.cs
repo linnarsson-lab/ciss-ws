@@ -347,13 +347,13 @@ namespace Linnarsson.Strt
 
         public bool AddToBackupQueue(string readFile, int priority)
         {
-            string sql = string.Format("INSERT INTO jos_aaabackupqueue (path, status, priority) VALUES ('{0}', 'inqueue', '{1}')", readFile, priority);
+            string sql = string.Format("INSERT INTO jos_aaabackupqueue (path, status, priority, time) VALUES ('{0}', 'inqueue', '{1}', NOW())", readFile, priority);
             return IssueNonQuery(sql);
         }
 
         public bool SetBackupStatus(string readFile, string status)
         {
-            string sql = string.Format("UPDATE jos_aaabackupqueue SET status='{0}' WHERE path='{1}'", status, readFile);
+            string sql = string.Format("UPDATE jos_aaabackupqueue SET status='{0}', time=NOW() WHERE path='{1}'", status, readFile);
             return IssueNonQuery(sql);
         }
 

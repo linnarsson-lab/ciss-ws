@@ -6,12 +6,12 @@ $afteredit = $this->afteredit;
 $runno = $afteredit['runno'];
 
 $db =& JFactory::getDBO();
-$query = " INSERT INTO #__aaafqmailqueue (runno, laneno, email, status) VALUES ";
+$query = " INSERT INTO #__aaafqmailqueue (runno, laneno, email, status, time) VALUES ";
 $qdata = "";
 for ($i = 1; $i <= 8; $i++) {
   if ($afteredit["lanesel$i"]) {
     if ($qdata != "") $qdata .= ", ";
-    $qdata .= "(" . $db->Quote($runno) . ", $i, " . $db->Quote($afteredit["email$i"]) . ", 'inqueue')";
+    $qdata .= "(" . $db->Quote($runno) . ", $i, " . $db->Quote($afteredit["email$i"]) . ", 'inqueue', NOW())";
   }
 }
 $query .= $qdata;

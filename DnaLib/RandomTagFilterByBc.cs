@@ -8,15 +8,23 @@ using Linnarsson.Mathematics;
 
 namespace Linnarsson.Strt
 {
+    /// <summary>
+    /// Holds read counts and SNP data (as TagItems) for one chromosome
+    /// </summary>
     public class ChrTagData
     {
         public ChrTagData(string chr)
         {
             this.chr = chr;
         }
+
+        /// <summary>
+        /// Mismatches closer than this to either read end will not be used for SNP analysis
+        /// </summary>
         public static int marginInReadForSNP = 2;
         public static int averageReadLen; // Needed for SNP handling
         public string chr;
+
         /// <summary>
         /// PosAndStrand_on_Chr -> countsByRndTagIdx
         /// Position stored as "(pos * 2) | strand" where strand in bit0: +/- => 0/1
@@ -77,7 +85,10 @@ namespace Linnarsson.Strt
             tagItems[posStrand].RegisterSNP(snpOffset);
         }
 
-        public void ChangeBcIdx()
+        /// <summary>
+        /// Should be called when all reads from the same barcode have been registered
+        /// </summary>
+        public void FinishBarcode()
         {
             AddToWiggle();
             foreach (TagItem tagItem in tagItems.Values)
@@ -144,7 +155,6 @@ namespace Linnarsson.Strt
                     char strand = ((cPair.Key & 1) == 0) ? '+' : '-';
                     item.Update(hitStartPos, strand, cPair.Value);
                     item.splcToRealChrOffset = 0; // Need always reset this
-                    //Console.WriteLine("ChrTagData.IterItems(bcIdx=" + bcIdx + " chrId=" + chrId + ") yield: " + item.ToString());
                     yield return item;
                 }
             }
@@ -256,8 +266,6 @@ namespace Linnarsson.Strt
     {
         private bool hasRndTags;
         public Dictionary<string, ChrTagData> chrTagDatas;
-        private int currentBcIdx;
-        private HashSet<int> usedBcIdxs;
 
         public static int nRndTags;
         /// <summary>
@@ -297,8 +305,6 @@ namespace Linnarsson.Strt
             chrTagDatas = new Dictionary<string, ChrTagData>();
             foreach (string chrId in chrIds)
                 chrTagDatas[chrId] = new ChrTagData(chrId);
-            currentBcIdx = 0;
-            usedBcIdxs = new HashSet<int>();
             moleculeReadCountsHistogram = new int[MaxValueInReadCountHistogram + 1];
         }
 
@@ -321,15 +327,11 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Need to call this inbetween every series of reads from the same barcode
+        /// Need to call this after finishing every series of reads from the same barcode
         /// </summary>
         /// <param name="newBcIdx"></param>
-        public void ChangeBcIdx(int newBcIdx)
+        public void FinishBarcode()
         {
-            if (usedBcIdxs.Contains(newBcIdx))
-                throw new Exception("Program or map file naming error: Revisiting an already analyzed barcode (" + newBcIdx + ") is not allowed.");
-            usedBcIdxs.Add(newBcIdx);
-            currentBcIdx = newBcIdx;
             foreach (ChrTagData chrTagData in chrTagDatas.Values)
             {
                 int[] chrCounts = chrTagData.GetCasesByRndTagCount();
@@ -337,7 +339,7 @@ namespace Linnarsson.Strt
                     nCasesPerRandomTagCount[i] += chrCounts[i];
                 foreach (int count in chrTagData.IterMoleculeReadCounts())
                     moleculeReadCountsHistogram[Math.Min(MaxValueInReadCountHistogram, count)]++;
-                chrTagData.ChangeBcIdx();
+                chrTagData.FinishBarcode();
             }
         }
 
@@ -358,15 +360,16 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Iterate through the TagItem count data for every (chr, position, strand) hit by some read
         /// </summary>
+        /// <param name="bcIdx">Only needed to set the bcIdx properly in the MappedTagItems</param>
         /// <param name="filterChrIds">Ids to select either for exclusion or inclusion</param>
         /// <param name="includeFilter">true to only iterate specified chrs, false to iterate all but specified chrs</param>
         /// <returns></returns>
-        public IEnumerable<MappedTagItem> IterItems(List<string> filterChrIds, bool includeFilter)
+        public IEnumerable<MappedTagItem> IterItems(int bcIdx, List<string> filterChrIds, bool includeFilter)
         {
             foreach (string chrId in chrTagDatas.Keys)
             {
                 if (filterChrIds.Contains(chrId) == includeFilter)
-                    foreach (MappedTagItem item in chrTagDatas[chrId].IterItems(currentBcIdx, chrId))
+                    foreach (MappedTagItem item in chrTagDatas[chrId].IterItems(bcIdx, chrId))
                         yield return item;
             }
             yield break;

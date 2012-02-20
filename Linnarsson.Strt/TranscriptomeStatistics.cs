@@ -153,7 +153,6 @@ namespace Linnarsson.Strt
             }
             if (Props.props.SnpRndTagVerification && barcodes.HasRandomBarcodes)
                 snpRndTagVerifier = new SnpRndTagVerifier(Props.props, Annotations.Genome);
-            List<string> bcMapFilePaths = new List<string>();
             string mapFileName = Path.GetFileName(mapFilePaths[0]);
             currentBcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
             Console.Write("Annotatating " + mapFilePaths.Count + " map files");
@@ -166,6 +165,8 @@ namespace Linnarsson.Strt
                 nonExonWriter = new StreamWriter(OutputPathbase + "_NONEXON.tab");
             }
 
+            HashSet<int> usedBcIdxs = new HashSet<int>();
+            List<string> bcMapFilePaths = new List<string>();
             foreach (string mapFilePath in mapFilePaths)
             {
                 Console.Write(".");
@@ -175,8 +176,10 @@ namespace Linnarsson.Strt
                 {
                     ProcessBarcodeMapFiles(bcMapFilePaths);
                     bcMapFilePaths.Clear();
+                    if (usedBcIdxs.Contains(bcIdx))
+                        throw new Exception("Program or map file naming error: Revisiting an already analyzed barcode (" + bcIdx + ") is not allowed.");
+                    usedBcIdxs.Add(bcIdx);
                     currentBcIdx = bcIdx;
-                    randomTagFilter.ChangeBcIdx(currentBcIdx);
                 }
                 bcMapFilePaths.Add(mapFilePath);
             }
@@ -233,15 +236,22 @@ namespace Linnarsson.Strt
             if (randomTagFilter.chrTagDatas.ContainsKey("CTRL"))
             {
                 ctrlChrId.Add("CTRL");
-                foreach (MappedTagItem mtitem in randomTagFilter.IterItems(ctrlChrId, true))
+                foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, true))
                     Annotate(mtitem);
                 double labelingEfficiency = Annotations.GetEfficiencyFromSpikes(currentBcIdx);
                 TagItem.LabelingEfficiency = labelingEfficiency;
                 labelingEfficiencyByBc[currentBcIdx] = labelingEfficiency;
             }
-            foreach (MappedTagItem mtitem in randomTagFilter.IterItems(ctrlChrId, false))
+            foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, false))
                 Annotate(mtitem);
             FinishBarcode();
+        }
+
+        private void FinishBarcode()
+        {
+            MakeGeneRndTagProfiles();
+            MakeBcWigglePlots();
+            randomTagFilter.FinishBarcode();
         }
 
         public void SampleReadStatistics(int numReadsInBin)
@@ -327,12 +337,6 @@ namespace Linnarsson.Strt
             }
             /*else if (nonAnnotWriter != null)
                 nonAnnotWriter.WriteLine(item.ToString());*/
-        }
-
-        public void FinishBarcode()
-        {
-            MakeGeneRndTagProfiles();
-            MakeBcWigglePlots();
         }
 
         private void MakeGeneRndTagProfiles()

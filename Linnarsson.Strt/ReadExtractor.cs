@@ -200,10 +200,7 @@ namespace Linnarsson.Strt
             minReadLength = barcodes.GetInsertStartPos() + props.MinExtractionInsertLength;
             minInsertNonAs = props.MinExtractionInsertNonAs;
             barcodeSeqs = barcodes.Seqs;
-            int sIdx = 0;
-            barcodesWithTSSeq = new Dictionary<string, int>();
-            foreach (string s in barcodes.GetBarcodesWithTSSeq())
-                barcodesWithTSSeq[s] = sIdx++;
+            barcodesWithTSSeq = barcodes.GetBcWTSSeqToBcIdxMap();
             lastNtOfTSSeq = barcodes.TSTrimNt;
             firstNegBarcodeIndex = barcodes.FirstNegBarcodeIndex;
         }

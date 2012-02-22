@@ -47,6 +47,10 @@ namespace Linnarsson.Dna
         public int RandomTagLen { get { return m_RandomTagLen; } }
         public int BarcodeFieldLen { get { return (RandomTagLen > 0)? (1 + RandomTagLen + SeqLength) : SeqLength; } }
 
+        /// <summary>
+        /// Set to true to allow extraction step to correct single base substitutions in barcodes.
+        /// </summary>
+        public bool AllowSingleMutations = false;
         private Dictionary<string, int> barcodeToIdx;
         public int NOBARIdx = 0;
         public static readonly string NOBARCODE = "NOBAR";
@@ -66,6 +70,32 @@ namespace Linnarsson.Dna
         public string TSSeq { get { return m_TSSeq; } }
         protected char m_TSTrimNt = 'G';
         public char TSTrimNt { get { return m_TSTrimNt; } }
+
+        public virtual Dictionary<string, int> GetBcWTSSeqToBcIdxMap()
+        {
+            Dictionary<string, int> bcWTSSeqToBcIdxMap = new Dictionary<string, int>();
+            for (int bcIdx = 0; bcIdx < Count; bcIdx++)
+            {
+                string bcWTSSeq = m_Seqs[bcIdx] + m_TSSeq;
+                bcWTSSeqToBcIdxMap[bcWTSSeq] = bcIdx;
+                if (AllowSingleMutations)
+                {
+                    for (int p = 0; p < SeqLength; p++)
+                    {
+                        foreach (char subNt in new char[] { 'A', 'C', 'G', 'T' })
+                        {
+                            if (bcWTSSeq[p] != subNt)
+                            {
+                                char[] subS = bcWTSSeq.ToCharArray();
+                                subS[p] = subNt;
+                                bcWTSSeqToBcIdxMap[new string(subS)] = bcIdx;
+                            }
+                        }
+                    }
+                }
+            }
+            return bcWTSSeqToBcIdxMap;
+        }
 
         public virtual string[] GetBarcodesWithTSSeq()
         {
@@ -557,6 +587,12 @@ namespace Linnarsson.Dna
             this.m_TSTrimNt = ' ';
             this.m_WellIds = new string[] { "Sample1" };
         }
+        public override Dictionary<string, int> GetBcWTSSeqToBcIdxMap()
+        {
+            Dictionary<string, int> b2Idx = new Dictionary<string, int>();
+            b2Idx[""] = 0;
+            return b2Idx;
+        }
         public override string[] GetBarcodesWithTSSeq()
         {
             return new string[] { "" };
@@ -599,6 +635,8 @@ namespace Linnarsson.Dna
                     m_BarcodePos = int.Parse(line.Substring(12));
                 else if (line.ToLower().StartsWith("#indexfile"))
                     BarcodesInIndexReads = true;
+                else if (line.ToLower().StartsWith("#allowsinglemutations"))
+                    AllowSingleMutations = true;
                 line = reader.ReadLine();
             }
             List<string> sampleIds = new List<string>();

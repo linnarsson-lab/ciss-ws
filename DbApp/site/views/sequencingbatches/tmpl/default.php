@@ -165,8 +165,9 @@ defined('_JEXEC') or die('Restricted access');
     if ($batch->principalinvestigator == "") $pi = "?";
     else {
       $pi = implode(array_map(create_function('$a', 'return $a[0];'), explode(' ', $batch->principalinvestigator))); 
-      $pi = "<a href=index.php?option=com_dbapp&view=client&layout=client&controller=client&searchid="
-           . $batch->clientid . "&Itemid=" . $itemid . ">" . $pi . "</a>";
+      $pi = "<a href=\"index.php?option=com_dbapp&view=client&layout=client&controller=client&searchid="
+           . $batch->clientid . "&Itemid=" . $itemid
+           . "\"><abbr title=\"$batch->principalinvestigator\">$pi</abbr></a>";
     }
     echo "<td>$pi</td>";
     $signed = "?";

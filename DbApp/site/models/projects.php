@@ -25,7 +25,7 @@ class DbAppModelProjects extends JModel {
     $db =& JFactory::getDBO();
     $query = ' SELECT p.id as id, principalinvestigator, person, contactperson, plateid, p.status, platereference,
                  barcodeset, species, tissue, sampletype, collectionmethod, weightconcentration, fragmentlength,
-                 p.molarconcentration, p.user as user, p.time as time, layoutfile, 
+                 p.molarconcentration, p.user as user, p.time as time, layoutfile, p.title, p.comment,
                  COUNT(DISTINCT(a.id)) AS analysiscount,
                  SUBSTRING_INDEX(GROUP_CONCAT(CAST(a.status AS CHAR) ORDER BY a.id DESC), ",", 1) AS astatus,
                  COUNT(DISTINCT(l.id)) AS assignedlanes, IFNULL(nplannedlanes, 0) AS plannedlanes, 

@@ -128,8 +128,9 @@ defined('_JEXEC') or die('Restricted access');
     if ($strt == "no" && $project->plateid[0] == "L") continue;
 
     echo "<tr>";
-    $projectlink = "<nobr>&nbsp;<a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
-           . $project->id . "&Itemid=" . $itemid . ">" . $project->plateid . "</a>&nbsp;</nobr>";
+    $projectlink = "<nobr>&nbsp;<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
+           . $project->id . "&Itemid=$itemid\" title=\"" . $project->title . " " . $project->comment . "\">"
+           . $project->plateid . "</a>&nbsp;</nobr>";
     $editlink = "<nobr>&nbsp;<a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=" 
            . $project->id . "&Itemid=" . $itemid . ">edit</a>&nbsp;</nobr>";
     echo "<td>" . $editlink . "</td>";
@@ -143,7 +144,7 @@ defined('_JEXEC') or die('Restricted access');
     if (strpos($mngr, ' ') >= 1)
       $mngr = implode(array_map(create_function('$a', 'return $a[0];'), explode(' ', $project->person)));
     else $mngr = substr($mngr, 0, 5);
-    echo "<td><nobr>" . $mngr . "&nbsp;</nobr></td>";
+    echo "<td><nobr><abbr title=\"$project->person\">" . $mngr . "</abbr>&nbsp;</nobr></td>";
     echo "<td><nobr>" . $project->plannedlanes . "</nobr></td>";
     echo "<td><nobr>" . $project->assignedlanes . "</nobr></td>";
     if ($project->status == 'cancelled')

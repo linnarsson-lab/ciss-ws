@@ -265,7 +265,7 @@ function addTable($title, $values){
 		    $idx = $col * 8 + $row;
 			if ($idx < count($values))
                 $val = $values[$idx];
-			$bkgcolor = "#808080";
+			$bkgcolor = "#c0c0c0";
 			if ($numeric == true) {
 			    $ci = $colfactor *(log($val + 0.01) - $minval);
 			    $bkgcolor = sprintf("#%02x%02x20", 220 - $ci, $ci);

@@ -91,9 +91,9 @@ $xmlDoc->load($xmlfile);
 $allxml = $xmlDoc->documentElement;
 $project = $allxml->getAttributeNode("project")->value;
 echo "<style type=\"text/css\">";
-echo "table, th, td { border: 1px solid black; border-collapse:collapse;\n";
-echo "}\n";
-echo "td { text-align: right; }\n";
+echo "table, th, td { border: 1px solid black; border-collapse:collapse;font-family:\"Courier New\", Courier, monospace;}\n";
+echo "th { text-align: center; }\n";
+echo "td { text-align: right; font-weight:bold; padding-right:5px; }\n";
 echo "</style>\n";
 echo "<p><b>Summary of results in $project.</b></p>\n";
 foreach ($allxml->childNodes AS $graphdata) {

@@ -107,6 +107,8 @@ namespace BkgFastQCopier
                         {
                             cycles[readFileResult.read] = (int)readFileResult.readLen;
                             new ProjectDB().AddToBackupQueue(readFileResult.readFile, 10);
+                            if (readFileResult.read == 1)
+                                new ProjectDB().SetIlluminaYield(runId, readFileResult.nReads, readFileResult.nPFReads, readFileResult.lane);
                         }
                         new ProjectDB().UpdateRunCycles(runId, cycles[1], cycles[2], cycles[3]);
                         copiedRunIds[runNo] = null;
@@ -227,14 +229,19 @@ namespace BkgFastQCopier
             return readFileResults;
         }
 
+        /// <summary>
+        /// Describes the extracted fastQ records from one read of a lane.
+        /// </summary>
         public class ReadFileResult
         {
-            public string readFile;
-            public int lane;
-            public int read;
-            public uint nPFReads;
-            public uint nNonPFReads;
-            public uint readLen;
+            public string readFile { get; private set; }
+            public int lane { get; private set; }
+            public int read { get; private set; }
+            public uint nPFReads { get; private set; }
+            public uint nNonPFReads { get; private set; }
+            public uint readLen { get; private set; }
+            public uint nReads { get { return nPFReads + nNonPFReads; } }
+
             public ReadFileResult(string readFile, int lane, int read, uint nPFReads, uint nNonPFReads, uint readLen)
             {
                 this.readFile = readFile;

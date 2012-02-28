@@ -223,7 +223,7 @@ namespace Linnarsson.Strt
             return pds;
         }
 
-        public void UpdateDB(ProjectDescription projDescr)
+        public void UpdateAnalysisStatus(ProjectDescription projDescr)
         {
             string sql = string.Format("UPDATE jos_aaaanalysis SET status=\"{0}\", time=NOW() WHERE id=\"{1}\";",
                                        projDescr.status, projDescr.analysisId);
@@ -285,6 +285,13 @@ namespace Linnarsson.Strt
             conn.Close();
         }
 
+        /// <summary>
+        /// Updates the database with info on number of total and passed filter reads for a lane
+        /// </summary>
+        /// <param name="runId">The (8 character long) plate id</param>
+        /// <param name="nReads">Total number of reads</param>
+        /// <param name="nPFReads">Number of reads passed Illumina filter</param>
+        /// <param name="lane">Lane number</param>
         public void SetIlluminaYield(string runId, uint nReads, uint nPFReads, int lane)
         {
             string sql = string.Format(string.Format("UPDATE jos_aaalane SET yield=\"{0}\", pfyield=\"{1}\" WHERE laneno=\"{2}\" AND " +

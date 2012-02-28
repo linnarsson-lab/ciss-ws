@@ -285,6 +285,14 @@ namespace Linnarsson.Strt
             conn.Close();
         }
 
+        public void SetIlluminaYield(string runId, uint nReads, uint nPFReads, int lane)
+        {
+            string sql = string.Format(string.Format("UPDATE jos_aaalane SET yield=\"{0}\", pfyield=\"{1}\" WHERE laneno=\"{2}\" AND " +
+                                    "jos_aaailluminarunid= (SELECT id FROM jos_aaailluminarun WHERE illuminarunid=\"{3}\") ",
+                                    nReads, nPFReads, lane, runId));
+            IssueNonQuery(sql);
+        }
+
         /// <summary>
         /// Sets the bcl copy/collection status of a run.
         /// </summary>

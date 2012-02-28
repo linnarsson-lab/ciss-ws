@@ -119,7 +119,7 @@ namespace ProjectDBProcessor
         private static void HandleDBTask(ProjectDescription projDescr)
         {
             projDescr.status = ProjectDescription.STATUS_PROCESSING;
-            projectDB.UpdateDB(projDescr);
+            projectDB.UpdateAnalysisStatus(projDescr);
             List<string> results = new List<string>();
             try
             {
@@ -137,7 +137,7 @@ namespace ProjectDBProcessor
                 results.Add(e.ToString());
             }
             NotifyManager(projDescr, results);
-            projectDB.UpdateDB(projDescr);
+            projectDB.UpdateAnalysisStatus(projDescr);
             logWriter.WriteLine(DateTime.Now.ToString() + " " + projDescr.projectName + "[analysisId=" + projDescr.analysisId + "] finished with status " + projDescr.status);
             logWriter.Flush();
         }

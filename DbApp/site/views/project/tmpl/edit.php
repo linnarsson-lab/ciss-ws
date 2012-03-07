@@ -24,6 +24,11 @@ JHtml::_('behavior.formvalidation');
 <script type="text/javascript">
 function validateFields()
 {
+  var c = document.getElementById("spikemolecules").value;
+  if (c != parseInt(c)) {
+    alert("Spike molecule count must be numeric!");
+    return false;
+  }
   if (document.getElementById("#__aaacontactid").value == "0") {
     alert("You must select a contact person!");
     return false;

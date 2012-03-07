@@ -59,6 +59,11 @@ namespace Linnarsson.Dna
         {
             return TotalSenseHits + TotalAntiSenseHits;
         }
+        /// <summary>
+        /// Total hits to the locus on specified strand
+        /// </summary>
+        /// <param name="sense">True for sense strand</param>
+        /// <returns></returns>
         public virtual int GetTotalHits(bool sense)
         {
             return (sense)? TotalSenseHits : TotalAntiSenseHits;

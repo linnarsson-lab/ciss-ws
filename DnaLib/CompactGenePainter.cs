@@ -120,35 +120,6 @@ namespace Linnarsson.Dna
             }
         }
 
-        /// <summary>
-        /// Count which hits are within an interval of the locus on the specified strand
-        /// </summary>
-        /// <param name="locusStart">start of interval</param>
-        /// <param name="locusEnd">inclusive end of interval</param>
-        /// <param name="strand">+ or -</param>
-        /// <param name="hits">the array of locus hit positions to filter</param>
-        /// <returns></returns>
-        public static int GetIvlHitCount(int locusStart, int locusEnd, char strand, int[] hits)
-        {
-            int s = (strand == '+') ? 0 : 1;
-            int c = 0;
-            foreach (int hit in hits)
-                if ((hit & 1) == s && (hit >> 8 >= locusStart) && (hit >> 8 <= locusEnd)) c++;
-            return c;
-        }
-        public static int[] GetBarcodedIvlHitCount(int locusStart, int locusEnd, char strand, int[] hits)
-        {
-            int s = (strand == '+') ? 0 : 1;
-            int[] counts = new int[96];
-            foreach (int hit in hits)
-                if ((hit & 1) == s && (hit >> 8 >= locusStart) && (hit >> 8 <= locusEnd))
-                {
-                    int bcodeIdx = (hit >> 1) & 127;
-                    counts[bcodeIdx]++;
-                }
-            return counts;
-        }
-
         public static int[] GetBarcodedTranscriptCounts(GeneFeature gf, int trFrom, int trTo)
         {
             int chrFrom = gf.GetChrPos(trFrom);
@@ -312,14 +283,6 @@ namespace Linnarsson.Dna
                 }
             }
             return counts.Keys.ToArray<int>();
-        }
-
-        public static int GetUniqueBarcodedHitPositionCount(GeneFeature gf)
-        {
-            Dictionary<int, object> unique = new Dictionary<int, object>();
-            foreach (int hit in gf.LocusHits)
-                unique[hit] = null;
-            return unique.Keys.Count;
         }
 
         /// <summary>

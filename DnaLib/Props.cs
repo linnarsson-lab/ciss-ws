@@ -29,11 +29,6 @@ namespace Linnarsson.Dna
         public string FailureReportEmail = "peter.lonnerberg@ki.se";
         public string ProjectDBProcessorNotifierEmailSender = "peter.lonnerberg@ki.se";
         public string BowtieIndexFolder = "\\\\192.168.1.12\\sequtils\\bowtie-0.12.7\\indexes";
-        public string QueueFile = "\\\\192.168.1.12\\data\\strt\\SilverBulletQueue.txt";
-        public string LogFile = "SilverBulletLog.txt";
-        public string CopierLogFile = "SilverBulletCopyLog.txt";
-        public string MailerLogFile = "SilverBulletMailerLog.txt";
-        public string QueueProjectsFolder = "\\\\192.168.1.12\\data\\strt"; // Folder where projects and results are stored
         public string OutputDocFile = "\\\\192.168.1.12\\data\\strt\\STRTOutputManual.pdf";
         public int BkgBackuperStartHour = 17;
         public int BkgBackuperStopHour = 8;
@@ -51,8 +46,6 @@ namespace Linnarsson.Dna
         public string[] GenesToShowRndTagProfile =
             new string[] { "Sox2" ,"Actb", "Nanog" };
         public bool SnpRndTagVerification = false;
-        public string SnpRndTagVerificationChr = "1";
-        public int SnpRndTagVerificationMinQAscii = 33; // Bowtie map file lowest Q-value is 33 ('!')
         public int MinPhredScoreInRandomTag = 17;
         public int MinMoleculesToTestSnp = 4; // SNP analysis minimum coverage to test a potential SNP positions (when using random labels)
         public int MinReadsToTestSnp = 10; // SNP analysis minimum coverage to test a potential SNP positions (without random labeled barcodes)
@@ -62,7 +55,7 @@ namespace Linnarsson.Dna
         public bool AnalyzeAllGeneVariants = true; // Analyze all alternative splice sites in exons etc.
         public bool DirectionalReads = true; // STRT are always directional reads
         public bool UseRPKM = false; // Give RPKM instead of RPM in output files for non-STRT samples
-        public string DefaultBarcodeSet = "v2"; // This is the default barcode set
+        public string DefaultBarcodeSet = "v4"; // This is the default barcode set
         public int LocusFlankLength = 1000; // Maximum length of UPSTREAM and DOWNSTREAM regions to analyse
         public int StandardReadLen = 50; // Better not use actual reads that are longer - otherwise some junction hits may be missed
         public int MaxAlignmentMismatches = 3;  // Should be the value used in bowtie calls
@@ -83,7 +76,7 @@ namespace Linnarsson.Dna
         public int ExtractionCounterWordLength = 12; // Used for over-representation analysis by ExtractionWordCounter
         public string SampleLayoutFileFolder = ""; // If empty, the PlateLayout file is looked for in the project folder
         public string SampleLayoutFileFormat = "{0}_SampleLayout.txt"; // Formatter for sample layout filenames. Arg0 is project name
-        public double TotalNumberOfAddedSpikeMolecules = 2500;
+        public int TotalNumberOfAddedSpikeMolecules = 2500;
 
         [NonSerialized]
         private Barcodes m_Barcodes;

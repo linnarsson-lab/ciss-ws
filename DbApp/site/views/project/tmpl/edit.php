@@ -221,6 +221,10 @@ function changeBatchGen() {
       <td><input type="text" name="barcodeset" id="barcodeset" value="<?php if ($searchid > 0) echo $project->barcodeset; ?>" class="inputbox required" size="40"/></td>
     </tr>
     <tr>
+      <th>Spike&nbsp;Mol.&nbsp;count <?php echo JHTML::tooltip('Number of spike molecules per well - only for true mol. count estimation.'); ?> </th>
+      <td><input type="text" name="spikemolecules" id="spikemolecules" value="<?php if ($searchid > 0) echo $project->spikemolecules; else echo "2500"; ?>" class="inputbox" size="40"/></td>
+    </tr>
+    <tr>
       <th>Layout&nbsp;file&nbsp; <?php echo JHTML::tooltip('Tab-delimited special file specifying species and samples by well.'); ?> </th>
       <td><input type="file" name="uploadedfile" id="uploadedfile" value="" size="40"/><?php if ($searchid > 0) { echo $project->layoutfile; if ($project->fileupload == 1) { echo ' [Uploaded]'; } else { echo ' [Is not uploaded]'; } } ?></td>
     </tr>

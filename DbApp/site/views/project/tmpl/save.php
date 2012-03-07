@@ -71,7 +71,7 @@ if ($submit != 'Save') {
         || ($key == 'sampletype') || ($key == 'collectionmethod') || ($key == 'weightconcentration')
         || ($key == 'fragmentlength') || ($key == 'molarconcentration') || ($key == 'labbookpage')
         || ($key == 'protocol') || ($key == 'comment') || ($key == 'user') 
-        || ($key == 'time') || ($key == '#__aaamanagerid')
+        || ($key == 'time') || ($key == '#__aaamanagerid') || ($key == 'spikemolecules')
         || ($key == '#__aaacontactid') || ($key == '#__aaaclientid')) {
       $columns .= $key . ", ";
       $vcolumn .= $db->Quote(trim($value)) . ", ";

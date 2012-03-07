@@ -64,7 +64,7 @@ $editlink = "<a href=\"index.php?option=com_dbapp&view=project&layout=edit&contr
     echo "<table><tr><td><table><tr><th>Concentration&nbsp;[ng/ul]:&nbsp;</th><td>" . $project->weightconcentration . "</td></tr>";
     echo "<tr><th>Fragment&nbsp;length:&nbsp;</th><td>" . $project->fragmentlength . "</td></tr>";
     echo "<tr><th>Concentration&nbsp;[nM]:&nbsp;</th><td>" . $project->molarconcentration . "  </td></tr>";
-    echo "<tr><th>Lab&nbsp;book&nbsp;page:&nbsp;</th><td>" . $project->labbookpage . "</td></tr></table></td>";
+    echo "<tr><th>Spike&nbsp;mol.&nbsp;count&nbsp;</th><td>" . $project->spikemolecules . "</td></tr></table></td>";
 
     echo "<td><table><tr><th>Protocol:&nbsp;</th><td>" . $project->protocol . "</td></tr>";
     echo "<tr><th>Barcode&nbsp;set:&nbsp;</th><td>" . $project->barcodeset . "</td></tr>";

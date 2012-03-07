@@ -42,7 +42,7 @@ class DbAppModelProject extends JModel {
                   contactperson, ctct.id AS aaacontactid, title, plateid, p.status, platereference, barcodeset,
                   species, tissue, sampletype, collectionmethod, weightconcentration, layoutfile, fragmentlength,
                   molarconcentration, labbookpage, protocol, p.comment as comment, p.user AS user, p.time AS time,
-                  a.id AS analysisid
+                  a.id AS analysisid, p.spikemolecules
                FROM #__aaaproject p
                LEFT JOIN #__aaaclient c ON p.#__aaaclientid = c.id
                LEFT JOIN #__aaacontact ctct ON p.#__aaacontactid = ctct.id
@@ -135,7 +135,7 @@ class DbAppModelProject extends JModel {
     $analysid = JRequest::getVar('searchid') ;
     $query = " SELECT a.id AS id, #__aaaprojectid, extraction_version, annotation_version,
                genome, transcript_db_version, transcript_variant, a.comment AS comment,
-               p.plateid AS plateid, barcodeset, resultspath, emails, a.status AS status
+               p.plateid AS plateid, barcodeset, resultspath, emails, a.status AS status, p.spikemolecules
                FROM #__aaaanalysis a, #__aaaproject p
                WHERE a.#__aaaprojectid = p.id
                AND a.id = '" . $analysid . "'  

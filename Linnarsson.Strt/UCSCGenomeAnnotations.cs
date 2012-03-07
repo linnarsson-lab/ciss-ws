@@ -1041,7 +1041,7 @@ namespace Linnarsson.Strt
                 int trLen = gf.GetTranscriptLength();
                 if (trLen < capRegionSize * 2)
                     continue;
-                if (analyzeSpikes != gf.Name.StartsWith("RNA_SPIKE")) 
+                if (analyzeSpikes != gf.IsSpike()) 
                     continue;
                 if (gf.GetTranscriptHits() < minHitsPerGene)
                     continue;
@@ -1096,7 +1096,7 @@ namespace Linnarsson.Strt
             int[] nGenesPerSizeClass = new int[nTrSizeBins];
             foreach (GeneFeature gf in geneFeatures.Values)
             {
-                if (gf.Name.StartsWith("RNA_SPIKE"))
+                if (gf.IsSpike())
                     continue;
                 if (gf.GetTranscriptHits() < minHitsPerGene)
                     continue;
@@ -1127,7 +1127,7 @@ namespace Linnarsson.Strt
             bool wroteHeader = false;
             foreach (GeneFeature gf in geneFeatures.Values)
             {
-                if (!gf.Name.StartsWith("RNA_SPIKE") || gf.GetTotalHits(true) < 50)
+                if (!gf.IsSpike() || gf.GetTranscriptHits() < 25)
                     continue;
                 int trLen = gf.GetTranscriptLength();
                 double binSize = (trLen - averageReadLen) / (double)nSections;

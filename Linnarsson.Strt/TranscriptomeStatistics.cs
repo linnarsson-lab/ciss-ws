@@ -744,7 +744,7 @@ namespace Linnarsson.Strt
             bool anySpikeDetected = false;
             foreach (GeneFeature gf in Annotations.geneFeatures.Values)
             {
-                if (gf.Name.StartsWith("RNA_SPIKE_") && gf.IsExpressed())
+                if (gf.IsSpike() && gf.IsExpressed())
                 {
                     anySpikeDetected = true;
                     DescriptiveStatistics ds = new DescriptiveStatistics();
@@ -786,7 +786,8 @@ namespace Linnarsson.Strt
             int trLen1stBinStart = trLen1stBinMid - trLenBinHalfWidth;
             int trLenBinCount = 4;
             int nSections = 20;
-            int minHitsPerGene = nSections * 10;
+            int minHitsPerGene = (barcodes.HasRandomBarcodes) ? 25 : nSections * 10;
+            int maxHitsPerGene = (barcodes.HasRandomBarcodes) ? (int)(0.7 * barcodes.RandomBarcodeCount * barcodes.Count) : int.MaxValue;
             DescriptiveStatistics[,] binnedEfficiencies = new DescriptiveStatistics[trLenBinCount, nSections];
             for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
             {
@@ -798,10 +799,7 @@ namespace Linnarsson.Strt
             int spikeColorStep = ((0xFF - 0x41) / 8);
             foreach (GeneFeature gf in Annotations.geneFeatures.Values)
             {
-                bool isSpike = gf.Name.StartsWith("RNA_SPIKE_");
-                if (isSpike && gf.GetTotalHits(true) < 50)
-                    continue;
-                if (!isSpike && gf.GetTranscriptHits() < minHitsPerGene)
+                if (gf.GetTranscriptHits() < minHitsPerGene || gf.GetTranscriptHits() > maxHitsPerGene)
                     continue;
                 int trLen = gf.GetTranscriptLength();
                 double sectionSize = (trLen - averageReadLen) / (double)nSections;
@@ -810,11 +808,10 @@ namespace Linnarsson.Strt
                 double trTotalCounts = 0.0;
                 foreach (int c in trSectionCounts) trTotalCounts += c;
                 if (trTotalCounts == 0.0) continue;
-                if (!isSpike)
+                if (!gf.IsSpike())
                 {
                     if (trLen < trLen1stBinStart || (trLen - trLen1stBinStart) % trLenBinStep > trLenBinSize)
                         continue;
-                    //if (Math.Abs((trLen - trLen1stBinMid) % trLenBinSize) > 250) continue;
                     int trLenBin = (trLen - trLen1stBinStart) / trLenBinStep;
                     if (trLenBin >= trLenBinCount) continue;
                     for (int section = 0; section < nSections; section++)

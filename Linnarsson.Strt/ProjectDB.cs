@@ -43,6 +43,7 @@ namespace Linnarsson.Strt
         public string[] runIdsLanes { get; set; }
         public int[] runNumbers { get; set; }
         public string barcodeSet { get; set; }
+        public int SpikeMoleculeCount { get; set; }
         public bool analyzeVariants { get; set; }
         public string extractionVersion { get; set; }
         public string annotationVersion { get; set; }
@@ -71,7 +72,8 @@ namespace Linnarsson.Strt
         { }
 
         public ProjectDescription(string projectName, string barcodesName, string defaultSpecies, List<string> laneInfos,
-                          string layoutFile, string status, string emails, string defaultBuild, string variants, string analysisId, bool rpkm)
+                          string layoutFile, string status, string emails, string defaultBuild, string variants, string analysisId,
+                          bool rpkm, int spikeMoleculeCount)
         {
             this.projectName = projectName;
             this.barcodeSet = barcodesName;
@@ -84,6 +86,7 @@ namespace Linnarsson.Strt
             this.defaultBuild = defaultBuild;
             this.analyzeVariants = (variants == "all");
             this.rpkm = rpkm;
+            this.SpikeMoleculeCount = spikeMoleculeCount;
             this.analysisId = analysisId;
             this.resultDescriptions = new List<ResultDescription>();
         }
@@ -102,6 +105,7 @@ namespace Linnarsson.Strt
                 return n;
             }
         }
+
     }
 
     [Serializable()]
@@ -178,7 +182,7 @@ namespace Linnarsson.Strt
             MySqlConnection conn = new MySqlConnection(connectionString);
             List<ProjectDescription> pds = new List<ProjectDescription>();
             string sql = "SELECT a.id, a.genome, a.transcript_db_version, a.transcript_variant, a.rpkm, a.emails, " +
-                         " p.plateid, p.barcodeset, p.species, p.layoutfile, a.status, " +
+                         " p.plateid, p.barcodeset, p.spikemolecules, p.species, p.layoutfile, a.status, " +
                          " r.illuminarunid AS runid, GROUP_CONCAT(l.laneno ORDER BY l.laneno) AS lanenos " +
                          "FROM jos_aaaanalysis a " + 
                          "LEFT JOIN jos_aaaproject p ON a.jos_aaaprojectid = p.id " +
@@ -194,13 +198,14 @@ namespace Linnarsson.Strt
             string currAnalysisId = "", plateId = "", bcSet = "", defaultSpecies = "", layoutFile = "", plateStatus = "",
                     emails = "", defaultBuild = "", variant = "";
             bool rpkm = false;
+            int spikeMolecules = Props.props.TotalNumberOfAddedSpikeMolecules;
             while (rdr.Read())
             {
                 string analysisId = rdr["id"].ToString();
                 if (currAnalysisId != "" && analysisId != currAnalysisId)
                 {
                     pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
-                                                    emails, defaultBuild, variant, currAnalysisId, rpkm));
+                                                    emails, defaultBuild, variant, currAnalysisId, rpkm, spikeMolecules));
                     laneInfos = new List<string>();
                 }
                 currAnalysisId = analysisId;
@@ -214,10 +219,11 @@ namespace Linnarsson.Strt
                 emails = rdr["emails"].ToString();
                 defaultBuild = rdr["transcript_db_version"].ToString();
                 variant = rdr["transcript_variant"].ToString();
+                spikeMolecules = int.Parse(rdr["spikemolecules"].ToString());
                 rpkm = (rdr["rpkm"].ToString() == "True");
             }
             if (currAnalysisId != "") pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
-                                                                        emails, defaultBuild, variant, currAnalysisId, rpkm));
+                                                                        emails, defaultBuild, variant, currAnalysisId, rpkm, spikeMolecules));
             rdr.Close();
             conn.Close();
             return pds;

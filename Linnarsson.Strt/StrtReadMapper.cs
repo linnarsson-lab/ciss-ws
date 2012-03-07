@@ -391,6 +391,7 @@ namespace Linnarsson.Strt
         public void Process(ProjectDescription projDescr, StreamWriter logWriter)
         {
             SetBarcodeSet(projDescr.barcodeSet);
+            props.TotalNumberOfAddedSpikeMolecules = projDescr.SpikeMoleculeCount;
             logWriter.WriteLine(DateTime.Now.ToString() + " Extracting " + projDescr.runIdsLanes.Length + " lanes with barcodes " + projDescr.barcodeSet + "..."); logWriter.Flush();
             if (barcodes.HasRandomBarcodes)
                 logWriter.WriteLine(DateTime.Now.ToString() + " MinPhredScoreInRandomTag=" + props.MinPhredScoreInRandomTag);

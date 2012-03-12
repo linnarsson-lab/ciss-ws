@@ -325,10 +325,12 @@ namespace Linnarsson.Strt
 
         public void UpdateRunCycles(string runId, int cycles, int indexCycles, int pairedCycles)
         {
-            string sql = string.Format("UPDATE jos_aaailluminarun SET cycles='{0}', indexcycles='{1}' " +
-                                       "WHERE illuminarunid='{2}' AND cycles=0;",
-                                       cycles + pairedCycles, indexCycles, runId);
-            IssueNonQuery(sql);
+            string sql = string.Format("UPDATE jos_aaailluminarun SET cycles='{0}' WHERE illuminarunid='{1}' AND cycles=0;",
+                                       cycles + pairedCycles, runId);
+            if (cycles > 0) IssueNonQuery(sql);
+            sql = string.Format("UPDATE jos_aaailluminarun SET indexcycles='{0}' WHERE illuminarunid='{1}' AND indexcycles=0;",
+                                indexCycles, runId);
+            if (indexCycles > 0) IssueNonQuery(sql);
         }
 
         public Dictionary<string, List<MailTaskDescription>> GetQueuedMailTasksByEmail()
@@ -368,7 +370,7 @@ namespace Linnarsson.Strt
 
         public bool AddToBackupQueue(string readFile, int priority)
         {
-            string sql = string.Format("INSERT INTO jos_aaabackupqueue (path, status, priority, time) VALUES ('{0}', 'inqueue', '{1}', NOW())", readFile, priority);
+            string sql = string.Format("INSERT IGNORE INTO jos_aaabackupqueue (path, status, priority, time) VALUES ('{0}', 'inqueue', '{1}', NOW())", readFile, priority);
             return IssueNonQuery(sql);
         }
 

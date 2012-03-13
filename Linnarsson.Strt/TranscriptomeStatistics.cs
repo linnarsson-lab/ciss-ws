@@ -381,7 +381,7 @@ namespace Linnarsson.Strt
 
         private void MakeBcWigglePlots()
         {
-            if (!Props.props.GenerateBarcodedWiggle && !Props.props.UseRPKM) return;
+            if (!Props.props.GenerateBarcodedWiggle) return;
             int readLength = MappedTagItem.AverageReadLen;
             WriteBcWiggleStrand(readLength, '+');
             WriteBcWiggleStrand(readLength, '-');
@@ -441,7 +441,8 @@ namespace Linnarsson.Strt
                 WriteSNPPositions(fileNameBase);
             if (DetermineMotifs)
                 WriteSequenceLogos(fileNameBase);
-            WriteWriggle(fileNameBase);
+            if (Props.props.GenerateWiggle)
+                WriteWriggle(fileNameBase);
             WriteHotspots(fileNameBase);
             if (rndTagProfileByGeneWriter != null)
                 rndTagProfileByGeneWriter.Close();

@@ -530,6 +530,12 @@ namespace Linnarsson.Strt
                 string outputSplcPath = Path.Combine(mapFolder, bcIdx + "_" +  splcIndexVersion + ".map");
                 AssertBowtieOutputFile(splcIndexName, fqUnmappedReadsPath, outputSplcPath, "", laneInfo.bowtieLogFilePath);
                 mapFiles.Add(outputSplcPath);
+                try
+                {
+                    File.Delete(fqUnmappedReadsPath);
+                }
+                catch (Exception)
+                { }
                 if (Background.CancellationPending) break;
             }
             laneInfo.mappedFilePaths = mapFiles.ToArray();

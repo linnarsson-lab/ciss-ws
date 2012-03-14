@@ -18,7 +18,7 @@ defined('_JEXEC') or die('Restricted access'); ?>
 	      $searchid = -1;
           }
       } else if ($action == 'retry') {
-          $query = ' UPDATE #__aaafqmailqueue SET status="inqueue" WHERE id=' . $db->Quote($searchid);
+          $query = ' UPDATE #__aaafqmailqueue SET status="inqueue", time=NOW() WHERE id=' . $db->Quote($searchid);
           $db->setQuery($query);
           if (! $db->query()) {
               JError::raiseWarning('Message', JText::_('Could not reactivate task!'));
@@ -34,7 +34,7 @@ function confirmRemove() {
 </script>
 <h1>All FastQ mailing tasks</h1><br />
   <div><fieldset><legend></legend>
-    <table><tr><th>Run&nbsp;</th><th>Lane&nbsp;</th><th>Recepient</th><th>Status</th><th></th></tr>
+    <table><tr><th>Run&nbsp;</th><th>Lane&nbsp;</th><th>Recepient</th><th>Status</th><th>Last change</th><th></th></tr>
 <?php
   foreach ($mailtasks as $task) {
     if ($task->id == $searchid && $action == 'cancel') continue;
@@ -48,7 +48,8 @@ function confirmRemove() {
         $retrylink = "&nbsp;<a href=\"index.php?option=com_dbapp&view=entry&layout=mailqueue&controller=entry&searchid="
                       . $task->id . "&action=retry&Itemid=$itemid\">Retry</a>";
     echo "<tr><td>" . $task->runno . "</td><td>" . $task->laneno . "</td><td>" . $task->email 
-	     . "&nbsp;</td><td>" . $task->status . "&nbsp;</td><td>$canclink $retrylink&nbsp;</td></tr>\n";
+	     . "&nbsp;</td><td>" . $task->status . "&nbsp;</td><td>" . $task->time
+             . "&nbsp;</td><td>$canclink $retrylink&nbsp;</td></tr>\n";
   }
   echo "</table></fieldset></div>";
   echo "<br />\n";

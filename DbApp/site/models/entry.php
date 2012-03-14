@@ -19,14 +19,14 @@ class DbAppModelEntry extends JModel {
 
   public function getBuptasks() {
     $db =& JFactory::getDBO();
-    $query = ' SELECT id, path, status, priority FROM #__aaabackupqueue ORDER BY status ';
+    $query = ' SELECT id, path, status, priority, time FROM #__aaabackupqueue ORDER BY status DESC, id DESC ';
     $db->setQuery($query);
     $buptasks = $db->loadObjectList();
     return $buptasks;  
   }
   public function getMailtasks() {
     $db =& JFactory::getDBO();
-    $query = ' SELECT id, runno, laneno, email, status FROM #__aaafqmailqueue ORDER BY status, runno DESC, laneno ';
+    $query = ' SELECT id, runno, laneno, email, status, time FROM #__aaafqmailqueue ORDER BY status, runno DESC, laneno ';
     $db->setQuery($query);
     $mailtasks = $db->loadObjectList();
     return $mailtasks;  

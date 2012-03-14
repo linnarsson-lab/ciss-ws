@@ -9,14 +9,15 @@ defined('_JEXEC') or die('Restricted access'); ?>
 
   echo "<h1>All backup tasks</h1><br />";
   echo "<div><fieldset><legend></legend>";
-  echo "<table><tr><th>Path&nbsp;</th><th>Priority</th><th>Status</th><th></th></tr>";
+  echo "<table><tr><th>Path&nbsp;</th><th>Priority</th><th>Status</th><th>Last change</th><th></th></tr>";
   foreach ($buptasks as $task) {
     $cancellink = "";
 	if ($task->status == "inqueue")
         $cancellink = "<a href=index.php?option=com_dbapp&view=entry&layout=cancelbup&controller=entry&searchid=" 
                       . $task->id . "&Itemid=" . $itemid . ">Cancel</a>";
     echo "<tr><td>" . $task->path . "&nbsp;</td><td>&nbsp;" . $task->priority
-         . "</td><td>" . $task->status . "&nbsp;</td><td>" . $cancellink . "&nbsp;</td></tr>";
+         . "</td><td>" . $task->status . "&nbsp;</td><td>" . $task->time
+         . "&nbsp;</td><td>" . $cancellink . "&nbsp;</td></tr>";
   }
   echo "</table></fieldset></div>";
   echo "<br />";

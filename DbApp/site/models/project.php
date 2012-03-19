@@ -32,7 +32,18 @@ class DbAppModelProject extends JModel {
       $db->setQuery($query);
       if ($db->query()) {
         JError::raiseNotice('Message', JText::_("Analysis Id $rescancel Status-> 'cancelled'"));
-        $item->status = $newstatus;
+        $item->status = "cancelled";
+      } else {
+        JError::raiseWarning('Message', JText::_( "[ " . $db->getErrorMsg() . " ]"));
+      }
+    }
+    $resretry = JRequest::getVar('resretry', "0");
+    if ($resretry > 0) {
+      $query = " UPDATE #__aaaanalysis SET status='inqueue' WHERE id='$resretry' ";
+      $db->setQuery($query);
+      if ($db->query()) {
+        JError::raiseNotice('Message', JText::_("Analysis Id $resretry Status-> 'inqueue'"));
+        $item->status = "inqueue";
       } else {
         JError::raiseWarning('Message', JText::_( "[ " . $db->getErrorMsg() . " ]"));
       }

@@ -89,6 +89,7 @@ if ($submit != 'Save') {
 
   foreach ($plateids AS $plateid) {
     $title = ($afteredit['title'] == "")? $plateid : $afteredit['title'];
+    $plateid = str_replace(" ", "_", trim($plateid));
     $updquery = $query . " hits='1', title=" . $db->Quote(trim($title)) . ", plateid=" 
                 . $db->Quote(trim($plateid)) . $addtoquery . " WHERE id = '" . $searchid . "' ";
     $insquery = $newquery . "$columns title, plateid, hits) VALUES ($vcolumn " . $db->Quote(trim($title)) . ", "

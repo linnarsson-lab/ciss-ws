@@ -159,6 +159,11 @@ if (count($this->seqbatches) != 0) {
           $a = explode('/', $analys->resultspath);
           $resultname = $a[sizeof($a)-1];
         }
+        else if ($analys->status == "failed") {
+          $analysissummary = "<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid="
+                             . $project->id . "&resretry=" . $analys->id . "&Itemid=" . $itemid
+                             . "\" title=\"Try processing this analysis again.\" >retry</a>&nbsp;";
+        }
         $cancelledstyle = "";
         $rescancellink = "";
         if ($analys->status != 'cancelled') {

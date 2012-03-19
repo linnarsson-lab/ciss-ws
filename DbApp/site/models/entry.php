@@ -19,6 +19,15 @@ class DbAppModelEntry extends JModel {
 
   public function getBuptasks() {
     $db =& JFactory::getDBO();
+    $priority = JRequest::getVar('priority', "0");
+    if ($priority > 0) {
+      $taskid = JRequest::getVar('searchid');
+      $query = " UPDATE #__aaabackupqueue SET priority=$priority WHERE id=$taskid ";
+      $db->setQuery($query);
+      if (!$db->query()) {
+        JError::raiseWarning('Message', JText::_( "[ " . $db->getErrorMsg() . " ]"));
+      }
+    }
     $query = ' SELECT id, path, status, priority, time FROM #__aaabackupqueue ORDER BY status DESC, id DESC ';
     $db->setQuery($query);
     $buptasks = $db->loadObjectList();

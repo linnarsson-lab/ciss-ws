@@ -13,10 +13,14 @@ defined('_JEXEC') or die('Restricted access'); ?>
   foreach ($buptasks as $task) {
     $cancellink = "";
 	if ($task->status == "inqueue")
-        $cancellink = "<a href=index.php?option=com_dbapp&view=entry&layout=cancelbup&controller=entry&searchid=" 
-                      . $task->id . "&Itemid=" . $itemid . ">Cancel</a>";
-    echo "<tr><td>" . $task->path . "&nbsp;</td><td>&nbsp;" . $task->priority
-         . "</td><td>" . $task->status . "&nbsp;</td><td>" . $task->time
+        $cancellink = "<a href=\"index.php?option=com_dbapp&view=entry&layout=cancelbup&controller=entry&searchid=" 
+                      . $task->id . "&Itemid=" . $itemid . "\">Cancel</a>";
+    echo "<tr><td>" . $task->path . "&nbsp;</td><td>&nbsp;" . $task->priority;
+    if ($task->priority > 1 && $task->status == "inqueue") {
+        echo "&nbsp;<a style=\"font-size:larger;text-decoration:none;\" href=\"index.php?option=com_dbapp&view=entry&layout=bupqueue&controller=entry&searchid="
+             . $task->id . "&Itemid=" . $itemid . "&priority=" . ($task->priority - 1) . "\" title=\"Move forward in queue\">+</a>";
+    }
+    echo "</td><td>" . $task->status . "&nbsp;</td><td>" . $task->time 
          . "&nbsp;</td><td>" . $cancellink . "&nbsp;</td></tr>";
   }
   echo "</table></fieldset></div>";

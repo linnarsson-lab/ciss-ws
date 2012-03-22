@@ -339,11 +339,12 @@ namespace Linnarsson.Strt
         {
             WritePotentialErronousAnnotations(fileNameBase);
             WriteSplicesByGeneLocus(fileNameBase);
-            WriteExpressionTable(fileNameBase);
+            string expressionFile = WriteExpressionTable(fileNameBase);
             string rpmFile = WriteBarcodedRPM(fileNameBase);
             if (!Environment.OSVersion.VersionString.Contains("Microsoft"))
             {
                 CmdCaller.Run("php", "strt2Qsingle.php " + rpmFile);
+                CmdCaller.Run("php", "expression2forR.php " + expressionFile);
             }
             if (props.GenerateTranscriptProfiles)
                 WriteTranscriptHitsByGeneLocus(fileNameBase, averageReadLen);
@@ -447,9 +448,11 @@ namespace Linnarsson.Strt
         /// For each feature, write the total (for genes, transcript) hit count for every barcode
         /// </summary>
         /// <param name="fileNameBase"></param>
-        private void WriteExpressionTable(string fileNameBase)
+        /// <returns>Path to output file</returns>
+        private string WriteExpressionTable(string fileNameBase)
         {
-            var matrixFile = (fileNameBase + "_expression.tab").OpenWrite();
+            string exprPath = fileNameBase + "_expression.tab";
+            var matrixFile = exprPath.OpenWrite();
             matrixFile.WriteLine("Length, total and per barcode maximum transcript hits for transcripts, and total length, total and per barcode (both sense & antisense) hits for repeat regions grouped by type.");
             matrixFile.WriteLine("MinExonHits have a unique genome mapping, MaxExonHits includes hits with alternative mapping(s) to genome.");
             matrixFile.WriteLine("NOTE: Gene variants occupying the same locus share counts in the table.");
@@ -526,6 +529,7 @@ namespace Linnarsson.Strt
             }
             summaryLines.Add("For raw counts of " + geneFeatures.Count + " genes/variants and " +
                              repeatFeatures.Count +  "expressed repeat types view the expression.tab file.");
+            return exprPath;
         }
 
         /// <summary>

@@ -252,8 +252,9 @@ namespace BkgFastQCopier
             public static bool DataExists(string readsFolder, int runId, int lane, int read, string runName)
             {
                 string fileId = GetFileId(runId, lane, read, runName);
+                string PFPath = GetPFFilePath(readsFolder, fileId);
                 return (File.Exists(GetStatsFilePath(readsFolder, fileId)) &&
-                        File.Exists(GetPFFilePath(readsFolder, fileId)));
+                        (File.Exists(PFPath)) || File.Exists(PFPath + ".gz"));
             }
 
             private static string GetFileId(int runId, int lane, int read, string runName)

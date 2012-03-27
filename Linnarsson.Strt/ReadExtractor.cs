@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using Linnarsson.Dna;
 using Linnarsson.Utilities;
+using System.Text.RegularExpressions;
 
 namespace Linnarsson.Strt
 {
@@ -20,10 +21,14 @@ namespace Linnarsson.Strt
         public readonly static int N_IN_RANDOM_TAG = 4;
         public readonly static int NEGATIVE_BARCODE_ERROR = 5;
         public readonly static int LOW_QUALITY_IN_RANDOM_TAG = 6;
-        public readonly static int Length = 7;
+        public readonly static int CGACT25 = 7;
+        public readonly static int NNNA25 = 8;
+        public readonly static int SAL1 = 9;
+        public readonly static int Length = 10;
         public readonly static string[] categories = new string[] { "VALID", "BARCODE_ERROR", "LENGTH_ERROR", 
                                                                    "COMPLEXITY_ERROR", "N_IN_RANDOM_TAG", "NEGATIVE_BARCODE_ERROR",
-                                                                   "LOW_QUALITY_IN_RANDOM_TAG" };
+                                                                   "LOW_QUALITY_IN_RANDOM_TAG", "NO_BARCODE-CGACT25", "NO_BARCODE-NNNA25",
+                                                                   "INTERNAL_SAL1-T25" };
         public static int Parse(string category) { return Array.IndexOf(categories, category.ToUpper()); }
     }
 
@@ -83,17 +88,6 @@ namespace Linnarsson.Strt
         {
             partialSum = 0;
             partialCounts = new int[ReadStatus.Length];
-        }
-        public string PartialsToString()
-        {
-            string stats = PartialTotal + " reads: " +
-                           PartialCount(ReadStatus.VALID) + " accepted, " + PartialRejected + " rejected. (" +
-                           PartialCount(ReadStatus.BARCODE_ERROR) + " wrong barcode, " + PartialCount(ReadStatus.LENGTH_ERROR) + " too short, " +
-                           PartialCount(ReadStatus.COMPLEXITY_ERROR) + " polyA-like";
-            if (PartialCount(ReadStatus.N_IN_RANDOM_TAG) > 0)
-                stats += ", " + PartialCount(ReadStatus.N_IN_RANDOM_TAG) + " unparseable random barcodes";
-            stats += ").";
-            return stats;
         }
 
         public string TotalsToTabString()
@@ -221,7 +215,7 @@ namespace Linnarsson.Strt
                 return ReadStatus.LENGTH_ERROR;
             //Console.WriteLine(bcWithTSSeqLen + " " + barcodePos + " " + rSeq.Substring(barcodePos, bcWithTSSeqLen) + " " + barcodesWithTSSeq.Count);
             if (!barcodesWithTSSeq.TryGetValue(rSeq.Substring(barcodePos, bcWithTSSeqLen), out bcIdx))
-                return ReadStatus.BARCODE_ERROR;
+                return AnalyzeNonBarcodeRead(rSeq);
             if (bcIdx >= firstNegBarcodeIndex)
                 return ReadStatus.NEGATIVE_BARCODE_ERROR;
             string bcRandomPart = "";
@@ -280,6 +274,14 @@ namespace Linnarsson.Strt
                         break;
                 }
             return nNonAs >= minInsertNonAs;
+        }
+
+        private int AnalyzeNonBarcodeRead(string seq)
+        {
+            if (Regex.Match(seq, "GTCGACTTTTTTTTTTTTTTTTTTTTTTTTT").Success) return ReadStatus.SAL1;
+            if (seq.StartsWith("CGACTTTTTTTTTTTTTTTTTTTTTTTTT")) return ReadStatus.CGACT25;
+            if (Regex.Match(seq, "^...AAAAAAAAAAAAAAAAAAAAAAAAA").Success) return ReadStatus.NNNA25;
+            return ReadStatus.BARCODE_ERROR;
         }
 
     }

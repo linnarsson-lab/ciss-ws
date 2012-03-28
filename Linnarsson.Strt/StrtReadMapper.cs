@@ -525,10 +525,17 @@ namespace Linnarsson.Strt
                 string mainIndex = genome.GetBowtieMainIndexName();
                 string fqUnmappedReadsPath = Path.Combine(mapFolder, bcIdx + ".fq-" + mainIndex);
                 string outputMainPath = Path.Combine(mapFolder, bcIdx + "_" + mainIndex + ".map");
-                AssertBowtieOutputFile(mainIndex, fqPath, outputMainPath, fqUnmappedReadsPath, laneInfo.bowtieLogFilePath);
+                if (!File.Exists(outputMainPath))
+                    CreateBowtieOutputFile(mainIndex, fqPath, outputMainPath, fqUnmappedReadsPath, laneInfo.bowtieLogFilePath);
                 mapFiles.Add(outputMainPath);
-                string outputSplcPath = Path.Combine(mapFolder, bcIdx + "_" +  splcIndexVersion + ".map");
-                AssertBowtieOutputFile(splcIndexName, fqUnmappedReadsPath, outputSplcPath, "", laneInfo.bowtieLogFilePath);
+                string outputSplcFilename = bcIdx + "_" +  splcIndexVersion + ".map";
+                string outputSplcPath = Path.Combine(mapFolder, outputSplcFilename);
+                string splcFilePat = PathHandler.StarOutReadLenInSplcMapFile(outputSplcFilename);
+                string[] existingSplcMapFiles = Directory.GetFiles(mapFolder, splcFilePat);
+                if (existingSplcMapFiles.Length >= 1)
+                    outputSplcPath = Path.Combine(mapFolder, existingSplcMapFiles[0]);
+                else
+                    CreateBowtieOutputFile(splcIndexName, fqUnmappedReadsPath, outputSplcPath, "", laneInfo.bowtieLogFilePath);
                 mapFiles.Add(outputSplcPath);
                 try
                 {
@@ -556,33 +563,39 @@ namespace Linnarsson.Strt
             return splcIndexVersion;
         }
 
-        private bool AssertBowtieOutputFile(string bowtieIndex, string inputFqReadPath, string outputPath,
+        /// <summary>
+        /// Run bowtie to produce a .map file.
+        /// </summary>
+        /// <param name="bowtieIndex"></param>
+        /// <param name="inputFqReadPath"></param>
+        /// <param name="outputPath"></param>
+        /// <param name="outputFqUnmappedReadPath"></param>
+        /// <param name="bowtieLogFile"></param>
+        /// <returns>true if Bowtie returned ExitCode 0</returns>
+        private bool CreateBowtieOutputFile(string bowtieIndex, string inputFqReadPath, string outputPath,
                                    string outputFqUnmappedReadPath, string bowtieLogFile)
         {
-            if (!File.Exists(outputPath))
+            int nThreads = props.NumberOfAlignmentThreadsDefault;
+            string threadArg = (nThreads == 1) ? "" : ("-p " + nThreads.ToString());
+            string unmappedArg = "";
+            if (outputFqUnmappedReadPath != "")
             {
-                int nThreads = props.NumberOfAlignmentThreadsDefault;
-                string threadArg = (nThreads == 1) ? "" : ("-p " + nThreads.ToString());
-                string unmappedArg = "";
-                if (outputFqUnmappedReadPath != "")
-                {
-                    string crapMaxPath = Path.Combine(Path.GetDirectoryName(outputFqUnmappedReadPath), "bowtie_maxM_reads_map.temp");
-                    unmappedArg = " --un " + outputFqUnmappedReadPath + " --max " + crapMaxPath;
-                }
-                string bowtieOptions = props.BowtieOptions.Replace("MaxAlignmentMismatches", props.MaxAlignmentMismatches.ToString());
-                string arguments = String.Format("{0} {1} {2} {3} \"{4}\" \"{5}\"", bowtieOptions, threadArg,
-                                                  unmappedArg, bowtieIndex, inputFqReadPath, outputPath);
-                CmdCaller cc = new CmdCaller("bowtie", arguments);
-                StreamWriter logWriter = new StreamWriter(bowtieLogFile, true);
-                logWriter.WriteLine("--- " + bowtieIndex + " on " + inputFqReadPath + " ---");
-                logWriter.WriteLine(cc.StdError);
-                logWriter.Close();
-                if (cc.ExitCode != 0)
-                {
-                    Console.Error.WriteLine("bowtie " + arguments + "\nFailed to run Bowtie on {0}. ExitCode={1}. Check logFile.", inputFqReadPath, cc.ExitCode);
-                    if (File.Exists(outputPath)) File.Delete(outputPath);
-                    return false;
-                }
+                string crapMaxPath = Path.Combine(Path.GetDirectoryName(outputFqUnmappedReadPath), "bowtie_maxM_reads_map.temp");
+                unmappedArg = " --un " + outputFqUnmappedReadPath + " --max " + crapMaxPath;
+            }
+            string bowtieOptions = props.BowtieOptions.Replace("MaxAlignmentMismatches", props.MaxAlignmentMismatches.ToString());
+            string arguments = String.Format("{0} {1} {2} {3} \"{4}\" \"{5}\"", bowtieOptions, threadArg,
+                                                unmappedArg, bowtieIndex, inputFqReadPath, outputPath);
+            CmdCaller cc = new CmdCaller("bowtie", arguments);
+            StreamWriter logWriter = new StreamWriter(bowtieLogFile, true);
+            logWriter.WriteLine("--- " + bowtieIndex + " on " + inputFqReadPath + " ---");
+            logWriter.WriteLine(cc.StdError);
+            logWriter.Close();
+            if (cc.ExitCode != 0)
+            {
+                Console.Error.WriteLine("bowtie " + arguments + "\nFailed to run Bowtie on {0}. ExitCode={1}. Check logFile.", inputFqReadPath, cc.ExitCode);
+                if (File.Exists(outputPath)) File.Delete(outputPath);
+                return false;
             }
             return true;
         }
@@ -650,7 +663,7 @@ namespace Linnarsson.Strt
         {
             string splcIndexVersion = GetSplcIndexVersion(genome);
             string mainPattern = "*_" + genome.GetBowtieMainIndexName() + ".map";
-            string splcPattern = "*_" + splcIndexVersion + ".map";
+            string splcPattern = "*_" + genome.Build + "chr" + genome.VarAnnot + "_*.map"; // splcIndexVersion + ".map";
             List<string> allLanesMapFiles = new List<string>();
             foreach (LaneInfo info in laneInfos)
             {

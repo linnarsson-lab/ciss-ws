@@ -14,6 +14,8 @@ namespace Linnarsson.Strt
 	public class TranscriptomeStatistics
 	{
         private static readonly int sampleDistForAccuStats = 5000000;
+        private static readonly int libraryDepthSampleReadCountPerBc = 200000;
+        private static readonly int libraryDepthSampleMolsCountPerBc = 20000;
 
         public static readonly int maxHotspotCount = 50;
         public static readonly int minHotspotDistance = 5;
@@ -82,7 +84,9 @@ namespace Linnarsson.Strt
         int nMaxAltMappingsReads = 0;
 
         private int statsSampleDistPerBarcode;
-
+        List<double> sampledLibraryDepths = new List<double>();
+        List<double> sampledUniqueMolecules = new List<double>();
+        List<double> sampledExpressedTranscripts = new List<double>();
         Dictionary<int, List<int>> sampledDetectedTranscriptsByBcIdx = new Dictionary<int, List<int>>();
         // For non-rndTagged samples the following to will be identical:
         Dictionary<int, List<int>> sampledUniqueMoleculesByBcIdx = new Dictionary<int, List<int>>();
@@ -227,6 +231,11 @@ namespace Linnarsson.Strt
                     totalReadLength += mrm.SeqLen;
                     if ((++nMappedReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
                         SampleReadStatistics(statsSampleDistPerBarcode);
+                    if ((nMappedReadsByBarcode[currentBcIdx]) == libraryDepthSampleReadCountPerBc)
+                    {
+                        sampledLibraryDepths.Add(randomTagFilter.GetNumDistinctMappings());
+                        sampledUniqueMolecules.Add(randomTagFilter.nUniqueByBarcode[currentBcIdx]);
+                    }
                     if (mrm.HasAltMappings) nMaxAltMappingsReads++;
                 }
             }
@@ -337,6 +346,9 @@ namespace Linnarsson.Strt
             }
             /*else if (nonAnnotWriter != null)
                 nonAnnotWriter.WriteLine(item.ToString());*/
+            int t = nMoleculesByBarcode[currentBcIdx] - libraryDepthSampleMolsCountPerBc;
+            if (t > 0 && t <= molCount)
+                sampledExpressedTranscripts.Add(Annotations.GetNumExpressedGenes(currentBcIdx));
         }
 
         private void MakeGeneRndTagProfiles()
@@ -424,7 +436,7 @@ namespace Linnarsson.Strt
 		/// <summary>
 		///  Save all the statistics to a set of files
 		/// </summary>
-        /// <param name="extractionSummaryPath">Full path to Lxxx_extraction_summary.txt file</param>
+        /// <param name="readCounter">Holder of types of reads in input</param>
 		/// <param name="fileNameBase">A path and a filename prefix that will used to create all output files, e.g. "/data/Sample12_"</param>
 		public void SaveResult(ReadCounter readCounter, string fileNameBase)
 		{
@@ -468,6 +480,14 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
             xmlFile.WriteLine("<strtSummary project=\"{0}\">", Path.GetDirectoryName(fileNameBase));
             WriteReadStats(readCounter, xmlFile);
+            xmlFile.WriteLine("<libraryDepth>\n" +
+                              "  <title>Median values among all used barcodes</title>\n" +
+                              "  <point x=\"Unique molecules after {0} reads\" y=\"{2}\" />\n" +
+                              "  <point x=\"Distinct mappings after {0} reads\" y=\"{1}\" />\n" +
+                              "  <point x=\"Expressed transcripts after {3} molecules\" y=\"{4}\" />\n" +
+                              "</libraryDepth>", libraryDepthSampleReadCountPerBc,
+                                 DescriptiveStatistics.Median(sampledLibraryDepths), DescriptiveStatistics.Median(sampledUniqueMolecules),
+                                 libraryDepthSampleMolsCountPerBc, DescriptiveStatistics.Median(sampledExpressedTranscripts));
             WriteReadsBySpecies(xmlFile);
             WriteFeatureStats(xmlFile);
             WriteSenseAntisenseStats(xmlFile);

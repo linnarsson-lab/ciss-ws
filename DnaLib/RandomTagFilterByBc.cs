@@ -396,7 +396,7 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Number of distinct mappings since last barcode change
         /// </summary>
-        /// <returns>Number of distinct mappings (position & strand) that have been observed in current barcode, irrespective of rndTags</returns>
+        /// <returns>Number of distinct mappings (position + strand) that have been observed in current barcode, irrespective of rndTags</returns>
         public int GetNumDistinctMappings()
         {
             int nAllChr = 0;

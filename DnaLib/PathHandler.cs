@@ -24,7 +24,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Tries to find a bowtie index version, including create date, with read length matchin or close below genome.ReadLen
+        /// Tries to find a bowtie index version, including create date, with read length exactly matching or slightly less than genome.ReadLen
         /// </summary>
         /// <param name="genome"></param>
         /// <returns>Empty string if none found</returns>
@@ -46,6 +46,17 @@ namespace Linnarsson.Dna
         {
             Match m = Regex.Match(spliceIndexVersion, "(.+)chr[as](.+)_.+bp([0-9]+)");
             return m.Groups[1].Value + "_" + m.Groups[2].Value + "_" + m.Groups[3].Value;
+        }
+
+        /// <summary>
+        /// Replace the "NNbp" part of a splc map file with "*" to enable searching of arbitrary read length splice files
+        /// </summary>
+        /// <param name="mapFile"></param>
+        /// <returns></returns>
+        public static string StarOutReadLenInSplcMapFile(string mapFile)
+        {
+            Match m = Regex.Match(mapFile, "(.+_)[0-9]+(bp.+)");
+            return m.Groups[1].Value + "*" + m.Groups[2].Value;
         }
 
         public static string GetSampleLayoutPath(string projectNameOrFolder)

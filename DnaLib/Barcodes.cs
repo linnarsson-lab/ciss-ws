@@ -203,6 +203,7 @@ namespace Linnarsson.Dna
             return GenomeBarcodeIndexes(genome, false);
         }
         /// <summary>
+        /// Get the barcode indices of the specified genome (and optionally empty wells) given the layout file.
         /// </summary>
         /// <param name="genome">Defines species to pick wells for</param>
         /// <param name="strict">If true, only species wells are taken. If false, empty wells are included</param>

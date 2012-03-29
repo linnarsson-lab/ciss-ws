@@ -16,7 +16,7 @@ defined('_JEXEC') or die('Restricted access'); ?>
 $imgNo = 2600;
 require_once ('plotfn.php');
 
-function parseCurves($graphdata) {
+function parseCurves($graphdata, $filter=null) {
     $title = $graphdata->getElementsByTagname("title")->item(0)->nodeValue;
     $title = str_replace("#br#", "\n", $title);
     $xtitle = "";
@@ -35,7 +35,10 @@ function parseCurves($graphdata) {
         $yvalues = array();
         $errors = array();
         foreach ($curve->getElementsByTagname("point") as $point) {
-            $xvalues[] = str_replace("#br#", "\n", $point->getAttributeNode("x")->value);
+            $xval = str_replace("#br#", "\n", $point->getAttributeNode("x")->value);
+            if ($filter != null && !preg_match($filter, $xval))
+                continue;
+            $xvalues[] = $xval;
             $yvalues[] = $point->getAttributeNode("y")->value;
             $errors[] = ($point->hasAttribute("error"))? $point->getAttributeNode("error")->value : "";
         }
@@ -46,7 +49,7 @@ function parseCurves($graphdata) {
     return array("title" => $title, "curves" => $curves, "xtitle" => $xtitle);
 }
 
-function parseSingleCurve($graphdata) {
+function parseSingleCurve($graphdata, $filter=null) {
     $title = $graphdata->getElementsByTagname("title")->item(0)->nodeValue;
     $title = str_replace("#br#", "\n", $title);
     $xtitle = "";
@@ -59,7 +62,10 @@ function parseSingleCurve($graphdata) {
     $y2values = array();
     $errors = array();
     foreach ($graphdata->getElementsByTagname("point") as $point) {
-        $xvalues[] = str_replace("#br#", "\n", $point->getAttributeNode("x")->value);
+        $xval = str_replace("#br#", "\n", $point->getAttributeNode("x")->value);
+        if ($filter != null && !preg_match($filter, $xval))
+            continue;
+        $xvalues[] = $xval;
         $yvalues[] = $point->getAttributeNode("y")->value;
         $y2values[] = ($point->hasAttribute("y2"))? $point->getAttributeNode("y2")->value : "";
         $errors[] = ($point->hasAttribute("error"))? $point->getAttributeNode("error")->value : "";
@@ -123,14 +129,27 @@ foreach ($allxml->childNodes AS $graphdata) {
          addGraph($graph);
          break;
       case "spikes":
-         $d = parseSingleCurve($graphdata);
+         $d = parseSingleCurve($graphdata, "/#[0-9]/");
          $graph = plot_spikes($d["title"], $d["xvalues"], $d["yvalues"], $d["errors"]);
 	     addGraph($graph);
          break;
        case "spikedetection":
-         $d = parseCurves($graphdata);
+         $d = parseCurves($graphdata, "/#[0-9]/");
          $graph = plotLines("textlin", "log", $d["title"], $d["curves"], $d["xtitle"]);
          addGraph($graph);
+         break;
+       case "librarycomplexity":
+         echo "<div style=\"width:500px;text-align:center;font-family:arial,sans-serif;\">"
+              . "<p style=\"text-align:center;font-weight:bold;font-size:0.8em;\">Estimations of library depth</p>\n";
+         $title = $graphdata->getElementsByTagname("title")->item(0)->nodeValue;
+         echo "<p style=\"font-style:italic;font-size:0.6em;\">$title</p>\n"
+              . "<p style=\"font-size:0.8em;\">";
+         foreach ($graphdata->getElementsByTagname("point") as $point) {
+           $measure = $point->getAttributeNode("x")->value;
+           $value = $point->getAttributeNode("y")->value;
+           echo "&nbsp;&nbsp;$measure:&nbsp;$value<br />\n";
+         }
+         echo "<br /></p></div>\n";
          break;
        case "librarydepth":
          $d = parseCurves($graphdata);

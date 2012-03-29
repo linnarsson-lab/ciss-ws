@@ -480,12 +480,12 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
             xmlFile.WriteLine("<strtSummary project=\"{0}\">", Path.GetDirectoryName(fileNameBase));
             WriteReadStats(readCounter, xmlFile);
-            xmlFile.WriteLine("<libraryDepth>\n" +
+            xmlFile.WriteLine("<librarycomplexity>\n" +
                               "  <title>Median values among all used barcodes</title>\n" +
                               "  <point x=\"Unique molecules after {0} reads\" y=\"{2}\" />\n" +
                               "  <point x=\"Distinct mappings after {0} reads\" y=\"{1}\" />\n" +
                               "  <point x=\"Expressed transcripts after {3} molecules\" y=\"{4}\" />\n" +
-                              "</libraryDepth>", libraryDepthSampleReadCountPerBc,
+                              "</librarycomplexity>", libraryDepthSampleReadCountPerBc,
                                  DescriptiveStatistics.Median(sampledLibraryDepths), DescriptiveStatistics.Median(sampledUniqueMolecules),
                                  libraryDepthSampleMolsCountPerBc, DescriptiveStatistics.Median(sampledExpressedTranscripts));
             WriteReadsBySpecies(xmlFile);
@@ -579,27 +579,30 @@ namespace Linnarsson.Strt
         private void WriteReadStats(ReadCounter readCounter, StreamWriter xmlFile)
         {
             int allBcCount = barcodes.Count;
-            int spBcCount = barcodes.GenomeBarcodeIndexes(Annotations.Genome, false).Length;
+            int[] speciesBarcodes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
+            int spBcCount = speciesBarcodes.Length;
             xmlFile.WriteLine("  <readfiles>");
             foreach (string path in readCounter.GetReadFiles())
                 xmlFile.WriteLine("    <readfile path=\"{0}\" />", path);
             xmlFile.WriteLine("  </readfiles>");
             xmlFile.WriteLine("  <reads>");
-            xmlFile.WriteLine("    <title>Read distribution (10^6). [# samples/wells]</title>");
-            double totalReads = readCounter.GrandTotal;
-            if (totalReads > 0)
+            xmlFile.WriteLine("    <title>Read distribution (10^6). [#samples]</title>");
+            double allBcReads = readCounter.GrandTotal;
+            double speciesReads = readCounter.TotalReads(speciesBarcodes);
+            if (allBcReads > 0 && speciesReads > 0)
             {
-                xmlFile.WriteLine("    <point x=\"All reads [{0}] (100%)\" y=\"{1}\" />", allBcCount, totalReads / 1.0E6d);
-                int validReads = readCounter.GrandCount(ReadStatus.VALID);
-                xmlFile.WriteLine("    <point x=\"Valid STRT reads[{0}] ({1:0%})\" y=\"{2}\" />", allBcCount, validReads / totalReads, validReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"All PF reads [{0}] (0%)\" y=\"{1}\" />", allBcCount, allBcReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Barcoded {0} reads [{1}] (100%)\" y=\"{2}\" />", Annotations.Genome.Abbrev, spBcCount, speciesReads / 1.0E6d);
+                int validReads = readCounter.ValidReads(speciesBarcodes);
+                xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, validReads / speciesReads, validReads / 1.0E6d);
             }
             else
-                totalReads = nMappedReads; // Default to nMappedReads if extraction summary files are missing
-            xmlFile.WriteLine("    <point x=\"Mapped reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMappedReads / totalReads, nMappedReads / 1.0E6d);
-            xmlFile.WriteLine("    <point x=\"Multireads [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nMaxAltMappingsReads / totalReads, nMaxAltMappingsReads / 1.0E6d);
-            xmlFile.WriteLine("    <point x=\"Exon/Splc reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nExonAnnotatedReads / totalReads, nExonAnnotatedReads / 1.0E6d);
+                speciesReads = nMappedReads; // Default to nMappedReads if extraction summary files are missing
+            xmlFile.WriteLine("    <point x=\"Mapped reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMappedReads / speciesReads, nMappedReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Multireads [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nMaxAltMappingsReads / speciesReads, nMaxAltMappingsReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Exon/Splc reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nExonAnnotatedReads / speciesReads, nExonAnnotatedReads / 1.0E6d);
             if (barcodes.HasRandomBarcodes)
-                xmlFile.WriteLine("    <point x=\"Duplicate reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nDuplicateReads / totalReads, nDuplicateReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Duplicate reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nDuplicateReads / speciesReads, nDuplicateReads / 1.0E6d);
             xmlFile.WriteLine("  </reads>");
             xmlFile.WriteLine("  <hits>");
             double dividend = nAnnotatedMappings;
@@ -608,11 +611,11 @@ namespace Linnarsson.Strt
             {
                 dividend = nMolecules;
                 reducer = 1.0E3d;
-                xmlFile.WriteLine("    <title>Molecule distribution (10^3). [# samples/wells]</title>");
+                xmlFile.WriteLine("    <title>Molecule distribution (10^3). [#samples]</title>");
                 xmlFile.WriteLine("    <point x=\"Unique molecules [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMolecules / dividend, nMolecules / reducer);
             }
             else
-                xmlFile.WriteLine("    <title>Annotations (10^6) [# samples/wells].\n(N.B.: Multireads give multiple annotations)</title>");
+                xmlFile.WriteLine("    <title>Annotations (10^6) [#samples].\n(N.B.: Multireads give multiple annotations)</title>");
             xmlFile.WriteLine("    <point x=\"Annotated mappings [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nAnnotatedMappings / dividend, nAnnotatedMappings / reducer);
             xmlFile.WriteLine("    <point x=\"Exon mappings [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nExonMappings / dividend, nExonMappings / reducer);
             int nIntronHits = TotalHitsByAnnotType[AnnotType.INTR] + ((Props.props.DirectionalReads) ? 0 : TotalHitsByAnnotType[AnnotType.AINTR]);
@@ -807,7 +810,7 @@ namespace Linnarsson.Strt
             int trLen1stBinStart = trLen1stBinMid - trLenBinHalfWidth;
             int trLenBinCount = 4;
             int nSections = 20;
-            int minHitsPerGene = (barcodes.HasRandomBarcodes) ? 25 : nSections * 10;
+            int minHitsPerGene = (barcodes.HasRandomBarcodes) ? 50 : nSections * 10;
             int maxHitsPerGene = (barcodes.HasRandomBarcodes) ? (int)(0.7 * barcodes.RandomBarcodeCount * barcodes.Count) : int.MaxValue;
             DescriptiveStatistics[,] binnedEfficiencies = new DescriptiveStatistics[trLenBinCount, nSections];
             for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
@@ -970,9 +973,13 @@ namespace Linnarsson.Strt
             int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(Annotations.Genome);
             if (barcodes.SpeciesByWell != null)
                 WriteSpeciesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
-            if (readCounter.TotalBarcodeReads.Length == barcodes.Count)
-                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, readCounter.TotalBarcodeReads,
-                                    "READS", "Total reads by barcode", "reads");
+            if (readCounter.ValidReadsByBarcode.Length == barcodes.Count)
+            {
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, readCounter.ValidReadsByBarcode,
+                                    "BARCODEDREADS", "Total barcoded reads by barcode", "barcoded reads");
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, readCounter.ValidReadsByBarcode,
+                                    "VALIDSTRTREADS", "Total valid STRT reads by barcode", "valid STRT reads");
+            }
             WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, TotalHitsByBarcode,
                                 "HITS", "Total annotated hits by barcode", "annotated hits");
             WriteDuplicateMoleculesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);

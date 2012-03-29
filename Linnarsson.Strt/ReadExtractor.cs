@@ -40,7 +40,8 @@ namespace Linnarsson.Strt
         private int[] partialCounts = new int[ReadStatus.Length];
         private List<string> readFiles = new List<string>();
         private List<int> meanReadLens = new List<int>();
-        private List<int> barcodeReads = new List<int>();
+        private List<int> validBarcodeReads = new List<int>();
+        private List<int> totalBarcodeReads = new List<int>();
         private Dictionary<string, int> barcodeToReadsIdx = new Dictionary<string, int>();
 
         /// <summary>
@@ -48,10 +49,27 @@ namespace Linnarsson.Strt
         /// </summary>
         public int AverageReadLen { get { return (int)Math.Floor(meanReadLens.Sum() / (double)meanReadLens.Count); } }
         /// <summary>
-        /// Total read counts over all files, per barcode
+        /// Total valid read counts over all files, per barcode
         /// </summary>
-        public int[] TotalBarcodeReads { get { return barcodeReads.ToArray(); } }
-
+        public int[] ValidReadsByBarcode { get { return validBarcodeReads.ToArray(); } }
+        public int ValidReads(int[] selectedBcIndexes)
+        {
+            int sum = 0;
+            foreach (int idx in selectedBcIndexes)
+                sum += validBarcodeReads[idx];
+            return sum;
+        }
+        /// <summary>
+        /// Total valid and invalid read counts over all files, per barcode
+        /// </summary>
+        public int[] TotalReadsByBarcode { get { return totalBarcodeReads.ToArray(); } }
+        public int TotalReads(int[] selectedBcIndexes)
+        {
+            int sum = 0;
+            foreach (int idx in selectedBcIndexes)
+                sum += totalBarcodeReads[idx];
+            return sum;
+        }
         public int GrandTotal { get { return totalSum; } }
         public int PartialTotal { get { return partialSum; } }
         public int GrandRejected { get { return totalSum - totalCounts[ReadStatus.VALID]; } }
@@ -138,9 +156,11 @@ namespace Linnarsson.Strt
                                 {
                                     idx = barcodeToReadsIdx.Count;
                                     barcodeToReadsIdx[bc] = idx;
-                                    barcodeReads.Add(0);
+                                    validBarcodeReads.Add(0);
+                                    totalBarcodeReads.Add(0);
                                 }
-                                barcodeReads[idx] += int.Parse(fields[2]);
+                                validBarcodeReads[idx] += int.Parse(fields[2]);
+                                totalBarcodeReads[idx] += int.Parse(fields[3]);
                             }
                             else
                             {
@@ -207,7 +227,7 @@ namespace Linnarsson.Strt
         public int Extract(ref FastQRecord rec, out int bcIdx)
         {
             int minQualityInRandomTag = Props.props.MinPhredScoreInRandomTag;
-            bcIdx = 0;
+            bcIdx = -1;
             rec.TrimBBB();
             string rSeq = rec.Sequence;
             int insertLength = TrimTrailingNAndCheckAs(rSeq);
@@ -217,7 +237,10 @@ namespace Linnarsson.Strt
             if (!barcodesWithTSSeq.TryGetValue(rSeq.Substring(barcodePos, bcWithTSSeqLen), out bcIdx))
                 return AnalyzeNonBarcodeRead(rSeq);
             if (bcIdx >= firstNegBarcodeIndex)
+            {
+                bcIdx = -1;
                 return ReadStatus.NEGATIVE_BARCODE_ERROR;
+            }
             string bcRandomPart = "";
             if (rndBcLen > 0)
             {

@@ -302,7 +302,8 @@ namespace Linnarsson.Strt
                     ExtractionQuality extrQ = (props.AnalyzeExtractionQualities) ? new ExtractionQuality(props.LargestPossibleReadLength) : null;
                     double totLen = 0.0;
                     long nRecords = 0;
-                    int[] nValidReadsByBc = new int[barcodes.Count];
+                    int[] nValidSTRTReadsByBc = new int[barcodes.Count];
+                    int[] nTotalBarcodedReadsByBc = new int[barcodes.Count];
                     foreach (FastQRecord fastQRecord in BarcodedReadStream.Stream(barcodes, extrInfo.readFilePath, props.QualityScoreBase))
                     {
                         FastQRecord rec = fastQRecord;
@@ -314,10 +315,11 @@ namespace Linnarsson.Strt
                         {
                             totLen += rec.Sequence.Length;
                             nRecords++;
-                            nValidReadsByBc[bcIdx]++;
+                            nValidSTRTReadsByBc[bcIdx]++;
                             sws_barcoded[bcIdx].WriteLine(rec.ToString(props.QualityScoreBase));
                         }
                         else sw_slask.WriteLine(rec.ToString(props.QualityScoreBase));
+                        if (bcIdx >= 0) nTotalBarcodedReadsByBc[bcIdx]++;
                     }
                     CloseStreamWriters(sws_barcoded);
                     sw_slask.Close();
@@ -325,8 +327,9 @@ namespace Linnarsson.Strt
                     int averageReadLen = (int)Math.Round(totLen / nRecords);
                     readCounter.AddReadFile(extrInfo.readFilePath, averageReadLen);
                     sw_summary.WriteLine(readCounter.TotalsToTabString());
-                    for (int bc = 0; bc < nValidReadsByBc.Length; bc++)
-                        sw_summary.WriteLine("BARCODEREADS\t" + barcodes.Seqs[bc] + "\t" + nValidReadsByBc[bc].ToString());
+                    sw_summary.WriteLine("#\tBarcode\tValidSTRTReads\tTotalBarcodedReads");
+                    for (int bc = 0; bc < nValidSTRTReadsByBc.Length; bc++)
+                        sw_summary.WriteLine("BARCODEREADS\t{0}\t{1}\t{2}", barcodes.Seqs[bc], nValidSTRTReadsByBc[bc], nTotalBarcodedReadsByBc[bc]);
                     sw_summary.WriteLine("\nBelow are the most common words among all reads.\n");
                     sw_summary.WriteLine(wordCounter.GroupsToString(200));
                     sw_summary.Close();
@@ -629,7 +632,7 @@ namespace Linnarsson.Strt
             return AnnotateMapFiles(genome, projectFolder, extractedFolder, mapFiles);
         }
 
-        public static readonly string ANNOTATION_VERSION = "37";
+        public static readonly string ANNOTATION_VERSION = "38";
         /// <summary>
         /// Annotate output from Bowtie alignment
         /// </summary>

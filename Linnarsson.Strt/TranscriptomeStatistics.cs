@@ -589,20 +589,27 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("    <title>Read distribution (10^6). [#samples]</title>");
             double allBcReads = readCounter.GrandTotal;
             double speciesReads = readCounter.TotalReads(speciesBarcodes);
-            if (allBcReads > 0 && speciesReads > 0)
+            if (speciesReads > 0 && allBcReads > 0)
             {
                 xmlFile.WriteLine("    <point x=\"All PF reads [{0}] (0%)\" y=\"{1}\" />", allBcCount, allBcReads / 1.0E6d);
-                xmlFile.WriteLine("    <point x=\"Barcoded {0} reads [{1}] (100%)\" y=\"{2}\" />", Annotations.Genome.Abbrev, spBcCount, speciesReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Barcoded as {0} [{1}] (100%)\" y=\"{2}\" />", Annotations.Genome.Abbrev, spBcCount, speciesReads / 1.0E6d);
+                int validReads = readCounter.ValidReads(speciesBarcodes);
+                xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, validReads / speciesReads, validReads / 1.0E6d);
+            }
+            else if (allBcReads > 0)
+            { // Old versions of extraction summary files without the total-reads-per-barcode data
+                speciesReads = allBcReads;
+                xmlFile.WriteLine("    <point x=\"All PF reads [{0}] (100%)\" y=\"{1}\" />", allBcCount, allBcReads / 1.0E6d);
                 int validReads = readCounter.ValidReads(speciesBarcodes);
                 xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, validReads / speciesReads, validReads / 1.0E6d);
             }
             else
                 speciesReads = nMappedReads; // Default to nMappedReads if extraction summary files are missing
-            xmlFile.WriteLine("    <point x=\"Mapped reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMappedReads / speciesReads, nMappedReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Mapped [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMappedReads / speciesReads, nMappedReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Multireads [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nMaxAltMappingsReads / speciesReads, nMaxAltMappingsReads / 1.0E6d);
-            xmlFile.WriteLine("    <point x=\"Exon/Splc reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nExonAnnotatedReads / speciesReads, nExonAnnotatedReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Exon/Splc [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nExonAnnotatedReads / speciesReads, nExonAnnotatedReads / 1.0E6d);
             if (barcodes.HasRandomBarcodes)
-                xmlFile.WriteLine("    <point x=\"Duplicate reads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nDuplicateReads / speciesReads, nDuplicateReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Duplicates [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nDuplicateReads / speciesReads, nDuplicateReads / 1.0E6d);
             xmlFile.WriteLine("  </reads>");
             xmlFile.WriteLine("  <hits>");
             double dividend = nAnnotatedMappings;

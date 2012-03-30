@@ -23,12 +23,14 @@ namespace Linnarsson.Strt
         public readonly static int LOW_QUALITY_IN_RANDOM_TAG = 6;
         public readonly static int CGACT25 = 7;
         public readonly static int NNNA25 = 8;
-        public readonly static int SAL1 = 9;
-        public readonly static int Length = 10;
+        public readonly static int NO_BC_SAL1 = 9;
+        public readonly static int SAL1T25_IN_READ = 10;
+        public readonly static int SEQ_QUALITY_ERROR = 11;
+        public readonly static int Length = 12;
         public readonly static string[] categories = new string[] { "VALID", "BARCODE_ERROR", "LENGTH_ERROR", 
                                                                    "COMPLEXITY_ERROR", "N_IN_RANDOM_TAG", "NEGATIVE_BARCODE_ERROR",
                                                                    "LOW_QUALITY_IN_RANDOM_TAG", "NO_BARCODE-CGACT25", "NO_BARCODE-NNNA25",
-                                                                   "INTERNAL_SAL1-T25" };
+                                                                   "NO_BARCODE-SAL1-T25", "SAL1-T25_IN_READ", "SEQ_QUALITY_ERROR" };
         public static int Parse(string category) { return Array.IndexOf(categories, category.ToUpper()); }
     }
 
@@ -160,7 +162,8 @@ namespace Linnarsson.Strt
                                     totalBarcodeReads.Add(0);
                                 }
                                 validBarcodeReads[idx] += int.Parse(fields[2]);
-                                totalBarcodeReads[idx] += int.Parse(fields[3]);
+                                if (fields.Length >= 4)
+                                    totalBarcodeReads[idx] += int.Parse(fields[3]);
                             }
                             else
                             {
@@ -223,24 +226,29 @@ namespace Linnarsson.Strt
         /// Extracts the barcode and random barcode from rec.Sequence and puts in rec.Header.
         /// </summary>
         /// <param name="rec"></param>
+        /// <param name="bcIdx">Set to -1 if no valid barcode could be detected</param>
         /// <returns>A ReadStatus that indicates if the read was valid</returns>
         public int Extract(ref FastQRecord rec, out int bcIdx)
         {
             int minQualityInRandomTag = Props.props.MinPhredScoreInRandomTag;
-            bcIdx = -1;
             rec.TrimBBB();
+            bcIdx = -1;
             string rSeq = rec.Sequence;
-            int insertLength = TrimTrailingNAndCheckAs(rSeq);
-            if (insertLength < minReadLength)
-                return ReadStatus.LENGTH_ERROR;
-            //Console.WriteLine(bcWithTSSeqLen + " " + barcodePos + " " + rSeq.Substring(barcodePos, bcWithTSSeqLen) + " " + barcodesWithTSSeq.Count);
+            if (rSeq.Length <= bcWithTSSeqLen)
+                return ReadStatus.SEQ_QUALITY_ERROR;
             if (!barcodesWithTSSeq.TryGetValue(rSeq.Substring(barcodePos, bcWithTSSeqLen), out bcIdx))
+            {
+                bcIdx = -1;
                 return AnalyzeNonBarcodeRead(rSeq);
+            }
             if (bcIdx >= firstNegBarcodeIndex)
             {
                 bcIdx = -1;
                 return ReadStatus.NEGATIVE_BARCODE_ERROR;
             }
+            int insertLength = TrimTrailingNAndCheckAs(rSeq);
+            if (insertLength < minReadLength)
+                return ReadStatus.LENGTH_ERROR;
             string bcRandomPart = "";
             if (rndBcLen > 0)
             {
@@ -261,11 +269,9 @@ namespace Linnarsson.Strt
                 insertStart++;
                 insertLength--;
             }
-            if (!HasComplexity(rSeq, insertStart, insertLength))
-                return ReadStatus.COMPLEXITY_ERROR;
             rec.Header = rec.Header + "_" + bcRandomPart + barcodeSeqs[bcIdx];
             rec.Trim(insertStart, insertLength);
-            return ReadStatus.VALID;
+            return TestComplexity(rSeq, insertStart, insertLength);
         }
 
         /// <summary>
@@ -287,7 +293,7 @@ namespace Linnarsson.Strt
             return insertLength;
         }
 
-        private bool HasComplexity(string rSeq, int insertStart, int insertLength)
+        private int TestComplexity(string rSeq, int insertStart, int insertLength)
         {
             int nNonAs = 0;
             for (int rp = insertStart; rp < insertStart + insertLength; rp++)
@@ -296,12 +302,16 @@ namespace Linnarsson.Strt
                     if (++nNonAs >= minInsertNonAs)
                         break;
                 }
-            return nNonAs >= minInsertNonAs;
+            if (nNonAs < minInsertNonAs)
+                return ReadStatus.COMPLEXITY_ERROR;
+            if (Regex.Match(rSeq, "GTCGACTTTTTTTTTTTTTTTTTTTTTTTTT").Success)
+                return ReadStatus.SAL1T25_IN_READ;
+            return ReadStatus.VALID;
         }
 
         private int AnalyzeNonBarcodeRead(string seq)
         {
-            if (Regex.Match(seq, "GTCGACTTTTTTTTTTTTTTTTTTTTTTTTT").Success) return ReadStatus.SAL1;
+            if (Regex.Match(seq, "GTCGACTTTTTTTTTTTTTTTTTTTTTTTTT").Success) return ReadStatus.NO_BC_SAL1;
             if (seq.StartsWith("CGACTTTTTTTTTTTTTTTTTTTTTTTTT")) return ReadStatus.CGACT25;
             if (Regex.Match(seq, "^...AAAAAAAAAAAAAAAAAAAAAAAAA").Success) return ReadStatus.NNNA25;
             return ReadStatus.BARCODE_ERROR;

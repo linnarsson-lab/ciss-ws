@@ -283,7 +283,7 @@ namespace Linnarsson.Strt
             Extract(pd.extractionInfos, outputFolder);
         }
 
-        public static readonly string EXTRACTION_VERSION = "30";
+        public static readonly string EXTRACTION_VERSION = "31";
         private void Extract(List<LaneInfo> extrInfos, string outputFolder)
         {
             DateTime start = DateTime.Now;

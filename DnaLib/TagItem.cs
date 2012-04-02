@@ -17,6 +17,9 @@ namespace Linnarsson.Dna
         private int cachedEstTrueMolCount;
         private List<SNPCounter> cachedMolSNPCounts;
 
+        /// <summary>
+        /// Equals ReadCount if no rnd tags are used.
+        /// </summary>
         public int MolCount { get { return cachedMolCount; } }
         public int ReadCount { get { return cachedReadCount; } }
         public int EstTrueMolCount { get { return cachedEstTrueMolCount; } }

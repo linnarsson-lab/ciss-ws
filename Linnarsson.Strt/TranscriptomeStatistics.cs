@@ -16,6 +16,7 @@ namespace Linnarsson.Strt
         private static readonly int sampleDistForAccuStats = 5000000;
         private static readonly int libraryDepthSampleReadCountPerBc = 200000;
         private static readonly int libraryDepthSampleMolsCountPerBc = 20000;
+        private int trSampleDepth;
 
         public static readonly int maxHotspotCount = 50;
         public static readonly int minHotspotDistance = 5;
@@ -145,6 +146,7 @@ namespace Linnarsson.Strt
         /// <param name="mapFilePaths"></param>
         public void ProcessMapFiles(List<string> mapFilePaths, int averageReadLen)
         {
+            trSampleDepth = (barcodes.HasRandomBarcodes) ? libraryDepthSampleMolsCountPerBc : libraryDepthSampleReadCountPerBc;
             if (mapFilePaths.Count == 0)
                 return;
             mapFilePaths.Sort(CompareMapFiles); // Important to have them sorted by barcode
@@ -346,7 +348,7 @@ namespace Linnarsson.Strt
             }
             /*else if (nonAnnotWriter != null)
                 nonAnnotWriter.WriteLine(item.ToString());*/
-            int t = nMoleculesByBarcode[currentBcIdx] - libraryDepthSampleMolsCountPerBc;
+            int t = nMoleculesByBarcode[currentBcIdx] - trSampleDepth;
             if (t > 0 && t <= molCount)
                 sampledExpressedTranscripts.Add(Annotations.GetNumExpressedGenes(currentBcIdx));
         }
@@ -484,10 +486,11 @@ namespace Linnarsson.Strt
                               "  <title>Median values among all used barcodes</title>\n" +
                               "  <point x=\"Unique molecules after {0} reads\" y=\"{2}\" />\n" +
                               "  <point x=\"Distinct mappings after {0} reads\" y=\"{1}\" />\n" +
-                              "  <point x=\"Expressed transcripts after {3} molecules\" y=\"{4}\" />\n" +
+                              "  <point x=\"Expressed transcripts after {3} {5}\" y=\"{4}\" />\n" +
                               "</librarycomplexity>", libraryDepthSampleReadCountPerBc,
                                  DescriptiveStatistics.Median(sampledLibraryDepths), DescriptiveStatistics.Median(sampledUniqueMolecules),
-                                 libraryDepthSampleMolsCountPerBc, DescriptiveStatistics.Median(sampledExpressedTranscripts));
+                                 trSampleDepth, DescriptiveStatistics.Median(sampledExpressedTranscripts),
+                                 (barcodes.HasRandomBarcodes)? "molecules" : "reads");
             WriteReadsBySpecies(xmlFile);
             WriteFeatureStats(xmlFile);
             WriteSenseAntisenseStats(xmlFile);

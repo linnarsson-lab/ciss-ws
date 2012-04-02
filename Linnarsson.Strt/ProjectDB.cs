@@ -246,6 +246,7 @@ namespace Linnarsson.Strt
             rdr.Read();
             string projectId = rdr["jos_aaaprojectid"].ToString();
             string laneCount = rdr["lanecount"].ToString();
+            string isRpkm = (projDescr.rpkm) ? "1" : "0";
             rdr.Close();
             bool firstResult = true;
             foreach (ResultDescription resultDescr in projDescr.resultDescriptions)
@@ -268,10 +269,10 @@ namespace Linnarsson.Strt
                 {
                     sql = string.Format("INSERT INTO jos_aaaanalysis " +
                                         "(jos_aaaprojectid, extraction_version, annotation_version, genome, " +
-                                        "transcript_db_version, transcript_variant, lanecount, resultspath, status, time) " +
-                                        "VALUES (\"{0}\", \"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\", \"{8}\", NOW());",
+                                        "transcript_db_version, transcript_variant, lanecount, resultspath, status, time, rpkm) " +
+                                        "VALUES (\"{0}\", \"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\", \"{8}\", NOW(), \"{9}\");",
                                         projectId, projDescr.extractionVersion, projDescr.annotationVersion, genome,
-                                        dbbuild, variants, laneCount, resultDescr.resultFolder, projDescr.status);
+                                        dbbuild, variants, laneCount, resultDescr.resultFolder, projDescr.status, isRpkm);
                 }
                 cmd = new MySqlCommand(sql, conn);
                 cmd.ExecuteNonQuery();

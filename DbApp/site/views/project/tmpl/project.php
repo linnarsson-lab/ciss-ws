@@ -138,14 +138,14 @@ if (count($this->seqbatches) != 0) {
                 <th></th>
                 <th></th>
                 <th>DBId</th>
-                <th>Lanes</th>
+                <th>#L&nbsp;" . JHTML::tooltip('Number of lanes in analysis.') . "</th>
                 <th>Status&nbsp;</th>
                 <th>Extr&nbsp;" . JHTML::tooltip('Version of sequence filter and barcoded extraction software used for processing') . "&nbsp;</th>
                 <th>Annot&nbsp;" . JHTML::tooltip('Version of feature annotation software used for processing') . "&nbsp;</th>
-                <th>Genome&nbsp;</th>
+                <th>Gnm&nbsp;</th>
                 <th>DBVer&nbsp;" . JHTML::tooltip('Source and creation date of genome and annotation database. Source may change after analysis if unavailable at processing time') . "&nbsp;</th>
                 <th>Type&nbsp;" . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "&nbsp;</th>
-                <th>RPKM&nbsp;</th>
+                <th>Rpkm&nbsp;</th>
                 <th>ResultsPath&nbsp;</th>
                 <th>Rpt@</th>
                 <th>Cmnt</th>
@@ -185,7 +185,11 @@ if (count($this->seqbatches) != 0) {
         echo "<td>" . $analys->extraction_version . "&nbsp;</td>";
         echo "<td>" . $analys->annotation_version . "&nbsp;</td>";
         echo "<td>" . $analys->genome . "&nbsp;</td>";
-        echo "<td>" . $analys->transcript_db_version . "&nbsp;</td>";
+        $dbver = $analys->transcript_db_version;
+        if (preg_match('/^(.+)_[0-9]+bp([0-9]+)/', $dbver, $m)) {
+          $dbver = $m[1] . $m[2];
+        }
+        echo "<td>" . $dbver . "&nbsp;</td>";
         echo "<td>" . $analys->transcript_variant . "&nbsp;</td>";
         echo "<td>" . (($analys->rpkm == "1")? "Yes" : "---") . "&nbsp;</td>";
         echo "<td>" . $resultname . "</td>";

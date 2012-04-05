@@ -488,8 +488,8 @@ namespace Linnarsson.Strt
                               "  <point x=\"Distinct mappings after {0} reads\" y=\"{1}\" />\n" +
                               "  <point x=\"Expressed transcripts after {3} {5}\" y=\"{4}\" />\n" +
                               "</librarycomplexity>", libraryDepthSampleReadCountPerBc,
-                                 DescriptiveStatistics.Median(sampledLibraryDepths), DescriptiveStatistics.Median(sampledUniqueMolecules),
-                                 trSampleDepth, DescriptiveStatistics.Median(sampledExpressedTranscripts),
+                                 DefaultMedian(sampledLibraryDepths, "N/A"), DefaultMedian(sampledUniqueMolecules, "N/A"),
+                                 trSampleDepth, DefaultMedian(sampledExpressedTranscripts, "N/A"),
                                  (barcodes.HasRandomBarcodes)? "molecules" : "reads");
             WriteReadsBySpecies(xmlFile);
             WriteFeatureStats(xmlFile);
@@ -510,6 +510,17 @@ namespace Linnarsson.Strt
             {
                 CmdCaller.Run("php", "make_html_summary.php " + xmlPath);
             }
+        }
+
+        private string DefaultMedian(List<double> values, string defaultValue)
+        {
+            try
+            {
+                return string.Format("{0}", DescriptiveStatistics.Median(values));
+            }
+            catch
+            { }
+            return defaultValue;
         }
 
         private void WriteAccuBarcodedDetection(StreamWriter xmlFile)

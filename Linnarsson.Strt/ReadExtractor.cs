@@ -26,12 +26,15 @@ namespace Linnarsson.Strt
         public readonly static int NO_BC_SAL1 = 9;
         public readonly static int SAL1T25_IN_READ = 10;
         public readonly static int SEQ_QUALITY_ERROR = 11;
-        public readonly static int Length = 12;
+        public readonly static int NO_BC_SOLEXA_ADP2 = 12;
+        public readonly static int Length = 13;
         public readonly static string[] categories = new string[] { "VALID", "BARCODE_ERROR", "LENGTH_ERROR", 
                                                                    "COMPLEXITY_ERROR", "N_IN_RANDOM_TAG", "NEGATIVE_BARCODE_ERROR",
                                                                    "LOW_QUALITY_IN_RANDOM_TAG", "NO_BARCODE-CGACT25", "NO_BARCODE-NNNA25",
-                                                                   "NO_BARCODE-SAL1-T25", "SAL1-T25_IN_READ", "SEQ_QUALITY_ERROR" };
+                                                                   "NO_BARCODE-SAL1-T25", "SAL1-T25_IN_READ", "SEQ_QUALITY_ERROR",
+                                                                   "NO_BARCODE-SOLEXA-ADP2_CONTAINING" };
         public static int Parse(string category) { return Array.IndexOf(categories, category.ToUpper()); }
+
     }
 
     public class ReadCounter
@@ -314,6 +317,7 @@ namespace Linnarsson.Strt
             if (Regex.Match(seq, "GTCGACTTTTTTTTTTTTTTTTTTTTTTTTT").Success) return ReadStatus.NO_BC_SAL1;
             if (seq.StartsWith("CGACTTTTTTTTTTTTTTTTTTTTTTTTT")) return ReadStatus.CGACT25;
             if (Regex.Match(seq, "^...AAAAAAAAAAAAAAAAAAAAAAAAA").Success) return ReadStatus.NNNA25;
+            if (seq.Contains("GATCGGAAGAGCTCGTA")) return ReadStatus.NO_BC_SOLEXA_ADP2;
             return ReadStatus.BARCODE_ERROR;
         }
 

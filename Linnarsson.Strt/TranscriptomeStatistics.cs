@@ -599,9 +599,18 @@ namespace Linnarsson.Strt
             foreach (string path in readCounter.GetReadFiles())
                 xmlFile.WriteLine("    <readfile path=\"{0}\" />", path);
             xmlFile.WriteLine("  </readfiles>");
+            double allBcReads = readCounter.GrandTotal;
+            if (allBcReads > 0)
+            {
+                xmlFile.WriteLine("  <readstatus>");
+                xmlFile.WriteLine("    <title>Reads sorted by errors and artefacts.</title>");
+                for (int status = 0; status < ReadStatus.Length; status++)
+                    xmlFile.WriteLine("    <point x=\"{0} ({1:1%})\" y=\"{2}\" />", ReadStatus.categories[status],
+                                      (readCounter.GrandCount(status) / allBcReads), readCounter.GrandCount(status));
+                xmlFile.WriteLine("  </readstatus>");
+            }
             xmlFile.WriteLine("  <reads>");
             xmlFile.WriteLine("    <title>Read distribution (10^6). [#samples]</title>");
-            double allBcReads = readCounter.GrandTotal;
             double speciesReads = readCounter.TotalReads(speciesBarcodes);
             if (speciesReads > 0 && allBcReads > 0)
             {

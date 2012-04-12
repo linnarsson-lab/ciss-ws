@@ -64,7 +64,7 @@ namespace CmdSilverBullet
                             UCSCGenomeDownloader gdm = new UCSCGenomeDownloader();
                             string abbrev, threeName;
                             gdm.ParseSpecies(args[argOffset], out threeName, out abbrev);
-                            string destDir = args[argOffset + 1];
+                            string destDir = (args.Length > argOffset + 1)? args[argOffset + 1] : "";
                             gdm.DownloadMartAnnotations(abbrev, destDir);
                             break;
 
@@ -254,17 +254,14 @@ namespace CmdSilverBullet
                 "    - annotate data from .map files in latest/specified Extracted folder.\n" +
                 "      Use 'all'/'single' to force analysis of all/single transcript variants. First runs Bowtie if .map files are missing.\n" +
                 "SB.exe download <Genus_species>\n    - download latest genome build and annotations for the given species from UCSC\n" +
-                "SB.exe downloadmart <Genus_species> <GenomeFolderPath>\n" +
+                "SB.exe downloadmart <Genus_species> [<GenomeFolderPath>]\n" +
                 "    - download BioMart VEGA/ENSEMBL for the given species. Specify the path to folder where chromosomes of same build reside.\n" +
                 "SB.exe idx [<readLen>] <Sp_or_Build> [<Annot>]\n" +
                 "    - build annotations and Bowtie index. Both transcript variant versions of index will be built.\n" +
                 "SB.exe upd [<readLen>] [<Build> <Annot> | <Sp>] <AnnotErrorFile>\n    - update SilverBullet annotations of 5' ends using the specified XXX_annot_errors_xxx.tab file.\n" +
                 "SB.exe bt <Sp>|<IdxName> all|single <ProjectPath>|<ExtractedPath>\n    - run Bowtie on latest/specified Extracted folder\n" +
-                "SB.exe aw <Sp> <MapFolderPath>/n    - annotate data from Wiggles .wig files folder\n" +
-                "SB.exe sort <BcSet> [<MapFile>]+ <outFile>\n    - sort and merge specified .map files\n" +
                 "SB.exe split [<BcSet>] <ProjectPath>\n    - split data by barcode\n" +
-                "SB.exe synt <BcSet> <IdxName> all|single <OutputFolder>\n" +
-                "    - generate synthetic reads from a genome\n" +
+                "SB.exe synt <BcSet> <IdxName> all|single <OutputFolder>\n    - generate synthetic reads from a genome\n" +
                 "SB.exe stats [<BcSet>] <ProjectPath>\n    - calculate barcode statistics\n" +
                 "SB.exe mapsnp <BcSet> <outputFile> [<mapFile>]+\n    - analyze a set of map files to find potential SNP locations\n" +
                 "SB.exe maskchr <genome> <minLocusFlank> <minIntronFlank> <maxIntronSizeToSaveFully> <outputFolder>\n    - mask non-exon regions of chromosomes with 'N':s\n" +
@@ -276,9 +273,9 @@ namespace CmdSilverBullet
                 "<Sp> is 'Mm' or 'Hs'. If left out, species are taken from the <ProjectName>_SampleLayout.txt file in the project folder.\n" +
                 "<Build> is 'mm9', 'hg19', or 'gg3', <Annot> is 'UCSC', 'VEGA', or 'ENSE',\n" + 
                 "Annot defaults to 'UCSC' when only species is given.\n" +
-                "<IdxName> is a specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_sVEGA'.\n" +
-                "<BcSet> is 'v1' (96x5-mer), 'v2' (96x6-mer), 'v4' (48x6-mer), 'v4rnd' (48x6-mer w. molecule counting), or 'no' for no barcodes\n" +
-                "Define non-standard barcode sets in files in the barcodes directory in the project folder\n" +
+                "<IdxName> is a specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_VEGA'.\n" +
+                "<BcSet> is 'v1' (96x5-mer), 'v2' (96x6-mer), or 'no' for no barcodes.\n" +
+                "Define other barcode sets in BcSetName.barcodes files in the barcodes directory in the project folder\n" +
                 "<readLen> is the sequence length after barcode and GGG. When omitted, standard len is taken from config.\n" +
                 "Paths are per default rooted in the data directory, so that e.g. 'L006' is enough as a ProjectPath.\n"
             );

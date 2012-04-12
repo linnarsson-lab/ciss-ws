@@ -16,6 +16,13 @@ JHtml::_('behavior.formvalidation');
 ?>
 <div class='illuminarun'>
   <fieldset>
+    <legend>
+<?php
+  if ($searchid > 0) {
+    echo "[ DB id: $item->id ]";
+  }
+?>
+    </legend>
     <table>
       <tr>
         <td><nobr>RunId/CellId&nbsp; 

@@ -41,7 +41,7 @@ function confirmRemove() {
     if ($task->id == $searchid && $action == 'retry') $task->status = 'inqueue';
     $retrylink = "";
     $canclink = "";
-    if ($task->status != "sent" && $task-status != "processing")
+    if ($task->status != "sent" && $task->status != "processing")
         $canclink = "&nbsp;<a href=\"index.php?option=com_dbapp&view=entry&layout=mailqueue&controller=entry&searchid=" 
                       . $task->id . "&action=cancel&Itemid=" . $itemid . "\" onclick=\"return confirmRemove();\">Remove</a>";
     if ($task->status == "failed" || $task->status == "filemissing")

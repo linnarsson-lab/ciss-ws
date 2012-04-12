@@ -4,7 +4,6 @@ defined('_JEXEC') or die('Restricted access'); ?>
   $menus = &JSite::getMenu();
   $menu  = $menus->getActive();
   $itemid = $menu->id;
-  $searchid = JRequest::getVar('searchid') ;
   $buptasks = $this->buptasks;
 
   echo "<h1>All backup tasks</h1><br />";

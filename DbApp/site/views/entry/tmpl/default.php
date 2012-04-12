@@ -44,12 +44,10 @@ $processnames = Array("Backuper" => "BkgBackuper.exe", "Analyzer" => "ProjectDBP
                       "FastQ mailer" => "BkgFastQMailer.exe", "Read collector" => "BkgFastQCopier.exe");
 $processcounts = checkProcesses(array_values($processnames));
 $processlinks = Array();
-$processlinks["Backuper"] = "<a href=index.php?option=com_dbapp&view=entry&layout=bupqueue&controller=entry&searchid=" 
-                      . $task->id . "&Itemid=" . $itemid . ">Details</a>";
-$processlinks["FastQ mailer"] = "<a href=index.php?option=com_dbapp&view=entry&layout=mailqueue&controller=entry&searchid=" 
-                      . $task->id . "&Itemid=" . $itemid . ">Details</a>";
-$processlinks["Read collector"] = "<a href=index.php?option=com_dbapp&view=illumina-runs&Itemid=" . $itemid . ">Runs</a>";
-$processlinks["Analyzer"] = "<a href=index.php?option=com_dbapp&view=analysisresults&Itemid=" . $itemid . ">Samples</a>";
+$processlinks["Backuper"] = "<a href=\"index.php?option=com_dbapp&view=entry&layout=bupqueue&controller=entry&Itemid=$itemid\">Details</a>";
+$processlinks["FastQ mailer"] = "<a href=\"index.php?option=com_dbapp&view=entry&layout=mailqueue&controller=entry&Itemid=$itemid\">Details</a>";
+$processlinks["Read collector"] = "<a href=\"index.php?option=com_dbapp&view=illumina-runs&Itemid=$itemid\">Runs</a>";
+$processlinks["Analyzer"] = "<a href=\"index.php?option=com_dbapp&view=analysisresults&Itemid=$itemid\">Results</a>";
 
 echo "<div><fieldset><legend>Overview of running processes</legend><table>";
 echo "<tr><th>Process&nbsp;</th><th>Program&nbsp;</th><th>Running instances&nbsp;</th><th>Tasks in line&nbsp;</th><th></th></tr>\n";
@@ -61,3 +59,4 @@ foreach ($processnames as $process => $exename) {
 }
 echo "</table></fieldset></div><br />&nbsp;<br />";
 ?>
+

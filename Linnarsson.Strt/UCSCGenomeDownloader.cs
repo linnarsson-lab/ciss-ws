@@ -18,7 +18,7 @@ namespace Linnarsson.Strt
         string password = Props.props.FailureReportEmail;
 
         /// <summary>
-        /// Downloads the most up-to-date chromosomes, refFlat and repeat mask files for a 
+        /// Downloads the most up-to-date chromosomes, refFlat, MART annotations, and repeat mask files for a 
         /// species into the proper subfolder under GenomesFolder.
         /// </summary>
         /// <param name="latinSpeciesName">UCSC latin directory name, e.g. "Mus musculus", or a UCSC abbreviation, e.g. "mm"</param>
@@ -52,7 +52,7 @@ namespace Linnarsson.Strt
                 try
                 {
                     DownloadSpeciesGenome(speciesURL, buildName, destDir);
-                    Console.WriteLine("Downloaded build " + buildName + " from UCSC.");
+                    Console.WriteLine("Downloaded build " + buildName + " from UCSC to " + destDir);
                     DownloadMartAnnotations(abbrev, destDir);
                     return;
                 }
@@ -61,7 +61,7 @@ namespace Linnarsson.Strt
                     Console.WriteLine("- Looking for an older build.");
                 }
             }
-            Console.WriteLine("ERROR: Could not find a build at UCSC with the needed data!");
+            Console.WriteLine("ERROR: Could not find a build at UCSC with data for " + abbrev + "!");
         }
 
         public void ParseSpecies(string latinSpeciesName, out string threeName, out string abbrev)
@@ -76,6 +76,7 @@ namespace Linnarsson.Strt
                 threeName = abbrev.Substring(0, 3) + abbrev.Substring(spaceIdx + 1, 1).ToUpper() + abbrev.Substring(spaceIdx + 2, 2);
                 abbrev = abbrev.Substring(0, 1) + abbrev.Substring(spaceIdx + 1, 1);
             }
+            if (abbrev == "hs") abbrev = "hg";
         }
 
         private void DownloadSpeciesGenome(string speciesURL, string buildName, string destDir)
@@ -149,10 +150,15 @@ namespace Linnarsson.Strt
             return files;
         }
 
+        /// <summary>
+        /// Downloads VEGA and ENSEMBL annotations from BioMart database.
+        /// </summary>
+        /// <param name="abbrev">Species, e.g. "mm" or "hg"</param>
+        /// <param name="downloadFolder">Optional destination folder. If "", downloads to genome folder of latest build for species</param>
         public void DownloadMartAnnotations(string abbrev, string downloadFolder)
         {
             Dictionary<string, string> threeNameToMartName = new Dictionary<string,string>() {
-                {"gg", "ggallus"}, {"bt", "btaurus"}, {"hs", "hsapiens"}, {"mm", "mmusculus"}, 
+                {"gg", "ggallus"}, {"bt", "btaurus"}, {"hg", "hsapiens"}, {"hs", "hsapiens"}, {"mm", "mmusculus"}, 
                 {"ce", "celegans"}, {"dm", "dmelanogaster"}, {"dr", "drerio"}, {"xl", "xlaevis"},
                 {"cf", "cfamiliaris"}, {"xt", "xtropicalis"}, {"sc", "scerevisiae"}, {"pt", "ptroglodytes"} };
 
@@ -176,6 +182,13 @@ namespace Linnarsson.Strt
                                   "</Query>";
             if (!threeNameToMartName.ContainsKey(abbrev)) return;
             string speciesId = threeNameToMartName[abbrev];
+            if (downloadFolder == "")
+            {
+                string[] matches = Directory.GetDirectories(Props.props.GenomesFolder, abbrev + "*");
+                Array.Sort(matches);
+                matches.Reverse();
+                downloadFolder = Path.Combine(matches[0], "genome");
+            }
             WebClient webClient = new WebClient();
             foreach (string db in new string[] { "vega", "ensembl" })
             {
@@ -193,12 +206,12 @@ namespace Linnarsson.Strt
                 }
                 if (!File.Exists(dest) || new FileInfo(dest).Length < 1000)
                 {
-                    Console.WriteLine("Could not download BioMart annotations for " + db);
+                    Console.WriteLine("Could not download " + abbrev + " BioMart annotations for " + db);
                     if (File.Exists(dest)) File.Delete(dest);
                 }
                 else
                 {
-                    Console.WriteLine("Downloaded BioMart annotations for " + db);
+                    Console.WriteLine("Downloaded " + abbrev + " BioMart annotations for " + db + " to " + downloadFolder);
                 }
             }
         }

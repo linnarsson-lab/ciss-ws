@@ -49,21 +49,35 @@ namespace Linnarsson.Dna
             {
                 foreach (GeneFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(refFlatPath))
                 {
-                    if (!gf.Chr.Contains("random"))
+                    if (ShouldAdd(gf))
                     {
-                        try
-                        {
-                            if (genesByChr[gf.Chr].FindIndex(
-                                    (g) => g.NonVariantName == gf.Name) >= 0)
-                                continue;
-                        }
-                        catch (KeyNotFoundException) { }
                         AddGeneModel(gf);
                         refN++;
                     }
                 }
                 Console.WriteLine("Added {0} genes and their variants from {1}", refN, refFlatPath);
             }
+        }
+
+        private bool ShouldAdd(GeneFeature gf)
+        {
+            if (gf.Chr.Contains("random")) return false;
+            try
+            {
+                if (genesByChr[gf.Chr].FindIndex(
+                        (g) => g.NonVariantName == gf.Name) >= 0)
+                    return false;
+                foreach (GeneFeature oldGf in genesByChr[gf.Chr])
+                    if (oldGf.IsSameTranscript(gf, 5))
+                    {
+                        oldGf.Name = gf.Name + "/" + oldGf.Name;
+                        oldGf.Start = Math.Min(oldGf.Start, gf.Start);
+                        oldGf.End = Math.Max(oldGf.End, gf.End);
+                        return false;
+                    }
+            }
+            catch (KeyNotFoundException) { }
+            return true;
         }
 
         protected IEnumerable<IFeature> IterAnnotationFile(string martPath)

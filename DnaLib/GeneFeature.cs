@@ -338,6 +338,21 @@ namespace Linnarsson.Dna
             return -1; // Given pos is not inside transcript exons
         }
 
+        /// <summary>
+        /// Checks if the exons are exactly the same as another GeneFeature
+        /// </summary>
+        /// <param name="otherGf"></param>
+        /// <param name="exonMargin">Allow for some bases wobble at exon margins</param>
+        /// <returns>true if they represent the same transcript</returns>
+        public bool IsSameTranscript(GeneFeature otherGf, int exonMargin)
+        {
+            if (ExonCount != otherGf.ExonCount) return false;
+            for (int i = 0; i < ExonCount; i++)
+                if (Math.Abs(ExonStarts[i] - otherGf.ExonStarts[i]) > exonMargin || Math.Abs(ExonEnds[i] - otherGf.ExonEnds[i]) > exonMargin)
+                    return false;
+            return true;
+        }
+
         public bool Contains(int start, int end)
         {
             return (start >= Start && end <= End);

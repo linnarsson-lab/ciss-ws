@@ -93,6 +93,9 @@ namespace Linnarsson.Dna
                 line = reader.ReadLine();
             }
             reader.Close();
+            if (SpeciesAbbrevs.Count == 0)
+                throw new SampleLayoutFileException("No parseable species in " + plateLayoutPath + 
+                                                    ". Use two-letter abbrevation or full latin name (e.g. 'Hs' or 'Homo sapiens')");
         }
 
     }

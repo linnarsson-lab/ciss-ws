@@ -253,9 +253,7 @@ namespace CmdSilverBullet
                 "SB.exe ab [rpkm] [<Sp>|<IdxName>] [all|single] <ProjectPath>|<ExtractedPath>\n" +
                 "    - annotate data from .map files in latest/specified Extracted folder.\n" +
                 "      Use 'all'/'single' to force analysis of all/single transcript variants. First runs Bowtie if .map files are missing.\n" +
-                "SB.exe download <Genus_species>\n    - download latest genome build and annotations for the given species from UCSC\n" +
-                "SB.exe downloadmart <Genus_species> [<GenomeFolderPath>]\n" +
-                "    - download BioMart VEGA/ENSEMBL for the given species. Specify the path to folder where chromosomes of same build reside.\n" +
+                "SB.exe download <Genus_species>\n    - download latest genome build and annotations for the given species\n" +
                 "SB.exe idx [<readLen>] <Sp_or_Build> [<Annot>]\n" +
                 "    - build annotations and Bowtie index. Both transcript variant versions of index will be built.\n" +
                 "SB.exe upd [<readLen>] [<Build> <Annot> | <Sp>] <AnnotErrorFile>\n    - update SilverBullet annotations of 5' ends using the specified XXX_annot_errors_xxx.tab file.\n" +

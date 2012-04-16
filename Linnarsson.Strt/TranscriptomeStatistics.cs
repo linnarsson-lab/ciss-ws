@@ -31,13 +31,29 @@ namespace Linnarsson.Strt
         private SnpRndTagVerifier snpRndTagVerifier;
         public SyntReadReporter TestReporter { get; set; }
 
-        Dictionary<string, int[]> TotalHitsByAnnotTypeAndChr; // Separates sense and antisense
-        int[,] TotalHitsByAnnotTypeAndBarcode; // Separates sense and antisense
-        int[] TotalHitsByAnnotType;            // Separates sense and antisense
+        /// <summary>
+        /// Per chromosome hits of each type, separates sense and antisense
+        /// </summary>
+        Dictionary<string, int[]> TotalHitsByAnnotTypeAndChr;
+        /// <summary>
+        /// Total exon/splc matching molecules (or reads when no rnd labels are used) per barcode, each molecule/read is counted exactly once
+        /// </summary>
+        int[] TotalTranscriptMolsByBarcode;
+        /// <summary>
+        /// Hit counts sorted by type and barcode. Multireads hitting transcripts may be counted several times. Separates sense and antisense matches
+        /// </summary>
+        int[,] TotalHitsByAnnotTypeAndBarcode;
+        /// <summary>
+        /// Total hits of each type. Multireads hitting transcripts may be counted several times. Separates sense and antisense matches
+        /// </summary>
+        int[] TotalHitsByAnnotType;
         /// <summary>
         /// Number of hits to distinct annotations in each barcode (multireads can get a count for each mapping)
         /// </summary>
         int[] TotalHitsByBarcode;
+        /// <summary>
+        /// Estimates of labelling efficiency based on the known number of spike molecules added to the samples.
+        /// </summary>
         double[] labelingEfficiencyByBc;
 
         AbstractGenomeAnnotations Annotations;
@@ -112,6 +128,7 @@ namespace Linnarsson.Strt
 				motifs[i] = new DnaMotif(40);
 			}
             TotalHitsByBarcode = new int[barcodes.Count];
+            TotalTranscriptMolsByBarcode = new int[barcodes.Count];
             TotalHitsByAnnotTypeAndBarcode = new int[AnnotType.Count, barcodes.Count];
             TotalHitsByAnnotTypeAndChr = new Dictionary<string, int[]>();
             foreach (string chr in Annotations.GetChromosomeIds())
@@ -336,7 +353,10 @@ namespace Linnarsson.Strt
             {
                 nAnnotatedMappings += molCount;
                 if (someExonHit)
+                {
                     nExonMappings += molCount;
+                    TotalTranscriptMolsByBarcode[currentBcIdx] += molCount;
+                }
                 /*else if (nonExonWriter != null)
                 {
                     StringBuilder sb = new StringBuilder();
@@ -1026,6 +1046,13 @@ namespace Linnarsson.Strt
                 if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
                 string d = genomeBcIndexes.Contains(bcIdx) ? trCounts[bcIdx] : "(" + trCounts[bcIdx] + ")";
                 xmlFile.Write("    <d>{0}</d>", d);
+            }
+            xmlFile.WriteLine("\n    </barcodestat>");
+            xmlFile.Write("    <barcodestat section=\"transcript detecting {0}\">", (barcodes.HasRandomBarcodes)? "molecules" : "reads");
+            for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+            {
+                if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
+                xmlFile.Write("    <d>{0}</d>", TotalTranscriptMolsByBarcode[bcIdx]);
             }
             xmlFile.WriteLine("\n    </barcodestat>");
             if (barcodes.HasRandomBarcodes)

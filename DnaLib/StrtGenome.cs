@@ -80,7 +80,7 @@ namespace Linnarsson.Dna
             Dictionary<string, string> chrIdToFileMap = new Dictionary<string, string>();
             foreach (string filePath in GetMaskedChrPaths())
             {
-                Match m = Regex.Match(filePath, "chr([^_]+)_");
+                Match m = Regex.Match(filePath, "chr(.+)_[^_]+");
                 string chrId = m.Groups[1].Value;
                 chrIdToFileMap[chrId] = filePath;
             }

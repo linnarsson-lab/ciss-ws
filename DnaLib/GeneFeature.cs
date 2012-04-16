@@ -98,8 +98,14 @@ namespace Linnarsson.Dna
         public int[] EstimatedTrueMolsByBarcode;
         public int[] NonConflictingTranscriptHitsByBarcode;
         public List<double> VariationSamples;
-        public int[] TranscriptHitsByExonIdx; // Used to analyse exon hit distribution
-        public Dictionary<string, int> TranscriptHitsByJunction; // Used to analyse cross-junction hit distribution
+        /// <summary>
+        /// Used to analyse exon hit distribution
+        /// </summary>
+        public int[] TranscriptHitsByExonIdx;
+        /// <summary>
+        /// Used to analyse cross-junction hit distribution
+        /// </summary>
+        public Dictionary<string, int> TranscriptHitsByJunction;
         /// <summary>
         /// Total hits for every annotation type. Note that EXON/AEXON counts will include SPLC/ASPLC counts
         /// </summary>

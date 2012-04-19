@@ -540,12 +540,7 @@ namespace Linnarsson.Strt
                 else
                     CreateBowtieOutputFile(splcIndexName, fqUnmappedReadsPath, outputSplcPath, "", laneInfo.bowtieLogFilePath);
                 mapFiles.Add(outputSplcPath);
-                try
-                {
-                    File.Delete(fqUnmappedReadsPath);
-                }
-                catch (Exception)
-                { }
+                // Don't delete the fqUnmappedReadsPath - it is needed if rerun with changing all/single annotation versions
                 if (Background.CancellationPending) break;
             }
             laneInfo.mappedFilePaths = mapFiles.ToArray();

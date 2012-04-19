@@ -206,7 +206,6 @@ namespace Linnarsson.Strt
         {
             int nLines = 0;
             int nRepeatFeatures = 0;
-            int nTooLongFeatures = 0;
             string[] record;
             RepeatFeature reptFeature;
             int fileTypeOffset = 0;
@@ -236,9 +235,6 @@ namespace Linnarsson.Strt
                 line = reader.ReadLine();
             }
             reader.Close();
-            if (nRepeatFeatures < nLines || nTooLongFeatures > 0)
-                Console.WriteLine("\n{0}: {1} repeats, {2} on defined chromosomes, but {3} larger than {4} were skipped.",
-                  rmskPath, nLines, nRepeatFeatures, nTooLongFeatures, props.MaxFeatureLength);
         }
 
         private void RegisterGenesAndIntervals()
@@ -454,13 +450,23 @@ namespace Linnarsson.Strt
             string exprPath = fileNameBase + "_expression.tab";
             var matrixFile = exprPath.OpenWrite();
             matrixFile.WriteLine("Length, total and per barcode maximum transcript hits for transcripts, and total length, total and per barcode (both sense & antisense) hits for repeat regions grouped by type.");
-            matrixFile.WriteLine("MinExonHits have a unique genome mapping, MaxExonHits includes hits with alternative mapping(s) to genome.");
-            matrixFile.WriteLine("NOTE: Gene variants occupying the same locus share counts in the table.");
+            matrixFile.WriteLine("MinExonHits correspond to single reads, having a unique genome mapping.");
+            string exonHitType = "MaxExonHits";
+            if (props.UseMost5PrimeExonMapping && props.DirectionalReads)
+            {
+                exonHitType = "ExonHits";
+                matrixFile.WriteLine("Multireads are assigned to their most 5' exonic hit and included in ExonHits and table counts.");
+            }
+            else
+            {
+                matrixFile.WriteLine("Multireads are multiply assigned to all their exonic hits and included in MaxExonHits and table counts.");
+                matrixFile.WriteLine("NOTE: Also gene variants occupying the same locus share MaxExonHits and table counts.");
+            }
             if (!props.DirectionalReads)
                 matrixFile.WriteLine("NOTE: This is a non-STRT analysis with non-directional reads.");
             string matrixValType = barcodes.HasRandomBarcodes ? "(Values are molecule counts)" : "(Values are read counts)";
             WriteBarcodeHeaders(matrixFile, 6, matrixValType);
-            matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\tMaxExonHits");
+            matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\t{0}", exonHitType);
             StreamWriter readFile = null;
             StreamWriter trueFile = null;
             if (barcodes.HasRandomBarcodes)
@@ -468,11 +474,11 @@ namespace Linnarsson.Strt
                 readFile = new StreamWriter(fileNameBase + "_reads.tab");
                 readFile.WriteLine("Total maximal read counts in barcodes for each gene and repeat.");
                 WriteBarcodeHeaders(readFile, 5, "");
-                readFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMaxExonReads");
+                readFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\t{0}", exonHitType);
                 trueFile = new StreamWriter(fileNameBase + "_true_counts.tab");
                 trueFile.WriteLine("Estimated true molecule counts.");
                 WriteBarcodeHeaders(trueFile, 5, "");
-                trueFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMaxExonReads");
+                trueFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\t{0}", exonHitType);
             }
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             foreach (GeneFeature gf in geneFeatures.Values)
@@ -540,7 +546,8 @@ namespace Linnarsson.Strt
         {
             // Create a normal-form table of hit counts
             var tableFile = (fileNameBase + "_expression_list.tab").OpenWrite();
-            tableFile.WriteLine("Barcode\tFeature\t#Hits");
+            string exonHitType = (props.UseMost5PrimeExonMapping && props.DirectionalReads)? "ExonHits" : "MaxExonHits";
+            tableFile.WriteLine("Barcode\tFeature\t{0}", exonHitType);
             tableFile.WriteLine();
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             foreach (GeneFeature gf in geneFeatures.Values)
@@ -724,9 +731,13 @@ namespace Linnarsson.Strt
         {
             int nExonsToShow = 50;
             var matrixFile = (fileNameBase + "_exons.tab").OpenWrite();
-            matrixFile.Write("Gene\tChr\tStrand\tUSTRLen\tLocusLen\tDSTRLen\t#SHits\t#AHits\tExonLen\tIntrLen\t#Exons\tMixGene\tASGene\t");
+            matrixFile.Write("Gene\tChr\tPos\tStrand\tTrLen\tUSTRLen\tLocusLen\tDSTRLen\t#SHits\t#AHits\tIntrLen\t#Exons\tMixGene\tASGene\t");
             foreach (int i in AnnotType.GetGeneTypes())
-                matrixFile.Write("#{0}Hits\t", AnnotType.GetName(i));
+            {
+                string annotName = AnnotType.GetName(i);
+                if (annotName == "EXON") annotName = "EXON+SPLC";
+                matrixFile.Write("#{0}Hits\t", annotName);
+            }
             for (int exonId = 1; exonId <= nExonsToShow; exonId++)
                 matrixFile.Write("SEx{0}\t", exonId);
             matrixFile.WriteLine();
@@ -739,10 +750,11 @@ namespace Linnarsson.Strt
                 string mixedASGene = "";
                 if (gf.HitsByAnnotType[AnnotType.AINTR] >= 5 || gf.HitsByAnnotType[AnnotType.AEXON] >= 5)
                     mixedASGene = OverlappingExpressedGene(gf, 10, false);
-                matrixFile.Write(gf.Name + "\t" + gf.Chr + "\t" + gf.Strand + "\t" + 
+                matrixFile.Write(gf.Name + "\t" + gf.Chr + "\t" + gf.Start + "\t" + gf.Strand + "\t" +
+                                 gf.GetTranscriptLength() + "\t" +
                                  gf.USTRLength + "\t" + gf.GetLocusLength() + "\t" + gf.DSTRLength + "\t" +
                                  gf.GetTotalHits(true) + "\t" + gf.GetTotalHits(false) + "\t" +
-                                 gf.GetTranscriptLength() + "\t" + gf.GetIntronicLength() + "\t" + 
+                                 gf.GetIntronicLength() + "\t" + 
                                  gf.ExonCount + "\t" + mixedSenseGene + "\t" + mixedASGene + "\t");
                 foreach (int i in AnnotType.GetGeneTypes())
                 {

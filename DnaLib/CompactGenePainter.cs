@@ -89,7 +89,7 @@ namespace Linnarsson.Dna
         {
             ushort[,] imgData = new ushort[nSlots, Barcodes.MaxCount];
             double scaler = (double)nSlots / (double)length;
-            int s = (strand == '+') ? 0 : 1;
+            int s = GeneFeature.GetStrandAsInt(strand);
             foreach (int hit in hits)
             {
                 if ((hit & 1) == s)
@@ -108,7 +108,7 @@ namespace Linnarsson.Dna
         private static void MakeLocusHitProfile(char strand, int[] hits)
         {
             Array.Clear(locusProfile, 0, locusProfile.Length);
-            int s = (strand == '+') ? 0 : 1;
+            int s = GeneFeature.GetStrandAsInt(strand);
             foreach (int hit in hits)
             {
                 if ((hit & 1) == s)
@@ -127,7 +127,7 @@ namespace Linnarsson.Dna
             if (chrFrom > chrTo)
             { int temp = chrFrom; chrFrom = chrTo; chrTo = temp; }
             int[] counts = new int[96];
-            int s = (gf.Strand == '+') ? 0 : 1;
+            int s = gf.GetStrandAsInt();
             foreach (int hit in gf.LocusHits)
             {
                 if ((hit & 1) == s)
@@ -237,6 +237,7 @@ namespace Linnarsson.Dna
         /// <summary>
         /// Assumes intervals are non-overlapping and in order
         /// </summary>
+        /// <param name="hits">LocusHits array from a GeneFeature.</param>
         /// <param name="strand">'+', '-', or '.' for both strands</param>
         /// <param name="starts">Start+offset positions in locus of intervals</param>
         /// <param name="ends">End+offset positions of intervals</param>
@@ -245,7 +246,7 @@ namespace Linnarsson.Dna
         private static int[] GetCountsPerInterval(int[] hits, char strand, int[] starts, int[] ends, int offset)
         {
             int[] result = new int[starts.Length];
-            int s = (strand == '-') ? 1 : 0;
+            int s = GeneFeature.GetStrandAsInt(strand);
             int strandMask = (strand != '.') ? 1 : 0;
             int idx = 0;
             for (int i = 0; i < starts.Length; i++)
@@ -270,7 +271,7 @@ namespace Linnarsson.Dna
         public static int[] GetHitPositions(GeneFeature gf, char strand)
         {
             Dictionary<int, int> counts = new Dictionary<int, int>();
-            int s = (strand == '+') ? 0 : 1;
+            int s = GeneFeature.GetStrandAsInt(strand);
             foreach (int hit in gf.LocusHits)
             {
                 if ((hit & 1) == s)
@@ -376,7 +377,7 @@ namespace Linnarsson.Dna
             int nBins = 1 + maxPos / binSize;
             if (nBins <= 0) return new int[0]; // No hits on right side of offset.
             int[] result = new int[nBins];
-            int s = (chrStrand == '+') ? 0 : 1;
+            int s = GeneFeature.GetStrandAsInt(chrStrand);
             foreach (int hit in hits)
             {
                 if ((hit & 1) == s)

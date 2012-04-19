@@ -77,6 +77,7 @@ namespace Linnarsson.Dna
         public string SampleLayoutFileFolder = ""; // If empty, the PlateLayout file is looked for in the project folder
         public string SampleLayoutFileFormat = "{0}_SampleLayout.txt"; // Formatter for sample layout filenames. Arg0 is project name
         public int TotalNumberOfAddedSpikeMolecules = 2500;
+        public bool UseMost5PrimeExonMapping = false; // if true, exonic multireads get only one single hit at the transcript with closest 5' end
 
         [NonSerialized]
         private Barcodes m_Barcodes;

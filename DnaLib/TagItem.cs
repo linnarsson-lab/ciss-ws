@@ -76,6 +76,10 @@ namespace Linnarsson.Dna
         /// </summary>
         private ushort[] readCountsByRndTag;
         /// <summary>
+        /// Counts number of reads irrespective of rndTag
+        /// </summary>
+        private int totalReadCount;
+        /// <summary>
         /// SNP data for SNP positions by offsets from read startPos. Should only be affected when hasAltMappings == false
         /// The final SNP status of a chromosomal position has to be calculated from the tagSNPData:s of all spanning TagItems
         /// </summary>
@@ -117,6 +121,7 @@ namespace Linnarsson.Dna
         public void Clear()
         {
             readCountsByRndTag = null;
+            totalReadCount = 0;
             if (tagSNPData != null)
                 tagSNPData.Clear();
         }
@@ -128,10 +133,15 @@ namespace Linnarsson.Dna
         /// <returns>True if the rndTag is new</returns>
         public bool Add(int rndTagIdx)
         {
-            if (readCountsByRndTag == null)
-                readCountsByRndTag = new ushort[nRndTags];
-            int currentCount = readCountsByRndTag[rndTagIdx];
-            readCountsByRndTag[rndTagIdx] = (ushort)Math.Min(ushort.MaxValue, currentCount + 1);
+            int currentCount = totalReadCount;
+            totalReadCount++;
+            if (nRndTags > 1)
+            {
+                if (readCountsByRndTag == null)
+                    readCountsByRndTag = new ushort[nRndTags];
+                currentCount = readCountsByRndTag[rndTagIdx];
+                readCountsByRndTag[rndTagIdx] = (ushort)Math.Min(ushort.MaxValue, currentCount + 1);
+            }
             return currentCount == 0;
         }
 
@@ -168,7 +178,7 @@ namespace Linnarsson.Dna
             return totalCounters;
         }
 
-        public bool HasReads { get { return readCountsByRndTag != null; } }
+        public bool HasReads { get { return totalReadCount > 0; } }
         public bool HasSNPs { get { return tagSNPData != null; } }
 
         /// <summary>
@@ -177,10 +187,7 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public int GetNumReads()
         {
-            int n = 0;
-            if (readCountsByRndTag != null)
-                foreach (int c in readCountsByRndTag) n += c;
-            return n;
+            return totalReadCount;
         }
 
         /// <summary>
@@ -190,7 +197,7 @@ namespace Linnarsson.Dna
         public List<int> GetValidMolRndTags()
         {
             List<int> validTagIndices = new List<int>();
-            if (readCountsByRndTag != null)
+            if (nRndTags > 1 && readCountsByRndTag != null)
             {
                 int maxNumReads = readCountsByRndTag.Max();
                 int cutOff = maxNumReads / ratioForMutationFilter;
@@ -201,17 +208,15 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Get number of molecules at this position-strand.
+        /// Get number of molecules (reads if rndTag not used) at this position-strand.
         /// Simple % cutoff used to get rid of mutated rndTags.
         /// </summary>
         /// <returns>Number of molecules (mutated rndTags excluded), or number of reads if no rndTags were used.</returns>
         public int GetNumMolecules()
         {
-            int n = 0;
-            if (readCountsByRndTag != null)
+            int n = totalReadCount;
+            if (nRndTags > 1 && readCountsByRndTag != null)
             {
-                if (nRndTags == 1)
-                    return readCountsByRndTag[0];
                 int maxNumReads = readCountsByRndTag.Max();
                 int cutOff = maxNumReads / ratioForMutationFilter;
                 foreach (int c in readCountsByRndTag)
@@ -226,6 +231,8 @@ namespace Linnarsson.Dna
         /// <returns>null if no reads have been found</returns>
         public ushort[] GetReadCountsByRndTag()
         {
+            if (nRndTags == 1)
+                return new ushort[1] { (ushort)totalReadCount };
             return readCountsByRndTag;
         }
 

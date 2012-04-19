@@ -8,7 +8,12 @@ using System.IO;
 
 namespace Linnarsson.Dna
 {
-    public class GeneFeature : LocusFeature
+    public interface TranscriptFeature
+    {
+        int GetTranscriptPos(int hitMidPos, int partIdxForSplices);
+    }
+
+    public class GeneFeature : LocusFeature, TranscriptFeature
     {
         public readonly static string pseudoGeneIndicator = "_p";
         public readonly static string altLocusIndicator = "_loc";
@@ -17,13 +22,14 @@ namespace Linnarsson.Dna
         public static int LocusFlankLength;
 
         public int SpliceLen; // Set by the corresponding SplicedGeneLocus
-        /// <summary>
-        /// Hits stored as ints of pp..pppbbbbbbbs where p is position relative to LocusStart
-        /// in chromosome orientation, b is barcode, and s is chromosome strand (0 = '+', 1 = '-')
-        /// </summary>
         private int locusHitIdx;
         private bool locusHitsSorted;
         private int[] m_LocusHits;
+        /// <summary>
+        /// Hits stored as ints of pp..pppbbbbbbbs where p is position relative to LocusStart
+        /// in chromosome orientation, b is barcode, and s is chromosome strand (0 = '+', 1 = '-')
+        /// Always returned sorted when accessed.
+        /// </summary>
         public int[] LocusHits
         {
             get
@@ -307,6 +313,10 @@ namespace Linnarsson.Dna
             return -1;
         }
 
+        public int GetTranscriptPos(int chrPos, int junkExtraData)
+        {
+            return GetTranscriptPos(chrPos);
+        }
         /// <summary>
         /// Convert from position on chromosome to position within transcript relative 5' end
         /// (all positions zero-based)
@@ -318,27 +328,24 @@ namespace Linnarsson.Dna
             int posFrom5Prime = 0;
             if (Strand == '+')
             {
-                for (int i = 0; i < ExonCount; i++)
+                for (int i = 0; i < ExonStarts.Length; i++)
                 {
                     if (ExonStarts[i] > chrPos)
                         return -1;
                     if (ExonEnds[i] >= chrPos)
                         return chrPos - ExonStarts[i] + posFrom5Prime;
-                    int exonLen = ExonEnds[i] - ExonStarts[i] + 1;
-                    posFrom5Prime += exonLen;
+                    posFrom5Prime += ExonEnds[i] - ExonStarts[i] + 1;
                 }
             }
             else
             {
-                for (int i = ExonCount - 1; i >= 0; i--)
+                for (int i = ExonStarts.Length - 1; i >= 0; i--)
                 {
                     if (ExonEnds[i] < chrPos)
                         return -1;
                     if (ExonStarts[i] <= chrPos)
                         return ExonEnds[i] - chrPos + posFrom5Prime;
-                    int len = ExonEnds[i] - ExonStarts[i] + 1;
-                    int exonLen = ExonEnds[i] - ExonStarts[i] + 1;
-                    posFrom5Prime += exonLen;
+                    posFrom5Prime += ExonEnds[i] - ExonStarts[i] + 1;
                 }
             }
             return -1; // Given pos is not inside transcript exons
@@ -429,7 +436,7 @@ namespace Linnarsson.Dna
             if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
                 NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
             HitsByAnnotType[annotType] += item.MolCount;
-            NonMaskedHitsByAnnotType[annotType] += item.MolCount;
+            NonMaskedHitsByAnnotType[annotType] += item.MolCount; // Count all EXON/SPLC hits for counter-oriented genes in statistics
             return new MarkResult(annotType, this);
         }
 
@@ -637,15 +644,23 @@ namespace Linnarsson.Dna
         /// <param name="bcodeIdx"></param>
         public void MarkLocusHitPos(MappedTagItem item)
         {
-            int locusPos = item.HitMidPos - LocusStart;
             locusHitsSorted = false;
-            if (locusHitIdx == m_LocusHits.Length)
+            while (locusHitIdx + item.MolCount >= m_LocusHits.Length)
             {
-                Array.Resize(ref m_LocusHits, Math.Max(1000, m_LocusHits.Length * 2));
+                Array.Resize(ref m_LocusHits, m_LocusHits.Length * 2);
             }
-            int s = (item.strand == '+') ? 0 : 1;
+            int s = GetStrandAsInt(item.strand);
+            int locusPos = item.HitMidPos - LocusStart;
             int hit = (locusPos << 8) | (item.bcIdx << 1) | s;
-            m_LocusHits[locusHitIdx++] = hit;
+            for (int n = 0; n < item.MolCount; n++)
+                m_LocusHits[locusHitIdx++] = hit;
+        }
+        public static int GetStrandAsInt(char strand)
+        {
+            return (strand == '+') ? 0 : 1;
+        }
+        public int GetStrandAsInt() {
+            return GetStrandAsInt(Strand); 
         }
 
         /// <summary>
@@ -665,8 +680,6 @@ namespace Linnarsson.Dna
                         bcSnpCounters[bcIdx] = new SNPCounter(snpPosOnRealChr, snpCounter.refNt);
                     bcSNPCountersByRealChrPos[snpPosOnRealChr] = bcSnpCounters;
                 }
-                //Console.WriteLine("Gf.MarkSNPs: snpPosOnRealChr:" + snpPosOnRealChr + " spliceOffset:" + item.splcToRealChrOffset + " " + snpCounter.ToString());
-                //Console.WriteLine("             " + item.ToString());
                 bcSnpCounters[item.bcIdx].Add(snpCounter);
             }
         }

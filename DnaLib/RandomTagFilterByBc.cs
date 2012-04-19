@@ -177,6 +177,7 @@ namespace Linnarsson.Strt
 
         /// <summary>
         /// Generates (in arbitrary order) the number of times each registered molecule has been observed.
+        /// If rndTags are not used, generates the number of reads in each position.
         /// </summary>
         /// <returns></returns>
         public IEnumerable<int> IterMoleculeReadCounts()

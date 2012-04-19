@@ -42,5 +42,10 @@ namespace Linnarsson.Dna
             if (Start <= pt && End >= pt) return true;
             return false;
         }
+
+        public int GetTranscriptPos(int hitMidPos)
+        {
+            return ((TranscriptFeature)Feature).GetTranscriptPos(hitMidPos, ExtraData);
+        }
     }
 }

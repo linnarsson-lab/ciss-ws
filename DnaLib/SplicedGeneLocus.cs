@@ -6,7 +6,7 @@ using Linnarsson.Mathematics;
 
 namespace Linnarsson.Dna
 {
-    public class SplicedGeneFeature : LocusFeature
+    public class SplicedGeneFeature : LocusFeature, TranscriptFeature
     {
         private int[] offsets;
         /// <summary>
@@ -57,15 +57,19 @@ namespace Linnarsson.Dna
 
         public override IEnumerable<FtInterval> IterIntervals()
         {
-            for (int pIdx = 0; pIdx < offsets.Length; pIdx++)
+            for (int partIdx = 0; partIdx < offsets.Length; partIdx++)
             {
-                int pStart = exonStarts[pIdx];
-                int pEnd = exonEnds[pIdx];
-                FtInterval ivl = new FtInterval(pStart, pEnd, MarkHit, pIdx, this, AnnotType.SPLC, Strand);
+                int pStart = exonStarts[partIdx];
+                int pEnd = exonEnds[partIdx];
+                FtInterval ivl = new FtInterval(pStart, pEnd, MarkHit, partIdx, this, AnnotType.SPLC, Strand);
                 yield return ivl;
             }
             yield break;
         }
 
+        public int GetTranscriptPos(int hitMidPos, int extraData)
+        {
+            return realFeature.GetTranscriptPos(hitMidPos + offsets[extraData]);
+        }
     }
 }

@@ -736,9 +736,10 @@ namespace Linnarsson.Strt
             int averageReadLen = readCounter.AverageReadLen;
             if (averageReadLen == 0)
             {
-                averageReadLen = Props.props.StandardReadLen - barcodes.GetInsertStartPos();
-                Console.WriteLine("WARNING: Could not read any extraction summary files - using default readLen " + averageReadLen);
+                averageReadLen = EstimateReadLengthFromMapFiles(mapFilePaths); // Props.props.StandardReadLen - barcodes.GetInsertStartPos();
+                Console.WriteLine("WARNING: Could not read any extraction summary files - estimated read length from first map file = " + averageReadLen);
             }
+            MappedTagItem.AverageReadLen = averageReadLen;
             genome.ReadLen = averageReadLen;
             UpdateGenesToPaint(projectFolder, props);
             AbstractGenomeAnnotations annotations = new UCSCGenomeAnnotations(props, genome);
@@ -760,6 +761,20 @@ namespace Linnarsson.Strt
             ts.SaveResult(readCounter, outputPathbase);
             string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
             return new ResultDescription(mapFilePaths, bowtieIndexVersion, outputFolder);
+        }
+
+        private int EstimateReadLengthFromMapFiles(List<string> mapFilePaths)
+        {
+            MapFile mapFileReader = MapFile.GetMapFile(mapFilePaths[0], barcodes);
+            int n = 0;
+            long totalReadLength = 0;
+            foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePaths[0]))
+            {
+                if (n++ == 1000)
+                    break;
+                totalReadLength += mrm.SeqLen;
+            }
+            return (int)Math.Ceiling((double)totalReadLength / n);
         }
 
         private void UpdateGenesToPaint(string projectFolder, Props props)

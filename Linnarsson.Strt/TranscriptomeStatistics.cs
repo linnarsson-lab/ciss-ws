@@ -223,10 +223,10 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Annotate a set of map files that have the same barcode
         /// </summary>
-        /// <param name="bcMapFilePaths">Paths to files where all reads have the sanme barcode</param>
+        /// <param name="bcMapFilePaths">Paths to files where all reads have the same barcode</param>
         private void ProcessBarcodeMapFiles(List<string> bcMapFilePaths)
         {
-            long totalReadLength = 0;
+            //long totalReadLength = 0;
             foreach (string mapFilePath in bcMapFilePaths)
             {
                 currentMapFilePath = mapFilePath;
@@ -241,7 +241,7 @@ namespace Linnarsson.Strt
                         randomTagFilter.Add(mrm[0]); // If no exon-mapping is found, add the read randomly to a (the first) mapping it got
                     if (snpRndTagVerifier != null)
                         snpRndTagVerifier.Add(mrm);
-                    totalReadLength += mrm.SeqLen;
+                    //totalReadLength += mrm.SeqLen;
                     if ((++nMappedReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
                         SampleReadStatistics(statsSampleDistPerBarcode);
                     if ((nMappedReadsByBarcode[currentBcIdx]) == libraryDepthSampleReadCountPerBc)
@@ -253,7 +253,7 @@ namespace Linnarsson.Strt
                 }
             }
             SampleReadStatistics(nMappedReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
-            MappedTagItem.AverageReadLen = (int)Math.Round((double)totalReadLength / nMappedReadsByBarcode[currentBcIdx]);
+            //MappedTagItem.AverageReadLen = (int)Math.Round((double)totalReadLength / nMappedReadsByBarcode[currentBcIdx]);
             List<string> ctrlChrId = new List<string>();
             if (randomTagFilter.chrTagDatas.ContainsKey("CTRL"))
             {
@@ -322,6 +322,8 @@ namespace Linnarsson.Strt
                         overlappingGeneFeatures[combNames] += molCount;
                 }
             }
+            else
+                Console.WriteLine("Got non-exon item: " + item.ToString());
             if (!someExonHit && item.chr != spliceChrId)
             { // Annotate all features of molecules that do not map to any transcript
                 foreach (FtInterval nonTrMatch in Annotations.GetNonTrMatches(item.chr, item.strand, item.HitMidPos))

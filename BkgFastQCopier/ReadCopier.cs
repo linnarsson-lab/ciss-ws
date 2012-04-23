@@ -53,7 +53,8 @@ namespace BkgFastQCopier
                     string runId = (m.Groups.Count > 3)? m.Groups[3].Value : runNo.ToString();
                     string runDate = m.Groups[1].Value;
                     runDate = "20" + runDate.Substring(0, 2) + "-" + runDate.Substring(2, 2) + "-" + runDate.Substring(4);
-                    if (File.Exists(readyFilePath))
+                    string callFolder = Path.Combine(runFolder, PathHandler.MakeRunDataSubPath());
+                    if (File.Exists(readyFilePath) && Directory.Exists(callFolder))
                     {
                         List<ReadFileResult> readFileResults;
                         string status = "copied";

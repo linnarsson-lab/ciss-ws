@@ -15,6 +15,12 @@ namespace Linnarsson.Dna
         protected Barcodes barcodes;
         protected MultiReadMappings mrm;
 
+        /// <summary>
+        /// Find the correct reader for the file of mapped reads. Will handle .map and .sam files
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="barcodes"></param>
+        /// <returns></returns>
         public static MapFile GetMapFile(string file, Barcodes barcodes)
         {
             if (file.EndsWith(".map"))
@@ -234,7 +240,7 @@ namespace Linnarsson.Dna
         public int Position;
         public string Mismatches;
 
-        public int HitMidPos { get { return Position + parent.SeqLen / 2; } }
+        public int HitMidPos { get { return Position + MappedTagItem.AverageReadLen / 2; } } //  { get { return Position + parent.SeqLen / 2; } }
         public string ReadId { get { return parent.ReadId; } }
         public int BcIdx { get { return parent.BarcodeIdx; } }
         public int RndTagIdx { get { return parent.RandomBcIdx; } }

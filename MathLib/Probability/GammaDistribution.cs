@@ -5,6 +5,9 @@ using System.Text;
 
 namespace Linnarsson.Mathematics
 {
+    /// <summary>
+    /// Alpha is apparently scale, and beta shape, judgung from Mean and Variance definitions. /Peter
+    /// </summary>
 	public struct GammaDistribution : IContinuousDistribution
 	{
 		private double m_Alpha;

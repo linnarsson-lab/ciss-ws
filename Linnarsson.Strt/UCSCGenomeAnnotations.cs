@@ -263,9 +263,10 @@ namespace Linnarsson.Strt
                     nGeneFeatures++;
                 }
             }
+            string exlTxt = (nTooLongFeatures == 0) ? "" : string.Format(" (Excluding {0} spanning > {1} bp.)",
+                                                                         nTooLongFeatures, props.MaxFeatureLength);
             string exclV = noGeneVariants ? "main" : "complete";
-            Console.WriteLine("{0} {1} gene variants will be mapped. (Excluding {2} spanning > {3} bp.)",
-                              nGeneFeatures, exclV, nTooLongFeatures, props.MaxFeatureLength);
+            Console.WriteLine("{0} {1} gene variants will be mapped.{2}", nGeneFeatures, exclV, exlTxt);
             summaryLines.Add("\n" + nGeneFeatures + " " + exclV + " gene variants were analyzed in this run.");
         }
 
@@ -333,6 +334,7 @@ namespace Linnarsson.Strt
 
         public override void SaveResult(string fileNameBase, int averageReadLen)
         {
+            WriteSharedGenes(fileNameBase);
             WritePotentialErronousAnnotations(fileNameBase);
             WriteSplicesByGeneLocus(fileNameBase);
             string expressionFile = WriteExpressionTable(fileNameBase);
@@ -577,6 +579,27 @@ namespace Linnarsson.Strt
                 foreach (int idx in speciesBcIndexes) matrixFile.Write("\t" + barcodes.GetAnnotation(annotation, idx));
                 matrixFile.WriteLine();
             }
+        }
+
+        private void WriteSharedGenes(string fileNameBase)
+        {
+            StreamWriter trShareFile = (fileNameBase + "_sharing_genes.tab").OpenWrite();
+            trShareFile.WriteLine("Transcripts/variants competing for reads (# shared reads within parenthesis)");
+            trShareFile.WriteLine("Feature\t#Assigned Reads\tCompetes with genes...");
+            foreach (GeneFeature gf in geneFeatures.Values)
+            {
+                List<string> sGfGroup = new List<string>();
+                foreach (KeyValuePair<IFeature, int> pair in gf.sharingGenes)
+                {
+                    string sGfName = pair.Key.Name;
+                    if (!sGfGroup.Contains(sGfName) && sGfName != gf.Name)
+                        sGfGroup.Add(sGfName + "(" + pair.Value.ToString() + ")");
+                }
+                sGfGroup.Sort();
+                if (sGfGroup.Count > 0)
+                    trShareFile.WriteLine(gf.Name + "\t" + gf.GetTranscriptHits() + "\t" + string.Join("\t", sGfGroup.ToArray()));                
+            }
+            trShareFile.Close();
         }
 
         public override void WriteSpikeDetection(StreamWriter xmlFile)

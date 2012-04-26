@@ -18,13 +18,13 @@ namespace Linnarsson.Strt
     public class SyntReadMaker
     {
         private Barcodes barcodes;
+        private StrtGenome genome;
         private int nRndTags;
         Random rnd = new Random();
 
         int meanMolExprLevelPerBc = 10;
         int meanReadsPerMolecule = 50;
         double ProbGeneExpressed = 0.05;
-        double hotspotProb = 0.1;
         int hotspotPos;
         int hotspotCount;
         /// <summary>
@@ -38,16 +38,17 @@ namespace Linnarsson.Strt
         /// <summary>
         /// To mimic truncated reads
         /// </summary>
-        int[] readLengthSamples = new int [4] { 50, 50, 50, 50 };
+        public int[] readLengthSamples = new int [4] { 50, 50, 50, 50 };
         private int maxReadLength;
         private int readNumber;
         private string[] barcodesGGG;
         private string firstFiller;
         private string midFiller;
 
-        public SyntReadMaker(Barcodes barcodes)
+        public SyntReadMaker(Barcodes barcodes, StrtGenome genome)
         {
             this.barcodes = barcodes;
+            this.genome = genome;
             nRndTags = 1 << (2 * barcodes.RandomTagLen);
             barcodesGGG = barcodes.GetBarcodesWithTSSeq();
             firstFiller = new string('T', barcodes.RandomTagPos);
@@ -55,13 +56,24 @@ namespace Linnarsson.Strt
             maxReadLength = DescriptiveStatistics.Max(readLengthSamples);
         }
 
+        public string SettingsString()
+        {
+            return "Genome: " + genome.Build + " source: " + genome.Annotation + ((genome.GeneVariants) ? "all" : "single") + " transcript models\r\n" +
+                   "Barcode set: " + barcodes.Name + (barcodes.HasRandomBarcodes ? (" (" + nRndTags.ToString()) : " (no") + " random labels)\r\n" +
+                   "Read lengths sampled from: " + string.Join(",", Array.ConvertAll(readLengthSamples, v => v.ToString())) + "\r\n" +
+                   "Average #reads per molecule: " + meanReadsPerMolecule + " Average expr level of a gene within a barcode: " + meanMolExprLevelPerBc +
+                   "Probility of a gene to be expressed: " + ProbGeneExpressed + "\r\n" +
+                   "Probability of SNP per base: " + snpProb + " Background reads per base: " + Props.props.SyntheticReadsBackgroundFreq;
+        }
+
         /// <summary>
         /// Generates synthetic transcript read data as a FastQ file for testing of the analysis pipeline.
         /// Generates random mutations, SNPs, barcodes and rndTags depending on the settings.
+        /// Output will end up in the Reads folder, as Run #0, lane 1, read 1, with specified Id.
+        /// Both .fq data and files specifying SNPs and expression levels will be written.
         /// </summary>
-        /// <param name="genome">Genome to pick reads from</param>
-        /// <param name="dataId">Identifier of output files</param>
-        public void SynthetizeReads(StrtGenome genome, string dataId)
+        /// <param name="dataId">Identifier of output files - will be put in place of Illumina machine Id</param>
+        public void SynthetizeReads(string dataId)
         {
             int nMols = 0;
             readNumber = 1;
@@ -174,8 +186,8 @@ namespace Linnarsson.Strt
             StreamWriter reportWriter = outputFile.OpenWrite();
             reportWriter.WriteLine("Synthetic data - parameters:\nBarcodeSet\t{0}\nGenome\t{1}\nMutationProb\t{2}",
                                    barcodes.Name, genome.GetBowtieMainIndexName(), Props.props.SyntheticReadsRandomMutationProb);
-            reportWriter.WriteLine("MaxExprLevel\t{0}\nHotspotProb\t{1}\nBackgroundFreq\t{2}\n\nGeneFeature\tExprLevel",
-                                   meanMolExprLevelPerBc, hotspotProb, Props.props.SyntheticReadsBackgroundFreq);
+            reportWriter.WriteLine("MaxExprLevel\t{0}BackgroundFreq\t{1}\n\nGeneFeature\tExprLevel",
+                                   meanMolExprLevelPerBc, Props.props.SyntheticReadsBackgroundFreq);
             return reportWriter;
         }
 

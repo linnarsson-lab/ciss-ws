@@ -581,8 +581,7 @@ namespace Linnarsson.Strt
                 string crapMaxPath = Path.Combine(Path.GetDirectoryName(outputFqUnmappedReadPath), "bowtie_maxM_reads_map.temp");
                 unmappedArg = " --un " + outputFqUnmappedReadPath + " --max " + crapMaxPath;
             }
-            string bowtieOptions = props.BowtieOptions.Replace("MaxAlignmentMismatches", props.MaxAlignmentMismatches.ToString());
-            string arguments = String.Format("{0} {1} {2} {3} \"{4}\" \"{5}\"", bowtieOptions, threadArg,
+            string arguments = String.Format("{0} {1} {2} {3} \"{4}\" \"{5}\"", props.BowtieOptions, threadArg,
                                                 unmappedArg, bowtieIndex, inputFqReadPath, outputPath);
             CmdCaller cc = new CmdCaller("bowtie", arguments);
             StreamWriter logWriter = new StreamWriter(bowtieLogFile, true);
@@ -736,7 +735,7 @@ namespace Linnarsson.Strt
             int averageReadLen = readCounter.AverageReadLen;
             if (averageReadLen == 0)
             {
-                averageReadLen = EstimateReadLengthFromMapFiles(mapFilePaths); // Props.props.StandardReadLen - barcodes.GetInsertStartPos();
+                averageReadLen = EstimateReadLengthFromMapFiles(mapFilePaths);
                 Console.WriteLine("WARNING: Could not read any extraction summary files - estimated read length from first map file = " + averageReadLen);
             }
             MappedTagItem.AverageReadLen = averageReadLen;

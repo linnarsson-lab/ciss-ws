@@ -149,6 +149,16 @@ namespace Linnarsson.Strt
             }
         }
 
+        public List<FtInterval> GetExonAnnotations(string chr, char strand, int hitMidPos)
+        {
+            List<FtInterval> ftIvls = new List<FtInterval>();
+            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitMidPos))
+            {
+                if (ivl.Strand == strand || !AnnotType.DirectionalReads) ftIvls.Add(ivl);
+            }
+            return ftIvls;
+        }
+
         protected void AddGeneIntervals(LocusFeature ft)
         {
             foreach (FtInterval ivl in ft.IterIntervals())
@@ -261,7 +271,7 @@ namespace Linnarsson.Strt
 
     }
 
-    public delegate List<FtInterval> TranscriptMatcher(string chr, char strand, int hitMidPos);
+    public delegate List<FtInterval> TranscriptMatcher(string chr, char strand, int hitMidPos, out bool hasVariants);
     public class TranscriptMatchers
     {
         private Dictionary<string, QuickAnnotationMap> ExonAnnotations;
@@ -286,15 +296,17 @@ namespace Linnarsson.Strt
         /// <param name="strand">Strand of hit (for directional reads)</param>
         /// <param name="hitMidPos">Middle position of hit on chromosome</param>
         /// <returns></returns>
-        public List<FtInterval> GetMost5PrimeTranscriptMatch(string chr, char strand, int hitMidPos)
+        public List<FtInterval> GetMost5PrimeTranscriptMatch(string chr, char strand, int hitMidPos, out bool hasVariants)
         {
             List<FtInterval> matches = new List<FtInterval>();
             int bestDist = int.MaxValue;
             FtInterval bestMatch = nullIvl;
+            int nMatches = 0;
             foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitMidPos))
             {
                 if (ivl.Strand == strand)
                 {
+                    nMatches++;
                     int dist = ivl.GetTranscriptPos(hitMidPos);
                     if (dist < bestDist)
                     {
@@ -306,6 +318,7 @@ namespace Linnarsson.Strt
             }
             if (bestDist < int.MaxValue)
                 matches.Add(bestMatch);
+            hasVariants = (nMatches > 1);
             return matches;
         }
 
@@ -316,13 +329,14 @@ namespace Linnarsson.Strt
         /// <param name="strand">Strand of hit (for directional reads)</param>
         /// <param name="hitMidPos">Middle position of hit on chromosome</param>
         /// <returns></returns>
-        public List<FtInterval> GetAllTranscriptMatches(string chr, char strand, int hitMidPos)
+        public List<FtInterval> GetAllTranscriptMatches(string chr, char strand, int hitMidPos, out bool hasVariants)
         {
             List<FtInterval> matches = new List<FtInterval>();
-                foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitMidPos))
-                {
-                    if (ivl.Strand == strand || !AnnotType.DirectionalReads) matches.Add(ivl);
-                }
+            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitMidPos))
+            {
+                if (ivl.Strand == strand || !AnnotType.DirectionalReads) matches.Add(ivl);
+            }
+            hasVariants = (matches.Count > 1);
             return matches;
         }
     }

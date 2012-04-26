@@ -291,11 +291,11 @@ namespace Linnarsson.Strt
             foreach (LaneInfo extrInfo in extrInfos)
 			{
                 extrInfo.extractionTopFolder = outputFolder;
-                ReadCounter readCounter = new ReadCounter();
-                ExtractionWordCounter wordCounter = new ExtractionWordCounter(props.ExtractionCounterWordLength);
                 GetExtractedFilePaths(outputFolder, extrInfo);
                 if (!AllFilePathsExist(extrInfo.extractedFilePaths) || !File.Exists(extrInfo.summaryFilePath))
                 {
+                    ReadCounter readCounter = new ReadCounter();
+                    ExtractionWordCounter wordCounter = new ExtractionWordCounter(props.ExtractionCounterWordLength);
                     StreamWriter[] sws_barcoded = OpenStreamWriters(extrInfo.extractedFilePaths);
                     StreamWriter sw_slask = extrInfo.slaskFilePath.OpenWrite();
                     int bcIdx;

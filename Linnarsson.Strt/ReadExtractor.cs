@@ -317,7 +317,7 @@ namespace Linnarsson.Strt
             if (Regex.Match(seq, "GTCGACTTTTTTTTTTTTTTTTTTTTTTTTT").Success) return ReadStatus.NO_BC_SAL1;
             if (seq.StartsWith("CGACTTTTTTTTTTTTTTTTTTTTTTTTT")) return ReadStatus.CGACT25;
             if (Regex.Match(seq, "^...AAAAAAAAAAAAAAAAAAAAAAAAA").Success) return ReadStatus.NNNA25;
-            if (seq.Contains("GATCGGAAGAGCTCGTA")) return ReadStatus.NO_BC_SOLEXA_ADP2;
+            if (seq.Contains("TCGGAAGAGCTCGTATG")) return ReadStatus.NO_BC_SOLEXA_ADP2;
             return ReadStatus.BARCODE_ERROR;
         }
 

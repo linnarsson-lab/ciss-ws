@@ -41,7 +41,6 @@
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.mergeAndNormalizeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.qCAnalysisToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.buildIndexToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.peekAtgzFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitByBarcodeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -67,7 +66,7 @@
             this.lblStatus});
             this.statusStrip1.Location = new System.Drawing.Point(0, 516);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(594, 25);
+            this.statusStrip1.Size = new System.Drawing.Size(931, 25);
             this.statusStrip1.TabIndex = 8;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -90,7 +89,7 @@
             this.testToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(594, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(931, 24);
             this.menuStrip1.TabIndex = 9;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -156,7 +155,6 @@
             // toolsToolStripMenuItem
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.qCAnalysisToolStripMenuItem,
             this.buildIndexToolStripMenuItem,
             this.peekAtgzFileToolStripMenuItem,
             this.splitByBarcodeToolStripMenuItem,
@@ -170,13 +168,6 @@
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(48, 20);
             this.toolsToolStripMenuItem.Text = "Tools";
-            // 
-            // qCAnalysisToolStripMenuItem
-            // 
-            this.qCAnalysisToolStripMenuItem.Name = "qCAnalysisToolStripMenuItem";
-            this.qCAnalysisToolStripMenuItem.Size = new System.Drawing.Size(252, 22);
-            this.qCAnalysisToolStripMenuItem.Text = "QC Annotation";
-            this.qCAnalysisToolStripMenuItem.Click += new System.EventHandler(this.qCAnalysisToolStripMenuItem_Click);
             // 
             // buildIndexToolStripMenuItem
             // 
@@ -273,14 +264,14 @@
             this.consoleBox1.Location = new System.Drawing.Point(0, 24);
             this.consoleBox1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.consoleBox1.Name = "consoleBox1";
-            this.consoleBox1.Size = new System.Drawing.Size(594, 492);
+            this.consoleBox1.Size = new System.Drawing.Size(931, 492);
             this.consoleBox1.TabIndex = 10;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(594, 541);
+            this.ClientSize = new System.Drawing.Size(931, 541);
             this.Controls.Add(this.consoleBox1);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.menuStrip1);
@@ -306,8 +297,7 @@
 		private System.Windows.Forms.MenuStrip menuStrip1;
 		private Linnarsson.Utilities.ConsoleBox consoleBox1;
 		private System.Windows.Forms.ToolStripProgressBar toolStripProgressBar1;
-		private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
-		private System.Windows.Forms.ToolStripMenuItem qCAnalysisToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem buildIndexToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem pipelineIIToolStripMenuItem;
 		private System.Windows.Forms.ToolStripMenuItem extractToolStripMenuItem;

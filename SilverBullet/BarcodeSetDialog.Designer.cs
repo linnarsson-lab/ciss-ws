@@ -32,9 +32,9 @@
             this.radioButtonV1 = new System.Windows.Forms.RadioButton();
             this.radioButtonV2 = new System.Windows.Forms.RadioButton();
             this.button1 = new System.Windows.Forms.Button();
-            this.radioButtonV4rnd = new System.Windows.Forms.RadioButton();
-            this.radioButtonNobarcodes = new System.Windows.Forms.RadioButton();
             this.radioButtonV4 = new System.Windows.Forms.RadioButton();
+            this.radioButtonNobarcodes = new System.Windows.Forms.RadioButton();
+            this.radioButtonV4R = new System.Windows.Forms.RadioButton();
             this.SuspendLayout();
             // 
             // label1
@@ -79,15 +79,15 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.OKButton_Click);
             // 
-            // radioButtonV4rnd
+            // radioButtonV4
             // 
-            this.radioButtonV4rnd.AutoSize = true;
-            this.radioButtonV4rnd.Location = new System.Drawing.Point(46, 96);
-            this.radioButtonV4rnd.Name = "radioButtonV4rnd";
-            this.radioButtonV4rnd.Size = new System.Drawing.Size(130, 17);
-            this.radioButtonV4rnd.TabIndex = 4;
-            this.radioButtonV4rnd.Text = "v4rnd (6-mer/48/random tag)";
-            this.radioButtonV4rnd.UseVisualStyleBackColor = true;
+            this.radioButtonV4.AutoSize = true;
+            this.radioButtonV4.Location = new System.Drawing.Point(46, 96);
+            this.radioButtonV4.Name = "radioButtonV4";
+            this.radioButtonV4.Size = new System.Drawing.Size(159, 17);
+            this.radioButtonV4.TabIndex = 4;
+            this.radioButtonV4.Text = "v4 (6-mer/48/random labels)";
+            this.radioButtonV4.UseVisualStyleBackColor = true;
             // 
             // radioButtonNobarcodes
             // 
@@ -99,24 +99,24 @@
             this.radioButtonNobarcodes.Text = "none";
             this.radioButtonNobarcodes.UseVisualStyleBackColor = true;
             // 
-            // radioButtonV4
+            // radioButtonV4R
             // 
-            this.radioButtonV4.AutoSize = true;
-            this.radioButtonV4.Location = new System.Drawing.Point(46, 116);
-            this.radioButtonV4.Name = "radioButtonV4";
-            this.radioButtonV4.Size = new System.Drawing.Size(89, 17);
-            this.radioButtonV4.TabIndex = 6;
-            this.radioButtonV4.Text = "v4 (6-mer/48)";
-            this.radioButtonV4.UseVisualStyleBackColor = true;
+            this.radioButtonV4R.AutoSize = true;
+            this.radioButtonV4R.Location = new System.Drawing.Point(46, 116);
+            this.radioButtonV4R.Name = "radioButtonV4R";
+            this.radioButtonV4R.Size = new System.Drawing.Size(197, 17);
+            this.radioButtonV4R.TabIndex = 6;
+            this.radioButtonV4R.Text = "v4r (6-mer/48 without random labels)";
+            this.radioButtonV4R.UseVisualStyleBackColor = true;
             // 
             // BarcodeSetDialog
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(339, 193);
-            this.Controls.Add(this.radioButtonV4);
+            this.Controls.Add(this.radioButtonV4R);
             this.Controls.Add(this.radioButtonNobarcodes);
-            this.Controls.Add(this.radioButtonV4rnd);
+            this.Controls.Add(this.radioButtonV4);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.radioButtonV2);
             this.Controls.Add(this.radioButtonV1);
@@ -134,8 +134,8 @@
         private System.Windows.Forms.RadioButton radioButtonV1;
         private System.Windows.Forms.RadioButton radioButtonV2;
         private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.RadioButton radioButtonV4rnd;
-        private System.Windows.Forms.RadioButton radioButtonNobarcodes;
         private System.Windows.Forms.RadioButton radioButtonV4;
+        private System.Windows.Forms.RadioButton radioButtonNobarcodes;
+        private System.Windows.Forms.RadioButton radioButtonV4R;
     }
 }

@@ -46,7 +46,7 @@ namespace SilverBullet
 	
 		private void Form1_Load(object sender, EventArgs e)
 		{
-			Console.WriteLine("SilverBullet single-cell transcriptome mapping tool\r\nVersion 1.0, (C) Sten Linnarsson 2009\r\n");
+			Console.WriteLine("SilverBullet single-cell transcriptome mapping tool\r\nVersion 1.0, (C) Sten Linnarsson 2012\r\n");
 		}
 
 		private void interruptToolStripMenuItem_Click(object sender, EventArgs e)
@@ -70,13 +70,6 @@ namespace SilverBullet
 		// Use a common mapper object, so the index can be reused
 		StrtReadMapper mapper;
 
-		private void qCAnalysisToolStripMenuItem_Click(object sender, EventArgs e)
-		{
-            MessageBox.Show("This function is now a separate application.");
-			//QcForm qcf = new QcForm();
-			//qcf.Show();
-		}
-
         private void runBowtieToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (Background.IsBusy)
@@ -84,7 +77,7 @@ namespace SilverBullet
                 if (MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
             }
             string projectFolder = SelectProject();
-            string barcodeSet = "v1";
+            string barcodeSet = "v4";
             if (projectFolder != null)
             {
                 Dictionary<string, bool> bcSets = new Dictionary<string, bool>();
@@ -105,7 +98,9 @@ namespace SilverBullet
                 SetupMapper(barcodeSet);
                 Background.RunAsync(() =>
                 {
+                    Background.Message("Mapping...");
                     mapper.Map(projectFolder, gd.Genome);
+                    Background.Message("Ready");
                     Console.WriteLine("Done.");
                 });
             }
@@ -132,30 +127,17 @@ namespace SilverBullet
 				SetupMapper(null);
 				Background.RunAsync( () =>
 				{
+                    Background.Message("Annotating...");
                     try
                     {
                         gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
                         string projectFolder = Path.GetDirectoryName(mapFolder);
                         mapper.Annotate(mapFolder, gd.Genome);
                     }
-                    catch (NoAnnotationsFileFoundException nafe)
+                    catch (Exception exp)
                     {
-                        Console.WriteLine("ERROR: " + nafe.Message);
+                        Console.WriteLine("ERROR: " + exp);
                     }
-                    catch (ChromosomeMissingException ce)
-                    {
-                        Console.WriteLine(ce.Message);
-                        Console.WriteLine("Make sure that the proper fasta/genbank file is in the genomes directory.");
-                    }
-                    catch (NoMapFilesFoundException me)
-                    {
-                        Console.WriteLine(me.Message);
-                        Console.WriteLine("You may have forgotten to run Bowtie with the proper settings.");
-                    }
-                    //catch (Exception exp)
-                    //{
-                    //    Console.WriteLine("Error in Form1.annotateFromBowtieToolStripMenuItem_Click: " + exp);
-                    //}
 					Background.Message("Ready.");
 					Background.Progress(100);
 					Console.WriteLine("Done.");
@@ -169,7 +151,6 @@ namespace SilverBullet
 			{
 				if(MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
 			}
-
 			GenomeDialog gd = new GenomeDialog();
 			gd.ShowDialog();
 
@@ -177,6 +158,7 @@ namespace SilverBullet
 			SetupMapper(null);
 			Background.RunAsync(() =>
 			{
+                Background.Message("Building index...");
                 try
                 {
                     mapper.BuildJunctionsAndIndex(gd.Genome);
@@ -185,7 +167,7 @@ namespace SilverBullet
 				{
                     Console.WriteLine("*** Error in Form1.buildIndexToolStripMenuItem_Click:" + exp.Message);
 				}
-				Background.Message("Ready.");
+				Background.Message("Ready");
 				Background.Progress(100);
 				Console.WriteLine("Done.");
 			});
@@ -210,7 +192,6 @@ namespace SilverBullet
 				}
 				file.Close();
 			}
-
 		}
 
 		private void mergeAndNormalizeToolStripMenuItem_Click(object sender, EventArgs e)
@@ -243,7 +224,12 @@ namespace SilverBullet
 			{
                 string barcodeSet = SelectBarcodeSet();
                 SetupMapper(barcodeSet);
-                Background.RunAsync(() => { mapper.Split(projectFolder); Console.WriteLine("Done."); });
+                Background.RunAsync(() => {
+                    Background.Message("Splitting...");
+                    mapper.Split(projectFolder);
+                    Background.Message("Ready");
+                    Console.WriteLine("Done.");
+                });
 			}
 		}
 
@@ -258,7 +244,12 @@ namespace SilverBullet
             {
                 string barcodeSet = SelectBarcodeSet();
                 SetupMapper(barcodeSet);
-                Background.RunAsync(() => { mapper.BarcodeStats(projectFolder); Console.WriteLine("Done."); });
+                Background.RunAsync(() => {
+                    Background.Message("Calculating stats...");
+                    mapper.BarcodeStats(projectFolder);
+                    Background.Message("Ready");
+                    Console.WriteLine("Done.");
+                });
             }
         }
 
@@ -273,15 +264,16 @@ namespace SilverBullet
             SetupMapper(null);
             Background.RunAsync(() =>
             {
-                if (true) //try
+                Background.Message("Building junctions...");
+                try
                 {
                     mapper.BuildJunctions(gd.Genome);
                 }
-                //catch (Exception exp)
+                catch (Exception exp)
                 {
-                //    Console.WriteLine("*** Error in Form1.buildSplicedExonsToolStripMenuItem_Click: " + exp);
+                    Console.WriteLine("*** Error in Form1.buildSplicedExonsToolStripMenuItem_Click: " + exp);
                 }
-                Background.Message("Ready.");
+                Background.Message("Ready");
                 Background.Progress(100);
                 Console.WriteLine("Done.");
             });
@@ -367,6 +359,7 @@ namespace SilverBullet
             {
                 if (MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
             }
+            Console.WriteLine("Will make synthetic read data including SNPs, random mutations etc.");
             TextDialog readIdDialog = new TextDialog("Name for the synthetic data:");
             readIdDialog.ShowDialog();
             string outputId = readIdDialog.value;
@@ -376,11 +369,13 @@ namespace SilverBullet
             GeneVariantsDialog gvd = new GeneVariantsDialog();
             gvd.ShowDialog();
             gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
-            Console.WriteLine("Read lengths will be mostly 50bp , but some reads down to 46 bp.");
             Background.RunAsync(() => 
                 {
-                    SyntReadMaker srm = new SyntReadMaker(Barcodes.GetBarcodes(barcodeSet));
-                    srm.SynthetizeReads(gd.Genome, outputId);
+                    Background.Message("Synthesizing reads...");
+                    SyntReadMaker srm = new SyntReadMaker(Barcodes.GetBarcodes(barcodeSet), gd.Genome);
+                    Console.WriteLine(srm.SettingsString());
+                    srm.SynthetizeReads(outputId);
+                    Background.Message("Ready");
                 });
         }
 
@@ -397,7 +392,11 @@ namespace SilverBullet
                 string mapFile = ofd.FileName;
                 BowtieMapFileSorter s = new BowtieMapFileSorter();
                 Background.RunAsync(() =>
-                 { s.SortMapFile(mapFile); });
+                 {
+                     Background.Message("Sorting...");
+                     s.SortMapFile(mapFile);
+                     Background.Message("Ready");
+                 });
             }
         }
 
@@ -407,6 +406,7 @@ namespace SilverBullet
             {
                 if (MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
             }
+            Console.WriteLine("Will construct synthetic exon/splc reads with given barcode set from the transcripts of a genome.");
             BarcodeSetDialog bsd = new BarcodeSetDialog();
             bsd.ShowDialog();
             Barcodes bc = Barcodes.GetBarcodes(bsd.barcodeSet);
@@ -418,12 +418,16 @@ namespace SilverBullet
             gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
             Console.WriteLine("Read lengths will be 44bp. All splices are made.");
 			SaveFileDialog ofd = new SaveFileDialog();
-            ofd.Title = "Specify a FQ file to save the reads to.";
+            ofd.Title = "Specify a FastQ file to save the reads to.";
             if (ofd.ShowDialog() == DialogResult.OK)
             {
                 string fastaFile = ofd.FileName;
                 Background.RunAsync(() =>
-                { mapper.DumpTranscripts(bc, gd.Genome, 44, 1, 0, fastaFile, true, 3, 10); });
+                {
+                    Background.Message("Writing fastQ file...");
+                    mapper.DumpTranscripts(bc, gd.Genome, 44, 1, 0, fastaFile, true, 3, 10);
+                    Background.Message("Ready");
+                });
             }
         }
 
@@ -433,6 +437,7 @@ namespace SilverBullet
             {
                 if (MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
             }
+            Console.WriteLine("Will search for potential SNP positions in a Bowtie .map output file.");
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.DefaultExt = "map";
             ofd.Multiselect = true;
@@ -449,10 +454,12 @@ namespace SilverBullet
                 {
                     Background.RunAsync(() =>
                     {
+                        Background.Message("Finding SNPs...");
                         MapFileSnpFinder mfsf = new MapFileSnpFinder(bc);
                         List<string> files = ofd.FileNames.ToList();
                         mfsf.ProcessMapFiles(files);
                         mfsf.WriteToFile(sfd.FileName);
+                        Background.Message("Ready");
                     });
                 }
             }

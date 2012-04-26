@@ -8,6 +8,7 @@ namespace Linnarsson.Dna
 {
     public interface IFeature
     {
+        IFeature RealFeature { get; }
         string Name { get; set; }
         string NonVariantName { get; }
         int GetLocusLength();

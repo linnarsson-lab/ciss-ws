@@ -21,6 +21,8 @@ namespace Linnarsson.Dna
         public static int LocusProfileBinSize = 50;
         public static int LocusFlankLength;
 
+        public Dictionary<IFeature, int> sharingGenes = new Dictionary<IFeature, int>();
+
         public int SpliceLen; // Set by the corresponding SplicedGeneLocus
         private int locusHitIdx;
         private bool locusHitsSorted;
@@ -203,11 +205,19 @@ namespace Linnarsson.Dna
                 return HitsByAnnotType[annotType];
         }
 
+        /// <summary>
+        /// # of hits to SPLC (+ASPLC for non-directional data)
+        /// </summary>
+        /// <returns></returns>
         public int GetJunctionHits()
         {
             int senseHits = HitsByAnnotType[AnnotType.SPLC];
             return (AnnotType.DirectionalReads) ? senseHits : senseHits + HitsByAnnotType[AnnotType.ASPLC];
         }
+        /// <summary>
+        /// # of hits to EXON (+AEXON for non-directional data)
+        /// </summary>
+        /// <returns></returns>
         public int GetTranscriptHits()
         {
             int senseHits = HitsByAnnotType[AnnotType.EXON];
@@ -437,7 +447,21 @@ namespace Linnarsson.Dna
                 NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
             HitsByAnnotType[annotType] += item.MolCount;
             NonMaskedHitsByAnnotType[annotType] += item.MolCount; // Count all EXON/SPLC hits for counter-oriented genes in statistics
+            if (Props.props.ShowTranscriptSharingGenes)
+                AddSharingGenes(item);
             return new MarkResult(annotType, this);
+        }
+
+        private void AddSharingGenes(MappedTagItem item)
+        {
+            foreach (KeyValuePair<IFeature, int> pair in item.tagItem.sharingGenes)
+                if (pair.Key != this)
+                {
+                    if (sharingGenes.ContainsKey(pair.Key))
+                        sharingGenes[pair.Key] += pair.Value;
+                    else
+                        sharingGenes[pair.Key] = pair.Value;
+                }
         }
 
         public MarkResult MarkSpliceHit(MappedTagItem item, int exonId, string junctionId, MarkStatus markType)

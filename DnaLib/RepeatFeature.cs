@@ -7,6 +7,8 @@ namespace Linnarsson.Dna
 {
     public class RepeatFeature : IFeature
     {
+        public IFeature RealFeature { get { return this; } }
+
         private string m_Name;
         public string Name { get { return m_Name; } set { m_Name = value; } }
         public string NonVariantName { get { return m_Name; } }

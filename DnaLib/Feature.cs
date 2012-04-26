@@ -10,6 +10,8 @@ namespace Linnarsson.Dna
     {
         public readonly static string variantIndicator = "_v";
 
+        public virtual IFeature RealFeature { get { return this; } }
+
         public bool IsVariant()
         {
             return Name.Contains(variantIndicator);

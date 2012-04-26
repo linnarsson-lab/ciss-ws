@@ -8,6 +8,8 @@ namespace Linnarsson.Dna
 {
     public class SplicedGeneFeature : LocusFeature, TranscriptFeature
     {
+        public override IFeature RealFeature { get { return realFeature; } }
+
         private int[] offsets;
         /// <summary>
         /// Symbolic strings representing each junction, e.g. '2-3-6'

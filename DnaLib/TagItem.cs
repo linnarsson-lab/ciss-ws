@@ -72,6 +72,11 @@ namespace Linnarsson.Dna
         public static double LabelingEfficiency;
 
         /// <summary>
+        /// List of the genes that share this TagItem's counts. (If some reads are SNPed, the sharing genes may be not belong to all reads.)
+        /// </summary>
+        public Dictionary<IFeature, int> sharingGenes = new Dictionary<IFeature, int>();
+
+        /// <summary>
         /// Counts number of reads in each rndTag
         /// </summary>
         private ushort[] readCountsByRndTag;
@@ -122,6 +127,7 @@ namespace Linnarsson.Dna
         {
             readCountsByRndTag = null;
             totalReadCount = 0;
+            sharingGenes.Clear();
             if (tagSNPData != null)
                 tagSNPData.Clear();
         }
@@ -143,6 +149,17 @@ namespace Linnarsson.Dna
                 readCountsByRndTag[rndTagIdx] = (ushort)Math.Min(ushort.MaxValue, currentCount + 1);
             }
             return currentCount == 0;
+        }
+
+        public void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures)
+        {
+            foreach (IFeature sGf in sharingRealFeatures.Keys)
+            {
+                if (this.sharingGenes.ContainsKey(sGf))
+                    this.sharingGenes[sGf] += 1;
+                else
+                    this.sharingGenes[sGf] = 1;
+            }
         }
 
         /// <summary>

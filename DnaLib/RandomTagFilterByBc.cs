@@ -136,6 +136,29 @@ namespace Linnarsson.Strt
             return item.Add(m.RndTagIdx);
         }
 
+        public bool Add(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures)
+        {
+            int posStrand = MakePosStrandIdx(m.Position, m.Strand);
+            TagItem item;
+            if (!tagItems.TryGetValue(posStrand, out item))
+            {
+                item = new TagItem(m.HasAltMappings);
+                tagItems[posStrand] = item;
+            }
+            if (!m.HasAltMappings && item.HasSNPs) // Should maybe move this code into new TagItem.Add(MultiReadMapping m)
+            {                                      // and do IterMismatches(minPhredScore).
+                foreach (Mismatch mm in m.IterMismatches(0))
+                {
+                    if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
+                    //Console.WriteLine("ChrTagData.Add: MultiReadMapping.Position=" + m.Position + " Strand=" + m.Strand 
+                    //                  + " RndTagIdx=" + m.RndTagIdx + " " + mm.ToString());
+                    item.tagSNPData.AddSNP(m.RndTagIdx, mm);
+                }
+            }
+            item.AddSharedGenes(sharingRealFeatures);
+            return item.Add(m.RndTagIdx);
+        }
+
         /// <summary>
         /// Iterate through the TagItem count data for every (position, strand) hit in this chromosome
         /// </summary>
@@ -353,6 +376,15 @@ namespace Linnarsson.Strt
         {
             nReadsByRandomTag[m.RndTagIdx]++;
             bool isNew = chrTagDatas[m.Chr].Add(m);
+            if (isNew) nUniqueByBarcode[m.BcIdx]++;
+            else nDuplicatesByBarcode[m.BcIdx]++;
+            return isNew | !hasRndTags;
+        }
+
+        public bool Add(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures)
+        {
+            nReadsByRandomTag[m.RndTagIdx]++;
+            bool isNew = chrTagDatas[m.Chr].Add(m, sharingRealFeatures);
             if (isNew) nUniqueByBarcode[m.BcIdx]++;
             else nDuplicatesByBarcode[m.BcIdx]++;
             return isNew | !hasRndTags;

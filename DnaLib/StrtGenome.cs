@@ -248,6 +248,17 @@ namespace Linnarsson.Dna
             return existingGenomes.ToArray();
         }
 
+        public static List<string> GetValidGenomeStrings()
+        {
+            List<string> s = new List<string>();
+            foreach (StrtGenome g in GetGenomes())
+            {
+                s.AddRange(new string[] { g.Name, g.Abbrev, g.Build, 
+                           g.Build + "_" + g.Annotation, g.Build + "_a" + g.Annotation, g.Build + "_s" + g.Annotation });
+            }
+            return s;
+        }
+
         /// <summary>
         /// Returns the StrtGenome corresponding to argument.
         /// Arg examples: "Mm", "Mm_a", "Hs_s", "hs_VEGA", "mm9_sVEGA", "mouse", "mm9"

@@ -58,15 +58,20 @@ namespace Linnarsson.Dna
         public string DefaultBarcodeSet = "v4"; // This is the default barcode set
         public int LocusFlankLength = 1000; // Maximum length of UPSTREAM and DOWNSTREAM regions to analyse
         public int StandardReadLen = 50; // Better not use actual reads that are longer - otherwise some junction hits may be missed
-        public int MaxAlignmentMismatches = 3;  // Should be the value used in bowtie calls
         public int MaxExonsSkip = 12; // Max number of exons to consider for splice out in junction chromosome
         public bool AnalyzeExtractionQualities = false; // Analyze read quality and color balance
         public int MinExtractionInsertLength = 25; // Min acceptable read length excluding barcode and GGG
 		public int MinExtractionInsertNonAs = 5; // Min number of C/G/T in an acceptable read
         public int LargestPossibleReadLength = 300; // Used for dimensioning extraction quality calculators
         public int CapRegionSize = 200; // Used for elongation efficiency (full length cDNA) estimation.
-		public byte QualityScoreBase = 64; // For ASCII-encoding of phred scores (if you change this, then also change Bowtie options below)
-        public string BowtieOptions = "--phred64-quals -a -v MaxAlignmentMismatches --best --strata";
+        public int MaxAlignmentMismatches = 3;  // Should be the value used in bowtie calls
+        public byte QualityScoreBase = 64; // For ASCII-encoding of phred scores
+        public string bowtieOptionPattern = "--phredQualityScoreBase-quals -a -v MaxAlignmentMismatches --best --strata";
+        public string BowtieOptions
+        {
+            get { return bowtieOptionPattern.Replace("MaxAlignmentMismatches",
+                                                     MaxAlignmentMismatches.ToString()).Replace("QualityScoreBase", QualityScoreBase.ToString()); }
+        }
         public double SyntheticReadsRandomMutationProb = 0.0; // Used only in synthetic data construction
         public double SyntheticReadsBackgroundFreq = 0.0; // Frequency of random background reads in synthetic data
         public bool SynthesizeReadsFromGeneVariants = false; // Used only in synthetic data construction
@@ -78,6 +83,7 @@ namespace Linnarsson.Dna
         public string SampleLayoutFileFormat = "{0}_SampleLayout.txt"; // Formatter for sample layout filenames. Arg0 is project name
         public int TotalNumberOfAddedSpikeMolecules = 2500;
         public bool UseMost5PrimeExonMapping = false; // if true, exonic multireads get only one single hit at the transcript with closest 5' end
+        public bool ShowTranscriptSharingGenes = true;
 
         [NonSerialized]
         private Barcodes m_Barcodes;
@@ -127,6 +133,7 @@ namespace Linnarsson.Dna
             }
             internal static readonly Props instance = Read();
         }
+
 
     }
 

@@ -64,7 +64,7 @@ namespace CmdSilverBullet
                             UCSCGenomeDownloader gdm = new UCSCGenomeDownloader();
                             string abbrev, threeName;
                             gdm.ParseSpecies(args[argOffset], out threeName, out abbrev);
-                            string destDir = (args.Length > argOffset + 1)? args[argOffset + 1] : "";
+                            string destDir = (args.Length > argOffset + 1) ? args[argOffset + 1] : "";
                             gdm.DownloadMartAnnotations(abbrev, destDir);
                             break;
 
@@ -92,17 +92,66 @@ namespace CmdSilverBullet
                             break;
 
                         case "ab":
-                            if (args[argOffset].ToLower() == "rpkm")
+                            List<string> genomeStrings = StrtGenome.GetValidGenomeStrings();
+                            while (args.Length > argOffset + 1)
                             {
+                                bool optionMatch = false;
+                                string opt = args[argOffset].ToLower();
+                                if (opt == "rpkm")
+                                {
+                                    optionMatch = true;
+                                    props.DirectionalReads = false;
+                                    props.UseRPKM = true;
+                                }
+                                else if (opt == "rpm")
+                                {
+                                    optionMatch = true;
+                                    props.DirectionalReads = true;
+                                    props.UseRPKM = false;
+                                }
+                                else if (opt == "all")
+                                {
+                                    optionMatch = true;
+                                    analyzeAllGeneVariants = true;
+                                }
+                                else if (opt == "single")
+                                {
+                                    optionMatch = true;
+                                    analyzeAllGeneVariants = false;
+                                }
+                                else if (opt == "false")
+                                {
+                                    optionMatch = true;
+                                    analyzeAllGeneVariants = false;
+                                }
+                                else if (opt == "false")
+                                {
+                                    optionMatch = true;
+                                    analyzeAllGeneVariants = false;
+                                }
+                                else if (opt == "5primemap")
+                                {
+                                    optionMatch = true;
+                                    props.UseMost5PrimeExonMapping = true;
+                                }
+                                else if (opt == "multimap")
+                                {
+                                    optionMatch = true;
+                                    props.UseMost5PrimeExonMapping = false;
+                                }
+                                else if (genomeStrings.Contains(opt))
+                                {
+                                    optionMatch = true;
+                                    speciesArg = opt;
+                                }
+                                if (!optionMatch)
+                                    break;
                                 argOffset++;
-                                props.DirectionalReads = false;
-                                props.UseRPKM = true;
                             }
-                            CheckArgs(args, argOffset + 1, argOffset + 3);
-                            if (args[argOffset] != "all" && args[argOffset] != "single" && args.Length > argOffset + 1)
-                                speciesArg = args[argOffset++];
-                            if (args[argOffset] == "all" || args[argOffset] == "single" && args.Length > argOffset + 1)
-                                analyzeAllGeneVariants = (args[argOffset++].ToLower().StartsWith("a")) ? true : false;
+                            if (argOffset >= args.Length)
+                                throw new ArgumentException("You must specify a project name!");
+                            if (props.UseMost5PrimeExonMapping && !props.DirectionalReads)
+                                Console.WriteLine("Note that 5primemap is not very reasonable together with non-directional reads.");
                             projectFolder = args[argOffset];
                             mapper = new StrtReadMapper(props);
                             if (speciesArg != "")
@@ -158,7 +207,7 @@ namespace CmdSilverBullet
                                 minOverhang = int.Parse(args[5]);
                             bool makeSplices = true;
                             if (args.Length > 6)
-                                makeSplices = args[6] .ToUpper().StartsWith("S");
+                                makeSplices = args[6].ToUpper().StartsWith("S");
                             if (args.Length > 7)
                                 barcodes = Barcodes.GetBarcodes(args[7]);
                             mapper = new StrtReadMapper(props);
@@ -216,9 +265,10 @@ namespace CmdSilverBullet
                         case "synt":
                             CheckArgs(args, 5, 5);
                             barcodes = Barcodes.GetBarcodes(args[1]);
-                            SyntReadMaker srm = new SyntReadMaker(barcodes);
                             genome = StrtGenome.GetGenome(args[2], args[3].StartsWith("a"));
-                            srm.SynthetizeReads(genome, args[4]);
+                            SyntReadMaker srm = new SyntReadMaker(barcodes, genome);
+                            Console.WriteLine(srm.SettingsString());
+                            srm.SynthetizeReads(args[4]);
                             break;
 
                         default:
@@ -227,54 +277,52 @@ namespace CmdSilverBullet
                     }
                     return;
                 }
-                catch (NoAnnotationsFileFoundException nafe)
+                catch (ArgumentException exp)
                 {
-                    Console.WriteLine("\nERROR: " + nafe.Message);
-                }
-                catch (NoMapFilesFoundException)
-                {
-                    Console.WriteLine("\nERROR: No .map files were found (use bt function)");
-                }
-                catch (ChromosomeMissingException ec)
-                {
-                    Console.WriteLine("\nERROR: " + ec.Message);
-                    Console.WriteLine("Make sure that the proper fasta/genbank file is in the genomes directory.");
+                    Console.WriteLine("\nERROR: " + exp);
                 }
                 catch (Exception exp)
                 {
                     Console.WriteLine("\nFATAL ERROR: " + exp);
+                    return;
                 }
-                return;
             }
             Console.WriteLine("\nUsage:\n\n" +
-                "SB.exe q [<RunLaneSpec>]+ [rpkm] <BcSet> [<Sp>|<IdxName>] [all|single] <ProjectPath>\n" +
-                "    - extract data, run Bowtie, and annotate in one sweep using default parameters\n" +
-                "SB.exe x [<RunLaneSpec>]+ <BcSet> <ProjectPath>\n    - extract data from the [common] reads folder\n" +
-                "SB.exe ab [rpkm] [<Sp>|<IdxName>] [all|single] <ProjectPath>|<ExtractedPath>\n" +
-                "    - annotate data from .map files in latest/specified Extracted folder.\n" +
-                "      Use 'all'/'single' to force analysis of all/single transcript variants. First runs Bowtie if .map files are missing.\n" +
-                "SB.exe download <Genus_species>\n    - download latest genome build and annotations for the given species\n" +
-                "SB.exe idx [<readLen>] <Sp_or_Build> [<Annot>]\n" +
-                "    - build annotations and Bowtie index. Both transcript variant versions of index will be built.\n" +
-                "SB.exe upd [<readLen>] [<Build> <Annot> | <Sp>] <AnnotErrorFile>\n    - update SilverBullet annotations of 5' ends using the specified XXX_annot_errors_xxx.tab file.\n" +
-                "SB.exe bt <Sp>|<IdxName> all|single <ProjectPath>|<ExtractedPath>\n    - run Bowtie on latest/specified Extracted folder\n" +
-                "SB.exe split [<BcSet>] <ProjectPath>\n    - split data by barcode\n" +
-                "SB.exe synt <BcSet> <IdxName> all|single <OutputFolder>\n    - generate synthetic reads from a genome\n" +
-                "SB.exe stats [<BcSet>] <ProjectPath>\n    - calculate barcode statistics\n" +
-                "SB.exe mapsnp <BcSet> <outputFile> [<mapFile>]+\n    - analyze a set of map files to find potential SNP locations\n" +
-                "SB.exe maskchr <genome> <minLocusFlank> <minIntronFlank> <maxIntronSizeToSaveFully> <outputFolder>\n    - mask non-exon regions of chromosomes with 'N':s\n" +
-                "SB.exe dump <IdxName> [<readLen> [<Step> [<MaxPerGene> [<MinOverhang> [Splices|Linear [<bcSet>]]]]]] [<OutputPath>]\n" +
-                "    - make fq file of transcript fragments. Makes all if MaxPerGene=0. Adds barcodes+GGG if bcSet given \n\n" + 
+                "SB.exe q [<RunLaneSpec>]+ [rpkm] <BcSet> [<Build>|<IdxName>] [all|single] <ProjectPath>\n" +
+                "      extract data, run Bowtie, and annotate in one sweep using default parameters.\n" +
+                "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +
+                "SB.exe x [<RunLaneSpec>]+ <BcSet> <ProjectPath>\n" +
+                "      extract data from the reads folder.\n" +
+                "SB.exe ab [rpkm|rpm|multimap|5primemap|all|single]* [<Build>|<IdxName>] <ProjectPath>|<ExtractedPath>\n" +
+                "      annotate data from .map files in latest/specified Extracted folder.\n" +
+                "      Use 'all'/'single' to force analysis of all/single transcript variants.\n" +
+                "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +
+                "      Use '5primemap' to annotate reads/molecules to (one of) the transcript(s) they match closest to 5' end.\n" +
+                "      Use 'multimap' to annotate reads/molecules to every alternative transcript they match.\n" +
+                "      If Build/IdxName is left out, these are taken from the <ProjectName>_SampleLayout.txt file in the project folder.\n" +
+                "      Will start by running Bowtie if .map files are missing.\n" +
+                "SB.exe download <Genus_species>\n" +
+                "      download latest genome build and annotations for the given species.\n" +
+                "SB.exe idx <readLen> <Build> [<Annot>]\n" +
+                "      build annotations and Bowtie index. Both transcript variant versions of index will be built.\n" +
+                "SB.exe bt <Build>|<IdxName> all|single <ProjectPath>|<ExtractedPath>\n" +
+                "      run Bowtie on latest/specified extracted data folder.\n" +
+                "SB.exe split [<BcSet>] <ProjectPath>\n" +
+                "      split fastQ read file data by barcode. FastQ files should be located in ProjectPath/Reads.\n" +
+                "SB.exe synt <BcSet> <IdxName> all|single <OutputFolder>\n" +
+                "      generate synthetic reads from a genome.\n" +
+                "SB.exe stats [<BcSet>] <ProjectPath>\n" +
+                "      calculate barcode statistics.\n" +
+                "SB.exe dump <IdxName> <readLen> [<Step> [<MaxPerGene> [<MinOverhang> [Splices|Linear [<bcSet>]]]]] [<OutputPath>]\n" +
+                "      make fq file of transcript fragments. Makes all if MaxPerGene=0. Adds barcodes+GGG if bcSet given.\n\n" + 
                 "<RunLaneSpec> is e.g. '17:235' indicating lanes 2,3, and 5 of run 17.\n" + 
                 "              If left out, defaults to all sequence files in Reads/ folder under ProjectPath\n" +
-                "rpkm will change analysis method to non-directional reads and output RPKM instead of RPM\n" + 
-                "<Sp> is 'Mm' or 'Hs'. If left out, species are taken from the <ProjectName>_SampleLayout.txt file in the project folder.\n" +
-                "<Build> is 'mm9', 'hg19', or 'gg3', <Annot> is 'UCSC', 'VEGA', or 'ENSE',\n" + 
+                "<Build> is 'mm9', 'hg19', or 'gg3', <Annot> is 'UCSC', 'VEGA', or 'ENSEMBL',\n" + 
                 "Annot defaults to 'UCSC' when only species is given.\n" +
                 "<IdxName> is a specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_VEGA'.\n" +
-                "<BcSet> is 'v1' (96x5-mer), 'v2' (96x6-mer), or 'no' for no barcodes.\n" +
-                "Define other barcode sets in BcSetName.barcodes files in the barcodes directory in the project folder\n" +
-                "<readLen> is the sequence length after barcode and GGG. When omitted, standard len is taken from config.\n" +
+                "<BcSet> is 'v2' (96x6-mer), 'v4' (48x6-mer, random labels), 'v4r' (no random labels), or 'no' for no barcodes.\n" +
+                "Define other barcode sets in 'BcSet.barcodes' files in the barcodes directory in the project folder\n" +
+                "<readLen> is the sequence length after barcode and GGG. For idx it should be 0-5 below actual data length.\n" +
                 "Paths are per default rooted in the data directory, so that e.g. 'L006' is enough as a ProjectPath.\n"
             );
         }

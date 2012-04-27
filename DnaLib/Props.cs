@@ -84,6 +84,7 @@ namespace Linnarsson.Dna
         public int TotalNumberOfAddedSpikeMolecules = 2500;
         public bool UseMost5PrimeExonMapping = false; // if true, exonic multireads get only one single hit at the transcript with closest 5' end
         public bool ShowTranscriptSharingGenes = true;
+        public bool SaveNonMappedReads = false; // Non-mapped reads from Bowtie may be stored in separate files
 
         [NonSerialized]
         private Barcodes m_Barcodes;

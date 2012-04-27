@@ -538,7 +538,12 @@ namespace Linnarsson.Strt
                 if (existingSplcMapFiles.Length >= 1)
                     outputSplcPath = Path.Combine(mapFolder, existingSplcMapFiles[0]);
                 else
-                    CreateBowtieOutputFile(splcIndexName, fqUnmappedReadsPath, outputSplcPath, "", laneInfo.bowtieLogFilePath);
+                {
+                    if (!File.Exists(fqUnmappedReadsPath))
+                        CreateBowtieOutputFile(mainIndex, fqPath, outputMainPath, fqUnmappedReadsPath, laneInfo.bowtieLogFilePath);
+                    string remainUnmappedPath = props.SaveNonMappedReads ? Path.Combine(mapFolder, bcIdx + ".fq-nonmapped") : "";
+                    CreateBowtieOutputFile(splcIndexName, fqUnmappedReadsPath, outputSplcPath, remainUnmappedPath, laneInfo.bowtieLogFilePath);
+                }
                 mapFiles.Add(outputSplcPath);
                 // Don't delete the fqUnmappedReadsPath - it is needed if rerun with changing all/single annotation versions
                 if (Background.CancellationPending) break;

@@ -696,6 +696,7 @@ namespace Linnarsson.Strt
             foreach (string extractedByBcFolder in Directory.GetDirectories(fqFolder))
             {
                 Match m = Regex.Match(extractedByBcFolder, "Run([0-9]+)_L([0-9])_[0-9]_[0-9]+");
+                if (!m.Success) continue;
                 LaneInfo laneInfo = new LaneInfo(m.Groups[0].Value, m.Groups[1].Value, m.Groups[2].Value[0]);
                 SetExtractedFilesInfo(laneInfo, extractedByBcFolder);
                 laneInfo.extractionTopFolder = extractedFolder;

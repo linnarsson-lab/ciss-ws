@@ -160,9 +160,13 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static int[] GetBinnedTranscriptHitsRelEnd(GeneFeature gf, double binSize, bool senseOnly, int readLen)
         {
+            return GetBinnedTranscriptHitsRelEnd(gf, binSize, senseOnly, readLen, -1);
+        }
+        public static int[] GetBinnedTranscriptHitsRelEnd(GeneFeature gf, double binSize, bool senseOnly, int readLen, int bcIdx)
+        {
             char strand = (senseOnly) ? gf.Strand : '.';
             return GetIvlSpecificCountsInBinsRelEnd(gf.LocusHits, strand, binSize, readLen,
-                                                    gf.ExonStarts, gf.ExonEnds, gf.LocusStart);
+                                                    gf.ExonStarts, gf.ExonEnds, gf.LocusStart, bcIdx);
         }
 
         /// <summary>
@@ -179,6 +183,11 @@ namespace Linnarsson.Dna
         /// <returns>histogram of counts</returns>
         private static int[] GetIvlSpecificCountsInBinsRelEnd(int[] hits, char strand, double binSize, int readLen,
                                                      int[] starts, int[] ends, int offset)
+        {
+            return GetIvlSpecificCountsInBinsRelEnd(hits, strand, binSize, readLen, starts, ends, offset, -1);
+        }
+        private static int[] GetIvlSpecificCountsInBinsRelEnd(int[] hits, char strand, double binSize, int readLen,
+                                                     int[] starts, int[] ends, int offset, int bcIdx)
         {
             if (hits.Length == 0) return new int[0];
             int[] rightIvlsLen = new int[ends.Length];
@@ -210,17 +219,20 @@ namespace Linnarsson.Dna
                     if (hit > to) break;
                     if ((hit & strandMask) == s)
                     {
-                        int pos = hit >> 8;
-                        if ((hit & 1) == 0) // (strand == '+')
+                        if (bcIdx == -1 || ((hit >> 1) & 127) == bcIdx)
                         {
-                            dist = rightIvlsLen[i] + (ivlEnd - pos);
+                            int pos = hit >> 8;
+                            if ((hit & 1) == 0) // (strand == '+')
+                            {
+                                dist = rightIvlsLen[i] + (ivlEnd - pos);
+                            }
+                            else
+                            {
+                                dist = leftIvlsLen + (pos - ivlStart);
+                            }
+                            int bin = Math.Max(0, Math.Min(nBins - 1, (int)Math.Floor((dist - readLen / 2) / binSize)));
+                            result[bin]++;
                         }
-                        else
-                        {
-                            dist = leftIvlsLen + (pos - ivlStart);
-                        }
-                        int bin = Math.Max(0, Math.Min(nBins - 1, (int)Math.Floor((dist - readLen/2) / binSize)));
-                        result[bin]++;
                     }
                 }
                 leftIvlsLen += ends[i] - starts[i] + 1;

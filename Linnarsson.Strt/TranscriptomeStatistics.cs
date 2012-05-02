@@ -441,6 +441,7 @@ namespace Linnarsson.Strt
 		{
             if (TestReporter != null)
                 TestReporter.Summarize(Annotations.geneFeatures);
+            WriteHitProfilesByBarcode(fileNameBase);
             WriteRedundantExonHits(fileNameBase);
             WriteASExonDistributionHistogram(fileNameBase);
             WriteSummary(fileNameBase, Annotations.GetSummaryLines(), readCounter);
@@ -886,8 +887,7 @@ namespace Linnarsson.Strt
                 double sectionSize = (trLen - averageReadLen) / (double)nSections;
                 int[] trSectionCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, sectionSize, Props.props.DirectionalReads, averageReadLen);
                 if (trSectionCounts.Length == 0) continue;
-                double trTotalCounts = 0.0;
-                foreach (int c in trSectionCounts) trTotalCounts += c;
+                double trTotalCounts = trSectionCounts.Sum();
                 if (trTotalCounts == 0.0) continue;
                 if (!gf.IsSpike())
                 {
@@ -1447,6 +1447,68 @@ namespace Linnarsson.Strt
                 writer.WriteLine("{0}\t{1}\t{2}\t{3}",
                                  chr, start + averageReadLength / 2, strand, topCounts[cI]);
             }
+        }
+
+        private void WriteHitProfilesByBarcode(string fileNameBase)
+        {
+            int trLenBinSize = 500;
+            int trLenBinHalfWidth = trLenBinSize / 2;
+            int trLenBinStep = 1500;
+            int trLen1stBinMid = 500;
+            int trLen1stBinStart = trLen1stBinMid - trLenBinHalfWidth;
+            int trLenBinCount = 4;
+            int nSections = 20;
+            int averageReadLen = MappedTagItem.AverageReadLen;
+            var xmlFile = (fileNameBase + "_5to3_profiles_by_barcode.tab").OpenWrite();
+            xmlFile.WriteLine("5'->3' read distributions by barcode.");
+            xmlFile.WriteLine("\t\t\tRelative position within transcript.");
+            xmlFile.Write("\t\t");
+            for (int section = 0; section < nSections; section++)
+                xmlFile.Write("\t{0}", (section + 0.5D) / (double)nSections);
+            xmlFile.WriteLine("\nBarcode\tTrLenFrom\tTrLenTo\tFraction within interval of all reads.");
+            int minHitsPerGene = (barcodes.HasRandomBarcodes) ? 50 : nSections * 10;
+            int maxHitsPerGene = (barcodes.HasRandomBarcodes) ? (int)(0.7 * barcodes.RandomBarcodeCount * barcodes.Count) : int.MaxValue;
+            for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+            {
+                DescriptiveStatistics[,] binnedEfficiencies = new DescriptiveStatistics[trLenBinCount, nSections];
+                for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
+                {
+                    for (int section = 0; section < nSections; section++)
+                        binnedEfficiencies[trLenBinIdx, section] = new DescriptiveStatistics();
+                }
+                int[] geneCounts = new int[trLenBinCount];
+                foreach (GeneFeature gf in Annotations.geneFeatures.Values)
+                {
+                    if (gf.IsSpike() || gf.TranscriptHitsByBarcode[bcIdx] < minHitsPerGene || gf.TranscriptHitsByBarcode[bcIdx] > maxHitsPerGene)
+                        continue;
+                    int trLen = gf.GetTranscriptLength();
+                    double sectionSize = (trLen - averageReadLen) / (double)nSections;
+                    int[] trSectionCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, sectionSize, Props.props.DirectionalReads, averageReadLen);
+                    if (trSectionCounts.Length == 0) continue;
+                    double trTotalCounts = trSectionCounts.Sum();
+                    if (trTotalCounts == 0.0) continue;
+                    if (trLen < trLen1stBinStart || (trLen - trLen1stBinStart) % trLenBinStep > trLenBinSize)
+                        continue;
+                    int trLenBin = (trLen - trLen1stBinStart) / trLenBinStep;
+                    if (trLenBin >= trLenBinCount) continue;
+                    for (int section = 0; section < nSections; section++)
+                        binnedEfficiencies[trLenBin, section].Add(trSectionCounts[nSections - 1 - section] / trTotalCounts);
+                    geneCounts[trLenBin]++;
+                }
+                for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
+                {
+                    if (geneCounts[trLenBinIdx] < 10) continue;
+                    int midLen = (trLenBinIdx * trLenBinStep) + trLen1stBinMid;
+                    xmlFile.Write("{0}\t{1}\t{2}", bcIdx, midLen - trLenBinHalfWidth, midLen + trLenBinHalfWidth);
+                    for (int section = 0; section < nSections; section++)
+                    {
+                        double eff = binnedEfficiencies[trLenBinIdx, section].Mean();
+                        xmlFile.Write("\t{0}", eff);
+                    }
+                    xmlFile.WriteLine();
+                }
+            }
+            xmlFile.Close();
         }
 
     }

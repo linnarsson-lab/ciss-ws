@@ -15,24 +15,26 @@ namespace Linnarsson.Strt
     public class ReadStatus
     {
         public readonly static int VALID = 0;
-        public readonly static int BARCODE_ERROR = 1;
-        public readonly static int LENGTH_ERROR = 2;
+        public readonly static int LENGTH_ERROR = 1;
+        public readonly static int SEQ_QUALITY_ERROR = 2;
         public readonly static int COMPLEXITY_ERROR = 3;
-        public readonly static int N_IN_RANDOM_TAG = 4;
-        public readonly static int NEGATIVE_BARCODE_ERROR = 5;
+        public readonly static int SAL1T25_IN_READ = 4;
+        public readonly static int N_IN_RANDOM_TAG = 5;
         public readonly static int LOW_QUALITY_IN_RANDOM_TAG = 6;
-        public readonly static int CGACT25 = 7;
-        public readonly static int NNNA25 = 8;
-        public readonly static int NO_BC_SAL1 = 9;
-        public readonly static int SAL1T25_IN_READ = 10;
-        public readonly static int SEQ_QUALITY_ERROR = 11;
-        public readonly static int NO_BC_SOLEXA_ADP2 = 12;
-        public readonly static int Length = 13;
-        public readonly static string[] categories = new string[] { "VALID", "BARCODE_ERROR", "LENGTH_ERROR", 
-                                                                   "COMPLEXITY_ERROR", "N_IN_RANDOM_TAG", "NEGATIVE_BARCODE_ERROR",
-                                                                   "LOW_QUALITY_IN_RANDOM_TAG", "NO_BARCODE-CGACT25", "NO_BARCODE-NNNA25",
-                                                                   "NO_BARCODE-SAL1-T25", "SAL1-T25_IN_READ", "SEQ_QUALITY_ERROR",
-                                                                   "NO_BARCODE-SOLEXA-ADP2_CONTAINING" };
+        public readonly static int NEGATIVE_BARCODE_ERROR = 7;
+        public readonly static int NO_BC_CGACT25 = 8;
+        public readonly static int NO_BC_NNNA25 = 9;
+        public readonly static int NO_BC_SAL1 = 10;
+        public readonly static int NO_BC_SOLEXA_ADP2 = 11;
+        public readonly static int NO_BC_INTERNAL_T20 = 12;
+        public readonly static int BARCODE_ERROR = 13;
+        public readonly static int Length = 14;
+        public readonly static string[] categories = new string[] { "VALID", "TOO_LONG_pA_pN_TAIL", "SEQ_QUALITY_ERROR",
+                                                                   "COMPLEXITY_ERROR",  "SAL1-T25_IN_READ", "N_IN_RANDOM_TAG",
+                                                                   "LOW_QUALITY_IN_RANDOM_TAG","NEGATIVE_BARCODE_ERROR",
+                                                                   "NO_BARCODE-CGACT25", "NO_BARCODE-NNNA25", "NO_BARCODE-SAL1-T25",
+                                                                   "NO_BARCODE-SOLEXA-ADP2_CONTAINING", "NO_BARCODE-INTERNAL-T20",
+                                                                   "NO_VALID_BARCODE-UNCHARACTERIZED" };
         public static int Parse(string category) { return Array.IndexOf(categories, category.ToUpper()); }
 
     }
@@ -315,9 +317,10 @@ namespace Linnarsson.Strt
         private int AnalyzeNonBarcodeRead(string seq)
         {
             if (Regex.Match(seq, "GTCGACTTTTTTTTTTTTTTTTTTTTTTTTT").Success) return ReadStatus.NO_BC_SAL1;
-            if (seq.StartsWith("CGACTTTTTTTTTTTTTTTTTTTTTTTTT")) return ReadStatus.CGACT25;
-            if (Regex.Match(seq, "^...AAAAAAAAAAAAAAAAAAAAAAAAA").Success) return ReadStatus.NNNA25;
+            if (seq.StartsWith("CGACTTTTTTTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_CGACT25;
+            if (Regex.Match(seq, "^...AAAAAAAAAAAAAAAAAAAAAAAAA").Success) return ReadStatus.NO_BC_NNNA25;
             if (seq.Contains("TCGGAAGAGCTCGTATG")) return ReadStatus.NO_BC_SOLEXA_ADP2;
+            if (seq.Contains("TTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_INTERNAL_T20;
             return ReadStatus.BARCODE_ERROR;
         }
 

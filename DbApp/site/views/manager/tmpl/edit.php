@@ -15,11 +15,12 @@ function validateForm()
 		alert("The email address is invalid!");
 		return false;
 	}
-	adminForm.submit();
+        document.getElementById("submittype").value = "Save";
+        document.getElementById("edit-manager-form").submit();
 }
 </script>
 
-<form action="<?php echo JText::_('?option=com_dbapp&view=manager&layout=save&id='.(int) $searchid); ?>" method="post" name="adminForm" id="admin-form" class="form-validate">
+<form action="<?php echo JText::_('?option=com_dbapp&view=manager&layout=save&id='.(int) $searchid); ?>" method="post" id="edit-manager-form" class="form-validate">
 <h1><?php if ($searchid > 0) echo "Edit"; else echo "New"; ?> manager</h1>
 <div class='manager'><fieldset><legend>
 <?php
@@ -52,6 +53,7 @@ function validateForm()
 </table>
 </fieldset></div>
 <br/>
+<input type="hidden" name="submittype" id="submittype" value="Cancel">
 <input type="Submit" name="Submit" value="Save" onclick="validateForm(); return false;">
 <input type="Submit" name="Submit" value="Cancel" >
 <?php

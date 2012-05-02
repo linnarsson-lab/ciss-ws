@@ -27,7 +27,7 @@ defined('_JEXEC') or die('Restricted access');
     if ($key == 'id') {
       $searchid = $value;
     }
-    if ($key == 'Submit') {
+    if ($key == 'submittype') {
       $submit = $value;
     }
   }

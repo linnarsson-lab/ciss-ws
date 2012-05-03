@@ -47,7 +47,7 @@ namespace Linnarsson.Dna
 					if(line.Trim() == "") continue; // we are forgiving about extra empty lines
 
 					// Parse the header and extract any annotations
-					if(!(line.StartsWith(">"))) throw new InvalidDataException("Fasta record does not start with '>'");
+					if(!(line.StartsWith(">"))) throw new InvalidDataException("Fasta record does not start with '>' in file " + path + ":\n" + line);
 					line = line.Substring(1);
 					record.HeaderLine = line;
 					string[] items = line.Split(' ');

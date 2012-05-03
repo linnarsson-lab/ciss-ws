@@ -1497,12 +1497,11 @@ namespace Linnarsson.Strt
                 }
                 for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
                 {
-                    if (geneCounts[trLenBinIdx] < 10) continue;
                     int midLen = (trLenBinIdx * trLenBinStep) + trLen1stBinMid;
                     xmlFile.Write("{0}\t{1}\t{2}", bcIdx, midLen - trLenBinHalfWidth, midLen + trLenBinHalfWidth);
                     for (int section = 0; section < nSections; section++)
                     {
-                        double eff = binnedEfficiencies[trLenBinIdx, section].Mean();
+                        double eff = (geneCounts[trLenBinIdx] < 10)? 0.0 : binnedEfficiencies[trLenBinIdx, section].Mean();
                         xmlFile.Write("\t{0}", eff);
                     }
                     xmlFile.WriteLine();

@@ -756,16 +756,23 @@ namespace Linnarsson.Strt
                 int totSense = Annotations.GetTotalAnnotCounts(t, true);
                 int at = AnnotType.MakeAntisense(t);
                 int totASense = Annotations.GetTotalAnnotCounts(at, true);
-                string ratio = "Inf";
+                string ratio = "1:0";
                 int totLen = Annotations.GetTotalAnnotLength(at, true);
                 if (totASense > 0)
-                    ratio = string.Format("{0:0.0}", totSense / (double)totASense);
-                xmlFile.WriteLine("   <point x=\"{0}#br#{1}:1\" y=\"{2:0.##}\" y2=\"{3:0.##}\" />", AnnotType.GetName(t),
-                                  ratio, 1000.0d * (totSense / (double)totLen), 1000.0d * (totASense / (double)totLen));
+                    ratio = string.Format("{0:0.0}:1", totSense / (double)totASense);
+                double sensePerKb = 1000.0d * (totSense / (double)totLen);
+                double antiPerKb = 1000.0d * (totASense / (double)totLen);
+                if (double.IsNaN(sensePerKb) || double.IsNaN(antiPerKb))
+                    sensePerKb = antiPerKb = 0.0;
+                xmlFile.WriteLine("   <point x=\"{0}#br#{1}\" y=\"{2:0.##}\" y2=\"{3:0.##}\" />", AnnotType.GetName(t),
+                                  ratio, sensePerKb, antiPerKb);
             }
             int reptLen = Annotations.GetTotalAnnotLength(AnnotType.REPT);
             int reptCount = TotalHitsByAnnotType[AnnotType.REPT];
-            xmlFile.WriteLine("   <point x=\"REPT#br#1:1\" y=\"{0:0.###}\" y2=\"{0:0.####}\" />", reptCount / (double)reptLen);
+            double reptPerKb = reptCount / (double)reptLen;
+            if (double.IsNaN(reptPerKb))
+                reptPerKb = 0.0;
+            xmlFile.WriteLine("   <point x=\"REPT#br#1:1\" y=\"{0:0.###}\" y2=\"{0:0.####}\" />", reptPerKb);
             xmlFile.WriteLine("  </senseantisense>");
         }
 

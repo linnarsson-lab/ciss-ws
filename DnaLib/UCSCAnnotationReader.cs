@@ -35,14 +35,14 @@ namespace Linnarsson.Dna
         {
             StreamReader refReader = refFlatPath.OpenRead();
             string line = refReader.ReadLine();
-            while (line.StartsWith("@"))
+            while (line.StartsWith("@") || line.StartsWith("#"))
                 line = refReader.ReadLine();
             string[] f = line.Split('\t');
             if (f.Length < 11)
                 throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should be >= 11 TAB-delimited columns.");
             while (line != null)
             {
-                if (line != "")
+                if (line != "" && !line.StartsWith("#"))
                 {
                     IFeature ft = FromAnnotationFileLine(line);
                     yield return ft;

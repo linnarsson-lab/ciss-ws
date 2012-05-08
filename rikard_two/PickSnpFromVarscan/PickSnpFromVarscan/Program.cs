@@ -90,15 +90,14 @@ namespace PickSnpFromVarscan
         public string seqname { get; set; }
         public string source { get; set; }
         public string feature { get; set; }
-        public int start { get; set; }
-        public int end { get; set; }
+        public Int32 start { get; set; }
+        public Int32 end { get; set; }
         public string score { get; set; }
-        public char strand { get; set; }
-        public int frame { get; set; }
-        public string attribute { get; set; }
+        public string strand { get; set; }
+//        public int frame { get; set; }
+//        public string attribute { get; set; }
 
-        public Fragment(string Seqname, string Source, string Feature, int Start, int End, string Score,
-                       char Strand, int Frame, string Attribute)
+        public Fragment(string Seqname, string Source, string Feature, Int32 Start, Int32 End, string Score, string Strand)
         {
             seqname = Seqname;
             source = Source;
@@ -107,8 +106,8 @@ namespace PickSnpFromVarscan
             end = End;
             score = Score;
             strand = Strand;
-            frame = Frame;
-            attribute = Attribute;
+//            frame = Frame;
+//            attribute = Attribute;
         }
     }
 
@@ -133,7 +132,7 @@ namespace PickSnpFromVarscan
                         if (entries.Length > 4)
                         {
                             Fragment temp = new Fragment(entries[0], entries[1], entries[2], Int32.Parse(entries[3]), Int32.Parse(entries[4]),
-                                 entries[5], char.Parse(entries[6]), Int32.Parse(entries[7]), entries[8]);
+                                 entries[5], entries[6]);
                             this.addfragment(entries[0] + entries[3], temp);
                             fragmentcount++;
                         }
@@ -215,7 +214,7 @@ namespace PickSnpFromVarscan
     {
         static int Main(string[] args)
         {
-            if (args.Length != 4)
+            if (args.Length != 5)
             {
                 usage();
                 return (1);
@@ -227,16 +226,17 @@ namespace PickSnpFromVarscan
             Console.WriteLine("Chrom\tPosition\tRef\tVar\tCons:Cov:Reads1:Reads2:Freq:P-value\tStrandFilter:R1+:R1-:R2+:R2-:pval\tSamplesRef\tSamplesHet\tSamplesHom\tSamplesNC\tCons:Cov:Reads1:Reads2:Freq:P-value");
             //            Console.WriteLine(Environment.NewLine + DB.dbsnpcount + Environment.NewLine);
 //            varscanfile VS = new varscanfile(args[0]);
-            int cnt = readvarscan(args[0], DB);
-            Console.WriteLine(cnt);
             int minsample = int.Parse(args[2]);
             int mintotal = int.Parse(args[3]);
+            GFFfile ROI = new GFFfile(args[4]);
+            int cnt = readvarscan(args[0], DB, minsample, mintotal, ROI);
+            Console.WriteLine(cnt);
 
             return (0);
         }
 
 
-        static int readvarscan(string Filepath, dbsnpfile DBSNP)
+        static int readvarscan(string Filepath, dbsnpfile DBSNP, int ms, int ts, GFFfile roi)
         {
             int poscount = 0;
 
@@ -252,26 +252,48 @@ namespace PickSnpFromVarscan
                         if (entries.Length > 10)
                         {
                    //         Console.WriteLine(entries.Length + line);
+                            string lineout = "";
+                            int outfalse = 0;
                             string[] sample = entries[10].Split(new Char[] { ' ' });
                             foreach (string item in sample)
                             {
                                 string[] samplevars = item.Split(new Char[] { ':' });
-                                Console.Write(samplevars[0] + " " + samplevars[4] + "\t");
-                       //          C:586:586:0:0%:1E0 C:1085:1085:0:0%:1E0 C:1336:1336:0:0%:1E0 
+                                lineout = lineout + samplevars[4].Replace("%", "") + "\t";
+                       //         Console.Write(samplevars[4].Replace("%", "") + "\t");
+                                if (int.Parse(samplevars[1]) < ms - 1) 
+                                {
+                                    outfalse++;
+                                }
+                       //         Console.Write(samplevars[0] + " " + samplevars[4] + "\t");
+                       //         C:586:586:0:0%:1E0 C:1085:1085:0:0%:1E0 C:1336:1336:0:0%:1E0 
                             }
                        //     Console.WriteLine();
-                            Console.Write(entries[0] + "\t" + entries[1] + "\t" + entries[2] + "\t" + entries[3] + "\t" + entries[4] + "\t" + entries[5]);
-                            Console.Write(entries[6] + "\t" + entries[7] + "\t" + entries[8] + "\t" + entries[9]);
+                            lineout = lineout + entries[0] + "\t" + entries[1] + "\t" + entries[2] + "\t" + entries[3] + "\t" + entries[4] + "\t" + entries[5];
+                            lineout = lineout +  entries[6] + "\t" + entries[7] + "\t" + entries[8] + "\t" + entries[9];
+                            //     Console.Write(entries[0] + "\t" + entries[1] + "\t" + entries[2] + "\t" + entries[3] + "\t" + entries[4] + "\t" + entries[5]);
+                            //     Console.Write(entries[6] + "\t" + entries[7] + "\t" + entries[8] + "\t" + entries[9]);
+
+                            string[] tottest = entries[4].Split(new Char[] { ':' });
+                            if (int.Parse(tottest[1]) < ts - 1) continue;
+
 
                             if (DBSNP.ContainsKey(entries[0].Replace("chr", "") + '.' + entries[1]))
                             {
-                                Console.WriteLine("\t" + DBSNP[entries[0].Replace("chr", "") + '.' + entries[1]].gene);
+                                lineout = lineout + "\t" + DBSNP[entries[0].Replace("chr", "") + '.' + entries[1]].gene;
+                        //        Console.WriteLine("\t" + DBSNP[entries[0].Replace("chr", "") + '.' + entries[1]].gene);
                             }
                             else
                             {
-                                Console.WriteLine("\t" + "not-in-dbsnp");
+                                lineout = lineout + "\t" + "not-in-dbsnp";
+                        //        Console.WriteLine("\t" + "not-in-dbsnp");
                             }
-                            poscount++;
+                            lineout = lineout + "\t" + genefromgff(entries[0], Int32.Parse(entries[1]), roi);
+                            if (outfalse != 29)
+                            {
+                                poscount++;
+                                Console.WriteLine(lineout);
+                            }
+                            
                         }
                     }
                 }
@@ -279,10 +301,22 @@ namespace PickSnpFromVarscan
             return poscount;
         }
 
+        static string genefromgff(string chr, Int32 pos, GFFfile roi)
+        {
+            string gene = "";
+            foreach (KeyValuePair<string,Fragment> kvp in roi)
+            {
+                if ((chr == kvp.Value.seqname) && (pos > kvp.Value.start - 1) && (pos < kvp.Value.end + 1))
+                    gene = kvp.Value.source;
+            }
+            
+            return gene;
+        }
+
         static void usage()
         {
             Console.WriteLine(Environment.NewLine + "\tPickSnpFromVarscan Usage:");
-            Console.WriteLine("\tPickSnpFromVarscan <varscanoutput> <dbsnpoutput> <int min-readcount-sample> <int min-readcount-total>" + Environment.NewLine);
+            Console.WriteLine("\tPickSnpFromVarscan <varscanoutput> <dbsnpoutput> <int min-readcount-sample> <int min-readcount-total> <design.gff>" + Environment.NewLine);
         }
     }
 }

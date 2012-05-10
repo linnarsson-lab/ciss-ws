@@ -132,8 +132,15 @@ namespace BkgBackuper
                             {
                                 new ProjectDB().SetBackupStatus(readFile, "copied");
                                 TimeSpan timeTaken = DateTime.Now.Subtract(startTime);
-                                currentBytesPerHour = fileLen / timeTaken.TotalHours;
-                                logWriter.WriteLine(DateTime.Now.ToString() + " ...speed: " + currentBytesPerHour / Math.Pow(2.0, 30) + " Gbytes/hour");
+                                if (fileLen > 100000)
+                                {
+                                    currentBytesPerHour = fileLen / timeTaken.TotalHours;
+                                    logWriter.WriteLine(DateTime.Now.ToString() + " ...speed: " + currentBytesPerHour / Math.Pow(2.0, 30) + " Gbytes/hour");
+                                }
+                                else
+                                {
+                                    logWriter.WriteLine(DateTime.Now.ToString() + " ...file was empty.");
+                                }
                                 logWriter.Flush();
                             }
                         }

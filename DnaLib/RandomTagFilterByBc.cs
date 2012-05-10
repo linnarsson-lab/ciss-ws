@@ -231,6 +231,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
+        /// Number of distinct mappings (position-strand) that have been observed, irrespective of rndTags
         /// </summary>
         /// <returns>Number of distinct mappings (position-strand) that have been observed, irrespective of rndTags</returns>
         public int GetNumDistinctMappings()
@@ -242,6 +243,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
+        /// Returns all positions with some mapped read on given strand
         /// </summary>
         /// <param name="strand"></param>
         /// <returns>All positions with some mapped read on given strand</returns>
@@ -301,10 +303,16 @@ namespace Linnarsson.Strt
         /// </summary>
         public int[] nCasesPerRandomTagCount;
         /// <summary>
-        /// Number of reads that are distinct in each barcode.
-        /// (i.e., the position, strand, and rndTag are distinct.)
+        /// Number of signatures that are distinct in each barcode, i.e. the position, strand, and rndTag are distinct.
+        /// When all alternative exon mappings are annotated, the same molecule/read is counted more than once
         /// </summary>
         public int[] nUniqueByBarcode;
+        /// <summary>
+        /// Return the total number of distinct signatures, i.e. having unique pos, strand, rndTag.
+        /// When all alternative exon mappings are annotated, the same molecule/read is counted more than once
+        /// </summary>
+        public int nUniqueSignatures { get { return nUniqueByBarcode.Sum(); } }
+
         /// <summary>
         /// Histogram of number of times (reads) every molecule has been seen
         /// </summary>
@@ -316,6 +324,7 @@ namespace Linnarsson.Strt
         /// (i.e., the position, strand, and rndTag are exactly the same.)
         /// </summary>
         public int[] nDuplicatesByBarcode;
+        public int nDuplicates { get { return nDuplicatesByBarcode.Sum(); } }
 
         public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds)
         {
@@ -427,7 +436,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Number of distinct mappings since last barcode change
+        /// Number of distinct mappings (position + strand) since last barcode change
         /// </summary>
         /// <returns>Number of distinct mappings (position + strand) that have been observed in current barcode, irrespective of rndTags</returns>
         public int GetNumDistinctMappings()

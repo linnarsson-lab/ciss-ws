@@ -50,7 +50,6 @@ namespace Linnarsson.Strt
                 LoadRepeatMaskFile(rmskFile);
             }
             Console.WriteLine("{0} annotated repeat types.", repeatFeatures.Count);
-            summaryLines.Add(repeatFeatures.Count + " repeat types analyzed using " + rmskFiles.Length + " repeat mask files.\n");
         }
 
         public override string[] GetChromosomeIds()
@@ -174,8 +173,6 @@ namespace Linnarsson.Strt
                 }
                 if (Background.CancellationPending) return;
             }
-            summaryLines.Add("Read " + ChromosomeSequences.Count + 
-                     " sequence files for UCSC Wiggle plots (.wig files) and/or upstream hit motifs (sequence_logos.tab files).");
             Console.WriteLine();
         }
 
@@ -267,7 +264,6 @@ namespace Linnarsson.Strt
                                                                          nTooLongFeatures, props.MaxFeatureLength);
             string exclV = noGeneVariants ? "main" : "complete";
             Console.WriteLine("{0} {1} gene variants will be mapped.{2}", nGeneFeatures, exclV, exlTxt);
-            summaryLines.Add("\n" + nGeneFeatures + " " + exclV + " gene variants were analyzed in this run.");
         }
 
         /// <summary>
@@ -380,8 +376,6 @@ namespace Linnarsson.Strt
                 }
             }
             file.Close();
-            summaryLines.Add(nPairs + " pairs of expressed overlapping counter-oriented genes were found." +
-                             " For details, view the expressed_antisense.tab file.\n");
         }
 
         private void WritePotentialErronousAnnotations(string fileNameBase)
@@ -409,11 +403,6 @@ namespace Linnarsson.Strt
             warnFile.Close();
             if (nErr == 0)
                 File.Delete(warnFilename);
-            else
-            {
-                summaryLines.Add("Potentially erronous annotation of 5' and 3' transcript ends found in " +
-                                 nErr + " cases. For details, view the annot_errors_X.tab file.\n");
-            }
         }
 
         private int TestErrorAnnotType(StreamWriter warnFile, GeneFeature gf, 
@@ -513,7 +502,7 @@ namespace Linnarsson.Strt
             foreach (RepeatFeature rf in repeatFeatures.Values)
             {
                 matrixFile.Write("r_" + rf.Name + "\t\t\t\t" + rf.GetLocusLength() + "\t" +
-                                 rf.GetTotalHits() + "\t");
+                                 rf.GetTotalHits() + "\t" + rf.GetTotalHits());
                 foreach (int idx in speciesBcIndexes)
                     matrixFile.Write("\t" + rf.TotalHitsByBarcode[idx]);
                 matrixFile.WriteLine();
@@ -535,8 +524,6 @@ namespace Linnarsson.Strt
                 readFile.Close();
                 trueFile.Close();
             }
-            summaryLines.Add("For raw counts of " + geneFeatures.Count + " genes/variants and " +
-                             repeatFeatures.Count +  "expressed repeat types view the expression.tab file.");
             return exprPath;
         }
 
@@ -661,7 +648,7 @@ namespace Linnarsson.Strt
             }
             WriteRPMSection(matrixFile, true, null);
             matrixFile.WriteLine();
-            StreamWriter simpleTableFile = (fileNameBase + "_normalized_simple.txt").OpenWrite();
+            StreamWriter simpleTableFile = (fileNameBase + "_" + rpType + "_simple.txt").OpenWrite();
             foreach (int idx in barcodes.GenomeAndEmptyBarcodeIndexes(genome))
                 simpleTableFile.Write("\t" + barcodes.GetWellId(idx));
             simpleTableFile.WriteLine();

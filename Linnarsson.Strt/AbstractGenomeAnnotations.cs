@@ -40,11 +40,9 @@ namespace Linnarsson.Strt
         protected bool needChromosomeSequences;
         protected bool needChromosomeLengths;
         public bool noGeneVariants;
-        protected List<string> summaryLines;
 
         protected AbstractGenomeAnnotations(Props props, StrtGenome genome)
 		{
-            summaryLines = new List<string>();
             this.props = props;
             this.genome = genome;
             this.barcodes = props.Barcodes;
@@ -75,11 +73,6 @@ namespace Linnarsson.Strt
         /// <returns></returns>
         public abstract int GetTotalAnnotCounts(int annotType, bool excludeMasked);
         public abstract void WriteSpikeDetection(StreamWriter xmlFile);
-
-        public virtual List<string> GetSummaryLines()
-        {
-            return summaryLines;
-        }
 
         /// <summary>
         /// Write locus oriented statistics

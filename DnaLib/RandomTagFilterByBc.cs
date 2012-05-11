@@ -136,6 +136,12 @@ namespace Linnarsson.Strt
             return item.Add(m.RndTagIdx);
         }
 
+        /// <summary>
+        /// Add a read and checks wether the specified rndTag has been seen before on the pos and strand.
+        /// </summary>
+        /// <param name="m">A multireadmapping to analyze</param>
+        /// <param name="sharingRealFeatures">List of other features that compete due to the read being a multiread</param>
+        /// <returns>true if the rndTag is new at this position-strand</returns>
         public bool Add(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures)
         {
             int posStrand = MakePosStrandIdx(m.Position, m.Strand);
@@ -390,6 +396,14 @@ namespace Linnarsson.Strt
             return isNew | !hasRndTags;
         }
 
+        /// <summary>
+        /// Add a mapped read and check if the read represents a new molecule.
+        /// Reads have to be submitted in series containing all reads for each barcode.
+        /// Will record the transcripts competing for the read if it is multiread
+        /// </summary>
+        /// <param name="m">The mapping to add</param>
+        /// <param name="sharingRealFeatures">List of other features compete due to the read being a multiread</param>
+        /// <returns>True if the chr-strand-pos-randomTag combination is new</returns>
         public bool Add(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures)
         {
             nReadsByRandomTag[m.RndTagIdx]++;

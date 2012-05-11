@@ -151,6 +151,10 @@ namespace Linnarsson.Dna
             return currentCount == 0;
         }
 
+        /// <summary>
+        /// Record other transcripts that share the count from a multiread
+        /// </summary>
+        /// <param name="sharingRealFeatures"></param>
         public void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures)
         {
             foreach (IFeature sGf in sharingRealFeatures.Keys)

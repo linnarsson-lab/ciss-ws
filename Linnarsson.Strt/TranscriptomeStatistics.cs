@@ -574,13 +574,13 @@ namespace Linnarsson.Strt
         {
             if (!barcodes.HasRandomBarcodes) return;
             xmlFile.WriteLine("    <randomtagfrequence>");
-            xmlFile.WriteLine("<title>Number of reads detected in each random barcode</title>");
+            xmlFile.WriteLine("<title>Number of reads detected in each random tag</title>");
             xmlFile.WriteLine("<xtitle>Random tag index (AAAA...TTTT)</xtitle>");
             for (int i = 0; i < randomTagFilter.nReadsByRandomTag.Length; i++)
                 xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", barcodes.MakeRandomTag(i), randomTagFilter.nReadsByRandomTag[i]);
             xmlFile.WriteLine("    </randomtagfrequence>");
             xmlFile.WriteLine("    <nuniqueateachrandomtagcoverage>");
-            xmlFile.WriteLine("<title>Unique alignmentposition-barcodes as fn of # random tags they occur in</title>");
+            xmlFile.WriteLine("<title>Unique alignmentposition-barcodes as fn. of # random tags they occur in</title>");
             xmlFile.WriteLine("<xtitle>Number of different random tags</xtitle>");
             for (int i = 0; i < randomTagFilter.nCasesPerRandomTagCount.Length; i++)
                 xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
@@ -675,10 +675,10 @@ namespace Linnarsson.Strt
             {
                 dividend = nUsedMolecules;
                 reducer = 1.0E3d;
-                xmlFile.WriteLine("    <title>Molecule distribution (10^3). [#samples].\n{0}</title>", multiReadMethod);
+                xmlFile.WriteLine("    <title>Molecule mappings distribution (10^3). [#samples].\n{0}</title>", multiReadMethod);
             }
             else
-                xmlFile.WriteLine("    <title>Read distribution (10^6) [#samples].\n{0}</title>", multiReadMethod);
+                xmlFile.WriteLine("    <title>Read mappings distribution (10^6) [#samples].\n{0}</title>", multiReadMethod);
             xmlFile.WriteLine("    <point x=\"Mappings [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nUsedMolecules / dividend, nUsedMolecules / reducer);
             xmlFile.WriteLine("    <point x=\"Annotated [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nAnnotatedMappings / dividend, nAnnotatedMappings / reducer);
             xmlFile.WriteLine("    <point x=\"Feature hits [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nAllHits / dividend, nAllHits / reducer);
@@ -1300,7 +1300,7 @@ namespace Linnarsson.Strt
         {
             Dictionary<string, List<string>> byGene = new Dictionary<string, List<string>>();
             StreamWriter redFile = (fileNameBase + "_shared_hits.tab").OpenWrite();
-            redFile.WriteLine("#Reads\tGene loci competing for these reads (not all gene variants spanning the same hit site are shown)");
+            redFile.WriteLine("#Reads\tGenomically overlapping transcripts competing for these reads");
             foreach (string combName in overlappingGeneFeatures.Keys)
             {
                 int sharedHits = overlappingGeneFeatures[combName];
@@ -1318,7 +1318,7 @@ namespace Linnarsson.Strt
             }
             redFile.Close();
             StreamWriter sharedFile = (fileNameBase + "_shared_hits_by_gene.tab").OpenWrite();
-            sharedFile.WriteLine("Gene\tMinHits\tMaxHits\tNon-unique hits in the difference, that also map to other known genes");
+            sharedFile.WriteLine("Transcript\tMinHits\tMaxHits\tNon-unique hits in the difference, that also map to other overlapping transcripts/variants");
             foreach (string gene in byGene.Keys)
             {
                 GeneFeature gf = Annotations.geneFeatures[gene];
@@ -1560,6 +1560,11 @@ namespace Linnarsson.Strt
             }
         }
 
+        /// <summary>
+        /// Adds to every position where the read aligns to some transcript.
+        /// </summary>
+        /// <param name="mrm"></param>
+        /// <returns>true if any transcript was hit</returns>
         public bool AddToAllExonMappings(MultiReadMappings mrm)
         {
             bool someExonHit = false;
@@ -1574,6 +1579,12 @@ namespace Linnarsson.Strt
             return someExonHit;
         }
 
+        /// <summary>
+        /// Adds only to the single position where the (multi)read aligns closest to the 5' end of some transcript.
+        /// If several positions have equal distance to a 5' end one is chosen by random.
+        /// </summary>
+        /// <param name="mrm"></param>
+        /// <returns>true if any transcript was hit</returns>
         public bool AddToMost5PrimeExonMapping(MultiReadMappings mrm)
         {
             MultiReadMapping bestMapping = null;
@@ -1598,6 +1609,12 @@ namespace Linnarsson.Strt
             return false;
         }
 
+        /// <summary>
+        /// Adds to every position where the read aligns to some transcript.
+        /// Records the identities of the transcripts that compete for the read if it is a multiread
+        /// </summary>
+        /// <param name="mrm"></param>
+        /// <returns>true if any transcript was hit</returns>
         public bool AddToAllExonMappingsWSharedGenes(MultiReadMappings mrm)
         {
             Dictionary<IFeature, object> sharingRealFeatures = new Dictionary<IFeature, object>();
@@ -1619,6 +1636,13 @@ namespace Linnarsson.Strt
             return someExonHit;
         }
 
+        /// <summary>
+        /// Adds only to the single position where the (multi)read aligns closest to the 5' end of some transcript.
+        /// If several positions have equal distance to a 5' end one is chosen by random.
+        /// Records the identities of the transcripts that compete for the read if it is a multiread
+        /// </summary>
+        /// <param name="mrm"></param>
+        /// <returns>true if any transcript was hit</returns>
         public bool AddToMost5PrimeExonMappingWSharedGenes(MultiReadMappings mrm)
         {
             Dictionary<IFeature, object> sharingRealFeatures = new Dictionary<IFeature, object>();

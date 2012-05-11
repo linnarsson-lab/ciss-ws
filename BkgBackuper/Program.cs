@@ -127,8 +127,8 @@ namespace BkgBackuper
                             string cmdArg = string.Format("{0} {1}", readFile, backupDest);
                             logWriter.WriteLine(DateTime.Now.ToString() + " scp " + cmdArg);
                             logWriter.Flush();
-                            int cmdResult = CmdCaller.Run("scp", cmdArg);
-                            if (cmdResult == 0)
+                            CmdCaller cmd = new CmdCaller("scp", cmdArg);
+                            if (cmd.ExitCode == 0)
                             {
                                 new ProjectDB().SetBackupStatus(readFile, "copied");
                                 TimeSpan timeTaken = DateTime.Now.Subtract(startTime);
@@ -141,6 +141,13 @@ namespace BkgBackuper
                                 {
                                     logWriter.WriteLine(DateTime.Now.ToString() + " ...file was empty.");
                                 }
+                                logWriter.Flush();
+                            }
+                            else
+                            {
+                                new ProjectDB().SetBackupStatus(readFile, "failed");
+                                logWriter.WriteLine("{0} ERROR: scp {1} failed - Exit code: {2} {3}", 
+                                                    DateTime.Now.ToString(), cmdArg, cmd.ExitCode, cmd.StdError);
                                 logWriter.Flush();
                             }
                         }

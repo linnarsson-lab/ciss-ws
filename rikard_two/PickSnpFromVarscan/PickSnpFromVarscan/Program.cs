@@ -226,23 +226,25 @@ namespace PickSnpFromVarscan
             Console.WriteLine("Chrom\tPosition\tRef\tVar\tCons:Cov:Reads1:Reads2:Freq:P-value\tStrandFilter:R1+:R1-:R2+:R2-:pval\tSamplesRef\tSamplesHet\tSamplesHom\tSamplesNC\tCons:Cov:Reads1:Reads2:Freq:P-value");
             //            Console.WriteLine(Environment.NewLine + DB.dbsnpcount + Environment.NewLine);
 //            varscanfile VS = new varscanfile(args[0]);
+            double detectionlimit = 5;
             int minsample = int.Parse(args[2]);
             int mintotal = int.Parse(args[3]);
             GFFfile ROI = new GFFfile(args[4]);
-            int cnt = readvarscan(args[0], DB, minsample, mintotal, ROI);
+            int cnt = readvarscan(args[0], DB, minsample, mintotal, ROI, detectionlimit);
             Console.WriteLine(cnt);
 
             return (0);
         }
 
 
-        static int readvarscan(string Filepath, dbsnpfile DBSNP, int ms, int ts, GFFfile roi)
+        static int readvarscan(string Filepath, dbsnpfile DBSNP, int ms, int ts, GFFfile roi, double dl)
         {
             int poscount = 0;
 
             using (StreamReader r = new StreamReader(Filepath))
             {
                 string line;
+                int[] tokeep = new int[] { 10, 13, 15, 17, 18, 22, 23, 24, 25, 26 };
                 while ((line = r.ReadLine()) != null)
                 {
                     if (line.Length < 5) continue;
@@ -254,29 +256,55 @@ namespace PickSnpFromVarscan
                    //         Console.WriteLine(entries.Length + line);
                             string lineout = "";
                             int outfalse = 0;
+                            int outfracfalse = 0;
+                            int outfractrue = 0;
+                            int minfreqcount = 0;
                             string[] sample = entries[10].Split(new Char[] { ' ' });
+                            int counter = 1;
                             foreach (string item in sample)
                             {
                                 string[] samplevars = item.Split(new Char[] { ':' });
+                                if (samplevars[4] == "-")
+                                {
+                                    samplevars[4] = "0";
+                                }
                                 lineout = lineout + samplevars[4].Replace("%", "") + "\t";
                        //         Console.Write(samplevars[4].Replace("%", "") + "\t");
-                                if (int.Parse(samplevars[1]) < ms - 1) 
+                                if (double.Parse(samplevars[1]) < ms - 1)
                                 {
                                     outfalse++;
                                 }
-                       //         Console.Write(samplevars[0] + " " + samplevars[4] + "\t");
+                                if (double.Parse(samplevars[1]) < dl)
+                                {
+                                    outfracfalse++;
+                                }
+                                else
+                                {
+                                    outfractrue++;
+                                }
+                                if (!(tokeep.Contains(counter)))
+                                {
+
+                                    if (!(double.Parse(samplevars[4].Replace("%", "")) < dl))
+                                    {
+                                        minfreqcount++;
+                                    }
+                                }
+                                counter++;
+                                //         Console.Write(samplevars[0] + " " + samplevars[4] + "\t");
                        //         C:586:586:0:0%:1E0 C:1085:1085:0:0%:1E0 C:1336:1336:0:0%:1E0 
                             }
+                            if (minfreqcount > 3) continue;
                        //     Console.WriteLine();
                             lineout = lineout + entries[0] + "\t" + entries[1] + "\t" + entries[2] + "\t" + entries[3] + "\t" + entries[4] + "\t" + entries[5];
-                            lineout = lineout +  entries[6] + "\t" + entries[7] + "\t" + entries[8] + "\t" + entries[9];
+                            lineout = lineout + entries[6] + "\t" + entries[7] + "\t" + entries[8] + "\t" + entries[9];
                             //     Console.Write(entries[0] + "\t" + entries[1] + "\t" + entries[2] + "\t" + entries[3] + "\t" + entries[4] + "\t" + entries[5]);
                             //     Console.Write(entries[6] + "\t" + entries[7] + "\t" + entries[8] + "\t" + entries[9]);
 
                             string[] tottest = entries[4].Split(new Char[] { ':' });
                             if (int.Parse(tottest[1]) < ts - 1) continue;
 
-
+                            lineout = lineout + "\t" + outfracfalse + "\t" + outfractrue + "\t" + minfreqcount;
                             if (DBSNP.ContainsKey(entries[0].Replace("chr", "") + '.' + entries[1]))
                             {
                                 lineout = lineout + "\t" + DBSNP[entries[0].Replace("chr", "") + '.' + entries[1]].gene;

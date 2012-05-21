@@ -223,7 +223,8 @@ namespace PickSnpFromVarscan
             dbsnpfile DB = new dbsnpfile(args[1]);
             Console.WriteLine("\tFile: '" + args[1] + "' scanned for DBSNPs: " + DB.dbsnpcount + " found.");
             Console.Write("1\t2\t3\t4\t5\t6\t7\t8\t9\t10\t11\t12\t13\t14\t15\t16\t17\t18\t19\t20\t21\t22\t23\t24\t25\t26\t27\t28\t29\t");
-            Console.WriteLine("Chrom\tPosition\tRef\tVar\tCons:Cov:Reads1:Reads2:Freq:P-value\tStrandFilter:R1+:R1-:R2+:R2-:pval\tSamplesRef\tSamplesHet\tSamplesHom\tSamplesNC\tCons:Cov:Reads1:Reads2:Freq:P-value");
+            Console.Write("Chrom\tPosition\tRef\tVar\tCons:Cov:Reads1:Reads2:Freq:P-value\tStrandFilter:R1+:R1-:R2+:R2-:pval\tSamplesRef\t");
+            Console.WriteLine("SamplesHet\tSamplesHom\tSamplesNC\toutfracfalse\toutfractrue\tminfreqcount\tdbsnpgene\troigene");
             //            Console.WriteLine(Environment.NewLine + DB.dbsnpcount + Environment.NewLine);
 //            varscanfile VS = new varscanfile(args[0]);
             double detectionlimit = 5;
@@ -297,7 +298,7 @@ namespace PickSnpFromVarscan
                             if (minfreqcount > 3) continue;
                        //     Console.WriteLine();
                             lineout = lineout + entries[0] + "\t" + entries[1] + "\t" + entries[2] + "\t" + entries[3] + "\t" + entries[4] + "\t" + entries[5];
-                            lineout = lineout + entries[6] + "\t" + entries[7] + "\t" + entries[8] + "\t" + entries[9];
+                            lineout = lineout  + "\t"+ entries[6] + "\t" + entries[7] + "\t" + entries[8] + "\t" + entries[9];
                             //     Console.Write(entries[0] + "\t" + entries[1] + "\t" + entries[2] + "\t" + entries[3] + "\t" + entries[4] + "\t" + entries[5]);
                             //     Console.Write(entries[6] + "\t" + entries[7] + "\t" + entries[8] + "\t" + entries[9]);
 
@@ -331,7 +332,7 @@ namespace PickSnpFromVarscan
 
         static string genefromgff(string chr, Int32 pos, GFFfile roi)
         {
-            string gene = "";
+            string gene = "not-in-roi";
             foreach (KeyValuePair<string,Fragment> kvp in roi)
             {
                 if ((chr == kvp.Value.seqname) && (pos > kvp.Value.start - 1) && (pos < kvp.Value.end + 1))

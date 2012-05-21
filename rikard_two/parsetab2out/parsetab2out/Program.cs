@@ -136,7 +136,7 @@ namespace parsetab2out
                 counter++;
                 if (counter == 1)
                 {
-                    Console.WriteLine(String.Join("\t", rw));
+                    Console.WriteLine(String.Join("\t", rw) + "\tposAgain\tInEnsembl\tHGNC\tConsequence\tcodon\tAA");
                     continue;
                 }
                 else
@@ -180,23 +180,31 @@ namespace parsetab2out
                         hitcount++;
                     }
                 }
-                Console.Write(" InEnsembl:" + hitcount);
+                Console.Write("\t" + hitcount);
                 if (HGNC.Length > 3)
                 {
-                    Console.Write(" Gene" + HGNC);
+                    Console.Write("\t" + HGNC);
                 }
+                else
+                    Console.Write("\tno gene");
                 if (Consequence.Length > 3)
                 {
-                    Console.Write(" Consequence" + Consequence);
+                    Console.Write("\t" + Consequence);
                 }
+                else
+                    Console.Write("\tnot-known");
                 if (CodonChange.Length > 3)
                 {
-                    Console.Write(" CodonChange: " + CodonChange);
+                    Console.Write("\t" + CodonChange);
                 }
+                else
+                    Console.Write("\tno-codon");
                 if (AAchange.Length > 3)
                 {
-                    Console.Write(" AAChange: " + AAchange);
+                    Console.Write("\t" + AAchange);
                 }
+                else
+                    Console.Write("\tno-aa");
                 Console.WriteLine();
             }
         }

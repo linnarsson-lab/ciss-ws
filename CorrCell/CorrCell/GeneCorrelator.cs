@@ -42,8 +42,12 @@ namespace CorrCell
             int nGenes = expr.GeneCount;
             for (int geneIdxA = 0; geneIdxA < nGenes - 1; geneIdxA++)
             {
+                if (expr.GeneMean(geneIdxA) == 0.0)
+                    continue;
                 for (int geneIdxB = geneIdxA + 1; geneIdxB < nGenes; geneIdxB++)
                 {
+                    if (expr.GeneMean(geneIdxB) == 0.0)
+                        continue;
                     int[] countsA = expr.GetGeneValues(geneIdxA);
                     int[] countsB = expr.GetGeneValues(geneIdxB);
                     DescriptiveStatistics ds = EstimateCorrelation(dataSampler, countsA, countsB);

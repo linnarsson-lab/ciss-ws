@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace CorrCell
 {
@@ -10,16 +11,28 @@ namespace CorrCell
     /// </summary>
     public class Expression
     {
-        private double[,] data;
+        private string[] cellNames;
+        public string GetCellName(int cellIdx)
+        {
+            return cellNames[cellIdx];
+        }
+
+        private string[] geneNames;
+        public string GetGeneName(int geneIdx)
+        {
+            return geneNames[geneIdx];
+        }
+
+        private List<int[]> data = new List<int[]>();
 
         /// <summary>
         /// Number of genes in data the data set
         /// </summary>
-        public int GeneCount { get { return data.GetLength(0); } }
+        public int GeneCount { get { return data.Count; } }
         /// <summary>
         /// Number of cells in the data set
         /// </summary>
-        public int CellCount { get { return data.GetLength(1); } }
+        public int CellCount { get { return data[0].Length; } }
 
         /// <summary>
         /// Fetch the expression value for a specific gene and cell
@@ -27,9 +40,9 @@ namespace CorrCell
         /// <param name="geneIdx"></param>
         /// <param name="cellIdx"></param>
         /// <returns></returns>
-        public double GetValue(int geneIdx, int cellIdx)
+        public int GetValue(int geneIdx, int cellIdx)
         {
-            return data[geneIdx, cellIdx];
+            return data[geneIdx][cellIdx];
         }
 
         /// <summary>
@@ -41,7 +54,7 @@ namespace CorrCell
         {
             int n = 0;
             double sum = 0.0;
-            foreach (double value in IterGeneValues(geneIdx, false))
+            foreach (int value in data[geneIdx])
             {
                 n++;
                 sum += value;
@@ -58,7 +71,7 @@ namespace CorrCell
         {
             int n = 0;
             double sum = 0.0;
-            foreach (double value in IterCellValues(cellIdx, false))
+            foreach (int value in IterCellValues(cellIdx))
             {
                 n++;
                 sum += value;
@@ -67,42 +80,37 @@ namespace CorrCell
         }
 
         /// <summary>
-        /// Iterate the counts for all cells of a specific gene
+        /// Get the counts for all cells of a specific gene
         /// </summary>
         /// <param name="geneIdx"></param>
-        /// <param name="includeNaN">If false, will only return values for cells where data exist</param>
         /// <returns></returns>
-        public IEnumerable<double> IterGeneValues(int geneIdx, bool includeNaN)
+        public int[] GetGeneValues(int geneIdx)
         {
-            for (int col = 0; col < GeneCount; col++)
-                if (!double.IsNaN(data[geneIdx, col]) || includeNaN)
-                    yield return data[geneIdx, col];
+            return data[geneIdx];
         }
 
         /// <summary>
         /// Iterate the counts for all genes of a specific cell
         /// </summary>
-        /// <param name="geneIdx"></param>
-        /// <param name="includeNaN">If false, will only return values for genes where data exist</param>
+        /// <param name="cellIdx"></param>
         /// <returns></returns>
-        public IEnumerable<double> IterCellValues(int cellIdx, bool includeNaN)
+        public IEnumerable<int> IterCellValues(int cellIdx)
         {
             for (int row = 0; row < CellCount; row++)
-                if (!double.IsNaN(data[row, cellIdx]) || includeNaN)
-                    yield return data[row, cellIdx];
+                yield return data[row][cellIdx];
         }
 
         /// <summary>
         /// Iterate all counts in the whole table
         /// </summary>
-        /// <param name="includeNaN">If false, will only return valid counts</param>
+        /// <param name="includeZeroGenes">If false, will skip genes with no expression</param>
         /// <returns></returns>
-        public IEnumerable<double> IterValues(bool includeNaN)
+        public IEnumerable<int> IterValues(bool includeZeroGenes)
         {
-            for (int row = 0; row < CellCount; row++)
-                for (int col = 0; col < GeneCount; col++)
-                    if (!double.IsNaN(data[row, col]) || includeNaN)
-                        yield return data[row, col];
+            for (int geneIdx = 0; geneIdx < GeneCount; geneIdx++)
+                if (includeZeroGenes || GeneMean(geneIdx) > 0)
+                    foreach (int value in data[geneIdx])
+                        yield return value;
         }
 
         /// <summary>
@@ -110,9 +118,45 @@ namespace CorrCell
         /// </summary>
         /// <param name="file"></param>
         /// <returns></returns>
-        public static Expression FromExpressionFile(string file)
+        public Expression(string file)
         {
-            return new Expression();
+            bool dataReached = false;
+            int firstDataCol = 0;
+            List<string> genes = new List<string>();
+            using (StreamReader reader = new StreamReader(file))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (!dataReached)
+                    {
+                        int p = line.IndexOf("Sample:\t");
+                        if (p > -1)
+                        {
+                            cellNames = line.Substring(p + 7).Trim().Split('\t');
+                            firstDataCol = line.Substring(0, p).Split('\t').Length;
+                            Console.WriteLine("Firstdatacol:" + firstDataCol.ToString());
+                        }
+                        else if (line.StartsWith("Feature\t"))
+                            dataReached = true;
+                    }
+                    else
+                    {
+                        if (line.StartsWith("RNA_SPIKE") || line.StartsWith("r_"))
+                            continue;
+                        string[] fields = line.Split('\t');
+                        int nDataFields = fields.Length - firstDataCol;
+                        if (nDataFields != cellNames.Length)
+                            throw new IOException("File format error - Wrong number of data columns:\n" + line);
+                        int[] geneData = new int[nDataFields];
+                        for (int col = firstDataCol; col < fields.Length; col++)
+                            geneData[col - firstDataCol] = int.Parse(fields[col]);
+                        data.Add(geneData);
+                        genes.Add(fields[0]);
+                    }
+                }
+            }
+            geneNames = genes.ToArray();            
         }
 
     }

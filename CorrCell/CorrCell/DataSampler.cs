@@ -47,7 +47,7 @@ namespace CorrCell
             List<double> ivlMeans = new List<double>();
             int[] counts = meansByCount.Keys.ToArray();
             Array.Sort(counts);
-            List<int> TempIvlStarts = new List<int>();
+            List<int> tempIvlStarts = new List<int>();
             int ivlNValues = 0;
             int ivlStartIdx = 0;
             for (int i = 0; i < counts.Length; i++)
@@ -58,7 +58,7 @@ namespace CorrCell
                 if (ivlNValues >= minValuesPerIvl)
                 {
                     meansByIvl.Add(ivlMeans);
-                    TempIvlStarts.Add(counts[ivlStartIdx]);
+                    tempIvlStarts.Add(counts[ivlStartIdx]);
                     ivlMeans = new List<double>();
                     ivlNValues = 0;
                     ivlStartIdx = i + 1;
@@ -67,9 +67,9 @@ namespace CorrCell
             if (ivlMeans.Count > 0)
             {
                 meansByIvl.Add(ivlMeans);
-                TempIvlStarts.Add(counts[ivlStartIdx]);
+                tempIvlStarts.Add(counts[ivlStartIdx]);
             }
-            countIvlStarts = TempIvlStarts.ToArray();
+            countIvlStarts = tempIvlStarts.ToArray();
         }
 
         private static Dictionary<int, List<double>> SortMeansByCount(Expression expression)
@@ -78,12 +78,12 @@ namespace CorrCell
             for (int geneIdx = 0; geneIdx < expression.GeneCount; geneIdx++)
             {
                 double mean = expression.GeneMean(geneIdx);
-                foreach (int count in expression.IterGeneValues(geneIdx, false))
+                foreach (int count in expression.GetGeneValues(geneIdx))
                 {
                     List<double> meansAtCount;
                     if (!meansByCount.TryGetValue(count, out meansAtCount))
-                        meansAtCount = new List<double>();
-                    meansAtCount.Add(mean);
+                        meansByCount[count] = new List<double>();
+                    meansByCount[count].Add(mean);
                 }
             }
             return meansByCount;

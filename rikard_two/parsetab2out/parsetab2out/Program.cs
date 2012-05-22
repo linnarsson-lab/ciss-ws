@@ -162,7 +162,7 @@ namespace parsetab2out
                                 CodonChange += kvp.Value.Codonchange;
                             }
                         }
-                        if (kvp.Value.Aminoacidchange.Length > 5)
+                        if (kvp.Value.Aminoacidchange.Length > 1)
                         {
                             if (kvp.Value.Aminoacidchange != AAchange)
                             {
@@ -199,7 +199,7 @@ namespace parsetab2out
                 }
                 else
                     Console.Write("\tno-codon");
-                if (AAchange.Length > 3)
+                if (AAchange.Length > 1)
                 {
                     Console.Write("\t" + AAchange);
                 }

@@ -283,14 +283,16 @@ namespace PickSnpFromVarscan
                                 {
                                     outfractrue++;
                                 }
-                                if (!(tokeep.Contains(counter)))
+
+                                if (!(tokeep.Contains(counter)))    // count only tumors
                                 {
 
                                     if (!(double.Parse(samplevars[4].Replace("%", "")) < dl))
                                     {
-                                        minfreqcount++;
+                                        minfreqcount++;             // add to count tumors with variant allele
                                     }
                                 }
+
                                 counter++;
                                 //         Console.Write(samplevars[0] + " " + samplevars[4] + "\t");
                        //         C:586:586:0:0%:1E0 C:1085:1085:0:0%:1E0 C:1336:1336:0:0%:1E0 

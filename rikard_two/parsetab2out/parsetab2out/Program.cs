@@ -128,7 +128,7 @@ namespace parsetab2out
             //            Console.WriteLine(filerows1.Count);
             EnsemblFile EFILE = new EnsemblFile(args[1]);
 
-            Console.WriteLine(EFILE.poscount);
+//            Console.WriteLine(EFILE.poscount);
 
             int counter = 0;
             foreach (string[] rw in filerows1)

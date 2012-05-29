@@ -220,11 +220,13 @@ namespace PickSnpFromVarscan
                 return (1);
             }
 
+
+
             dbsnpfile DB = new dbsnpfile(args[1]);
-            Console.WriteLine("\tFile: '" + args[1] + "' scanned for DBSNPs: " + DB.dbsnpcount + " found.");
+//            Console.WriteLine("\tFile: '" + args[1] + "' scanned for DBSNPs: " + DB.dbsnpcount + " found.");
             Console.Write("1\t2\t3\t4\t5\t6\t7\t8\t9\t10\t11\t12\t13\t14\t15\t16\t17\t18\t19\t20\t21\t22\t23\t24\t25\t26\t27\t28\t29\t");
             Console.Write("Chrom\tPosition\tRef\tVar\tCons:Cov:Reads1:Reads2:Freq:P-value\tStrandFilter:R1+:R1-:R2+:R2-:pval\tSamplesRef\t");
-            Console.WriteLine("SamplesHet\tSamplesHom\tSamplesNC\toutfracfalse\toutfractrue\tminfreqcount\tdbsnpgene\troigene");
+            Console.WriteLine("SamplesHet\tSamplesHom\tSamplesNC\toutfracfalse\toutfractrue5\toutfractrue1\tdbsnpgene\troigene");
             //            Console.WriteLine(Environment.NewLine + DB.dbsnpcount + Environment.NewLine);
 //            varscanfile VS = new varscanfile(args[0]);
             double detectionlimit = 5;
@@ -232,7 +234,7 @@ namespace PickSnpFromVarscan
             int mintotal = int.Parse(args[3]);
             GFFfile ROI = new GFFfile(args[4]);
             int cnt = readvarscan(args[0], DB, minsample, mintotal, ROI, detectionlimit);
-            Console.WriteLine(cnt);
+//            Console.WriteLine(cnt);
 
             return (0);
         }
@@ -241,6 +243,7 @@ namespace PickSnpFromVarscan
         static int readvarscan(string Filepath, dbsnpfile DBSNP, int ms, int ts, GFFfile roi, double dl)
         {
             int poscount = 0;
+            string outsnps = "";
 
             using (StreamReader r = new StreamReader(Filepath))
             {
@@ -258,7 +261,8 @@ namespace PickSnpFromVarscan
                             string lineout = "";
                             int outfalse = 0;
                             int outfracfalse = 0;
-                            int outfractrue = 0;
+                            int outfractrue1 = 0;
+                            int outfractrue5 = 0;
                             int minfreqcount = 0;
                             string[] sample = entries[10].Split(new Char[] { ' ' });
                             int counter = 1;
@@ -281,18 +285,25 @@ namespace PickSnpFromVarscan
                                 }
                                 else
                                 {
-                                    outfractrue++;
+                                    outfractrue5++;
+                                }
+                                if (double.Parse(samplevars[1]) < 1)    // to count all below 1%
+                                {
+                                }
+                                else
+                                {
+                                    outfractrue1++;
                                 }
 
-                                if (!(tokeep.Contains(counter)))    // count only tumors
+/*                                if (!(tokeep.Contains(counter)))    // count only tumors, not nomrals
                                 {
 
                                     if (!(double.Parse(samplevars[4].Replace("%", "")) < dl))
                                     {
-                                        minfreqcount++;             // add to count tumors with variant allele
+                                        minfreqcount++;             // add to count tumors with variant allele, we did not want too many
                                     }
                                 }
-
+                                */
                                 counter++;
                                 //         Console.Write(samplevars[0] + " " + samplevars[4] + "\t");
                        //         C:586:586:0:0%:1E0 C:1085:1085:0:0%:1E0 C:1336:1336:0:0%:1E0 
@@ -303,11 +314,11 @@ namespace PickSnpFromVarscan
                             lineout = lineout  + "\t"+ entries[6] + "\t" + entries[7] + "\t" + entries[8] + "\t" + entries[9];
                             //     Console.Write(entries[0] + "\t" + entries[1] + "\t" + entries[2] + "\t" + entries[3] + "\t" + entries[4] + "\t" + entries[5]);
                             //     Console.Write(entries[6] + "\t" + entries[7] + "\t" + entries[8] + "\t" + entries[9]);
-
+                            outsnps = outsnps + entries[0].Replace("chr", "") + "\t" + entries[1] + "\t" + entries[1] + "\t" + entries[2] + "/" + entries[3] + "\t+\n";
                             string[] tottest = entries[4].Split(new Char[] { ':' });
                             if (int.Parse(tottest[1]) < ts - 1) continue;
 
-                            lineout = lineout + "\t" + outfracfalse + "\t" + outfractrue + "\t" + minfreqcount;
+                            lineout = lineout + "\t" + outfracfalse + "\t" + outfractrue5 + "\t" + outfractrue1;
                             if (DBSNP.ContainsKey(entries[0].Replace("chr", "") + '.' + entries[1]))
                             {
                                 lineout = lineout + "\t" + DBSNP[entries[0].Replace("chr", "") + '.' + entries[1]].gene;
@@ -329,6 +340,7 @@ namespace PickSnpFromVarscan
                     }
                 }
             }
+            System.IO.File.WriteAllText(@"WriteText.txt", outsnps);
             return poscount;
         }
 

@@ -17,12 +17,27 @@ namespace CorrCell
             return cellNames[cellIdx];
         }
 
+        /// <summary>
+        /// Lower case of gene names
+        /// </summary>
         private string[] geneNames;
         public string GetGeneName(int geneIdx)
         {
             return geneNames[geneIdx];
         }
+        /// <summary>
+        /// Find the index of a gene
+        /// </summary>
+        /// <param name="geneName"></param>
+        /// <returns>-1 if not found</returns>
+        public int GetGeneIdx(string geneName)
+        {
+            return Array.IndexOf(geneNames, geneName.ToLower());
+        }
 
+        /// <summary>
+        /// data[genes][cells]
+        /// </summary>
         private List<int[]> data = new List<int[]>();
 
         /// <summary>
@@ -63,23 +78,6 @@ namespace CorrCell
         }
 
         /// <summary>
-        /// Get the average count for a specific cell
-        /// </summary>
-        /// <param name="cellIdx"></param>
-        /// <returns></returns>
-        public double CellMean(int cellIdx)
-        {
-            int n = 0;
-            double sum = 0.0;
-            foreach (int value in IterCellValues(cellIdx))
-            {
-                n++;
-                sum += value;
-            }
-            return sum / n;
-        }
-
-        /// <summary>
         /// Get the counts for all cells of a specific gene
         /// </summary>
         /// <param name="geneIdx"></param>
@@ -90,14 +88,27 @@ namespace CorrCell
         }
 
         /// <summary>
+        /// Get the total count for a specific cell
+        /// </summary>
+        /// <param name="cellIdx"></param>
+        /// <returns></returns>
+        public double CellSum(int cellIdx)
+        {
+            double sum = 0.0;
+            foreach (int value in IterCellValues(cellIdx))
+                sum += value;
+            return sum;
+        }
+
+        /// <summary>
         /// Iterate the counts for all genes of a specific cell
         /// </summary>
         /// <param name="cellIdx"></param>
         /// <returns></returns>
         public IEnumerable<int> IterCellValues(int cellIdx)
         {
-            for (int row = 0; row < CellCount; row++)
-                yield return data[row][cellIdx];
+            for (int geneIdx = 0; geneIdx < GeneCount; geneIdx++)
+                yield return data[geneIdx][cellIdx];
         }
 
         /// <summary>
@@ -152,12 +163,36 @@ namespace CorrCell
                         for (int col = firstDataCol; col < fields.Length; col++)
                             geneData[col - firstDataCol] = int.Parse(fields[col]);
                         data.Add(geneData);
-                        genes.Add(fields[0]);
+                        genes.Add(fields[0].ToLower());
                     }
                 }
             }
             geneNames = genes.ToArray();            
         }
 
+        public double AllCellMean()
+        {
+            double total = 0.0;
+            foreach (int value in IterValues(true)) total += value;
+            return total / CellCount;
+        }
+
+        public void FilterEmptyCells(double fractionThreshold)
+        {
+            double threshold = AllCellMean() / fractionThreshold;
+            List<int> keepCells = new List<int>();
+            for (int cellIdx = 0; cellIdx < CellCount; cellIdx++)
+            {
+                if (CellSum(cellIdx) >= threshold)
+                    keepCells.Add(cellIdx);
+            }
+            for (int geneIdx = 0; geneIdx < data.Count; geneIdx++)
+            {
+                int[] newGeneData = new int[keepCells.Count];
+                for (int i = 0; i < keepCells.Count; i++)
+                    newGeneData[i] = data[geneIdx][keepCells[i]];
+                data[geneIdx] = newGeneData;
+            }
+        }
     }
 }

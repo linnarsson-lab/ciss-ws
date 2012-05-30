@@ -17,18 +17,14 @@ namespace CorrCell
         /// </summary>
         private int nSamples;
 
-        /// <summary>
-        /// Used to group less frequent (high) raw data counts in intervals to get reasonable samples sizes
-        /// </summary>
-        private int minValuesPerIvl;
-
+        private DataSampler dataSampler;
         private CorrelationCalculator correlationCalculator;
 
-        public GeneCorrelator(int nSamples, int minSampleBinSize, CorrelationCalculator corrCalculator)
+        public GeneCorrelator(int nSamples, int minSampleBinSize, CorrelationCalculator corrCalculator, DataSampler dataSampler)
         {
             this.nSamples = nSamples;
-            minValuesPerIvl = minSampleBinSize;
             correlationCalculator = corrCalculator;
+            this.dataSampler = dataSampler;
         }
 
         /// <summary>
@@ -38,7 +34,6 @@ namespace CorrCell
         /// <param name="expr"></param>
         public IEnumerable<CorrPair> IterCorrelations(Expression expr)
         {
-            DataSampler dataSampler = new DataSampler(expr, minValuesPerIvl);
             int nGenes = expr.GeneCount;
             for (int geneIdxA = 0; geneIdxA < nGenes - 1; geneIdxA++)
             {
@@ -48,14 +43,19 @@ namespace CorrCell
                 {
                     if (expr.GeneMean(geneIdxB) == 0.0)
                         continue;
-                    int[] countsA = expr.GetGeneValues(geneIdxA);
-                    int[] countsB = expr.GetGeneValues(geneIdxB);
-                    DescriptiveStatistics ds = EstimateCorrelation(dataSampler, countsA, countsB);
-                    CorrPair cp = new CorrPair(ds.Mean(), ds.Variance(), countsA, countsB,
-                                               geneIdxA, geneIdxB, expr.GetGeneName(geneIdxA), expr.GetGeneName(geneIdxB));
-                    yield return cp;
+                    yield return GetCorrelation(expr, geneIdxA, geneIdxB);
                 }
             }
+        }
+
+        public CorrPair GetCorrelation(Expression expr, int geneIdxA, int geneIdxB)
+        {
+            int[] countsA = expr.GetGeneValues(geneIdxA);
+            int[] countsB = expr.GetGeneValues(geneIdxB);
+            DescriptiveStatistics ds = EstimateCorrelation(dataSampler, countsA, countsB);
+            CorrPair cp = new CorrPair(ds.Mean(), ds.Variance(), countsA, countsB,
+                                       geneIdxA, geneIdxB, expr.GetGeneName(geneIdxA), expr.GetGeneName(geneIdxB));
+            return cp;
         }
 
         private DescriptiveStatistics EstimateCorrelation(DataSampler dataSampler, int[] countsA, int[] countsB)

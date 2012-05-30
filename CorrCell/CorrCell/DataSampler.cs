@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
+using Linnarsson.Mathematics;
 
 namespace CorrCell
 {
@@ -19,11 +21,16 @@ namespace CorrCell
         /// </summary>
         /// <param name="expression">Input expression data</param>
         /// <param name="minValuesPerIvl">Minimum number of values in each bin to sample from</param>
-        public DataSampler(Expression expression, int minValuesPerIvl)
+        public DataSampler(Expression expression, int minValuesPerIvl, bool plotDistributions)
         {
             rnd = new Random(DateTime.Now.Millisecond);
             Dictionary<int, List<double>> meansByCount = SortMeansByCount(expression);
             DefineIntervalsOfMeans(minValuesPerIvl, meansByCount);
+            if (plotDistributions)
+            {
+                PlotMeansByCount(meansByCount);
+                PlotIntervals();
+            }
         }
 
         /// <summary>
@@ -89,5 +96,38 @@ namespace CorrCell
             return meansByCount;
         }
 
+        public static void PlotMeansByCount(Dictionary<int, List<double>> meansByCount)
+        {
+            string outFile = "means_by_count.txt";
+            Console.WriteLine("Writing data by count to " + outFile);
+            int[] counts = meansByCount.Keys.ToArray();
+            Array.Sort(counts);
+            StreamWriter writer = new StreamWriter(outFile);
+            writer.WriteLine("Count\tNValues\tMeanOfMeans\tStdDev");
+            foreach (int c in counts)
+            {
+                DescriptiveStatistics ds = new DescriptiveStatistics(meansByCount[c].ToArray());
+                writer.WriteLine("{0}\t{1}\t{2}\t{3}", c, ds.Count, ds.Mean(), ds.StandardDeviation());
+            }
+            writer.Close();
+        }
+
+        public void PlotIntervals()
+        {
+            string outFile = "interval_data.txt";
+            Console.WriteLine("Writing data by intervals to " + outFile);
+            StreamWriter writer = new StreamWriter(outFile);
+            writer.WriteLine("IvlStart\tIvlEnd\tMidIvl\tNValues\tMeanOfMeans\tStdDev");
+            for (int ivlIdx = 0; ivlIdx < meansByIvl.Count; ivlIdx++)
+            {
+                int ivlStart = countIvlStarts[ivlIdx];
+                int ivlEnd = (ivlIdx == meansByIvl.Count - 1) ? int.MaxValue : countIvlStarts[ivlIdx + 1];
+                List<double> ivlData = meansByIvl[ivlIdx];
+                DescriptiveStatistics ds = new DescriptiveStatistics(ivlData.ToArray());
+                writer.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", ivlStart, ivlEnd, (ivlStart + ivlEnd) / 2.0,
+                                                                 ds.Count, ds.Mean(), ds.StandardDeviation());
+
+            }
+        }
     }
 }

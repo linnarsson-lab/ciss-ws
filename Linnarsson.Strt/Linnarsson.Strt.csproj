@@ -55,6 +55,7 @@
     <Compile Include="BarcodedReadStream.cs" />
     <Compile Include="BowtieMapFileSorter.cs" />
     <Compile Include="MapFileSnpFinder.cs" />
+    <Compile Include="MappingAdder.cs" />
     <Compile Include="NonExonRepeatMasker.cs" />
     <Compile Include="MoleculeCounter.cs" />
     <Compile Include="ProjectDB.cs" />

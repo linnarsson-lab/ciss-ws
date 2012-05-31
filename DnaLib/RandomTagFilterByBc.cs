@@ -40,18 +40,6 @@ namespace Linnarsson.Strt
         /// </summary>
         public Wiggle wiggleRev = new Wiggle();
 
-        /// <summary>
-        /// Pre-define a tagItem at specified position (used for shared multiread TagItems)
-        /// </summary>
-        /// <param name="pos"></param>
-        /// <param name="strand"></param>
-        /// <param name="tagItem"></param>
-        public void Setup(int pos, char strand, TagItem tagItem)
-        {
-            int posStrand = MakePosStrandIdx(pos, strand);
-            tagItems[posStrand] = tagItem; 
-        }
-
         private static int MakePosStrandIdx(int pos, char strand)
         {
             int strandIdx = (strand == '+') ? 0 : 1;
@@ -237,7 +225,8 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Number of distinct mappings (position-strand) that have been observed, irrespective of rndTags
+        /// Number of distinct mappings (position-strand) that have been observed, irrespective of rndTags.
+        /// Note that this may be more than number of distinct molecules, if all multiread mappings to exons are analyzed
         /// </summary>
         /// <returns>Number of distinct mappings (position-strand) that have been observed, irrespective of rndTags</returns>
         public int GetNumDistinctMappings()
@@ -308,29 +297,12 @@ namespace Linnarsson.Strt
         /// Histogram of saturation of random tags by different position-strand combinations
         /// </summary>
         public int[] nCasesPerRandomTagCount;
-        /// <summary>
-        /// Number of signatures that are distinct in each barcode, i.e. the position, strand, and rndTag are distinct.
-        /// When all alternative exon mappings are annotated, the same molecule/read is counted more than once
-        /// </summary>
-        public int[] nUniqueByBarcode;
-        /// <summary>
-        /// Return the total number of distinct signatures, i.e. having unique pos, strand, rndTag.
-        /// When all alternative exon mappings are annotated, the same molecule/read is counted more than once
-        /// </summary>
-        public int nUniqueSignatures { get { return nUniqueByBarcode.Sum(); } }
 
         /// <summary>
         /// Histogram of number of times (reads) every molecule has been seen
         /// </summary>
         public int[] moleculeReadCountsHistogram;
         public static readonly int MaxValueInReadCountHistogram = 1000;
-
-        /// <summary>
-        /// Number of reads that are copies of a first distinct read in each barcode.
-        /// (i.e., the position, strand, and rndTag are exactly the same.)
-        /// </summary>
-        public int[] nDuplicatesByBarcode;
-        public int nDuplicates { get { return nDuplicatesByBarcode.Sum(); } }
 
         public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds)
         {
@@ -339,8 +311,6 @@ namespace Linnarsson.Strt
             TagItem.nRndTags = nRndTags;
             nReadsByRandomTag = new int[nRndTags];
             nCasesPerRandomTagCount = new int[nRndTags + 1];
-            nDuplicatesByBarcode = new int[barcodes.AllCount];
-            nUniqueByBarcode = new int[barcodes.AllCount];
             chrTagDatas = new Dictionary<string, ChrTagData>();
             foreach (string chrId in chrIds)
                 chrTagDatas[chrId] = new ChrTagData(chrId);
@@ -386,13 +356,11 @@ namespace Linnarsson.Strt
         /// Add a mapped read and check if the read represents a new molecule.
         /// Reads have to be submitted in series containing all reads for each barcode.
         /// </summary>
-        /// <returns>True if the chr-strand-pos-randomTag combination is new</returns>
+        /// <returns>True if the chr-strand-pos-bc-rndTag combination is new</returns>
         public bool Add(MultiReadMapping m)
         {
             nReadsByRandomTag[m.RndTagIdx]++;
             bool isNew = chrTagDatas[m.Chr].Add(m);
-            if (isNew) nUniqueByBarcode[m.BcIdx]++;
-            else nDuplicatesByBarcode[m.BcIdx]++;
             return isNew | !hasRndTags;
         }
 
@@ -403,13 +371,11 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="m">The mapping to add</param>
         /// <param name="sharingRealFeatures">List of other features compete due to the read being a multiread</param>
-        /// <returns>True if the chr-strand-pos-randomTag combination is new</returns>
+        /// <returns>True if the chr-strand-pos-bc-rndTag combination is new</returns>
         public bool Add(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures)
         {
             nReadsByRandomTag[m.RndTagIdx]++;
             bool isNew = chrTagDatas[m.Chr].Add(m, sharingRealFeatures);
-            if (isNew) nUniqueByBarcode[m.BcIdx]++;
-            else nDuplicatesByBarcode[m.BcIdx]++;
             return isNew | !hasRndTags;
         }
 
@@ -450,7 +416,8 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Number of distinct mappings (position + strand) since last barcode change
+        /// Number of distinct mappings (position + strand) since last barcode change.
+        /// Note that this may be higher than number of distinct molecules if multiread mappings to exons are analyzed
         /// </summary>
         /// <returns>Number of distinct mappings (position + strand) that have been observed in current barcode, irrespective of rndTags</returns>
         public int GetNumDistinctMappings()

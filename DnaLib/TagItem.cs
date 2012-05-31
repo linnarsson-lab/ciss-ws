@@ -18,7 +18,7 @@ namespace Linnarsson.Dna
         private List<SNPCounter> cachedMolSNPCounts;
 
         /// <summary>
-        /// Equals ReadCount if no rnd tags are used.
+        /// Number of molecules (after filtering mutated rndTags). Equals ReadCount if rndTags are not used.
         /// </summary>
         public int MolCount { get { return cachedMolCount; } }
         public int ReadCount { get { return cachedReadCount; } }
@@ -67,14 +67,17 @@ namespace Linnarsson.Dna
     /// </summary>
     public class TagItem
     {
-        public static int ratioForMutationFilter = 50; // 20 seems a good number, but need to investigate various seq depths before final decision
+        /// <summary>
+        /// Threshold for removing molecules that are a result of mutated rnd tags.
+        /// RndTags having less than (1 / value) of the reads of the rndTag with maximum reads are not counted.
+        /// Need to investigate various seq depths before final decision. 20 may be more appropriate.
+        /// </summary>
+        public static int ratioForMutationFilter = 50;
+        /// <summary>
+        /// Mirrors the number of rndTags from Barcodes
+        /// </summary>
         public static int nRndTags;
         public static double LabelingEfficiency;
-
-        /// <summary>
-        /// List of the genes that share this TagItem's counts. (If some reads are SNPed, the sharing genes may be not belong to all reads.)
-        /// </summary>
-        public Dictionary<IFeature, int> sharingGenes = new Dictionary<IFeature, int>();
 
         /// <summary>
         /// Counts number of reads in each rndTag
@@ -84,11 +87,18 @@ namespace Linnarsson.Dna
         /// Counts number of reads irrespective of rndTag
         /// </summary>
         private int totalReadCount;
+
+        /// <summary>
+        /// List of the genes that share this TagItem's counts. (If some reads are SNPed, the sharing genes may be not belong to all reads.)
+        /// </summary>
+        public Dictionary<IFeature, int> sharingGenes = new Dictionary<IFeature, int>();
+
         /// <summary>
         /// SNP data for SNP positions by offsets from read startPos. Should only be affected when hasAltMappings == false
         /// The final SNP status of a chromosomal position has to be calculated from the tagSNPData:s of all spanning TagItems
         /// </summary>
         public TagSNPCounters tagSNPData;
+
         /// <summary>
         /// true when the read sequence at the (chr, pos, strand) of this TagItem is not unique in genome.
         /// </summary>
@@ -166,6 +176,18 @@ namespace Linnarsson.Dna
             }
         }
 
+        public bool HasReads { get { return totalReadCount > 0; } }
+        public bool HasSNPs { get { return tagSNPData != null; } }
+
+        /// <summary>
+        /// Return the total number of reads at this position-strand. (Molecule mutation filter not applied for rndTag data.)
+        /// </summary>
+        /// <returns></returns>
+        public int GetNumReads()
+        {
+            return totalReadCount;
+        }
+
         /// <summary>
         /// Get Nt counts at all positions where there is SNP data available
         /// </summary>
@@ -199,18 +221,6 @@ namespace Linnarsson.Dna
             return totalCounters;
         }
 
-        public bool HasReads { get { return totalReadCount > 0; } }
-        public bool HasSNPs { get { return tagSNPData != null; } }
-
-        /// <summary>
-        /// Return the total number of reads at this position-strand. (Molecule mutation filter not applied for rndTag data.)
-        /// </summary>
-        /// <returns></returns>
-        public int GetNumReads()
-        {
-            return totalReadCount;
-        }
-
         /// <summary>
         /// Get indices of the rndTags that represent real molecules and not only mutations from other rndTags
         /// </summary>
@@ -235,8 +245,9 @@ namespace Linnarsson.Dna
         /// <returns>Number of molecules (mutated rndTags excluded), or number of reads if no rndTags were used.</returns>
         public int GetNumMolecules()
         {
-            int n = totalReadCount;
-            if (nRndTags > 1 && readCountsByRndTag != null)
+            if (nRndTags == 1) return totalReadCount;
+            int n = 0;
+            if (readCountsByRndTag != null)
             {
                 int maxNumReads = readCountsByRndTag.Max();
                 int cutOff = maxNumReads / ratioForMutationFilter;

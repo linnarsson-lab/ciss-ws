@@ -22,6 +22,7 @@ namespace CorrCell
                 bool plot = false;
                 double minShowCorr = 0.0;
                 string pairFile = null;
+                string classFile = null;
                 while (argIdx < args.Length && args[argIdx][0] == '-')
                 {
                     if (args[argIdx] == "-s")
@@ -34,6 +35,8 @@ namespace CorrCell
                         minShowCorr = double.Parse(args[++argIdx]);
                     else if (args[argIdx] == "-p")
                         pairFile = args[++argIdx];
+                    else if (args[argIdx] == "-c")
+                        classFile = args[++argIdx];
                     else if (args[argIdx] == "--plot")
                         plot = true;
                     argIdx++;
@@ -47,6 +50,8 @@ namespace CorrCell
                 GeneCorrelator gc = new GeneCorrelator(nSample, minMeanSamplesInBin, CorrelationCalculators.Spearman, dataSampler);
                 if (pairFile != null)
                     AnalyzePairedGenes(pairFile, expr, gc);
+                else if (classFile != null)
+                    AnalyzeGeneClasses(classFile, expr, gc);
                 if (minShowCorr > 0.0)
                     ShowCorrelations(minShowCorr, expr, gc);
             }
@@ -57,11 +62,12 @@ namespace CorrCell
             catch (Exception e)
             {
                 Console.WriteLine(e);
-                Console.WriteLine("\nUsage:\nmono CorrCell.exe [-s CORRSAMPLESIZE] [-b MINCOUNTBINSIZE] [-p GENEPAIRFILE]\n" +
+                Console.WriteLine("\nUsage:\nmono CorrCell.exe [-s CORRSAMPLESIZE] [-b MINCOUNTBINSIZE] [-p GENEPAIRFILE] [-c GENECLASSFILE]\n" +
                                   "                            [-f FILTERTHRESHOLD] [-d SHOWCORRTHRESHOLD] [--plot] EXPRESSION_FILE\n" +
                                   "CORRSAMPLESIZE        number of samples to take when calculating correlation\n" +
                                   "MINCOUNTBINSIZE       min number of means in each bin (interval) of count values\n" +
                                   "GENEPAIRFILE          file of pairs of names of potentially correlated genes to compare against background\n" +
+                                  "GENECLASSFILE         file of gene names (1st col) and their respective class names (2nd col)\n" + 
                                   "FILTERTHRESHOLD       for filtering of empty cells. Min fraction of counts in cells compared with max cell\n" +
                                   "SHOWCORRTHRESHOLD     (> 0.0) Display list of correlations. Only higher correlations will be reported\n" +
                                   "--plot                used to output distributions to files.");
@@ -70,56 +76,14 @@ namespace CorrCell
 
         private static void AnalyzePairedGenes(string pairFile, Expression expr, GeneCorrelator gc)
         {
-            Random rnd = new Random(DateTime.Now.Millisecond);
-            int nHistoBins = 40;
-            List<Pair<int, int>> geneIdxPairs = ReadGenePairs(pairFile, expr);
-            int[] pairHisto = new int[nHistoBins];
-            foreach (Pair<int, int> p in geneIdxPairs)
-            {
-                double corr = gc.GetCorrelation(expr, p.First, p.Second).corrMean;
-                pairHisto[(int)Math.Floor(Math.Abs(corr) * nHistoBins)]++;
-            }
-            int nNonPairSamples = geneIdxPairs.Count;
-            int[] nonPairHisto = new int[nHistoBins];
-            for (int i = 0; i < nNonPairSamples; i++)
-            {
-                int geneIdxA, geneIdxB;
-                do
-                {
-                    geneIdxA = rnd.Next(expr.GeneCount - 1);
-                    geneIdxB = rnd.Next(geneIdxA, expr.GeneCount);
-                } while (geneIdxPairs.Any(p => (p.First == geneIdxA && p.Second == geneIdxB)));
-                double corr = gc.GetCorrelation(expr, geneIdxA, geneIdxB).corrMean;
-                nonPairHisto[(int)Math.Floor(Math.Abs(corr) * nHistoBins)]++;
-            }
-            StreamWriter writer = new StreamWriter(pairFile + ".correlation");
-            writer.WriteLine("BinStart\tPairCount\tNonPairCount");
-            for (int i = 0; i < nHistoBins; i++)
-                writer.WriteLine("{0}\t{1}\t{2}", (i / (double)nHistoBins), pairHisto[i], nonPairHisto[i]);
-            writer.Close();
+            GeneClassAnalyzer gca = new GeneClassAnalyzer(expr, gc);
+            gca.AnalyzePairedGenes(pairFile);
         }
 
-        private static List<Pair<int, int>> ReadGenePairs(string pairFile, Expression expr)
+        private static void AnalyzeGeneClasses(string classFile, Expression expr, GeneCorrelator gc)
         {
-            List<Pair<int, int>> geneIdxPairs = new List<Pair<int, int>>();
-            using (StreamReader reader = new StreamReader(pairFile))
-            {
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    string[] fields = line.Trim().Split('\t');
-                    int geneIdxA = expr.GetGeneIdx(fields[0]);
-                    int geneIdxB = expr.GetGeneIdx(fields[1]);
-                    if (geneIdxA >= 0 && geneIdxB >= 0)
-                    {
-                        if (geneIdxA > geneIdxB)
-                            geneIdxPairs.Add(new Pair<int, int>(geneIdxB, geneIdxA));
-                        else
-                            geneIdxPairs.Add(new Pair<int, int>(geneIdxA, geneIdxB));
-                    }
-                }
-            }
-            return geneIdxPairs;
+            GeneClassAnalyzer gca = new GeneClassAnalyzer(expr, gc);
+            gca.AnalyzeGeneClasses(classFile);
         }
 
         private static void ShowCorrelations(double minShowCorr, Expression expr, GeneCorrelator gc)

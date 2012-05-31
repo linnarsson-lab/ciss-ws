@@ -49,6 +49,7 @@
     <Compile Include="DataSampler.cs" />
     <Compile Include="Expression.cs" />
     <Compile Include="CorrelationCalculators.cs" />
+    <Compile Include="GeneClassAnalyzer.cs" />
     <Compile Include="GeneCorrelator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

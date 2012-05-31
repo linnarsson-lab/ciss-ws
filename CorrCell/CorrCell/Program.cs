@@ -39,8 +39,11 @@ namespace CorrCell
                         classFile = args[++argIdx];
                     else if (args[argIdx] == "--plot")
                         plot = true;
+                    else throw new ArgumentException();
                     argIdx++;
                 }
+                if (args.Length == argIdx)
+                    throw new ArgumentException();
                 Console.WriteLine("Reading " + args[argIdx]);
                 Expression expr = new Expression(args[argIdx]);
                 expr.FilterEmptyCells(fractionThreshold);
@@ -57,20 +60,21 @@ namespace CorrCell
             }
             catch (FileNotFoundException)
             {
-                Console.WriteLine("The input file does not exist!");
+                Console.WriteLine("The gene list input file does not exist!");
             }
-            catch (Exception e)
+            catch (ArgumentException)
             {
-                Console.WriteLine(e);
-                Console.WriteLine("\nUsage:\nmono CorrCell.exe [-s CORRSAMPLESIZE] [-b MINCOUNTBINSIZE] [-p GENEPAIRFILE] [-c GENECLASSFILE]\n" +
-                                  "                            [-f FILTERTHRESHOLD] [-d SHOWCORRTHRESHOLD] [--plot] EXPRESSION_FILE\n" +
+                Console.WriteLine("\nUsage:\n" + 
+                                  "mono CorrCell.exe [-s CORRSAMPLESIZE] [-b MINCOUNTBINSIZE] [-p GENEPAIRFILE] [-c GENECLASSFILE]\n" +
+                                  "                  [-f FILTERTHRESHOLD] [-d SHOWCORRTHRESHOLD] [--plot] EXPRESSIONFILE\n" +
                                   "CORRSAMPLESIZE        number of samples to take when calculating correlation\n" +
                                   "MINCOUNTBINSIZE       min number of means in each bin (interval) of count values\n" +
                                   "GENEPAIRFILE          file of pairs of names of potentially correlated genes to compare against background\n" +
                                   "GENECLASSFILE         file of gene names (1st col) and their respective class names (2nd col)\n" + 
                                   "FILTERTHRESHOLD       for filtering of empty cells. Min fraction of counts in cells compared with max cell\n" +
                                   "SHOWCORRTHRESHOLD     (> 0.0) Display list of correlations. Only higher correlations will be reported\n" +
-                                  "--plot                used to output distributions to files.");
+                                  "--plot                used to output distributions to files.\n" + 
+                                  "EXPRESSIONFILE is the Lxxx_expression.tab output file from the STRT pipeline.");
             }
         }
 

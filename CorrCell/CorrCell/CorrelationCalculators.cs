@@ -22,6 +22,10 @@ namespace CorrCell
             return Linnarsson.Mathematics.Correlation.pearsoncorrelation(ref seriesA, ref seriesB, n);
         }
 
+        public static double Distance(double[] seriesA, double[] seriesB)
+        {
+            return DistanceCorrelation.distancecorrelation(seriesA, seriesB);
+        }
     }
 
 }

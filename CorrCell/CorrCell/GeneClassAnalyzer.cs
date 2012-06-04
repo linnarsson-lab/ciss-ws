@@ -42,11 +42,14 @@ namespace CorrCell
             List<Pair<int, int>> allGenePairs = new List<Pair<int, int>>();
             foreach (string className in geneIdxClasses.Keys)
             {
+                Console.Write("Analyzing " + className + " - " + geneIdxClasses[className].Count + " genes...");
                 titles.Add(className + ".Pairs.Count");
                 List<Pair<int, int>> classGenePairs = MakeGenePairs(geneIdxClasses[className]);
+                Console.WriteLine(classGenePairs.Count + " gene pairs...");
                 allGenePairs.AddRange(classGenePairs);
                 histograms.Add(CalcPairHistogram(nHistoBins, classGenePairs));
             }
+            Console.WriteLine("Analyzing background...");
             histograms.Add(CalcBkgHistogram(nHistoBins, allGenePairs, allGenePairs.Count));
             titles.Add("NonPaired.Count");
             string outFile = classFile + ".correlation";
@@ -102,7 +105,7 @@ namespace CorrCell
             {
                 writer.Write(i / (double)nHistoBins);
                 foreach (int[] histo in histograms)
-                    writer.Write(histo[i] + "\t");
+                    writer.Write("\t" + histo[i]);
                 writer.WriteLine();
             }
             writer.Close();

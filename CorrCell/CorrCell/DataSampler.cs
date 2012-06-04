@@ -26,6 +26,7 @@ namespace CorrCell
             rnd = new Random(DateTime.Now.Millisecond);
             Dictionary<int, List<double>> meansByCount = SortMeansByCount(expression);
             DefineIntervalsOfMeans(minValuesPerIvl, meansByCount);
+            Console.WriteLine(meansByCount.Count + " count levels made into " + countIvlStarts.Length + " intervals.");
             if (plotDistributions)
             {
                 PlotMeansByCount(meansByCount);
@@ -98,7 +99,7 @@ namespace CorrCell
 
         public static void PlotMeansByCount(Dictionary<int, List<double>> meansByCount)
         {
-            string outFile = "means_by_count.txt";
+            string outFile = "CorrCell_means_by_count.txt";
             Console.WriteLine("Writing data by count to " + outFile);
             int[] counts = meansByCount.Keys.ToArray();
             Array.Sort(counts);
@@ -114,7 +115,7 @@ namespace CorrCell
 
         public void PlotIntervals()
         {
-            string outFile = "interval_data.txt";
+            string outFile = "CorrCell_interval_data.txt";
             Console.WriteLine("Writing data by intervals to " + outFile);
             StreamWriter writer = new StreamWriter(outFile);
             writer.WriteLine("IvlStart\tIvlEnd\tMidIvl\tNValues\tMeanOfMeans\tStdDev");
@@ -128,6 +129,7 @@ namespace CorrCell
                                                                  ds.Count, ds.Mean(), ds.StandardDeviation());
 
             }
+            writer.Close();
         }
     }
 }

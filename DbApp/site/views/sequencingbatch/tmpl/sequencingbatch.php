@@ -29,9 +29,9 @@ defined('_JEXEC') or die('Restricted access'); ?>
             <tr><td>Batch&nbsp;no:&nbsp;</td><td>" . $seqbatch->sr_title . "</td></tr>";
     //echo "<tr><td>Lab&nbsp;book (page):</td><td>" . $seqbatch->labbookpage . "</td></tr>";
     echo "<tr><td>Planned no of lanes:&nbsp;</td><td>" . $seqbatch->plannednumberoflanes . "</td></tr>";
-    echo "<tr><td>Planned no of cycles:&nbsp;</td><td>" . $seqbatch->plannednumberofcycles . "</td></tr>";
+    echo "<tr><td>Planned first cycles:&nbsp;</td><td>" . $seqbatch->plannednumberofcycles . "</td></tr>";
     echo "<tr><td>Sequencing primer:&nbsp;</td><td>" . $seqbatch->primer . "</td></tr>";
-    echo "<tr><td>Planned no of cycles:&nbsp;</td><td>" . $seqbatch->plannedindexcycles . "</td></tr>";
+    echo "<tr><td>Planned index cycles:&nbsp;</td><td>" . $seqbatch->plannedindexcycles . "</td></tr>";
     echo "<tr><td>Index primer:&nbsp;</td><td>" . $seqbatch->indexprimer . "</td></tr>";
     echo "<tr><td>Cost:</td><td>" . $seqbatch->cost . "</td></tr>";
     echo "<tr><td>Signed:</td><td>" . $seqbatch->signed . "</td></tr>";

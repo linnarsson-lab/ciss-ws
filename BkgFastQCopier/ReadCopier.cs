@@ -151,8 +151,9 @@ namespace BkgFastQCopier
 						}
                         if (outputter != null)
                         {
-                            readFileResults.Add(outputter.Close());
-                            logWriter.WriteLine(readsFolder +  " done.");
+                            ReadFileResult r = outputter.Close();
+                            readFileResults.Add(r);
+                            logWriter.WriteLine(r.readFile + " done. (" + r.nPFReads + " PFReads, " + r.readLen + " cycles)");
                             logWriter.Flush();
                         }
 					}

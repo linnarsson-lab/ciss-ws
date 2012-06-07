@@ -123,7 +123,7 @@ namespace parsetab2out
         }
 
         static void Main(string[] args)
-        {
+       {
             List<string[]> filerows1 = tabfile(args[0]);
             //            Console.WriteLine(filerows1.Count);
             EnsemblFile EFILE = new EnsemblFile(args[1]);
@@ -143,7 +143,9 @@ namespace parsetab2out
                 {
                     Console.Write(String.Join("\t", rw));
                 }
-                Console.Write(rw[29] + " pos " + rw[30]);
+                Console.Write(rw[24] + " pos " + rw[25]);
+               // Console.Write(rw[23] + " pos " + rw[24]); for beta
+                //                Console.Write(rw[29] + " pos " + rw[30]);        For Main
                 int hitcount = 0;
                 string CodonChange = "";
                 string HGNC = "";
@@ -160,51 +162,34 @@ namespace parsetab2out
                 foreach (KeyValuePair<string, EnsemblRow> kvp in EFILE)
                 {
 
-                    if ("chr" + kvp.Value.Location == rw[29] + ":" + rw[30])
-                    {
+                    if ("chr" + kvp.Value.Location == rw[24] + ":" + rw[25])
+//                        if ("chr" + kvp.Value.Location == rw[29] + ":" + rw[30])
+                        {
                         //                      Console.Write(" " + kvp.Value.Location);
                         if (kvp.Value.Codonchange.Length > 3)
                         {
-                            if ( ":" +  kvp.Value.Codonchange != CodonChange)
-                            {
-                                CodonChange += ":" +  kvp.Value.Codonchange;
-                            }
+                            CodonChange += ":" + kvp.Value.Codonchange;
                         }
                         if (kvp.Value.Aminoacidchange.Length > 1)
                         {
-                            if (":" + kvp.Value.Aminoacidchange != AAchange)
-                            {
-                                AAchange += ":" + kvp.Value.Aminoacidchange;
-                            }
+                            AAchange += ":" + kvp.Value.Aminoacidchange;
                         }
                         if (kvp.Value.PositionincDNA.Length > 1)
                         {
-                            if (":" + kvp.Value.PositionincDNA != poscdna)
-                            {
-                                poscdna += ":" + kvp.Value.PositionincDNA;
-                            }
+                            poscdna += ":" + kvp.Value.PositionincDNA;
                         }
                         if (kvp.Value.PositioninCDS.Length > 1)
                         {
-                            if (":" + kvp.Value.PositioninCDS != poscds)
-                            {
-                                poscds += ":" + kvp.Value.PositioninCDS;
-                            }
+                            poscds += ":" + kvp.Value.PositioninCDS;
                         }
                         if (kvp.Value.ColocatedVariation.Length > 1)
                         {
-                            if (":" + kvp.Value.ColocatedVariation != poscds)
-                            {
-                                colocv += ":" + kvp.Value.ColocatedVariation;
-                            }
+                            colocv += ":" + kvp.Value.ColocatedVariation;
                         }
-                        
+
                         if (kvp.Value.Positioninprotein.Length > 1)
                         {
-                            if (":" + kvp.Value.Positioninprotein != posprot)
-                            {
-                                posprot += ":" + kvp.Value.Positioninprotein;
-                            }
+                            posprot += ":" + kvp.Value.Positioninprotein;
                         }
 
                         if (kvp.Value.Extra.Length > 2)
@@ -213,21 +198,15 @@ namespace parsetab2out
                             foreach (string item in extras)
                             {
                                 if (item.Substring(0, 4) == "HGNC")
-                                    if (HGNC != item.Replace("HGNC=", ":"))
-                                        HGNC += item.Replace("HGNC=", ":");
+                                    HGNC += item.Replace("HGNC=", ":");
                                 if (item.Substring(0, 5) == "HGVSc")
-                                    if (HGVSc != item.Replace("HGVSc=", ":"))
-                                        HGVSc += item.Replace("HGVSc=", ":");
+                                    HGVSc += item.Replace("HGVSc=", ":");
                                 if (item.Substring(0, 5) == "HGVSp")
-                                    if (HGVSp != item.Replace("HGVSp=", ":"))
-                                        HGVSp += item.Replace("HGVSp=", ":");
+                                    HGVSp += item.Replace("HGVSp=", ":");
                                 if (item.Substring(0, 8) == "PolyPhen")
-                                    if (polyphen != item.Replace("PolyPhen=", ":"))
-                                        polyphen += item.Replace("PolyPhen=", ":");
+                                    polyphen += item.Replace("PolyPhen=", ":");
                                 if (item.Substring(0, 4) == "SIFT")
-                                    if (SIFT != item.Replace("SIFT=", ":"))
-                                        SIFT += item.Replace("SIFT=", ":");
-
+                                    SIFT += item.Replace("SIFT=", ":");
                             }
                         }
                         Consequence += ":" + kvp.Value.Consequence;
@@ -266,7 +245,6 @@ namespace parsetab2out
                 }
                 else
                     Console.Write("\tNOposprot");
-
 
                 if (CodonChange.Length > 3)
                 {

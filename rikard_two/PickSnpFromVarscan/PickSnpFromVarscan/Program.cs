@@ -224,7 +224,9 @@ namespace PickSnpFromVarscan
 
             dbsnpfile DB = new dbsnpfile(args[1]);
 //            Console.WriteLine("\tFile: '" + args[1] + "' scanned for DBSNPs: " + DB.dbsnpcount + " found.");
-            Console.Write("1\t2\t3\t4\t5\t6\t7\t8\t9\t10\t11\t12\t13\t14\t15\t16\t17\t18\t19\t20\t21\t22\t23\t24\t25\t26\t27\t28\t29\t");
+//            Console.Write("Beta_1\tBeta_2\tBeta_3\tBeta_4\tBeta_5\tBeta_6\tBeta_7\tBeta_8\tBeta_9\tBeta_10\tBeta_11\tBeta_12\tBeta_15\tBeta_17\tBeta_18\tBeta_19\tBeta_20\tBeta_21\tBeta_22\tBeta_24\tBeta_25\tBeta_26\tBeta_27\t");
+            Console.Write("Method_1\tMethod_2\tMethod_3\tMethod_4\tMethod_5\tMethod_6\tMethod_7\tMethod_8\tMethod_9\tMethod_10\tMethod_11\tMethod_12\tMethod_13\tMethod_14\tMethod_15\tMethod_16\tMethod_17\tMethod_18\tMethod_19\tMethod_20\tMethod_21\tMethod_22\tMethod_23\tMethod_24\t");
+//            Console.Write("1\t2\t3\t4\t5\t6\t7\t8\t9\t10\t11\t12\t13\t14\t15\t16\t17\t18\t19\t20\t21\t22\t23\t24\t25\t26\t27\t28\t29\t");   For Main sample
             Console.Write("Chrom\tPosition\tRef\tVar\tCons:Cov:Reads1:Reads2:Freq:P-value\tStrandFilter:R1+:R1-:R2+:R2-:pval\tSamplesRef\t");
             Console.WriteLine("SamplesHet\tSamplesHom\tSamplesNC\toutfracfalse\toutfractrue5\toutfractrue1\tdbsnpgene\troigene");
             //            Console.WriteLine(Environment.NewLine + DB.dbsnpcount + Environment.NewLine);

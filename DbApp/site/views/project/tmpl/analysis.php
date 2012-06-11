@@ -7,6 +7,8 @@ defined('_JEXEC') or die('Restricted access'); ?>
   $itemid = $menu->id;
 //  $analysid = JRequest::getVar('analysid') ;
   $analys = $this->theanalysis;
+  $document = JFactory::getDocument();
+  $document->setTitle(JText::_($analys->plateid . ' result summary'));
   $xmlfile = $analys->resultspath . "/" . $analys->plateid . "_summary.xml";
   if (! file_exists($xmlfile)) {
     echo "<p>The requested analysis file $xmlfile has been removed!";

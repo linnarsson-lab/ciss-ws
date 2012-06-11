@@ -6,7 +6,9 @@ defined('_JEXEC') or die('Restricted access'); ?>
   $itemid = $menu->id;
   $searchid = JRequest::getVar('searchid') ;
   $project = $this->project;
-  
+  $document = JFactory::getDocument();
+  $document->setTitle(JText::_('View of ' . $project->plateid));
+
 $removelink = "";
 if (count($this->seqbatches) == 0 && $project->status != 'inqueue' && $project->status != 'processing') {
   $removelink = "<a href=\"index.php?option=com_dbapp&view=project&layout=remove&controller=project&searchid=" 

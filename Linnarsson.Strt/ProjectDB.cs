@@ -154,7 +154,7 @@ namespace Linnarsson.Strt
             }
             catch (Exception ex)
             {
-                Console.WriteLine(DateTime.Now.ToString() + ": " + ex.ToString());
+                Console.WriteLine("{0}: {1}", DateTime.Now, ex);
                 success = false;
             }
             conn.Close();
@@ -209,7 +209,7 @@ namespace Linnarsson.Strt
                     laneInfos = new List<string>();
                 }
                 currAnalysisId = analysisId;
-                string laneInfo = rdr["runid"].ToString() + ":" + rdr.GetString("lanenos").Replace(",", "");
+                string laneInfo = string.Format("{0}:{1}", rdr["runid"], rdr.GetString("lanenos").Replace(",", ""));
                 laneInfos.Add(laneInfo);
                 plateId = rdr["plateid"].ToString();
                 bcSet = rdr["barcodeset"].ToString();
@@ -372,7 +372,7 @@ namespace Linnarsson.Strt
             }
             catch (Exception ex)
             {
-                Console.WriteLine(DateTime.Now.ToString() + ": " + ex.ToString());
+                Console.WriteLine("{0}: {1}", DateTime.Now, ex);
             }
             conn.Close();
             return mds;
@@ -421,7 +421,7 @@ namespace Linnarsson.Strt
             }
             catch (Exception ex)
             {
-                Console.WriteLine(DateTime.Now.ToString() + ": " + ex.ToString());
+                Console.WriteLine("{0}: {1}", DateTime.Now, ex);
             }
             conn.Close();
             return waitingFiles;

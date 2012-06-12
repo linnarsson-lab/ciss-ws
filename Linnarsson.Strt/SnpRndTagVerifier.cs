@@ -238,7 +238,7 @@ namespace Linnarsson.Strt
             barcodes = props.Barcodes;
             string GVFPath = PathHandler.GetGVFFile(genome);
             if (GVFPath == "")
-                Console.WriteLine("Can not find a GVF file for " + genome.Build + ". Skipping SNP verification.");
+                Console.WriteLine("Can not find a GVF file for {0}. Skipping SNP verification.", genome.Build);
             else
             {
                 foreach (GVFRecord rec in GFF3CompatibleFile.Iterate(GVFPath, new GVFRecord()))
@@ -255,7 +255,7 @@ namespace Linnarsson.Strt
                         chrData.AddSnpPos(rec.start - 1);
                     }
                 }
-                Console.WriteLine("Registered " + n + " SNPs to verify read from GVF file.");
+                Console.WriteLine("Registered {0} SNPs to verify read from GVF file.", n);
             }
         }
 

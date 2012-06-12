@@ -49,7 +49,7 @@ namespace Linnarsson.Strt
                 line = reader.ReadLine();
             }
             reader.Close();
-            Console.WriteLine(positions.Count + " blocks to sort.");
+            Console.WriteLine("{0} blocks to sort.", positions.Count);
             StreamWriter outfile = new StreamWriter(mapFile + ".sorted");
             reader = new StreamReader(mapFile);
             int n = 0;

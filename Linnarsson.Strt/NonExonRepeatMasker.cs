@@ -166,7 +166,7 @@ namespace Linnarsson.Strt
                     }
                 }
                 WriteMaskedSequence(writer, seq, lineLen);
-                Console.WriteLine("Chr" + chrId + ": " + nChanged + " 'N':s added using " + chrIntervals[chrId].Count + " intervals. Outfile: " + outfile); 
+                Console.WriteLine("Chr{0}: {1} 'N':s added using {2} intervals. Outfile: {3}", chrId, nChanged, chrIntervals[chrId].Count, outfile); 
             }
         }
 

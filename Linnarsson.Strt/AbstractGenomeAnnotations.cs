@@ -27,7 +27,8 @@ namespace Linnarsson.Strt
         /// </summary>
         protected Dictionary<string, QuickAnnotationMap> ExonAnnotations { get; set; }
         protected Dictionary<string, QuickAnnotationMap> NonExonAnnotations { get; set; }
-        public TranscriptMatcher GetTranscriptMatches;
+        //public TranscriptMatcher GetTranscriptMatches;
+        public IterTranscriptMatcher IterTranscriptMatches;
 
         public Dictionary<string, GeneFeature> geneFeatures;
         public Dictionary<string, RepeatFeature> repeatFeatures;
@@ -57,8 +58,9 @@ namespace Linnarsson.Strt
             NonExonAnnotations = new Dictionary<string, QuickAnnotationMap>();
             geneFeatures = new Dictionary<string, GeneFeature>(50000);
             repeatFeatures = new Dictionary<string, RepeatFeature>(1500);
-            GetTranscriptMatches = new TranscriptMatchers(ExonAnnotations).GetMatcher();
-		}
+            //GetTranscriptMatches = new TranscriptMatchers(ExonAnnotations).GetMatcher();
+            IterTranscriptMatches = new IterTranscriptMatchers(ExonAnnotations).GetMatcher();
+        }
 
         public abstract void Load();
 
@@ -89,17 +91,17 @@ namespace Linnarsson.Strt
         /// <param name="strand">Strand of hit (for directional reads)</param>
         /// <param name="hitMidPos">Middle position of hit on chromosome</param>
         /// <returns></returns>
-        public IEnumerable<FtInterval> GetNonTrMatches(string chr, char strand, int hitMidPos)
+        public IEnumerable<FtInterval> IterNonTrMatches(string chr, char strand, int hitMidPos)
         {
             if (AnnotType.DirectionalReads)
             {
-                foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitMidPos))
+                foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
                     if (ivl.Strand != strand) yield return ivl;
             }
             if (!NonExonAnnotations.ContainsKey(chr))
                 yield break;
             else
-                foreach (FtInterval ivl in NonExonAnnotations[chr].GetItems(hitMidPos))
+                foreach (FtInterval ivl in NonExonAnnotations[chr].IterItems(hitMidPos))
                     yield return ivl;
         }
 
@@ -112,10 +114,10 @@ namespace Linnarsson.Strt
         /// <returns>True if any matching interval defines an (forward) exon or repeat</returns>
         public bool HasTrOrRepeatMatches(string chr, char strand, int hitMidPos)
         {
-            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitMidPos))
+            foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
                 if (ivl.Strand == strand || !AnnotType.DirectionalReads) return true;
             if (NonExonAnnotations.ContainsKey(chr))
-                foreach (FtInterval ivl in NonExonAnnotations[chr].GetItems(hitMidPos))
+                foreach (FtInterval ivl in NonExonAnnotations[chr].IterItems(hitMidPos))
                     if (ivl.annotType == AnnotType.REPT) return true;
             return false;
         }
@@ -129,14 +131,14 @@ namespace Linnarsson.Strt
         /// <returns>True if an annotation says exon (sense)</returns>
         public bool IsTranscript(string chr, char strand, int hitMidPos)
         {
-            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitMidPos))
+            foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
                 if (ivl.Strand == strand || !AnnotType.DirectionalReads) return true;
             return false;
         }
 
         public IEnumerable<FtInterval> IterExonAnnotations(string chr, char strand, int hitMidPos)
         {
-            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitMidPos))
+            foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
                 if (ivl.Strand == strand || !AnnotType.DirectionalReads) yield return ivl;
             }
@@ -145,7 +147,7 @@ namespace Linnarsson.Strt
         public List<FtInterval> GetExonAnnotations(string chr, char strand, int hitMidPos)
         {
             List<FtInterval> ftIvls = new List<FtInterval>();
-            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitMidPos))
+            foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
                 if (ivl.Strand == strand || !AnnotType.DirectionalReads) ftIvls.Add(ivl);
             }
@@ -282,11 +284,11 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Finds a matching annotated interval that correspond to (forward strand for directional reads) transcripts.
-        /// Will only return the one where the 5' transcript end is closest.
+        /// Finds a matching annotated interval that corresponds to a forward strand transcript.
+        /// Will only return the one (if any) on the given strand where the 5' transcript end is closest.
         /// </summary>
         /// <param name="chr">Chromosome of hit</param>
-        /// <param name="strand">Strand of hit (for directional reads)</param>
+        /// <param name="strand">Strand of hit</param>
         /// <param name="hitMidPos">Middle position of hit on chromosome</param>
         /// <returns></returns>
         public List<FtInterval> GetMost5PrimeTranscriptMatch(string chr, char strand, int hitMidPos, out bool hasVariants)
@@ -295,7 +297,7 @@ namespace Linnarsson.Strt
             int bestDist = int.MaxValue;
             FtInterval bestMatch = nullIvl;
             int nMatches = 0;
-            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitMidPos))
+            foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
                 if (ivl.Strand == strand)
                 {
@@ -325,12 +327,95 @@ namespace Linnarsson.Strt
         public List<FtInterval> GetAllTranscriptMatches(string chr, char strand, int hitMidPos, out bool hasVariants)
         {
             List<FtInterval> matches = new List<FtInterval>();
-            foreach (FtInterval ivl in ExonAnnotations[chr].GetItems(hitMidPos))
+            foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
                 if (ivl.Strand == strand || !AnnotType.DirectionalReads) matches.Add(ivl);
             }
             hasVariants = (matches.Count > 1);
             return matches;
+        }
+    }
+
+    public delegate IEnumerable<FtInterval> IterTranscriptMatcher(string chr, char strand, int hitMidPos);
+    public class IterTranscriptMatchers
+    {
+        private Dictionary<string, QuickAnnotationMap> ExonAnnotations;
+        private static FtInterval nullIvl = new FtInterval();
+        private static FtInterval firstMatch;
+        public static bool HasVariants;
+
+        public IterTranscriptMatchers(Dictionary<string, QuickAnnotationMap> exonAnnotations)
+        {
+            ExonAnnotations = exonAnnotations;
+        }
+        public IterTranscriptMatcher GetMatcher()
+        {
+            if (Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping)
+                return IterMost5PrimeTranscriptMatch;
+            else
+                return IterAllTranscriptMatches;
+        }
+
+        /// <summary>
+        /// Yields a matching annotated interval that corresponds to a transcript.
+        /// Will only yield the one (if any) on the given strand where the 5' transcript end is closest.
+        /// Will set HasVariants to indicate if there are several alternative matches
+        /// </summary>
+        /// <param name="chr">Chromosome of hit</param>
+        /// <param name="strand">Strand of hit</param>
+        /// <param name="hitMidPos">Middle position of hit on chromosome</param>
+        /// <returns></returns>
+        public IEnumerable<FtInterval> IterMost5PrimeTranscriptMatch(string chr, char strand, int hitMidPos)
+        {
+            int bestDist = int.MaxValue;
+            firstMatch = nullIvl;
+            int nMatches = 0;
+            foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
+            {
+                if (ivl.Strand == strand)
+                {
+                    nMatches++;
+                    int dist = ivl.GetTranscriptPos(hitMidPos);
+                    if (dist < bestDist)
+                    {
+                        bestDist = dist;
+                        firstMatch = ivl;
+                    }
+                }
+            }
+            HasVariants = (nMatches > 1);
+            if (bestDist < int.MaxValue)
+                yield return firstMatch;
+        }
+
+        /// <summary>
+        /// Yields all matching exonic intervals that correspond to (forward strand for directional reads) transcripts.
+        /// Will set HasVariants to indicate if there are several alternative matches.
+        /// </summary>
+        /// <param name="chr">Chromosome of hit</param>
+        /// <param name="strand">Strand of hit (for directional reads)</param>
+        /// <param name="hitMidPos">Middle position of hit on chromosome</param>
+        /// <returns></returns>
+        public IEnumerable<FtInterval> IterAllTranscriptMatches(string chr, char strand, int hitMidPos)
+        {
+            int nMatches = 0;
+            HasVariants = false;
+            foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
+            {
+                if (ivl.Strand == strand || !AnnotType.DirectionalReads)
+                {
+                    nMatches++;
+                    if (nMatches == 1)
+                        firstMatch = ivl; // Save first to be able to set HasVariants correctly before yielding
+                    else
+                    {
+                        HasVariants = true;
+                        yield return ivl;
+                    }
+                }
+            }
+            if (nMatches >= 1)
+                yield return firstMatch;
         }
     }
 

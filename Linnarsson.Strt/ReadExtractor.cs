@@ -138,56 +138,57 @@ namespace Linnarsson.Strt
         {
             try
             {
-                StreamReader extrFile = extractionSummaryPath.OpenRead();
-                string line = extrFile.ReadLine();
-                while (line != null)
+                using (StreamReader extrFile = new StreamReader(extractionSummaryPath))
                 {
-                    if (!line.StartsWith("#"))
+                    string line = extrFile.ReadLine();
+                    while (line != null)
                     {
-                        try
+                        if (!line.StartsWith("#"))
                         {
-                            string[] fields = line.Split('\t');
-                            if (line.StartsWith("READFILE"))
+                            try
                             {
-                                int meanReadLen = int.Parse(fields[2]);
-                                if (meanReadLen == 0)
-                                    throw new ReadFileEmptyException();
-                                readFiles.Add(fields[1]);
-                                meanReadLens.Add(meanReadLen);
-                            }
-                            else if (line.StartsWith("BARCODEREADS"))
-                            {
-                                string bc = fields[1];
-                                int idx;
-                                if (!barcodeToReadsIdx.TryGetValue(bc, out idx))
+                                string[] fields = line.Split('\t');
+                                if (line.StartsWith("READFILE"))
                                 {
-                                    idx = barcodeToReadsIdx.Count;
-                                    barcodeToReadsIdx[bc] = idx;
-                                    validBarcodeReads.Add(0);
-                                    totalBarcodeReads.Add(0);
+                                    int meanReadLen = int.Parse(fields[2]);
+                                    if (meanReadLen == 0)
+                                        throw new ReadFileEmptyException();
+                                    readFiles.Add(fields[1]);
+                                    meanReadLens.Add(meanReadLen);
                                 }
-                                validBarcodeReads[idx] += int.Parse(fields[2]);
-                                if (fields.Length >= 4)
-                                    totalBarcodeReads[idx] += int.Parse(fields[3]);
+                                else if (line.StartsWith("BARCODEREADS"))
+                                {
+                                    string bc = fields[1];
+                                    int idx;
+                                    if (!barcodeToReadsIdx.TryGetValue(bc, out idx))
+                                    {
+                                        idx = barcodeToReadsIdx.Count;
+                                        barcodeToReadsIdx[bc] = idx;
+                                        validBarcodeReads.Add(0);
+                                        totalBarcodeReads.Add(0);
+                                    }
+                                    validBarcodeReads[idx] += int.Parse(fields[2]);
+                                    if (fields.Length >= 4)
+                                        totalBarcodeReads[idx] += int.Parse(fields[3]);
+                                }
+                                else
+                                {
+                                    int statusCategory = ReadStatus.Parse(fields[0]);
+                                    if (statusCategory >= 0)
+                                        Add(statusCategory, int.Parse(fields[1]));
+                                }
                             }
-                            else
+                            catch (ReadFileEmptyException)
                             {
-                                int statusCategory = ReadStatus.Parse(fields[0]);
-                                if (statusCategory >= 0)
-                                    Add(statusCategory, int.Parse(fields[1]));
+                                readFiles.Add(extractionSummaryPath + " - EMPTY: No valid reads in this file.");
+                                break;
                             }
+                            catch (Exception)
+                            { }
                         }
-                        catch (ReadFileEmptyException)
-                        {
-                            readFiles.Add(extractionSummaryPath + " - EMPTY: No valid reads in this file.");
-                            break;
-                        }
-                        catch (Exception)
-                        { }
+                        line = extrFile.ReadLine();
                     }
-                    line = extrFile.ReadLine();
                 }
-                extrFile.Close();
             }
             catch (FileNotFoundException)
             {
@@ -262,7 +263,7 @@ namespace Linnarsson.Strt
                     if (rec.Qualities[i] < minQualityInRandomTag)
                         return ReadStatus.LOW_QUALITY_IN_RANDOM_TAG;
                 }
-                bcRandomPart = rSeq.Substring(rndBcPos, rndBcLen) + ".";
+                bcRandomPart = string.Format("{0}.", rSeq.Substring(rndBcPos, rndBcLen));
                 if (bcRandomPart.Contains('N'))
                     return ReadStatus.N_IN_RANDOM_TAG;
             }
@@ -274,7 +275,7 @@ namespace Linnarsson.Strt
                 insertStart++;
                 insertLength--;
             }
-            rec.Header = rec.Header + "_" + bcRandomPart + barcodeSeqs[bcIdx];
+            rec.Header = string.Format("{0}_{1]{2}", rec.Header, bcRandomPart, barcodeSeqs[bcIdx]);
             rec.Trim(insertStart, insertLength);
             return TestComplexity(rSeq, insertStart, insertLength);
         }

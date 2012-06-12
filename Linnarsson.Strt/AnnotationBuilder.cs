@@ -190,8 +190,8 @@ namespace Linnarsson.Strt
             Dictionary<string, List<GeneFeature>> gfByChr = annotationReader.BuildGeneModelsByChr();
             Console.WriteLine("...read data for {0} chromosomes from annotation files:", gfByChr.Count);
             Console.WriteLine(string.Join(",", gfByChr.Keys.ToArray()));
-            Console.WriteLine(annotationReader.GetPseudogeneCount() + " genes are annotated as pseudogenes.");
-            Console.WriteLine("ReadLen=" + ReadLen + " MaxMismatches=" + MaxAlignmentMismatches + " MaxExonsSkip=" + MaxExonsSkip);
+            Console.WriteLine("{0} genes are annotated as pseudogenes.", annotationReader.GetPseudogeneCount());
+            Console.WriteLine("ReadLen={0} MaxMismatches={1} MaxExonsSkip={2}", ReadLen, MaxAlignmentMismatches, MaxExonsSkip);
             DnaSequence jChrSeq = new LongDnaSequence();
             Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
             StreamWriter annotWriter = PrepareAnnotationsFile(genome);
@@ -202,7 +202,7 @@ namespace Linnarsson.Strt
                     continue;
                 DnaSequence chrSeq = AbstractGenomeAnnotations.readChromosomeFile(chrIdToFileMap[chrId]);
                 List<GeneFeature> chrGfs = gfByChr[chrId];
-                Console.WriteLine("Processing chr" + chrId + " (" + chrGfs.Count + " genes)...");
+                Console.WriteLine("Processing chr {0} ({1} genes)...", chrId, chrGfs.Count);
                 /* We can not rely on that the versions of each gene are consecutive in input file.
                     One and the same junction-sequence could also potentially have two different gene names.
                     Thus, sort the genes along the chromosome and check if every new junction is already
@@ -266,35 +266,35 @@ namespace Linnarsson.Strt
                                         List<int> offsets, List<int> realExonIds, List<string> exonIdStrings)
         {
             StringBuilder s = new StringBuilder();
-            s.Append(gf.Name + "\t\t");
-            s.Append(junctionsChrId + "\t");
-            s.Append(gf.Strand + "\t");
-            s.Append(jStarts[0] + "\t");
-            s.Append((jEnds[jEnds.Count - 1] + 1) + "\t");
+            s.AppendFormat("{0}\t\t", gf.Name);
+            s.AppendFormat("{0}\t", junctionsChrId);
+            s.AppendFormat("{0}\t", gf.Strand);
+            s.AppendFormat("{0}\t", jStarts[0]);
+            s.AppendFormat("{0}\t", jEnds[jEnds.Count - 1] + 1);
             s.Append("\t\t");
             s.Append(offsets.Count);
             s.Append("\t");
             foreach (int exonStart in jStarts)
-                s.Append(exonStart.ToString() + ",");
+                s.AppendFormat("{0},", exonStart);
             s.Append("\t");
             foreach (int exonEnd in jEnds)
-                s.Append((exonEnd + 1).ToString() + ",");
+                s.AppendFormat("{0},", exonEnd + 1);
             s.Append("\t");
             foreach (int offset in offsets)
-                s.Append(offset.ToString() + ",");
+                s.AppendFormat("{0},", offset);
             s.Append("\t");
             foreach (int exonId in realExonIds)
-                s.Append(exonId.ToString() + ",");
+                s.AppendFormat("{0},", exonId);
             s.Append("\t");
             foreach (string exonsString in exonIdStrings)
-                s.Append(exonsString + ",");
+                s.AppendFormat("{0},", exonsString);
             return s.ToString();
         }
 
         private StreamWriter PrepareJunctionChrFile(StrtGenome genome, string junctionChrId)
         {
             string jChrPath = genome.MakeJunctionChrPath();
-            Console.WriteLine("Artificial exon junction chromosome: " + jChrPath);
+            Console.WriteLine("Artificial exon junction chromosome: {0}", jChrPath);
             if (File.Exists(jChrPath))
             {
                 File.Delete(jChrPath + ".old");
@@ -315,9 +315,9 @@ namespace Linnarsson.Strt
                 File.Move(annotationsPath, annotationsPath + ".old");
             }
             StreamWriter annotWriter = new StreamWriter(annotationsPath, false);
-            annotWriter.WriteLine("@ReadLen=" + ReadLen);
-            annotWriter.WriteLine("@MaxAlignmentMismatches=" + MaxAlignmentMismatches);
-            annotWriter.WriteLine("@MaxExonsSkip=" + MaxExonsSkip);
+            annotWriter.WriteLine("@ReadLen={0}", ReadLen);
+            annotWriter.WriteLine("@MaxAlignmentMismatches={0}", MaxAlignmentMismatches);
+            annotWriter.WriteLine("@MaxExonsSkip={0}", MaxExonsSkip);
             CopyCTRLData(genome, annotWriter);
             return annotWriter;
         }
@@ -350,51 +350,52 @@ namespace Linnarsson.Strt
             string annotationPath = genome.MakeAnnotationsPath();
             long fileSize = new FileInfo(annotationPath).Length;
             string updatedPath = annotationPath + ".extended";
-            StreamWriter writer = updatedPath.OpenWrite();
-            string lastOriginal = "";
-            string originalFlag = GeneFeature.nonUTRExtendedIndicator;
-            long nc = 0;
-            Console.WriteLine("Updating annotation file...");
-            foreach (LocusFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(annotationPath))
+            using (StreamWriter writer = new StreamWriter(updatedPath))
             {
-                string gfTxt = gf.ToString();
-                nc += gfTxt.Length;
-                Background.Progress((int)(100 * (nc + 2) / (double)fileSize));
-                if (StrtGenome.IsSyntheticChr(gf.Chr))
+                string lastOriginal = "";
+                string originalFlag = GeneFeature.nonUTRExtendedIndicator;
+                long nc = 0;
+                Console.WriteLine("Updating annotation file...");
+                foreach (LocusFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(annotationPath))
                 {
-                    writer.WriteLine(gfTxt);
-                    continue;
-                }
-                if (gf.Name.EndsWith(originalFlag))
-                {
-                    lastOriginal = gf.Name;
-                    writer.WriteLine(gfTxt);
-                }
-                else
-                {
-                    try
-                    {
-                        int newPos = geneToNewPos[gf.Name];
-                        if (!lastOriginal.StartsWith(gf.Name))
-                        {
-                            gf.Name += originalFlag;
-                            writer.WriteLine(gf.ToString());
-                            gf.Name = gf.Name.Substring(0, gf.Name.Length - originalFlag.Length);
-                        }
-                        if (newPos < 0)
-                            gf.Start = -newPos;
-                        else
-                            gf.End = newPos;
-                        writer.WriteLine(gf.ToString());
-                    }
-                    catch (KeyNotFoundException)
+                    string gfTxt = gf.ToString();
+                    nc += gfTxt.Length;
+                    Background.Progress((int)(100 * (nc + 2) / (double)fileSize));
+                    if (StrtGenome.IsSyntheticChr(gf.Chr))
                     {
                         writer.WriteLine(gfTxt);
+                        continue;
                     }
-                    lastOriginal = "";
+                    if (gf.Name.EndsWith(originalFlag))
+                    {
+                        lastOriginal = gf.Name;
+                        writer.WriteLine(gfTxt);
+                    }
+                    else
+                    {
+                        try
+                        {
+                            int newPos = geneToNewPos[gf.Name];
+                            if (!lastOriginal.StartsWith(gf.Name))
+                            {
+                                gf.Name += originalFlag;
+                                writer.WriteLine(gf.ToString());
+                                gf.Name = gf.Name.Substring(0, gf.Name.Length - originalFlag.Length);
+                            }
+                            if (newPos < 0)
+                                gf.Start = -newPos;
+                            else
+                                gf.End = newPos;
+                            writer.WriteLine(gf.ToString());
+                        }
+                        catch (KeyNotFoundException)
+                        {
+                            writer.WriteLine(gfTxt);
+                        }
+                        lastOriginal = "";
+                    }
                 }
             }
-            writer.Close();
             Console.WriteLine("The updated annotations are stored in {0}.\n" +
                                 "You need to replace the old file manually.", updatedPath);
         }
@@ -402,26 +403,27 @@ namespace Linnarsson.Strt
         private Dictionary<string, int> ReadErrorsFile(string errorsPath)
         {
             Dictionary<string, int> updates = new Dictionary<string, int>();
-            StreamReader errReader = errorsPath.OpenRead();
-            string line = errReader.ReadLine();
-            string[] fields = line.Split('\t');
-            int leftIdx = Array.FindIndex(fields, f => f == "NewLeftExonStart");
-            int rightIdx = Array.FindIndex(fields, f => f == "NewRightExonStart");
-            while (line != null)
+            using (StreamReader errReader = new StreamReader(errorsPath))
             {
-                fields = line.Split('\t');
-                if (fields.Length >= rightIdx)
+                string line = errReader.ReadLine();
+                string[] fields = line.Split('\t');
+                int leftIdx = Array.FindIndex(fields, f => f == "NewLeftExonStart");
+                int rightIdx = Array.FindIndex(fields, f => f == "NewRightExonStart");
+                while (line != null)
                 {
-                    string geneName = fields[0];
-                    string newLeftStart = fields[leftIdx];
-                    string newRightStart = fields[rightIdx];
-                    int newPos;
-                    if (int.TryParse(newLeftStart, out newPos)) updates[geneName] = -newPos;
-                    else if (int.TryParse(newRightStart, out newPos)) updates[geneName] = newPos;
+                    fields = line.Split('\t');
+                    if (fields.Length >= rightIdx)
+                    {
+                        string geneName = fields[0];
+                        string newLeftStart = fields[leftIdx];
+                        string newRightStart = fields[rightIdx];
+                        int newPos;
+                        if (int.TryParse(newLeftStart, out newPos)) updates[geneName] = -newPos;
+                        else if (int.TryParse(newRightStart, out newPos)) updates[geneName] = newPos;
+                    }
+                    line = errReader.ReadLine();
                 }
-                line = errReader.ReadLine();
             }
-            errReader.Close();
             return updates;
         }
     }

@@ -77,7 +77,7 @@ namespace Linnarsson.Strt
                 SNPCounter counter = pair.Value;
                 if (counter.nSnps < minNSNPs) continue;
                 if (!totalsSet)
-                    counter.nTotal = wiggle.GetReadCount(chrPos, averageReadLength, marginForWiggle);
+                    counter.nTotal = (ushort)wiggle.GetReadCount(chrPos, averageReadLength, marginForWiggle);
                 locCounter.chrPos = chrPos;
                 locCounter.counter = counter;
                 yield return locCounter;
@@ -104,7 +104,7 @@ namespace Linnarsson.Strt
 
         public void ProcessMapFiles(List<string> mapFilePaths)
         {
-            Console.Write("Defining SNP positions by scanning " + mapFilePaths.Count + " map files..");
+            Console.Write("Defining SNP positions by scanning {0} map files..", mapFilePaths.Count);
             int numReadInFile = 0;
             int nValidReads = 0, nReadsWMismatches = 0, nDistinctPositions = 0;
             long totLen = 0;
@@ -112,7 +112,7 @@ namespace Linnarsson.Strt
             {
                 MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, barcodes);
                 if (mapFileReader == null)
-                    Console.WriteLine("\n  Skipping " + mapFilePath + "- unknown read map file type.");
+                    Console.WriteLine("\n  Skipping {0} - unknown read map file type.", mapFilePath);
                 Console.Write(".");
                 foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
                 {
@@ -143,10 +143,10 @@ namespace Linnarsson.Strt
                 }
             }
             averageReadLength = (int)Math.Ceiling(totLen / (double)nValidReads);
-            Console.WriteLine("\nTotally " + numReadInFile + " reads in " + mapFilePaths.Count + 
-                              " files. Average readLen:" + averageReadLength + ".");
-            Console.WriteLine(nReadsWMismatches + " / " + nValidReads + " singleReads had some mismatch. " + 
-                              nDistinctPositions + " distinct expressed genomic mismatch positions were found.");
+            Console.WriteLine("\nTotally {0} reads in {1} files. Average readLen: {2}.",
+                              numReadInFile, mapFilePaths.Count, averageReadLength);
+            Console.WriteLine("{0} / {1} singleReads had some mismatch. {2} distinct expressed genomic mismatch positions were found.",
+                              nReadsWMismatches, nValidReads, nDistinctPositions);
         }
 
         public int GetAverageReadLength()

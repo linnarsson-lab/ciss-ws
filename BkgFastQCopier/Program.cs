@@ -66,33 +66,34 @@ namespace BkgFastQCopier
                 Console.WriteLine("Can not find logfile {0}. Creating it.", logFile);
                 File.Create(logFile).Close();
             }
-            StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
-            string now = DateTime.Now.ToString();
-            logWriter.WriteLine(DateTime.Now.ToString() + " Starting BkgFastQCopier");
-            logWriter.Flush();
-            Console.WriteLine("BkgFastQCopier started at " + now + " and logging to " + logFile);
-            ReadCopier readCopier = new ReadCopier(illuminaRunsFolder, outputReadsFolder, logWriter);
-            if (specificRunFolder != null)
+            using (StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append)))
             {
-                int laneFrom = 1, laneTo = 8;
-                string laneTxt = "";
-                if (specificRunFolder.Contains(':'))
+                string now = DateTime.Now.ToString();
+                logWriter.WriteLine(DateTime.Now.ToString() + " Starting BkgFastQCopier");
+                logWriter.Flush();
+                Console.WriteLine("BkgFastQCopier started at " + now + " and logging to " + logFile);
+                ReadCopier readCopier = new ReadCopier(illuminaRunsFolder, outputReadsFolder, logWriter);
+                if (specificRunFolder != null)
                 {
-                    int colonIdx = specificRunFolder.IndexOf(':');
-                    laneFrom = laneTo = int.Parse(specificRunFolder.Substring(colonIdx + 1));
-                    specificRunFolder = specificRunFolder.Substring(0, colonIdx);
-                    laneTxt = "lane " + laneFrom.ToString() + " of ";
+                    int laneFrom = 1, laneTo = 8;
+                    string laneTxt = "";
+                    if (specificRunFolder.Contains(':'))
+                    {
+                        int colonIdx = specificRunFolder.IndexOf(':');
+                        laneFrom = laneTo = int.Parse(specificRunFolder.Substring(colonIdx + 1));
+                        specificRunFolder = specificRunFolder.Substring(0, colonIdx);
+                        laneTxt = "lane " + laneFrom.ToString() + " of ";
+                    }
+                    Console.WriteLine("Copying data from " + laneTxt + specificRunFolder + " to " + outputReadsFolder);
+                    readCopier.Copy(specificRunFolder, outputReadsFolder, laneFrom, laneTo);
                 }
-                Console.WriteLine("Copying data from " + laneTxt + specificRunFolder + " to " + outputReadsFolder);
-                readCopier.Copy(specificRunFolder, outputReadsFolder, laneFrom, laneTo);
+                else
+                {
+                    Console.WriteLine("Scans for new data every {0} minutes. Log output goes to {1}.", minutesWait, logFile);
+                    KeepScanning(minutesWait, logWriter, readCopier);
+                }
+                logWriter.WriteLine("BkgFastQCopier quit at " + DateTime.Now.ToPathSafeString());
             }
-            else
-            {
-                Console.WriteLine("Scans for new data every {0} minutes. Log output goes to {1}.", minutesWait, logFile);
-                KeepScanning(minutesWait, logWriter, readCopier);
-            }
-            logWriter.WriteLine("BkgFastQCopier quit at " + DateTime.Now.ToPathSafeString());
-            logWriter.Close();
         }
 
         private static void KeepScanning(int minutesWait, StreamWriter logWriter, ReadCopier readCopier)

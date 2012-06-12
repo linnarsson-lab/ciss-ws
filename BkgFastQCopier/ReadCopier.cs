@@ -290,16 +290,19 @@ namespace BkgFastQCopier
             public ReadFileResult Close()
             {
                 PFFile.Close();
+                PFFile.Dispose();
                 CmdCaller.Run("chmod", "go-w " + PFFilename);
                 nonPFFile.Close();
-                StreamWriter statsFile = new StreamWriter(statsFilePath);
-                statsFile.WriteLine("TotalReadsNumber\t" + nReads);
-                statsFile.WriteLine("PassedFilterReadsNumber\t" + nPFReads);
+                nonPFFile.Dispose();
                 double passedAvLen = (nPFReads > 0) ? (totalPFReadLength / (double)nPFReads) : 0.0;
                 double nonPassedAvLen = (nReads - nPFReads > 0) ? (totalNonPFReadLength / (double)(nReads - nPFReads)) : 0.0;
-                statsFile.WriteLine("PassedFilterReadsAverageLength\t{0:0.##}", passedAvLen);
-                statsFile.WriteLine("NonPassedFilterReadsAverageLength\t{0:0.##}", nonPassedAvLen);
-                statsFile.Close();
+                using (StreamWriter statsFile = new StreamWriter(statsFilePath))
+                {
+                    statsFile.WriteLine("TotalReadsNumber\t" + nReads);
+                    statsFile.WriteLine("PassedFilterReadsNumber\t" + nPFReads);
+                    statsFile.WriteLine("PassedFilterReadsAverageLength\t{0:0.##}", passedAvLen);
+                    statsFile.WriteLine("NonPassedFilterReadsAverageLength\t{0:0.##}", nonPassedAvLen);
+                }
                 return new ReadFileResult(PFFilename, lane, read, nPFReads, nReads - nPFReads, (uint)passedAvLen);
             }
 

@@ -57,30 +57,31 @@ namespace BkgFastQMailer
                 Console.WriteLine("Can not find {0}. Creating it.", logFile);
                 File.Create(logFile).Close();
             }
-            StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
-            string now = DateTime.Now.ToString();
-            logWriter.WriteLine(DateTime.Now.ToString() + " Starting BkgFastQMailer");
-            logWriter.Flush();
-            Console.WriteLine("BkgFastQMailer started at " + now + " and logging to " + logFile);
-
-            ReadMailer readMailer = new ReadMailer(readsFolder, logWriter);
-            int nExceptions = 0;
-            while (nExceptions < 5 && Program.keepRunning)
+            using (StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append)))
             {
-                try
+                string now = DateTime.Now.ToString();
+                logWriter.WriteLine(DateTime.Now.ToString() + " Starting BkgFastQMailer");
+                logWriter.Flush();
+                Console.WriteLine("BkgFastQMailer started at " + now + " and logging to " + logFile);
+
+                ReadMailer readMailer = new ReadMailer(readsFolder, logWriter);
+                int nExceptions = 0;
+                while (nExceptions < 5 && Program.keepRunning)
                 {
-                    readMailer.Scan();
+                    try
+                    {
+                        readMailer.Scan();
+                    }
+                    catch (Exception exp)
+                    {
+                        nExceptions++;
+                        logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: Exception in BkgFastQMailer: ***\n" + exp);
+                        logWriter.Flush();
+                    }
+                    Thread.Sleep(1000 * 60 * minutesWait);
                 }
-                catch (Exception exp)
-                {
-                    nExceptions++;
-                    logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: Exception in BkgFastQMailer: ***\n" + exp);
-                    logWriter.Flush();
-                }
-                Thread.Sleep(1000 * 60 * minutesWait);
+                logWriter.WriteLine(DateTime.Now.ToString() + " BkgFastQMailer quit");
             }
-            logWriter.WriteLine(DateTime.Now.ToString() + " BkgFastQMailer quit");
-            logWriter.Close();
         }
 
     }

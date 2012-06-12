@@ -56,15 +56,17 @@ namespace ProjectDBProcessor
             {
                 File.Create(logFile).Close();
             }
-            logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
-            string now = DateTime.Now.ToString();
-            logWriter.WriteLine(DateTime.Now.ToString() + " ProjectDBProcessor started. ScanInterval=" + minutesWait +
-                                " minutes. Max#Exceptions=" + maxExceptions);
-            logWriter.Flush();
-            Console.WriteLine("ProjectDBProcessor started " + now + " and logging to " + logFile);
+            using (logWriter = new StreamWriter(File.Open(logFile, FileMode.Append)))
+            {
+                string now = DateTime.Now.ToString();
+                logWriter.WriteLine(DateTime.Now.ToString() + " ProjectDBProcessor started. ScanInterval=" + minutesWait +
+                                    " minutes. Max#Exceptions=" + maxExceptions);
+                logWriter.Flush();
+                Console.WriteLine("ProjectDBProcessor started " + now + " and logging to " + logFile);
 
-            projectDB = new ProjectDB();
-            Run(minutesWait, maxExceptions);
+                projectDB = new ProjectDB();
+                Run(minutesWait, maxExceptions);
+            }
         }
 
         private static void Run(int minutesWait, int maxExceptions)

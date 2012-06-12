@@ -75,50 +75,52 @@ namespace Linnarsson.Dna
         
         public override IEnumerable<MultiReadMappings> MultiMappings(string file)
         {
-            StreamReader reader = new StreamReader(file);
-            string line = reader.ReadLine();
-            if (line == null) yield break;
-            string[] fields = line.Split('\t');
-            if (fields.Length < 8)
-                throw new FormatException("Too few columns in input bowtie map file");
-            string combinedReadId = fields[0];
-            mrm.Init(combinedReadId, fields[4].Length, fields[5], fields[1][0], int.Parse(fields[6]));
-            while (line != null)
+            using (StreamReader reader = file.OpenRead())
             {
-                fields = line.Split('\t');
-                char strand = fields[1][0];
-                if (!line.StartsWith(combinedReadId))
+                string line = reader.ReadLine();
+                if (line == null) yield break;
+                string[] fields = line.Split('\t');
+                if (fields.Length < 8)
+                    throw new FormatException("Too few columns in input bowtie map file");
+                string combinedReadId = fields[0];
+                mrm.Init(combinedReadId, fields[4].Length, fields[5], fields[1][0], int.Parse(fields[6]));
+                while (line != null)
                 {
-                    yield return mrm;
-                    combinedReadId = fields[0];
-                    mrm.Init(combinedReadId, fields[4].Length, fields[5], strand, int.Parse(fields[6]));
+                    fields = line.Split('\t');
+                    char strand = fields[1][0];
+                    if (!line.StartsWith(combinedReadId))
+                    {
+                        yield return mrm;
+                        combinedReadId = fields[0];
+                        mrm.Init(combinedReadId, fields[4].Length, fields[5], strand, int.Parse(fields[6]));
+                    }
+                    mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);
+                    line = reader.ReadLine();
                 }
-                mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);
-                line = reader.ReadLine();
             }
-            reader.Close();
             yield return mrm;
             yield break;
         }
 
         public override IEnumerable<MultiReadMappings> SingleMappings(string file)
         {
-            StreamReader reader = new StreamReader(file);
-            string line = reader.ReadLine();
-            if (line == null) yield break;
-            string[] fields = line.Split('\t');
-            if (fields.Length < 8)
-                throw new FormatException("Too few columns in input bowtie map file");
-            while (line != null)
+            using (StreamReader reader = file.OpenRead())
             {
-                fields = line.Split('\t');
-                char strand = fields[1][0];
-                mrm.Init(fields[0], fields[4].Length, fields[5], strand, int.Parse(fields[6]));
-                mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);
-                yield return mrm;
-                line = reader.ReadLine();
+                string line = reader.ReadLine();
+                if (line == null) yield break;
+                string[] fields = line.Split('\t');
+                if (fields.Length < 8)
+                    throw new FormatException("Too few columns in input bowtie map file");
+                while (line != null)
+                {
+                    fields = line.Split('\t');
+                    char strand = fields[1][0];
+                    mrm.Init(fields[0], fields[4].Length, fields[5], strand, int.Parse(fields[6]));
+                    mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);
+                    yield return mrm;
+                    line = reader.ReadLine();
+                }
             }
-            reader.Close();
             yield break;
         }
 	}
@@ -183,7 +185,6 @@ namespace Linnarsson.Dna
         {
             string chr = (a.Chromosome.StartsWith("chr")) ? a.Chromosome.Substring(3) : a.Chromosome;
             char strand = (a.Strand == DnaStrand.Forward) ? '+' : '-';
-            //int altMappings = ParseAltMappings(a.ExtraFields);
             mrm.Init(a.QueryName, (int)a.QuerySequence.Count, a.QueryQuality, strand, 0);
             mrm.AddMapping(chr, strand, a.Position - 1, "");
         }

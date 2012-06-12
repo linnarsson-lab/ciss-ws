@@ -33,23 +33,24 @@ namespace Linnarsson.Dna
 
         public IEnumerable<IFeature> IterAnnotationFile(string refFlatPath)
         {
-            StreamReader refReader = refFlatPath.OpenRead();
-            string line = refReader.ReadLine();
-            while (line.StartsWith("@") || line.StartsWith("#"))
-                line = refReader.ReadLine();
-            string[] f = line.Split('\t');
-            if (f.Length < 11)
-                throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should be >= 11 TAB-delimited columns.");
-            while (line != null)
+            using (StreamReader refReader = new StreamReader(refFlatPath))
             {
-                if (line != "" && !line.StartsWith("#"))
+                string line = refReader.ReadLine();
+                while (line.StartsWith("@") || line.StartsWith("#"))
+                    line = refReader.ReadLine();
+                string[] f = line.Split('\t');
+                if (f.Length < 11)
+                    throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should be >= 11 TAB-delimited columns.");
+                while (line != null)
                 {
-                    IFeature ft = FromAnnotationFileLine(line);
-                    yield return ft;
+                    if (line != "" && !line.StartsWith("#"))
+                    {
+                        IFeature ft = FromAnnotationFileLine(line);
+                        yield return ft;
+                    }
+                    line = refReader.ReadLine();
                 }
-                line = refReader.ReadLine();
             }
-            refReader.Close();
         }
 
         public IFeature FromAnnotationFileLine(string annotFileLine)

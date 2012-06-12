@@ -93,7 +93,8 @@ namespace Linnarsson.Dna
             m_End = end;
         }
 
-        public virtual MarkResult MarkHit(MappedTagItem item, int junk, MarkStatus markType)
+        //public virtual MarkResult MarkHit(MappedTagItem item, int junk, MarkStatus markType)
+        public virtual int MarkHit(MappedTagItem item, int junk, MarkStatus markType)
         {
             int annotType = AnnotType.USTR;
             if (item.strand == Strand)
@@ -103,7 +104,7 @@ namespace Linnarsson.Dna
                 TotalAntiSenseHits += item.MolCount;
                 annotType = AnnotType.AUSTR;
             }
-            return new MarkResult(annotType, this);
+            return annotType; // new MarkResult(annotType, this);
         }
 
         public virtual bool Contains(int pos)

@@ -21,6 +21,9 @@ namespace Linnarsson.Dna
         public static int LocusProfileBinSize = 50;
         public static int LocusFlankLength;
 
+        /// <summary>
+        /// Counts number of reads that are shared with each of other GeneFeatures
+        /// </summary>
         public Dictionary<IFeature, int> sharingGenes = new Dictionary<IFeature, int>();
 
         public int SpliceLen; // Set by the corresponding SplicedGeneLocus
@@ -393,15 +396,18 @@ namespace Linnarsson.Dna
             return false;
         }
 
-        private MarkResult MarkUpstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
+        //private MarkResult MarkUpstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
+        private int MarkUpstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
         {
             return MarkFlankHit(AnnotType.USTR, item, markType);
         }
-        private MarkResult MarkDownstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
+        //private MarkResult MarkDownstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
+        private int MarkDownstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
         {
             return MarkFlankHit(AnnotType.DSTR, item, markType);
         }
-        private MarkResult MarkFlankHit(int annotType, MappedTagItem item, MarkStatus markType)
+        //private MarkResult MarkFlankHit(int annotType, MappedTagItem item, MarkStatus markType)
+        private int MarkFlankHit(int annotType, MappedTagItem item, MarkStatus markType)
         {
             int undirAnnotType = annotType;
             if (item.strand != Strand) annotType = AnnotType.MakeAntisense(annotType);
@@ -411,20 +417,22 @@ namespace Linnarsson.Dna
             if ((undirAnnotType == AnnotType.USTR && !MaskedUSTR) ||
                 (undirAnnotType == AnnotType.DSTR && !MaskedDSTR))
                 NonMaskedHitsByAnnotType[annotType] += item.MolCount;
-            return new MarkResult(annotType, this);
+            return annotType; //return new MarkResult(annotType, this);
         }
 
-        private MarkResult MarkIntronHit(MappedTagItem item, int intronIdx, MarkStatus markType)
+        //private MarkResult MarkIntronHit(MappedTagItem item, int intronIdx, MarkStatus markType)
+        private int MarkIntronHit(MappedTagItem item, int intronIdx, MarkStatus markType)
         {
             int annotType = (item.strand == Strand) ? AnnotType.INTR : AnnotType.AINTR;
             MarkLocusHitPos(item);
             AddToTotalHits(item);
             HitsByAnnotType[annotType] += item.MolCount;
             if (!MaskedINTR[intronIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
-            return new MarkResult(annotType, this);
+            return annotType; // return new MarkResult(annotType, this);
         }
 
-        public MarkResult MarkExonHit(MappedTagItem item, int exonIdx, MarkStatus markType)
+        //public MarkResult MarkExonHit(MappedTagItem item, int exonIdx, MarkStatus markType)
+        public int MarkExonHit(MappedTagItem item, int exonIdx, MarkStatus markType)
         {
             MarkSNPs(item);
             int annotType = (item.strand == Strand) ? AnnotType.EXON : AnnotType.AEXON;
@@ -434,7 +442,7 @@ namespace Linnarsson.Dna
                 AddToTotalHits(item);
                 HitsByAnnotType[annotType] += item.MolCount;
                 if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
-                return new MarkResult(annotType, this);
+                return annotType; // new MarkResult(annotType, this);
             } 
             // Now hit is to transcript and should be marked as EXON, or AEXON for antisense undirectional reads
             MarkLocusHitPos(item);
@@ -449,7 +457,7 @@ namespace Linnarsson.Dna
             NonMaskedHitsByAnnotType[annotType] += item.MolCount; // Count all EXON/SPLC hits for counter-oriented genes in statistics
             if (Props.props.ShowTranscriptSharingGenes)
                 AddSharingGenes(item);
-            return new MarkResult(annotType, this);
+            return annotType; // new MarkResult(annotType, this);
         }
 
         private void AddSharingGenes(MappedTagItem item)
@@ -464,7 +472,8 @@ namespace Linnarsson.Dna
                 }
         }
 
-        public MarkResult MarkSpliceHit(MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
+        //public MarkResult MarkSpliceHit(MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
+        public int MarkSpliceHit(MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
         {
             int exonIdx = (Strand == '+') ? exonId - 1 : ExonCount - exonId;
             int annotType = (item.strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
@@ -478,8 +487,9 @@ namespace Linnarsson.Dna
                 NonMaskedHitsByAnnotType[annotType] += item.MolCount;
             }
             HitsByAnnotType[annotType] += item.MolCount;
-            MarkResult res = MarkExonHit(item, exonIdx, markType);
-            return new MarkResult(annotType, this);
+            //MarkResult res = MarkExonHit(item, exonIdx, markType);
+            int res = MarkExonHit(item, exonIdx, markType);
+            return annotType; // return new MarkResult(annotType, this);
         }
 
         private void MarkJunctionHit(string junctionId, int count)
@@ -564,20 +574,20 @@ namespace Linnarsson.Dna
         public override string ToString()
         {
             StringBuilder s = new StringBuilder();
-            s.Append(Name + "\t\t");
+            s.AppendFormat("\t\t{0}", Name);
             string chrName = (Chr == StrtGenome.chrCTRLId)? StrtGenome.chrCTRLId : "chr" + Chr;
-            s.Append(chrName + "\t");
-            s.Append(Strand + "\t");
-            s.Append(Start + "\t");
-            s.Append((End+1) + "\t");
+            s.AppendFormat("{0}\t", chrName);
+            s.AppendFormat("{0}\t", Strand);
+            s.AppendFormat("{0}\t", Start);
+            s.AppendFormat("{0}\t", End+1);
             s.Append("\t\t");
             s.Append(ExonStarts.Length);
             s.Append("\t");
             foreach (int start in ExonStarts)
-                s.Append(start.ToString() + ",");
+                s.AppendFormat("{0},", start);
             s.Append("\t");
             foreach (int end in ExonEnds)
-                s.Append((end+1).ToString() + ",");
+                s.AppendFormat("{0},", end+1);
             return s.ToString();
         }
 

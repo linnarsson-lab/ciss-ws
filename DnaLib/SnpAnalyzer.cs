@@ -17,44 +17,52 @@ namespace Linnarsson.Dna
         /// <param name="snpFile">output file</param>
         /// <param name="barcodes">just needed for header</param>
         /// <param name="geneFeatures">dictionary of geneNames to GeneFeatures</param>
-        public static void WriteSnpsByBarcode(StreamWriter snpFile, Barcodes barcodes, Dictionary<string, GeneFeature> geneFeatures)
+        public static void WriteSnpsByBarcode(string snpPath, Barcodes barcodes, Dictionary<string, GeneFeature> geneFeatures)
         {
-            snpFile.Write("#Gene\tTrLen\tChr\tStrand\tChrPos\tTrPos\tNt\tTotal");
-            for (int idx = 0; idx < barcodes.Count; idx++)
-                snpFile.Write("\t" + barcodes.GetWellId(idx));
-            snpFile.WriteLine();
-            foreach (GeneFeature gf in geneFeatures.Values)
+            using (StreamWriter snpFile = new StreamWriter(snpPath))
             {
-                int trLen = gf.GetTranscriptLength();
-                foreach (KeyValuePair<int, SNPCounter[]> posCounts in gf.bcSNPCountersByRealChrPos)
+                snpFile.Write("#Gene\tTrLen\tChr\tStrand\tChrPos\tTrPos\tNt\tTotal");
+                for (int idx = 0; idx < barcodes.Count; idx++)
+                    snpFile.Write("\t{0}", barcodes.GetWellId(idx));
+                snpFile.WriteLine();
+                Dictionary<char, StringBuilder> bcBcIdxStr = new Dictionary<char, StringBuilder>(5);
+                Dictionary<char, int> totals = new Dictionary<char, int>(5);
+                Dictionary<char, string> totalOverflow = new Dictionary<char, string>(5);
+                foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    int chrPos = posCounts.Key;
-                    int trPos = gf.GetTranscriptPos(chrPos);
-                    snpFile.WriteLine(gf.Name + "\t" + trLen + "\t" + gf.Chr + "\t" + gf.Strand + "\t" + chrPos
-                                      + "\t" + trPos + "\tACGT\t" + gf.GetTranscriptHits());
-                    Dictionary<char, StringBuilder> bcBcIdxStr = new Dictionary<char, StringBuilder>(5);
-                    Dictionary<char, int> totals = new Dictionary<char, int>(5);
-                    int total = 0;
-                    foreach (char nt in new char[] { '0', 'A', 'C', 'G', 'T' })
+                    int trLen = gf.GetTranscriptLength();
+                    foreach (KeyValuePair<int, SNPCounter[]> posCounts in gf.bcSNPCountersByRealChrPos)
                     {
-                        bcBcIdxStr[nt] = new StringBuilder();
-                        totals[nt] = 0;
-                        foreach (SNPCounter snpc in posCounts.Value)
+                        int chrPos = posCounts.Key;
+                        int trPos = gf.GetTranscriptPos(chrPos);
+                        snpFile.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\tACGT\t{6}",
+                                    gf.Name, trLen, gf.Chr, gf.Strand, chrPos, trPos, gf.GetTranscriptHits());
+                        int total = 0;
+                        bcBcIdxStr.Clear();
+                        totals.Clear();
+                        totalOverflow.Clear();
+                        foreach (char nt in new char[] { '0', 'A', 'C', 'G', 'T' })
                         {
-                            int count = snpc.GetCount(nt);
-                            totals[nt] += count;
-                            total += count;
-                            bcBcIdxStr[nt].Append("\t" + count.ToString());
+                            bcBcIdxStr[nt] = new StringBuilder();
+                            totals[nt] = 0;
+                            totalOverflow[nt] = "";
+                            foreach (SNPCounter snpc in posCounts.Value)
+                            {
+                                int count = snpc.GetCount(nt);
+                                totals[nt] += count;
+                                total += count;
+                                if (count > SNPCounter.MaxCount) totalOverflow[nt] = ">=";
+                                bcBcIdxStr[nt].AppendFormat("\t{0}", SNPCounter.MaxTestedString(count));
+                            }
+                        }
+                        if (trPos >= 0 && total >= SnpAnalyzer.MinTotalHitsToShowBarcodedSnps)
+                        {
+                            snpFile.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\tACGT\t{6}{7}",
+                                       gf.Name, trLen, gf.Chr, gf.Strand, chrPos, trPos, totals['0'], bcBcIdxStr['0']);
+                            foreach (char nt in new char[] { 'A', 'C', 'G', 'T' })
+                                snpFile.WriteLine("\t\t\t\t\t\t{0}\t{1}{2}{3}", nt, totalOverflow[nt], totals[nt], bcBcIdxStr[nt]);
                         }
                     }
-                    if (trPos >= 0 && total >= SnpAnalyzer.MinTotalHitsToShowBarcodedSnps)
-                    {
-                        snpFile.WriteLine(gf.Name + "\t" + trLen + "\t" + gf.Chr + "\t" + gf.Strand + "\t" + chrPos
-                                          + "\t" + trPos + "\tACGT\t" + totals['0'] + bcBcIdxStr['0']);
-                        foreach (char nt in new char[] { 'A', 'C', 'G', 'T' })
-                            snpFile.WriteLine("\t\t\t\t\t\t" + nt + "\t" + totals[nt] + bcBcIdxStr[nt]);
-                    }
-                    snpFile.Close();
                 }
             }
         }
@@ -91,7 +99,6 @@ namespace Linnarsson.Dna
                 foreach (SNPCounter counter in posCounts.Value)
                     sumCounter.Add(counter);
                 sumCounters.Add(sumCounter);
-                //Console.WriteLine("SnpAnalyzer.GetSnpChrPositions: Next sumCounter at chrPos=" + chrPos + ": " + sumCounter.ToString());
             }
             sumCounters.Sort((x, y) => x.posOnChr.CompareTo(y.posOnChr));
             return sumCounters;

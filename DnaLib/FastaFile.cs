@@ -108,6 +108,7 @@ namespace Linnarsson.Dna
             foreach (FastaRecord rec in fastaRecords)
                 rec.ToFile(writer);
             writer.Close();
+            writer.Dispose();
         }
     }
 

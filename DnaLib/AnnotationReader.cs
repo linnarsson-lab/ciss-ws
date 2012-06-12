@@ -44,7 +44,7 @@ namespace Linnarsson.Dna
             string annotationPath = Path.Combine(genomeFolder, annotationFilename);
             annotationPath = PathHandler.ExistsOrGz(annotationPath);
             if (annotationPath == null)
-                throw new FileNotFoundException("Could not find " + annotationFilename + " in " + genomeFolder);
+                throw new FileNotFoundException(string.Format("Could not find {0} in {1}", annotationFilename, genomeFolder));
             return annotationPath;
         }
 
@@ -80,12 +80,12 @@ namespace Linnarsson.Dna
                         return;
                     }
                     v++;
-                    locName = gf.Name + GeneFeature.altLocusIndicator + v.ToString();
+                    locName = string.Format("{0}{1}{2}", gf.Name, GeneFeature.altLocusIndicator, + v);
                 } // Now we need to add a new second locus for this gene name
                 gf.Name = locName;
                 if (!prevGf.Name.Contains(GeneFeature.altLocusIndicator))
                 { // We are adding the second locus with same name: Add locus indicator to the first gene name.
-                    string firstNameWithLocus = prevGf.Name + GeneFeature.altLocusIndicator + "1";
+                    string firstNameWithLocus = string.Format("{0}{1}1", prevGf.Name, GeneFeature.altLocusIndicator);
                     prevGf.Name = firstNameWithLocus;
                     nameToGene[firstNameWithLocus] = prevGf;
                 }
@@ -130,16 +130,16 @@ namespace Linnarsson.Dna
                 GeneFeature prevGf = nameToGene[gf.Name];
                 if (!prevGf.IsVariant())
                 {
-                    string firstNameWithVariant = prevGf.Name + LocusFeature.variantIndicator + "1";
+                    string firstNameWithVariant = string.Format("{0}{1}1", prevGf.Name, LocusFeature.variantIndicator);
                     prevGf.Name = firstNameWithVariant;
                     nameToGene[firstNameWithVariant] = prevGf;
                 }
                 int ver = 2;
-                string versionName = gf.Name + LocusFeature.variantIndicator + ver.ToString();
+                string versionName = string.Format("{0}{1}{2}", gf.Name, LocusFeature.variantIndicator, ver);
                 while (nameToGene.ContainsKey(versionName))
                 {
                     ver++;
-                    versionName = gf.Name + LocusFeature.variantIndicator + ver.ToString();
+                    versionName = string.Format("{0}{1}{2}", gf.Name, LocusFeature.variantIndicator, ver);
                 }
                 gf.Name = versionName;
             }

@@ -46,7 +46,8 @@ namespace Linnarsson.Dna
             realFeature.SpliceLen = End - Start;
         }
 
-        public override MarkResult MarkHit(MappedTagItem item, int partIdx, MarkStatus markType)
+        //public override MarkResult MarkHit(MappedTagItem item, int partIdx, MarkStatus markType)
+        public override int MarkHit(MappedTagItem item, int partIdx, MarkStatus markType)
         {
             item.splcToRealChrOffset = offsets[partIdx];
             if (item.HitMidPos < realFeature.Start || item.HitMidPos > realFeature.End)

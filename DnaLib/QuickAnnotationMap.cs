@@ -42,7 +42,7 @@ namespace Linnarsson.Dna
 			}
 		}
 
-        public IEnumerable<FtInterval> GetItems(int pos)
+        public IEnumerable<FtInterval> IterItems(int pos)
 		{
 			int bin = pos / BinSize;
 			if (bin >= bins.Count) yield break;

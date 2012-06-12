@@ -68,24 +68,25 @@ namespace Linnarsson.Dna
 
 		public void Save(string filename)
 		{
-			StreamWriter writer = new StreamWriter(filename);
-			writer.WriteLine("A\tC\tG\tT");
-			for(int i = 0; i < Length; i++)
-			{
-				double C = Conservation(i);
-				for(byte j = 0; j < 4; j++)
-				{
-					writer.Write(Probability(i, j) * C);
-					writer.Write("\t");
-				}
-				writer.WriteLine();
-			}
-			writer.WriteLine("*** 100 sampled motifs ***");
-			for(int j = 0; j < 100; j++)
-			{
-				writer.WriteLine(DnaSequence.RandomMotif(this).ToString());
-			}
-			writer.Close();
+            using (StreamWriter writer = new StreamWriter(filename))
+            {
+                writer.WriteLine("A\tC\tG\tT");
+                for (int i = 0; i < Length; i++)
+                {
+                    double C = Conservation(i);
+                    for (byte j = 0; j < 4; j++)
+                    {
+                        writer.Write(Probability(i, j) * C);
+                        writer.Write("\t");
+                    }
+                    writer.WriteLine();
+                }
+                writer.WriteLine("*** 100 sampled motifs ***");
+                for (int j = 0; j < 100; j++)
+                {
+                    writer.WriteLine(DnaSequence.RandomMotif(this).ToString());
+                }
+            }
 		}
 	}
 }

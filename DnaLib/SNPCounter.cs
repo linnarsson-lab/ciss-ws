@@ -26,27 +26,31 @@ namespace Linnarsson.Dna
         /// <summary>
         /// Total sampling (read/molecule) count. Can be set after SNP analysis.
         /// </summary>
-        public int nTotal = 0;
-        public int nA = 0;
-        public int nC = 0;
-        public int nG = 0;
-        public int nT = 0;
+        public ushort nTotal = 0;
+        public ushort nA = 0;
+        public ushort nC = 0;
+        public ushort nG = 0;
+        public ushort nT = 0;
 
         public static string Header { get { return "RefNt\tTotal\tMut-A\tMut-C\tMut-G\tMut-T"; } }
         public string ToLine()
         {
-            return ToLine(refNt, nTotal, nA, nC, nG, nT);
-        }
-        public static string ToLine(char refNt, int nTotal, int nA, int nC, int nG, int nT)
-        {
             StringBuilder sb = new StringBuilder();
-            sb.Append(refNt + "\t" + nTotal + "\t");
-            sb.Append((nA > 0)? (nA + "\t") : "\t");
-            sb.Append((nC > 0) ? (nC + "\t") : "\t");
-            sb.Append((nG > 0) ? (nG + "\t") : "\t");
-            sb.Append((nT > 0) ? (nT.ToString()) : "");
+            sb.AppendFormat("{0}\t{1}\t", refNt, MaxTestedString(nTotal));
+            if (nA > 0) sb.Append(MaxTestedString(nA));
+            sb.Append('\t');
+            if (nC > 0) sb.Append(MaxTestedString(nC));
+            sb.Append('\t');
+            if (nG > 0) sb.Append(MaxTestedString(nG));
+            sb.Append('\t');
+            if (nT > 0) sb.Append(MaxTestedString(nT));
             return sb.ToString();
         }
+        public static string MaxTestedString(int n)
+        {
+            return (n == MaxCount) ? string.Format(">={0}", MaxCount) : n.ToString();
+        }
+        public static int MaxCount { get { return ushort.MaxValue; } }
 
         public override string ToString()
         {
@@ -79,7 +83,6 @@ namespace Linnarsson.Dna
         /// <param name="refNt">reference Nt, if known</param>
         public void Add(char snpNt, char refNt)
         {
-            //Console.WriteLine("SNPCounter.Add(snpNt=" + snpNt + " refNt=" + refNt + ") this.refNt=" + this.refNt + " this.posOnChr=" + this.posOnChr);
             if (refNt != '0') this.refNt = refNt;
             switch (snpNt)
             {
@@ -123,6 +126,7 @@ namespace Linnarsson.Dna
             if (nT > maxN) return 'T';
             return (maxN > 0)? maxC : '-'; // return maxC;
         }
+
     }
 
     /// <summary>
@@ -169,7 +173,7 @@ namespace Linnarsson.Dna
         public void Clear()
         {
             if (m_SNPCountersByOffset != null)
-                foreach (byte snpOffset in m_SNPCountersByOffset.Keys.ToArray())
+                foreach (byte snpOffset in m_SNPCountersByOffset.Keys)
                     m_SNPCountersByOffset[snpOffset] = null;
         }
 

@@ -104,7 +104,8 @@ namespace Linnarsson.Dna
 
         public override string ToString()
         {
-            return QueryName + "\t" + Chromosome + "\t" + Strand + "\t" + Position + "\t" + QuerySequence.Count + "\t" + ExtraFields;
+            return string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
+                                 QueryName, Chromosome, Strand, Position, QuerySequence.Count, ExtraFields);
         }
 
     }

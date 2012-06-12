@@ -16,6 +16,11 @@ namespace Linnarsson.Strt
         public ChrTagData(string chr)
         {
             this.chr = chr;
+            if (Props.props.GenerateWiggle)
+            {
+                wiggleFw = new Wiggle();
+                wiggleRev = new Wiggle();
+            }
         }
 
         /// <summary>
@@ -34,11 +39,11 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Wiggle data in forward, i.e. total counts (all barcodes) of reads and molecules for each position on the chromosome
         /// </summary>
-        public Wiggle wiggleFw = new Wiggle();
+        private Wiggle wiggleFw;
         /// <summary>
         /// Wiggle data in reverse, i.e. total counts (all barcodes) of reads and molecules for each position on the chromosome
         /// </summary>
-        public Wiggle wiggleRev = new Wiggle();
+        private Wiggle wiggleRev;
 
         private static int MakePosStrandIdx(int pos, char strand)
         {
@@ -85,6 +90,7 @@ namespace Linnarsson.Strt
 
         private void AddToWiggle()
         {
+            if (wiggleFw == null) return;
             int[] positions, molCounts, readCounts;
             GetDistinctPositionsAndCounts('+', out positions, out molCounts, out readCounts);
             wiggleFw.AddCounts(positions, molCounts, readCounts);
@@ -116,8 +122,6 @@ namespace Linnarsson.Strt
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {
                     if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
-                    //Console.WriteLine("ChrTagData.Add: MultiReadMapping.Position=" + m.Position + " Strand=" + m.Strand 
-                    //                  + " RndTagIdx=" + m.RndTagIdx + " " + mm.ToString());
                     item.tagSNPData.AddSNP(m.RndTagIdx, mm);
                 }
             }
@@ -144,8 +148,6 @@ namespace Linnarsson.Strt
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {
                     if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
-                    //Console.WriteLine("ChrTagData.Add: MultiReadMapping.Position=" + m.Position + " Strand=" + m.Strand 
-                    //                  + " RndTagIdx=" + m.RndTagIdx + " " + mm.ToString());
                     item.tagSNPData.AddSNP(m.RndTagIdx, mm);
                 }
             }

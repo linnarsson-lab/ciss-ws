@@ -15,6 +15,7 @@ namespace Linnarsson.Dna
         int GetTotalHits();
         int GetTotalHits(bool sense);
         bool IsExpressed();
-        MarkResult MarkHit(MappedTagItem item, int extraData, MarkStatus markType);
+        //MarkResult MarkHit(MappedTagItem item, int extraData, MarkStatus markType);
+        int MarkHit(MappedTagItem item, int extraData, MarkStatus markType);
     }
 }

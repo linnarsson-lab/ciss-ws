@@ -83,63 +83,64 @@ namespace Linnarsson.Dna
         protected IEnumerable<IFeature> IterAnnotationFile(string martPath)
         {
             Dictionary<string, bool> uniqNames = new Dictionary<string, bool>();
-            StreamReader martReader = martPath.OpenRead();
-            string header = martReader.ReadLine();
-            int exStartCol = -1, exEndCol = -1, chrCol = -1, 
-                strandCol = -1, nameCol = -1, typeCol = 0, trIdCol = -1;
-            string[] fields = header.Split('\t');
-            for (int i = 0; i < fields.Length; i++)
+            using (StreamReader martReader = new StreamReader(martPath))
             {
-                string f = fields[i].Trim();
-                if (f.ToLower().Contains("transcript id")) trIdCol = i;
-                if (f.StartsWith("Exon Chr Start")) exStartCol = i;
-                else if (f.StartsWith("Exon Chr End")) exEndCol = i;
-                else if (f == "Chromosome Name") chrCol = i;
-                else if (f == "Strand") strandCol = i;
-                else if (f == "External Gene ID" || f == "Associated Gene Name") nameCol = i;
-                else if (f == "Gene Biotype") typeCol = i;
-            }
-            if (exStartCol == -1 || exEndCol == -1 || chrCol == -1 || strandCol == -1 || nameCol == -1)
-                throw new FormatException("BioMart input file misses some columns.\n" +
-                    "Required: Transcript ID, Exon Chr Start, Exon Chr End, Chromosome Name, Strand, External Gene ID");
-            List<Interval> exons = new List<Interval>();
-            string name = "";
-            string currentTrId = "";
-            string chr = "";
-            char strand = '+';
-            string line = martReader.ReadLine();
-            while (line != null)
-            {
-                fields = line.Split('\t');
-                string trId = fields[trIdCol].Trim();
-                if (exons.Count > 0 && trId != currentTrId) // Handle every splice variant as a gene variant
+                string header = martReader.ReadLine();
+                int exStartCol = -1, exEndCol = -1, chrCol = -1,
+                    strandCol = -1, nameCol = -1, typeCol = 0, trIdCol = -1;
+                string[] fields = header.Split('\t');
+                for (int i = 0; i < fields.Length; i++)
                 {
-                    yield return CreateGeneFeature(name, chr, strand, exons);
-                    exons.Clear();
+                    string f = fields[i].Trim();
+                    if (f.ToLower().Contains("transcript id")) trIdCol = i;
+                    if (f.StartsWith("Exon Chr Start")) exStartCol = i;
+                    else if (f.StartsWith("Exon Chr End")) exEndCol = i;
+                    else if (f == "Chromosome Name") chrCol = i;
+                    else if (f == "Strand") strandCol = i;
+                    else if (f == "External Gene ID" || f == "Associated Gene Name") nameCol = i;
+                    else if (f == "Gene Biotype") typeCol = i;
                 }
-                if (exons.Count == 0)
+                if (exStartCol == -1 || exEndCol == -1 || chrCol == -1 || strandCol == -1 || nameCol == -1)
+                    throw new FormatException("BioMart input file misses some columns.\n" +
+                        "Required: Transcript ID, Exon Chr Start, Exon Chr End, Chromosome Name, Strand, External Gene ID");
+                List<Interval> exons = new List<Interval>();
+                string name = "";
+                string currentTrId = "";
+                string chr = "";
+                char strand = '+';
+                string line = martReader.ReadLine();
+                while (line != null)
                 {
-                    currentTrId = trId;
-                    name = fields[nameCol].Trim();
-                    if (name == "") name = trId;
-                    if (fields[typeCol].Contains("pseudogene"))
+                    fields = line.Split('\t');
+                    string trId = fields[trIdCol].Trim();
+                    if (exons.Count > 0 && trId != currentTrId) // Handle every splice variant as a gene variant
                     {
-                        pseudogeneCount++;
-                        int n = 1;
-                        while (uniqNames.ContainsKey(name + GeneFeature.pseudoGeneIndicator + n))
-                            n++;
-                        name += GeneFeature.pseudoGeneIndicator + n;
-                        uniqNames[name] = true;
+                        yield return CreateGeneFeature(name, chr, strand, exons);
+                        exons.Clear();
                     }
-                    chr = fields[chrCol].Trim();
-                    strand = (fields[strandCol].Trim() == "1") ? '+' : '-';
+                    if (exons.Count == 0)
+                    {
+                        currentTrId = trId;
+                        name = fields[nameCol].Trim();
+                        if (name == "") name = trId;
+                        if (fields[typeCol].Contains("pseudogene"))
+                        {
+                            pseudogeneCount++;
+                            int n = 1;
+                            while (uniqNames.ContainsKey(name + GeneFeature.pseudoGeneIndicator + n))
+                                n++;
+                            name += GeneFeature.pseudoGeneIndicator + n;
+                            uniqNames[name] = true;
+                        }
+                        chr = fields[chrCol].Trim();
+                        strand = (fields[strandCol].Trim() == "1") ? '+' : '-';
+                    }
+                    exons.Add(new Interval(int.Parse(fields[exStartCol]) - 1, int.Parse(fields[exEndCol]) - 1));
+                    line = martReader.ReadLine();
                 }
-                exons.Add(new Interval(int.Parse(fields[exStartCol]) - 1, int.Parse(fields[exEndCol]) - 1));
-                line = martReader.ReadLine();
+                if (name != "")
+                    yield return CreateGeneFeature(name, chr, strand, exons);
             }
-            if (name != "")
-                yield return CreateGeneFeature(name, chr, strand, exons);
-            martReader.Close();
         }
 
         private IFeature CreateGeneFeature(string name, string chr, char strand,

@@ -57,38 +57,41 @@ namespace Linnarsson.Dna
 
         private static void WriteLengthDistribution(int[,] lengthDistro, string referredFile, string outputPath)
         {
-            var lenFile = outputPath.OpenWrite();
-            lenFile.WriteLine("Length distribution for " + referredFile + "\tAll reads\tBarcoded_trimmed");
-            for (int i = 0; i < lengthDistro.GetLength(1); i++)
+            using (StreamWriter lenFile = new StreamWriter(outputPath))
             {
-                lenFile.WriteLine(i.ToString() + "\t" + lengthDistro[0, i] + "\t" + lengthDistro[1, i]);
+                lenFile.WriteLine("Length distribution for {0}\tAll reads\tBarcoded_trimmed", referredFile);
+                for (int i = 0; i < lengthDistro.GetLength(1); i++)
+                {
+                    lenFile.WriteLine(i.ToString() + "\t" + lengthDistro[0, i] + "\t" + lengthDistro[1, i]);
+                }
+                lenFile.WriteLine();
             }
-            lenFile.WriteLine();
-            lenFile.Close();
         }
 
         private static void WriteColorBalance(int[,] colorBalance, string referredFile, string outputPath)
         {
-            var cFile = outputPath.OpenWrite();
-            cFile.WriteLine("Color balance for " + referredFile + " (all reads):\tA\tC\tG\tT");
-            for (int i = 0; i < colorBalance.GetLength(1); i++)
+            using (StreamWriter cFile = new StreamWriter(outputPath))
             {
-                cFile.WriteLine(i.ToString() + "\t" + colorBalance[0, i] + "\t" + colorBalance[1, i] + "\t" + colorBalance[2, i] + "\t" + colorBalance[3, i]);
+                cFile.WriteLine("Color balance for {0} (all reads):\tA\tC\tG\tT", referredFile);
+                for (int i = 0; i < colorBalance.GetLength(1); i++)
+                {
+                    cFile.WriteLine(i.ToString() + "\t" + colorBalance[0, i] + "\t" + colorBalance[1, i] + "\t" + colorBalance[2, i] + "\t" + colorBalance[3, i]);
+                }
+                cFile.WriteLine();
             }
-            cFile.WriteLine();
-            cFile.Close();
         }
 
         private static void WriteQualityProfile(DescriptiveStatistics[] qprofile, string referredFile, string outputPath)
         {
-            var qFile = outputPath.OpenWrite();
-            qFile.WriteLine("Quality profile for " + referredFile + " (all reads):");
-            for (int i = 0; i < qprofile.Length; i++)
+            using (StreamWriter qFile = new StreamWriter(outputPath))
             {
-                qFile.WriteLine(i.ToString() + "\t" + qprofile[i].Mean().ToString());
+                qFile.WriteLine("Quality profile for {0} (all reads):", referredFile);
+                for (int i = 0; i < qprofile.Length; i++)
+                {
+                    qFile.WriteLine("{0}\t{1}", i, qprofile[i].Mean());
+                }
+                qFile.WriteLine();
             }
-            qFile.WriteLine();
-            qFile.Close();
         }
 
     }

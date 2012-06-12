@@ -211,9 +211,7 @@ namespace Linnarsson.Dna
                             SNPCounter counterAtRndTag = p.Value[rndTagIdx];
                             countsAtOffset.Add(counterAtRndTag.GetNt(), counterAtRndTag.refNt);
                         }
-                        countsAtOffset.nTotal = nTotal;
-                        //Console.WriteLine("TagItem.GetTotalSNPCounts: readPosOnChr=" + readPosOnChr + " p.Key= " + p.Key +
-                        //                  " spCountsAtOffset after sum over rndTags= " + countsAtOffset.ToString());
+                        countsAtOffset.nTotal = (ushort)nTotal;
                         totalCounters.Add(countsAtOffset);
                     }
                 }

@@ -73,12 +73,13 @@ namespace Linnarsson.Dna
             Length += end - start + 1;
         }
 
-        public MarkResult MarkHit(MappedTagItem item, int extraData, MarkStatus markType)
+        //public MarkResult MarkHit(MappedTagItem item, int extraData, MarkStatus markType)
+        public int MarkHit(MappedTagItem item, int extraData, MarkStatus markType)
         {
             TotalHits += item.MolCount;
             TotalHitsByBarcode[item.bcIdx] += item.MolCount;
             TotalReadsByBarcode[item.bcIdx] += item.ReadCount;
-            return new MarkResult(AnnotType.REPT, this); // Do not care about orientation for repeats
+            return AnnotType.REPT; // return new MarkResult(AnnotType.REPT, this); // Do not care about orientation for repeats
         }
 
     }

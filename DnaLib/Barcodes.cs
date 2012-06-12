@@ -615,54 +615,55 @@ namespace Linnarsson.Dna
             string path = PathHandler.MakeBarcodeFilePath(bcSetName);
             if (!File.Exists(path))
                 throw new FileNotFoundException("ERROR: Can not find barcode file " + path);
-            StreamReader reader = path.OpenRead();
-            string line = reader.ReadLine();
-            while (line.StartsWith("#"))
-            {
-                line = line.Trim().Replace(" ", "");
-                if (line.ToLower().StartsWith("#remove=") && line.Length > 8)
-                    m_TSSeq = line.Substring(8);
-                else if (line.ToLower().StartsWith("#trim=") & line.Length > 6)
-                    m_TSTrimNt = line[6];
-                else if (line.ToLower().StartsWith("#randomtagpos="))
-                {
-                    m_RandomTagPos = int.Parse(line.Substring(14));
-                }
-                else if (line.ToLower().StartsWith("#randomtaglen="))
-                {
-                    m_RandomTagLen = int.Parse(line.Substring(14));
-                }
-                else if (line.ToLower().StartsWith("#barcodepos="))
-                    m_BarcodePos = int.Parse(line.Substring(12));
-                else if (line.ToLower().StartsWith("#indexfile"))
-                    BarcodesInIndexReads = true;
-                else if (line.ToLower().StartsWith("#allowsinglemutations"))
-                    AllowSingleMutations = true;
-                line = reader.ReadLine();
-            }
             List<string> sampleIds = new List<string>();
             List<string> barcodes = new List<string>();
-            while (line != null)
+            using (StreamReader reader = new StreamReader(path))
             {
-                line = line.Trim();
-                if (line.Length > 0 && !line.StartsWith("#"))
+                string line = reader.ReadLine();
+                while (line.StartsWith("#"))
                 {
-                    string[] fields = line.Split('\t');
-                    if (fields.Length != 2)
-                        throw new BarcodeFileException("ERROR: Barcode file definition lines should be SampleId TAB Barcode:" + line);
-                    string sampleId = fields[0];
-                    string bc = fields[1];
-                    if (m_SeqLength == 0) m_SeqLength = bc.Length;
-                    else if (m_SeqLength != bc.Length)
-                        throw new BarcodeFileException("ERROR: Barcodes have different lengths: " + path);
-                    if (sampleIds.Contains(sampleId))
-                        throw new BarcodeFileException("ERROR: SampledIds in barcode file must be unique: " + sampleId);
-                    sampleIds.Add(sampleId);
-                    barcodes.Add(bc);
+                    line = line.Trim().Replace(" ", "");
+                    if (line.ToLower().StartsWith("#remove=") && line.Length > 8)
+                        m_TSSeq = line.Substring(8);
+                    else if (line.ToLower().StartsWith("#trim=") & line.Length > 6)
+                        m_TSTrimNt = line[6];
+                    else if (line.ToLower().StartsWith("#randomtagpos="))
+                    {
+                        m_RandomTagPos = int.Parse(line.Substring(14));
+                    }
+                    else if (line.ToLower().StartsWith("#randomtaglen="))
+                    {
+                        m_RandomTagLen = int.Parse(line.Substring(14));
+                    }
+                    else if (line.ToLower().StartsWith("#barcodepos="))
+                        m_BarcodePos = int.Parse(line.Substring(12));
+                    else if (line.ToLower().StartsWith("#indexfile"))
+                        BarcodesInIndexReads = true;
+                    else if (line.ToLower().StartsWith("#allowsinglemutations"))
+                        AllowSingleMutations = true;
+                    line = reader.ReadLine();
                 }
-                line = reader.ReadLine();
+                while (line != null)
+                {
+                    line = line.Trim();
+                    if (line.Length > 0 && !line.StartsWith("#"))
+                    {
+                        string[] fields = line.Split('\t');
+                        if (fields.Length != 2)
+                            throw new BarcodeFileException("ERROR: Barcode file definition lines should be SampleId TAB Barcode:" + line);
+                        string sampleId = fields[0];
+                        string bc = fields[1];
+                        if (m_SeqLength == 0) m_SeqLength = bc.Length;
+                        else if (m_SeqLength != bc.Length)
+                            throw new BarcodeFileException("ERROR: Barcodes have different lengths: " + path);
+                        if (sampleIds.Contains(sampleId))
+                            throw new BarcodeFileException("ERROR: SampledIds in barcode file must be unique: " + sampleId);
+                        sampleIds.Add(sampleId);
+                        barcodes.Add(bc);
+                    }
+                    line = reader.ReadLine();
+                }
             }
-            reader.Close();
             m_WellIds = sampleIds.ToArray();
             m_Seqs = barcodes.ToArray();
             m_FirstNegBarcodeIndex = m_Seqs.Length;

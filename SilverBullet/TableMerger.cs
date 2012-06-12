@@ -24,7 +24,7 @@ namespace SilverBullet
 
 		public void AddTable(string filename, bool union)
 		{
-			Console.WriteLine("Loading " + filename + "...");
+			Console.WriteLine("Loading {0} ...", filename);
 			var file = filename.OpenRead();
 			string sample = Path.GetFileNameWithoutExtension(filename);
 			if(sample.Contains('_')) sample = sample.Split('_')[0];

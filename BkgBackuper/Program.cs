@@ -74,22 +74,23 @@ namespace BkgBackuper
                 Console.WriteLine("Can not find {0}. Creating it.", logFile);
                 File.Create(logFile).Close();
             }
-            StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append));
-            logWriter.WriteLine(DateTime.Now.ToString() + " Starting BkgBackuper");
-            logWriter.Flush();
-            Console.WriteLine("BkgBackuper started at " + DateTime.Now.ToString() + " and logging to " + logFile);
-            
-            while (nExceptions < 30)
+            using (StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append)))
             {
-                bool canCopy = true;
-                while (TimeOfDayOK() && canCopy)
+                logWriter.WriteLine(DateTime.Now.ToString() + " Starting BkgBackuper");
+                logWriter.Flush();
+                Console.WriteLine("BkgBackuper started at " + DateTime.Now.ToString() + " and logging to " + logFile);
+
+                while (nExceptions < 30)
                 {
-                    canCopy = TryCopy(logWriter);
+                    bool canCopy = true;
+                    while (TimeOfDayOK() && canCopy)
+                    {
+                        canCopy = TryCopy(logWriter);
+                    }
+                    Thread.Sleep(1000 * 60 * minutesWait);
                 }
-                Thread.Sleep(1000 * 60 * minutesWait);
+                logWriter.WriteLine(DateTime.Now.ToString() + "BkgBackuper quit");
             }
-            logWriter.WriteLine(DateTime.Now.ToString() + "BkgBackuper quit");
-            logWriter.Close();
         }
 
         private static bool TimeOfDayOK()

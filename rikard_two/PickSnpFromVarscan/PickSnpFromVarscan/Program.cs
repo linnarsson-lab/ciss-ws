@@ -224,9 +224,23 @@ namespace PickSnpFromVarscan
 
             dbsnpfile DB = new dbsnpfile(args[1]);
 //            Console.WriteLine("\tFile: '" + args[1] + "' scanned for DBSNPs: " + DB.dbsnpcount + " found.");
-//            Console.Write("Beta_1\tBeta_2\tBeta_3\tBeta_4\tBeta_5\tBeta_6\tBeta_7\tBeta_8\tBeta_9\tBeta_10\tBeta_11\tBeta_12\tBeta_15\tBeta_17\tBeta_18\tBeta_19\tBeta_20\tBeta_21\tBeta_22\tBeta_24\tBeta_25\tBeta_26\tBeta_27\t");
-            Console.Write("Method_1\tMethod_2\tMethod_3\tMethod_4\tMethod_5\tMethod_6\tMethod_7\tMethod_8\tMethod_9\tMethod_10\tMethod_11\tMethod_12\tMethod_13\tMethod_14\tMethod_15\tMethod_16\tMethod_17\tMethod_18\tMethod_19\tMethod_20\tMethod_21\tMethod_22\tMethod_23\tMethod_24\t");
-//            Console.Write("1\t2\t3\t4\t5\t6\t7\t8\t9\t10\t11\t12\t13\t14\t15\t16\t17\t18\t19\t20\t21\t22\t23\t24\t25\t26\t27\t28\t29\t");   For Main sample
+            string ToOut = "beta"; 
+//          ToOut - 'main', 'method' or 'beta'
+            if (ToOut.Equals("beta"))
+            {
+                Console.Write("Beta_1\tBeta_2\tBeta_3\tBeta_4\tBeta_5\tBeta_6\tBeta_7\tBeta_8\tBeta_9\tBeta_10\tBeta_11\tBeta_12\tBeta_15\tBeta_17\tBeta_18\tBeta_19\tBeta_20\tBeta_21\tBeta_22\tBeta_24\tBeta_25\tBeta_26\tBeta_27\t");
+                // for beta
+            }
+            if (ToOut.Equals("method"))
+            {
+                Console.Write("Method_1\tMethod_2\tMethod_3\tMethod_4\tMethod_5\tMethod_6\tMethod_7\tMethod_8\tMethod_9\tMethod_10\tMethod_11\tMethod_12\tMethod_13\tMethod_14\tMethod_15\tMethod_16\tMethod_17\tMethod_18\tMethod_19\tMethod_20\tMethod_21\tMethod_22\tMethod_23\tMethod_24\t");
+                // for method
+            }
+            if (ToOut.Equals("main"))
+            {
+                Console.Write("1\t2\t3\t4\t5\t6\t7\t8\t9\t10\t11\t12\t13\t14\t15\t16\t17\t18\t19\t20\t21\t22\t23\t24\t25\t26\t27\t28\t29\t");
+                // for main
+            }
             Console.Write("Chrom\tPosition\tRef\tVar\tCons:Cov:Reads1:Reads2:Freq:P-value\tStrandFilter:R1+:R1-:R2+:R2-:pval\tSamplesRef\t");
             Console.WriteLine("SamplesHet\tSamplesHom\tSamplesNC\toutfracfalse\toutfractrue5\toutfractrue1\tdbsnpgene\troigene");
             //            Console.WriteLine(Environment.NewLine + DB.dbsnpcount + Environment.NewLine);
@@ -250,7 +264,7 @@ namespace PickSnpFromVarscan
             using (StreamReader r = new StreamReader(Filepath))
             {
                 string line;
-                int[] tokeep = new int[] { 10, 13, 15, 17, 18, 22, 23, 24, 25, 26 };
+//                int[] tokeep = new int[] { 10, 13, 15, 17, 18, 22, 23, 24, 25, 26 };
                 while ((line = r.ReadLine()) != null)
                 {
                     if (line.Length < 5) continue;
@@ -271,12 +285,20 @@ namespace PickSnpFromVarscan
                             foreach (string item in sample)
                             {
                                 string[] samplevars = item.Split(new Char[] { ':' });
-                                if (samplevars[4] == "-")
+                                if (samplevars[4] == "-")                            // picks out %
                                 {
                                     samplevars[4] = "0";
                                 }
-                                lineout = lineout + samplevars[4].Replace("%", "") + "\t";
-                       //         Console.Write(samplevars[4].Replace("%", "") + "\t");
+
+
+//                              lineout = lineout + samplevars[4].Replace("%", "") + "\t";
+                                // for percentage out
+//                                lineout = lineout + samplevars[2] + " " + samplevars[3] + "\t";
+                                // for absolute count 'ref var' out
+                                lineout = lineout + item + "\t";
+                                // for all count values out
+                       
+
                                 if (double.Parse(samplevars[1]) < ms - 1)
                                 {
                                     outfalse++;

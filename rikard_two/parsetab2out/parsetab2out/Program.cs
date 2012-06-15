@@ -143,9 +143,14 @@ namespace parsetab2out
                 {
                     Console.Write(String.Join("\t", rw));
                 }
-                Console.Write(rw[24] + " pos " + rw[25]);
-               // Console.Write(rw[23] + " pos " + rw[24]); for beta
-                //                Console.Write(rw[29] + " pos " + rw[30]);        For Main
+
+//                Console.Write(rw[24] + " pos " + rw[25]);
+                // for method
+                Console.Write(rw[23] + " pos " + rw[24]); 
+                // for beta
+//                Console.Write(rw[29] + " pos " + rw[30]); 
+                // for main
+
                 int hitcount = 0;
                 string CodonChange = "";
                 string HGNC = "";
@@ -162,7 +167,8 @@ namespace parsetab2out
                 foreach (KeyValuePair<string, EnsemblRow> kvp in EFILE)
                 {
 
-                    if ("chr" + kvp.Value.Location == rw[24] + ":" + rw[25])
+                    if ("chr" + kvp.Value.Location == rw[23] + ":" + rw[24])
+                // for beta!!!!!!!!!!!!!!!!!!!!!!
 //                        if ("chr" + kvp.Value.Location == rw[29] + ":" + rw[30])
                         {
                         //                      Console.Write(" " + kvp.Value.Location);

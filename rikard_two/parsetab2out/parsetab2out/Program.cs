@@ -146,7 +146,7 @@ namespace parsetab2out
 
 //                Console.Write(rw[24] + " pos " + rw[25]);
                 // for method
-                Console.Write(rw[23] + " pos " + rw[24]); 
+//                Console.WriteLine(23rw[23] + " pos " + rw[24]); 
                 // for beta
 //                Console.Write(rw[29] + " pos " + rw[30]); 
                 // for main
@@ -167,10 +167,11 @@ namespace parsetab2out
                 foreach (KeyValuePair<string, EnsemblRow> kvp in EFILE)
                 {
 
-                    if ("chr" + kvp.Value.Location == rw[23] + ":" + rw[24])
-                // for beta!!!!!!!!!!!!!!!!!!!!!!
-//                        if ("chr" + kvp.Value.Location == rw[29] + ":" + rw[30])
-                        {
+                    //                    if ("chr" + kvp.Value.Location == rw[23] + ":" + rw[24])
+                    // for beta!!!!!!!!!!!!!!!!!!!!!!
+                    if ("chr" + kvp.Value.Location == rw[29] + ":" + rw[30])
+                    // for main!!!!!!!!!!!!!!!!!!!!!!
+                    {
                         //                      Console.Write(" " + kvp.Value.Location);
                         if (kvp.Value.Codonchange.Length > 3)
                         {

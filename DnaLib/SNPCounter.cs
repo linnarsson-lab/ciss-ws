@@ -32,6 +32,11 @@ namespace Linnarsson.Dna
         public ushort nG = 0;
         public ushort nT = 0;
 
+        public void Clear()
+        {
+            nTotal = nA = nC = nG = nT = 0;
+        }
+
         public static string Header { get { return "RefNt\tTotal\tMut-A\tMut-C\tMut-G\tMut-T"; } }
         public string ToLine()
         {
@@ -172,9 +177,13 @@ namespace Linnarsson.Dna
 
         public void Clear()
         {
-            if (m_SNPCountersByOffset != null)
-                foreach (byte snpOffset in m_SNPCountersByOffset.Keys)
-                    m_SNPCountersByOffset[snpOffset] = null;
+            foreach (byte snpOffset in m_SNPCountersByOffset.Keys)
+            {
+                SNPCounter[] snpCountersByRndTag = m_SNPCountersByOffset[snpOffset];
+                if (snpCountersByRndTag != null)
+                    for (int i = 0; i < snpCountersByRndTag.Length; i++)
+                        snpCountersByRndTag[i].Clear();
+            }
         }
 
         /// <summary>
@@ -186,17 +195,17 @@ namespace Linnarsson.Dna
         /// <param name="snpNt">The reads' Nt at the SNP positions</param>
         public void AddSNP(int rndTagIdx, Mismatch mm)
         {
-            SNPCounter[] snpCounterByRndTag;
-            if (!m_SNPCountersByOffset.TryGetValue(mm.relPosInChrDir, out snpCounterByRndTag))
+            SNPCounter[] snpCountersByRndTag;
+            if (!m_SNPCountersByOffset.TryGetValue(mm.relPosInChrDir, out snpCountersByRndTag))
                 return;
-            if (snpCounterByRndTag == null)
+            if (snpCountersByRndTag == null)
             {
-                snpCounterByRndTag = new SNPCounter[TagItem.nRndTags];
+                snpCountersByRndTag = new SNPCounter[TagItem.nRndTags];
                 for (int n = 0; n < TagItem.nRndTags; n++)
-                    snpCounterByRndTag[n] = new SNPCounter(mm.posInChr, mm.refNtInChrDir);
-                m_SNPCountersByOffset[mm.relPosInChrDir] = snpCounterByRndTag;
+                    snpCountersByRndTag[n] = new SNPCounter(mm.posInChr, mm.refNtInChrDir);
+                m_SNPCountersByOffset[mm.relPosInChrDir] = snpCountersByRndTag;
             }
-            snpCounterByRndTag[rndTagIdx].Add(mm.ntInChrDir);
+            snpCountersByRndTag[rndTagIdx].Add(mm.ntInChrDir);
         }
 
     }

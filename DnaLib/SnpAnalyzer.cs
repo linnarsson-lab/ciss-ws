@@ -25,42 +25,50 @@ namespace Linnarsson.Dna
                 for (int idx = 0; idx < barcodes.Count; idx++)
                     snpFile.Write("\t{0}", barcodes.GetWellId(idx));
                 snpFile.WriteLine();
-                Dictionary<char, StringBuilder> bcBcIdxStr = new Dictionary<char, StringBuilder>(5);
+                Dictionary<char, StringBuilder> byBcNtStrings = new Dictionary<char, StringBuilder>(5);
                 Dictionary<char, int> totals = new Dictionary<char, int>(5);
                 Dictionary<char, string> totalOverflow = new Dictionary<char, string>(5);
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     int trLen = gf.GetTranscriptLength();
-                    foreach (KeyValuePair<int, SNPCounter[]> posCounts in gf.bcSNPCountersByRealChrPos)
+                    int[] chrPositions = gf.bcSNPCountersByRealChrPos.Keys.ToArray();
+                    Array.Sort(chrPositions);
+                    foreach (int chrPos in chrPositions)
                     {
-                        int chrPos = posCounts.Key;
+                        SNPCounter[] bcSnpCounters = gf.bcSNPCountersByRealChrPos[chrPos];
                         int trPos = gf.GetTranscriptPos(chrPos);
-                        snpFile.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\tACGT\t{6}",
-                                    gf.Name, trLen, gf.Chr, gf.Strand, chrPos, trPos, gf.GetTranscriptHits());
                         int total = 0;
-                        bcBcIdxStr.Clear();
-                        totals.Clear();
-                        totalOverflow.Clear();
+                        char refNt = bcSnpCounters[0].refNt;
+                        int[] refCounts = new int[bcSnpCounters.Length];
                         foreach (char nt in new char[] { '0', 'A', 'C', 'G', 'T' })
                         {
-                            bcBcIdxStr[nt] = new StringBuilder();
+                            byBcNtStrings[nt] = new StringBuilder();
                             totals[nt] = 0;
                             totalOverflow[nt] = "";
-                            foreach (SNPCounter snpc in posCounts.Value)
+                            int bcIdx = 0;
+                            foreach (SNPCounter bcSnpCounter in bcSnpCounters)
                             {
-                                int count = snpc.GetCount(nt);
+                                int count = bcSnpCounter.GetCount(nt);
                                 totals[nt] += count;
                                 total += count;
+                                refCounts[bcIdx++] += (nt == refNt) ? count : -count;
                                 if (count > SNPCounter.MaxCount) totalOverflow[nt] = ">=";
-                                bcBcIdxStr[nt].AppendFormat("\t{0}", SNPCounter.MaxTestedString(count));
+                                byBcNtStrings[nt].AppendFormat("\t{0}", SNPCounter.MaxTestedString(count));
                             }
                         }
                         if (trPos >= 0 && total >= SnpAnalyzer.MinTotalHitsToShowBarcodedSnps)
                         {
-                            snpFile.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\tACGT\t{6}{7}",
-                                       gf.Name, trLen, gf.Chr, gf.Strand, chrPos, trPos, totals['0'], bcBcIdxStr['0']);
+                            int refTotal = totals['0'] - totals['A'] - totals['C'] - totals['G'] - totals['T'];
+                            string refIdxStr = string.Join("\t", Array.ConvertAll(refCounts, (w) => w.ToString()));
+                            snpFile.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\tRef{6}\t{7}{8}\t{9}", gf.Name, trLen,
+                                              gf.Chr, gf.Strand, chrPos, trPos, refNt, totalOverflow['0'], refTotal, refIdxStr);
                             foreach (char nt in new char[] { 'A', 'C', 'G', 'T' })
-                                snpFile.WriteLine("\t\t\t\t\t\t{0}\t{1}{2}{3}", nt, totalOverflow[nt], totals[nt], bcBcIdxStr[nt]);
+                            {
+                                if (nt == refNt) continue;
+                                int ntTotal = totals[nt];
+                                string ntIdxStr = byBcNtStrings[nt].ToString();
+                                snpFile.WriteLine("\t\t\t\t\t\t{0}\t{1}{2}{3}", nt, totalOverflow[nt], ntTotal, ntIdxStr);
+                            }
                         }
                     }
                 }

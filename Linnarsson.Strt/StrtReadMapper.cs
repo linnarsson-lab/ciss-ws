@@ -259,20 +259,20 @@ namespace Linnarsson.Strt
         /// Accepted reads are written in FastQ format and separated from rejected reads written to slask.fq files.
         /// </summary>
         /// <param name="project">project folder or project name</param>
-        /// <param name="laneArgs">Items of "RunNo:LaneNos" that define the lanes of the project.
+        /// <param name="laneArgs">Items of "RunNo:LaneNos[:idxSeqs]" that define the lanes of the project.
         ///                        If empty, all sequence files in projectFolder/Reads are used.</param>
 		public List<LaneInfo> Extract(string project, List<string> laneArgs)
 		{
             project = PathHandler.GetRootedProjectFolder(project);
-            List<LaneInfo> extrInfos = new List<LaneInfo>();
+            List<LaneInfo> laneInfos = new List<LaneInfo>();
             if (laneArgs.Count > 0)
-                extrInfos = PathHandler.ListReadsFiles(laneArgs);
+                laneInfos = PathHandler.ListReadsFiles(laneArgs);
             else
                 foreach (string extractedFile in PathHandler.CollectReadsFilesNames(project))
-                    extrInfos.Add(new LaneInfo(extractedFile, "X", 'x'));
+                    laneInfos.Add(new LaneInfo(extractedFile, "X", 'x'));
             string outputFolder = PathHandler.MakeExtractedFolder(project, barcodes.Name, EXTRACTION_VERSION);
-            Extract(extrInfos, outputFolder);
-            return extrInfos;
+            Extract(laneInfos, outputFolder);
+            return laneInfos;
         }
 
         public void Extract(ProjectDescription pd)
@@ -284,27 +284,28 @@ namespace Linnarsson.Strt
         }
 
         public static readonly string EXTRACTION_VERSION = "31";
-        private void Extract(List<LaneInfo> extrInfos, string outputFolder)
+        private void Extract(List<LaneInfo> laneInfos, string outputFolder)
         {
             DateTime start = DateTime.Now;
             ReadExtractor readExtractor = new ReadExtractor(props);
-            foreach (LaneInfo extrInfo in extrInfos)
+            foreach (LaneInfo laneInfo in laneInfos)
 			{
-                extrInfo.extractionTopFolder = outputFolder;
-                GetExtractedFilePaths(outputFolder, extrInfo);
-                if (!AllFilePathsExist(extrInfo.extractedFilePaths) || !File.Exists(extrInfo.summaryFilePath))
+                laneInfo.extractionTopFolder = outputFolder;
+                GetExtractedFilePaths(outputFolder, laneInfo);
+                if (!AllFilePathsExist(laneInfo.extractedFilePaths) || !File.Exists(laneInfo.summaryFilePath))
                 {
                     ReadCounter readCounter = new ReadCounter();
                     ExtractionWordCounter wordCounter = new ExtractionWordCounter(props.ExtractionCounterWordLength);
-                    StreamWriter[] sws_barcoded = OpenStreamWriters(extrInfo.extractedFilePaths);
-                    StreamWriter sw_slask = extrInfo.slaskFilePath.OpenWrite();
+                    StreamWriter[] sws_barcoded = OpenStreamWriters(laneInfo.extractedFilePaths);
+                    StreamWriter sw_slask = laneInfo.slaskFilePath.OpenWrite();
                     int bcIdx;
                     ExtractionQuality extrQ = (props.AnalyzeExtractionQualities) ? new ExtractionQuality(props.LargestPossibleReadLength) : null;
                     double totLen = 0.0;
                     long nRecords = 0;
                     int[] nValidSTRTReadsByBc = new int[barcodes.Count];
                     int[] nTotalBarcodedReadsByBc = new int[barcodes.Count];
-                    foreach (FastQRecord fastQRecord in BarcodedReadStream.Stream(barcodes, extrInfo.readFilePath, props.QualityScoreBase))
+                    foreach (FastQRecord fastQRecord in 
+                                BarcodedReadStream.Stream(barcodes, laneInfo.readFilePath, props.QualityScoreBase, laneInfo.idxSeqFilter))
                     {
                         FastQRecord rec = fastQRecord;
                         if (extrQ != null) extrQ.Add(rec);
@@ -323,10 +324,10 @@ namespace Linnarsson.Strt
                     }
                     CloseStreamWriters(sws_barcoded);
                     sw_slask.Close();
-                    using (StreamWriter sw_summary = new StreamWriter(extrInfo.summaryFilePath))
+                    using (StreamWriter sw_summary = new StreamWriter(laneInfo.summaryFilePath))
                     {
                         int averageReadLen = (int)Math.Round(totLen / nRecords);
-                        readCounter.AddReadFile(extrInfo.readFilePath, averageReadLen);
+                        readCounter.AddReadFile(laneInfo.readFilePath, averageReadLen);
                         sw_summary.WriteLine(readCounter.TotalsToTabString());
                         sw_summary.WriteLine("#\tBarcode\tValidSTRTReads\tTotalBarcodedReads");
                         for (int bc = 0; bc < nValidSTRTReadsByBc.Length; bc++)
@@ -335,9 +336,9 @@ namespace Linnarsson.Strt
                         sw_summary.WriteLine(wordCounter.GroupsToString(200));
                     }
                     if (extrQ != null)
-                        extrQ.Write(extrInfo);
-                    extrInfo.nReads = readCounter.PartialTotal;
-                    extrInfo.nPFReads = readCounter.PartialCount(ReadStatus.VALID);
+                        extrQ.Write(laneInfo);
+                    laneInfo.nReads = readCounter.PartialTotal;
+                    laneInfo.nPFReads = readCounter.PartialCount(ReadStatus.VALID);
                 }
                 if (Background.CancellationPending) break;
             }

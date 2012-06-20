@@ -25,9 +25,18 @@ namespace Linnarsson.Strt
             return readsFqFilename.Substring(0, m.Length) + "2" + readsFqFilename.Substring(m.Length + 1);
         }
 
-        public static IEnumerable<FastQRecord> Stream(Barcodes barcodes, string readsFqPath, byte qualityScoreBase)
+        /// <summary>
+        /// Reads fq records from a stream, with the option of extraction barcodes from a 2nd read index file,
+        /// and/or filtering to yield only records having a specific index read sequence.
+        /// </summary>
+        /// <param name="barcodes"></param>
+        /// <param name="readsFqPath"></param>
+        /// <param name="qualityScoreBase"></param>
+        /// <param name="idxSeqFilter">If non-empty, only records with index reads starting with the given seq will be returned</param>
+        /// <returns></returns>
+        public static IEnumerable<FastQRecord> Stream(Barcodes barcodes, string readsFqPath, byte qualityScoreBase, string idxSeqFilter)
         {
-            if (!barcodes.BarcodesInIndexReads)
+            if (!barcodes.BarcodesInIndexReads && idxSeqFilter.Length == 0)
             {
                 foreach (FastQRecord rec in FastQFile.Stream(readsFqPath, qualityScoreBase))
                     yield return rec;
@@ -42,13 +51,18 @@ namespace Linnarsson.Strt
                 FastQRecord read = readStream.Current;
                 indexStream.MoveNext();
                 FastQRecord index = indexStream.Current;
+                if (idxSeqFilter.Length > 0 && !index.Sequence.StartsWith(idxSeqFilter))
+                        continue;
                 if (read.PassedFilter && index.PassedFilter)
                 {
                     if (read.Header != index.Header.Replace("_R2_", "_R1_"))
                         throw new FormatException("Read file and index file headers do not match at " + read.Header + " in " + readsFqPath + "!");
-                    byte[] indexQs = new byte[indexEndPos];
-                    Array.Copy(index.Qualities, indexQs, indexEndPos);
-                    read.Insert(0, index.Sequence.Substring(0, indexEndPos), indexQs);
+                    if (barcodes.BarcodesInIndexReads)
+                    {
+                        byte[] indexQs = new byte[indexEndPos];
+                        Array.Copy(index.Qualities, indexQs, indexEndPos);
+                        read.Insert(0, index.Sequence.Substring(0, indexEndPos), indexQs);
+                    }
                     yield return read;
                 }
             }

@@ -51,7 +51,7 @@ namespace Linnarsson.Dna
                                 int count = bcSnpCounter.GetCount(nt);
                                 totals[nt] += count;
                                 total += count;
-                                refCounts[bcIdx++] += (nt == refNt) ? count : -count;
+                                refCounts[bcIdx++] += (nt == '0') ? count : -count;
                                 if (count > SNPCounter.MaxCount) totalOverflow[nt] = ">=";
                                 byBcNtStrings[nt].AppendFormat("\t{0}", SNPCounter.MaxTestedString(count));
                             }

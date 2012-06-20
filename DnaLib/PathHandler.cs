@@ -125,6 +125,13 @@ namespace Linnarsson.Dna
             return runNo; 
         }
 
+        /// <summary>
+        /// laneArgs have the form RUNNO:LANENOS[:IDXSEQS]
+        /// RUNNO is a single digit, LANENOS may be serveral digits, and IDXSEQS is the index sequence
+        /// to filter by (or "" for using all indexes in that lane) for each of the lanes, separated with ','
+        /// </summary>
+        /// <param name="laneArgs"></param>
+        /// <returns></returns>
         public static List<LaneInfo> ListReadsFiles(List<string> laneArgs)
         {
             List<LaneInfo> extrInfos = new List<LaneInfo>();
@@ -133,12 +140,21 @@ namespace Linnarsson.Dna
                 string[] parts = laneArg.Split(':');
                 string runId = parts[0];
                 string matchPat = GetReadFileMatchPattern(runId);
+                string idxSeqFilterString = new string(',', parts[1].Length - 1);
+                if (parts.Length >= 3)
+                {
+                    if (parts[2].Split(',').Length != parts[1].Length)
+                        throw new ArgumentException("One (possibly empty) index filter seq must exist for each lane");
+                    idxSeqFilterString = parts[2];
+                }
+                string[] idxSeqFilter = idxSeqFilterString.Split(',');
+                int n = 0;
                 foreach (char laneNo in parts[1])
                 {
                     string readFilePat = string.Format(matchPat, laneNo);
                     string[] laneFiles = Directory.GetFiles(Props.props.ReadsFolder, readFilePat);
                     if (laneFiles.Length > 0)
-                        extrInfos.Add(new LaneInfo(laneFiles[0], runId, laneNo));
+                        extrInfos.Add(new LaneInfo(laneFiles[0], runId, laneNo, idxSeqFilter[n++]));
                 }
             }
             return extrInfos;
@@ -161,7 +177,6 @@ namespace Linnarsson.Dna
 
         /// <summary>
         /// List all sequence files contained in folder.
-        /// Exclude files that were produced by random tag filtering.
         /// </summary>
         /// <param name="folder">Either a ...Lxxx/Reads/ reads folder, or a project folder or project name</param>
         /// <returns></returns>
@@ -178,7 +193,6 @@ namespace Linnarsson.Dna
             files.AddRange(Directory.GetFiles(readsFolder, "*qseq.txt"));
             files.AddRange(Directory.GetFiles(readsFolder, "*qseq.txt.gz"));
             files.AddRange(Directory.GetFiles(readsFolder, "*.fasta"));
-            files.RemoveAll((s) => (s.Contains("duplicated_tags") || s.Contains("unique_tags")));
             return files;
         }
 

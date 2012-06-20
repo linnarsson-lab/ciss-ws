@@ -11,6 +11,8 @@ namespace Linnarsson.Dna
     {
         public string runId { get; set; }
         public char laneNo { get; set; }
+        public string idxSeqFilter { get; set; }
+
         public string extractionTopFolder { get; set; }
 
         public string readFilePath { get; set; }
@@ -31,10 +33,15 @@ namespace Linnarsson.Dna
         { }
 
         public LaneInfo(string readFilePath, string runId, char laneNo)
+            : this(readFilePath, runId, laneNo, "")
+        { }
+
+        public LaneInfo(string readFilePath, string runId, char laneNo, string idxSeqFilter)
         {
             this.readFilePath = readFilePath;
             this.runId = runId;
             this.laneNo = laneNo;
+            this.idxSeqFilter = idxSeqFilter;
         }
 
         public void SetMappedFileFolder(string splcIndexVersion)

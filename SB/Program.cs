@@ -288,41 +288,32 @@ namespace CmdSilverBullet
                 }
             }
             Console.WriteLine("\nUsage:\n\n" +
-                "SB.exe q [<RunLaneSpec>]+ [rpkm] <BcSet> [<Build>|<IdxName>] [all|single] <ProjectPath>\n" +
+                "SB.exe q [<RunLaneSpec>]+ [rpkm] <Bc> [<Build>|<Idx>] [all|single] <ProjectPath>\n" +
                 "      extract data, run Bowtie, and annotate in one sweep using default parameters.\n" +
                 "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +
-                "SB.exe x [<RunLaneSpec>]+ <BcSet> <ProjectPath>\n" +
-                "      extract data from the reads folder.\n" +
-                "SB.exe ab [rpkm|rpm|multimap|5primemap|all|single]* [<Build>|<IdxName>] <ProjectPath>|<ExtractedPath>\n" +
+                "SB.exe x [<RunLaneSpec>]+ <Bc> <ProjectPath>         -   extract data from the reads folder.\n" +
+                "SB.exe ab [rpkm|rpm|multimap|5primemap|all|single]* [<Build>|<Idx>] <ProjectPath>|<ExtractedPath>\n" +
                 "      annotate data from .map files in latest/specified Extracted folder.\n" +
                 "      Use 'all'/'single' to force analysis of all/single transcript variants.\n" +
                 "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +
                 "      Use '5primemap' to annotate reads/molecules to (one of) the transcript(s) they match closest to 5' end.\n" +
                 "      Use 'multimap' to annotate reads/molecules to every alternative transcript they match.\n" +
-                "      If Build/IdxName is left out, these are taken from the <ProjectName>_SampleLayout.txt file in the project folder.\n" +
+                "      If Build/Idx is left out, these are taken from the <ProjectName>_SampleLayout.txt file in the project folder.\n" +
                 "      Will start by running Bowtie if .map files are missing.\n" +
-                "SB.exe download <Genus_species>\n" +
-                "      download latest genome build and annotations for the given species.\n" +
-                "SB.exe idx <readLen> <Build> [<Annot>]\n" +
-                "      build annotations and Bowtie index. Both transcript variant versions of index will be built.\n" +
-                "SB.exe bt <Build>|<IdxName> all|single <ProjectPath>|<ExtractedPath>\n" +
+                "SB.exe download <Genus_species>                      -   download latest genome build and annotations.\n" +
+                "SB.exe idx <readLen> <Build> [<Annot>]               -   build annotations and Bowtie index.\n" +
+                "SB.exe bt <Build>|<Idx> all|single <ProjectPath>|<ExtractedPath>\n" +
                 "      run Bowtie on latest/specified extracted data folder.\n" +
-                "SB.exe split [<BcSet>] <ProjectPath>\n" +
-                "      split fastQ read file data by barcode. FastQ files should be located in ProjectPath/Reads.\n" +
-                "SB.exe synt <BcSet> <IdxName> all|single <OutputFolder>\n" +
-                "      generate synthetic reads from a genome.\n" +
-                "SB.exe stats [<BcSet>] <ProjectPath>\n" +
-                "      calculate barcode statistics.\n" +
-                "SB.exe dump <IdxName> <readLen> [<Step> [<MaxPerGene> [<MinOverhang> [Splices|Linear [<bcSet>]]]]] [<OutputPath>]\n" +
+                "SB.exe synt <Bc> <Idx> all|single <OutputFolder>     -   generate synthetic reads from a genome.\n" +
+                "SB.exe stats [<Bc>] <ProjectPath>                    -   calculate barcode statistics.\n" +
+                "SB.exe dump <Idx> <readLen> [<Step> [<MaxPerGene> [<MinOverhang> [Splices|Linear [<bcSet>]]]]] [<OutputPath>]\n" +
                 "      make fq file of transcript fragments. Makes all if MaxPerGene=0. Adds barcodes+GGG if bcSet given.\n\n" + 
-                "<RunLaneSpec> is e.g. '17:235' indicating lanes 2,3, and 5 of run 17.\n" + 
-                "              If left out, defaults to all sequence files in Reads/ folder under ProjectPath\n" +
-                "<Build> is 'mm9', 'hg19', or 'gg3', <Annot> is 'UCSC', 'VEGA', or 'ENSEMBL',\n" + 
-                "Annot defaults to 'UCSC' when only species is given.\n" +
-                "<IdxName> is a specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_VEGA'.\n" +
-                "<BcSet> is 'v2' (96x6-mer), 'v4' (48x6-mer, random labels), 'v4r' (no random labels), or 'no' for no barcodes.\n" +
-                "Define other barcode sets in 'BcSet.barcodes' files in the barcodes directory in the project folder\n" +
-                "<readLen> is the sequence length after barcode and GGG. For idx it should be 0-5 below actual data length.\n" +
+                "<RunLaneSpec> E.g. '17:235[:,,AGCTTG]', i.e. lanes 2,3,5 of run 17 [and only idx read AGCTTG of lane 5].\n" + 
+                "<Build> E.g. 'mm9', 'hg19', or 'gg3', <Annot> is 'UCSC', 'VEGA', or 'ENSEMBL' (Default: 'UCSC')\n" +
+                "<Idx>   Specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_VEGA'.\n" +
+                "<Bc>    'v2' (96x6-mer), 'v4' (48x6-mer, random tags), 'v4r' (no random tags), or 'no' for no barcodes.\n" +
+                "Define other barcode sets in 'Bc.barcodes' files in the barcodes directory in the project folder\n" +
+                "<readLen> Sequence length after barcode and GGG. For idx it should be 0-5 below actual data length.\n" +
                 "Paths are per default rooted in the data directory, so that e.g. 'L006' is enough as a ProjectPath.\n"
             );
         }
@@ -336,6 +327,8 @@ namespace CmdSilverBullet
                 int junkInt;
                 if (!int.TryParse(parts[0], out junkInt) || !int.TryParse(parts[1], out junkInt))
                     throw new Exception("Illegal specification of run and lane: " + args[argIdx]);
+                if (parts.Length >= 3 && parts[1].Length != parts[2].Split(',').Length)
+                    throw new Exception("# of fields in index read filter part must equal # of lanes: " + args[argIdx]); 
                 laneArgs.Add(args[argIdx]);
                 argIdx++;
             }

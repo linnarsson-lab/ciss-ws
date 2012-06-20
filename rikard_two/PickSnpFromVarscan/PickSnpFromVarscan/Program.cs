@@ -294,8 +294,11 @@ namespace PickSnpFromVarscan
 //                              lineout = lineout + samplevars[4].Replace("%", "") + "\t";
                                 // for percentage out
 //                                lineout = lineout + samplevars[2] + " " + samplevars[3] + "\t";
-                                // for absolute count 'ref var' out
+
+                                // for absolute count 'ref var' output complete, BUT with '-' converted to '0'
+                                item.Replace("-", "0");
                                 lineout = lineout + item + "\t";
+
                                 // for all count values out
                        
 
@@ -354,11 +357,11 @@ namespace PickSnpFromVarscan
                         //        Console.WriteLine("\t" + "not-in-dbsnp");
                             }
                             lineout = lineout + "\t" + genefromgff(entries[0], Int32.Parse(entries[1]), roi);
-                            if (outfalse != 29)
-                            {
+//                            if (outfalse != 29)
+//                            {                                               Take out all positions, the ones removed are so few anyway, simplifies cross-project comparison
                                 poscount++;
                                 Console.WriteLine(lineout);
-                            }
+//                            }
                             
                         }
                     }

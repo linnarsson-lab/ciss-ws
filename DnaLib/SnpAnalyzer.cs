@@ -21,6 +21,11 @@ namespace Linnarsson.Dna
         {
             using (StreamWriter snpFile = new StreamWriter(snpPath))
             {
+                if (barcodes.HasRandomBarcodes)
+                    snpFile.WriteLine("#Read counts at all positions that have at least one read with a non-reference nucleotide.");
+                else
+                    snpFile.WriteLine("#Molecule counts at all positions that have at least one molecule with a non-reference nucleotide,\n" +
+                                      "#Spurious molecules in random tags that likely are results of artefactial (PCR) mutations have been removed.");
                 snpFile.Write("#Gene\tTrLen\tChr\tStrand\tChrPos\tTrPos\tNt\tTotal");
                 for (int idx = 0; idx < barcodes.Count; idx++)
                     snpFile.Write("\t{0}", barcodes.GetWellId(idx));

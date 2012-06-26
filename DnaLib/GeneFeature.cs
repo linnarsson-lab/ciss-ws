@@ -396,17 +396,14 @@ namespace Linnarsson.Dna
             return false;
         }
 
-        //private MarkResult MarkUpstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
         private int MarkUpstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
         {
             return MarkFlankHit(AnnotType.USTR, item, markType);
         }
-        //private MarkResult MarkDownstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
         private int MarkDownstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
         {
             return MarkFlankHit(AnnotType.DSTR, item, markType);
         }
-        //private MarkResult MarkFlankHit(int annotType, MappedTagItem item, MarkStatus markType)
         private int MarkFlankHit(int annotType, MappedTagItem item, MarkStatus markType)
         {
             int undirAnnotType = annotType;
@@ -417,10 +414,9 @@ namespace Linnarsson.Dna
             if ((undirAnnotType == AnnotType.USTR && !MaskedUSTR) ||
                 (undirAnnotType == AnnotType.DSTR && !MaskedDSTR))
                 NonMaskedHitsByAnnotType[annotType] += item.MolCount;
-            return annotType; //return new MarkResult(annotType, this);
+            return annotType;
         }
 
-        //private MarkResult MarkIntronHit(MappedTagItem item, int intronIdx, MarkStatus markType)
         private int MarkIntronHit(MappedTagItem item, int intronIdx, MarkStatus markType)
         {
             int annotType = (item.strand == Strand) ? AnnotType.INTR : AnnotType.AINTR;
@@ -428,10 +424,9 @@ namespace Linnarsson.Dna
             AddToTotalHits(item);
             HitsByAnnotType[annotType] += item.MolCount;
             if (!MaskedINTR[intronIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
-            return annotType; // return new MarkResult(annotType, this);
+            return annotType;
         }
 
-        //public MarkResult MarkExonHit(MappedTagItem item, int exonIdx, MarkStatus markType)
         public int MarkExonHit(MappedTagItem item, int exonIdx, MarkStatus markType)
         {
             MarkSNPs(item);
@@ -457,7 +452,7 @@ namespace Linnarsson.Dna
             NonMaskedHitsByAnnotType[annotType] += item.MolCount; // Count all EXON/SPLC hits for counter-oriented genes in statistics
             if (Props.props.ShowTranscriptSharingGenes)
                 AddSharingGenes(item);
-            return annotType; // new MarkResult(annotType, this);
+            return annotType;
         }
 
         private void AddSharingGenes(MappedTagItem item)
@@ -472,7 +467,6 @@ namespace Linnarsson.Dna
                 }
         }
 
-        //public MarkResult MarkSpliceHit(MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
         public int MarkSpliceHit(MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
         {
             int exonIdx = (Strand == '+') ? exonId - 1 : ExonCount - exonId;
@@ -487,9 +481,8 @@ namespace Linnarsson.Dna
                 NonMaskedHitsByAnnotType[annotType] += item.MolCount;
             }
             HitsByAnnotType[annotType] += item.MolCount;
-            //MarkResult res = MarkExonHit(item, exonIdx, markType);
             int res = MarkExonHit(item, exonIdx, markType);
-            return annotType; // return new MarkResult(annotType, this);
+            return annotType;
         }
 
         private void MarkJunctionHit(string junctionId, int count)
@@ -689,11 +682,21 @@ namespace Linnarsson.Dna
             for (int n = 0; n < item.MolCount; n++)
                 m_LocusHits[locusHitIdx++] = hit;
         }
+        /// <summary>
+        /// Strand is coded as 0 for forward ('+') and 1 for reverse ('-')
+        /// </summary>
+        /// <param name="strand"></param>
+        /// <returns></returns>
         public static int GetStrandAsInt(char strand)
         {
             return (strand == '+') ? 0 : 1;
         }
-        public int GetStrandAsInt() {
+        /// <summary>
+        /// Strand is coded as 0 for forward ('+') and 1 for reverse ('-')
+        /// </summary>
+        /// <returns></returns>
+        public int GetStrandAsInt()
+        {
             return GetStrandAsInt(Strand); 
         }
 
@@ -703,7 +706,7 @@ namespace Linnarsson.Dna
         /// <param name="item"></param>
         private void MarkSNPs(MappedTagItem item)
         {
-            foreach (SNPCounter snpCounter in item.MolSNPCounts)
+            foreach (SNPCounter snpCounter in item.SNPCounts)
             {
                 int snpPosOnRealChr = item.splcToRealChrOffset + snpCounter.posOnChr;
                 SNPCounter[] bcSnpCounters;

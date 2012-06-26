@@ -16,7 +16,7 @@ namespace Linnarsson.Strt
         public ChrTagData(string chr)
         {
             this.chr = chr;
-            if (Props.props.GenerateWiggle)
+            if (Props.props.GenerateWiggle || Props.props.AnalyzeSNPs)
             {
                 wiggleFw = new Wiggle();
                 wiggleRev = new Wiggle();
@@ -104,7 +104,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Add a read and checks wether the specified rndTag has been seen before on the pos and strand.
+        /// Add a read and checks whether the specified rndTag has been seen before on the pos and strand.
         /// </summary>
         /// <param name="m">A multireadmapping to analyze</param>
         /// <returns>true if the rndTag is new at this position-strand</returns>
@@ -129,7 +129,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Add a read and checks wether the specified rndTag has been seen before on the pos and strand.
+        /// Add a read and check whether the specified rndTag has been seen before on the pos and strand.
         /// </summary>
         /// <param name="m">A multireadmapping to analyze</param>
         /// <param name="sharingRealFeatures">List of other features that compete due to the read being a multiread</param>

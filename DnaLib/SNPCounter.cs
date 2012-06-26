@@ -181,8 +181,8 @@ namespace Linnarsson.Dna
             {
                 SNPCounter[] snpCountersByRndTag = m_SNPCountersByOffset[snpOffset];
                 if (snpCountersByRndTag != null)
-                    for (int i = 0; i < snpCountersByRndTag.Length; i++)
-                        snpCountersByRndTag[i].Clear();
+                    for (int n = 0; n < snpCountersByRndTag.Length; n++)
+                        snpCountersByRndTag[n].Clear();
             }
         }
 

@@ -258,7 +258,7 @@ namespace Linnarsson.Dna
         private static int[] GetCountsPerInterval(int[] hits, char strand, int[] starts, int[] ends, int offset)
         {
             int[] result = new int[starts.Length];
-            int s = GeneFeature.GetStrandAsInt(strand);
+            int s = (strand != '.') ? GeneFeature.GetStrandAsInt(strand) : 0;
             int strandMask = (strand != '.') ? 1 : 0;
             int idx = 0;
             for (int i = 0; i < starts.Length; i++)
@@ -276,6 +276,44 @@ namespace Linnarsson.Dna
                         count++;
                 }
                 result[i] = count;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Calculate hits per exon in each barcode.
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <param name="senseOnly"></param>
+        /// <param name="nBarcodes"></param>
+        /// <returns>counts[barcodeIdx, exonIdx along chromosome]</returns>
+        public static int[,] GetCountsPerExonAndBarcode(GeneFeature gf, bool senseOnly, int nBarcodes)
+        {
+            char strand = (senseOnly) ? gf.Strand : '.';
+            return GetCountsPerIntervalAndBarcode(gf.LocusHits, strand, gf.ExonStarts, gf.ExonEnds, gf.LocusStart, nBarcodes);
+        }
+        private static int[,] GetCountsPerIntervalAndBarcode(int[] hits, char strand, int[] starts, int[] ends, int offset, int nBarcodes)
+        {
+            int[,] result = new int[nBarcodes, starts.Length];
+            int s = (strand != '.') ? GeneFeature.GetStrandAsInt(strand) : 0;
+            int strandMask = (strand != '.') ? 1 : 0;
+            int idx = 0;
+            for (int ivlIdx = 0; ivlIdx < starts.Length; ivlIdx++)
+            {
+                int from = (starts[ivlIdx] - offset) << 8;
+                int to = ((ends[ivlIdx] - offset) << 8) | 255;
+                idx = Array.FindIndex(hits, idx, (v) => (v >= from));
+                if (idx == -1) break;
+                for (; idx < hits.Length; idx++)
+                {
+                    int hit = hits[idx];
+                    if (hit > to) break;
+                    if ((hit & strandMask) == s)
+                    {
+                        int bcIdx = (hit >> 1) & 127;
+                        result[bcIdx, ivlIdx]++;
+                    }
+                }
             }
             return result;
         }

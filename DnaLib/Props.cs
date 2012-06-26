@@ -51,7 +51,7 @@ namespace Linnarsson.Dna
         public int MinReadsToTestSnp = 10; // SNP analysis minimum coverage to test a potential SNP positions (without random labeled barcodes)
         public bool GenerateTranscriptProfiles = false;
         public bool GenerateGeneLocusProfiles = false;
-        public bool GenerateGeneProfilesByBarcode = false;
+        public bool GenerateGeneProfilesByBarcode = false; // Will show exon hits by barcode for each gene
         public bool AnalyzeAllGeneVariants = true; // Analyze all alternative splice sites in exons etc.
         public bool DirectionalReads = true; // STRT are always directional reads
         public bool UseRPKM = false; // Give RPKM instead of RPM in output files for non-STRT samples

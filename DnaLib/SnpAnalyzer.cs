@@ -100,12 +100,12 @@ namespace Linnarsson.Dna
         {
             List<SNPCounter> sumCounters = new List<SNPCounter>();
             if (gf.bcSNPCountersByRealChrPos.Count == 0) return sumCounters;
-            foreach (KeyValuePair <int, SNPCounter[]> posCounts in gf.bcSNPCountersByRealChrPos)
+            foreach (KeyValuePair <int, SNPCounter[]> bcCountsByChrPos in gf.bcSNPCountersByRealChrPos)
             {
-                int chrPos = posCounts.Key;
+                int chrPos = bcCountsByChrPos.Key;
                 SNPCounter sumCounter = new SNPCounter(chrPos);
-                foreach (SNPCounter counter in posCounts.Value)
-                    sumCounter.Add(counter);
+                foreach (SNPCounter bcCounter in bcCountsByChrPos.Value)
+                    sumCounter.Add(bcCounter);
                 sumCounters.Add(sumCounter);
             }
             sumCounters.Sort((x, y) => x.posOnChr.CompareTo(y.posOnChr));

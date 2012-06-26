@@ -15,7 +15,7 @@ namespace Linnarsson.Dna
         private int cachedMolCount;
         private int cachedReadCount;
         private int cachedEstTrueMolCount;
-        private List<SNPCounter> cachedMolSNPCounts;
+        private List<SNPCounter> cachedSNPCounts;
 
         /// <summary>
         /// Number of molecules (after filtering mutated rndTags). Equals ReadCount if rndTags are not used.
@@ -23,7 +23,7 @@ namespace Linnarsson.Dna
         public int MolCount { get { return cachedMolCount; } }
         public int ReadCount { get { return cachedReadCount; } }
         public int EstTrueMolCount { get { return cachedEstTrueMolCount; } }
-        public List<SNPCounter> MolSNPCounts { get { return cachedMolSNPCounts; } }
+        public List<SNPCounter> SNPCounts { get { return cachedSNPCounts; } }
 
         private TagItem m_TagItem;
         public TagItem tagItem { get { return m_TagItem; } }
@@ -36,7 +36,7 @@ namespace Linnarsson.Dna
             cachedMolCount = m_TagItem.GetNumMolecules();
             cachedReadCount = m_TagItem.GetNumReads();
             cachedEstTrueMolCount = EstimateFromSaturatedLabels(cachedMolCount);
-            cachedMolSNPCounts = m_TagItem.GetTotalSNPCounts(m_HitStartPos);
+            cachedSNPCounts = m_TagItem.GetTotalSNPCounts(m_HitStartPos);
         }
         public static int EstimateFromSaturatedLabels(int numMolecules)
         {
@@ -151,13 +151,13 @@ namespace Linnarsson.Dna
         {
             int currentCount = totalReadCount;
             totalReadCount++;
-            if (nRndTags > 1)
-            {
+//            if (nRndTags > 1)
+//            {
                 if (readCountsByRndTag == null)
                     readCountsByRndTag = new ushort[nRndTags];
                 currentCount = readCountsByRndTag[rndTagIdx];
                 readCountsByRndTag[rndTagIdx] = (ushort)Math.Min(ushort.MaxValue, currentCount + 1);
-            }
+//            }
             return currentCount == 0;
         }
 
@@ -198,7 +198,7 @@ namespace Linnarsson.Dna
             List<SNPCounter> totalCounters = new List<SNPCounter>();
             if (tagSNPData != null)
             {
-                List<int> validRndTags = GetValidMolRndTags();
+                List<int> validRndTags = GetValidRndTags();
                 int nTotal = GetNumMolecules();
                 foreach (KeyValuePair<byte, SNPCounter[]> p in tagSNPData.SNPCountersByOffset)
                 {
@@ -220,18 +220,24 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Get indices of the rndTags that represent real molecules and not only mutations from other rndTags
+        /// Get indices of the rndTags that represent real molecules and not only mutations from other rndTags.
+        /// If no random tags are used, get all indices that contain any reads.
         /// </summary>
-        /// <returns></returns>
-        public List<int> GetValidMolRndTags()
+        /// <returns>Indices of random tags containing real data (not stemming from mutations in other random tags)</returns>
+        public List<int> GetValidRndTags()
         {
             List<int> validTagIndices = new List<int>();
-            if (nRndTags > 1 && readCountsByRndTag != null)
+// 3 new lines:
+            if (nRndTags == 1)
+                validTagIndices.Add(0);
+            else
+//            if (readCountsByRndTag != null)
             {
-                int maxNumReads = readCountsByRndTag.Max();
-                int cutOff = maxNumReads / ratioForMutationFilter;
+                int cutOff = readCountsByRndTag.Max() / ratioForMutationFilter;
+                //int cutOff = (nRndTags > 1) ? readCountsByRndTag.Max() / ratioForMutationFilter : 0;
                 for (int rndTagIdx = 0; rndTagIdx < readCountsByRndTag.Length; rndTagIdx++)
-                    if (readCountsByRndTag[rndTagIdx] > cutOff) validTagIndices.Add(rndTagIdx);
+                    if (readCountsByRndTag[rndTagIdx] > cutOff)
+                        validTagIndices.Add(rndTagIdx);
             }
             return validTagIndices;
         }

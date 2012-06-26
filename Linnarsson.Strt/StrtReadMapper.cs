@@ -859,8 +859,8 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="genome"></param>
         /// <param name="readLen">length of read seq without barcodes + GGG</param>
-        public void DumpTranscripts(Barcodes barcodes, StrtGenome genome, int readLen, int step, int maxPerGene, string fqOutput,
-                                    bool makeSplices, int minOverhang, int maxSkip)
+        public void DumpTranscripts(Barcodes barcodes, StrtGenome genome, int readLen, int step, int maxPerGene, string outFile,
+                                    bool outputFastq, bool makeSplices, int minOverhang, int maxSkip)
         {
             if (readLen > 0) genome.ReadLen = readLen;
             bool variantGenes = genome.GeneVariants;
@@ -877,10 +877,11 @@ namespace Linnarsson.Strt
             foreach (LocusFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(annotationsPath))
                 if (chrIdToFeature.ContainsKey(gf.Chr))
                     chrIdToFeature[gf.Chr].Add(gf);
-            using (StreamWriter fqWriter = new StreamWriter(fqOutput))
+            using (StreamWriter outWriter = new StreamWriter(outFile))
             {
                 StreamWriter spliceWriter = null;
-                string spliceOutput = fqOutput.Replace(".fq", "") + "_splices_only.fq";
+                string spliceOutput = outputFastq? outFile.Replace(".fq", "") + "_splices_only.fq" :
+                                                   outFile.Replace(".fa", "") + "_splices_only.fa";
                 if (makeSplices)
                     spliceWriter = spliceOutput.OpenWrite();
                 int nSeqs = 0, nTrSeqs = 0, nSplSeq = 0, bcIdx = 0;
@@ -911,9 +912,19 @@ namespace Linnarsson.Strt
                                 gfTrFwSeq.Append(s);
                             if (gf.Strand == '-')
                                 gfTrFwSeq.RevComp();
-                            fqWriter.WriteLine("@Gene={0}:Chr={1}{2}:Pos={3}", gf.Name, gf.Chr, gf.Strand, gf.Start);
-                            fqWriter.WriteLine(gfTrFwSeq);
-                            fqWriter.WriteLine("+\n{0}", new String('b', (int)gfTrFwSeq.Count));
+                            string header = string.Format("Gene={0}:Chr={1}{2}:Pos={3}:TrLen={4}", gf.Name, gf.Chr, gf.Strand, gf.Start, gfTrFwSeq.Count);
+                            if (outputFastq)
+                            {
+                                outWriter.WriteLine("@{0}", header);
+                                outWriter.WriteLine(gfTrFwSeq);
+                                outWriter.WriteLine("+\n{0}", new String('b', (int)gfTrFwSeq.Count));
+                            }
+                            else
+                            {
+                                outWriter.WriteLine(">{0}", header);
+                                outWriter.WriteLine(gfTrFwSeq);
+                            }
+
                         }
                         else
                         {
@@ -928,11 +939,13 @@ namespace Linnarsson.Strt
                                 if (gf.Strand == '-')
                                     frag.Seq.RevComp();
                                 string seqString = readStart + frag.Seq.ToString();
-                                string outBlock = string.Format("@Gene={0}:Chr={1}{2}:Pos={3}:TrPos={4}:Exon={5}\n{6}\n+\n{7}",
-                                                  gf.Name, gf.Chr, gf.Strand, posInChr, posInTrFw, exonNos, seqString,
-                                                  new String('b', seqString.Length));
+                                string header = string.Format("Gene={0}:Chr={1}{2}:Pos={3}:TrPos={4}:Exon={5}",
+                                                                     gf.Name, gf.Chr, gf.Strand, posInChr, posInTrFw, exonNos);
+                                string outBlock = outputFastq ?
+                                                      string.Format("@{0}\n{1}\n+\n{2}", header, seqString, new String('b', seqString.Length))
+                                                    : string.Format(">{0}\n{1}", header, seqString);
                                 nSeqs++;
-                                fqWriter.WriteLine(outBlock);
+                                outWriter.WriteLine(outBlock);
                                 if (spliceWriter != null && frag.ExonIds.Count > 1)
                                 {
                                     nSplSeq++;
@@ -945,7 +958,10 @@ namespace Linnarsson.Strt
                         nTrSeqs++;
                     }
                 }
-                Console.WriteLine("\nWrote {0} reads from {1} transcripts to {2}", nSeqs, nTrSeqs, fqOutput);
+                if (readLen == 0)
+                    Console.WriteLine("\nWrote {0} transcripts to {1}", nTrSeqs, outFile);
+                else
+                    Console.WriteLine("\nWrote {0} reads from {1} transcripts to {2}", nSeqs, nTrSeqs, outFile);
                 if (spliceWriter != null)
                 {
                     spliceWriter.Close();

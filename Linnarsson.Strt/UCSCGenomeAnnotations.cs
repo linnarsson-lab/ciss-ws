@@ -353,6 +353,8 @@ namespace Linnarsson.Strt
             }
             WriteUniquehits(fileNameBase);
             WriteAnnotTypeAndExonCounts(fileNameBase);
+            if (props.GenerateGeneProfilesByBarcode)
+                WriteExonCountsPerBarcode(fileNameBase);
             WriteElongationEfficiency(fileNameBase, averageReadLen);
         }
 
@@ -782,6 +784,37 @@ namespace Linnarsson.Strt
                     int[] counts = CompactGenePainter.GetCountsPerExon(gf, props.DirectionalReads);
                     WriteCountsDirected(matrixFile, gf.Strand, counts);
                     matrixFile.WriteLine();
+                }
+            }
+        }
+
+        private void WriteExonCountsPerBarcode(string fileNameBase)
+        {
+            int nExonsToShow = MaxExonCount();
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_exons_by_bc.tab"))
+            {
+                file.Write("Gene\tChr\tStrand\tPos\tTrLen\tBarcode");
+                for (int exonId = 1; exonId <= nExonsToShow; exonId++)
+                    file.Write("\tExon{0}", exonId);
+                file.WriteLine();
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    string firstCols = string.Format("{0}\t{1}\t{2}\t{3}\t{4}",
+                                                     gf.Name, gf.Chr, gf.Strand, gf.Start, gf.GetTranscriptLength());
+                    int[,] counts = CompactGenePainter.GetCountsPerExonAndBarcode(gf, props.DirectionalReads, barcodes.Count);
+                    for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                    {
+                        string bc = barcodes.Seqs[bcIdx];
+                        file.Write("{0}\t{1}", firstCols, bc);
+                        if (gf.Strand == '-')
+                            for (int i = counts.GetLength(1) - 1; i >= 0; i--)
+                                file.Write("\t{0}", counts[bcIdx, i]);
+                        else
+                            for (int i = 0; i < counts.GetLength(1); i++)
+                                file.Write("\t{0}", counts[bcIdx, i]);
+                        file.WriteLine();
+                        firstCols = "\t\t\t\t";
+                    }
                 }
             }
         }

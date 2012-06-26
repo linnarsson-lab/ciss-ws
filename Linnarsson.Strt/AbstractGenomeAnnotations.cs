@@ -201,6 +201,10 @@ namespace Linnarsson.Strt
         {
             return repeatFeatures.Values.Count(r => r.GetTotalHits() > 0);
         }
+        public int MaxExonCount()
+        {
+            return geneFeatures.Values.Max(gf => gf.ExonCount);
+        }
 
         public int[] SampleBarcodeExpressedGenes()
         {

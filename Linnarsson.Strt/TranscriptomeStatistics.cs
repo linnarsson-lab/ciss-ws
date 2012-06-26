@@ -251,7 +251,7 @@ namespace Linnarsson.Strt
             SampleReadStatistics(nMappedReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
             List<string> ctrlChrId = new List<string>();
             if (randomTagFilter.chrTagDatas.ContainsKey("CTRL"))
-            {
+            { // First process CTRL chromosome to get the labeling efficiency
                 ctrlChrId.Add("CTRL");
                 foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, true))
                     Annotate(mtitem);
@@ -289,20 +289,14 @@ namespace Linnarsson.Strt
             bool someAnnotationHit = false;
             bool someExonHit = false;
             exonHitGeneNames.Clear();
-            //bool hasVariants;
-            //List<FtInterval> trMatches = Annotations.GetTranscriptMatches(item.chr, item.strand, item.HitMidPos, out hasVariants);
-            //if (trMatches.Count > 0)
             foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.strand, item.HitMidPos))
             {
                 someExonHit = someAnnotationHit = true;
                 MarkStatus markStatus = (IterTranscriptMatchers.HasVariants || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
-                //foreach (FtInterval trMatch in trMatches)
-                //{
                     if (!exonHitGeneNames.Contains(trMatch.Feature.Name))
                     { // If a gene is hit multiple times (happens if two diff. splices have same seq.), we should annotate it only once
                         exonHitGeneNames.Add(trMatch.Feature.Name);
                         item.splcToRealChrOffset = 0;
-                        //MarkResult res = trMatch.Mark(item, trMatch.ExtraData, markStatus);
                         int annotType = trMatch.Mark(item, trMatch.ExtraData, markStatus);
                         TotalHitsByAnnotTypeAndBarcode[annotType, currentBcIdx] += molCount;
                         TotalHitsByAnnotTypeAndChr[item.chr][annotType] += molCount;
@@ -310,7 +304,6 @@ namespace Linnarsson.Strt
                         TotalHitsByBarcode[currentBcIdx] += molCount;
                     }
             }
-                //}
             if (exonHitGeneNames.Count > 1)
             {
                 exonHitGeneNames.Sort();
@@ -325,7 +318,6 @@ namespace Linnarsson.Strt
                 foreach (FtInterval nonTrMatch in Annotations.IterNonTrMatches(item.chr, item.strand, item.HitMidPos))
                 {
                     someAnnotationHit = true;
-                    //MarkResult res = nonTrMatch.Mark(item, nonTrMatch.ExtraData, MarkStatus.NONEXONIC_MAPPING);
                     int annotType = nonTrMatch.Mark(item, nonTrMatch.ExtraData, MarkStatus.NONEXONIC_MAPPING);
                     TotalHitsByAnnotTypeAndBarcode[annotType, currentBcIdx] += molCount;
                     TotalHitsByAnnotTypeAndChr[item.chr][annotType] += molCount;
@@ -1343,10 +1335,15 @@ namespace Linnarsson.Strt
                 {
                     List<SNPCounter> sumSNPCounters = SnpAnalyzer.GetSnpChrPositions(gf);
                     string first = string.Format("{0}\t{1}\t{2}\t", gf.Name, gf.Chr, gf.Start);
+                    Console.WriteLine("TranscriptomeStatistics.WriteSNPPositions(): Gf=" + gf.Name + " minHitsToTestSNP=" + minHitsToTestSNP);
+                    Console.WriteLine("TranscriptomeStatistics.WriteSNPPositions(): sumSNPCounters.Count=" + sumSNPCounters.Count);
+                    int nGtMin = 0, nAltGt0 = 0;
                     foreach (SNPCounter sumCounter in sumSNPCounters)
                     {
+                        if (sumCounter.nAlt > 0) nAltGt0++;
                         if (sumCounter.nTotal >= minHitsToTestSNP)
                         {
+                            nGtMin++;
                             int type = SnpAnalyzer.TestSNP(sumCounter);
                             if (type == SnpAnalyzer.REFERENCE) continue;
                             string typeName = (type == SnpAnalyzer.ALTERNATIVE) ? "AltNt" : "MixNt";
@@ -1354,6 +1351,8 @@ namespace Linnarsson.Strt
                             first = "\t\t\t";
                         }
                     }
+                    Console.WriteLine("TranscriptomeStatistics.WriteSNPPositions(): # GtMinHits=" + nGtMin);
+                    Console.WriteLine("TranscriptomeStatistics.WriteSNPPositions(): # SNPCounter with nAlt>0 =" + nAltGt0);
                 }
             }
         }

@@ -275,7 +275,7 @@ namespace Linnarsson.Strt
                 insertStart++;
                 insertLength--;
             }
-            rec.Header = string.Format("{0}_{1]{2}", rec.Header, bcRandomPart, barcodeSeqs[bcIdx]);
+            rec.Header = string.Format("{0}_{1}{2}", rec.Header, bcRandomPart, barcodeSeqs[bcIdx]);
             rec.Trim(insertStart, insertLength);
             return TestComplexity(rSeq, insertStart, insertLength);
         }

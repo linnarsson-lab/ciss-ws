@@ -185,6 +185,13 @@ namespace CmdSilverBullet
                             mapper.BuildJunctionsAndIndex(genome);
                             break;
 
+                        case "dumpfasta":
+                            genome = StrtGenome.GetGenome(args[1]);
+                            string fastaPath = args[2];
+                            mapper = new StrtReadMapper(props);
+                            mapper.DumpTranscripts(null, genome, 0, 0, 0, fastaPath, false, false, 0, 0);
+                            break;
+
                         case "dump":
                             genome = StrtGenome.GetGenome(args[1]);
                             int readLength = props.StandardReadLen, step = 1, maxPerGene = 0;
@@ -212,7 +219,8 @@ namespace CmdSilverBullet
                                 barcodes = Barcodes.GetBarcodes(args[7]);
                             mapper = new StrtReadMapper(props);
                             int maxSkip = props.MaxExonsSkip;
-                            mapper.DumpTranscripts(barcodes, genome, readLength, step, maxPerGene, outputPath, makeSplices, minOverhang, maxSkip);
+                            mapper.DumpTranscripts(barcodes, genome, readLength, step, maxPerGene, outputPath, true,
+                                                   makeSplices, minOverhang, maxSkip);
                             break;
 
                         case "mapsnp":
@@ -306,6 +314,7 @@ namespace CmdSilverBullet
                 "      run Bowtie on latest/specified extracted data folder.\n" +
                 "SB.exe synt <Bc> <Idx> all|single <OutputFolder>     -   generate synthetic reads from a genome.\n" +
                 "SB.exe stats [<Bc>] <ProjectPath>                    -   calculate barcode statistics.\n" +
+                "SB.exe dumpfasta <Idx> <OutputPath>\n                -   dump all transcript sequences to fasta file.\n" +
                 "SB.exe dump <Idx> <readLen> [<Step> [<MaxPerGene> [<MinOverhang> [Splices|Linear [<bcSet>]]]]] [<OutputPath>]\n" +
                 "      make fq file of transcript fragments. Makes all if MaxPerGene=0. Adds barcodes+GGG if bcSet given.\n\n" + 
                 "<RunLaneSpec> E.g. '17:235[:,,AGCTTG]', i.e. lanes 2,3,5 of run 17 [and only idx read AGCTTG of lane 5].\n" + 

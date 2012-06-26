@@ -1234,8 +1234,8 @@ namespace Linnarsson.Strt
         {
             using (StreamWriter ASHistFile = new StreamWriter(fileNameBase + "_ASRPM_Histo.tab"))
             {
-                ASHistFile.WriteLine("Distribution of Antisense RPM/bp transcript among all genes with any Antisense hit.");
-                ASHistFile.WriteLine("BinStart\tCount");
+                ASHistFile.WriteLine("#Distribution of Antisense RPM/bp transcript among all genes with any Antisense hit.");
+                ASHistFile.WriteLine("#BinStart\tCount");
                 int[] histo;
                 double firstBinStart, binWidth, median;
                 MakeExonAntisenseHistogram(out histo, out median, out firstBinStart, out binWidth);
@@ -1309,7 +1309,7 @@ namespace Linnarsson.Strt
             }
             using (StreamWriter sharedFile = new StreamWriter(fileNameBase + "_shared_hits_by_gene.tab"))
             {
-                sharedFile.WriteLine("Transcript\tMinHits\tMaxHits\tNon-unique hits in the difference, that also map to other overlapping transcripts/variants");
+                sharedFile.WriteLine("#Transcript\tMinHits\tMaxHits\tNon-unique hits in the difference, that also map to other overlapping transcripts/variants");
                 foreach (string gene in byGene.Keys)
                 {
                     GeneFeature gf = Annotations.geneFeatures[gene];
@@ -1335,15 +1335,10 @@ namespace Linnarsson.Strt
                 {
                     List<SNPCounter> sumSNPCounters = SnpAnalyzer.GetSnpChrPositions(gf);
                     string first = string.Format("{0}\t{1}\t{2}\t", gf.Name, gf.Chr, gf.Start);
-                    Console.WriteLine("TranscriptomeStatistics.WriteSNPPositions(): Gf=" + gf.Name + " minHitsToTestSNP=" + minHitsToTestSNP);
-                    Console.WriteLine("TranscriptomeStatistics.WriteSNPPositions(): sumSNPCounters.Count=" + sumSNPCounters.Count);
-                    int nGtMin = 0, nAltGt0 = 0;
                     foreach (SNPCounter sumCounter in sumSNPCounters)
                     {
-                        if (sumCounter.nAlt > 0) nAltGt0++;
                         if (sumCounter.nTotal >= minHitsToTestSNP)
                         {
-                            nGtMin++;
                             int type = SnpAnalyzer.TestSNP(sumCounter);
                             if (type == SnpAnalyzer.REFERENCE) continue;
                             string typeName = (type == SnpAnalyzer.ALTERNATIVE) ? "AltNt" : "MixNt";
@@ -1351,8 +1346,6 @@ namespace Linnarsson.Strt
                             first = "\t\t\t";
                         }
                     }
-                    Console.WriteLine("TranscriptomeStatistics.WriteSNPPositions(): # GtMinHits=" + nGtMin);
-                    Console.WriteLine("TranscriptomeStatistics.WriteSNPPositions(): # SNPCounter with nAlt>0 =" + nAltGt0);
                 }
             }
         }
@@ -1404,8 +1397,8 @@ namespace Linnarsson.Strt
         {
             using (StreamWriter writer = new StreamWriter(file + "_hotspots.tab"))
             {
-                writer.WriteLine("Positions with local maximal read counts that lack gene or repeat annotation. Samples < 5 bp apart not shown.");
-                writer.WriteLine("Chr\tPosition\tStrand\tCoverage");
+                writer.WriteLine("#Positions with local maximal read counts that lack gene or repeat annotation. Samples < 5 bp apart not shown.");
+                writer.WriteLine("#Chr\tPosition\tStrand\tCoverage");
                 foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                 {
                     string chr = data.Key;

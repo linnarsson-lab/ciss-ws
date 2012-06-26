@@ -115,7 +115,7 @@ namespace Linnarsson.Strt
             partialCounts = new int[ReadStatus.Length];
         }
 
-        public string TotalsToTabString()
+        public string TotalsToTabString(bool showRndTagCategories)
         {
             string s = "#Files included in this read summary, with average read lengths:\n";
             for (int i = 0; i < readFiles.Count; i++)
@@ -125,7 +125,10 @@ namespace Linnarsson.Strt
             s += "#Category\tCount\tPercent\n" +
                  "TOTAL_PASSED_ILLUMINA_FILTER\t" + GrandTotal + "\t100%\n";
             for (int statusCat = 0; statusCat < ReadStatus.Length; statusCat++)
-                s += string.Format("{0}\t{1}\t{2:0.#%}\n", ReadStatus.categories[statusCat], GrandCount(statusCat), GrandFraction(statusCat));
+            {
+                if (showRndTagCategories || !ReadStatus.categories[statusCat].Contains("RANDOM"))
+                    s += string.Format("{0}\t{1}\t{2:0.#%}\n", ReadStatus.categories[statusCat], GrandCount(statusCat), GrandFraction(statusCat));
+            }
             return s;
         }
 

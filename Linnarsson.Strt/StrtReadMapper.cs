@@ -328,7 +328,7 @@ namespace Linnarsson.Strt
                     {
                         int averageReadLen = (int)Math.Round(totLen / nRecords);
                         readCounter.AddReadFile(laneInfo.readFilePath, averageReadLen);
-                        sw_summary.WriteLine(readCounter.TotalsToTabString());
+                        sw_summary.WriteLine(readCounter.TotalsToTabString(barcodes.HasRandomBarcodes));
                         sw_summary.WriteLine("#\tBarcode\tValidSTRTReads\tTotalBarcodedReads");
                         for (int bc = 0; bc < nValidSTRTReadsByBc.Length; bc++)
                             sw_summary.WriteLine("BARCODEREADS\t{0}\t{1}\t{2}", barcodes.Seqs[bc], nValidSTRTReadsByBc[bc], nTotalBarcodedReadsByBc[bc]);

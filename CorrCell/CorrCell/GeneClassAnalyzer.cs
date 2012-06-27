@@ -26,8 +26,10 @@ namespace CorrCell
             List<Pair<int, int>> geneIdxPairs = ReadGenePairs(pairFile);
             List<int[]> histograms = new List<int[]>();
             List<string> titles = new List<string>();
+            Console.WriteLine("Analyzing " + geneIdxPairs.Count + " gene pairs...");
             histograms.Add(CalcPairHistogram(nHistoBins, geneIdxPairs));
             titles.Add("PairCount");
+            Console.WriteLine("Analyzing background using " + geneIdxPairs.Count + " gene pairs...");
             histograms.Add(CalcBkgHistogram(nHistoBins, geneIdxPairs, geneIdxPairs.Count));
             titles.Add("NonPairCount");
             string outFile = pairFile + ".correlation";

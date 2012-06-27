@@ -7,6 +7,10 @@ using Linnarsson.Mathematics;
 
 namespace CorrCell
 {
+    /// <summary>
+    /// Used to compare the class-wise distibution(s) of gene pair correlation coefficients
+    /// to a random background of non-candidate gene pairs
+    /// </summary>
     public class GeneClassAnalyzer
     {
         private Expression expr;
@@ -21,6 +25,12 @@ namespace CorrCell
             rnd = new Random(DateTime.Now.Millisecond);
         }
 
+        /// <summary>
+        /// The input file consists of lines of gene name pairs of possibly correlated genes, separated by a TAB.
+        /// All genes are analyzed as one class of correlations and compared with background from random samplings of pairs
+        /// of genes not in the file.
+        /// </summary>
+        /// <param name="pairFile"></param>
         public void AnalyzePairedGenes(string pairFile)
         {
             List<Pair<int, int>> geneIdxPairs = ReadGenePairs(pairFile);
@@ -36,6 +46,12 @@ namespace CorrCell
             WriteHistograms(outFile, histograms, titles);
         }
 
+        /// <summary>
+        /// The input files consists of pairs of a gene name and a class name for that gene.
+        /// Data are analyzed as all gene pairs taken from each class in turn and compared to a background
+        /// of random samples of pairs of gene taken from two different classes.
+        /// </summary>
+        /// <param name="classFile"></param>
         public void AnalyzeGeneClasses(string classFile)
         {
             Dictionary<string, List<int>> geneIdxClasses = ReadGeneClasses(classFile);

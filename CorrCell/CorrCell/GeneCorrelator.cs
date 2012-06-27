@@ -48,6 +48,13 @@ namespace CorrCell
             }
         }
 
+        /// <summary>
+        /// Estimate the correlation between a specified pair of genes from the given Expression set.
+        /// </summary>
+        /// <param name="expr"></param>
+        /// <param name="geneIdxA"></param>
+        /// <param name="geneIdxB"></param>
+        /// <returns></returns>
         public CorrPair GetCorrelation(Expression expr, int geneIdxA, int geneIdxB)
         {
             int[] countsA = expr.GetGeneValues(geneIdxA);

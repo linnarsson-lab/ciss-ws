@@ -19,7 +19,9 @@ defined('_JEXEC') or die('Restricted access'); ?>
   echo "  <tr><th>Latest&nbsp;edit:&nbsp;</th><td>" . $client->user . "&nbsp;&nbsp;" . $client->time . "</td></tr>\n";
   echo "</table></fieldset></div>\n";
   echo "<br />\n";
-  echo "<a href=index.php?option=com_dbapp&view=sequencingbatches&layout=default&clientId=" . urlencode( $client->principalinvestigator ) . ">View sequencing batches</a>";
+  echo "<a href=index.php?option=com_dbapp&view=projects&layout=default&clientId=" . urlencode( $client->principalinvestigator ) . ">View client's samples</a><br />\n";
+  echo "<br />\n";
+  echo "<a href=index.php?option=com_dbapp&view=sequencingbatches&layout=default&clientId=" . urlencode( $client->principalinvestigator ) . ">View client's sequencing batches</a><br />\n";
   echo "<br />\n";
   echo "<a href=index.php?option=com_dbapp&view=clients&Itemid=" . $itemid . ">Return to client list</a>\n";
 ?>

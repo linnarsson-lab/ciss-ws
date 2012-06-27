@@ -17,6 +17,9 @@ defined('_JEXEC') or die('Restricted access'); ?>
   echo "    <tr><th>Comment:&nbsp;</th><td>" . $contact->comment . "</td></tr>\n";
   echo "    <tr><th>Latest&nbsp;edit:&nbsp;</th><td>" . $contact->user . "&nbsp;&nbsp;" . $contact->time . "</td></tr>\n";
   echo "  </table></fieldset></div><br />\n";
+  echo "<br />\n";
+  echo  "<a href=index.php?option=com_dbapp&view=projects&layout=default&contactId=" . urlencode( $contact->contactperson ) . ">View contact's samples</a><br />\n";
+  echo "<br />\n";
   echo "<a href=index.php?option=com_dbapp&view=contacts&Itemid=" . $itemid . ">Return to contact list</a>\n";
 ?>
 

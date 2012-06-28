@@ -147,17 +147,18 @@ namespace Linnarsson.Dna
             int i = 0;
             while (i < chrLength && hitIdx < positions.Length)
             {
-                int c = countAtEachPosition[hitIdx];
+                int c0 = countAtEachPosition[hitIdx];
                 i = positions[hitIdx++];
-                for (int cc = 0; cc < c; cc++)
+                for (int cc = 0; cc < c0; cc++)
                     stops.Enqueue(i + readLength);
                 writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
                 while (i < chrLength && stops.Count > 0)
                 {
                     while (hitIdx < positions.Length && positions[hitIdx] == i)
                     {
-                        hitIdx++;
-                        stops.Enqueue(i + readLength);
+                        int c = countAtEachPosition[hitIdx++];
+                        for (int cc = 0; cc < c; cc++)
+                            stops.Enqueue(i + readLength);
                     }
                     writer.WriteLine(stops.Count * strandSign);
                     i++;

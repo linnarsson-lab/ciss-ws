@@ -15,24 +15,20 @@ namespace Linnarsson.Dna
             locusProfile = new ushort[maxLocusLen];
         }
 
+        /// <summary>
+        /// The constructed matrix is always in 'strand' (5' to 3') orientation relative to chromosome,
+        /// ordered by position in first index and desired barcodes in second.
+        /// </summary>
+        /// <param name="gf">Gene to analyze</param>
+        /// <param name="bcodeSortOrder">The barcodes in the desired order of rows of output.
+        ///  If empty, one row of totals will be returned.</param>
+        /// <returns></returns>
         public static ushort[,] GetTranscriptImageData(GeneFeature gf, int[] bcodeSortOrder)
         {
             return GetTranscriptImageData(gf.LocusHits, gf.Strand, gf.ExonStarts, gf.ExonEnds,
                                           gf.GetLocusLength(), gf.LocusStart, bcodeSortOrder);
         }
 
-        /// <summary>
-        /// The constructed matrix is always in 'strand' (5' to 3') orientation relative to chromosome,
-        /// ordered by position in first index and desired barcodes in second.
-        /// </summary>
-        /// <param name="strand">Orientation of the transcript on chromosome</param>
-        /// <param name="exonStarts"></param>
-        /// <param name="exonEnds"></param>
-        /// <param name="locusLen"></param>
-        /// <param name="offset"></param>
-        /// <param name="bcodeSortOrder">The barcodes in the desired order of rows of output.
-        ///  If empty, one row of totals will be returned.</param>
-        /// <returns></returns>
         private static ushort[,] GetTranscriptImageData(int[] hits, char strand, int[] exonStarts, int[] exonEnds, 
                                                 int locusLen, int offset, int[] bcodeSortOrder)
         {

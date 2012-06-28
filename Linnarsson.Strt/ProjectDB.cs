@@ -240,12 +240,14 @@ namespace Linnarsson.Strt
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
-            string sql = string.Format("SELECT jos_aaaprojectid, lanecount FROM jos_aaaanalysis WHERE id=\"{0}\";", projDescr.analysisId);
+            string sql = string.Format("SELECT jos_aaaprojectid, lanecount, comment, emails FROM jos_aaaanalysis WHERE id=\"{0}\";", projDescr.analysisId);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             rdr.Read();
             string projectId = rdr["jos_aaaprojectid"].ToString();
             string laneCount = rdr["lanecount"].ToString();
+            string comment = rdr["comment"].ToString();
+            string emails = rdr["emails"].ToString();
             string isRpkm = (projDescr.rpkm) ? "1" : "0";
             rdr.Close();
             bool firstResult = true;
@@ -268,11 +270,11 @@ namespace Linnarsson.Strt
                 else
                 {
                     sql = string.Format("INSERT INTO jos_aaaanalysis " +
-                                        "(jos_aaaprojectid, extraction_version, annotation_version, genome, " +
-                                        "transcript_db_version, transcript_variant, lanecount, resultspath, status, time, rpkm) " +
-                                        "VALUES (\"{0}\", \"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\", \"{8}\", NOW(), \"{9}\");",
-                                        projectId, projDescr.extractionVersion, projDescr.annotationVersion, genome,
-                                        dbbuild, variants, laneCount, resultDescr.resultFolder, projDescr.status, isRpkm);
+                               "(jos_aaaprojectid, extraction_version, annotation_version, genome, comment, emails, " +
+                                "transcript_db_version, transcript_variant, lanecount, resultspath, status, rpkm, time) " +
+                               "VALUES (\"{0}\", \"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\", \"{8}\", \"{9}\", \"{10}\", \"{11}\", NOW());",
+                               projectId, projDescr.extractionVersion, projDescr.annotationVersion, genome, comment, emails,
+                               dbbuild, variants, laneCount, resultDescr.resultFolder, projDescr.status, isRpkm);
                 }
                 cmd = new MySqlCommand(sql, conn);
                 cmd.ExecuteNonQuery();

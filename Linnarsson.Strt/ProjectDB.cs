@@ -240,7 +240,7 @@ namespace Linnarsson.Strt
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
-            string sql = string.Format("SELECT jos_aaaprojectid, lanecount, comment, emails FROM jos_aaaanalysis WHERE id=\"{0}\";", projDescr.analysisId);
+            string sql = string.Format("SELECT jos_aaaprojectid, lanecount, comment, emails, user FROM jos_aaaanalysis WHERE id=\"{0}\";", projDescr.analysisId);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             rdr.Read();
@@ -248,6 +248,7 @@ namespace Linnarsson.Strt
             string laneCount = rdr["lanecount"].ToString();
             string comment = rdr["comment"].ToString();
             string emails = rdr["emails"].ToString();
+            string user = rdr["user"].ToString();
             string isRpkm = (projDescr.rpkm) ? "1" : "0";
             rdr.Close();
             bool firstResult = true;
@@ -270,10 +271,10 @@ namespace Linnarsson.Strt
                 else
                 {
                     sql = string.Format("INSERT INTO jos_aaaanalysis " +
-                               "(jos_aaaprojectid, extraction_version, annotation_version, genome, comment, emails, " +
+                               "(jos_aaaprojectid, extraction_version, annotation_version, genome, comment, emails, user, " +
                                 "transcript_db_version, transcript_variant, lanecount, resultspath, status, rpkm, time) " +
-                               "VALUES (\"{0}\", \"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\", \"{8}\", \"{9}\", \"{10}\", \"{11}\", NOW());",
-                               projectId, projDescr.extractionVersion, projDescr.annotationVersion, genome, comment, emails,
+                               "VALUES (\"{0}\", \"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\", \"{8}\", \"{9}\", \"{10}\", \"{11}\", \"{12}\", NOW());",
+                               projectId, projDescr.extractionVersion, projDescr.annotationVersion, genome, comment, emails, user,
                                dbbuild, variants, laneCount, resultDescr.resultFolder, projDescr.status, isRpkm);
                 }
                 cmd = new MySqlCommand(sql, conn);
@@ -287,7 +288,6 @@ namespace Linnarsson.Strt
                 sql = string.Format(string.Format("UPDATE jos_aaalane SET yield=\"{0}\", pfyield=\"{1}\" WHERE laneno=\"{2}\" AND " + 
                                         "jos_aaailluminarunid= (SELECT id FROM jos_aaailluminarun WHERE illuminarunid=\"{3}\") ",
                                         extrInfo.nReads, extrInfo.nPFReads, extrInfo.laneNo, extrInfo.runId));
-                //Console.WriteLine(sql);
                 cmd = new MySqlCommand(sql, conn);
                 cmd.ExecuteNonQuery();
             }

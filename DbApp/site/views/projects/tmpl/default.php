@@ -57,7 +57,7 @@ defined('_JEXEC') or die('Restricted access');
   if ($cancelled == "yes") $filterText .= " including cancelled";
   if ($strt != "all") $filterText .= " " . $strtnow;
 
-  echo "<h1>Samples $filterText </h1>";
+  echo "<h1>Samples $filterText </h1>\n";
   echo "<div class='project'>
           <fieldset>
             <legend>
@@ -78,7 +78,7 @@ defined('_JEXEC') or die('Restricted access');
             <th>Asgn&nbsp;<br />" . JHTML::tooltip('Total no. of lanes that have been assigned to runs') . "</th>
             <th>$statussorter&nbsp;<br />" . JHTML::tooltip('--- is shown if last analysis was cancelled') . "</th>
             <th>Res&nbsp;<br />" . JHTML::tooltip('Number of analysis setup') . "</th>
-            <th>Layout&nbsp;<br />" . JHTML::tooltip('Click to view layout file') . "</th>";
+            <th>Layout&nbsp;<br />" . JHTML::tooltip('Click to view layout file') . "</th>\n";
 
     function newestsort($a, $b) { if ($a->id == $b->id) { return 0; }
                                   return ($a->id > $b->id) ? -1 : 1; };
@@ -127,36 +127,40 @@ defined('_JEXEC') or die('Restricted access');
     if ($strt == "yes" && $project->plateid[0] != "L") continue;
     if ($strt == "no" && $project->plateid[0] == "L") continue;
 
-    echo "<tr>";
-    $projectlink = "<nobr>&nbsp;<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
-           . $project->id . "&Itemid=$itemid\" title=\"" . $project->title . " " . $project->comment . "\">"
-           . $project->plateid . "</a>&nbsp;</nobr>";
-    $editlink = "<nobr>&nbsp;<a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=" 
-           . $project->id . "&Itemid=" . $itemid . ">edit</a>&nbsp;</nobr>";
-    echo "<td>" . $editlink . "</td>";
-    echo "<td>" . $projectlink . "</td>";
-    echo "<td>" . $project->barcodeset . "&nbsp;</td>";
-    echo "<td>" . $project->species . "&nbsp;</td>";
-    echo "<td><nobr>" . $project->principalinvestigator . "&nbsp;</nobr></td>";
-    echo "<td><nobr>" . $project->contactperson . "&nbsp;</nobr></td>";
+    echo "<tr>\n";
+    $projectlink = "<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
+                   . $project->id . "&Itemid=$itemid\" title=\"" . $project->title . " " . $project->comment . "\">"
+                   . $project->plateid . "</a>";
+    $editlink = "<a href=\"index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=" 
+                . $project->id . "&Itemid=" . $itemid . "\">edit</a>";
+    echo "<td><nobr>&nbsp; $editlink &nbsp;</nobr></td>\n";
+    echo "<td><nobr>&nbsp; $projectlink &nbsp;</nobr></td>\n";
+    echo "<td>" . $project->barcodeset . "&nbsp;</td>\n";
+    echo "<td>" . $project->species . "&nbsp;</td>\n";
+    $pilink = "<a href=\"index.php?option=com_dbapp&view=client&layout=client&controller=client&searchid="
+              . $project->clientid . "&Itemid=" . $itemid . "\">$project->principalinvestigator</a>";
+    echo "<td><nobr>&nbsp; $pilink &nbsp;</nobr></td>\n";
+    $clientlink = "<a href=\"index.php?option=com_dbapp&view=contact&layout=contact&controller=contact&searchid="
+                  . $project->contactid . "&Itemid=" . $itemid . "\">$project->contactperson</a>";
+    echo "<td><nobr>&nbsp; $clientlink &nbsp;</nobr></td>\n";
 
     $mngr = $project->person;
     if (strpos($mngr, ' ') >= 1)
       $mngr = implode(array_map(create_function('$a', 'return $a[0];'), explode(' ', $project->person)));
     else $mngr = substr($mngr, 0, 5);
-    echo "<td><nobr><abbr title=\"$project->person\">" . $mngr . "</abbr>&nbsp;</nobr></td>";
-    echo "<td><nobr>" . $project->plannedlanes . "</nobr></td>";
-    echo "<td><nobr>" . $project->assignedlanes . "</nobr></td>";
+    echo "<td><nobr><abbr title=\"$project->person\">" . $mngr . "</abbr>&nbsp;</nobr></td>\n";
+    echo "<td><nobr>" . $project->plannedlanes . "</nobr></td>\n";
+    echo "<td><nobr>" . $project->assignedlanes . "</nobr></td>\n";
     if ($project->status == 'cancelled')
-         echo "<td><nobr>cancelled&nbsp;</nobr></td>";
+         echo "<td><nobr>cancelled&nbsp;</nobr></td>\n";
     else
-        echo "<td><nobr>" . (($project->astatus == 'cancelled')? '---' : $project->astatus) . "&nbsp;</nobr></td>";
-    echo "<td>&nbsp;" . (($project->analysiscount > 0)? $project->analysiscount : "-") . "&nbsp;</td>";
+        echo "<td><nobr>" . (($project->astatus == 'cancelled')? '---' : $project->astatus) . "&nbsp;</nobr></td>\n";
+    echo "<td>&nbsp;" . (($project->analysiscount > 0)? $project->analysiscount : "-") . "&nbsp;</td>\n";
     $filelink = "";
     if ($project->layoutfile) $filelink = "yes";
-    echo "<td><nobr><a href='/uploads/" . $project->layoutfile . "' target='_blank' >" . $filelink . "</a></nobr></td>";
-    echo "</tr>";
+    echo "<td><nobr><a href='/uploads/" . $project->layoutfile . "' target='_blank' >" . $filelink . "</a></nobr></td>\n";
+    echo "</tr>\n";
   }
-  echo "</table></fieldset></div><br />";
+  echo "</table></fieldset></div><br />\n";
 
 ?>

@@ -26,13 +26,14 @@ class DbAppModelProjects extends JModel {
     $query = ' SELECT p.id as id, principalinvestigator, person, contactperson, plateid, p.status, platereference,
                  barcodeset, species, tissue, sampletype, collectionmethod, weightconcentration, fragmentlength,
                  p.molarconcentration, p.user as user, p.time as time, layoutfile, p.title, p.comment,
+                 cli.id AS clientid, con.id AS contactid,
                  COUNT(DISTINCT(a.id)) AS analysiscount,
                  SUBSTRING_INDEX(GROUP_CONCAT(CAST(a.status AS CHAR) ORDER BY a.id DESC), ",", 1) AS astatus,
                  COUNT(DISTINCT(l.id)) AS assignedlanes, IFNULL(nplannedlanes, 0) AS plannedlanes, 
                  IFNULL(nbatches, 0) AS batches
                FROM #__aaaproject p
-               LEFT JOIN #__aaaclient ON p.#__aaaclientid = #__aaaclient.id
-               LEFT JOIN #__aaacontact ON p.#__aaacontactid = #__aaacontact.id
+               LEFT JOIN #__aaaclient cli ON p.#__aaaclientid = cli.id
+               LEFT JOIN #__aaacontact con ON p.#__aaacontactid = con.id
                LEFT JOIN #__aaamanager ON p.#__aaamanagerid = #__aaamanager.id
                LEFT JOIN #__aaasequencingbatch b ON p.id = b.#__aaaprojectid
                LEFT JOIN #__aaalane l ON b.id = l.#__aaasequencingbatchid

@@ -342,14 +342,17 @@ namespace Linnarsson.Strt
                 CmdCaller.Run("php", "expression2forR.php " + expressionFile);
             }
             if (props.GenerateTranscriptProfiles)
-                WriteTranscriptHitsByGeneLocus(fileNameBase, averageReadLen);
+            {
+                WriteTranscriptProfiles(fileNameBase);
+                WriteTranscriptHistograms(fileNameBase, averageReadLen);
+            }
             if (props.GenerateGeneLocusProfiles)
                 WriteLocusHitsByGeneLocus(fileNameBase);
             WriteExpressedAntisenseGenes(fileNameBase);
             if (props.GenesToPaint != null && props.GenesToPaint.Length > 0)
             {
-                WriteGeneImages(fileNameBase);
-                WriteTranscriptImages(fileNameBase);
+                PaintSelectedGeneLocusImages(fileNameBase);
+                PaintSelectedGeneTranscriptImages(fileNameBase);
             }
             WriteUniquehits(fileNameBase);
             WriteAnnotTypeAndExonCounts(fileNameBase);
@@ -878,9 +881,9 @@ namespace Linnarsson.Strt
         /// For every expressed gene, write the binned hit count profile across the transcript.
         /// </summary>
         /// <param name="fileNameBase"></param>
-        private void WriteTranscriptHitsByGeneLocus(string fileNameBase, int averageReadLen)
+        private void WriteTranscriptHistograms(string fileNameBase, int averageReadLen)
         {
-            using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_profile.tab"))
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_histograms.tab"))
             {
                 file.WriteLine("Binned number of hits to transcripts counting from 3' end");
                 file.Write("Gene\tTrLen\tTotHits\tExonHits\t3'-");
@@ -906,7 +909,7 @@ namespace Linnarsson.Strt
         /// <param name="fileNameBase"></param>
         private void WriteLocusHitsByGeneLocus(string fileNameBase)
         {
-            using (StreamWriter file = new StreamWriter(fileNameBase + "_genelocus_profile.tab"))
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_genelocus_histograms.tab"))
             {
                 file.WriteLine("Binned number of hits to either strand of gene loci relative to 3' end including flank:");
                 file.Write("Gene\tTrscrDir\tLen\tChrStrand\tTotHits\t3'End->");
@@ -964,7 +967,7 @@ namespace Linnarsson.Strt
         /// Write the gene images
         /// </summary>
         /// <param name="fileNameBase"></param>
-        private void WriteGeneImages(string fileNameBase)
+        private void PaintSelectedGeneLocusImages(string fileNameBase)
         {
             if (props.GenesToPaint.Length == 0) return;
             string imgDir = Directory.CreateDirectory(fileNameBase + "_gene_images").FullName;
@@ -1016,7 +1019,7 @@ namespace Linnarsson.Strt
         /// Write transcript images
         /// </summary>
         /// <param name="fileNameBase"></param>
-        private void WriteTranscriptImages(string fileNameBase)
+        private void PaintSelectedGeneTranscriptImages(string fileNameBase)
         {
             if (props.GenesToPaint.Length == 0) return;
             string imgDir = Directory.CreateDirectory(fileNameBase + "_transcript_images").FullName;
@@ -1059,6 +1062,26 @@ namespace Linnarsson.Strt
                     file.Write(pos);
                     for (int bcRow = nBarcodes - 1; bcRow >= 0; bcRow--)
                         file.Write("\t{0}", imgData[pos, bcRow]);
+                    file.WriteLine();
+                }
+            }
+        }
+
+        private void WriteTranscriptProfiles(string fileNameBase)
+        {
+            using (StreamWriter file = new StreamWriter(fileNameBase + "transcript_profiles.tab"))
+            {
+                file.WriteLine("All hits to transcript from 5' to 3' end.");
+                file.Write("Gene\tChr\tTrDir\tTr5'Pos\tTr3'Pos\tTrLen\tCounts in 5'->3' order");
+                file.WriteLine();
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    if (gf.GetTranscriptHits() == 0) continue;
+                    file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
+                               gf.Name, gf.Chr, gf.Strand, gf.Start, gf.End, gf.GetTranscriptLength());
+                    ushort[,] countData = CompactGenePainter.GetTranscriptImageData(gf, new int[0]);
+                    for (int p = 0; p < countData.GetLength(0); p++)
+                        file.Write("\t{0}", countData[p, 0]);
                     file.WriteLine();
                 }
             }

@@ -17,7 +17,7 @@ namespace Linnarsson.Dna
         /// <param name="snpFile">output file</param>
         /// <param name="barcodes">just needed for header</param>
         /// <param name="geneFeatures">dictionary of geneNames to GeneFeatures</param>
-        public static void WriteSnpsByBarcode(string snpPath, Barcodes barcodes, Dictionary<string, GeneFeature> geneFeatures)
+        public static void WriteSnpsByBarcode(string snpPath, Barcodes barcodes, int[] selectedBarcodes, Dictionary<string, GeneFeature> geneFeatures)
         {
             using (StreamWriter snpFile = new StreamWriter(snpPath))
             {
@@ -27,8 +27,8 @@ namespace Linnarsson.Dna
                     snpFile.WriteLine("#Molecule counts at all positions that have at least one molecule with a non-reference nucleotide,\n" +
                                       "#Spurious molecules in random tags that likely are results of artefactial (PCR) mutations have been removed.");
                 snpFile.Write("#Gene\tTrLen\tChr\tStrand\tChrPos\tTrPos\tNt\tTotal");
-                for (int idx = 0; idx < barcodes.Count; idx++)
-                    snpFile.Write("\t{0}", barcodes.GetWellId(idx));
+                foreach (int bcIdx in selectedBarcodes)
+                    snpFile.Write("\t{0}", barcodes.GetWellId(bcIdx));
                 snpFile.WriteLine();
                 Dictionary<char, StringBuilder> byBcNtStrings = new Dictionary<char, StringBuilder>(5);
                 Dictionary<char, int> totals = new Dictionary<char, int>(5);
@@ -50,13 +50,14 @@ namespace Linnarsson.Dna
                             byBcNtStrings[nt] = new StringBuilder();
                             totals[nt] = 0;
                             totalOverflow[nt] = "";
-                            int bcIdx = 0;
-                            foreach (SNPCounter bcSnpCounter in bcSnpCounters)
-                            {
+                            int i = 0;
+                            foreach (int bcIdx in selectedBarcodes)
+                            { 
+                                SNPCounter bcSnpCounter = bcSnpCounters[bcIdx];
                                 int count = bcSnpCounter.GetCount(nt);
                                 totals[nt] += count;
                                 total += count;
-                                refCounts[bcIdx++] += (nt == '0') ? count : -count;
+                                refCounts[i++] += (nt == '0') ? count : -count;
                                 if (count > SNPCounter.MaxCount) totalOverflow[nt] = ">=";
                                 byBcNtStrings[nt].AppendFormat("\t{0}", SNPCounter.MaxTestedString(count));
                             }

@@ -1353,7 +1353,8 @@ namespace Linnarsson.Strt
         private void WriteSnpsByBarcode(string fileNameBase)
         {
             string snpPath = fileNameBase + "_SNPs_by_barcode.tab";
-            SnpAnalyzer.WriteSnpsByBarcode(snpPath, barcodes, Annotations.geneFeatures);
+            int[] genomeBarcodes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
+            SnpAnalyzer.WriteSnpsByBarcode(snpPath, barcodes, genomeBarcodes, Annotations.geneFeatures);
         }
 
         public void WriteWriggle(string fileNameBase)

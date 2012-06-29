@@ -58,7 +58,6 @@ namespace Linnarsson.Strt
             NonExonAnnotations = new Dictionary<string, QuickAnnotationMap>();
             geneFeatures = new Dictionary<string, GeneFeature>(50000);
             repeatFeatures = new Dictionary<string, RepeatFeature>(1500);
-            //GetTranscriptMatches = new TranscriptMatchers(ExonAnnotations).GetMatcher();
             IterTranscriptMatches = new IterTranscriptMatchers(ExonAnnotations).GetMatcher();
         }
 
@@ -201,6 +200,10 @@ namespace Linnarsson.Strt
         {
             return repeatFeatures.Values.Count(r => r.GetTotalHits() > 0);
         }
+        /// <summary>
+        /// Find largest number of exons for any gene
+        /// </summary>
+        /// <returns></returns>
         public int MaxExonCount()
         {
             return geneFeatures.Values.Max(gf => gf.ExonCount);

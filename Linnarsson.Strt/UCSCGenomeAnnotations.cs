@@ -331,6 +331,12 @@ namespace Linnarsson.Strt
 
         public override void SaveResult(string fileNameBase, int averageReadLen)
         {
+            WriteIntronCounts(fileNameBase);
+            if (props.GenerateGeneProfilesByBarcode)
+            {
+                WriteExonCountsPerBarcode(fileNameBase);
+                WriteIntronCountsPerBarcode(fileNameBase);
+            }
             if (props.GenerateTranscriptProfiles)
             {
                 WriteTranscriptProfiles(fileNameBase);
@@ -356,8 +362,6 @@ namespace Linnarsson.Strt
             }
             WriteUniquehits(fileNameBase);
             WriteAnnotTypeAndExonCounts(fileNameBase);
-            if (props.GenerateGeneProfilesByBarcode)
-                WriteExonCountsPerBarcode(fileNameBase);
             WriteElongationEfficiency(fileNameBase, averageReadLen);
         }
 
@@ -753,19 +757,22 @@ namespace Linnarsson.Strt
         /// <param name="fileNameBase"></param>
         private void WriteAnnotTypeAndExonCounts(string fileNameBase)
         {
-            int nExonsToShow = 50;
-            using (StreamWriter matrixFile = new StreamWriter(fileNameBase + "_exons.tab"))
+            int nExonsToShow = MaxExonCount();
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_exons.tab"))
             {
-                matrixFile.Write("Gene\tChr\tPos\tStrand\tTrLen\tUSTRLen\tLocusLen\tDSTRLen\t#SHits\t#AHits\tIntrLen\t#Exons\tMixGene\tASGene\t");
+                file.WriteLine("Shows hits by to gene loci by type of annotation.");
+                file.WriteLine("MixGene shows overlapping genes in the same, ASGene in the opposite orientation.");
+                file.Write("Gene\tChr\tPos\tStrand\tTrLen\tUSTRLen\tLocusLen\tDSTRLen\t#SenseHits\t#AntiHits\tIntronLen\t#Exons\tMixGene\tASGene\t");
                 foreach (int i in AnnotType.GetGeneTypes())
                 {
                     string annotName = AnnotType.GetName(i);
                     if (annotName == "EXON") annotName = "EXON+SPLC";
-                    matrixFile.Write("#{0}Hits\t", annotName);
+                    file.Write("#{0}Hits\t", annotName);
                 }
+                string exonTitle = props.DirectionalReads ? "SExon" : "Exon";
                 for (int exonId = 1; exonId <= nExonsToShow; exonId++)
-                    matrixFile.Write("SEx{0}\t", exonId);
-                matrixFile.WriteLine();
+                    file.Write("{0}{1}\t", exonTitle, exonId);
+                file.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     string mixedSenseGene = "";
@@ -775,49 +782,17 @@ namespace Linnarsson.Strt
                     string mixedASGene = "";
                     if (gf.HitsByAnnotType[AnnotType.AINTR] >= 5 || gf.HitsByAnnotType[AnnotType.AEXON] >= 5)
                         mixedASGene = OverlappingExpressedGene(gf, 10, false);
-                    matrixFile.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t",
+                    file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}",
                                      gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), gf.USTRLength,
                                      gf.GetLocusLength(), gf.DSTRLength, gf.GetTotalHits(true), gf.GetTotalHits(false),
                                      gf.GetIntronicLength(), gf.ExonCount, mixedSenseGene, mixedASGene);
                     foreach (int i in AnnotType.GetGeneTypes())
                     {
                         int nHits = gf.HitsByAnnotType[i];
-                        matrixFile.Write("{0}\t", nHits);
+                        file.Write("\t{0}", nHits);
                     }
                     int[] counts = CompactGenePainter.GetCountsPerExon(gf, props.DirectionalReads);
-                    WriteCountsDirected(matrixFile, gf.Strand, counts);
-                    matrixFile.WriteLine();
-                }
-            }
-        }
-
-        private void WriteExonCountsPerBarcode(string fileNameBase)
-        {
-            int nExonsToShow = MaxExonCount();
-            using (StreamWriter file = new StreamWriter(fileNameBase + "_exons_by_bc.tab"))
-            {
-                file.Write("Gene\tChr\tStrand\tPos\tTrLen\tBarcode");
-                for (int exonId = 1; exonId <= nExonsToShow; exonId++)
-                    file.Write("\tExon{0}", exonId);
-                file.WriteLine();
-                foreach (GeneFeature gf in geneFeatures.Values)
-                {
-                    string firstCols = string.Format("{0}\t{1}\t{2}\t{3}\t{4}",
-                                                     gf.Name, gf.Chr, gf.Strand, gf.Start, gf.GetTranscriptLength());
-                    int[,] counts = CompactGenePainter.GetCountsPerExonAndBarcode(gf, props.DirectionalReads, barcodes.Count);
-                    for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
-                    {
-                        string bc = barcodes.Seqs[bcIdx];
-                        file.Write("{0}\t{1}", firstCols, bc);
-                        if (gf.Strand == '-')
-                            for (int i = counts.GetLength(1) - 1; i >= 0; i--)
-                                file.Write("\t{0}", counts[bcIdx, i]);
-                        else
-                            for (int i = 0; i < counts.GetLength(1); i++)
-                                file.Write("\t{0}", counts[bcIdx, i]);
-                        file.WriteLine();
-                        firstCols = "\t\t\t\t";
-                    }
+                    WriteCountsDirected(file, gf.Strand, counts);
                 }
             }
         }
@@ -826,10 +801,122 @@ namespace Linnarsson.Strt
         {
             if (strand == '-')
                 for (int i = counts.Length - 1; i >= 0; i--)
-                    file.Write("{0}\t", counts[i]);
+                    file.Write("\t{0}", counts[i]);
             else
-                foreach (int c in counts)
-                    file.Write("{0}\t", c);
+                for (int i = 0; i < counts.Length; i++)
+                    file.Write("\t{0}", counts[i]);
+            file.WriteLine();
+        }
+
+        private void WriteIntronCounts(string fileNameBase)
+        {
+            int nIntronsToShow = MaxExonCount() + 1;
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_introns.tab"))
+            {
+                file.Write("Gene\tChr\tStrand\tUSTRStart\tLocusLen\tDSTREnd\tUSTR({0}bp)\tDSTR({0}bp)", GeneFeature.LocusFlankLength);
+                for (int intronId = 1; intronId <= nIntronsToShow; intronId++)
+                    file.Write("\tIntr{0}", intronId);
+                file.WriteLine();
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    if (gf.GetIntronHits() == 0)
+                        continue;
+                    file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", gf.Name, gf.Chr, gf.Strand, gf.LocusStart, gf.GetLocusLength(), gf.LocusEnd);
+                    int[] counts = CompactGenePainter.GetCountsPerIntron(gf, props.DirectionalReads);
+                    if (gf.Strand == '-')
+                    {
+                        file.Write("\t{0}\t{1}", counts[1], counts[0]);
+                        for (int i = counts.Length - 1; i >= 2; i--)
+                            file.Write("\t{0}", counts[i]);
+                    }
+                    else
+                    {
+                        file.Write("\t{0}\t{1}", counts[0], counts[1]);
+                        for (int i = 2; i < counts.Length; i++)
+                            file.Write("\t{0}", counts[i]);
+                    }
+                    file.WriteLine();
+                }
+            }
+        }
+
+        private void WriteIntronCountsPerBarcode(string fileNameBase)
+        {
+            int nIntronsToShow = MaxExonCount() + 1;
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_introns_by_bc.tab"))
+            {
+                file.WriteLine("Rows are truncated when only zeroes remain.");
+                file.Write("Gene\tChr\tStrand\tUSTRStart\tLocusLen\tDSTREnd\tBarcode\tUSTR({0}bp\tDSTR({0}bp))",
+                           GeneFeature.LocusFlankLength);
+                for (int intronId = 1; intronId <= nIntronsToShow - 2; intronId++)
+                    file.Write("\tIntr{0}", intronId);
+                file.WriteLine();
+                int[,] counts = new int[barcodes.Count, nIntronsToShow];
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    if (gf.GetIntronHits() == 0) 
+                        continue;
+                    int n = CompactGenePainter.GetCountsPerIntronAndBarcode(gf, props.DirectionalReads, barcodes.Count, ref counts);
+                    string firstCols = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
+                                                     gf.Name, gf.Chr, gf.Strand, gf.LocusStart, gf.GetLocusLength(), gf.LocusEnd);
+                    string nextFirstCols = "\t\t\t\t\t";
+                    WriteCountsByBarcodeDirected(file, counts, gf, firstCols, nextFirstCols, 2, n - 1);
+                }
+            }
+        }
+
+        private void WriteCountsByBarcodeDirected(StreamWriter file, int[,] counts, GeneFeature gf,
+                                                    string firstCols, string followingFirstCols, int startAt, int last)
+        {
+            for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+            {
+                string bc = barcodes.Seqs[bcIdx];
+                file.Write("{0}\t{1}", firstCols, bc);
+                if (gf.Strand == '-')
+                {
+                    for (int i = startAt - 1; i >= 0; i--)
+                        file.Write("\t{0}", counts[bcIdx, i]);
+                    int firstNonZero = startAt;
+                    while (firstNonZero < last && counts[bcIdx, firstNonZero] == 0) firstNonZero++;
+                    for (int i = last; i >= firstNonZero; i--)
+                        file.Write("\t{0}", counts[bcIdx, i]);
+                }
+                else
+                {
+                    for (int i = 0; i < startAt; i++)
+                        file.Write("\t{0}", counts[bcIdx, i]);
+                    int lastNonZero = last;
+                    while (lastNonZero > startAt && counts[bcIdx, lastNonZero] == 0) lastNonZero--;
+                    for (int i = startAt; i <= lastNonZero; i++)
+                        file.Write("\t{0}", counts[bcIdx, i]);
+                }
+                file.WriteLine();
+                firstCols = followingFirstCols;
+            }
+        }
+
+        private void WriteExonCountsPerBarcode(string fileNameBase)
+        {
+            int nExonsToShow = MaxExonCount();
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_exons_by_bc.tab"))
+            {
+                file.WriteLine("Rows are truncated when only zeroes remain.");
+                file.Write("Gene\tChr\tStrand\tPos\tTrLen\tBarcode");
+                for (int exonId = 1; exonId <= nExonsToShow; exonId++)
+                    file.Write("\tExon{0}", exonId);
+                file.WriteLine();
+                int[,] counts = new int[barcodes.Count, nExonsToShow];
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    if (!gf.IsExpressed())
+                        continue;
+                    int n = CompactGenePainter.GetCountsPerExonAndBarcode(gf, props.DirectionalReads, barcodes.Count, ref counts);
+                    string firstCols = string.Format("{0}\t{1}\t{2}\t{3}\t{4}",
+                                                     gf.Name, gf.Chr, gf.Strand, gf.Start, gf.GetTranscriptLength());
+                    string followingFirstCols = "\t\t\t\t";
+                    WriteCountsByBarcodeDirected(file, counts, gf, firstCols, followingFirstCols, 0, n - 1);
+                }
+            }
         }
 
         private string OverlappingExpressedGene(GeneFeature gf, int minIntrusion, bool sameStrand)
@@ -856,8 +943,8 @@ namespace Linnarsson.Strt
             string fPath = fileNameBase + "_diff_splice.tab";
             using (StreamWriter matrixFile = new StreamWriter(fPath))
             {
-                matrixFile.WriteLine("Total hits to exons and splice junction.");
-                matrixFile.WriteLine("Gene\t#Exons\tExonHits\tJunctionHits\tExon/Junction IDs...");
+                matrixFile.WriteLine("Total hits to individual exons and splice junction.");
+                matrixFile.WriteLine("Gene\t#Exons\t#ExonHits\t#JunctionHits\tExon/Junction IDs...");
                 matrixFile.WriteLine("    \t      \t         \t           \tJCounts...");
                 matrixFile.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
@@ -904,33 +991,39 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// For every locus, write the binned sense hit count profile across the chromosome.
+        /// For every locus, write the binned hit count profiles across the chromosome.
         /// </summary>
         /// <param name="fileNameBase"></param>
         private void WriteLocusHitsByGeneLocus(string fileNameBase)
         {
-            using (StreamWriter file = new StreamWriter(fileNameBase + "_genelocus_histograms.tab"))
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_locus_histograms.tab"))
             {
-                file.WriteLine("Binned number of hits to either strand of gene loci relative to 3' end including flank:");
-                file.Write("Gene\tTrscrDir\tLen\tChrStrand\tTotHits\t3'End->");
-                for (int i = 0; i < 100; i++)
+                file.WriteLine("Binned number of hits to either strand of gene loci (including flanks) relative to 5' end of gene:");
+                file.Write("Gene\tTrscrDir\tLen\tChrStrand\tTotHits\t5'End->");
+                for (int i = 0; i < 100000 / GeneFeature.LocusProfileBinSize; i++)
                     file.Write("{0}bp\t", i * GeneFeature.LocusProfileBinSize);
                 file.WriteLine();
+                int histoSize = 0;
+                foreach (GeneFeature gf in geneFeatures.Values)
+                    histoSize = Math.Max(histoSize, gf.GetLocusLength());
+                int[] histo = new int[histoSize];
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     if (gf.GetTotalHits() == 0) continue;
-                    file.Write("{0}\t{1}\t{2}\t+\t{3}\t", gf.Name, gf.Strand, gf.Length, gf.GetTotalHits(true));
-                    int[] fwCounts = CompactGenePainter.GetLocusBinCountsRel3PrimeEnd(gf, '+');
-                    foreach (int c in fwCounts)
-                        file.Write("{0}\t", c);
-                    file.WriteLine();
-                    file.Write("{0}\t{1}\t{2}\t-\t{3}\t", gf.Name, gf.Strand, gf.Length, gf.GetTotalHits(false));
-                    int[] revCounts = CompactGenePainter.GetLocusBinCountsRel3PrimeEnd(gf, '-');
-                    foreach (int c in revCounts)
-                        file.Write("{0}\t", c);
-                    file.WriteLine();
+                    WriteLocusHistogramLine(file, ref histo, gf, true);
+                    WriteLocusHistogramLine(file, ref histo, gf, false);
                 }
             }
+        }
+
+        private static void WriteLocusHistogramLine(StreamWriter file, ref int[] histo, GeneFeature gf, bool sense)
+        {
+            char chrStrand = ((gf.Strand == '+') ^ sense) ? '-' : '+';
+            file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t", gf.Name, gf.Strand, gf.Length, chrStrand, gf.GetTotalHits(sense));
+            int maxBin = CompactGenePainter.MakeLocusHistogram(gf, chrStrand, GeneFeature.LocusProfileBinSize, ref histo);
+            for (int c = 0; c < maxBin; c++)
+                file.Write("{0}\t", histo[c]);
+            file.WriteLine();
         }
 
         private void WriteUniquehits(string fileNameBase)
@@ -945,14 +1038,14 @@ namespace Linnarsson.Strt
                 {
                     if (gf.GetTotalHits() == 0) continue;
                     int chrRefPos = gf.Start - GeneFeature.LocusFlankLength;
-                    int[] cs = CompactGenePainter.GetHitPositions(gf, '+');
+                    int[] cs = CompactGenePainter.GetLocusHitPositions(gf, '+');
                     file.Write("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t",
                                gf.Name, gf.Strand, gf.Chr, chrRefPos, (gf.LocusStart - chrRefPos),
                                (gf.LocusEnd - chrRefPos), "+", cs.Length);
                     foreach (int p in cs)
                         file.Write("{0}\t", p);
                     file.WriteLine();
-                    cs = CompactGenePainter.GetHitPositions(gf, '-');
+                    cs = CompactGenePainter.GetLocusHitPositions(gf, '-');
                     file.Write("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t",
                                gf.Name, gf.Strand, gf.Chr, chrRefPos, (gf.LocusStart - chrRefPos),
                                (gf.LocusEnd - chrRefPos), "-", cs.Length);
@@ -976,7 +1069,7 @@ namespace Linnarsson.Strt
                 if (!geneFeatures.ContainsKey(gene))
                     continue;
                 GeneFeature gf = geneFeatures[gene];
-                ushort[,] imgData = CompactGenePainter.GetGeneImageData(gf);
+                ushort[,] imgData = CompactGenePainter.GetLocusImageData(gf);
                 string safeGene = PathHandler.MakeSafeFilename(gene);
                 string gifFile = Path.Combine(imgDir, safeGene + ".gif");
                 WriteGifImage(imgData, gifFile, new int[] { 0, 10, 100, 1000, 10000 }, 
@@ -1072,7 +1165,9 @@ namespace Linnarsson.Strt
             using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_profiles.tab"))
             {
                 file.WriteLine("All hit counts to expressed transcripts from 5' to 3' end. Each data row truncated at last position > 0.");
-                file.Write("Gene\tChr\tTrDir\tTr5'Pos\tTr3'Pos\tTrLen\tCounts in 5'->3' order");
+                file.Write("Gene\tChr\tTrDir\tTr5'Pos\tTr3'Pos\tTrLen");
+                for (int p = 1; p < 10000; p++)
+                    file.Write("\tPos{0}", p);
                 file.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {

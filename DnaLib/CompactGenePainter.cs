@@ -9,9 +9,12 @@ namespace Linnarsson.Dna
     public class CompactGenePainter
     {
         private static ushort[] locusProfile;
+        private static ushort[,] locusProfileByBc;
+        private static int MaxLocusLen;
 
         public static void SetMaxLocusLen(int maxLocusLen)
         {
+            MaxLocusLen = maxLocusLen;
             locusProfile = new ushort[maxLocusLen];
         }
 
@@ -21,7 +24,7 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="gf">Gene to analyze</param>
         /// <param name="bcodeSortOrder">The barcodes in the desired order of rows of output.
-        ///  If empty, one row of totals will be returned.</param>
+        ///  If null, one row of totals will be returned.</param>
         /// <returns></returns>
         public static ushort[,] GetTranscriptImageData(GeneFeature gf, int[] bcodeSortOrder)
         {
@@ -32,13 +35,13 @@ namespace Linnarsson.Dna
         private static ushort[,] GetTranscriptImageData(int[] hits, char strand, int[] exonStarts, int[] exonEnds, 
                                                 int locusLen, int offset, int[] bcodeSortOrder)
         {
-            ushort[,] locImgData = GetGeneImageData(hits, locusLen, locusLen, strand, 1);
+            ushort[,] locImgData = GetGeneLocusProfilesByBarcode(hits, locusLen, locusLen, strand, 1);
             int trLen = 0;
             for (int i = 0; i < exonEnds.Length; i++)
                 trLen += exonEnds[i] - exonStarts[i] + 1;
             int rowIncr = 1;
             ushort[,] trImgData;
-            if (bcodeSortOrder == null)
+            if (bcodeSortOrder == null || bcodeSortOrder.Length == 0)
             {
                 rowIncr = 0; // Add all barcoded data to a total in row 0
                 trImgData = new ushort[trLen, 1];
@@ -70,7 +73,7 @@ namespace Linnarsson.Dna
 
         public static ushort[,] GetGeneImageData(GeneFeature gf)
         {
-            return GetGeneImageData(gf.LocusHits, 1000, gf.GetLocusLength(), gf.Strand, 1);
+            return GetGeneLocusProfilesByBarcode(gf.LocusHits, 1000, gf.GetLocusLength(), gf.Strand, 1);
         }
 
         /// <summary>
@@ -81,7 +84,7 @@ namespace Linnarsson.Dna
         /// <param name="strand"></param>
         /// <param name="weight"></param>
         /// <returns></returns>
-        private static ushort[,] GetGeneImageData(int[] hits, int nSlots, int length, char strand, int weight)
+        private static ushort[,] GetGeneLocusProfilesByBarcode(int[] hits, int nSlots, int length, char strand, int weight)
         {
             ushort[,] imgData = new ushort[nSlots, Barcodes.MaxCount];
             double scaler = (double)nSlots / (double)length;
@@ -99,6 +102,24 @@ namespace Linnarsson.Dna
                 }
             }
             return imgData;
+        }
+
+        public static ushort[] GetTranscriptProfile(GeneFeature gf)
+        {
+            MakeLocusHitProfile(gf.Strand, gf.LocusHits);
+            int trLen = gf.GetTranscriptLength();
+            ushort[] trImgData = new ushort[trLen];
+            int trPos = (gf.Strand == '+') ? 0 : trLen - 1;
+            int trDir = (gf.Strand == '+') ? 1 : -1;
+            for (int i = 0; i < gf.ExonEnds.Length; i++)
+            {
+                for (int p = gf.ExonStarts[i]; p <= gf.ExonEnds[i]; p++)
+                {
+                    trImgData[trPos] = locusProfile[p - gf.LocusStart];
+                    trPos += trDir;
+                }
+            }
+            return trImgData;
         }
 
         private static void MakeLocusHitProfile(char strand, int[] hits)

@@ -238,6 +238,9 @@ namespace Linnarsson.Dna
 
         public string Chr;
         public char Strand;
+        /// <summary>
+        /// Hit start position
+        /// </summary>
         public int Position;
         public string Mismatches;
 

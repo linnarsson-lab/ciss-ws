@@ -13,58 +13,48 @@ namespace Linnarsson.Dna
     public class Wiggle
     {
         /// <summary>
-        /// Total counts (all barcodes) of molecules for each position on one strand of the chromosome
+        /// Total counts (all barcodes) of molecules for each hit start position on one strand of the chromosome
         /// </summary>
         private SortedDictionary<int, int> molWiggle = new SortedDictionary<int, int>();
         /// <summary>
-        /// Total counts (all barcodes) of reads for each position on one strand of the chromosome
+        /// Total counts (all barcodes) of reads for each hit start position on one strand of the chromosome
         /// </summary>
         private SortedDictionary<int, int> readWiggle = new SortedDictionary<int, int>();
 
         /// <summary>
         /// Add (after every barcode) the molecule and read counts at all hit positions
         /// </summary>
-        /// <param name="positions">Array of positions</param>
+        /// <param name="hitStartPositions">Array of hit start positions</param>
         /// <param name="molCounts">Corresponding molecule counts</param>
         /// <param name="readCounts">Corresponding read counts</param>
-        public void AddCounts(int[] positions, int[] molCounts, int[] readCounts)
+        public void AddCounts(int[] hitStartPositions, int[] molCounts, int[] readCounts)
         {
-            for (int i = 0; i < positions.Length; i++)
+            for (int i = 0; i < hitStartPositions.Length; i++)
             {
-                int pos = positions[i];
+                int hitStartPos = hitStartPositions[i];
                 if (readCounts[i] > 0)
-                    AddCount(readWiggle, pos, readCounts[i]);
+                    AddCount(readWiggle, hitStartPos, readCounts[i]);
                 if (molCounts[i] > 0)
-                    AddCount(molWiggle, pos, molCounts[i]);
+                    AddCount(molWiggle, hitStartPos, molCounts[i]);
             }
         }
 
-        private void AddCount(SortedDictionary<int, int> wData, int pos, int count)
+        private void AddCount(SortedDictionary<int, int> wData, int hitStartPos, int count)
         {
-            if (!wData.ContainsKey(pos))
-                wData[pos] = count;
+            if (!wData.ContainsKey(hitStartPos))
+                wData[hitStartPos] = count;
             else
-                wData[pos] += count;
-        }
-
-        /// <summary>
-        /// Add some molecules at a hit position
-        /// </summary>
-        /// <param name="pos"></param>
-        /// <param name="count"></param>
-        public void AddMolecules(int pos, int count)
-        {
-            AddCount(molWiggle, pos, count);
+                wData[hitStartPos] += count;
         }
 
         /// <summary>
         /// Add some reads at a hit position
         /// </summary>
-        /// <param name="pos"></param>
+        /// <param name="readStartPos"></param>
         /// <param name="count"></param>
-        public void AddReads(int pos, int count)
+        public void AddReads(int readStartPos, int count)
         {
-            AddCount(readWiggle, pos, count);
+            AddCount(readWiggle, readStartPos, count);
         }
 
         /// <summary>
@@ -102,7 +92,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Get hit positions and respective read count for all reads added to the Wiggle instance
+        /// Get hit start positions and respective read count for all reads added to the Wiggle instance
         /// </summary>
         /// <param name="positions"></param>
         /// <param name="countAtEachPosition"></param>
@@ -123,9 +113,9 @@ namespace Linnarsson.Dna
         private void WriteToWigFile(StreamWriter writer, string chr, char strand, int readLength, int chrLength, SortedDictionary<int, int> wData)
         {
             int strandSign = (strand == '+') ? 1 : -1;
-            int[] positions = wData.Keys.ToArray();
+            int[] hitStartPositions = wData.Keys.ToArray();
             int[] countAtEachPosition = wData.Values.ToArray();
-            WriteToWigFile(writer, chr, readLength, strandSign, chrLength, positions, countAtEachPosition);
+            WriteToWigFile(writer, chr, readLength, strandSign, chrLength, hitStartPositions, countAtEachPosition);
         }
 
         /// <summary>
@@ -136,25 +126,25 @@ namespace Linnarsson.Dna
         /// <param name="readLength">average read length</param>
         /// <param name="strandSign">1 for forward, -1 for reverse</param>
         /// <param name="chrLength">(approximate) length of chromosome</param>
-        /// <param name="positions">start positions of reads on chromomsome</param>
+        /// <param name="hitStartPositions">start positions of reads on chromomsome</param>
         /// <param name="countAtEachPosition">number of reads at every start position</param>
         public static void WriteToWigFile(StreamWriter writer, string chr, int readLength, int strandSign, int chrLength,
-                                           int[] positions, int[] countAtEachPosition)
+                                           int[] hitStartPositions, int[] countAtEachPosition)
         {
-            Array.Sort(positions, countAtEachPosition);
+            Array.Sort(hitStartPositions, countAtEachPosition);
             Queue<int> stops = new Queue<int>();
             int hitIdx = 0;
             int i = 0;
-            while (i < chrLength && hitIdx < positions.Length)
+            while (i < chrLength && hitIdx < hitStartPositions.Length)
             {
                 int c0 = countAtEachPosition[hitIdx];
-                i = positions[hitIdx++];
+                i = hitStartPositions[hitIdx++];
                 for (int cc = 0; cc < c0; cc++)
                     stops.Enqueue(i + readLength);
                 writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
                 while (i < chrLength && stops.Count > 0)
                 {
-                    while (hitIdx < positions.Length && positions[hitIdx] == i)
+                    while (hitIdx < hitStartPositions.Length && hitStartPositions[hitIdx] == i)
                     {
                         int c = countAtEachPosition[hitIdx++];
                         for (int cc = 0; cc < c; cc++)

@@ -31,7 +31,7 @@ namespace Linnarsson.Dna
         private bool locusHitsSorted;
         private int[] m_LocusHits;
         /// <summary>
-        /// Hits stored as ints of pp..pppbbbbbbbs where p is position relative to LocusStart
+        /// Hits stored as ints of pp..pppbbbbbbbs where p is hitMidPosition relative to LocusStart
         /// in chromosome orientation, b is barcode, and s is chromosome strand (0 = '+', 1 = '-')
         /// Always returned sorted when accessed.
         /// </summary>
@@ -224,7 +224,7 @@ namespace Linnarsson.Dna
         public int GetTranscriptHits()
         {
             int senseHits = HitsByAnnotType[AnnotType.EXON];
-            return (AnnotType.DirectionalReads) ? senseHits : senseHits + HitsByAnnotType[AnnotType.AEXON];
+            return (Props.props.DirectionalReads) ? senseHits : senseHits + HitsByAnnotType[AnnotType.AEXON];
         }
         public override bool IsExpressed()
         {
@@ -233,6 +233,17 @@ namespace Linnarsson.Dna
         public bool IsExpressed(int barcodeIdx)
         {
             return TranscriptHitsByBarcode[barcodeIdx] > 0;
+        }
+        /// <summary>
+        /// # of hits to INTR, USTR and DSTR. (+Anti-versions for non-directional data)
+        /// </summary>
+        /// <returns></returns>
+        public int GetIntronHits()
+        {
+            int hits = HitsByAnnotType[AnnotType.INTR] + HitsByAnnotType[AnnotType.USTR] + HitsByAnnotType[AnnotType.DSTR];
+            if (!Props.props.DirectionalReads)
+                hits += HitsByAnnotType[AnnotType.AINTR] + HitsByAnnotType[AnnotType.AUSTR] + HitsByAnnotType[AnnotType.ADSTR];
+            return hits;
         }
 
         public bool IsSpike()
@@ -512,12 +523,16 @@ namespace Linnarsson.Dna
             yield break;
         }
 
+        /// <summary>
+        /// Generate pairs of [featureId, count] where featureId is either 1,2... for exons, or 1-2, 1-3,... for splice junctions
+        /// </summary>
+        /// <returns></returns>
         public List<Pair<string, int>> GetSpliceCounts()
         {
             int nExons = ExonStarts.Length;
             List<Pair<string, int>> result = new List<Pair<string, int>>();
             for (int exonIdx = 0; exonIdx < TranscriptHitsByExonIdx.Length; exonIdx++)
-                result.Add(new Pair<string,int>(exonIdx.ToString(), TranscriptHitsByExonIdx[exonIdx]));
+                result.Add(new Pair<string,int>((exonIdx+1).ToString(), TranscriptHitsByExonIdx[exonIdx]));
             string[] junctionIds = TranscriptHitsByJunction.Keys.ToArray();
             Array.Sort(junctionIds);
             foreach (string junctionId in junctionIds)
@@ -663,7 +678,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// The stored hit position is always relative to LocusStart, 
+        /// The stored hit position is always midPos of read relative to LocusStart, 
         /// i.e., 0 is first pos of untruncated left flank
         /// </summary>
         /// <param name="chrPos"></param>

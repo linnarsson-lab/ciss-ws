@@ -9,12 +9,9 @@ namespace Linnarsson.Dna
     public class CompactGenePainter
     {
         private static ushort[] locusProfile;
-        private static ushort[,] locusProfileByBc;
-        private static int MaxLocusLen;
 
         public static void SetMaxLocusLen(int maxLocusLen)
         {
-            MaxLocusLen = maxLocusLen;
             locusProfile = new ushort[maxLocusLen];
         }
 
@@ -35,7 +32,7 @@ namespace Linnarsson.Dna
         private static ushort[,] GetTranscriptImageData(int[] hits, char strand, int[] exonStarts, int[] exonEnds, 
                                                 int locusLen, int offset, int[] bcodeSortOrder)
         {
-            ushort[,] locImgData = GetGeneLocusProfilesByBarcode(hits, locusLen, locusLen, strand, 1);
+            ushort[,] locImgData = GetLocusProfilesByBarcode(hits, locusLen, locusLen, strand, 1);
             int trLen = 0;
             for (int i = 0; i < exonEnds.Length; i++)
                 trLen += exonEnds[i] - exonStarts[i] + 1;
@@ -71,9 +68,9 @@ namespace Linnarsson.Dna
             return trImgData;
         }
 
-        public static ushort[,] GetGeneImageData(GeneFeature gf)
+        public static ushort[,] GetLocusImageData(GeneFeature gf)
         {
-            return GetGeneLocusProfilesByBarcode(gf.LocusHits, 1000, gf.GetLocusLength(), gf.Strand, 1);
+            return GetLocusProfilesByBarcode(gf.LocusHits, 1000, gf.GetLocusLength(), gf.Strand, 1);
         }
 
         /// <summary>
@@ -84,7 +81,7 @@ namespace Linnarsson.Dna
         /// <param name="strand"></param>
         /// <param name="weight"></param>
         /// <returns></returns>
-        private static ushort[,] GetGeneLocusProfilesByBarcode(int[] hits, int nSlots, int length, char strand, int weight)
+        private static ushort[,] GetLocusProfilesByBarcode(int[] hits, int nSlots, int length, char strand, int weight)
         {
             ushort[,] imgData = new ushort[nSlots, Barcodes.MaxCount];
             double scaler = (double)nSlots / (double)length;
@@ -106,7 +103,7 @@ namespace Linnarsson.Dna
 
         public static ushort[] GetTranscriptProfile(GeneFeature gf)
         {
-            MakeLocusHitProfile(gf.Strand, gf.LocusHits);
+            MakeLocusProfile(gf.Strand, gf.LocusHits);
             int trLen = gf.GetTranscriptLength();
             ushort[] trImgData = new ushort[trLen];
             int trPos = (gf.Strand == '+') ? 0 : trLen - 1;
@@ -122,10 +119,10 @@ namespace Linnarsson.Dna
             return trImgData;
         }
 
-        private static void MakeLocusHitProfile(char strand, int[] hits)
+        private static void MakeLocusProfile(char chrStrand, int[] hits)
         {
             Array.Clear(locusProfile, 0, locusProfile.Length);
-            int s = GeneFeature.GetStrandAsInt(strand);
+            int s = GeneFeature.GetStrandAsInt(chrStrand);
             foreach (int hit in hits)
             {
                 if ((hit & 1) == s)
@@ -135,6 +132,50 @@ namespace Linnarsson.Dna
                         locusProfile[pos]++;
                 }
             }
+        }
+
+        /// <summary>
+        /// Makes histogram with given binSize of hits to gene locus. Data is always 5'->3' in gene orientation.
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <param name="chrStrand">Strand on chr to pick counts from</param>
+        /// <param name="binSize"></param>
+        /// <param name="histo"></param>
+        /// <returns>Index of last bin in histo with data</returns>
+        public static int MakeLocusHistogram(GeneFeature gf, char chrStrand, int binSize, ref int[] histo)
+        {
+            MakeLocusProfile(chrStrand, gf.LocusHits);
+            Array.Clear(histo, 0, histo.Length);
+            int locusLen = gf.GetLocusLength();
+            int locusPos = (gf.Strand == '+') ? 0 : locusLen - 1;
+            int locusDir = (gf.Strand == '+') ? 1 : -1;
+            int bin = -1;
+            int c = 0;
+            while (locusPos >= 0 && locusPos < locusLen)
+            {
+                if (c++ % binSize == 0) bin++;
+                histo[bin] += locusProfile[locusPos];
+                locusPos += locusDir;
+            }
+            return bin;
+        }
+
+        public static int[] GetLocusHitPositions(GeneFeature gf, char strand)
+        {
+            Dictionary<int, int> counts = new Dictionary<int, int>();
+            int s = GeneFeature.GetStrandAsInt(strand);
+            foreach (int hit in gf.LocusHits)
+            {
+                if ((hit & 1) == s)
+                {
+                    int pos = hit >> 8;
+                    if (!counts.ContainsKey(pos))
+                        counts[pos] = 1;
+                    else
+                        counts[pos]++;
+                }
+            }
+            return counts.Keys.ToArray<int>();
         }
 
         public static int[] GetBarcodedTranscriptCounts(GeneFeature gf, int trFrom, int trTo)
@@ -179,7 +220,7 @@ namespace Linnarsson.Dna
         {
             return GetBinnedTranscriptHitsRelEnd(gf, binSize, senseOnly, readLen, -1);
         }
-        public static int[] GetBinnedTranscriptHitsRelEnd(GeneFeature gf, double binSize, bool senseOnly, int readLen, int bcIdx)
+        private static int[] GetBinnedTranscriptHitsRelEnd(GeneFeature gf, double binSize, bool senseOnly, int readLen, int bcIdx)
         {
             char strand = (senseOnly) ? gf.Strand : '.';
             return GetIvlSpecificCountsInBinsRelEnd(gf.LocusHits, strand, binSize, readLen,
@@ -198,11 +239,11 @@ namespace Linnarsson.Dna
         /// <param name="ends">ends of intervals</param>
         /// <param name="offset">reference point for intervals. Has to be consistent with pos in MarkHit() calls</param>
         /// <returns>histogram of counts</returns>
-        private static int[] GetIvlSpecificCountsInBinsRelEnd(int[] hits, char strand, double binSize, int readLen,
+        /*private static int[] GetIvlSpecificCountsInBinsRelEnd(int[] hits, char strand, double binSize, int readLen,
                                                      int[] starts, int[] ends, int offset)
         {
             return GetIvlSpecificCountsInBinsRelEnd(hits, strand, binSize, readLen, starts, ends, offset, -1);
-        }
+        }*/
         private static int[] GetIvlSpecificCountsInBinsRelEnd(int[] hits, char strand, double binSize, int readLen,
                                                      int[] starts, int[] ends, int offset, int bcIdx)
         {
@@ -264,6 +305,21 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
+        /// The first and second values are for USTR and DSTR.
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <param name="senseOnly">True to only count on sense strand, otherwise adds anti-sense counts</param>
+        /// <returns>Array of counts on USTR, DSTR, and intron 1,2,...</returns>
+        public static int[] GetCountsPerIntron(GeneFeature gf, bool senseOnly)
+        {
+            char strand;
+            int[] intronStarts;
+            int[] intronEnds;
+            GetIntronIvls(gf, senseOnly, out strand, out intronStarts, out intronEnds);
+            return GetCountsPerInterval(gf.LocusHits, strand, intronStarts, intronEnds, gf.LocusStart);
+        }
+
+        /// <summary>
         /// Assumes intervals are non-overlapping and in order
         /// </summary>
         /// <param name="hits">LocusHits array from a GeneFeature.</param>
@@ -277,14 +333,13 @@ namespace Linnarsson.Dna
             int[] result = new int[starts.Length];
             int s = (strand != '.') ? GeneFeature.GetStrandAsInt(strand) : 0;
             int strandMask = (strand != '.') ? 1 : 0;
-            int idx = 0;
             for (int i = 0; i < starts.Length; i++)
             {
                 int count = 0;
                 int from = (starts[i] - offset) << 8;
                 int to = ((ends[i] - offset) << 8) | 255;
-                idx = Array.FindIndex(hits, idx, (v) => (v >= from));
-                if (idx == -1) break;
+                int idx = Array.FindIndex(hits, (v) => (v >= from));
+                if (idx == -1) continue;
                 for (; idx < hits.Length; idx++)
                 {
                     int hit = hits[idx];
@@ -303,24 +358,59 @@ namespace Linnarsson.Dna
         /// <param name="gf"></param>
         /// <param name="senseOnly"></param>
         /// <param name="nBarcodes"></param>
-        /// <returns>counts[barcodeIdx, exonIdx along chromosome]</returns>
-        public static int[,] GetCountsPerExonAndBarcode(GeneFeature gf, bool senseOnly, int nBarcodes)
+        /// <param name="result">counts[barcodeIdx, exonIdx along chromosome]</param>
+        public static int GetCountsPerExonAndBarcode(GeneFeature gf, bool senseOnly, int nBarcodes, ref int[,] result)
         {
             char strand = (senseOnly) ? gf.Strand : '.';
-            return GetCountsPerIntervalAndBarcode(gf.LocusHits, strand, gf.ExonStarts, gf.ExonEnds, gf.LocusStart, nBarcodes);
+            MakeCountsPerIntervalAndBarcode(gf.LocusHits, strand, gf.ExonStarts, gf.ExonEnds, gf.LocusStart, nBarcodes, ref result);
+            return gf.ExonCount;
         }
-        private static int[,] GetCountsPerIntervalAndBarcode(int[] hits, char strand, int[] starts, int[] ends, int offset, int nBarcodes)
+
+        /// <summary>
+        /// Calculate hits per intron, putting upstream and downstream first, in each barcode.
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <param name="senseOnly">False to include also counts at anti-sense</param>
+        /// <param name="nBarcodes"></param>
+        /// <param name="result">counts[barcodeIdx, intronIdx along chromosome]</param>
+        public static int GetCountsPerIntronAndBarcode(GeneFeature gf, bool senseOnly, int nBarcodes, ref int[,] result)
         {
-            int[,] result = new int[nBarcodes, starts.Length];
+            char strand;
+            int[] intronStarts;
+            int[] intronEnds;
+            GetIntronIvls(gf, senseOnly, out strand, out intronStarts, out intronEnds);
+            MakeCountsPerIntervalAndBarcode(gf.LocusHits, strand, intronStarts, intronEnds, gf.LocusStart, nBarcodes, ref result);
+            return intronStarts.Length;
+        }
+
+        private static void GetIntronIvls(GeneFeature gf, bool senseOnly, out char strand, out int[] intronStarts, out int[] intronEnds)
+        {
+            strand = (senseOnly) ? gf.Strand : '.';
+            intronStarts = new int[gf.ExonCount + 1];
+            intronEnds = new int[gf.ExonCount + 1];
+            intronStarts[0] = gf.LocusStart;
+            intronEnds[0] = gf.ExonStarts[0] - 1;
+            intronStarts[1] = gf.ExonEnds[gf.ExonEnds.Length - 1] + 1;
+            intronEnds[1] = gf.LocusEnd;
+            for (int i = 1; i < gf.ExonCount; i++)
+            {
+                intronStarts[i + 1] = gf.ExonEnds[i - 1] + 1;
+                intronEnds[i + 1] = gf.ExonStarts[i] - 1;
+            }
+        }
+
+        private static void MakeCountsPerIntervalAndBarcode(int[] hits, char strand, int[] starts, int[] ends, int offset,
+                                                             int nBarcodes, ref int[,] result)
+        {
+            Array.Clear(result, 0, result.Length);
             int s = (strand != '.') ? GeneFeature.GetStrandAsInt(strand) : 0;
             int strandMask = (strand != '.') ? 1 : 0;
-            int idx = 0;
             for (int ivlIdx = 0; ivlIdx < starts.Length; ivlIdx++)
             {
                 int from = (starts[ivlIdx] - offset) << 8;
                 int to = ((ends[ivlIdx] - offset) << 8) | 255;
-                idx = Array.FindIndex(hits, idx, (v) => (v >= from));
-                if (idx == -1) break;
+                int idx = Array.FindIndex(hits, (v) => (v >= from));
+                if (idx == -1) continue;
                 for (; idx < hits.Length; idx++)
                 {
                     int hit = hits[idx];
@@ -332,25 +422,6 @@ namespace Linnarsson.Dna
                     }
                 }
             }
-            return result;
-        }
-
-        public static int[] GetHitPositions(GeneFeature gf, char strand)
-        {
-            Dictionary<int, int> counts = new Dictionary<int, int>();
-            int s = GeneFeature.GetStrandAsInt(strand);
-            foreach (int hit in gf.LocusHits)
-            {
-                if ((hit & 1) == s)
-                {
-                    int pos = hit >> 8;
-                    if (!counts.ContainsKey(pos))
-                        counts[pos] = 1;
-                    else
-                        counts[pos]++;
-                }
-            }
-            return counts.Keys.ToArray<int>();
         }
 
         /// <summary>
@@ -370,7 +441,7 @@ namespace Linnarsson.Dna
             int clearWindowSize = 10;
             if (Math.Abs(searchEndLocusPos - searchStartLocusPos) < (peakWindowSize + clearWindowSize))
                 return -1;
-            MakeLocusHitProfile(strand, hits);
+            MakeLocusProfile(strand, hits);
             int pWCount = 0;
             int cWCount = 0;
             int pWLastPos = searchStartLocusPos;
@@ -419,7 +490,7 @@ namespace Linnarsson.Dna
             return hotspotStart;
         }
 
-        public static int[] GetLocusBinCountsRel3PrimeEnd(GeneFeature gf, char chrStrand)
+/*        public static int[] GetLocusBinCountsRel3PrimeEnd(GeneFeature gf, char chrStrand)
         {
             if (gf.Strand == '+')
                 return GetCountsInBins(gf.LocusHits, chrStrand, GeneFeature.LocusProfileBinSize, true, gf.End - gf.LocusStart);
@@ -459,6 +530,6 @@ namespace Linnarsson.Dna
             }
             return result;
         }
-
+        */
     }
 }

@@ -398,6 +398,7 @@ namespace Linnarsson.Strt
         /// <param name="logWriter">File for log information</param>
         public void Process(ProjectDescription projDescr, StreamWriter logWriter)
         {
+            Console.WriteLine("StrtReadMapper.Process(" + projDescr.projectName + ")");
             SetBarcodeSet(projDescr.barcodeSet);
             props.TotalNumberOfAddedSpikeMolecules = projDescr.SpikeMoleculeCount;
             logWriter.WriteLine("{0} Extracting {1} lanes with barcodes {2}...", DateTime.Now, projDescr.runIdsLanes.Length, projDescr.barcodeSet);

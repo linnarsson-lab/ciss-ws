@@ -171,12 +171,7 @@ namespace Linnarsson.Strt
                 return;
             mapFilePaths.Sort(CompareMapFiles); // Important to have them sorted by barcode
             if (Props.props.AnalyzeSNPs)
-            {
-                MapFileSnpFinder mfsf = new MapFileSnpFinder(barcodes);
-                mfsf.ProcessMapFiles(mapFilePaths);
-                int nSNPs = randomTagFilter.SetupSNPCounters(averageReadLen, mfsf.IterSNPLocations(minMismatchReadCountForSNPDetection));
-                Console.WriteLine("Registered {0} potential expressed SNPs (positions with >= {1} mismatch reads).", nSNPs, minMismatchReadCountForSNPDetection);
-            }
+                RegisterPotentialSNPs(mapFilePaths, averageReadLen);
             if (Props.props.SnpRndTagVerification && barcodes.HasRandomBarcodes)
                 snpRndTagVerifier = new SnpRndTagVerifier(Props.props, Annotations.Genome);
             string mapFileName = Path.GetFileName(mapFilePaths[0]);
@@ -218,6 +213,14 @@ namespace Linnarsson.Strt
                 nonAnnotWriter.Close(); nonAnnotWriter.Dispose();
                 nonExonWriter.Close(); nonExonWriter.Dispose();
             }
+        }
+
+        private void RegisterPotentialSNPs(List<string> mapFilePaths, int averageReadLen)
+        {
+            MapFileSnpFinder mfsf = new MapFileSnpFinder(barcodes);
+            mfsf.ProcessMapFiles(mapFilePaths);
+            int nSNPs = randomTagFilter.SetupSNPCounters(averageReadLen, mfsf.IterSNPLocations(minMismatchReadCountForSNPDetection));
+            Console.WriteLine("Registered {0} potential expressed SNPs (positions with >= {1} mismatch reads).", nSNPs, minMismatchReadCountForSNPDetection);
         }
 
         /// <summary>

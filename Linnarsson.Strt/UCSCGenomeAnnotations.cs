@@ -1176,7 +1176,7 @@ namespace Linnarsson.Strt
                                gf.Name, gf.Chr, gf.Strand, gf.Start, gf.End, gf.GetTranscriptLength());
                     ushort[] trProfile = CompactGenePainter.GetTranscriptProfile(gf);
                     int i = trProfile.Length - 1;
-                    while (trProfile[i] == 0) i--;
+                    while (i > 0 && trProfile[i] == 0) i--;
                     for (int p = 0; p <= i; p++)
                         file.Write("\t{0}", trProfile[p]);
                     file.WriteLine();

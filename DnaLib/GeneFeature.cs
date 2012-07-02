@@ -15,16 +15,17 @@ namespace Linnarsson.Dna
 
     public class GeneFeature : LocusFeature, TranscriptFeature
     {
+        public readonly static int LocusProfileBinSize = 50; // Move to Props
+
         public readonly static string pseudoGeneIndicator = "_p";
         public readonly static string altLocusIndicator = "_loc";
         public readonly static string nonUTRExtendedIndicator = variantIndicator + "Original";
-        public static int LocusProfileBinSize = 50;
         public static int LocusFlankLength;
 
         /// <summary>
         /// Counts number of reads that are shared with each of other GeneFeatures
         /// </summary>
-        public Dictionary<IFeature, int> sharingGenes = new Dictionary<IFeature, int>();
+        public Dictionary<IFeature, int> sharingGenes;
 
         public int SpliceLen; // Set by the corresponding SplicedGeneLocus
         private int locusHitIdx;
@@ -182,6 +183,7 @@ namespace Linnarsson.Dna
             m_LocusHits = new int[1000];
             locusHitIdx = 0;
             bcSNPCountersByRealChrPos = new Dictionary<int, SNPCounter[]>();
+            sharingGenes = new Dictionary<IFeature, int>();
         }
 
         public int GetExonLength(int i)

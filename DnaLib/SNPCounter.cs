@@ -150,6 +150,68 @@ namespace Linnarsson.Dna
         }
     }
 
+
+
+
+    public class SNPCountsByRndTag
+    {
+        public char refNt = '0'; // Nucleotide on reference chromosome
+        /// <summary>
+        /// All arrays by rndTag
+        /// </summary>
+        public ushort[] nA;
+        public ushort[] nC;
+        public ushort[] nG;
+        public ushort[] nT;
+
+        public SNPCountsByRndTag(char refNt)
+        {
+            this.refNt = refNt;
+            this.nA = new ushort[TagItem.nRndTags];
+            this.nC = new ushort[TagItem.nRndTags];
+            this.nG = new ushort[TagItem.nRndTags];
+            this.nT = new ushort[TagItem.nRndTags];
+        }
+        public void Clear()
+        {
+            Array.Clear(nA, 0, nA.Length);
+            Array.Clear(nC, 0, nC.Length);
+            Array.Clear(nG, 0, nG.Length);
+            Array.Clear(nT, 0, nT.Length);
+        }
+
+        public void Add(int rndTagIdx, char snpNt)
+        {
+            switch (snpNt)
+            {
+                case 'A': nA[rndTagIdx]++;
+                    break;
+                case 'C': nC[rndTagIdx]++;
+                    break;
+                case 'G': nG[rndTagIdx]++;
+                    break;
+                case 'T': nT[rndTagIdx]++;
+                    break;
+            }
+        }
+
+        public void Summarize(SNPCounter countsAtOffset, List<int> validRndTags)
+        {
+            foreach (int rndTagIdx in validRndTags)
+                countsAtOffset.Add(GetNt(rndTagIdx), refNt);
+        }
+        private char GetNt(int rndTagIdx)
+        {
+            int maxN = nA[rndTagIdx];
+            char maxC = 'A';
+            if (nC[rndTagIdx] > maxN) { maxC = 'C'; maxN = nC[rndTagIdx]; }
+            if (nG[rndTagIdx] > maxN) { maxC = 'G'; maxN = nG[rndTagIdx]; }
+            if (nT[rndTagIdx] > maxN) return 'T';
+            return (maxN > 0) ? maxC : '-'; // return maxC;
+        }
+
+    }
+
     /// <summary>
     /// Keeps track of SNPs by molecule and relative offset within read for reads mapping at the same genomic position
     /// </summary>
@@ -159,31 +221,25 @@ namespace Linnarsson.Dna
         /// At each offset relative to the 5' pos on chr of the reads' alignment where some SNPs appear,
         /// keep an array by rndTag of counts for each SNP nt. 
         /// </summary>
-        public Dictionary<byte, SNPCounter[]> SNPCountersByOffset { get { return m_SNPCountersByOffset; } }
-        private Dictionary<byte, SNPCounter[]> m_SNPCountersByOffset;
+        public Dictionary<byte, SNPCountsByRndTag> SNPCountsByOffset { get; private set; }
 
         public TagSNPCounters()
         {
-            m_SNPCountersByOffset = new Dictionary<byte, SNPCounter[]>();
+            SNPCountsByOffset = new Dictionary<byte, SNPCountsByRndTag>();
         }
         /// <summary>
-        ///
         /// </summary>
         /// <param name="snpOffset">Offset from 5' pos on chr of reads' alignment</param>
         public void RegisterSNPAtOffset(byte snpOffset)
         {
-            m_SNPCountersByOffset[snpOffset] = null;
+            SNPCountsByOffset[snpOffset] = null;
         }
 
         public void Clear()
         {
-            foreach (byte snpOffset in m_SNPCountersByOffset.Keys)
-            {
-                SNPCounter[] snpCountersByRndTag = m_SNPCountersByOffset[snpOffset];
-                if (snpCountersByRndTag != null)
-                    for (int n = 0; n < snpCountersByRndTag.Length; n++)
-                        snpCountersByRndTag[n].Clear();
-            }
+            foreach (SNPCountsByRndTag counts in SNPCountsByOffset.Values)
+                if (counts != null)
+                    counts.Clear();
         }
 
         /// <summary>
@@ -195,17 +251,15 @@ namespace Linnarsson.Dna
         /// <param name="snpNt">The reads' Nt at the SNP positions</param>
         public void AddSNP(int rndTagIdx, Mismatch mm)
         {
-            SNPCounter[] snpCountersByRndTag;
-            if (!m_SNPCountersByOffset.TryGetValue(mm.relPosInChrDir, out snpCountersByRndTag))
+            SNPCountsByRndTag SNPCounts;
+            if (!SNPCountsByOffset.TryGetValue(mm.relPosInChrDir, out SNPCounts))
                 return;
-            if (snpCountersByRndTag == null)
+            if (SNPCounts == null)
             {
-                snpCountersByRndTag = new SNPCounter[TagItem.nRndTags];
-                for (int n = 0; n < TagItem.nRndTags; n++)
-                    snpCountersByRndTag[n] = new SNPCounter(mm.posInChr, mm.refNtInChrDir);
-                m_SNPCountersByOffset[mm.relPosInChrDir] = snpCountersByRndTag;
+                SNPCounts = new SNPCountsByRndTag(mm.refNtInChrDir);
+                SNPCountsByOffset[mm.relPosInChrDir] = SNPCounts;
             }
-            snpCountersByRndTag[rndTagIdx].Add(mm.ntInChrDir);
+            SNPCounts.Add(rndTagIdx, mm.ntInChrDir);
         }
 
     }

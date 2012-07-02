@@ -200,17 +200,13 @@ namespace Linnarsson.Dna
             {
                 List<int> validRndTags = GetValidRndTags();
                 int nTotal = GetNumMolecules();
-                foreach (KeyValuePair<byte, SNPCounter[]> p in tagSNPData.SNPCountersByOffset)
+                foreach (KeyValuePair<byte, SNPCountsByRndTag> p in tagSNPData.SNPCountsByOffset)
                 {
                     if (p.Value != null)
                     {
                         int snpPosOnChr = readPosOnChr + p.Key;
                         SNPCounter countsAtOffset = new SNPCounter(snpPosOnChr);
-                        foreach (int rndTagIdx in validRndTags)
-                        {
-                            SNPCounter counterAtRndTag = p.Value[rndTagIdx];
-                            countsAtOffset.Add(counterAtRndTag.GetNt(), counterAtRndTag.refNt);
-                        }
+                        p.Value.Summarize(countsAtOffset, validRndTags);
                         countsAtOffset.nTotal = (ushort)nTotal;
                         totalCounters.Add(countsAtOffset);
                     }

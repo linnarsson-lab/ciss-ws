@@ -2,6 +2,27 @@
 defined('_JEXEC') or die('Restricted access');
 
 ?>
+
+<script type="text/javascript">
+  function doFreeSearch(searchField) {
+    var ss = searchField.value;
+    if (ss.length < 3)
+      ss = "";
+    var i = 1;
+    var searchelem = document.getElementById("row" + i + "search");
+    while (searchelem != null) {
+      var trelem = document.getElementById("row" + i);
+      if (ss == "" || searchelem.innerHTML.search(ss) >= 0) {
+        trelem.style.display = "table-row";
+      } else {
+            trelem.style.display = "none";
+      }
+      i = i + 1;
+      searchelem = document.getElementById("row" + i + "search");
+    }
+  }
+</script>
+
 <?php 
   echo "<h1>Requested analyses and results</h1>";
   $menus = &JSite::getMenu();
@@ -19,12 +40,16 @@ defined('_JEXEC') or die('Restricted access');
 
   echo "<div class='analysis'><fieldset>
          <legend>
-            <nobr> Sort: $newestsorter $sampleidsorter $statussorter $buildsorter $usersorter</nobr>
+            <br />
+            <nobr> Sort: $newestsorter $sampleidsorter $statussorter $buildsorter $usersorter
+                   &nbsp;&nbsp;&nbsp;
+                   Filter: <input type=\"text\" id=\"freeSearch\" onkeyup=\"return doFreeSearch(this);\" />
+            </nobr>
          </legend>
          <table>
          <tr>
           <th>&nbsp;</th>
-          <th>$sampleidsorter<br />" . JHTML::tooltip('Hoover for additional sample info') . "</th>
+          <th>$sampleidsorter<br />" . JHTML::tooltip('Hover for additional sample info') . "</th>
           <th>$statussorter<br />" . JHTML::tooltip('If "ready" - link to export in Qlucore format [.gedata]') . "</th>
           <th>Path & $newestsorter&nbsp;<br />" . JHTML::tooltip('Not displayed until results are ready') . "</th>
           <th>#Lanes<br />" . JHTML::tooltip('Total no. of lanes included in analysis') . "</th>
@@ -36,7 +61,7 @@ defined('_JEXEC') or die('Restricted access');
           <th>Type<br />" . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "</th>
           <th>$usersorter</th>
           <th>Cmnt</th>
-         </tr>";
+         </tr>\n";
 
     function newestsort($a, $b) { if ($a->id == $b->id) { return 0; }
                                   return ($a->id > $b->id) ? -1 : 1; };
@@ -58,6 +83,7 @@ defined('_JEXEC') or die('Restricted access');
     usort($this->items,"usersort");
   }
 
+  $rownum = 1;
   foreach ($this->items as $result) {
     if ($result->status == "cancelled")
         continue;
@@ -85,26 +111,28 @@ defined('_JEXEC') or die('Restricted access');
            . $result->projectid . "&Itemid=" . $itemid
            . "\" title=\"$result->projecttitle / $result->tissue / $result->sampletype\">" . substr($result->project, 0, 5) . "...</a>";
     }
-    echo "\n    <tr>";
-    echo "<td>" . $viewlink . "&nbsp;</td>";
-    echo "<td>" . $projectlink . "&nbsp;</td>"; 
+    echo "\n    <tr id=\"row" . $rownum . "\" >\n";
+    echo "<td id=\"row" . $rownum . "search\" style=\"display:none;\">" . $result->rowsearch . ">\n";
+    $rownum = $rownum + 1;
+    echo "<td>" . $viewlink . "&nbsp;</td>\n";
+    echo "<td>" . $projectlink . "&nbsp;</td>\n"; 
     echo $qlink;
     if (strlen($cpath) > 0)
-      echo "<td><nobr>" . JHTML::tooltip($cpath) . " &nbsp; " . $rpath . "</nobr></td>";
+      echo "<td><nobr>" . JHTML::tooltip($cpath) . " &nbsp; " . $rpath . "</nobr></td>\n";
     else
-      echo "<td><nobr>&nbsp;&nbsp;&nbsp;" . $rpath . "</nobr></td>";
-    echo "<td>" . $result->lanecount . "&nbsp;</td>";
-    echo "<td>" . $result->extraction_version . "&nbsp;</td>";
-    echo "<td>" . $result->annotation_version . "&nbsp;</td>";
-    echo "<td>" . (($result->rpkm == "1")? "Yes" : "---") . "&nbsp;</td>";
-    echo "<td>" . $result->genome . "&nbsp;</td>";
-    echo "<td>" . $result->transcript_db_version . "&nbsp;</td>";
-    echo "<td>" . $result->transcript_variant . "&nbsp;</td>";
-    echo "<td>" . $result->user . "&nbsp;</td>";
-    echo "<td>" . ( (strlen($result->comment) > 4)? JHTML::tooltip($result->comment) :  $result->comment ) . "</td>";
-    echo "</tr>";
+      echo "<td><nobr>&nbsp;&nbsp;&nbsp;" . $rpath . "</nobr></td>\n";
+    echo "<td>" . $result->lanecount . "&nbsp;</td>\n";
+    echo "<td>" . $result->extraction_version . "&nbsp;</td>\n";
+    echo "<td>" . $result->annotation_version . "&nbsp;</td>\n";
+    echo "<td>" . (($result->rpkm == "1")? "Yes" : "---") . "&nbsp;</td>\n";
+    echo "<td>" . $result->genome . "&nbsp;</td>\n";
+    echo "<td>" . $result->transcript_db_version . "&nbsp;</td>\n";
+    echo "<td>" . $result->transcript_variant . "&nbsp;</td>\n";
+    echo "<td>" . $result->user . "&nbsp;</td>\n";
+    echo "<td>" . ( (strlen($result->comment) > 4)? JHTML::tooltip($result->comment) :  $result->comment ) . "</td>\n";
+    echo "</tr>\n";
   }
-  echo "</table></fieldset></div><br />&nbsp;<br />";
+  echo "</table></fieldset></div><br />&nbsp;<br />\n";
 
 ?>
 

@@ -13,9 +13,8 @@ defined('_JEXEC') or die('Restricted access');
   $itemid = $menu->id;
   $newlink = "<a href=index.php?option=com_dbapp&view=project&layout=edit&controller=project&searchid=0&Itemid=" . $itemid . " >&nbsp;New&nbsp;sample&nbsp;</a>";
 
-  $sorturlhead = "<a href=index.php?option=com_dbapp&view=projects&layout=default&Itemid="
-                  . $itemid . "&clientId=" . urlencode($clientId) . "&cancelled=" . $cancelled
-                  . "&strt=" . $strt
+  $sorturlhead = "<a href=index.php?option=com_dbapp&view=projects&layout=default&clientId=" . urlencode($clientId)
+                  . "&cancelled=" . $cancelled . "&strt=" . $strt
                   . "&managerId=" . urlencode($managerId) . "&contactId=" . urlencode($contactId) . "&sortKey=";
   $newsorter = ($sortKey == "newest")? "Newest first" : ($sorturlhead . "newest>Newest first</a>");
   $platesorter = ($sortKey == "plate")? "SampleId" : ($sorturlhead . "plate>SampleId</a>");
@@ -25,7 +24,7 @@ defined('_JEXEC') or die('Restricted access');
   $managersorter = ($sortKey == "manager")? "Mngr" : ($sorturlhead . "manager>Mngr</a>");
   $contactsorter = ($sortKey == "contact")? "Contact" : ($sorturlhead . "contact>Contact</a>");
   $bcsetsorter = ($sortKey == "bcset")? "BcSet" : ($sorturlhead . "bcset>BcSet</a>");
-  $speciessorter = ($sortKey == "species")? "Species" : ($sorturlhead . "species>Species</a>");
+  $speciessorter = ($sortKey == "species")? "Spc" : ($sorturlhead . "species>Spc</a>");
 
   $cancelchange = ($cancelled == "yes")? "Hide" : "Show";
   if ($cancelled == "yes")
@@ -56,7 +55,29 @@ defined('_JEXEC') or die('Restricted access');
   if ($contactId != "") $filterText .= " for contact " . $contactId;
   if ($cancelled == "yes") $filterText .= " including cancelled";
   if ($strt != "all") $filterText .= " " . $strtnow;
+?>
 
+<script type="text/javascript">
+  function doFreeSearch(searchField) {
+    var ss = searchField.value;
+    if (ss.length < 3)
+      ss = "";
+    var i = 1;
+    var searchelem = document.getElementById("row" + i + "search");
+    while (searchelem != null) {
+      var trelem = document.getElementById("row" + i);
+      if (ss == "" || searchelem.innerHTML.search(ss) >= 0) {
+        trelem.style.display = "table-row";
+      } else {
+            trelem.style.display = "none";
+      }
+      i = i + 1;
+      searchelem = document.getElementById("row" + i + "search");
+    }
+  }
+</script>
+
+<?php
   echo "<h1>Samples $filterText </h1>\n";
   echo "<div class='project'>
           <fieldset>
@@ -64,6 +85,8 @@ defined('_JEXEC') or die('Restricted access');
                <nobr> $cancelledfilter $strtfilter &nbsp;&nbsp; $newlink </nobr><br /><br />
                <nobr>Sort: $newsorter $platesorter $nonasgnsorter $bcsetsorter $speciessorter $pisorter
                            $contactsorter $managersorter $statussorter
+                           &nbsp;&nbsp;&nbsp;
+                           Filter: <input type=\"text\" id=\"freeSearch\" onkeyup=\"return doFreeSearch(this);\" />
                </nobr>
             </legend>
           <table><tr>
@@ -119,6 +142,7 @@ defined('_JEXEC') or die('Restricted access');
     usort($this->projects, "speciessort");
   }
 
+  $rownum = 1;
   foreach ($this->projects as $project) {
     if ($clientId != "" && $project->principalinvestigator != $clientId) continue;
     if ($managerId != "" && $project->person != $managerId) continue;
@@ -127,7 +151,9 @@ defined('_JEXEC') or die('Restricted access');
     if ($strt == "yes" && $project->plateid[0] != "L") continue;
     if ($strt == "no" && $project->plateid[0] == "L") continue;
 
-    echo "<tr>\n";
+    echo "<tr id=\"row" . $rownum . "\">\n";
+    echo "<td id=\"row" . $rownum . "search\" style=\"display:none;\">" . $project->rowsearch . ">\n";
+    $rownum = $rownum + 1;
     $projectlink = "<a href=\"index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
                    . $project->id . "&Itemid=$itemid\" title=\"" . $project->title . " " . $project->comment . "\">"
                    . $project->plateid . "</a>";
@@ -136,7 +162,7 @@ defined('_JEXEC') or die('Restricted access');
     echo "<td><nobr>&nbsp; $editlink &nbsp;</nobr></td>\n";
     echo "<td><nobr>&nbsp; $projectlink &nbsp;</nobr></td>\n";
     echo "<td>" . $project->barcodeset . "&nbsp;</td>\n";
-    echo "<td>" . $project->species . "&nbsp;</td>\n";
+    echo "<td>" . substr($project->species, 0, 3) . "&nbsp;</td>\n";
     $pilink = "<a href=\"index.php?option=com_dbapp&view=client&layout=client&controller=client&searchid="
               . $project->clientid . "&Itemid=" . $itemid . "\">$project->principalinvestigator</a>";
     echo "<td><nobr>&nbsp; $pilink &nbsp;</nobr></td>\n";

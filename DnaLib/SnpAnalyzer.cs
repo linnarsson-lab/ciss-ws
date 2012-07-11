@@ -17,7 +17,8 @@ namespace Linnarsson.Dna
         /// <param name="snpFile">output file</param>
         /// <param name="barcodes">just needed for header</param>
         /// <param name="geneFeatures">dictionary of geneNames to GeneFeatures</param>
-        public static void WriteSnpsByBarcode(string snpPath, Barcodes barcodes, int[] selectedBarcodes, Dictionary<string, GeneFeature> geneFeatures)
+        public static void WriteSnpsByBarcode(string snpPath, Barcodes barcodes, int[] selectedBarcodes, 
+                                              Dictionary<string, GeneFeature> geneFeatures)
         {
             using (StreamWriter snpFile = new StreamWriter(snpPath))
             {
@@ -36,15 +37,14 @@ namespace Linnarsson.Dna
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     int trLen = gf.GetTranscriptLength();
-                    int[] chrPositions = gf.bcSNPCountersByRealChrPos.Keys.ToArray();
-                    Array.Sort(chrPositions);
-                    foreach (int chrPos in chrPositions)
+                    foreach (KeyValuePair<int, SNPCountsByBarcode> chrPosAndBcCounts in gf.bcSNPCountsByRealChrPos)
                     {
-                        SNPCounter[] bcSnpCounters = gf.bcSNPCountersByRealChrPos[chrPos];
+                        int chrPos = chrPosAndBcCounts.Key;
+                        SNPCountsByBarcode bcSnpCounters = chrPosAndBcCounts.Value;
                         int trPos = gf.GetTranscriptPos(chrPos);
                         int total = 0;
-                        char refNt = bcSnpCounters[0].refNt;
-                        int[] refCounts = new int[bcSnpCounters.Length];
+                        char refNt = bcSnpCounters.refNt;
+                        int[] refCounts = new int[barcodes.Count];
                         foreach (char nt in new char[] { '0', 'A', 'C', 'G', 'T' })
                         {
                             byBcNtStrings[nt] = new StringBuilder();
@@ -53,13 +53,12 @@ namespace Linnarsson.Dna
                             int i = 0;
                             foreach (int bcIdx in selectedBarcodes)
                             { 
-                                SNPCounter bcSnpCounter = bcSnpCounters[bcIdx];
-                                int count = bcSnpCounter.GetCount(nt);
+                                int count = bcSnpCounters.GetCount(bcIdx, nt);
                                 totals[nt] += count;
                                 total += count;
                                 refCounts[i++] += (nt == '0') ? count : -count;
-                                if (count > SNPCounter.MaxCount) totalOverflow[nt] = ">=";
-                                byBcNtStrings[nt].AppendFormat("\t{0}", SNPCounter.MaxTestedString(count));
+                                if (count > SNPCountsByBarcode.MaxCount) totalOverflow[nt] = ">=";
+                                byBcNtStrings[nt].AppendFormat("\t{0}", SNPCountsByBarcode.MaxTestedString(count));
                             }
                         }
                         if (trPos >= 0 && total >= SnpAnalyzer.MinTotalHitsToShowBarcodedSnps)
@@ -84,11 +83,11 @@ namespace Linnarsson.Dna
         public static readonly int REFERENCE = 0;
         public static readonly int ALTERNATIVE = 1;
         public static readonly int HETEROZYGOUS = 2;
-        public static int TestSNP(SNPCounter sumCounter)
+        public static int TestSNP(int nTotal, int nAlt)
         {
-            if (sumCounter.nTotal > 0)
+            if (nTotal > 0)
             {
-                double ratio = sumCounter.nAlt / (double)sumCounter.nTotal;
+                double ratio = nAlt / (double)nTotal;
                 if (ratio > (1 - thresholdFractionAltHitsForMixPos))
                     return ALTERNATIVE;
                 else if (ratio > thresholdFractionAltHitsForMixPos)
@@ -97,25 +96,5 @@ namespace Linnarsson.Dna
             return REFERENCE;
         }
 
-        /// <summary>
-        /// Summarize SNP data across all barcodes for a gene
-        /// </summary>
-        /// <param name="gf">Gene of interest</param>
-        /// <returns>SNPCounters that summarize Nt:s at each considered position. Each counter's posOnChr is set</returns>
-        public static List<SNPCounter> GetSnpChrPositions(GeneFeature gf)
-        {
-            List<SNPCounter> sumCounters = new List<SNPCounter>();
-            if (gf.bcSNPCountersByRealChrPos.Count == 0) return sumCounters;
-            foreach (KeyValuePair <int, SNPCounter[]> bcCountsByChrPos in gf.bcSNPCountersByRealChrPos)
-            {
-                int chrPos = bcCountsByChrPos.Key;
-                SNPCounter sumCounter = new SNPCounter(chrPos);
-                foreach (SNPCounter bcCounter in bcCountsByChrPos.Value)
-                    sumCounter.Add(bcCounter);
-                sumCounters.Add(sumCounter);
-            }
-            sumCounters.Sort((x, y) => x.posOnChr.CompareTo(y.posOnChr));
-            return sumCounters;
-        }
     }
 }

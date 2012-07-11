@@ -122,7 +122,7 @@ namespace Linnarsson.Strt
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {
                     if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
-                    item.tagSNPData.AddSNP(m.RndTagIdx, mm);
+                    item.AddSNP(m.RndTagIdx, mm);
                 }
             }
             return item.Add(m.RndTagIdx);
@@ -148,7 +148,7 @@ namespace Linnarsson.Strt
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {
                     if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
-                    item.tagSNPData.AddSNP(m.RndTagIdx, mm);
+                    item.AddSNP(m.RndTagIdx, mm);
                 }
             }
             item.AddSharedGenes(sharingRealFeatures);
@@ -237,23 +237,6 @@ namespace Linnarsson.Strt
             foreach (TagItem tagItem in tagItems.Values)
                 if (tagItem.HasReads) n++;
             return n;
-        }
-
-        /// <summary>
-        /// Returns all positions with some mapped read on given strand
-        /// </summary>
-        /// <param name="strand"></param>
-        /// <returns>All positions with some mapped read on given strand</returns>
-        public int[] GetDistinctPositions(char strand)
-        {
-            int[] positions = new int[tagItems.Count];
-            int strandIdx = (strand == '+') ? 0 : 1;
-            int p = 0;
-            foreach (int codedPos in tagItems.Keys)
-                if ((codedPos & 1) == strandIdx)
-                    positions[p++] = codedPos >> 1;
-            Array.Resize(ref positions, p);
-            return positions;
         }
 
         /// <summary>

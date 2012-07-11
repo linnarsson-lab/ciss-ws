@@ -94,10 +94,10 @@ namespace Linnarsson.Dna
         public Dictionary<IFeature, int> sharingGenes = new Dictionary<IFeature, int>();
 
         /// <summary>
-        /// SNP data for SNP positions by offsets from read startPos. Should only be affected when hasAltMappings == false
-        /// The final SNP status of a chromosomal position has to be calculated from the tagSNPData:s of all spanning TagItems
+        /// At each offset relative to the 5' pos on chr of the reads' alignment where some SNPs appear,
+        /// keep an array by rndTag of counts for each SNP nt. 
         /// </summary>
-        public TagSNPCounters tagSNPData;
+        public Dictionary<byte, SNPCountsByRndTag> SNPCountsByOffset { get; private set; }
 
         /// <summary>
         /// true when the read sequence at the (chr, pos, strand) of this TagItem is not unique in genome.
@@ -125,9 +125,29 @@ namespace Linnarsson.Dna
         /// <param name="snpOffset"></param>
         public void RegisterSNP(byte snpOffset)
         {
-            if (tagSNPData == null)
-                tagSNPData = new TagSNPCounters();
-            tagSNPData.RegisterSNPAtOffset(snpOffset);
+            if (SNPCountsByOffset == null)
+                SNPCountsByOffset = new Dictionary<byte, SNPCountsByRndTag>();
+            SNPCountsByOffset[snpOffset] = null;
+        }
+
+        /// <summary>
+        /// Add the Nt at a SNP position from a read.
+        /// If the position has not been defined as a SNP by a previous call to RegisterSNPAtOffset(), it will be skipped
+        /// </summary>
+        /// <param name="rndTagIdx">The rndTag of the read</param>
+        /// <param name="snpOffset">Offset within the read of the SNP</param>
+        /// <param name="snpNt">The reads' Nt at the SNP positions</param>
+        public void AddSNP(int rndTagIdx, Mismatch mm)
+        {
+            SNPCountsByRndTag SNPCounts;
+            if (!SNPCountsByOffset.TryGetValue(mm.relPosInChrDir, out SNPCounts))
+                return;
+            if (SNPCounts == null)
+            {
+                SNPCounts = new SNPCountsByRndTag(mm.refNtInChrDir);
+                SNPCountsByOffset[mm.relPosInChrDir] = SNPCounts;
+            }
+            SNPCounts.Add(rndTagIdx, mm.ntInChrDir);
         }
 
         /// <summary>
@@ -138,8 +158,10 @@ namespace Linnarsson.Dna
             readCountsByRndTag = null;
             totalReadCount = 0;
             sharingGenes.Clear();
-            if (tagSNPData != null)
-                tagSNPData.Clear();
+            if (SNPCountsByOffset != null)
+                foreach (SNPCountsByRndTag counts in SNPCountsByOffset.Values)
+                    if (counts != null)
+                        counts.Clear();
         }
 
         /// <summary>
@@ -151,13 +173,10 @@ namespace Linnarsson.Dna
         {
             int currentCount = totalReadCount;
             totalReadCount++;
-//            if (nRndTags > 1)
-//            {
-                if (readCountsByRndTag == null)
-                    readCountsByRndTag = new ushort[nRndTags];
-                currentCount = readCountsByRndTag[rndTagIdx];
-                readCountsByRndTag[rndTagIdx] = (ushort)Math.Min(ushort.MaxValue, currentCount + 1);
-//            }
+            if (readCountsByRndTag == null)
+                readCountsByRndTag = new ushort[nRndTags];
+            currentCount = readCountsByRndTag[rndTagIdx];
+            readCountsByRndTag[rndTagIdx] = (ushort)Math.Min(ushort.MaxValue, currentCount + 1);
             return currentCount == 0;
         }
 
@@ -177,7 +196,7 @@ namespace Linnarsson.Dna
         }
 
         public bool HasReads { get { return totalReadCount > 0; } }
-        public bool HasSNPs { get { return tagSNPData != null; } }
+        public bool HasSNPs { get { return SNPCountsByOffset != null; } }
 
         /// <summary>
         /// Return the total number of reads at this position-strand. (Molecule mutation filter not applied for rndTag data.)
@@ -192,24 +211,24 @@ namespace Linnarsson.Dna
         /// Get Nt counts at all positions where there is SNP data available
         /// </summary>
         /// <param name="readPosOnChr">Needed to convert the SNP offset to position within chromosome</param>
-        /// <returns>SNPCounters that summarize the (winning, if some mutated read) Nts found at each offset in the given rndTags</returns>
+        /// <returns>SNPCounters that summarize the (winning, if some mutated read) Nts found at each offset in valid rndTags,
+        /// or null if no SNPs are present.</returns>
         public List<SNPCounter> GetTotalSNPCounts(int readPosOnChr)
         {
+            if (SNPCountsByOffset == null)
+                return null;
             List<SNPCounter> totalCounters = new List<SNPCounter>();
-            if (tagSNPData != null)
+            List<int> validRndTags = GetValidRndTags();
+            int nTotal = GetNumMolecules();
+            foreach (KeyValuePair<byte, SNPCountsByRndTag> p in SNPCountsByOffset)
             {
-                List<int> validRndTags = GetValidRndTags();
-                int nTotal = GetNumMolecules();
-                foreach (KeyValuePair<byte, SNPCountsByRndTag> p in tagSNPData.SNPCountsByOffset)
+                if (p.Value != null)
                 {
-                    if (p.Value != null)
-                    {
-                        int snpPosOnChr = readPosOnChr + p.Key;
-                        SNPCounter countsAtOffset = new SNPCounter(snpPosOnChr);
-                        p.Value.Summarize(countsAtOffset, validRndTags);
-                        countsAtOffset.nTotal = (ushort)nTotal;
-                        totalCounters.Add(countsAtOffset);
-                    }
+                    int snpPosOnChr = readPosOnChr + p.Key;
+                    SNPCounter countsAtOffset = new SNPCounter(snpPosOnChr);
+                    p.Value.Summarize(countsAtOffset, validRndTags);
+                    countsAtOffset.nTotal = (ushort)nTotal;
+                    totalCounters.Add(countsAtOffset);
                 }
             }
             return totalCounters;
@@ -222,21 +241,19 @@ namespace Linnarsson.Dna
         /// <returns>Indices of random tags containing real data (not stemming from mutations in other random tags)</returns>
         public List<int> GetValidRndTags()
         {
-            List<int> validTagIndices = new List<int>();
-// 3 new lines:
             if (nRndTags == 1)
-                validTagIndices.Add(0);
-            else
-//            if (readCountsByRndTag != null)
-            {
-                int cutOff = readCountsByRndTag.Max() / ratioForMutationFilter;
-                //int cutOff = (nRndTags > 1) ? readCountsByRndTag.Max() / ratioForMutationFilter : 0;
-                for (int rndTagIdx = 0; rndTagIdx < readCountsByRndTag.Length; rndTagIdx++)
-                    if (readCountsByRndTag[rndTagIdx] > cutOff)
-                        validTagIndices.Add(rndTagIdx);
-            }
+                return noRndTagsValidRndTags;
+            List<int> validTagIndices = new List<int>();
+            int cutOff = readCountsByRndTag.Max() / ratioForMutationFilter;
+            for (int rndTagIdx = 0; rndTagIdx < readCountsByRndTag.Length; rndTagIdx++)
+                if (readCountsByRndTag[rndTagIdx] > cutOff)
+                    validTagIndices.Add(rndTagIdx);
             return validTagIndices;
         }
+        /// <summary>
+        /// Predefined for used by GetValidRdTags()
+        /// </summary>
+        private static List<int> noRndTagsValidRndTags = new List<int>() { 0 };
 
         /// <summary>
         /// Get number of molecules (reads if rndTag not used) at this position-strand.
@@ -258,7 +275,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Get number of reads in each rndTag. (Mutated molecule reads are not filtered when rndTags are used.)
+        /// Get number of reads in each rndTag. (Mutated molecule reads are not filtered away even when rndTags are used.)
         /// </summary>
         /// <returns>null if no reads have been found</returns>
         public ushort[] GetReadCountsByRndTag()

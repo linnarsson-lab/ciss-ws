@@ -53,7 +53,7 @@ namespace Linnarsson.Dna
         /// <summary>
         /// SNPCounter arrays by bcIdx for every SNP positions
         /// </summary>
-        public Dictionary<int,  SNPCounter[]> bcSNPCountersByRealChrPos;
+        public SortedDictionary<int, SNPCountsByBarcode> bcSNPCountsByRealChrPos;
 
         public override int GetLocusLength()
         {
@@ -182,7 +182,7 @@ namespace Linnarsson.Dna
             NonMaskedHitsByAnnotType = new int[AnnotType.Count];
             m_LocusHits = new int[1000];
             locusHitIdx = 0;
-            bcSNPCountersByRealChrPos = new Dictionary<int, SNPCounter[]>();
+            bcSNPCountsByRealChrPos = new SortedDictionary<int, SNPCountsByBarcode>();
             sharingGenes = new Dictionary<IFeature, int>();
         }
 
@@ -723,18 +723,18 @@ namespace Linnarsson.Dna
         /// <param name="item"></param>
         private void MarkSNPs(MappedTagItem item)
         {
+            if (item.SNPCounts == null)
+                return;
             foreach (SNPCounter snpCounter in item.SNPCounts)
             {
                 int snpPosOnRealChr = item.splcToRealChrOffset + snpCounter.posOnChr;
-                SNPCounter[] bcSnpCounters;
-                if (!bcSNPCountersByRealChrPos.TryGetValue(snpPosOnRealChr, out bcSnpCounters))
+                SNPCountsByBarcode bcSnpCounts;
+                if (!bcSNPCountsByRealChrPos.TryGetValue(snpPosOnRealChr, out bcSnpCounts))
                 {
-                    bcSnpCounters = new SNPCounter[Props.props.Barcodes.Count];
-                    for (int bcIdx = 0; bcIdx < Props.props.Barcodes.Count; bcIdx++)
-                        bcSnpCounters[bcIdx] = new SNPCounter(snpPosOnRealChr, snpCounter.refNt);
-                    bcSNPCountersByRealChrPos[snpPosOnRealChr] = bcSnpCounters;
+                    bcSnpCounts = new SNPCountsByBarcode(Props.props.Barcodes.Count, snpCounter.refNt);
+                    bcSNPCountsByRealChrPos[snpPosOnRealChr] = bcSnpCounts;
                 }
-                bcSnpCounters[item.bcIdx].Add(snpCounter);
+                bcSnpCounts.Add(item.bcIdx, snpCounter);
             }
         }
     }

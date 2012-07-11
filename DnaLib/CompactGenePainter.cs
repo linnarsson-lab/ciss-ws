@@ -102,7 +102,7 @@ namespace Linnarsson.Dna
         }
 
         public static ushort[] GetTranscriptProfile(GeneFeature gf)
-        {
+        { // Meomory leakage in this one?? trImgData not GC?
             MakeLocusProfile(gf.Strand, gf.LocusHits);
             int trLen = gf.GetTranscriptLength();
             ushort[] trImgData = new ushort[trLen];
@@ -160,22 +160,30 @@ namespace Linnarsson.Dna
             return bin;
         }
 
-        public static int[] GetLocusHitPositions(GeneFeature gf, char strand)
+        /// <summary>
+        /// This method requires that gf.LocusHits come out sorted by position
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <param name="strand"></param>
+        /// <returns>Positions hit within transcript</returns>
+        public static List<int> GetLocusHitPositions(GeneFeature gf, char strand)
         {
-            Dictionary<int, int> counts = new Dictionary<int, int>();
+            List<int> hitPositions = new List<int>();
             int s = GeneFeature.GetStrandAsInt(strand);
+            int lastPos = -1;
             foreach (int hit in gf.LocusHits)
             {
                 if ((hit & 1) == s)
                 {
                     int pos = hit >> 8;
-                    if (!counts.ContainsKey(pos))
-                        counts[pos] = 1;
-                    else
-                        counts[pos]++;
+                    if (pos != lastPos)
+                    {
+                        hitPositions.Add(pos);
+                        lastPos = pos;
+                    }
                 }
             }
-            return counts.Keys.ToArray<int>();
+            return hitPositions;
         }
 
         public static int[] GetBarcodedTranscriptCounts(GeneFeature gf, int trFrom, int trTo)
@@ -215,36 +223,34 @@ namespace Linnarsson.Dna
         /// <param name="binSize"></param>
         /// <param name="senseOnly">If true, only hits to transcript sense will be counted</param>
         /// <param name="readLen">Used to exclude the transcript ends, where no hitMids can occur, from the bins</param>
-        /// <returns></returns>
-        public static int[] GetBinnedTranscriptHitsRelEnd(GeneFeature gf, double binSize, bool senseOnly, int readLen)
+        /// <returns>histogram of counts</returns>
+        public static int[] GetBinnedTrHitsRelStart(GeneFeature gf, double binSize, bool senseOnly, int readLen)
         {
-            return GetBinnedTranscriptHitsRelEnd(gf, binSize, senseOnly, readLen, -1);
+            return GetBinnedTrHitsRelStart(gf, binSize, senseOnly, readLen, -1);
         }
-        private static int[] GetBinnedTranscriptHitsRelEnd(GeneFeature gf, double binSize, bool senseOnly, int readLen, int bcIdx)
+        private static int[] GetBinnedTrHitsRelStart(GeneFeature gf, double binSize, bool senseOnly, int readLen, int bcIdx)
         {
             char strand = (senseOnly) ? gf.Strand : '.';
-            return GetIvlSpecificCountsInBinsRelEnd(gf.LocusHits, strand, binSize, readLen,
+            return GetIvlSpecificCountsInBinsRelStart(gf.LocusHits, strand, binSize, readLen,
                                                     gf.ExonStarts, gf.ExonEnds, gf.LocusStart, bcIdx);
         }
 
         /// <summary>
-        /// Make histogram of hits in bins relative to an end point,
+        /// Make histogram of hits in bins relative to a start point,
         /// for hits within given intervals. Distance is calculated using these intervals,
         /// so that e.g. position within transcript is used if intervals define the exons.
         /// Intervals should be in order.
         /// </summary>
+        /// <param name="hits"></param>
         /// <param name="strand">'+', '-', or '.' for both strands</param>
         /// <param name="binSize"></param>
+        /// <param name="readLen">takes care of that hits are mid positions, not start positions of reads</param>
         /// <param name="starts">starts of intervals</param>
         /// <param name="ends">ends of intervals</param>
         /// <param name="offset">reference point for intervals. Has to be consistent with pos in MarkHit() calls</param>
+        /// <param name="bcIdx">Specific barcodeIdx or -1 for summation over all</param>
         /// <returns>histogram of counts</returns>
-        /*private static int[] GetIvlSpecificCountsInBinsRelEnd(int[] hits, char strand, double binSize, int readLen,
-                                                     int[] starts, int[] ends, int offset)
-        {
-            return GetIvlSpecificCountsInBinsRelEnd(hits, strand, binSize, readLen, starts, ends, offset, -1);
-        }*/
-        private static int[] GetIvlSpecificCountsInBinsRelEnd(int[] hits, char strand, double binSize, int readLen,
+        private static int[] GetIvlSpecificCountsInBinsRelStart(int[] hits, char strand, double binSize, int readLen,
                                                      int[] starts, int[] ends, int offset, int bcIdx)
         {
             if (hits.Length == 0) return new int[0];
@@ -282,11 +288,11 @@ namespace Linnarsson.Dna
                             int pos = hit >> 8;
                             if ((hit & 1) == 0) // (strand == '+')
                             {
-                                dist = rightIvlsLen[i] + (ivlEnd - pos);
+                                dist = leftIvlsLen + (pos - ivlStart);
                             }
                             else
                             {
-                                dist = leftIvlsLen + (pos - ivlStart);
+                                dist = rightIvlsLen[i] + (ivlEnd - pos);
                             }
                             int bin = Math.Max(0, Math.Min(nBins - 1, (int)Math.Floor((dist - readLen / 2) / binSize)));
                             result[bin]++;
@@ -436,7 +442,7 @@ namespace Linnarsson.Dna
                                            int searchEndLocusPos, int optimalMinCount)
         {
             int minPeakCount = 20;
-            int maxClearCount = 1; // 0;
+            int maxClearCount = 1;
             int peakWindowSize = 10;
             int clearWindowSize = 10;
             if (Math.Abs(searchEndLocusPos - searchStartLocusPos) < (peakWindowSize + clearWindowSize))
@@ -490,46 +496,5 @@ namespace Linnarsson.Dna
             return hotspotStart;
         }
 
-/*        public static int[] GetLocusBinCountsRel3PrimeEnd(GeneFeature gf, char chrStrand)
-        {
-            if (gf.Strand == '+')
-                return GetCountsInBins(gf.LocusHits, chrStrand, GeneFeature.LocusProfileBinSize, true, gf.End - gf.LocusStart);
-            else
-                return GetCountsInBins(gf.LocusHits, chrStrand, GeneFeature.LocusProfileBinSize, false, GeneFeature.LocusFlankLength);
-        }
-
-        /// <summary>
-        /// Makes a histogram of counts
-        /// </summary>
-        /// <param name="strand">Strand of chromosome to analyze</param>
-        /// <param name="binSize"></param>
-        /// <param name="relativeToEndPos">If true, bins go from right to left on chromosome</param>
-        /// <param name="offset">If relativeToEndPos==false, the first bin will start at offset into locus.
-        ///                      If relativeToEndPos==true, the first bin will end at offset</param>
-        /// <returns></returns>
-        private static int[] GetCountsInBins(int[] hits, char chrStrand, int binSize,
-                                             bool relativeToEndPos, int offset)
-        {
-            if (hits.Length == 0) return new int[0];
-            int maxPos = (relativeToEndPos) ? (offset - (hits[0] >> 8)) : hits[hits.Length - 1] >> 8;
-            int nBins = 1 + maxPos / binSize;
-            if (nBins <= 0) return new int[0]; // No hits on right side of offset.
-            int[] result = new int[nBins];
-            int s = GeneFeature.GetStrandAsInt(chrStrand);
-            foreach (int hit in hits)
-            {
-                if ((hit & 1) == s)
-                {
-                    int pos = hit >> 8;
-                    if (relativeToEndPos) pos = offset - pos;
-                    else pos = pos - offset;
-                    int bin = pos / binSize;
-                    if (bin >= 0)
-                        result[bin]++;
-                }
-            }
-            return result;
-        }
-        */
     }
 }

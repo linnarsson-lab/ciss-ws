@@ -69,20 +69,6 @@ namespace Linnarsson.Dna
         {
             return GetCount(readWiggle, pos, averageReadLength, margin);
         }
-
-        /// <summary>
-        /// Get number of molecules spanning across a position.
-        /// Note that this implementation requires all reads to be of almost same length for correct wiggle.
-        /// </summary>
-        /// <param name="pos">position on chromosome</param>
-        /// <param name="averageReadLength">Since each read's length is not stored, call with Ceiling(the average readLen) for complete coverage</param>
-        /// <param name="margin">Sometimes you only want to count reads that are surely spanning the position, then specifiy min overhang here</param>
-        /// <returns>Number of molecules covering position</returns>
-        public int GetMolCount(int pos, int averageReadLength)
-        {
-            return GetCount(molWiggle, pos, averageReadLength, 0);
-        }
-
         private int GetCount(SortedDictionary<int, int> wData, int pos, int averageReadLength, int margin)
         {
             int count = 0;

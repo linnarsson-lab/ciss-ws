@@ -444,10 +444,7 @@ namespace Linnarsson.Strt
             if (snpRndTagVerifier != null)
                 snpRndTagVerifier.Verify(fileNameBase);
             if (Props.props.AnalyzeSNPs)
-            {
-                WriteSNPPositions(fileNameBase);
-                WriteSnpsByBarcode(fileNameBase);
-            }
+                WriteSnps(fileNameBase);
             if (DetermineMotifs)
                 WriteSequenceLogos(fileNameBase);
             if (Props.props.GenerateWiggle)
@@ -895,7 +892,7 @@ namespace Linnarsson.Strt
                     continue;
                 int trLen = gf.GetTranscriptLength();
                 double sectionSize = (trLen - averageReadLen) / (double)nSections;
-                int[] trSectionCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, sectionSize, Props.props.DirectionalReads, averageReadLen);
+                int[] trSectionCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, sectionSize, Props.props.DirectionalReads, averageReadLen);
                 if (trSectionCounts.Length == 0) continue;
                 double trTotalCounts = trSectionCounts.Sum();
                 if (trTotalCounts == 0.0) continue;
@@ -906,7 +903,7 @@ namespace Linnarsson.Strt
                     int trLenBin = (trLen - trLen1stBinStart) / trLenBinStep;
                     if (trLenBin >= trLenBinCount) continue;
                     for (int section = 0; section < nSections; section++)
-                        binnedEfficiencies[trLenBin, section].Add(trSectionCounts[nSections - 1 - section] / trTotalCounts);
+                        binnedEfficiencies[trLenBin, section].Add(trSectionCounts[section] / trTotalCounts);
                     geneCounts[trLenBin]++;
                 }
                 else
@@ -1324,28 +1321,44 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void WriteSNPPositions(string fileNameBase)
+        private void WriteSNPPositions(string fileNameBase, int[] genomeBarcodes)
         {
             using (StreamWriter snpFile = new StreamWriter(fileNameBase + "_SNPs.tab"))
             {
+                char[] nts = new char[] { '0', 'A', 'C', 'G', 'T' };
                 int thres = (int)(SnpAnalyzer.thresholdFractionAltHitsForMixPos * 100);
                 int minHitsToTestSNP = (barcodes.HasRandomBarcodes) ? Props.props.MinMoleculesToTestSnp : Props.props.MinReadsToTestSnp;
                 string minTxt = (barcodes.HasRandomBarcodes) ? "Molecules" : "Reads";
+                snpFile.WriteLine("SNP positions found in " + genomeBarcodes.Length + " barcodes belonging to species.");
                 snpFile.WriteLine("#(minimum {0} {3}/Pos required to check, limits used heterozygous: {1}-{2}% AltNt and homozygous: >{2}% Alt Nt)",
                                   minHitsToTestSNP, thres, 100 - thres, minTxt);
-                snpFile.WriteLine("#Gene\tChr\tmRNALeftChrPos\tSNPChrPos\tType\t{0}", SNPCounter.Header);
+                snpFile.WriteLine("#Gene\tChr\tmRNALeftChrPos\tSNPChrPos\tType\tRefNt\tTotal\tMut-A\tMut-C\tMut-G\tMut-T");
                 foreach (GeneFeature gf in Annotations.geneFeatures.Values)
                 {
-                    List<SNPCounter> sumSNPCounters = SnpAnalyzer.GetSnpChrPositions(gf);
                     string first = string.Format("{0}\t{1}\t{2}\t", gf.Name, gf.Chr, gf.Start);
-                    foreach (SNPCounter sumCounter in sumSNPCounters)
+                    foreach (KeyValuePair<int, SNPCountsByBarcode> chrPosAndBcCounts in gf.bcSNPCountsByRealChrPos)
                     {
-                        if (sumCounter.nTotal >= minHitsToTestSNP)
+                        int nTotal, nAlt;
+                        SNPCountsByBarcode bcCounts = chrPosAndBcCounts.Value;
+                        bcCounts.GetTotals(genomeBarcodes, out nTotal, out nAlt);
+                        if (nTotal >= minHitsToTestSNP)
                         {
-                            int type = SnpAnalyzer.TestSNP(sumCounter);
+                            int type = SnpAnalyzer.TestSNP(nTotal, nAlt);
                             if (type == SnpAnalyzer.REFERENCE) continue;
+                            int posOnChr = chrPosAndBcCounts.Key;
                             string typeName = (type == SnpAnalyzer.ALTERNATIVE) ? "AltNt" : "MixNt";
-                            snpFile.WriteLine("{0}{1}\t{2}\t{3}", first, sumCounter.posOnChr, typeName, sumCounter.ToLine());
+                            StringBuilder sb = new StringBuilder();
+                            sb.Append(bcCounts.refNt);
+                            foreach (char nt in nts)
+                            {
+                                int c; bool overflow;
+                                bcCounts.SummarizeNt(nt, genomeBarcodes, out c, out overflow);
+                                if (c >= SNPCountsByBarcode.MaxCount)
+                                    sb.Append(">=");
+                                if (c > 0) sb.Append(c);
+                                sb.Append('\t');
+                            }
+                            snpFile.WriteLine("{0}{1}\t{2}\t{3}", first, posOnChr, typeName, sb);
                             first = "\t\t\t";
                         }
                     }
@@ -1353,11 +1366,12 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void WriteSnpsByBarcode(string fileNameBase)
+        private void WriteSnps(string fileNameBase)
         {
-            string snpPath = fileNameBase + "_SNPs_by_barcode.tab";
             int[] genomeBarcodes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
+            string snpPath = fileNameBase + "_SNPs_by_barcode.tab";
             SnpAnalyzer.WriteSnpsByBarcode(snpPath, barcodes, genomeBarcodes, Annotations.geneFeatures);
+            WriteSNPPositions(fileNameBase, genomeBarcodes);
         }
 
         public void WriteWriggle(string fileNameBase)
@@ -1498,7 +1512,7 @@ namespace Linnarsson.Strt
                             continue;
                         int trLen = gf.GetTranscriptLength();
                         double sectionSize = (trLen - averageReadLen) / (double)nSections;
-                        int[] trSectionCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, sectionSize, Props.props.DirectionalReads, averageReadLen);
+                        int[] trSectionCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, sectionSize, Props.props.DirectionalReads, averageReadLen);
                         if (trSectionCounts.Length == 0) continue;
                         double trTotalCounts = trSectionCounts.Sum();
                         if (trTotalCounts == 0.0) continue;
@@ -1507,7 +1521,7 @@ namespace Linnarsson.Strt
                         int trLenBin = (trLen - trLen1stBinStart) / trLenBinStep;
                         if (trLenBin >= trLenBinCount) continue;
                         for (int section = 0; section < nSections; section++)
-                            binnedEfficiencies[trLenBin, section].Add(trSectionCounts[nSections - 1 - section] / trTotalCounts);
+                            binnedEfficiencies[trLenBin, section].Add(trSectionCounts[section] / trTotalCounts);
                         geneCounts[trLenBin]++;
                     }
                     for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)

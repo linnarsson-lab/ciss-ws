@@ -972,16 +972,16 @@ namespace Linnarsson.Strt
         {
             using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_histograms.tab"))
             {
-                file.WriteLine("Binned number of hits to transcripts counting from 3' end");
-                file.Write("Gene\tTrLen\tTotHits\tExonHits\t3'-");
+                file.WriteLine("Binned number of hits to transcripts counting from 5' end of transcript");
+                file.Write("Gene\tTrLen\tTotHits\tExonHits\tFrom5'-");
                 for (int i = 0; i < 100; i++)
-                    file.Write("{0}\t", averageReadLen + i * GeneFeature.LocusProfileBinSize);
+                    file.Write("{0}\t", i * GeneFeature.LocusProfileBinSize);
                 file.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     if (!gf.IsExpressed()) continue;
                     file.Write("{0}\t{1}\t{2}\t{3}\t", gf.Name, gf.GetTranscriptLength(), gf.GetTotalHits(), gf.GetTranscriptHits());
-                    int[] trBinCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, GeneFeature.LocusProfileBinSize,
+                    int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, GeneFeature.LocusProfileBinSize,
                                                                                          props.DirectionalReads, averageReadLen);
                     foreach (int c in trBinCounts)
                         file.Write("{0}\t", c);
@@ -1030,25 +1030,22 @@ namespace Linnarsson.Strt
         {
             using (StreamWriter file = new StreamWriter(fileNameBase + "_unique_hits.tab"))
             {
-                file.WriteLine("Unique hit positions in gene loci relative to first position of a {0} bp flank, counting in chr direction:",
+                file.WriteLine("Unique hit positions in gene loci relative to the first position of a {0} bp LeftFlank, counting in chr direction:",
                                 GeneFeature.LocusFlankLength);
-                file.Write("Gene\tTrscrDir\tChr\tLocusChrPos\tLeftFlankStart\tRightFlankEnd\tChrStrand\t#Positions\t");
+                file.Write("Gene\tTrscrDir\tChr\tLeftFlankStart\tRightFlankEnd\tStrand\t#Positions\t");
                 file.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     if (gf.GetTotalHits() == 0) continue;
-                    int chrRefPos = gf.Start - GeneFeature.LocusFlankLength;
-                    int[] cs = CompactGenePainter.GetLocusHitPositions(gf, '+');
-                    file.Write("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t",
-                               gf.Name, gf.Strand, gf.Chr, chrRefPos, (gf.LocusStart - chrRefPos),
-                               (gf.LocusEnd - chrRefPos), "+", cs.Length);
+                    List<int> cs = CompactGenePainter.GetLocusHitPositions(gf, '+');
+                    file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t",
+                               gf.Name, gf.Strand, gf.Chr, gf.LocusStart, gf.LocusEnd, "+", cs.Count);
                     foreach (int p in cs)
                         file.Write("{0}\t", p);
                     file.WriteLine();
                     cs = CompactGenePainter.GetLocusHitPositions(gf, '-');
-                    file.Write("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t",
-                               gf.Name, gf.Strand, gf.Chr, chrRefPos, (gf.LocusStart - chrRefPos),
-                               (gf.LocusEnd - chrRefPos), "-", cs.Length);
+                    file.Write("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t",
+                               gf.Name, gf.Strand, gf.Chr, gf.LocusStart, gf.LocusEnd, "-", cs.Count);
                     foreach (int p in cs)
                         file.Write("{0}\t", p);
                     file.WriteLine();
@@ -1293,10 +1290,9 @@ namespace Linnarsson.Strt
                 int trLen = gf.GetTranscriptLength();
                 int trLenBin = Math.Min(nTrSizeBins - 1, trLen / trLenBinSize);
                 double posBinSize = (trLen - averageReadLen) / (double)nSectionsOverTranscipt;
-                int[] trBinCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, posBinSize, props.DirectionalReads, averageReadLen);
-                int trIdx = trBinCounts.Length - 1;
+                int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, posBinSize, props.DirectionalReads, averageReadLen);
                 for (int section = 0; section < Math.Min(nSectionsOverTranscipt, trBinCounts.Length); section++)
-                    binnedEfficiencies[trLenBin, section].Add(trBinCounts[trIdx--] / (double)trBinCounts.Sum());
+                    binnedEfficiencies[trLenBin, section].Add(trBinCounts[section] / (double)trBinCounts.Sum());
                 nGenesPerSizeClass[trLenBin]++;
             }
             capHitsFile.WriteLine("Hit distribution across gene transcripts, group averages by transcript length classes.");
@@ -1321,11 +1317,10 @@ namespace Linnarsson.Strt
                     continue;
                 int trLen = gf.GetTranscriptLength();
                 double binSize = (trLen - averageReadLen) / (double)nSections;
-                int[] trBinCounts = CompactGenePainter.GetBinnedTranscriptHitsRelEnd(gf, binSize, props.DirectionalReads, averageReadLen);
+                int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, binSize, props.DirectionalReads, averageReadLen);
                 if (trBinCounts.Length == 0) continue;
                 double allCounts = 0.0;
                 foreach (int c in trBinCounts) allCounts += c;
-                int trIdx = nSections - 1;
                 if (!wroteHeader)
                 {
                     capHitsFile.WriteLine("Hit distribution across spike transcripts.");
@@ -1335,7 +1330,7 @@ namespace Linnarsson.Strt
                 capHitsFile.Write("{0}\t{1}", gf.Name, trLen);
                 for (int section = 0; section < nSections; section++)
                 {
-                    double eff = trBinCounts[trIdx--] / allCounts;
+                    double eff = trBinCounts[section] / allCounts;
                     capHitsFile.Write("\t{0:0.####}", eff);
                 }
                 capHitsFile.WriteLine();

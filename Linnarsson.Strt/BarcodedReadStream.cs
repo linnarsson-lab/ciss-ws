@@ -51,7 +51,7 @@ namespace Linnarsson.Strt
                 FastQRecord read = readStream.Current;
                 indexStream.MoveNext();
                 FastQRecord index = indexStream.Current;
-                if (idxSeqFilter.Length > 0 && !index.Sequence.StartsWith(idxSeqFilter))
+                if (idxSeqFilter.Length > 0 && !Regex.IsMatch(index.Sequence, "^" + idxSeqFilter))
                         continue;
                 if (read.PassedFilter && index.PassedFilter)
                 {

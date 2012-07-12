@@ -71,6 +71,7 @@
     <Compile Include="TranscriptomeStatistics.cs" />
     <Compile Include="UCSCGenomeAnnotations.cs" />
     <Compile Include="UCSCGenomeDownloader.cs" />
+    <Compile Include="UpstreamAnalyzer.cs" />
     <Compile Include="XMLReportCreator.cs" />
   </ItemGroup>
   <ItemGroup>

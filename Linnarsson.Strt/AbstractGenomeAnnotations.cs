@@ -27,7 +27,7 @@ namespace Linnarsson.Strt
         /// </summary>
         protected Dictionary<string, QuickAnnotationMap> ExonAnnotations { get; set; }
         protected Dictionary<string, QuickAnnotationMap> NonExonAnnotations { get; set; }
-        //public TranscriptMatcher GetTranscriptMatches;
+
         public IterTranscriptMatcher IterTranscriptMatches;
 
         public Dictionary<string, GeneFeature> geneFeatures;
@@ -47,7 +47,7 @@ namespace Linnarsson.Strt
             this.props = props;
             this.genome = genome;
             this.barcodes = props.Barcodes;
-            needChromosomeSequences = props.DetermineMotifs;
+            needChromosomeSequences = props.DetermineMotifs || props.AnalyzeSeqUpstreamTSSite;
             needChromosomeLengths = props.GenerateWiggle || props.GenerateBarcodedWiggle;
             noGeneVariants = !genome.GeneVariants;
             GeneFeature.LocusFlankLength = props.LocusFlankLength;

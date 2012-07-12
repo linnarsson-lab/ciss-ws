@@ -111,6 +111,8 @@ namespace Linnarsson.Strt
         Dictionary<int, List<int>> sampledUniqueMoleculesByBcIdx = new Dictionary<int, List<int>>();
         Dictionary<int, List<int>> sampledUniqueHitPositionsByBcIdx = new Dictionary<int, List<int>>();
 
+        private UpstreamAnalyzer upstreamAnalyzer;
+
         private StreamWriter rndTagProfileByGeneWriter;
 
         Dictionary<string, int> overlappingGeneFeatures = new Dictionary<string, int>();
@@ -144,6 +146,8 @@ namespace Linnarsson.Strt
             randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
             mappingAdder = new MappingAdder(annotations, randomTagFilter, barcodes);
             statsSampleDistPerBarcode = sampleDistForAccuStats / barcodes.Count;
+            if (props.AnalyzeSeqUpstreamTSSite)
+                upstreamAnalyzer = new UpstreamAnalyzer(Annotations, barcodes);
         }
 
         /// <summary>
@@ -249,6 +253,8 @@ namespace Linnarsson.Strt
                         sampledUniqueMolecules.Add(mappingAdder.NUniqueReadSignatures(currentBcIdx));
                     }
                     if (mrm.HasAltMappings) nMultiReads++;
+                    else if (upstreamAnalyzer != null)
+                        upstreamAnalyzer.CheckSeqUpstreamTSSite(mrm[0], currentBcIdx);
                 }
             }
             SampleReadStatistics(nMappedReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
@@ -433,6 +439,8 @@ namespace Linnarsson.Strt
 		/// <param name="fileNameBase">A path and a filename prefix that will used to create all output files, e.g. "/data/Sample12_"</param>
 		public void SaveResult(ReadCounter readCounter, string fileNameBase)
 		{
+            if (upstreamAnalyzer != null)
+                upstreamAnalyzer.WriteUpstreamStats(fileNameBase);
             if (TestReporter != null)
                 TestReporter.Summarize(Annotations.geneFeatures);
             WriteHitProfilesByBarcode(fileNameBase);

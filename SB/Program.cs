@@ -317,7 +317,8 @@ namespace CmdSilverBullet
                 "SB.exe dumpfasta <Idx> <OutputPath>\n                -   dump all transcript sequences to fasta file.\n" +
                 "SB.exe dump <Idx> <readLen> [<Step> [<MaxPerGene> [<MinOverhang> [Splices|Linear [<bcSet>]]]]] [<OutputPath>]\n" +
                 "      make fq file of transcript fragments. Makes all if MaxPerGene=0. Adds barcodes+GGG if bcSet given.\n\n" + 
-                "<RunLaneSpec> E.g. '17:235[:,,AGCTTG]', i.e. lanes 2,3,5 of run 17 [and only idx read AGCTTG of lane 5].\n" + 
+                "<RunLaneSpec> E.g. '17:235[:,,AGCTTG]', i.e. lanes 2,3,5 of run 17 [and only idx read AGCTTG of lane 5].\n" +
+                "              Regexps are allowed for idx read matching, e.g. AG?TTG.\n" +
                 "<Build> E.g. 'mm9', 'hg19', or 'gg3', <Annot> is 'UCSC', 'VEGA', or 'ENSEMBL' (Default: 'UCSC')\n" +
                 "<Idx>   Specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_VEGA'.\n" +
                 "<Bc>    'v2' (96x6-mer), 'v4' (48x6-mer, random tags), 'v4r' (no random tags), or 'no' for no barcodes.\n" +

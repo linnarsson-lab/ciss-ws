@@ -762,16 +762,16 @@ namespace Linnarsson.Strt
             {
                 file.WriteLine("Shows hits by to gene loci by type of annotation.");
                 file.WriteLine("MixGene shows overlapping genes in the same, ASGene in the opposite orientation.");
-                file.Write("Gene\tChr\tPos\tStrand\tTrLen\tUSTRLen\tLocusLen\tDSTRLen\t#SenseHits\t#AntiHits\tIntronLen\t#Exons\tMixGene\tASGene\t");
+                file.Write("Gene\tChr\tPos\tStrand\tTrLen\tUSTRLen\tLocusLen\tDSTRLen\t#SenseHits\t#AntiHits\tIntronLen\t#Exons\tMixGene\tASGene");
                 foreach (int i in AnnotType.GetGeneTypes())
                 {
                     string annotName = AnnotType.GetName(i);
                     if (annotName == "EXON") annotName = "EXON+SPLC";
-                    file.Write("#{0}Hits\t", annotName);
+                    file.Write("\t#{0}Hits", annotName);
                 }
                 string exonTitle = props.DirectionalReads ? "SExon" : "Exon";
                 for (int exonId = 1; exonId <= nExonsToShow; exonId++)
-                    file.Write("{0}{1}\t", exonTitle, exonId);
+                    file.Write("\t{0}{1}", exonTitle, exonId);
                 file.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
@@ -1019,10 +1019,10 @@ namespace Linnarsson.Strt
         private static void WriteLocusHistogramLine(StreamWriter file, ref int[] histo, GeneFeature gf, bool sense)
         {
             char chrStrand = ((gf.Strand == '+') ^ sense) ? '-' : '+';
-            file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t", gf.Name, gf.Strand, gf.Length, chrStrand, gf.GetTotalHits(sense));
+            file.Write("{0}\t{1}\t{2}\t{3}\t{4}", gf.Name, gf.Strand, gf.Length, chrStrand, gf.GetTotalHits(sense));
             int maxBin = CompactGenePainter.MakeLocusHistogram(gf, chrStrand, GeneFeature.LocusProfileBinSize, ref histo);
             for (int c = 0; c < maxBin; c++)
-                file.Write("{0}\t", histo[c]);
+                file.Write("\t{0}", histo[c]);
             file.WriteLine();
         }
 
@@ -1038,16 +1038,16 @@ namespace Linnarsson.Strt
                 {
                     if (gf.GetTotalHits() == 0) continue;
                     List<int> cs = CompactGenePainter.GetLocusHitPositions(gf, '+');
-                    file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t",
+                    file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}",
                                gf.Name, gf.Strand, gf.Chr, gf.LocusStart, gf.LocusEnd, "+", cs.Count);
                     foreach (int p in cs)
-                        file.Write("{0}\t", p);
+                        file.Write("\t{0}", p);
                     file.WriteLine();
                     cs = CompactGenePainter.GetLocusHitPositions(gf, '-');
-                    file.Write("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t",
+                    file.Write("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}",
                                gf.Name, gf.Strand, gf.Chr, gf.LocusStart, gf.LocusEnd, "-", cs.Count);
                     foreach (int p in cs)
-                        file.Write("{0}\t", p);
+                        file.Write("\t{0}", p);
                     file.WriteLine();
                 }
             }

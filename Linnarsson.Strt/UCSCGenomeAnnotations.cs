@@ -845,7 +845,7 @@ namespace Linnarsson.Strt
             int nIntronsToShow = MaxExonCount() + 1;
             using (StreamWriter file = new StreamWriter(fileNameBase + "_introns_by_bc.tab"))
             {
-                file.WriteLine("Rows are truncated when only zeroes remain.");
+                file.WriteLine("Only genes with any intronic hits are shown. Rows are truncated when only zeroes remain.");
                 file.Write("Gene\tChr\tStrand\tUSTRStart\tLocusLen\tDSTREnd\tBarcode\tUSTR({0}bp\tDSTR({0}bp))",
                            GeneFeature.LocusFlankLength);
                 for (int intronId = 1; intronId <= nIntronsToShow - 2; intronId++)
@@ -900,7 +900,7 @@ namespace Linnarsson.Strt
             int nExonsToShow = MaxExonCount();
             using (StreamWriter file = new StreamWriter(fileNameBase + "_exons_by_bc.tab"))
             {
-                file.WriteLine("Rows are truncated when only zeroes remain.");
+                file.WriteLine("Only expressed genes are shown. Rows are truncated when only zeroes remain.");
                 file.Write("Gene\tChr\tStrand\tPos\tTrLen\tBarcode");
                 for (int exonId = 1; exonId <= nExonsToShow; exonId++)
                     file.Write("\tExon{0}", exonId);

@@ -135,7 +135,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Makes histogram with given binSize of hits to gene locus. Data is always 5'->3' in gene orientation.
+        /// Makes histogram with given binSize of hits to gene locus. Data is always 5'->3' in transcript orientation.
         /// </summary>
         /// <param name="gf"></param>
         /// <param name="chrStrand">Strand on chr to pick counts from</param>
@@ -144,9 +144,27 @@ namespace Linnarsson.Dna
         /// <returns>Index of last bin in histo with data</returns>
         public static int MakeLocusHistogram(GeneFeature gf, char chrStrand, int binSize, ref int[] histo)
         {
-            MakeLocusProfile(chrStrand, gf.LocusHits);
             Array.Clear(histo, 0, histo.Length);
             int locusLen = gf.GetLocusLength();
+            bool inChrDir = (gf.Strand == '+');
+            int s = GeneFeature.GetStrandAsInt(chrStrand);
+            foreach (int hit in gf.LocusHits)
+            {
+                if ((hit & 1) == s)
+                {
+                    int pos = hit >> 8;
+                    int bin = inChrDir? (pos / binSize) : (locusLen - pos) / binSize;
+                    histo[bin]++;
+                }
+            }
+            int maxBin = histo.Length - 1;
+            while (maxBin > 0 && histo[maxBin] == 0) maxBin--;
+            return maxBin;
+
+            /* Old slower code:
+            Array.Clear(histo, 0, histo.Length);
+            int locusLen = gf.GetLocusLength();
+            MakeLocusProfile(chrStrand, gf.LocusHits);
             int locusPos = (gf.Strand == '+') ? 0 : locusLen - 1;
             int locusDir = (gf.Strand == '+') ? 1 : -1;
             int bin = -1;
@@ -157,7 +175,7 @@ namespace Linnarsson.Dna
                 histo[bin] += locusProfile[locusPos];
                 locusPos += locusDir;
             }
-            return bin;
+            return bin;*/
         }
 
         /// <summary>
@@ -455,7 +473,6 @@ namespace Linnarsson.Dna
             int cWNextPos = searchStartLocusPos + dir * (peakWindowSize + clearWindowSize);
             for (int p = pWLastPos; p != cWLastPos; p += dir)
                 pWCount += locusProfile[p];
-            //int sumCount = pWCount;
             for (int p = cWLastPos; p < cWNextPos; p += dir)
                 cWCount += locusProfile[p];
             int acceptablePosition = -1;
@@ -463,7 +480,7 @@ namespace Linnarsson.Dna
             {
                 if (pWCount >= minPeakCount && cWCount <= maxClearCount)
                 {
-                    if (pWCount >= optimalMinCount) // (sumCount >= optimalMinCount)
+                    if (pWCount >= optimalMinCount)
                         return cWLastPos;
                     if (acceptablePosition == -1)
                         acceptablePosition = cWLastPos;

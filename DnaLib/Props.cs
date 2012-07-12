@@ -85,6 +85,7 @@ namespace Linnarsson.Dna
         public bool UseMost5PrimeExonMapping = false; // if true, exonic multireads get only one single hit at the transcript with closest 5' end
         public bool ShowTranscriptSharingGenes = true;
         public bool SaveNonMappedReads = false; // Non-mapped reads from Bowtie may be stored in separate files
+        public bool AnalyzeSeqUpstreamTSSite = false; // if true, will check if false reads were made by barcode matching in template
 
         [NonSerialized]
         private Barcodes m_Barcodes;
@@ -134,8 +135,6 @@ namespace Linnarsson.Dna
             }
             internal static readonly Props instance = Read();
         }
-
-
     }
 
 }

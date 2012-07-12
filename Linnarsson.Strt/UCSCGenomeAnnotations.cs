@@ -760,7 +760,7 @@ namespace Linnarsson.Strt
             int nExonsToShow = MaxExonCount();
             using (StreamWriter file = new StreamWriter(fileNameBase + "_exons.tab"))
             {
-                file.WriteLine("Shows hits by to gene loci by type of annotation.");
+                file.WriteLine("Shows hits to all gene loci divided by type of annotation, direction, and exon.");
                 file.WriteLine("MixGene shows overlapping genes in the same, ASGene in the opposite orientation.");
                 file.Write("Gene\tChr\tPos\tStrand\tTrLen\tUSTRLen\tLocusLen\tDSTRLen\t#SenseHits\t#AntiHits\tIntronLen\t#Exons\tMixGene\tASGene");
                 foreach (int i in AnnotType.GetGeneTypes())

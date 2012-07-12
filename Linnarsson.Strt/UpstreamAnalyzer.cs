@@ -28,13 +28,12 @@ namespace Linnarsson.Strt
         {
             if (StrtGenome.IsSyntheticChr(mrm.Chr)) return;
             int l = barcodes.GetLengthOfBarcodesWithTSSeq();
-            string actualSeq = barcodes.Seqs[mrm.BcIdx] + barcodes.TSSeq;
             DnaSequence chrSeq = Annotations.ChromosomeSequences[mrm.Chr];
             DnaSequence upSeq = null;
             if (mrm.Strand == '+')
             {
                 if (mrm.Position - l < 0) return;
-                upSeq = chrSeq.SubSequence(mrm.Position - l, actualSeq.Length);
+                upSeq = chrSeq.SubSequence(mrm.Position - l, l);
             }
             else
             {
@@ -44,7 +43,7 @@ namespace Linnarsson.Strt
             }
             int upstreamBcIdx = -1;
             if (barcodesWTSSeqMap.TryGetValue(upSeq.ToString(), out upstreamBcIdx))
-                upstreamEquals[currentBcIdx, mrm.BcIdx]++;
+                upstreamEquals[currentBcIdx, upstreamBcIdx]++;
             upstreamTests[mrm.BcIdx]++;
         }
 
@@ -56,12 +55,14 @@ namespace Linnarsson.Strt
                 writer.WriteLine("ActualBarcode\t#AnalyzedSingleReads");
                 string[] actualBcs = barcodesWTSSeqMap.Keys.ToArray();
                 foreach (string s in actualBcs)
-                    writer.WriteLine("\t{0}", s);
+                    writer.Write("\t{0}", s);
+                writer.WriteLine();
                 for (int actualBcIdx = 0; actualBcIdx < actualBcs.Length; actualBcIdx++)
                 {
-                    writer.WriteLine("{0}\t{1}", actualBcs[actualBcIdx], upstreamTests[actualBcIdx]);
+                    writer.Write("{0}\t{1}", actualBcs[actualBcIdx], upstreamTests[actualBcIdx]);
                     for (int foundBcIdx = 0; foundBcIdx < actualBcs.Length; foundBcIdx++)
-                        writer.WriteLine(upstreamEquals[actualBcIdx, foundBcIdx]);
+                        writer.Write("\t{0}", upstreamEquals[actualBcIdx, foundBcIdx]);
+                    writer.WriteLine();
                 }
             }
         }

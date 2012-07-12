@@ -130,15 +130,17 @@ foreach ($allxml->childNodes AS $graphdata) {
          $graph = plot_reads($d["title"], $d["xvalues"], $d["yvalues"]);
          addGraph($graph);
          break;
-      case "spikes":
+       case "spikes":
          $d = parseSingleCurve($graphdata, "/#[0-9]/");
          $graph = plot_spikes($d["title"], $d["xvalues"], $d["yvalues"], $d["errors"]);
 	     addGraph($graph);
          break;
        case "spikedetection":
          $d = parseCurves($graphdata, "/#[0-9]/");
-         $graph = plotLines("textlin", "log", $d["title"], $d["curves"], $d["xtitle"]);
-         addGraph($graph);
+         if (count($d["curves"][0]["xvalues"]) > 1) {
+           $graph = plotLines("textlin", "log", $d["title"], $d["curves"], $d["xtitle"]);
+           addGraph($graph);
+         }
          break;
        case "librarycomplexity":
          echo "<div style=\"width:500px;text-align:center;font-family:arial,sans-serif;\">"

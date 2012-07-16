@@ -6,6 +6,22 @@ JHtml::_('behavior.formvalidation');
   $item = $this->illuminarun;
 
 ?>
+
+<script type="text/javascript">
+function validateFields()
+{
+  var c = document.getElementById("illuminarunid").value;
+  if (c.length ==0) {
+    alert("You must specify the EXACT RunId!");
+    return false;
+  }
+  if (c != parseInt(c) && c.length != 9) {
+    return confirm("The runId looks strange. Are you sure it is correct?");
+  }
+  return true;
+  }
+</script>
+
 <form enctype="multipart/form-data" action="<?php echo JText::_('?option=com_dbapp&view=illuminarun&layout=save&id='.(int) $searchid); ?>" method="post" name="adminForm" id="admin-form" class="form-validate">
 <?php
   if ($searchid > 0) {
@@ -94,7 +110,7 @@ echo "
   </fieldset>
 </div>
 <br/>
-<input type="Submit" name="Submit" value="Save" />
+<input type="Submit" name="Submit" value="Save" onclick="return validateFields();" />
 <input type="Submit" name="Submit" value="Cancel" />
 <?php
     $menus = &JSite::getMenu();

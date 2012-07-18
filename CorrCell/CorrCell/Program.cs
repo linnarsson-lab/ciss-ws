@@ -19,6 +19,7 @@ namespace CorrCell
                 int nSample = 500;
                 int minMeanSamplesInBin = 200;
                 double fractionThreshold = 100.0;
+                double minExprLevel = 0.0;
                 bool plot = false;
                 double minShowCorr = 0.0;
                 string pairFile = null;
@@ -31,6 +32,8 @@ namespace CorrCell
                         minMeanSamplesInBin = int.Parse(args[++argIdx]);
                     else if (args[argIdx] == "-f")
                         fractionThreshold = double.Parse(args[++argIdx]);
+                    else if (args[argIdx] == "-e")
+                        minExprLevel = double.Parse(args[++argIdx]);
                     else if (args[argIdx] == "-d")
                         minShowCorr = double.Parse(args[++argIdx]);
                     else if (args[argIdx] == "-p")
@@ -47,6 +50,7 @@ namespace CorrCell
                 Console.WriteLine("Reading " + args[argIdx]);
                 Expression expr = new Expression(args[argIdx]);
                 expr.FilterEmptyCells(fractionThreshold);
+                expr.FilterLowGenes(minExprLevel);
                 Console.WriteLine("Data size after empty cell filtering is {0} genes and {1} cells.", expr.GeneCount, expr.CellCount);
                 Console.WriteLine("minCountBinSize=" + minMeanSamplesInBin + " NSamplings=" + nSample);
                 DataSampler dataSampler = new DataSampler(expr, minMeanSamplesInBin, plot);
@@ -66,12 +70,13 @@ namespace CorrCell
             {
                 Console.WriteLine("\nUsage:\n" + 
                                   "mono CorrCell.exe [-s CORRSAMPLESIZE] [-b MINCOUNTBINSIZE] [-p GENEPAIRFILE] [-c GENECLASSFILE]\n" +
-                                  "                  [-f FILTERTHRESHOLD] [-d SHOWCORRTHRESHOLD] [--plot] EXPRESSIONFILE\n" +
+                                  "                  [-f FILTERTHRESHOLD] [-e EXPTHRESHOLD] [-d SHOWCORRTHRESHOLD] [--plot] EXPRESSIONFILE\n" +
                                   "CORRSAMPLESIZE        number of samples to take when calculating correlation\n" +
                                   "MINCOUNTBINSIZE       min number of means in each bin (interval) of count values\n" +
                                   "GENEPAIRFILE          file of pairs of names of potentially correlated genes to compare against background\n" +
                                   "GENECLASSFILE         file of gene names (1st col) and their respective class names (2nd col)\n" + 
                                   "FILTERTHRESHOLD       for filtering of empty cells. Min fraction of counts in cells compared with max cell\n" +
+                                  "EXPRTHRESHOLD         minimum average expression level of a gene to be used\n" +
                                   "SHOWCORRTHRESHOLD     (> 0.0) Display list of correlations. Only higher correlations will be reported\n" +
                                   "--plot                used to output distributions to files.\n" + 
                                   "EXPRESSIONFILE is the Lxxx_expression.tab output file from the STRT pipeline.");

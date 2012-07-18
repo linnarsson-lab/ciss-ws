@@ -193,6 +193,29 @@ namespace CorrCell
                     newGeneData[i] = data[geneIdx][keepCells[i]];
                 data[geneIdx] = newGeneData;
             }
+            List<string> keepCellNames = new List<string>();
+            foreach (int cellIdx in keepCells)
+                keepCellNames.Add(cellNames[cellIdx]);
+            cellNames = keepCellNames.ToArray();
+        }
+
+        public void FilterLowGenes(double minExprLevel)
+        {
+            List<int> keepGenes = new List<int>();
+            for (int geneIdx = 0; geneIdx < data.Count; geneIdx++)
+            {
+                if (GeneMean(geneIdx) >= minExprLevel)
+                    keepGenes.Add(geneIdx);
+            }
+            List<string> keepGeneNames = new List<string>();
+            List<int[]> newData = new List<int[]>();
+            foreach (int keepGeneIdx in keepGenes)
+            {
+                newData.Add(data[keepGeneIdx]);
+                keepGeneNames.Add(geneNames[keepGeneIdx]);
+            }
+            data = newData;
+            geneNames = keepGeneNames.ToArray();
         }
     }
 }

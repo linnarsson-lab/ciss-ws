@@ -86,6 +86,8 @@ namespace Linnarsson.Dna
         public bool ShowTranscriptSharingGenes = true;
         public bool SaveNonMappedReads = false; // Non-mapped reads from Bowtie may be stored in separate files
         public bool AnalyzeSeqUpstreamTSSite = false; // if true, will check if false reads were made by barcode matching in template
+        public bool AnalyzeSpliceHitsByBarcode = false; // If true, will show transcript cross-junction hits per barcode
+        public int GeneFeature5PrimeExtension = 0; // Extend all transcript 5' annotations to allow for unknown more upstream start sites.
 
         [NonSerialized]
         private Barcodes m_Barcodes;

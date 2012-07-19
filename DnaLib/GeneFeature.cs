@@ -118,6 +118,7 @@ namespace Linnarsson.Dna
         /// Used to analyse cross-junction hit distribution
         /// </summary>
         public Dictionary<string, int> TranscriptHitsByJunction;
+        public Dictionary<string, int[]> TranscriptHitsByJunctionAndBc;
         /// <summary>
         /// Total hits for every annotation type. Note that EXON/AEXON counts will include SPLC/ASPLC counts
         /// </summary>
@@ -178,6 +179,8 @@ namespace Linnarsson.Dna
             VariationSamples = new List<double>();
             TranscriptHitsByExonIdx = new int[exonStarts.Length];
             TranscriptHitsByJunction = new Dictionary<string, int>();
+            if (Props.props.AnalyzeSpliceHitsByBarcode)
+                TranscriptHitsByJunctionAndBc = new Dictionary<string, int[]>();
             HitsByAnnotType = new int[AnnotType.Count];
             NonMaskedHitsByAnnotType = new int[AnnotType.Count];
             m_LocusHits = new int[1000];
@@ -490,7 +493,7 @@ namespace Linnarsson.Dna
             }
             else
             {
-                MarkJunctionHit(junctionId, item.MolCount);
+                MarkJunctionHit(junctionId, item);
                 NonMaskedHitsByAnnotType[annotType] += item.MolCount;
             }
             HitsByAnnotType[annotType] += item.MolCount;
@@ -498,12 +501,23 @@ namespace Linnarsson.Dna
             return annotType;
         }
 
-        private void MarkJunctionHit(string junctionId, int count)
+        private void MarkJunctionHit(string junctionId, MappedTagItem item)
         {
             if (!TranscriptHitsByJunction.ContainsKey(junctionId))
-                TranscriptHitsByJunction[junctionId] = count;
+            {
+                TranscriptHitsByJunction[junctionId] = item.MolCount;
+                if (TranscriptHitsByJunctionAndBc != null)
+                {
+                    TranscriptHitsByJunctionAndBc[junctionId] = new int[Props.props.Barcodes.Count];
+                    TranscriptHitsByJunctionAndBc[junctionId][item.bcIdx] = item.MolCount;
+                }
+            }
             else
-                TranscriptHitsByJunction[junctionId] += count;
+            {
+                TranscriptHitsByJunction[junctionId] += item.MolCount;
+                if (TranscriptHitsByJunctionAndBc != null)
+                    TranscriptHitsByJunctionAndBc[junctionId][item.bcIdx] += item.MolCount;
+            }
         }
 
         public override IEnumerable<FtInterval> IterIntervals()
@@ -539,6 +553,17 @@ namespace Linnarsson.Dna
             Array.Sort(junctionIds);
             foreach (string junctionId in junctionIds)
                 result.Add(new Pair<string, int>(junctionId, TranscriptHitsByJunction[junctionId]));
+            return result;
+        }
+
+        public List<Pair<string, int[]>> GetSpliceCountsPerBarcode()
+        {
+            int nExons = ExonStarts.Length;
+            List<Pair<string, int[]>> result = new List<Pair<string, int[]>>();
+            string[] junctionIds = TranscriptHitsByJunctionAndBc.Keys.ToArray();
+            Array.Sort(junctionIds);
+            foreach (string junctionId in junctionIds)
+                result.Add(new Pair<string, int[]>(junctionId, TranscriptHitsByJunctionAndBc[junctionId]));
             return result;
         }
 

@@ -253,8 +253,8 @@ namespace Linnarsson.Strt
                         sampledUniqueMolecules.Add(mappingAdder.NUniqueReadSignatures(currentBcIdx));
                     }
                     if (mrm.HasAltMappings) nMultiReads++;
-                    else if (upstreamAnalyzer != null)
-                        upstreamAnalyzer.CheckSeqUpstreamTSSite(mrm[0], currentBcIdx);
+                    //else if (upstreamAnalyzer != null)
+                    //    upstreamAnalyzer.CheckSeqUpstreamTSSite(mrm[0], currentBcIdx); // Analysis on raw read bases
                 }
             }
             SampleReadStatistics(nMappedReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
@@ -347,6 +347,8 @@ namespace Linnarsson.Strt
                 if (someExonHit)
                 {
                     TotalTranscriptMolsByBarcode[currentBcIdx] += molCount;
+                    if (upstreamAnalyzer != null)
+                        upstreamAnalyzer.CheckSeqUpstreamTSSite(item, currentBcIdx);
                 }
             }
             int t = nMappingsByBarcode[currentBcIdx] - trSampleDepth;

@@ -10,7 +10,8 @@ namespace Linnarsson.Strt
     public class UpstreamAnalyzer
     {
         private int[] upstreamTests;
-        private int [,] upstreamEquals;
+        private int[,] upstreamEquals;
+        private HashSet<string>[] hitsByBcIdx;
         private AbstractGenomeAnnotations Annotations;
         private Dictionary<string, int> barcodesWTSSeqMap;
         private Barcodes barcodes;
@@ -22,29 +23,58 @@ namespace Linnarsson.Strt
             Annotations = annotations;
             this.barcodes = barcodes;
             barcodesWTSSeqMap = barcodes.GetBcWTSSeqToBcIdxMap();
+            hitsByBcIdx = new HashSet<string>[barcodes.Count];
+            for (int i = 0; i < barcodes.Count; i++)
+                hitsByBcIdx[i] = new HashSet<string>();
         }
 
+        /// <summary>
+        /// Use to analyze only exon annotated positions on molecule or read bases.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="currentBcIdx"></param>
+        public void CheckSeqUpstreamTSSite(MappedTagItem item, int currentBcIdx)
+        {
+            if (item.hasAltMappings) return;
+            CheckSeqUpstreamTSSite(item.chr, item.strand, item.hitStartPos, item.HitLen, currentBcIdx, item.MolCount);
+        }
+        /// <summary>
+        /// Use to analyze raw reads
+        /// </summary>
+        /// <param name="mrm"></param>
+        /// <param name="currentBcIdx"></param>
         public void CheckSeqUpstreamTSSite(MultiReadMapping mrm, int currentBcIdx)
         {
-            if (StrtGenome.IsSyntheticChr(mrm.Chr)) return;
+            CheckSeqUpstreamTSSite(mrm.Chr, mrm.Strand, mrm.Position, mrm.SeqLen, currentBcIdx, 1);
+        }
+        private void CheckSeqUpstreamTSSite(string chr, char strand, int pos, int readLen, int currentBcIdx, int count)
+        {
+            if (StrtGenome.IsSyntheticChr(chr)) return;
             int l = barcodes.GetLengthOfBarcodesWithTSSeq();
-            DnaSequence chrSeq = Annotations.ChromosomeSequences[mrm.Chr];
+            DnaSequence chrSeq = Annotations.ChromosomeSequences[chr];
             DnaSequence upSeq = null;
-            if (mrm.Strand == '+')
+            if (strand == '+')
             {
-                if (mrm.Position - l < 0) return;
-                upSeq = chrSeq.SubSequence(mrm.Position - l, l);
+                if (pos - l < 0) return;
+                upSeq = chrSeq.SubSequence(pos - l, l);
             }
             else
             {
-                if (mrm.Position + mrm.SeqLen + l > chrSeq.Count) return;
-                upSeq = chrSeq.SubSequence(mrm.Position + mrm.SeqLen, l);
+                if (pos + readLen + l > chrSeq.Count) return;
+                upSeq = chrSeq.SubSequence(pos + readLen, l);
                 upSeq.RevComp();
             }
             int upstreamBcIdx = -1;
             if (barcodesWTSSeqMap.TryGetValue(upSeq.ToString(), out upstreamBcIdx))
-                upstreamEquals[currentBcIdx, upstreamBcIdx]++;
-            upstreamTests[mrm.BcIdx]++;
+            {
+                upstreamEquals[currentBcIdx, upstreamBcIdx] += count;
+                if (currentBcIdx == upstreamBcIdx)
+                {
+                    string chrPos = chr + strand + pos.ToString();
+                    hitsByBcIdx[upstreamBcIdx].Add(chrPos);
+                }
+            }
+            upstreamTests[currentBcIdx] += count;
         }
 
         public void WriteUpstreamStats(string fileNameBase)
@@ -52,17 +82,17 @@ namespace Linnarsson.Strt
             string file = fileNameBase + "_upstream_barcodeGGG_matches.tab";
             using (StreamWriter writer = new StreamWriter(file))
             {
-                writer.WriteLine("ActualBarcode\t#AnalyzedSingleReads");
+                writer.WriteLine("ActualBarcode\t#AnalyzedCases");
                 string[] actualBcs = barcodesWTSSeqMap.Keys.ToArray();
                 foreach (string s in actualBcs)
                     writer.Write("\t{0}", s);
-                writer.WriteLine();
+                writer.WriteLine("\tHits with same barcode upstream.");
                 for (int actualBcIdx = 0; actualBcIdx < actualBcs.Length; actualBcIdx++)
                 {
                     writer.Write("{0}\t{1}", actualBcs[actualBcIdx], upstreamTests[actualBcIdx]);
                     for (int foundBcIdx = 0; foundBcIdx < actualBcs.Length; foundBcIdx++)
                         writer.Write("\t{0}", upstreamEquals[actualBcIdx, foundBcIdx]);
-                    writer.WriteLine();
+                    writer.WriteLine("\t" + string.Join(",", hitsByBcIdx[actualBcIdx].ToArray()));
                 }
             }
         }

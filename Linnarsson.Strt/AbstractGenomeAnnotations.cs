@@ -48,7 +48,7 @@ namespace Linnarsson.Strt
             this.genome = genome;
             this.barcodes = props.Barcodes;
             needChromosomeSequences = props.DetermineMotifs || props.AnalyzeSeqUpstreamTSSite;
-            needChromosomeLengths = props.GenerateWiggle || props.GenerateBarcodedWiggle;
+            needChromosomeLengths = props.GenerateWiggle || props.GenerateBarcodedWiggle || props.GeneFeature5PrimeExtension > 0;
             noGeneVariants = !genome.GeneVariants;
             GeneFeature.LocusFlankLength = props.LocusFlankLength;
             CompactGenePainter.SetMaxLocusLen(props.MaxFeatureLength);

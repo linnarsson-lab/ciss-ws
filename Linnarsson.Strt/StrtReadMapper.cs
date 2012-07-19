@@ -419,8 +419,9 @@ namespace Linnarsson.Strt
                 props.UseRPKM = projDescr.rpkm;
                 props.DirectionalReads = !projDescr.rpkm;
                 logWriter.WriteLine("{0} Annotating {1} map files...", DateTime.Now, mapFilePaths.Count);
-                logWriter.WriteLine("{0} setting: AllTrVariants={1} DirectionalReads={2} RPKM={3}",
-                                    DateTime.Now, projDescr.analyzeVariants, props.DirectionalReads, props.UseRPKM);
+                logWriter.WriteLine("{0} setting: AllTrVariants={1} Gene5'Extensions={4} #SpikeMols={5} DirectionalReads={2} RPKM={3}",
+                                    DateTime.Now, projDescr.analyzeVariants, props.DirectionalReads, props.UseRPKM,
+                                    props.GeneFeature5PrimeExtension, props.TotalNumberOfAddedSpikeMolecules);
                 logWriter.Flush();
                 ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.projectName, mapFilePaths);
                 projDescr.resultDescriptions.Add(resultDescr);

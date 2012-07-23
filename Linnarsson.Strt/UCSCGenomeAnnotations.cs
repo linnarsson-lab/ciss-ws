@@ -876,7 +876,7 @@ namespace Linnarsson.Strt
                     int n = CompactGenePainter.GetCountsPerIntronAndBarcode(gf, props.DirectionalReads, barcodes.Count, ref counts);
                     string firstCols = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
                                                      gf.Name, gf.Chr, gf.Strand, gf.LocusStart, gf.GetLocusLength(), gf.LocusEnd);
-                    string nextFirstCols = "\t\t\t\t\t";
+                    string nextFirstCols = string.Format("{0}\t\t\t\t\t", gf.Name);
                     WriteCountsByBarcodeDirected(file, counts, gf, firstCols, nextFirstCols, 2, n - 1);
                 }
             }
@@ -928,7 +928,7 @@ namespace Linnarsson.Strt
                     int n = CompactGenePainter.GetCountsPerExonAndBarcode(gf, props.DirectionalReads, barcodes.Count, ref counts);
                     string firstCols = string.Format("{0}\t{1}\t{2}\t{3}\t{4}",
                                                      gf.Name, gf.Chr, gf.Strand, gf.Start, gf.GetTranscriptLength());
-                    string followingFirstCols = "\t\t\t\t";
+                    string followingFirstCols = string.Format("{0}\t\t\t\t", gf.Name);
                     WriteCountsByBarcodeDirected(file, counts, gf, firstCols, followingFirstCols, 0, n - 1);
                 }
             }
@@ -969,7 +969,7 @@ namespace Linnarsson.Strt
                     foreach (Pair<string, int> spliceAndCount in spliceCounts)
                         matrixFile.Write("\t{0}", spliceAndCount.First);
                     matrixFile.WriteLine();
-                    matrixFile.Write("\t\t\t");
+                    matrixFile.Write("{0}\t\t\t", gf.Name);
                     foreach (Pair<string, int> spliceAndCount in spliceCounts)
                         matrixFile.Write("\t{0}", spliceAndCount.Second);
                     matrixFile.WriteLine();
@@ -995,7 +995,7 @@ namespace Linnarsson.Strt
                     matrixFile.WriteLine();
                     for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                     {
-                        matrixFile.Write("\t\t\t\t{0}", barcodes.Seqs[bcIdx]);
+                        matrixFile.Write("{0}\t\t\t\t{1}", gf.Name, barcodes.Seqs[bcIdx]);
                         foreach (Pair<string, int[]> spliceAndBcCounts in splicesAndBcCounts)
                             matrixFile.Write("\t{0}", spliceAndBcCounts.Second[bcIdx]);
                         matrixFile.WriteLine();
@@ -1083,7 +1083,7 @@ namespace Linnarsson.Strt
                         file.Write("\t{0}", p);
                     file.WriteLine();
                     hisPoss = CompactGenePainter.GetLocusHitPositions(gf, '-');
-                    file.Write("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}",
+                    file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}",
                                gf.Name, gf.Strand, gf.Chr, gf.LocusStart, gf.LocusEnd, "-", hisPoss.Count);
                     foreach (int p in hisPoss)
                         file.Write("\t{0}", p);

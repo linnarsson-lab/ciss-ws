@@ -139,11 +139,16 @@ namespace CmdSilverBullet
                                     optionMatch = true;
                                     props.UseMost5PrimeExonMapping = false;
                                 }
-                                else if (genomeStrings.Contains(opt))
-                                {
-                                    optionMatch = true;
-                                    speciesArg = opt;
-                                }
+                                else
+                                    foreach (string s in genomeStrings)
+                                    {
+                                        if (s.ToLower() == opt)
+                                        {
+                                            optionMatch = true;
+                                            speciesArg = s;
+                                            break;
+                                        }
+                                    }
                                 if (!optionMatch)
                                     break;
                                 argOffset++;
@@ -157,7 +162,12 @@ namespace CmdSilverBullet
                             if (speciesArg != "")
                                 mapper.MapAndAnnotate(projectFolder, speciesArg, analyzeAllGeneVariants);
                             else
-                                mapper.MapAndAnnotateWithLayout(projectFolder, "NotSpecified", analyzeAllGeneVariants);
+                            {
+                                if (!File.Exists(PathHandler.GetSampleLayoutPath(projectFolder)))
+                                    throw new ArgumentException("No layout file exists - you must give a valid species/build: "
+                                                                + string.Join(", ", genomeStrings.ToArray()));
+                                mapper.MapAndAnnotateWithLayout(projectFolder, "NoSpeciesGiven", analyzeAllGeneVariants);
+                            }
                             break;
 
                         case "jct":

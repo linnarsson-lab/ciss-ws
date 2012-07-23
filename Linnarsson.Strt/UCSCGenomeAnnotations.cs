@@ -295,7 +295,7 @@ namespace Linnarsson.Strt
                 lastLoadedGeneName = "";
                 return false;
             }
-            if (props.GeneFeature5PrimeExtension > 0)
+            if (props.GeneFeature5PrimeExtension > 0 &&  !StrtGenome.IsSyntheticChr(gf.Chr))
                 ExtendGeneFeature5Prime((GeneFeature)gf);
             geneFeatures[gf.Name] = (GeneFeature)gf;
             lastLoadedGeneName = gf.Name;

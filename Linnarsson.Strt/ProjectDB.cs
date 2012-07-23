@@ -49,13 +49,19 @@ namespace Linnarsson.Strt
         public string annotationVersion { get; set; }
         public bool rpkm { get; set; }
         public string layoutFile { get; set; }
-        public string defaultBuild { get; set; }
+        public string build { get; set; }
+        public string annotation { get; set; }
+        public string variant { get; set; }
+        public int gene5PrimeExtension { get; set; }
         public List<LaneInfo> extractionInfos { get; set; }
         public string analysisId { get; set; }
         public List<ResultDescription> resultDescriptions { get; set; }
 
+        [XmlIgnoreAttribute]
         public string SampleLayoutPath { get { return Path.Combine(ProjectFolder, layoutFile); } }
 
+        [XmlIgnoreAttribute]
+        public string defaultBuild { get; set; }
         [XmlIgnoreAttribute]
         public string defaultSpecies;
         [XmlIgnoreAttribute]
@@ -90,6 +96,15 @@ namespace Linnarsson.Strt
             this.analysisId = analysisId;
             this.resultDescriptions = new List<ResultDescription>();
         }
+
+        public void SetGenomeData(StrtGenome genome)
+        {
+            build = genome.Build;
+            variant = genome.GeneVariants ? "all" : "single";
+            annotation = genome.Annotation;
+            gene5PrimeExtension = Props.props.GeneFeature5PrimeExtension;
+        }
+
         public override string ToString()
         {
             return string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\n", projectName, string.Join("|", runIdsLanes.ToArray()), barcodeSet, 

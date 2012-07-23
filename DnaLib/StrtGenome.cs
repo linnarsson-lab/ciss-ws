@@ -10,9 +10,6 @@ namespace Linnarsson.Dna
 {
 	public class StrtGenome
 	{
-        public static string SpliceChrFilenamePattern = "chr{0}{1}.splices";
-        public static string AnnotationsFilenamePattern = "Annotations_{0}{1}.txt";
-        public static string TagMappingFilenamePattern = "Mappings_{0}_{1}MM{2}.hmap";
         public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE", "ENSEMBL" };
         public static string chrCTRLId = "CTRL";
 
@@ -64,8 +61,13 @@ namespace Linnarsson.Dna
         }
         public string GetStrtGenomesFolder()
         {
-            return Path.Combine(Path.Combine(Props.props.GenomesFolder, Build), "strt");
+            return GetStrtGenomesFolder(Build);
         }
+        public static string GetStrtGenomesFolder(string build)
+        {
+            return Path.Combine(Path.Combine(Props.props.GenomesFolder, build), "strt");
+        }
+
         public string MakeMaskedChrFileName(string chrId)
         {
             return "chr" + chrId + "_" + Annotation + "Masked.fa";
@@ -121,14 +123,19 @@ namespace Linnarsson.Dna
         {
             return ReplaceReadLen(ReadLen, "chr" + VarAnnot + "{0}.splices");
         }
+
+        private static string AnnotationsFilePattern = "Annotations_#{0}.txt";
+        private static string AnnotationsBuildRegex = "Annotations_[as]([^_]+)_.+txt";
+        private static string AnnotationsBuildPattern = "Annotations_*.txt";
+
         public string MakeAnnotationsPath()
         {
-            string pathPattern = Path.Combine(GetStrtGenomesFolder(), "Annotations_" + VarAnnot + "{0}.txt");
+            string pathPattern = Path.Combine(GetStrtGenomesFolder(), AnnotationsFilePattern.Replace("#", VarAnnot));
             return ReplaceReadLen(ReadLen, pathPattern);
         }
         public string GetAnAnnotationsPath()
         {
-            string pathPattern = Path.Combine(GetStrtGenomesFolder(), "Annotations_" + VarAnnot + "{0}.txt");
+            string pathPattern = Path.Combine(GetStrtGenomesFolder(), AnnotationsFilePattern.Replace("#", VarAnnot));
             return FindABpVersion(ReadLen, pathPattern);
         }
         public string VerifyAnAnnotationPath()
@@ -187,6 +194,11 @@ namespace Linnarsson.Dna
                 if (chrIdOrFilename.IndexOf(a) >= 0) return true;
             return false;
         }
+        /// <summary>
+        /// Check if the chr is a splice or a control gene chromosome
+        /// </summary>
+        /// <param name="chrId"></param>
+        /// <returns></returns>
         public static bool IsSyntheticChr(string chrId)
         {
             return chrId.EndsWith(chrCTRLId) || IsASpliceAnnotationChr(chrId);
@@ -196,14 +208,14 @@ namespace Linnarsson.Dna
         {
             ReadLen = Props.props.StandardReadLen;
         }
-        private StrtGenome(string build, string abbrev)
+        private StrtGenome(string build, string abbrev, string annotation)
         {
             ReadLen = Props.props.StandardReadLen;
             Abbrev = abbrev;
             Build = build;
             Description = "genome of " + build;
             Name = "unknown";
-            Annotation = "UCSC";
+            Annotation = annotation;
             LatinName = "unknown";
             GeneVariants = Props.props.AnalyzeAllGeneVariants;
         }
@@ -227,36 +239,51 @@ namespace Linnarsson.Dna
         public static StrtGenome[] GetGenomes()
         {
             List<StrtGenome> existingGenomes =  new List<StrtGenome> { Human, Mouse, Chicken };
-            Dictionary<string, object> abbrevs = new Dictionary<string,object>() { {"hs", null} ,  {"mm", null}, {"gg", null } };
+            Dictionary<string, object> abbrevs = new Dictionary<string, object>() { {"hs", null} ,  {"mm", null}, {"gg", null } };
             string[] buildFolders = Directory.GetDirectories(Props.props.GenomesFolder);
             Array.Sort(buildFolders);
             buildFolders.Reverse();
             foreach (string buildFolder in buildFolders)
             {
-                string buildFolderName = Path.GetFileName(buildFolder);
-                Match m = Regex.Match(buildFolderName, "^([A-Za-z][A-Za-z])[0-9]+$");
-                string abbrev = buildFolderName.ToLower();
+                string build = Path.GetFileName(buildFolder);
+                Match m = Regex.Match(build, "^([A-Za-z][A-Za-z])[0-9]+$");
+                string abbrev = build.ToLower();
                 if (m.Success && !abbrevs.ContainsKey(m.Groups[1].Value))
                     abbrev = m.Groups[1].Value.ToLower();
-                foreach (StrtGenome g in existingGenomes)
-                    if (g.Build == buildFolderName)
-                        continue;
-                abbrevs[abbrev] = null;
-                StrtGenome existingGenome = new StrtGenome(buildFolderName, abbrev);
-                existingGenomes.Add(existingGenome);
+                abbrevs[abbrev] = null; // Used to only get latest version of each genome
+                string strtFolder = GetStrtGenomesFolder(build);
+                if (!Directory.Exists(strtFolder))
+                    continue;
+                string[] annFiles = Directory.GetFiles(strtFolder, AnnotationsBuildPattern);
+                foreach (string file in annFiles)
+                {
+                    m = Regex.Match(file, AnnotationsBuildRegex);
+                    if (m.Success)
+                    {
+                        string annotation = m.Groups[1].Value;
+                        if (existingGenomes.Any(g => (g.Build == build && g.Annotation == annotation)))
+                            continue;
+                        StrtGenome existingGenome = new StrtGenome(build, abbrev, annotation);
+                        existingGenomes.Add(existingGenome);
+                    }
+                }
             }
             return existingGenomes.ToArray();
         }
 
         public static List<string> GetValidGenomeStrings()
         {
-            List<string> s = new List<string>();
+            HashSet<string> s = new HashSet<string>();
             foreach (StrtGenome g in GetGenomes())
             {
-                s.AddRange(new string[] { g.Name, g.Abbrev, g.Build, 
-                           g.Build + "_" + g.Annotation, g.Build + "_a" + g.Annotation, g.Build + "_s" + g.Annotation });
+                s.Add(g.Name);
+                s.Add(g.Build);
+                if (g.Abbrev != g.Build.ToLower()) s.Add(g.Abbrev);
+                s.Add(g.Build + "_" + g.Annotation);
+                s.Add(g.Build + "_a" + g.Annotation);
+                s.Add(g.Build + "_s" + g.Annotation);
             }
-            return s;
+            return s.ToList();
         }
 
         /// <summary>

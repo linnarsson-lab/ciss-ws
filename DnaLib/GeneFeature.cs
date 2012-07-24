@@ -412,6 +412,14 @@ namespace Linnarsson.Dna
             return false;
         }
 
+        public int GetExpressionFromExons(List<int> selectedExonIdxs)
+        {
+            int count = 0;
+            foreach (int exonIdx in selectedExonIdxs)
+                count += TranscriptHitsByExonIdx[exonIdx];
+            return count;
+        }
+
         private int MarkUpstreamFlankHit(MappedTagItem item, int junk, MarkStatus markType)
         {
             return MarkFlankHit(AnnotType.USTR, item, markType);

@@ -390,24 +390,58 @@ namespace Linnarsson.Strt
         {
             using (StreamWriter file = new StreamWriter(fileNameBase + "_expressed_antisense.tab"))
             {
-                file.WriteLine("Chr\tGeneA\tGeneB\tCountA\tCountB");
+                file.WriteLine("Expressed gene pairs transcribed in opposite direction that have overlapping exons. " +
+                               "Numbers of overlapping exons and the expression from the non-overlapping exons is shown.");
+                file.WriteLine("Chr\tGeneA\tGeneB\t#OverlappingExons\tCountA\tCountB\t" +
+                               "OverlappingExonsA\tNonoverlappingCountA\tOverlappingExonsB\tNonoverlappingCountB");
                 int nPairs = 0;
-                foreach (string gfPair in antisensePairExons.Keys)
+                foreach (KeyValuePair<string, int> gfPair in antisensePairExons)
                 {
-                    string[] names = gfPair.Split('#');
-                    int aHits = geneFeatures[names[0]].GetTranscriptHits();
-                    int bHits = geneFeatures[names[1]].GetTranscriptHits();
-                    string chr = geneFeatures[names[0]].Chr;
-                    if (chr != geneFeatures[names[1]].Chr ||
-                        geneFeatures[names[0]].Strand == geneFeatures[names[1]].Strand)
+                    string[] names = gfPair.Key.Split('#');
+                    GeneFeature gfA = geneFeatures[names[0]];
+                    GeneFeature gfB = geneFeatures[names[1]];
+                    if (gfA.Chr != gfB.Chr || gfA.Strand == gfB.Strand)
                         throw new Exception("Internal error in sense-antisense genes: " + names[0] + "-" + names[1]);
+                    int aHits = gfA.GetTranscriptHits();
+                    int bHits = gfB.GetTranscriptHits();
                     if (aHits > 0 && bHits > 0)
                     {
-                        file.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", chr, names[0], names[1], aHits, bHits);
+                        List<int> freeExonsA = GetNonOverlappingExons(gfA, gfB);
+                        int freeHitsA = gfA.GetExpressionFromExons(freeExonsA);
+                        List<int> freeExonsB = GetNonOverlappingExons(gfB, gfA);
+                        int freeHitsB = gfB.GetExpressionFromExons(freeExonsB);
+                        int nCommonExons = gfPair.Value;
+                        string freeExonsAList = MakeExonNumberList(freeExonsA);
+                        string freeExonsBList = MakeExonNumberList(freeExonsB);
+                        file.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}", gfA.Chr, names[0], names[1], nCommonExons,
+                                       aHits, bHits, freeExonsAList, freeExonsBList, freeHitsA, freeHitsB);
                         nPairs++;
                     }
                 }
             }
+        }
+
+        private string MakeExonNumberList(List<int> exonIdxs)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append((exonIdxs[0] + 1));
+            for (int i = 1; i < exonIdxs.Count; i++)
+            {
+                sb.Append(',');
+                sb.Append(exonIdxs[i] + 1);
+            }
+            return sb.ToString();
+        }
+
+        private List<int> GetNonOverlappingExons(GeneFeature gf, GeneFeature maskGf)
+        {
+            List<int> freeExons = new List<int>();
+            for (int exonIdx = 0; exonIdx < gf.ExonCount; exonIdx++)
+            {
+                if (!maskGf.ExonsWithin(gf.ExonStarts[exonIdx], gf.ExonEnds[exonIdx], 3))
+                    freeExons.Add(exonIdx);
+            }
+            return freeExons;
         }
 
         private void WritePotentialErronousAnnotations(string fileNameBase)

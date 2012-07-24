@@ -761,11 +761,10 @@ namespace Linnarsson.Strt
             AbstractGenomeAnnotations annotations = new UCSCGenomeAnnotations(props, genome);
             annotations.Load();
             string outputPathbase = Path.Combine(outputFolder, projectName);
-            TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props);
-            ts.OutputPathbase = outputPathbase;
+            TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props, outputPathbase);
             string syntLevelFile = PathHandler.GetSyntLevelFile(projectFolder);
             if (File.Exists(syntLevelFile))
-                ts.TestReporter = new SyntReadReporter(syntLevelFile, genome.GeneVariants, outputPathbase, annotations.geneFeatures);
+                ts.SetSyntReadReporter(syntLevelFile);
             ts.ProcessMapFiles(mapFilePaths, averageReadLen);
             if (ts.GetNumMappedReads() == 0)
                 Console.WriteLine("WARNING: contigIds of reads do not seem to match with genome Ids.\nWas the Bowtie index made on a different genome or contig set?");
@@ -773,9 +772,10 @@ namespace Linnarsson.Strt
                               ts.GetNumMappedReads(), annotations.GetNumExpressedGenes(), annotations.GetNumExpressedRepeats());
             Directory.CreateDirectory(outputFolder);
             Console.WriteLine("Saving to {0}...", outputFolder);
-            ts.SaveResult(readCounter, outputPathbase);
             string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
-            return new ResultDescription(mapFilePaths, bowtieIndexVersion, outputFolder);
+            ResultDescription resultDescr = new ResultDescription(mapFilePaths, bowtieIndexVersion, outputFolder);
+            ts.SaveResult(readCounter, resultDescr);
+            return resultDescr;
         }
 
         private int EstimateReadLengthFromMapFiles(List<string> mapFilePaths)

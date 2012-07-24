@@ -77,9 +77,9 @@ namespace Linnarsson.Strt
             upstreamTests[currentBcIdx] += count;
         }
 
-        public void WriteUpstreamStats(string fileNameBase)
+        public void WriteUpstreamStats(string OutputPathbase)
         {
-            string file = fileNameBase + "_upstream_barcodeGGG_matches.tab";
+            string file = OutputPathbase + "_upstream_barcodeGGG_matches.tab";
             using (StreamWriter writer = new StreamWriter(file))
             {
                 writer.WriteLine("ActualBarcode\t#AnalyzedCases");

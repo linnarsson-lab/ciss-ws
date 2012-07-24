@@ -31,7 +31,7 @@ namespace Linnarsson.Strt
         private MappingAdder mappingAdder;
 
         private SnpRndTagVerifier snpRndTagVerifier;
-        public SyntReadReporter TestReporter { get; set; }
+        private SyntReadReporter TestReporter;
 
         /// <summary>
         /// Per chromosome hits of each type, separates sense and antisense
@@ -63,7 +63,7 @@ namespace Linnarsson.Strt
 		DnaMotif[] motifs;
         int currentBcIdx = 0;
         string currentMapFilePath;
-        public string OutputPathbase;
+        private string OutputPathbase;
 
         /// <summary>
         /// Total number of mapped reads in each barcode
@@ -119,8 +119,9 @@ namespace Linnarsson.Strt
         List<string> exonHitGeneNames;
         private string spliceChrId;
 
-        public TranscriptomeStatistics(AbstractGenomeAnnotations annotations, Props props)
+        public TranscriptomeStatistics(AbstractGenomeAnnotations annotations, Props props, string outputPathbase)
 		{
+            this.OutputPathbase = outputPathbase;
             AnnotType.DirectionalReads = props.DirectionalReads;
             barcodes = props.Barcodes;
             Annotations = annotations;
@@ -148,6 +149,11 @@ namespace Linnarsson.Strt
             statsSampleDistPerBarcode = sampleDistForAccuStats / barcodes.Count;
             if (props.AnalyzeSeqUpstreamTSSite)
                 upstreamAnalyzer = new UpstreamAnalyzer(Annotations, barcodes);
+        }
+
+        public void SetSyntReadReporter(string syntLevelFile)
+        {
+            TestReporter = new SyntReadReporter(syntLevelFile, Annotations.Genome.GeneVariants, OutputPathbase, Annotations.geneFeatures);
         }
 
         /// <summary>
@@ -438,29 +444,29 @@ namespace Linnarsson.Strt
 		///  Save all the statistics to a set of files
 		/// </summary>
         /// <param name="readCounter">Holder of types of reads in input</param>
-		/// <param name="fileNameBase">A path and a filename prefix that will used to create all output files, e.g. "/data/Sample12_"</param>
-		public void SaveResult(ReadCounter readCounter, string fileNameBase)
+		/// <param name="OutputPathbase">A path and a filename prefix that will used to create all output files, e.g. "/data/Sample12_"</param>
+		public void SaveResult(ReadCounter readCounter, ResultDescription resultDescr)
 		{
             if (upstreamAnalyzer != null)
-                upstreamAnalyzer.WriteUpstreamStats(fileNameBase);
+                upstreamAnalyzer.WriteUpstreamStats(OutputPathbase);
             if (TestReporter != null)
                 TestReporter.Summarize(Annotations.geneFeatures);
-            WriteHitProfilesByBarcode(fileNameBase);
-            WriteRedundantExonHits(fileNameBase);
-            WriteASExonDistributionHistogram(fileNameBase);
-            WriteSummary(fileNameBase, readCounter);
+            WriteHitProfilesByBarcode();
+            WriteRedundantExonHits();
+            WriteASExonDistributionHistogram();
+            WriteSummary(readCounter, resultDescr);
             int averageReadLen = MappedTagItem.AverageReadLen;
-            Annotations.SaveResult(fileNameBase, averageReadLen);
+            Annotations.SaveResult(OutputPathbase, averageReadLen);
             if (snpRndTagVerifier != null)
-                snpRndTagVerifier.Verify(fileNameBase);
+                snpRndTagVerifier.Verify(OutputPathbase);
             if (Props.props.AnalyzeSNPs)
-                WriteSnps(fileNameBase);
+                WriteSnps();
             if (DetermineMotifs)
-                WriteSequenceLogos(fileNameBase);
+                WriteSequenceLogos();
             if (Props.props.GenerateWiggle)
             {
-                WriteWriggle(fileNameBase);
-                WriteHotspots(fileNameBase);
+                WriteWriggle();
+                WriteHotspots();
             }
             if (rndTagProfileByGeneWriter != null)
             {
@@ -474,9 +480,9 @@ namespace Linnarsson.Strt
         /// Debugging output for counting of reads & molecules
         /// </summary>
         /// <param name="fileNameBase"></param>
-        private void WriteLogStats(string fileNameBase)
+        private void WriteLogStats()
         {
-            string xmlPath = fileNameBase + "_stats.log";
+            string xmlPath = OutputPathbase + "_stats.log";
             using (StreamWriter xmlFile = new StreamWriter(xmlPath))
             {
                 for (int i = 0; i < AnnotType.Count; i++)
@@ -502,29 +508,30 @@ namespace Linnarsson.Strt
         /// Write sequence logo data for each barcode
         /// </summary>
         /// <param name="fileNameBase"></param>
-        private void WriteSequenceLogos(string fileNameBase)
+        private void WriteSequenceLogos()
         {
-            string logoDir = Directory.CreateDirectory(fileNameBase + "_sequence_logos").FullName;
+            string logoDir = Directory.CreateDirectory(OutputPathbase + "_sequence_logos").FullName;
             for (int i = 0; i < motifs.Length; i++)
             {
                 motifs[i].Save(Path.Combine(logoDir, barcodes.Seqs[i] + "_motif.txt"));
             }
         }
 
-        private void WriteSummary(string fileNameBase, ReadCounter readCounter)
+        private void WriteSummary(ReadCounter readCounter, ResultDescription resultDescr)
         {
-            string xmlPath = fileNameBase + "_summary.xml";
+            string xmlPath = OutputPathbase + "_summary.xml";
             using (StreamWriter xmlFile = new StreamWriter(xmlPath))
             {
                 xmlFile.WriteLine("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
-                xmlFile.WriteLine("<strtSummary project=\"{0}\">", Path.GetDirectoryName(fileNameBase));
+                xmlFile.WriteLine("<strtSummary project=\"{0}\">", Path.GetDirectoryName(OutputPathbase));
+                WriteSettings(xmlFile, resultDescr);
                 WriteReadStats(readCounter, xmlFile);
-                xmlFile.WriteLine("<librarycomplexity>\n" +
-                                  "  <title>Median values from [indicated number of] barcodes</title>\n" +
-                                  "  <point x=\"Unique molecules [{6}] after {0} reads\" y=\"{2}\" />\n" +
-                                  "  <point x=\"Distinct mappings [{7}] after {0} reads\" y=\"{1}\" />\n" +
-                                  "  <point x=\"Expressed transcripts [{8}] after {3} {5}\" y=\"{4}\" />\n" +
-                                  "</librarycomplexity>", libraryDepthSampleReadCountPerBc,
+                xmlFile.WriteLine("  <librarycomplexity>\n" +
+                                  "    <title>Median values from [indicated number of] barcodes</title>\n" +
+                                  "    <point x=\"Unique molecules [{6}] after {0} reads\" y=\"{2}\" />\n" +
+                                  "    <point x=\"Distinct mappings [{7}] after {0} reads\" y=\"{1}\" />\n" +
+                                  "    <point x=\"Expressed transcripts [{8}] after {3} {5}\" y=\"{4}\" />\n" +
+                                  "  </librarycomplexity>", libraryDepthSampleReadCountPerBc,
                                      DefaultMedian(sampledLibraryDepths, "N/A"), DefaultMedian(sampledUniqueMolecules, "N/A"),
                                      trSampleDepth, DefaultMedian(sampledExpressedTranscripts, "N/A"),
                                      (barcodes.HasRandomBarcodes) ? "molecules" : "reads", sampledLibraryDepths.Count,
@@ -538,7 +545,7 @@ namespace Linnarsson.Strt
                 Annotations.WriteSpikeDetection(xmlFile);
                 Add5To3PrimeHitProfile(xmlFile);
                 AddCVHistogram(xmlFile);
-                WriteBarcodeStats(fileNameBase, xmlFile, readCounter);
+                WriteBarcodeStats(xmlFile, readCounter);
                 WriteRandomFilterStats(xmlFile);
                 xmlFile.WriteLine("</strtSummary>");
             }
@@ -546,6 +553,23 @@ namespace Linnarsson.Strt
             {
                 CmdCaller.Run("php", "make_html_summary.php " + xmlPath);
             }
+        }
+
+        private void WriteSettings(StreamWriter xmlFile, ResultDescription resultDescr)
+        {
+            xmlFile.WriteLine("  <settings>");
+            xmlFile.WriteLine("    <BowtieIndexVersion>{0}</BowtieIndexVersion>", resultDescr.bowtieIndexVersion);
+            xmlFile.WriteLine("    <DirectionalReads>{0}</DirectionalReads>", Props.props.DirectionalReads);
+            xmlFile.WriteLine("    <UseRPKM>{0}</UseRPKM>", Props.props.UseRPKM);
+            xmlFile.WriteLine("    <MaxFeatureLength>{0}</MaxFeatureLength>", Props.props.MaxFeatureLength);
+            xmlFile.WriteLine("    <GeneFeature5PrimeExtension>{0}</GeneFeature5PrimeExtension>", Props.props.GeneFeature5PrimeExtension);
+            xmlFile.WriteLine("    <LocusFlankLength>{0}</LocusFlankLength>", Props.props.LocusFlankLength);
+            xmlFile.WriteLine("    <UseMost5PrimeExonMapping>{0}</UseMost5PrimeExonMapping>", Props.props.UseMost5PrimeExonMapping);
+            if (Props.props.AnalyzeSNPs && barcodes.HasRandomBarcodes)
+                xmlFile.WriteLine("    <MinMoleculesToTestSnp>{0}</MinMoleculesToTestSnp>", Props.props.MinMoleculesToTestSnp);
+            if (Props.props.AnalyzeSNPs && !barcodes.HasRandomBarcodes)
+                xmlFile.WriteLine("    <MinReadsToTestSnp>{0}</MinReadsToTestSnp>", Props.props.MinReadsToTestSnp);
+            xmlFile.WriteLine("  </settings>");
         }
 
         /// <summary>
@@ -574,26 +598,26 @@ namespace Linnarsson.Strt
         private void WriteRandomFilterStats(StreamWriter xmlFile)
         {
             if (!barcodes.HasRandomBarcodes) return;
-            xmlFile.WriteLine("    <randomtagfrequence>");
-            xmlFile.WriteLine("<title>Number of reads detected in each random tag</title>");
-            xmlFile.WriteLine("<xtitle>Random tag index (AAAA...TTTT)</xtitle>");
+            xmlFile.WriteLine("  <randomtagfrequence>");
+            xmlFile.WriteLine("    <title>Number of reads detected in each random tag</title>");
+            xmlFile.WriteLine("    <xtitle>Random tag index (AAAA...TTTT)</xtitle>");
             for (int i = 0; i < randomTagFilter.nReadsByRandomTag.Length; i++)
                 xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", barcodes.MakeRandomTag(i), randomTagFilter.nReadsByRandomTag[i]);
-            xmlFile.WriteLine("    </randomtagfrequence>");
-            xmlFile.WriteLine("    <nuniqueateachrandomtagcoverage>");
-            xmlFile.WriteLine("<title>Unique alignmentposition-barcodes as fn. of # random tags they occur in</title>");
-            xmlFile.WriteLine("<xtitle>Number of different random tags</xtitle>");
+            xmlFile.WriteLine("  </randomtagfrequence>");
+            xmlFile.WriteLine("  <nuniqueateachrandomtagcoverage>");
+            xmlFile.WriteLine("    <title>Unique alignmentposition-barcodes as fn. of # random tags they occur in</title>");
+            xmlFile.WriteLine("    <xtitle>Number of different random tags</xtitle>");
             for (int i = 0; i < randomTagFilter.nCasesPerRandomTagCount.Length; i++)
-                xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
-            xmlFile.WriteLine("    </nuniqueateachrandomtagcoverage>");
+                xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
+            xmlFile.WriteLine("  </nuniqueateachrandomtagcoverage>");
             WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules in each barcode as fn. of reads processed",
                                    sampledUniqueMoleculesByBcIdx);
-            xmlFile.WriteLine("    <moleculereadscountshistogram>");
-            xmlFile.WriteLine("<title>Distribution of number of times every unique molecule has been observed</title>");
-            xmlFile.WriteLine("<xtitle>Number of observations (reads)</xtitle>");
+            xmlFile.WriteLine("  <moleculereadscountshistogram>");
+            xmlFile.WriteLine("    <title>Distribution of number of times every unique molecule has been observed</title>");
+            xmlFile.WriteLine("    <xtitle>Number of observations (reads)</xtitle>");
             for (int i = 1; i < randomTagFilter.moleculeReadCountsHistogram.Length; i++)
-                xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.moleculeReadCountsHistogram[i]);
-            xmlFile.WriteLine("    </moleculereadscountshistogram>");
+                xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.moleculeReadCountsHistogram[i]);
+            xmlFile.WriteLine("  </moleculereadscountshistogram>");
         }
 
         private void WriteAccuMoleculesByBc(StreamWriter xmlFile, string tag, string title, Dictionary<int, List<int>> data)
@@ -1030,12 +1054,12 @@ namespace Linnarsson.Strt
         /// Write plate layout formatted statistics for hits by barcodes.
         /// </summary>
         /// <param name="fileNameBase"></param>
-        private void WriteBarcodeStats(string fileNameBase, StreamWriter xmlFile, ReadCounter readCounter)
+        private void WriteBarcodeStats(StreamWriter xmlFile, ReadCounter readCounter)
         {
             int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(Annotations.Genome);
             string[] trCounts = Array.ConvertAll<int, string>(Annotations.SampleBarcodeExpressedGenes(), (x => x.ToString()));
-            using (StreamWriter barcodeStats = new StreamWriter(fileNameBase + "_barcode_summary.tab"))
-            using (StreamWriter bCodeLines = new StreamWriter(fileNameBase + "_barcode_oneliners.tab"))
+            using (StreamWriter barcodeStats = new StreamWriter(OutputPathbase + "_barcode_summary.tab"))
+            using (StreamWriter bCodeLines = new StreamWriter(OutputPathbase + "_barcode_oneliners.tab"))
             {
                 string molTitle = (barcodes.HasRandomBarcodes) ? "molecules" : "reads";
                 barcodeStats.WriteLine("Total annotated {0}: {1}\n", molTitle, nAnnotatedMappings);
@@ -1240,9 +1264,9 @@ namespace Linnarsson.Strt
             return nAnnotatedMappings;
         }
 
-        private void WriteASExonDistributionHistogram(string fileNameBase)
+        private void WriteASExonDistributionHistogram()
         {
-            using (StreamWriter ASHistFile = new StreamWriter(fileNameBase + "_ASRPM_Histo.tab"))
+            using (StreamWriter ASHistFile = new StreamWriter(OutputPathbase + "_ASRPM_Histo.tab"))
             {
                 ASHistFile.WriteLine("#Distribution of Antisense RPM/bp transcript among all genes with any Antisense hit.");
                 ASHistFile.WriteLine("#BinStart\tCount");
@@ -1295,10 +1319,10 @@ namespace Linnarsson.Strt
                 median = DescriptiveStatistics.Median(ASPBPM);
         }
 
-        private void WriteRedundantExonHits(string fileNameBase)
+        private void WriteRedundantExonHits()
         {
             Dictionary<string, List<string>> byGene = new Dictionary<string, List<string>>();
-            using (StreamWriter redFile = new StreamWriter(fileNameBase + "_shared_hits.tab"))
+            using (StreamWriter redFile = new StreamWriter(OutputPathbase + "_shared_hits.tab"))
             {
                 redFile.WriteLine("#Reads\tGenomically overlapping transcripts competing for these reads");
                 foreach (string combName in overlappingGeneFeatures.Keys)
@@ -1317,7 +1341,7 @@ namespace Linnarsson.Strt
                     redFile.WriteLine("{0}\t{1}", sharedHits, tabbedNames);
                 }
             }
-            using (StreamWriter sharedFile = new StreamWriter(fileNameBase + "_shared_hits_by_gene.tab"))
+            using (StreamWriter sharedFile = new StreamWriter(OutputPathbase + "_shared_hits_by_gene.tab"))
             {
                 sharedFile.WriteLine("#Transcript\tMinHits\tMaxHits\tNon-unique hits in the difference, that also map to other overlapping transcripts/variants");
                 foreach (string gene in byGene.Keys)
@@ -1331,9 +1355,9 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void WriteSNPPositions(string fileNameBase, int[] genomeBarcodes)
+        private void WriteSNPPositions(int[] genomeBarcodes)
         {
-            using (StreamWriter snpFile = new StreamWriter(fileNameBase + "_SNPs.tab"))
+            using (StreamWriter snpFile = new StreamWriter(OutputPathbase + "_SNPs.tab"))
             {
                 char[] nts = new char[] { '0', 'A', 'C', 'G', 'T' };
                 int thres = (int)(SnpAnalyzer.thresholdFractionAltHitsForMixPos * 100);
@@ -1376,28 +1400,28 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void WriteSnps(string fileNameBase)
+        private void WriteSnps()
         {
             int[] genomeBarcodes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
-            string snpPath = fileNameBase + "_SNPs_by_barcode.tab";
+            string snpPath = OutputPathbase + "_SNPs_by_barcode.tab";
             SnpAnalyzer.WriteSnpsByBarcode(snpPath, barcodes, genomeBarcodes, Annotations.geneFeatures);
-            WriteSNPPositions(fileNameBase, genomeBarcodes);
+            WriteSNPPositions(genomeBarcodes);
         }
 
-        public void WriteWriggle(string fileNameBase)
+        public void WriteWriggle()
         {
-            WriteWiggleStrand(fileNameBase, '+');
-            WriteWiggleStrand(fileNameBase, '-');
+            WriteWiggleStrand('+');
+            WriteWiggleStrand('-');
         }
 
-        private void WriteWiggleStrand(string fileNameBase, char strand)
+        private void WriteWiggleStrand(char strand)
         {
             int averageReadLength = MappedTagItem.AverageReadLen;
             string strandString = (strand == '+') ? "fw" : "rev";
-            using (StreamWriter readWriter = (fileNameBase + "_" + strandString + "_byread.wig.gz").OpenWrite())
+            using (StreamWriter readWriter = (OutputPathbase + "_" + strandString + "_byread.wig.gz").OpenWrite())
             {
                 readWriter.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full",
-                    Path.GetFileNameWithoutExtension(fileNameBase) + "_byread", strand);
+                    Path.GetFileNameWithoutExtension(OutputPathbase) + "_byread", strand);
                 foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                 {
                     string chr = data.Key;
@@ -1407,10 +1431,10 @@ namespace Linnarsson.Strt
             }
             if (barcodes.HasRandomBarcodes)
             {
-                using (StreamWriter molWriter = (fileNameBase + "_" + strandString + "_bymolecule.wig.gz").OpenWrite())
+                using (StreamWriter molWriter = (OutputPathbase + "_" + strandString + "_bymolecule.wig.gz").OpenWrite())
                 {
                     molWriter.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full",
-                        Path.GetFileNameWithoutExtension(fileNameBase) + "_bymolecule", strand);
+                        Path.GetFileNameWithoutExtension(OutputPathbase) + "_bymolecule", strand);
                     foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                     {
                         string chr = data.Key;
@@ -1421,9 +1445,9 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void WriteHotspots(string file)
+        private void WriteHotspots()
         {
-            using (StreamWriter writer = new StreamWriter(file + "_hotspots.tab"))
+            using (StreamWriter writer = new StreamWriter(OutputPathbase + "_hotspots.tab"))
             {
                 writer.WriteLine("#Positions with local maximal read counts that lack gene or repeat annotation. Samples < 5 bp apart not shown.");
                 writer.WriteLine("#Chr\tPosition\tStrand\tCoverage");
@@ -1487,7 +1511,7 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void WriteHitProfilesByBarcode(string fileNameBase)
+        private void WriteHitProfilesByBarcode()
         {
             int trLenBinSize = 500;
             int trLenBinHalfWidth = trLenBinSize / 2;
@@ -1497,7 +1521,7 @@ namespace Linnarsson.Strt
             int trLenBinCount = 4;
             int nSections = 20;
             int averageReadLen = MappedTagItem.AverageReadLen;
-            using (StreamWriter profileFile = new StreamWriter(fileNameBase + "_5to3_profiles_by_barcode.tab"))
+            using (StreamWriter profileFile = new StreamWriter(OutputPathbase + "_5to3_profiles_by_barcode.tab"))
             {
                 profileFile.WriteLine("5'->3' read distributions by barcode.");
                 profileFile.WriteLine("\t\t\tRelative position within transcript.");

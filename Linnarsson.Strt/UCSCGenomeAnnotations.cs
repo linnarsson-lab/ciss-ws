@@ -423,6 +423,8 @@ namespace Linnarsson.Strt
 
         private string MakeExonNumberList(List<int> exonIdxs)
         {
+            if (exonIdxs.Count == 0)
+                return "-";
             StringBuilder sb = new StringBuilder();
             sb.Append((exonIdxs[0] + 1));
             for (int i = 1; i < exonIdxs.Count; i++)

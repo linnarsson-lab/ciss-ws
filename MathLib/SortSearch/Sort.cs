@@ -42,6 +42,42 @@ namespace Linnarsson.Mathematics
 			Permute(list, positions);
 		}
 
+        public static void QuickSort<T, U, V, W>(IList<T> array, IList<U> other1, IList<V> other2, IList<W> other3) where T : IComparable<T>
+        {
+            if (array.Count != other1.Count) throw new ArgumentException("Lists must be of equal length!");
+            if (array.Count != other2.Count) throw new ArgumentException("Lists must be of equal length!");
+            if (array.Count != other3.Count) throw new ArgumentException("Lists must be of equal length!");
+            QuickSort<T, U, V, W>(array, other1, other2, other3, 0, array.Count);
+        }
+        public static void QuickSort<T, U, V, W>(IList<T> array, IList<U> other1, IList<V> other2, IList<W> other3,
+                                                int start, int end) where T : IComparable<T>
+        {
+            if (end > start + 1)
+            {
+                T piv = array[start];
+                int left = start + 1, right = end;
+                while (left < right)
+                {
+                    if (array[left].CompareTo(piv) <= 0) left++;
+                    else
+                    {
+                        right--;
+                        swap<T>(array, left, right);
+                        swap<U>(other1, left, right);
+                        swap<V>(other2, left, right);
+                        swap<W>(other3, left, right);
+                    }
+                }
+                left--;
+                swap<T>(array, left, start);
+                swap<U>(other1, left, start);
+                swap<V>(other2, left, start);
+                swap<W>(other3, left, start);
+
+                QuickSort<T, U, V, W>(array, other1, other2, other3, start, left);
+                QuickSort<T, U, V, W>(array, other1, other2, other3, right, end);
+            }
+        }
 
 		public static void QuickSort<T, U, V>(IList<T> array, IList<U> other1, IList<V> other2) where T : IComparable<T>
 		{

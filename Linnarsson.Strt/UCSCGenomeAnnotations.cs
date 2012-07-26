@@ -62,6 +62,8 @@ namespace Linnarsson.Strt
             int nMarkedExons = 0, nMarkedGenes = 0, totalMarkedLen = 0, totalFullyExtended5Primes = 0, totalMaskedIntronicFeatures = 0;
             foreach (string chrId in GetChromosomeIds())
             {
+                if (StrtGenome.IsSyntheticChr(chrId))
+                    continue;
                 int nStrandExons, nStrandGenes, totalStrandLen, nFullyExtended5Primes, nMaskedIntronicFeatures;
                 AdjustEndAndMarkUpOverlapsOnChr(chrId, out nStrandExons, out nStrandGenes, out totalStrandLen,
                                           out nFullyExtended5Primes, out nMaskedIntronicFeatures);
@@ -284,7 +286,7 @@ namespace Linnarsson.Strt
         /// <returns>true if gf represents a new gene, and not an artificial splice gene.</returns>
         private bool RegisterGeneFeature(LocusFeature gf)
         {
-            if (genome.Annotation == gf.Chr)
+            if (genome.Annotation == gf.Chr) // I.e., we are on the splice chromosome
             { // Requires that real loci are registered before artificial splice loci.
                 if (lastLoadedGeneName == gf.Name)
                 {    // Link from artificial splice chromosome to real locus

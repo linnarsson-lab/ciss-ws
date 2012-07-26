@@ -57,89 +57,96 @@ namespace Linnarsson.Strt
  	        return ExonAnnotations.Keys.ToArray();
         }
 
-        private void MarkUpOverlappingFeatures()
+        private void AdjustEndsAndMarkUpOverlaps()
         {
-            int nMarkedExons = 0, nMarkedGenes = 0, totalMarkedLen = 0;
+            int nMarkedExons = 0, nMarkedGenes = 0, totalMarkedLen = 0, totalFullyExtended5Primes = 0, totalMaskedIntronicFeatures = 0;
             foreach (string chrId in GetChromosomeIds())
             {
-                int nStrandExons, nStrandGenes, totalStrandLen;
-                MarkUpOverlappingFeatures(chrId, '+', out nStrandExons, out nStrandGenes, out totalStrandLen);
+                int nStrandExons, nStrandGenes, totalStrandLen, nFullyExtended5Primes, nMaskedIntronicFeatures;
+                AdjustEndAndMarkUpOverlapsOnChr(chrId, out nStrandExons, out nStrandGenes, out totalStrandLen,
+                                          out nFullyExtended5Primes, out nMaskedIntronicFeatures);
                 nMarkedExons += nStrandExons;
                 nMarkedGenes += nStrandGenes;
                 totalMarkedLen += totalStrandLen;
-                MarkUpOverlappingFeatures(chrId, '-', out nStrandExons, out nStrandGenes, out totalStrandLen);
-                nMarkedExons += nStrandExons;
-                nMarkedGenes += nStrandGenes;
-                totalMarkedLen += totalStrandLen;
+                totalFullyExtended5Primes += nFullyExtended5Primes;
+                totalMaskedIntronicFeatures += nMaskedIntronicFeatures;
+
             }
-            Console.WriteLine("{0} overlapping anti-sense exons from {1} genes ({2} bps) were masked from statistics calculations.",
+            Console.WriteLine("{0} genes could have the 5' end extended with the full {1} bp.", totalFullyExtended5Primes, props.GeneFeature5PrimeExtension);
+            if (nMarkedExons > 0)
+                Console.WriteLine("{0} overlapping anti-sense exons from {1} genes ({2} bps) were masked from statistics calculations.",
                               nMarkedExons, nMarkedGenes, totalMarkedLen);
+            Console.WriteLine("{0} USTR/DSTR/INTR features were masked from statistics beacuse they overlap with an exon.", totalMaskedIntronicFeatures);
         }
 
-        private void MarkUpOverlappingFeatures(string chrId, char strand, out int nMaskedExons,
-                                              out int nMaskedGenes, out int totalMaskedLength)
+        private void AdjustEndAndMarkUpOverlapsOnChr(string chrId, out int nMaskedASExons, out int nMaskedASGenes,
+                             out int totalMaskedASLength, out int nFullyExtended5Primes, out int nMaskedIntronicFeatures)
         {
             int[] exonStarts;
             int[] exonEnds;
+            bool[] exonStrands;
             GeneFeature[] geneFeatureByExon;
-            CollectExonsOfAllGenes(chrId, strand, out exonStarts, out exonEnds, out geneFeatureByExon);
-            char revStrand = (strand == '+')? '-' : '+';
-            nMaskedGenes = 0; nMaskedExons = 0; totalMaskedLength = 0;
+            CollectExonsOfAllGenes(chrId, out exonStarts, out exonEnds, out exonStrands, out geneFeatureByExon);
+            nMaskedASGenes = 0; nMaskedASExons = 0; totalMaskedASLength = 0; nFullyExtended5Primes = 0; nMaskedIntronicFeatures = 0;
             foreach (GeneFeature gf in geneFeatures.Values)
             {
                 if (gf.Chr == chrId)
                 {
-                    gf.MaskInterExons(exonStarts, exonEnds, strand);
-                    if (gf.Strand == revStrand)
+                    int extension = gf.AdjustFlanksAnd5PrimeExtend(exonStarts, exonEnds, exonStrands);
+                    if (extension == props.GeneFeature5PrimeExtension) nFullyExtended5Primes++;
+                    nMaskedIntronicFeatures += gf.MaskOverlappingUSTRDSTRINTR(exonStarts, exonEnds);
+                    List<int> indicesOfMasked = gf.MaskOverlappingAntisenseExons(exonStarts, exonEnds, exonStrands);
+                    if (indicesOfMasked.Count > 0)
                     {
-                        List<int> indicesOfMasked = gf.MaskExons(exonStarts, exonEnds);
-                        if (indicesOfMasked.Count > 0)
+                        nMaskedASExons += indicesOfMasked.Count;
+                        nMaskedASGenes++;
+                        totalMaskedASLength += gf.GetTranscriptLength() - gf.GetNonMaskedTranscriptLength();
+                        foreach (int idx in indicesOfMasked)
                         {
-                            nMaskedExons += indicesOfMasked.Count;
-                            nMaskedGenes++;
-                            totalMaskedLength += gf.GetTranscriptLength() - gf.GetNonMaskedTranscriptLength();
-                            foreach (int idx in indicesOfMasked)
-                            {
-                                string[] names = new string[] { gf.Name, geneFeatureByExon[idx].Name };
-                                Array.Sort(names);
-                                string gfPair = string.Join("#", names);
-                                if (!antisensePairExons.ContainsKey(gfPair))
-                                    antisensePairExons[gfPair] = 1;
-                                else
-                                    antisensePairExons[gfPair]++;
-                            }
+                            string[] names = new string[] { gf.Name, geneFeatureByExon[idx].Name };
+                            Array.Sort(names);
+                            string gfPair = string.Join("#", names);
+                            if (!antisensePairExons.ContainsKey(gfPair))
+                                antisensePairExons[gfPair] = 1;
+                            else
+                                antisensePairExons[gfPair]++;
                         }
                     }
                 }
             }
         }
 
-        private void CollectExonsOfAllGenes(string chrId, char strand, out int[] exonStarts, out int[] exonEnds, out GeneFeature[] gFeatureByExon)
+        private void CollectExonsOfAllGenes(string chrId, out int[] exonStarts, out int[] exonEnds,
+                                             out bool[] exonStrands, out GeneFeature[] gFeatureByExon)
         {
             exonStarts = new int[30000];
             exonEnds = new int[30000];
+            exonStrands = new bool[30000];
             gFeatureByExon = new GeneFeature[30000];
             int exonIdx = 0;
             foreach (GeneFeature gf in geneFeatures.Values)
             {
-                if (gf.Chr == chrId && gf.Strand == strand)
+                if (gf.Chr == chrId)
                     for (int i = 0; i < gf.ExonCount; i++)
                     {
                         exonStarts[exonIdx] = gf.ExonStarts[i];
                         exonEnds[exonIdx] = gf.ExonEnds[i];
+                        exonStrands[exonIdx] = (gf.Strand == '+')? true : false;
                         gFeatureByExon[exonIdx] = gf;
                         if (++exonIdx >= exonStarts.Length)
                         {
                             Array.Resize(ref exonStarts, exonIdx + 20000);
                             Array.Resize(ref exonEnds, exonIdx + 20000);
+                            Array.Resize(ref exonStrands, exonIdx + 20000);
                             Array.Resize(ref gFeatureByExon, exonIdx + 20000);
                         }
                     }
             }
             Array.Resize(ref exonStarts, exonIdx);
             Array.Resize(ref exonEnds, exonIdx);
+            Array.Resize(ref exonStrands, exonIdx);
             Array.Resize(ref gFeatureByExon, exonIdx);
-            Sort.QuickSort(exonStarts, exonEnds, gFeatureByExon);
+            Sort.QuickSort(exonStarts, exonEnds, exonStrands, gFeatureByExon);
         }
 
         private void ReadChromsomeSequences(Dictionary<string, string> chrIdToFileMap)
@@ -242,7 +249,7 @@ namespace Linnarsson.Strt
         {
             string annotationsPath = genome.VerifyAnAnnotationPath();
             LoadAnnotationsFile(annotationsPath);
-            MarkUpOverlappingFeatures();
+            AdjustEndsAndMarkUpOverlaps();
             foreach (GeneFeature gf in geneFeatures.Values) 
                 AddGeneIntervals((GeneFeature)gf);
         }
@@ -268,8 +275,6 @@ namespace Linnarsson.Strt
                                                                          nTooLongFeatures, props.MaxFeatureLength);
             string exclV = noGeneVariants ? "main" : "complete";
             Console.WriteLine("{0} {1} gene variants will be mapped.{2}", nGeneFeatures, exclV, exlTxt);
-            if (props.GeneFeature5PrimeExtension > 0)
-                Console.WriteLine("5' end annotations of all genes were extended with " + props.GeneFeature5PrimeExtension + " bases.");
         }
 
         /// <summary>
@@ -295,23 +300,9 @@ namespace Linnarsson.Strt
                 lastLoadedGeneName = "";
                 return false;
             }
-            if (props.GeneFeature5PrimeExtension > 0 &&  !StrtGenome.IsSyntheticChr(gf.Chr))
-                ExtendGeneFeature5Prime((GeneFeature)gf);
             geneFeatures[gf.Name] = (GeneFeature)gf;
             lastLoadedGeneName = gf.Name;
             return true;
-        }
-
-        /// <summary>
-        /// Adjust the transcript 5' annotation position to cover any unknown upstream start sites
-        /// </summary>
-        /// <param name="gf">The gene to adjust</param>
-        private void ExtendGeneFeature5Prime(GeneFeature gf)
-        {
-            if (gf.Strand == '+')
-                gf.Start = Math.Max(gf.Start - Props.props.GeneFeature5PrimeExtension, 0);
-            else
-                gf.End = Math.Min(gf.End + Props.props.GeneFeature5PrimeExtension, ChromosomeLengths[gf.Chr]);
         }
 
         public override int GetTotalAnnotCounts(int annotType, bool excludeMasked)
@@ -414,7 +405,7 @@ namespace Linnarsson.Strt
                         string freeExonsAList = MakeExonNumberList(freeExonsA);
                         string freeExonsBList = MakeExonNumberList(freeExonsB);
                         file.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}", gfA.Chr, names[0], names[1], nCommonExons,
-                                       aHits, bHits, freeExonsAList, freeExonsBList, freeHitsA, freeHitsB);
+                                       aHits, bHits, freeExonsAList, freeHitsA, freeExonsBList, freeHitsB);
                         nPairs++;
                     }
                 }
@@ -440,7 +431,7 @@ namespace Linnarsson.Strt
             List<int> freeExons = new List<int>();
             for (int exonIdx = 0; exonIdx < gf.ExonCount; exonIdx++)
             {
-                if (!maskGf.ExonsWithin(gf.ExonStarts[exonIdx], gf.ExonEnds[exonIdx], 3))
+                if (!maskGf.ExonsWithin(gf.ExonStarts[exonIdx], gf.ExonEnds[exonIdx], 0))
                     freeExons.Add(exonIdx);
             }
             return freeExons;

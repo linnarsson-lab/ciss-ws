@@ -214,18 +214,26 @@ namespace PickSnpFromVarscan
     {
         static int Main(string[] args)
         {
-            if (args.Length != 5)
+            if (args.Length != 6)
             {
                 usage();
                 return (1);
             }
 
 
-
+            int length = int.Parse(args[5]);
             dbsnpfile DB = new dbsnpfile(args[1]);
 //            Console.WriteLine("\tFile: '" + args[1] + "' scanned for DBSNPs: " + DB.dbsnpcount + " found.");
-            string ToOut = "beta"; 
+            string ToOut = "count"; 
 //          ToOut - 'main', 'method' or 'beta'
+            if (ToOut.Equals("count"))
+            {
+                for (int i = 1; i <= length; i++)
+                {
+                Console.Write("sample_" + i + "\t");                 
+                }
+                // for beta
+            }
             if (ToOut.Equals("beta"))
             {
                 Console.Write("Beta_1\tBeta_2\tBeta_3\tBeta_4\tBeta_5\tBeta_6\tBeta_7\tBeta_8\tBeta_9\tBeta_10\tBeta_11\tBeta_12\tBeta_15\tBeta_17\tBeta_18\tBeta_19\tBeta_20\tBeta_21\tBeta_22\tBeta_24\tBeta_25\tBeta_26\tBeta_27\t");
@@ -386,7 +394,8 @@ namespace PickSnpFromVarscan
         static void usage()
         {
             Console.WriteLine(Environment.NewLine + "\tPickSnpFromVarscan Usage:");
-            Console.WriteLine("\tPickSnpFromVarscan <varscanoutput> <dbsnpoutput> <int min-readcount-sample> <int min-readcount-total> <design.gff>" + Environment.NewLine);
+            Console.WriteLine("\tPickSnpFromVarscan <varscanoutput> <dbsnpoutput> <int min-readcount-sample> <int min-readcount-total> <design.gff> <sample_count>" + Environment.NewLine);
+            Console.WriteLine("\tE.g: PickSnpFromVarscanCount.exe varscanout.snp dbout-file 30 100 design.gff 35" + Environment.NewLine);
         }
     }
 }

@@ -131,12 +131,14 @@ foreach ($allxml->childNodes AS $graphdata) {
          addGraph($graph);
          break;
        case "spikes":
-         $d = parseSingleCurve($graphdata, "/#[0-9]/");
-         $graph = plot_spikes($d["title"], $d["xvalues"], $d["yvalues"], $d["errors"]);
-	     addGraph($graph);
+         $d = parseSingleCurve($graphdata, "/#[T0-9]/");
+         if (count($d["xvalues"]) > 0) {
+           $graph = plot_spikes($d["title"], $d["xvalues"], $d["yvalues"], $d["errors"]);
+           addGraph($graph);
+         }
          break;
        case "spikedetection":
-         $d = parseCurves($graphdata, "/#[0-9]/");
+         $d = parseCurves($graphdata, "/#[T0-9]/");
          if (count($d["curves"][0]["xvalues"]) > 1) {
            $graph = plotLines("textlin", "log", $d["title"], $d["curves"], $d["xtitle"]);
            addGraph($graph);
@@ -187,8 +189,10 @@ foreach ($allxml->childNodes AS $graphdata) {
          break;
       case "hitprofile":
         $d = parseCurves($graphdata);
-        $graph = plotLines("linlin", "", $d["title"], $d["curves"], $d["xtitle"]);
-        addGraph($graph);
+        if (count($d["curves"]) > 0) {
+          $graph = plotLines("linlin", "", $d["title"], $d["curves"], $d["xtitle"]);
+          addGraph($graph);
+        }
         break;
       case "variationbyreads":
         $d = parseCurves($graphdata);

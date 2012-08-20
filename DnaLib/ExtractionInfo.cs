@@ -10,7 +10,7 @@ namespace Linnarsson.Dna
     public class LaneInfo
     {
         public string runId { get; set; }
-        public char laneNo { get; set; }
+        public string laneNo { get; set; }
         public string idxSeqFilter { get; set; }
 
         public string extractionTopFolder { get; set; }
@@ -40,7 +40,7 @@ namespace Linnarsson.Dna
         {
             this.readFilePath = readFilePath;
             this.runId = runId;
-            this.laneNo = laneNo;
+            this.laneNo = laneNo.ToString();
             this.idxSeqFilter = idxSeqFilter;
         }
 

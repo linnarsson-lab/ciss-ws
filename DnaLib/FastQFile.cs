@@ -67,11 +67,20 @@ namespace Linnarsson.Dna
 		public static IEnumerable<FastQRecord> Stream(string path, byte qualityScoreBase, bool includeNonPFRecords)
 		{
             var sr = new LineReader(path);
+            string line, seq, qs;
 			while(true)
 			{
-				string line = sr.ReadLine();
-                while (line == "")
+                try
+                {
+
                     line = sr.ReadLine();
+                    while (line == "")
+                        line = sr.ReadLine();
+                }
+                catch (OutOfMemoryException)
+                {
+                    throw new OutOfMemoryException("Out of memory reading " + path + ". Do you have wrong line endings in the file?");
+                }
 				if (line == null)
 				{
 					sr.Close();
@@ -80,10 +89,17 @@ namespace Linnarsson.Dna
 				if (line.StartsWith("@")) // Classical .fastq file
 				{
 					string hdr = line.Substring(1);
-					// Parse the sequence
-					string seq = sr.ReadLine();
-					sr.ReadLine();
-					string qs = sr.ReadLine();
+                    try
+                    {
+                        // Parse the sequence
+                        seq = sr.ReadLine();
+                        sr.ReadLine();
+                        qs = sr.ReadLine();
+                    }
+                    catch (OutOfMemoryException)
+                    {
+                        throw new OutOfMemoryException("Out of memory reading " + path + ". Do you have wrong line endings in the file?");
+                    }
                     if (qs == null)
                         yield break;
 					var fqr = new FastQRecord(hdr, seq, FastQRecord.QualitiesFromString(qs, qualityScoreBase));
@@ -106,12 +122,19 @@ namespace Linnarsson.Dna
                 else if (line.StartsWith(">")) // Standard Fasta file
                 {
                     string hdr = line.Substring(1);
-                    string seq = sr.ReadLine();
-                    string temp = sr.PeekLine();
-                    while (temp != null && !temp.StartsWith(">"))
+                    try
                     {
-                        seq += sr.ReadLine();
-                        temp = sr.PeekLine();
+                        seq = sr.ReadLine();
+                        string temp = sr.PeekLine();
+                        while (temp != null && !temp.StartsWith(">"))
+                        {
+                            seq += sr.ReadLine();
+                            temp = sr.PeekLine();
+                        }
+                    }
+                    catch (OutOfMemoryException)
+                    {
+                        throw new OutOfMemoryException("Out of memory reading " + path + ". Do you have wrong line endings in the file?");
                     }
                     byte[] fakeQs = new byte[seq.Length];
                     yield return new FastQRecord(hdr, seq, fakeQs);
@@ -122,14 +145,13 @@ namespace Linnarsson.Dna
 					if (items.Length == 11) // Illumina 'qseq.txt'
 					{
 						string hdr = items[0] + ":" + items[2] + ":" + items[3] + ":" + items[4] + ":" + items[5] + "#" + items[6] + "/" + items[7];
-						string seq = items[8].Replace('.', 'N');
+						seq = items[8].Replace('.', 'N');
 						string qual = items[9];
                         bool passedFilter = (items[10] == "1");
 						if (includeNonPFRecords || passedFilter)
 						{
 							var fqr = new FastQRecord(hdr, seq, FastQRecord.QualitiesFromString(qual, qualityScoreBase), passedFilter);
 							if(fqr.IsValid()) yield return fqr;
-							//else Console.WriteLine("Invalid record: " + line);
 						}
 					}
                     else // Illumina sequence.txt.gz

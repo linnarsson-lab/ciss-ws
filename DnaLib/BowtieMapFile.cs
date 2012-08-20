@@ -95,7 +95,14 @@ namespace Linnarsson.Dna
                         mrm.Init(combinedReadId, fields[4].Length, fields[5], strand, int.Parse(fields[6]));
                     }
                     mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);
-                    line = reader.ReadLine();
+                    try
+                    {
+                        line = reader.ReadLine();
+                    }
+                    catch (OutOfMemoryException)
+                    {
+                        throw new OutOfMemoryException("Out of memory reading " + file + ". Do you have wrong line endings in the file?");
+                    }
                 }
             }
             yield return mrm;
@@ -118,7 +125,14 @@ namespace Linnarsson.Dna
                     mrm.Init(fields[0], fields[4].Length, fields[5], strand, int.Parse(fields[6]));
                     mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);
                     yield return mrm;
-                    line = reader.ReadLine();
+                    try
+                    {
+                        line = reader.ReadLine();
+                    }
+                    catch (OutOfMemoryException)
+                    {
+                        throw new OutOfMemoryException("Out of memory reading " + file + ". Do you have wrong line endings in the file?");
+                    }
                 }
             }
             yield break;

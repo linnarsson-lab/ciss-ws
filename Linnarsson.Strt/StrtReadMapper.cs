@@ -506,7 +506,7 @@ namespace Linnarsson.Strt
 
         private void CreateBowtieMaps(StrtGenome genome, List<LaneInfo> extrInfos)
         {
-            string splcIndexVersion = GetSplcIndexVersion(genome);
+            string splcIndexVersion = GetSplcIndexVersion(genome, true);
             string splcIndexName = genome.GetBowtieSplcIndexName();
             if (splcIndexName == "")
                 throw new Exception("Can not find a Bowtie index corresponding to " + genome.Build + "/" + genome.Annotation);
@@ -568,12 +568,21 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="genome"></param>
         /// <returns></returns>
-        private static string GetSplcIndexVersion(StrtGenome genome)
+        private string GetSplcIndexVersion(StrtGenome genome, bool tryBuildIfAbsent)
         {
             string splcIndexVersion = PathHandler.GetSpliceIndexVersion(genome); // The current version including date
-            if (splcIndexVersion == "")
-                throw new Exception("Please use idx function to make a bowtie splice index with ReadLen=" + genome.ReadLen
-                                    + " or at least " + (genome.ReadLen - 5) + " for " + genome.GetBowtieMainIndexName());
+            if (splcIndexVersion == "" && tryBuildIfAbsent)
+            {
+                int actualReadLen = genome.ReadLen;
+                genome.ReadLen = genome.ReadLen - (genome.ReadLen % 4);
+                Console.WriteLine("Can not find a proper splice index - trying to build one with ReadLen=" + genome.ReadLen);
+                BuildJunctionsAndIndex(genome);
+                splcIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
+                if (splcIndexVersion == "")
+                    throw new Exception("Could not build the needed splice index with ReadLen between " + genome.ReadLen +
+                                        " and " + actualReadLen + " for " + genome.Build + " and " + genome.Annotation);
+                genome.ReadLen = actualReadLen;
+            }
             return splcIndexVersion;
         }
 
@@ -672,9 +681,9 @@ namespace Linnarsson.Strt
             return extractedFolder;
         }
 
-        private static List<string> SetExistingMapFilePaths(StrtGenome genome, List<LaneInfo> laneInfos)
+        private List<string> SetExistingMapFilePaths(StrtGenome genome, List<LaneInfo> laneInfos)
         {
-            string splcIndexVersion = GetSplcIndexVersion(genome);
+            string splcIndexVersion = GetSplcIndexVersion(genome, false);
             string mainPattern = string.Format("*_{0}.map", genome.GetBowtieMainIndexName());
             string splcPattern = string.Format("*_{0}chr{1}_*.map", genome.Build, genome.VarAnnot);
             List<string> allLanesMapFiles = new List<string>();

@@ -242,6 +242,8 @@ namespace Linnarsson.Strt
             foreach (string mapFilePath in bcMapFilePaths)
             {
                 currentMapFilePath = mapFilePath;
+                if (!File.Exists(mapFilePath))
+                    continue;
                 MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, barcodes);
                 if (mapFileReader == null)
                     throw new Exception("Unknown read map file type : " + mapFilePath);

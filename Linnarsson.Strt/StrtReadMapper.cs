@@ -293,7 +293,8 @@ namespace Linnarsson.Strt
                 laneInfo.extractionTopFolder = outputFolder;
                 GetExtractedFilePaths(outputFolder, laneInfo);
                 bool someExtractionMissing = !AllFilePathsExist(laneInfo.extractedFilePaths) || !File.Exists(laneInfo.summaryFilePath);
-                bool readFileIsNewer = DateTime.Compare(new FileInfo(laneInfo.readFilePath).LastWriteTime, new FileInfo(laneInfo.summaryFilePath).LastWriteTime) > 0;
+                bool readFileIsNewer = (File.Exists(laneInfo.summaryFilePath) && File.Exists(laneInfo.readFilePath)) &&
+                                       DateTime.Compare(new FileInfo(laneInfo.readFilePath).LastWriteTime, new FileInfo(laneInfo.summaryFilePath).LastWriteTime) > 0;
                 if (someExtractionMissing || readFileIsNewer)
                 {
                     ReadCounter readCounter = new ReadCounter();

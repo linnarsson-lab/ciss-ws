@@ -175,7 +175,7 @@ namespace CmdSilverBullet
                             argOffset = 1;
                             if (int.TryParse(args[argOffset], out readLen))
                                 argOffset++;
-                            genome = StrtGenome.GetGenome(args[argOffset++]);
+                            genome = StrtGenome.GetBaseGenome(args[argOffset++]);
                             if (args.Length > argOffset + 1)
                                 genome.Annotation = args[argOffset++];
                             genome.ReadLen = readLen;
@@ -187,7 +187,7 @@ namespace CmdSilverBullet
                             CheckArgs(args, 2, 6);
                             if (int.TryParse(args[argOffset], out readLen))
                                 argOffset++;
-                            genome = StrtGenome.GetGenome(args[argOffset++]);
+                            genome = StrtGenome.GetBaseGenome(args[argOffset++]);
                             if (args.Length > argOffset + 1)
                                 genome.Annotation = args[argOffset + 1];
                             genome.ReadLen = readLen;

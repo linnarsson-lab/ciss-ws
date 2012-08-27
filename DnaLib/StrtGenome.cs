@@ -238,6 +238,10 @@ namespace Linnarsson.Dna
         public static StrtGenome Chicken { get { return m_Chicken; } }
         public static StrtGenome[] GetGenomes()
         {
+            return GetGenomes(false);
+        }
+        public static StrtGenome[] GetGenomes(bool requireStrtFolder)
+        {
             List<StrtGenome> existingGenomes =  new List<StrtGenome> { Human, Mouse, Chicken };
             Dictionary<string, object> abbrevs = new Dictionary<string, object>() { {"hs", null} ,  {"mm", null}, {"gg", null } };
             string[] buildFolders = Directory.GetDirectories(Props.props.GenomesFolder);
@@ -252,19 +256,22 @@ namespace Linnarsson.Dna
                     abbrev = m.Groups[1].Value.ToLower();
                 abbrevs[abbrev] = null; // Used to only get latest version of each genome
                 string strtFolder = GetStrtGenomesFolder(build);
-                if (!Directory.Exists(strtFolder))
-                    continue;
-                string[] annFiles = Directory.GetFiles(strtFolder, AnnotationsBuildPattern);
-                foreach (string file in annFiles)
+                if (!requireStrtFolder)
+                    existingGenomes.Add(new StrtGenome { Abbrev = abbrev, Build = build, Annotation = "UCSC" });
+                else if (Directory.Exists(strtFolder))
                 {
-                    m = Regex.Match(file, AnnotationsBuildRegex);
-                    if (m.Success)
+                    string[] annFiles = Directory.GetFiles(strtFolder, AnnotationsBuildPattern);
+                    foreach (string file in annFiles)
                     {
-                        string annotation = m.Groups[1].Value;
-                        if (existingGenomes.Any(g => (g.Build == build && g.Annotation == annotation)))
-                            continue;
-                        StrtGenome existingGenome = new StrtGenome(build, abbrev, annotation);
-                        existingGenomes.Add(existingGenome);
+                        m = Regex.Match(file, AnnotationsBuildRegex);
+                        if (m.Success)
+                        {
+                            string annotation = m.Groups[1].Value;
+                            if (existingGenomes.Any(g => (g.Build == build && g.Annotation == annotation)))
+                                continue;
+                            StrtGenome existingGenome = new StrtGenome(build, abbrev, annotation);
+                            existingGenomes.Add(existingGenome);
+                        }
                     }
                 }
             }
@@ -286,6 +293,11 @@ namespace Linnarsson.Dna
             return s.ToList();
         }
 
+        public static StrtGenome GetBaseGenome(string speciesArg)
+        {
+            return GetGenome(speciesArg, Props.props.AnalyzeAllGeneVariants, "", false);
+        }
+
         /// <summary>
         /// Returns the StrtGenome corresponding to argument.
         /// Arg examples: "Mm", "Mm_a", "Hs_s", "hs_VEGA", "mm9_sVEGA", "mouse", "mm9"
@@ -301,9 +313,10 @@ namespace Linnarsson.Dna
         }
         public static StrtGenome GetGenome(string speciesArg, bool defaultGeneVariants)
         {
-            return GetGenome(speciesArg, defaultGeneVariants, "");
+            return GetGenome(speciesArg, defaultGeneVariants, "", true);
         }
-        public static StrtGenome GetGenome(string speciesArg, bool defaultGeneVariants, string defaultAnnotation)
+        public static StrtGenome GetGenome(string speciesArg, bool defaultGeneVariants, string defaultAnnotation,
+                                           bool requireStrtFolder)
         {
             string spOrBuild = speciesArg;
             string annotation = defaultAnnotation;
@@ -312,7 +325,7 @@ namespace Linnarsson.Dna
                 annotation = spOrBuild.Split('_')[1];
                 spOrBuild = spOrBuild.Split('_')[0];
             }
-            foreach (StrtGenome g in GetGenomes())
+            foreach (StrtGenome g in GetGenomes(requireStrtFolder))
                 if (spOrBuild.ToLower() == g.Abbrev || spOrBuild.ToLower() == g.Name.ToLower() ||
                     spOrBuild == g.LatinName || spOrBuild == g.Build)
                 {

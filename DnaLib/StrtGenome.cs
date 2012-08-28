@@ -261,8 +261,8 @@ namespace Linnarsson.Dna
                 abbrevs[abbrev] = null; // Used to only get latest version of each genome
                 string strtFolder = GetStrtGenomesFolder(build);
                 if (!requireStrtFolder)
-                    existingGenomes.Add(new StrtGenome { Abbrev = abbrev, Build = build, Annotation = "UCSC" });
-                else if (Directory.Exists(strtFolder))
+                    existingGenomes.Add(new StrtGenome(build, abbrev, "UCSC"));
+                if (Directory.Exists(strtFolder))
                 {
                     string[] annFiles = Directory.GetFiles(strtFolder, AnnotationsBuildPattern);
                     foreach (string file in annFiles)
@@ -273,8 +273,7 @@ namespace Linnarsson.Dna
                             string annotation = m.Groups[1].Value;
                             if (existingGenomes.Any(g => (g.Build == build && g.Annotation == annotation)))
                                 continue;
-                            StrtGenome existingGenome = new StrtGenome(build, abbrev, annotation);
-                            existingGenomes.Add(existingGenome);
+                            existingGenomes.Add(new StrtGenome(build, abbrev, annotation));
                         }
                     }
                 }

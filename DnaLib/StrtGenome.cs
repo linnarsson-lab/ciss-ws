@@ -13,6 +13,10 @@ namespace Linnarsson.Dna
         public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE", "ENSEMBL" };
         public static string chrCTRLId = "CTRL";
 
+        public override string ToString()
+        {
+            return "Abrev=" + Abbrev + " Build=" + Build + " VarAnnot=" + VarAnnot;
+        }
         public int ReadLen { get; set; }
 		public string Name { get; set; }
         public string Abbrev { get; set; }

@@ -115,7 +115,7 @@ namespace Linnarsson.Dna
                     if (trPos < 0 || trPos == trImgData.Length)
                     {
                         Console.WriteLine("ERROR: CompactGenePainter.GetTranscriptProfile(gf):");
-                        Console.WriteLine("  gene=" + gf.Name + " LocusStart=" + gf.LocusStart + " next trPos=" + trPos +
+                        Console.WriteLine("  gene=" + gf.Name + "Start=" + gf.Start + " End=" + gf.End + " LocusStart=" + gf.LocusStart + " next trPos=" + trPos +
                                            " trLen=" + gf.GetTranscriptLength() + " next chrPos=" + p + " exonIdx=" + i);
                         trPos -= trDir;
                     }

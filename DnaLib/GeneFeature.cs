@@ -642,18 +642,16 @@ namespace Linnarsson.Dna
         /// <param name="sortedMaskEnds">ends of all gene's exons on chr</param>
         /// <param name="sortedMaskStrands">strands of all gene's exons. true = '+', false = '-'</param>
         /// <remarks>Actual length of 5' extension</remarks>
-        public int AdjustFlanksAnd5PrimeExtend(int[] sortedMaskStarts, int[] sortedMaskEnds, bool[] sortedMaskStrands)
+        public int AdjustFlanksAnd5PrimeExtend(int[] sortedMaskStarts, bool[] startSortedMaskStrands, int[] sortedMaskEnds, bool[] endSortedMaskStrands)
         {
             int extension = 0;
             int idx;
             bool strand = (Strand == '+') ? true : false;
             bool strandMatters = (Props.props.DirectionalReads)? true : false;
-            //int closestEndBefore = Array.FindLast(sortedMaskEnds, (p => p < Start));
-            //LeftFlankLength = (closestEndBefore > 0) ? Math.Min(LocusFlankLength, Start - closestEndBefore) : LocusFlankLength;
             idx = Array.BinarySearch(sortedMaskEnds, Start - 1);
             if (idx < 0) idx = ~idx;
             idx -= 1;
-            while (idx >= 0 && strandMatters && sortedMaskStrands[idx] != strand)
+            while (idx >= 0 && strandMatters && endSortedMaskStrands[idx] != strand)
                 idx--;
             if (idx >= 0)
             {
@@ -662,18 +660,16 @@ namespace Linnarsson.Dna
                 {
                     int newStart = Math.Max(Start - Props.props.GeneFeature5PrimeExtension, sortedMaskEnds[idx] + 1);
                     extension = Start - newStart;
-                    Start = newStart;
                     //if (extension < Props.props.GeneFeature5PrimeExtension)
-                    //    Console.WriteLine("Adjusted extension on {0}. newStart={1}. Competing exon={2}-{3}",
-                    //                 Name, newStart, sortedMaskStarts[idx], sortedMaskEnds[idx]);
+                    //    Console.WriteLine("Adjusting extension on {0}: oldStart={1} newStart={2}. Competing End={3} newLeftFlankLength={4}",
+                    //                 Name, Start, newStart, sortedMaskEnds[idx], LeftFlankLength);
+                    Start = newStart;
                 }
             }
             idx = Array.BinarySearch(sortedMaskStarts, End + 1);
             if (idx < 0) idx = ~idx;
-            while (idx < sortedMaskStarts.Length && strandMatters && sortedMaskStrands[idx] != strand)
+            while (idx < sortedMaskStarts.Length && strandMatters && startSortedMaskStrands[idx] != strand)
                 idx++;
-            //int closestStartAfter = Array.Find(sortedMaskStarts, (p => p > End));
-            //RightFlankLength = (closestStartAfter > 0) ? Math.Min(LocusFlankLength, closestStartAfter - End) : LocusFlankLength;
             if (idx < sortedMaskStarts.Length)
             {
                 RightFlankLength = Math.Min(LocusFlankLength, sortedMaskStarts[idx] - End);
@@ -682,9 +678,6 @@ namespace Linnarsson.Dna
                     int newEnd = Math.Min(End + Props.props.GeneFeature5PrimeExtension, sortedMaskStarts[idx] - 1);
                     extension = newEnd - End;
                     End = newEnd;
-                    //if (extension < Props.props.GeneFeature5PrimeExtension)
-                    //    Console.WriteLine("Adjusted extension on {0}. newEnd={1}. Competing exon={2}-{3}",
-                    //                 Name, newEnd, sortedMaskStarts[idx], sortedMaskEnds[idx]);
                 }
             }
             return extension;

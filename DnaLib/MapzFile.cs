@@ -44,10 +44,12 @@ namespace Linnarsson.Dna
         private string outfile;
         private BinaryWriter writer;
         private bool hasCommonBarcode;
+        private Barcodes barcodes;
 
-        public MapzFileWriter(string outfile, bool hasCommonBarcode)
+        public MapzFileWriter(string outfile, bool hasCommonBarcode, Barcodes barcodes)
         {
             this.outfile = outfile;
+            this.barcodes = barcodes;
             this.hasCommonBarcode = hasCommonBarcode;
         }
 
@@ -57,8 +59,10 @@ namespace Linnarsson.Dna
         /// 0       File type and version string: MapzV001
         /// 8       hasCommonBarcode (bool)
         /// 9       common barcode or 0 (byte)
-        /// 10      length of readId head (byte)
-        /// 11      readId head (h bytes)
+        /// 10      length b of barcode set name (byte)
+        /// 11      barcode set name (b bytes)
+        /// 11+b    length of readId head (byte)
+        /// 12+b    readId head (h bytes)
         /// --- for each following read: ---
         /// 0       T number (ushort)
         /// 2       C number (uint)
@@ -89,6 +93,8 @@ namespace Linnarsson.Dna
                 writer.Write(FileType);
                 writer.Write(hasCommonBarcode);
                 writer.Write(hasCommonBarcode? (byte)mrms.BarcodeIdx : (byte)0);
+                writer.Write((byte)barcodes.Name.Length);
+                writer.Write(barcodes.Name);
                 writer.Write((byte)m.Groups[0].Length);
                 writer.Write(m.Groups[0].Value);
             }
@@ -150,14 +156,15 @@ namespace Linnarsson.Dna
 
         private MultiReadMappings item;
 
-        public MapzFileReader(string infile, Barcodes barcodes)
+        public MapzFileReader(string infile)
         {
-            this.barcodes = barcodes;
             reader = new BinaryReader(File.Open(infile, FileMode.Open), Encoding.UTF8);
             if (!string.Equals(reader.ReadChars(7).ToString(), MapzFileWriter.FileType))
                 throw new IOException("Input file is not a " + MapzFileWriter.FileType + " file.");
             hasCommonBarcodes = reader.ReadBoolean();
             commonBarcodeIdx = reader.ReadByte();
+            string bcName = reader.ReadChars(reader.ReadByte()).ToString();
+            barcodes = Barcodes.GetBarcodes(bcName);
             idHead = reader.ReadChars(reader.ReadByte()).ToString();
             item = new MultiReadMappings(100, barcodes);
         }

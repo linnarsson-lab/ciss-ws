@@ -284,6 +284,26 @@ namespace Linnarsson.Dna
             return "MultiReadMapping: Chr=" + Chr + Strand + " Pos=" + Position + " HitMidPos=" + HitMidPos + " Mismatches=" + Mismatches;
         }
 
+        public int NMismatches { get { return Mismatches.Split(',').Length; } }
+        public byte[] CodedMismatches
+        {
+            get
+            {
+                string[] snps = Mismatches.Split(',');
+                byte[] codedMismatches = new byte[snps.Length * 2];
+                for (int i = 0; i < snps.Length; i++)
+                {
+                    int p = snps[i].IndexOf(':');
+                    byte relPosInReadDir = byte.Parse(snps[i].Substring(0, p));
+                    byte codedRefNt = IupacEncoding.FromIupac(snps[i][p + 1]);
+                    byte codedNt = IupacEncoding.FromIupac(snps[i][p + 3]);
+                    codedMismatches[i * 2] = relPosInReadDir;
+                    codedMismatches[i * 2 + 1] = (byte)((codedRefNt << 4) | codedNt);
+                }
+                return codedMismatches;
+            }
+        }
+
         public IEnumerable<Mismatch> IterMismatches(int minPhredAsciiVal)
         {
             if (!HasMismatches) yield break;
@@ -323,11 +343,11 @@ namespace Linnarsson.Dna
         public int BarcodeIdx;
         public int RandomBcIdx = 0;
         public int SeqLen;
-        private string qualityString;
-        private char qualityDir;
+        public string QualityString { get; private set; }
+        public char QualityDir { get; private set; }
         public char GetQuality(int relPosInRead)
         {
-            return qualityString[(qualityDir == '+')? relPosInRead : qualityString.Length - 1 - relPosInRead];
+            return QualityString[(QualityDir == '+')? relPosInRead : QualityString.Length - 1 - relPosInRead];
         }
         /// <summary>
         /// 
@@ -336,8 +356,8 @@ namespace Linnarsson.Dna
         /// <returns>If outside read, returns the lowest possible ascii value in phred strings: '!'</returns>
         public char GetQualityByAlignmentPos(int relPosInAlignment)
         {
-            if (relPosInAlignment < 0 || relPosInAlignment >= qualityString.Length) return '!';
-            return qualityString[relPosInAlignment];
+            if (relPosInAlignment < 0 || relPosInAlignment >= QualityString.Length) return '!';
+            return QualityString[relPosInAlignment];
         }
         public int AltMappings;
         public bool HasAltMappings { get { return AltMappings >= 1 || NMappings > 1; } }
@@ -368,9 +388,10 @@ namespace Linnarsson.Dna
             SeqLen = seqLen;
             AltMappings = altMappings;
             NMappings = 0;
-            this.qualityDir = qualityDirection;
-            this.qualityString = qualityString;
+            this.QualityDir = qualityDirection;
+            this.QualityString = qualityString;
         }
+
         public void AddMapping(string chr, char strand, int pos, string mismatches)
         {
             if (NMappings < Mappings.Length)
@@ -383,6 +404,20 @@ namespace Linnarsson.Dna
                 NMappings++;
             }
         }
+        internal void AddMapping(string chrId, char strand, int pos, byte[] codedMismatches)
+        {
+            if (NMappings < Mappings.Length)
+            {
+                int idx = NMappings;
+                Mappings[idx].Chr = chrId;
+                Mappings[idx].Strand = strand;
+                Mappings[idx].Position = pos;
+                Mappings[idx].Mismatches = "";
+                NMappings++;
+                throw new NotImplementedException("Need to parse coded mismatches in MultiReadMappings.AddMapping()");
+            }
+        }
+
         public MultiReadMapping this[int idx]
         {
             get { return (idx < NMappings)? Mappings[idx] : null; }

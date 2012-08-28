@@ -97,13 +97,13 @@ namespace Linnarsson.Dna
             writer.Write((ushort)mrms.RandomBcIdx);
             if (!hasCommonBarcode)
                 writer.Write((byte)mrms.BarcodeIdx);
-            int qDirBit = (mrms.qualityDir == '+') ? 128 : 0;
-            if (mrms.qualityString.Length > 127)
+            int qDirBit = (mrms.QualityDir == '+') ? 128 : 0;
+            if (mrms.QualityString.Length > 127)
                 throw new FormatException("Can not compress sequences > 127 nts");
             writer.Write((byte)(qDirBit | mrms.SeqLen));
-            writer.Write(mrms.qualityString);
+            writer.Write(mrms.QualityString);
             writer.Write((short)mrms.AltMappings);
-            foreach (MultiReadMapping mrm in mrms.Mappings)
+            foreach (MultiReadMapping mrm in mrms.IterMappings())
             {
                 int chrCode = ChrCodes.ToCode(mrm.Chr);
                 if (chrCode > -1)

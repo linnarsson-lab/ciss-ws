@@ -413,7 +413,7 @@ namespace Linnarsson.Strt
             projDescr.annotationVersion = ANNOTATION_VERSION;
             foreach (string speciesArg in speciesArgs)
             {
-                StrtGenome genome = StrtGenome.GetGenome(speciesArg, projDescr.analyzeVariants, projDescr.defaultBuild);
+                StrtGenome genome = StrtGenome.GetGenome(speciesArg, projDescr.analyzeVariants, projDescr.defaultBuild, true);
                 genome.ReadLen = GetReadLen(projDescr);
                 SetAvailableBowtieIndexVersion(projDescr, genome);
                 logWriter.WriteLine("{0} Mapping to {1}...", DateTime.Now, genome.GetBowtieSplcIndexName()); logWriter.Flush();
@@ -609,11 +609,13 @@ namespace Linnarsson.Strt
                 string crapMaxPath = Path.Combine(Path.GetDirectoryName(outputFqUnmappedReadPath), "bowtie_maxM_reads_map.temp");
                 unmappedArg = string.Format(" --un {0} --max {1}", outputFqUnmappedReadPath, crapMaxPath);
             }
-            string arguments = String.Format("{0} {1} {2} {3} \"{4}\" \"{5}\"", props.BowtieOptions, threadArg,
+            string opts = props.BowtieOptionPattern.Replace("MaxAlignmentMismatches", 
+                        props.MaxAlignmentMismatches.ToString()).Replace("QualityScoreBase", props.QualityScoreBase.ToString());
+            string arguments = String.Format("{0} {1} {2} {3} \"{4}\" \"{5}\"", opts, threadArg,
                                                 unmappedArg, bowtieIndex, inputFqReadPath, outputPath);
-            CmdCaller cc = new CmdCaller("bowtie", arguments);
             StreamWriter logWriter = new StreamWriter(bowtieLogFile, true);
-            logWriter.WriteLine("--- {0} on {1} ---", bowtieIndex, inputFqReadPath);
+            logWriter.WriteLine("--- bowtie {0} ---", arguments); logWriter.Flush();
+            CmdCaller cc = new CmdCaller("bowtie", arguments);
             logWriter.WriteLine(cc.StdError);
             logWriter.Close();
             if (cc.ExitCode != 0)

@@ -112,6 +112,13 @@ namespace Linnarsson.Dna
             {
                 for (int p = gf.ExonStarts[i]; p <= gf.ExonEnds[i]; p++)
                 {
+                    if (trPos < 0 || trPos == trImgData.Length)
+                    {
+                        Console.WriteLine("ERROR: CompactGenePainter.GetTranscriptProfile(gf):");
+                        Console.WriteLine("  gene=" + gf.Name + " LocusStart=" + gf.LocusStart + " next trPos=" + trPos +
+                                           " trLen=" + gf.GetTranscriptLength() + " next chrPos=" + p + " exonIdx=" + i);
+                        trPos -= trDir;
+                    }
                     trImgData[trPos] = locusProfile[p - gf.LocusStart];
                     trPos += trDir;
                 }

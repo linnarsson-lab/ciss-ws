@@ -106,6 +106,7 @@
     <Compile Include="HotspotFinder.cs" />
     <Compile Include="AnnotationReader.cs" />
     <Compile Include="IFeature.cs" />
+    <Compile Include="MapzFile.cs" />
     <Compile Include="MarkResult.cs" />
     <Compile Include="PathHandler.cs" />
     <Compile Include="PhrapAceFile.cs" />

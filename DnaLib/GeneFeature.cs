@@ -617,7 +617,7 @@ namespace Linnarsson.Dna
         public override string ToString()
         {
             StringBuilder s = new StringBuilder();
-            s.AppendFormat("\t\t{0}", Name);
+            s.AppendFormat("{0}\t\t", Name);
             string chrName = (Chr == StrtGenome.chrCTRLId)? StrtGenome.chrCTRLId : "chr" + Chr;
             s.AppendFormat("{0}\t", chrName);
             s.AppendFormat("{0}\t", Strand);

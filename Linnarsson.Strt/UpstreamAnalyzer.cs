@@ -49,9 +49,9 @@ namespace Linnarsson.Strt
         }
         private void CheckSeqUpstreamTSSite(string chr, char strand, int pos, int readLen, int currentBcIdx, int count)
         {
-            if (StrtGenome.IsSyntheticChr(chr)) return;
-            int l = barcodes.GetLengthOfBarcodesWithTSSeq();
+            if (StrtGenome.IsSyntheticChr(chr) || !Annotations.HasChromosome(chr)) return;
             DnaSequence chrSeq = Annotations.ChromosomeSequences[chr];
+            int l = barcodes.GetLengthOfBarcodesWithTSSeq();
             DnaSequence upSeq = null;
             if (strand == '+')
             {

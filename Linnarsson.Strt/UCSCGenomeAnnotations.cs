@@ -84,20 +84,23 @@ namespace Linnarsson.Strt
         private void AdjustEndAndMarkUpOverlapsOnChr(string chrId, out int nMaskedASExons, out int nMaskedASGenes,
                              out int totalMaskedASLength, out int nFullyExtended5Primes, out int nMaskedIntronicFeatures)
         {
-            int[] exonStarts;
+            int[] sortedExonStarts;
             int[] exonEnds;
-            bool[] exonStrands;
+            bool[] startSortedExonStrands;
             GeneFeature[] geneFeatureByExon;
-            CollectExonsOfAllGenes(chrId, out exonStarts, out exonEnds, out exonStrands, out geneFeatureByExon);
+            CollectExonsOfAllGenes(chrId, out sortedExonStarts, out exonEnds, out startSortedExonStrands, out geneFeatureByExon);
+            int[] sortedExonEnds = (int[])exonEnds.Clone();
+            bool[] endSortedExonStrands = (bool[])startSortedExonStrands.Clone();
+            Sort.QuickSort(sortedExonEnds, endSortedExonStrands);
             nMaskedASGenes = 0; nMaskedASExons = 0; totalMaskedASLength = 0; nFullyExtended5Primes = 0; nMaskedIntronicFeatures = 0;
             foreach (GeneFeature gf in geneFeatures.Values)
             {
                 if (gf.Chr == chrId)
                 {
-                    int extension = gf.AdjustFlanksAnd5PrimeExtend(exonStarts, exonEnds, exonStrands);
+                    int extension = gf.AdjustFlanksAnd5PrimeExtend(sortedExonStarts, startSortedExonStrands, exonEnds, endSortedExonStrands);
                     if (extension == props.GeneFeature5PrimeExtension) nFullyExtended5Primes++;
-                    nMaskedIntronicFeatures += gf.MaskOverlappingUSTRDSTRINTR(exonStarts, exonEnds);
-                    List<int> indicesOfMasked = gf.MaskOverlappingAntisenseExons(exonStarts, exonEnds, exonStrands);
+                    nMaskedIntronicFeatures += gf.MaskOverlappingUSTRDSTRINTR(sortedExonStarts, exonEnds);
+                    List<int> indicesOfMasked = gf.MaskOverlappingAntisenseExons(sortedExonStarts, exonEnds, startSortedExonStrands);
                     if (indicesOfMasked.Count > 0)
                     {
                         nMaskedASExons += indicesOfMasked.Count;
@@ -118,10 +121,18 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void CollectExonsOfAllGenes(string chrId, out int[] exonStarts, out int[] exonEnds,
+        /// <summary>
+        /// All four arrays will come out sorted on the exon Starts
+        /// </summary>
+        /// <param name="chrId"></param>
+        /// <param name="sortedExonStarts"></param>
+        /// <param name="exonEnds"></param>
+        /// <param name="exonStrands"></param>
+        /// <param name="gFeatureByExon"></param>
+        private void CollectExonsOfAllGenes(string chrId, out int[] sortedExonStarts, out int[] exonEnds,
                                              out bool[] exonStrands, out GeneFeature[] gFeatureByExon)
         {
-            exonStarts = new int[30000];
+            sortedExonStarts = new int[30000];
             exonEnds = new int[30000];
             exonStrands = new bool[30000];
             gFeatureByExon = new GeneFeature[30000];
@@ -131,24 +142,24 @@ namespace Linnarsson.Strt
                 if (gf.Chr == chrId)
                     for (int i = 0; i < gf.ExonCount; i++)
                     {
-                        exonStarts[exonIdx] = gf.ExonStarts[i];
+                        sortedExonStarts[exonIdx] = gf.ExonStarts[i];
                         exonEnds[exonIdx] = gf.ExonEnds[i];
                         exonStrands[exonIdx] = (gf.Strand == '+')? true : false;
                         gFeatureByExon[exonIdx] = gf;
-                        if (++exonIdx >= exonStarts.Length)
+                        if (++exonIdx >= sortedExonStarts.Length)
                         {
-                            Array.Resize(ref exonStarts, exonIdx + 20000);
+                            Array.Resize(ref sortedExonStarts, exonIdx + 20000);
                             Array.Resize(ref exonEnds, exonIdx + 20000);
                             Array.Resize(ref exonStrands, exonIdx + 20000);
                             Array.Resize(ref gFeatureByExon, exonIdx + 20000);
                         }
                     }
             }
-            Array.Resize(ref exonStarts, exonIdx);
+            Array.Resize(ref sortedExonStarts, exonIdx);
             Array.Resize(ref exonEnds, exonIdx);
             Array.Resize(ref exonStrands, exonIdx);
             Array.Resize(ref gFeatureByExon, exonIdx);
-            Sort.QuickSort(exonStarts, exonEnds, exonStrands, gFeatureByExon);
+            Sort.QuickSort(sortedExonStarts, exonEnds, exonStrands, gFeatureByExon);
         }
 
         private void ReadChromsomeSequences(Dictionary<string, string> chrIdToFileMap)
@@ -157,24 +168,25 @@ namespace Linnarsson.Strt
             if (selectedChrIds == null || selectedChrIds[0] == "")
                 selectedChrIds = chrIdToFileMap.Keys.ToArray();
             Console.Write("Reading {0} chromosomes...", selectedChrIds.Length);
-            foreach (string chrId in selectedChrIds)
+            foreach (string chrId in chrIdToFileMap.Keys)
             {
                 Console.Write(".{0}", chrId);
                 if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
                 try
                 {
-                    if (needChromosomeSequences)
+                    int chrLen;
+                    if (needChromosomeSequences && Array.IndexOf(selectedChrIds, chrId) >= 0)
                     {
                         DnaSequence chrSeq = readChromosomeFile(chrIdToFileMap[chrId]);
-                        ChromosomeLengths.Add(chrId, (int)chrSeq.Count);
+                        chrLen = (int)chrSeq.Count;
                         ChromosomeSequences.Add(chrId, chrSeq);
                     }
                     else
                     {
                         double fileLen = new FileInfo(chrIdToFileMap[chrId]).Length;
-                        int chrLen = (int)(fileLen * 60.0 / 61.0); // Get an approximate length by removing \n:s
-                        ChromosomeLengths.Add(chrId, chrLen);
+                        chrLen = (int)(fileLen * 80.0 / 81.0); // Get an approximate length by removing \n:s
                     }
+                    ChromosomeLengths.Add(chrId, chrLen);
                 }
                 catch (Exception e)
                 {

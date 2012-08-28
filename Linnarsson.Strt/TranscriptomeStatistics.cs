@@ -1427,7 +1427,7 @@ namespace Linnarsson.Strt
                 foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                 {
                     string chr = data.Key;
-                    if (!StrtGenome.IsSyntheticChr(chr))
+                    if (!StrtGenome.IsSyntheticChr(chr) && Annotations.ChromosomeLengths.ContainsKey(chr))
                         data.Value.GetWiggle(strand).WriteReadWiggle(readWriter, chr, strand, averageReadLength, Annotations.ChromosomeLengths[chr]);
                 }
             }
@@ -1440,7 +1440,7 @@ namespace Linnarsson.Strt
                     foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                     {
                         string chr = data.Key;
-                        if (!StrtGenome.IsSyntheticChr(chr))
+                        if (!StrtGenome.IsSyntheticChr(chr) && Annotations.ChromosomeLengths.ContainsKey(chr))
                             data.Value.GetWiggle(strand).WriteMolWiggle(molWriter, chr, strand, averageReadLength, Annotations.ChromosomeLengths[chr]);
                     }
                 }

@@ -31,7 +31,7 @@ class DbAppModelIlluminaRuns extends JModel {
                LEFT JOIN #__aaasequencingbatch ON #__aaalane.#__aaasequencingbatchid = #__aaasequencingbatch.id 
                LEFT JOIN #__aaaproject p ON p.id = #__aaasequencingbatch.#__aaaprojectid 
                GROUP BY r.id 
-               ORDER BY illuminarunid DESC ';
+               ORDER BY rundate DESC ';
     $db->setQuery($query);
 //    $statement = $db->loadResult();
     $item = $db->loadObjectList();

@@ -231,7 +231,21 @@ namespace Linnarsson.Dna
 			}
 			return quals;
 		}
-
+		/// <summary>
+		/// Make a quality string from an array of phred scores
+		/// </summary>
+		/// <param name="qualities"></param>
+		/// <param name="qualityScoreBase"></param>
+		/// <returns></returns>
+		public static string StringFromQualities(byte[] qualities, byte qualityScoreBase)
+		{
+			StringBuilder result = new StringBuilder(qualities.Length);
+			for (int i = 0; i < qualities.Length; i++)
+			{
+				result.Append((char)qualityScoreBase + qualities[i]);
+			}
+			return result.ToString();
+		}
 		/// <summary>
 		/// Convert a Phred quality score to an error probability
 		/// See http://en.wikipedia.org/wiki/Phred_quality_score

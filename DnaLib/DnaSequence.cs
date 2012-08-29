@@ -711,7 +711,7 @@ namespace Linnarsson.Dna
 
 	/// <summary>
 	/// Represents a DNA sequence stored in uncompressed form, allowing degeneracy. Each nucleotide position
-	/// is stored as a four-bit pattern in the order ACGT. For example, A is 1000, G is 0010 and N is 1111.
+	/// is stored as a four-bit pattern in the order ACGT. For example, A is 0001, G is 0100 and N is 1111.
 	/// The internal storage is a byte array, where only the lower four bits are used.
 	/// The DnaSequence can grow as needed using the Append method, and the internal storage will double
 	/// when necessary. This class is not suitable for sequences longer than about 2 Gbp (use LongDnaSequence instead), 

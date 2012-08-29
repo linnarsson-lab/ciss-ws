@@ -140,15 +140,15 @@ if (count($this->seqbatches) != 0) {
                 <th></th>
                 <th></th>
                 <th>DBId</th>
-                <th>#L&nbsp;" . JHTML::tooltip('Number of lanes in analysis.') . "</th>
-                <th>Status&nbsp;</th>
-                <th>Extr&nbsp;" . JHTML::tooltip('Version of sequence filter and barcoded extraction software used for processing') . "&nbsp;</th>
-                <th>Annot&nbsp;" . JHTML::tooltip('Version of feature annotation software used for processing') . "&nbsp;</th>
-                <th>Gnm&nbsp;</th>
-                <th>DBVer&nbsp;" . JHTML::tooltip('Source and creation date of genome and annotation database. Source may change after analysis if unavailable at processing time') . "&nbsp;</th>
-                <th>Type&nbsp;" . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "&nbsp;</th>
+                <th><nobr>#L&nbsp;" . JHTML::tooltip('Number of lanes in analysis.') . "</nobr></th>
+                <th><nobr>Status&nbsp;</nobr></th>
+                <th><nobr>Extr&nbsp;" . JHTML::tooltip('Version of sequence filter and barcoded extraction software used for processing') . "&nbsp;</nobr></th>
+                <th><nobr>Annot&nbsp;" . JHTML::tooltip('Version of feature annotation software used for processing') . "&nbsp;</nobr></th>
+                <th><nobr>Gnm&nbsp;</nobr></th>
+                <th><nobr>DBVer&nbsp;" . JHTML::tooltip('Source and creation date of genome and annotation database. Source may change after analysis if unavailable at processing time') . "&nbsp;</nobr></th>
+                <th><nobr>Type&nbsp;" . JHTML::tooltip('all=known transcript variants analyzed separately, single=one value for each locus') . "&nbsp;</nobr></th>
                 <th>Rpkm&nbsp;</th>
-                <th>ResultsPath&nbsp;</th>
+                <th><nobr>ResultsPath&nbsp;</nobr></th>
                 <th>Rpt@</th>
                 <th>Cmnt</th>
               </tr>";

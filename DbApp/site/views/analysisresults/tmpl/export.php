@@ -41,7 +41,7 @@ require_once ('strt2Qsingle.php');
         $gnm = (preg_match('/^v[0-9].*/', $gnms[1]) == 0 || $gnms[1] != 'TruSeq')? $gnms[1] : $gnms[2];
       }
       $outstring = "<tr><td colspan=7 bgcolor=yellow>Genome <b>" . $gnm . "</b> Variables <b>" . $out[0][2] . "</b></td></tr>_CUT_";
-      $outstring .= "<tr><th>" . $qlucoreFile . "</th>";
+      $outstring .= "<tr><th>" . $sampleId . "</th>";
       $outstring .= "<td align=center><input type=checkbox name=file" . $count . " value='" . $filePath . "/" . $qlucoreFile . "' /></td>";
       $outstring .= "<td><a href=index.php?option=com_dbapp&view=analysisresults&layout=rawdownload&analysisid=" . $result->id . "  \"target=_blank\" >" . $dirs[4] . "</a></td>";
       $outstring .= "<td align=center>" . $out[0][0] . "</td>";
@@ -58,7 +58,7 @@ require_once ('strt2Qsingle.php');
     if ($outrow != $parts[0]) {
       $outrow = $parts[0];
       echo "<tr><td colspan=7 align=right ><input type=submit value=Submit /></td>" . $outrow;
-      echo "<tr><th>Run</th><th>Export</th><th>Analysis</th><th>Samples</th><th>Attributes</th><th>Variables</th><th>Annotations</th></tr>";
+      echo "<tr><th>Sample</th><th>Export</th><th>Analysis</th><th>Samples</th><th>Attributes</th><th>Variables</th><th>Annotations</th></tr>";
       echo $parts[1];
     } else {
       echo $parts[1];

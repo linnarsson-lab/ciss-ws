@@ -21,7 +21,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "STRT", "STRT", "{DF9888F1-5
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{EEED2FB4-6405-4D03-A442-88173302FBDA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoleculeCounterTester", "MoleculeCountertester\MoleculeCounterTester.csproj", "{D09328C1-1E28-4228-AEEC-4622E8076FCD}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "InstrumentControl", "InstrumentControl", "{AC464BFC-5C7C-4616-BCAD-1B600D1DC297}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Linnarsson.InstrumentControl", "..\InstrumentControlLib\Linnarsson.InstrumentControl.csproj", "{272BC6CA-1543-4DF7-B9CE-5C1887499572}"
 EndProject
 Global
 	GlobalSection(SourceCodeControl) = preSolution
@@ -54,10 +56,9 @@ Global
 		SccProjectTopLevelParentUniqueName7 = Sten_Linnarsson.sln
 		SccLocalPath7 = ..
 		SccProjectFilePathRelativizedFromConnection7 = BkgFastQMailer\\
-		SccProjectUniqueName8 = MoleculeCountertester\\MoleculeCounterTester.csproj
+		SccProjectUniqueName8 = ..\\InstrumentControlLib\\Linnarsson.InstrumentControl.csproj
 		SccProjectTopLevelParentUniqueName8 = Sten_Linnarsson.sln
-		SccLocalPath8 = .
-		SccProjectFilePathRelativizedFromConnection8 = MoleculeCountertester\\
+		SccLocalPath8 = ..\\InstrumentControlLib
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Crick Release|Any CPU = Crick Release|Any CPU
@@ -214,26 +215,26 @@ Global
 		{9C6BBD24-EFBD-4D02-A4C5-F94B080BD8FC}.TestRelease|Mixed Platforms.Build.0 = Release|x86
 		{9C6BBD24-EFBD-4D02-A4C5-F94B080BD8FC}.TestRelease|x86.ActiveCfg = Release|x86
 		{9C6BBD24-EFBD-4D02-A4C5-F94B080BD8FC}.TestRelease|x86.Build.0 = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Crick Release|Any CPU.ActiveCfg = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Crick Release|Mixed Platforms.ActiveCfg = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Crick Release|Mixed Platforms.Build.0 = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Crick Release|x86.ActiveCfg = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Crick Release|x86.Build.0 = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Debug|Mixed Platforms.Build.0 = Debug|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Debug|x86.ActiveCfg = Debug|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Debug|x86.Build.0 = Debug|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Release|Any CPU.ActiveCfg = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Release|Mixed Platforms.ActiveCfg = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Release|Mixed Platforms.Build.0 = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Release|x86.ActiveCfg = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.Release|x86.Build.0 = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.TestRelease|Any CPU.ActiveCfg = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.TestRelease|Mixed Platforms.ActiveCfg = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.TestRelease|Mixed Platforms.Build.0 = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.TestRelease|x86.ActiveCfg = Release|x86
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD}.TestRelease|x86.Build.0 = Release|x86
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Crick Release|Any CPU.ActiveCfg = Release|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Crick Release|Any CPU.Build.0 = Release|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Crick Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Crick Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Crick Release|x86.ActiveCfg = Release|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Release|Any CPU.Build.0 = Release|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.Release|x86.ActiveCfg = Release|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.TestRelease|Any CPU.ActiveCfg = TestRelease|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.TestRelease|Any CPU.Build.0 = TestRelease|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.TestRelease|Mixed Platforms.ActiveCfg = TestRelease|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.TestRelease|Mixed Platforms.Build.0 = TestRelease|Any CPU
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572}.TestRelease|x86.ActiveCfg = TestRelease|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -246,6 +247,6 @@ Global
 		{4872C995-385F-494D-B395-A1A9E4D73681} = {DF9888F1-560A-4E60-A0E2-689EB5247775}
 		{9C6BBD24-EFBD-4D02-A4C5-F94B080BD8FC} = {DF9888F1-560A-4E60-A0E2-689EB5247775}
 		{426B865C-ED32-4ACD-BB8F-8101899AB14B} = {DF9888F1-560A-4E60-A0E2-689EB5247775}
-		{D09328C1-1E28-4228-AEEC-4622E8076FCD} = {EEED2FB4-6405-4D03-A442-88173302FBDA}
+		{272BC6CA-1543-4DF7-B9CE-5C1887499572} = {AC464BFC-5C7C-4616-BCAD-1B600D1DC297}
 	EndGlobalSection
 EndGlobal

@@ -82,50 +82,68 @@ namespace BkgFastQMailer
             }
         }
 
-        private static string PublishReadsForDownload(string readsFile)
+        private static string PublishReadsForDownload(string readsPath)
         {
             string readsFileLink = "";
-            string tempFqPath = readsFile + ".temp_copy";
-            if (File.Exists(tempFqPath))
+            string destFilename = Path.GetFileName(readsPath);
+            bool useTempGzReadsFile = !readsPath.EndsWith(".gz");
+            string gzReadsPath = readsPath;
+            if (useTempGzReadsFile)
             {
-                CmdCaller.Run("chmod", " u+w " + tempFqPath);
-                File.Delete(tempFqPath);
+                gzReadsPath = MakeGzReadsFile(readsPath);
+                destFilename += ".gz";
             }
-            string tempGzPath = tempFqPath + ".gz";
-            if (File.Exists(tempGzPath))
-            {
-                CmdCaller.Run("chmod", " u+w " + tempGzPath);
-                File.Delete(tempGzPath);
-            }
-            File.Copy(readsFile, tempFqPath);
-            CmdCaller cmd = new CmdCaller("gzip", tempFqPath);
-            if (cmd.ExitCode != 0)
-                throw new IOException("Could not call OS 'gzip' command: " + cmd.StdError);
-            File.Delete(tempFqPath);
-            string destFilename = Path.GetFileName(readsFile) + ".gz";
             string destPath = Path.Combine(Props.props.ResultDownloadUrl, destFilename);
-            string scpArg = string.Format("-P 9952 {0} {1}", tempGzPath, destPath);
+            string scpArg = string.Format("-P 9952 {0} {1}", gzReadsPath, destPath);
             Console.WriteLine(DateTime.Now.ToString() + ": scp " + scpArg);
             CmdCaller scpCmd = new CmdCaller("scp", scpArg);
             if (scpCmd.ExitCode != 0)
                 throw new IOException("Could not call OS 'scp' command: " + scpCmd.StdError);
             readsFileLink = Props.props.ResultDownloadFolderHttp + destFilename;
+            if (useTempGzReadsFile)
+                RemoveTempFile(gzReadsPath);
+            return readsFileLink;
+        }
+
+        private static string MakeGzReadsFile(string readsPath)
+        {
+            string tempReadsPath = readsPath + ".temp_copy";
+            if (File.Exists(tempReadsPath))
+            {
+                CmdCaller.Run("chmod", " u+w " + tempReadsPath);
+                File.Delete(tempReadsPath);
+            }
+            string gzReadsPath = readsPath + ".gz";
+            if (File.Exists(gzReadsPath))
+            {
+                CmdCaller.Run("chmod", " u+w " + gzReadsPath);
+                File.Delete(gzReadsPath);
+            }
+            File.Copy(readsPath, tempReadsPath);
+            CmdCaller cmd = new CmdCaller("gzip", tempReadsPath);
+            if (cmd.ExitCode != 0)
+                throw new IOException("Could not call OS 'gzip' command: " + cmd.StdError);
+            File.Delete(tempReadsPath);
+            return gzReadsPath;
+        }
+
+        private static void RemoveTempFile(string gzReadsPath)
+        {
             try
             {
-                CmdCaller chmodCmd = new CmdCaller("chmod", "u+w " + tempGzPath);
+                CmdCaller chmodCmd = new CmdCaller("chmod", "u+w " + gzReadsPath);
                 if (chmodCmd.ExitCode != 0)
-                    Console.WriteLine(DateTime.Now.ToString() + " Could not 'chmod u+w': " + tempGzPath + " Error: " + chmodCmd.StdError);
-                File.Delete(tempGzPath);
+                    Console.WriteLine(DateTime.Now.ToString() + " Could not 'chmod u+w': " + gzReadsPath + " Error: " + chmodCmd.StdError);
+                File.Delete(gzReadsPath);
             }
             catch (IOException e)
             {
-                Console.WriteLine(DateTime.Now.ToString() + " Could not delete tmp file " + tempGzPath + " Error: " + e);
+                Console.WriteLine(DateTime.Now.ToString() + " Could not delete tmp file " + gzReadsPath + " Error: " + e);
             }
             catch (UnauthorizedAccessException e)
             {
-                Console.WriteLine(DateTime.Now.ToString() + " Could not delete tmp file " + tempGzPath + " Error: " + e);
+                Console.WriteLine(DateTime.Now.ToString() + " Could not delete tmp file " + gzReadsPath + " Error: " + e);
             }
-            return readsFileLink;
         }
 
         private static void NotifyClient(string email, List<string> links)

@@ -245,7 +245,7 @@ namespace BkgFastQCopier
                 this.lane = lane;
                 this.read = read;
                 string fileId = GetFileId(runId, lane, read, runName);
-                PFFilename = GetPFFilePath(readsFolder, fileId);
+                PFFilename = GetPFFilePath(readsFolder, fileId) + ".gz";
                 PFFile = PFFilename.OpenWrite();
                 nonPFFile = Path.Combine(readsFolder, Path.Combine(nonPFSubFolder, fileId + "_nonPF.fq.gz")).OpenWrite();
                 statsFilePath = GetStatsFilePath(readsFolder, fileId);
@@ -269,7 +269,7 @@ namespace BkgFastQCopier
             }
             private static string GetPFFilePath(string readsFolder, string fileId)
             {
-                return Path.Combine(readsFolder, fileId + ".fq.gz");
+                return Path.Combine(readsFolder, fileId + ".fq");
             }
 
             public void Write(FastQRecord rec)

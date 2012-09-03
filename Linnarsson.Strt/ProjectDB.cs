@@ -341,11 +341,20 @@ namespace Linnarsson.Strt
             IssueNonQuery(sql);
         }
 
+        /// <summary>
+        /// Updates the actual cycle numbers for the illumina run.
+        /// If a specific reads's cycle value is -1 no update is performed.
+        /// Also sets the planned cycle numbers for matching batches where these values are not set before in DB.
+        /// </summary>
+        /// <param name="runId"></param>
+        /// <param name="cycles">Use -1 to indicate that this value should not be updated</param>
+        /// <param name="indexCycles">Use -1 to indicate that this value should not be updated</param>
+        /// <param name="pairedCycles">Use -1 to indicate that this value should not be updated</param>
         public void UpdateRunCycles(string runId, int cycles, int indexCycles, int pairedCycles)
         {
             string sql = string.Format("UPDATE jos_aaailluminarun SET cycles='{0}' WHERE illuminarunid='{1}' AND (cycles=0 OR cycles IS NULL);",
                                        cycles + pairedCycles, runId);
-            if (cycles > 0)
+            if (cycles >= 0)
             {
                 IssueNonQuery(sql);
                 IssueNonQuery("UPDATE jos_aaasequencingbatch b LEFT JOIN jos_aaalane l ON l.jos_aaasequencingbatchid = b.id " +
@@ -354,7 +363,7 @@ namespace Linnarsson.Strt
             }
             sql = string.Format("UPDATE jos_aaailluminarun SET indexcycles='{0}' WHERE illuminarunid='{1}' AND (indexcycles=0 OR indexcycles IS NULL);",
                                 indexCycles, runId);
-            if (indexCycles > 0)
+            if (indexCycles >= 0)
             {
                 IssueNonQuery(sql);
                 IssueNonQuery("UPDATE jos_aaasequencingbatch b LEFT JOIN jos_aaalane l ON l.jos_aaasequencingbatchid = b.id " +
@@ -363,7 +372,7 @@ namespace Linnarsson.Strt
             }
             sql = string.Format("UPDATE jos_aaailluminarun SET pairedcycles='{0}' WHERE illuminarunid='{1}' AND (pairedcycles=0 OR pairedcycles IS NULL);",
                                 pairedCycles, runId);
-            if (pairedCycles > 0) IssueNonQuery(sql);
+            if (pairedCycles >= 0) IssueNonQuery(sql);
         }
 
         public Dictionary<string, List<MailTaskDescription>> GetQueuedMailTasksByEmail()

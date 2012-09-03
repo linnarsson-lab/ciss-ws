@@ -116,40 +116,41 @@ namespace BkgFastQCopier
             string runName = Path.GetFileName(runFolder);
             List<ReadFileResult> readFileResults = new List<ReadFileResult>();
             for (int lane = laneFrom; lane <= laneTo; lane++)
+		    {
+                int[] cycles = new int[4];
+                cycles[1] = cycles[2] = cycles[3] = -1;
+                for (int read = 1; read <= 3; read++)
 				{
-                    int[] cycles = new int[4];
-                    for (int read = 1; read <= 3; read++)
-					{
-                        string readyFileName = string.Format("Basecalling_Netcopy_complete_Read{0}.txt", read);
-                        string readyFilePath = Path.Combine(runFolder, readyFileName);
-                        if (File.Exists(readyFilePath) && !Outputter.DataExists(readsFolder, runNo, lane, read, runName))
+                    string readyFileName = string.Format("Basecalling_Netcopy_complete_Read{0}.txt", read);
+                    string readyFilePath = Path.Combine(runFolder, readyFileName);
+                    if (File.Exists(readyFilePath) && !Outputter.DataExists(readsFolder, runNo, lane, read, runName))
+                    {
+                        ReadFileResult r;
+                        r = CopyBclLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
+                        if (r == null)
+                            r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
+                        if (r == null)
                         {
-                            ReadFileResult r;
-                            r = CopyBclLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
-                            if (r == null)
-                                r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
-                            if (r == null)
+                            logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find any bcl or qseq files in run " + runId +
+                                                                            " lane " + lane.ToString() + " read " + read.ToString());
+                            logWriter.Flush();
+                        }
+                        else
+                        {
+                            readFileResults.Add(r);
+                            cycles[read] = (int)r.readLen;
+                            if (projectDB != null)
                             {
-                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find any bcl or qseq files in run " + runId +
-                                                                              " lane " + lane.ToString() + " read " + read.ToString());
-                                logWriter.Flush();
-                            }
-                            else
-                            {
-                                readFileResults.Add(r);
-                                cycles[read] = (int)r.readLen;
-                                if (projectDB != null)
-                                {
-                                    projectDB.AddToBackupQueue(r.readFile, 10);
-                                    if (r.read == 1)
-                                        projectDB.SetIlluminaYield(runId, r.nReads, r.nPFReads, r.lane);
-                                }
+                                projectDB.AddToBackupQueue(r.readFile, 10);
+                                if (r.read == 1)
+                                    projectDB.SetIlluminaYield(runId, r.nReads, r.nPFReads, r.lane);
                             }
                         }
                     }
-                    if (projectDB != null && cycles[1] != 0)
-                        projectDB.UpdateRunCycles(runId, cycles[1], cycles[2], cycles[3]);
-                };
+                }
+                if (projectDB != null)
+                    projectDB.UpdateRunCycles(runId, cycles[1], cycles[2], cycles[3]);
+            };
             return readFileResults;
         }
 

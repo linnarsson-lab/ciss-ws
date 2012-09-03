@@ -85,7 +85,8 @@ namespace BkgFastQCopier
                         laneTxt = "lane " + laneFrom.ToString() + " of ";
                     }
                     Console.WriteLine("Copying data from " + laneTxt + specificRunFolder + " to " + outputReadsFolder);
-                    readCopier.Copy(specificRunFolder, outputReadsFolder, laneFrom, laneTo);
+                    int nFilesCopied = readCopier.Copy(specificRunFolder, outputReadsFolder, laneFrom, laneTo);
+                    Console.WriteLine("Created totally " + nFilesCopied.ToString() + " output fq files.");
                 }
                 else
                 {

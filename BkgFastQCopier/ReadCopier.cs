@@ -130,7 +130,8 @@ namespace BkgFastQCopier
                                 r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
                             if (r == null)
                             {
-                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find any bcl or fq files in run " + runId);
+                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find any bcl or qseq files in run " + runId +
+                                                                              " lane " + lane.ToString() + " read " + read.ToString());
                                 logWriter.Flush();
                             }
                             else

@@ -40,7 +40,7 @@ function plotLines($scale, $y2scale, $title, $curves, $xtitle, $ymin = NULL, $ym
             $p = new LinePlot($line["yvalues"]);
 			$graph->xaxis->SetTickLabels($line["xvalues"]);
 		}
-		$p->mark->SetType(MARK_DIAMOND);
+		$p->mark->Hide();
 		$p->mark->SetFillColor($line["color"]);
 		if ($line["yaxis"] == "right")
 		    $graph->AddY2($p);
@@ -54,7 +54,7 @@ function plotLines($scale, $y2scale, $title, $curves, $xtitle, $ymin = NULL, $ym
         $graph->xaxis->SetTitle($xtitle, 'middle');
 		$graph->xaxis->title->Align('center');
 	}
-	$graph->legend->Pos(0.01,0.3,"right","middle");
+	$graph->legend->Pos(0.01,0.05,"right","top");
     $graph->legend->SetLayout(LEGEND_VERT);
 	return $graph;
 }

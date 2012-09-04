@@ -20,11 +20,11 @@ namespace Linnarsson.Dna
             int n = 0;
             foreach (GeneFeature gf in IterAnnotationFile(refFlatPath))
             {
-                if (!gf.Chr.Contains("random")) // Avoid non-mapped genes.
-                {
+                //if (!gf.Chr.Contains("random")) // Avoid non-mapped genes.
+                //{
                     AddGeneModel(gf);
                     n++;
-                }
+                //}
             }
             string varTxt = (genome.GeneVariants) ? " genes and" : " main gene";
             Console.WriteLine("Read {0}{1} variants from {2}", n, varTxt, refFlatPath);

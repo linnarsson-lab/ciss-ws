@@ -593,8 +593,10 @@ namespace Linnarsson.Strt
 
         private void WriteMappingDepth(StreamWriter xmlFile)
         {
-            WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings in each barcode as fn. of reads processed",
-                                   sampledUniqueHitPositionsByBcIdx);
+            WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings in odd-numbered barcode as fn. of reads processed",
+                                   sampledUniqueHitPositionsByBcIdx, 0, 2);
+            WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings in even-numbered barcode as fn. of reads processed",
+                                   sampledUniqueHitPositionsByBcIdx, 1, 2);
         }
 
         private void WriteRandomFilterStats(StreamWriter xmlFile)
@@ -613,7 +615,7 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
             xmlFile.WriteLine("  </nuniqueateachrandomtagcoverage>");
             WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules in each barcode as fn. of reads processed",
-                                   sampledUniqueMoleculesByBcIdx);
+                                   sampledUniqueMoleculesByBcIdx, 0, 1);
             xmlFile.WriteLine("  <moleculereadscountshistogram>");
             xmlFile.WriteLine("    <title>Distribution of number of times every unique molecule has been observed</title>");
             xmlFile.WriteLine("    <xtitle>Number of observations (reads)</xtitle>");
@@ -622,16 +624,19 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </moleculereadscountshistogram>");
         }
 
-        private void WriteAccuMoleculesByBc(StreamWriter xmlFile, string tag, string title, Dictionary<int, List<int>> data)
+        private void WriteAccuMoleculesByBc(StreamWriter xmlFile, string tag, string title, Dictionary<int, List<int>> data, int start, int step)
         {
             xmlFile.WriteLine("  <{0}>", tag);
             xmlFile.WriteLine("    <title>{0}</title>", title);
             xmlFile.WriteLine("    <xtitle>Millions of reads processed</xtitle>");
-            foreach (int bcIdx in data.Keys)
+            int[] bcIndices = data.Keys.ToArray();
+            Array.Sort(bcIndices);
+            for (int bII = start; bII < bcIndices.Length; bII += step)
             {
+                int bcIdx = bcIndices[bII];
                 List<int> curve = data[bcIdx];
                 xmlFile.WriteLine("      <curve legend=\"{0}\" color=\"#{1:x2}{2:x2}{3:x2}\">",
-                                  barcodes.Seqs[bcIdx], (bcIdx * 17) % 255, (bcIdx * 11) % 255, (255 - (43 * bcIdx % 255)));
+                                  barcodes.Seqs[bcIdx], (bcIdx * 47) % 255, (bcIdx * 21) % 255, (255 - (60 * bcIdx % 255)));
                 int nReads = 0;
                 int i = 0;
                 for (; i < curve.Count - 1; i++)

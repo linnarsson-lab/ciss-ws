@@ -19,7 +19,7 @@ function plotLines($scale, $y2scale, $title, $curves, $xtitle, $ymin = NULL, $ym
 	$graph->img->SetAntiAliasing(false);
 	$graph->title->Set($title);
 	$graph->SetBox(false);
-	$graph->SetMargin(40,140,30,50);
+	$graph->SetMargin(60,140,30,50);
 	$graph->img->SetAntiAliasing();
 	$graph->yaxis->HideLine(false);
 	$graph->yaxis->HideTicks(false,false);

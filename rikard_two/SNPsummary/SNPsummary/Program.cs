@@ -7,6 +7,37 @@ using System.Diagnostics;
 
 namespace SNPsummary
 {
+    public class vdbashfile : List<string>
+    {
+        public string path { get; set; }
+
+        public vdbashfile(string filename)
+        {
+            if (File.Exists(filename))
+            {
+                path = filename;
+                using (StreamReader r = new StreamReader(path))
+                {
+                    string line;
+                    List<string> samplenames = new List<string>();
+                    while ((line = r.ReadLine()) != null)
+                    {
+                        if (line.Contains("numbers="))
+                        {
+                            string thenames = line.Replace("numbers=( ", "");
+                            thenames = thenames.Replace(")", "");
+                            string[] NAM = thenames.Split(new Char[] { ' ' });
+                            foreach (var NM in NAM)
+                            {
+                                this.Add(NM);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     public class sampleentry
     {
         public string Cons { get; set; }
@@ -22,16 +53,13 @@ namespace SNPsummary
             row = row.Replace("-", "0");
             row = row.Replace("BB", "E-");
             string[] entry = row.Split(new Char[] { ':' });
-            Console.WriteLine(row);
 
             Cons = entry[0];
             Cov = Int32.Parse(entry[1]);
             Reads1 = Int32.Parse(entry[2]);
             Reads2 = Int32.Parse(entry[3]);
-//            Console.WriteLine(Reads2);
             MAF = double.Parse(entry[4].Replace("%",""));
             PValue = double.Parse(entry[5]);
-//            Console.WriteLine(PValue);
         }
     }
     public class sample : Dictionary<string, sampleentry>
@@ -115,18 +143,14 @@ namespace SNPsummary
                             string[] sampl = temp.pval.Split(new Char[] { ' ' });
                             string name = "c" + temp.chr + "m" + temp.pos;
                             samplecount = sampl.Length;
-        //                    name + " " + sampl.Length);
                             if (sampl.Length != SMP.Length) continue;
                             this.addpos(name, temp);
-                            Console.WriteLine(name);
                             for (int i = 0; i < samplecount; i++)
                             {
-                                Console.WriteLine(i + sampl[i] + name); 
                                 {
                                     if (SMP[i] == null)
                                     {
-                                        sample MAS = new sample();//    SMP[i];
-                                        // sampleentry hej = sampl[i];
+                                        sample MAS = new sample();
                                         MAS.addsample(name, sampl[i]);
                                         SMP[i] = MAS;
                                     }
@@ -158,38 +182,65 @@ namespace SNPsummary
     {
         static int Main(string[] args)
         {
-            if (args.Length != 1)
+            if (args.Length != 3)
             {
-                Console.WriteLine(Process.GetCurrentProcess().ProcessName);
-                usage();
+                usage(); 
+                Console.Write(args.Length);
                 return (1);
             }
 
+            vdbashfile vdbshfil = new vdbashfile(args[1]);
             sample[] SMP = new sample[1];
             varscanfile VSFILE = new varscanfile(args[0], SMP);
             sample[] Samples = new sample[VSFILE.samplecount];
             varscanfile VarScan = new varscanfile(args[0], Samples);
+            int coverage = Int32.Parse(args[2]);
 
-            printallpos(VarScan, Samples);
-
-            Console.WriteLine(Environment.NewLine + VarScan.samplecount);
+            printallpos(VarScan, Samples, vdbshfil, coverage);
 
             return (0);
         }
 
         static void usage()
         {
-//            Console.WriteLine(Environment.NewLine + "\t" + Process.GetCurrentProcess().ProcessName);
-            Console.WriteLine(Environment.NewLine + "\t" + System.AppDomain.CurrentDomain.FriendlyName);
+            Console.WriteLine(Environment.NewLine + "\t" + System.AppDomain.CurrentDomain.FriendlyName + Environment.NewLine);
+            Console.WriteLine("\tParameters are in the following order");
+            Console.WriteLine("\tThe path to the output from VarScan mpileup2snp   [samples.snp]");
+            Console.WriteLine("\tMinimum number of reads at position [100]");
+            Console.WriteLine("\tThe path to [vd.bash] file created by the perl script [contains sample names]" + Environment.NewLine);
         }
 
-        static int printallpos(varscanfile varpos, sample[] allsamples)
+        static int printallpos(varscanfile varpos, sample[] allsamples, vdbashfile vdbshfil, int cov)
         {
-            foreach (KeyValuePair<string CPS, sampleentry > in varpos)
-            {
-                Console.WriteLine(allsamples[3][CPS][]);
 
-            }
+
+            string tempout = "";
+            tempout += "CHR\tPOS\tREF";
+            if (vdbshfil.Count == allsamples.Length)
+                foreach (var sample in vdbshfil)
+                {
+                    tempout += "\t" + sample;
+                }
+                Console.WriteLine(tempout);
+                foreach (KeyValuePair<string, sampleentry> CPS in allsamples[0])
+                {
+                    bool ok = true;
+                    tempout = "";
+                    tempout += varpos[CPS.Key].chr + "\t" + varpos[CPS.Key].pos + "\t" + varpos[CPS.Key].refb;
+                    foreach (var item in allsamples)
+                    {
+                        if ((item[CPS.Key].Cov < cov) & (item != allsamples.Last()))
+                        {
+                            ok = false;
+                        }
+                        tempout += "\t" + item[CPS.Key].MAF + "/" + item[CPS.Key].Cov;
+                    }
+                    if (ok)
+                    {
+                        Console.WriteLine(tempout);
+                    }
+
+                }
 
             return 0;
         }

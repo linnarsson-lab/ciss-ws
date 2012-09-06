@@ -7,6 +7,55 @@ using System.Diagnostics;
 
 namespace SNPsummary
 {
+    public class halotarget
+    {
+        public string target { get; set; }
+        public string source { get; set; }
+        public int chromosome { get; set; }
+        public Int32 start { get; set; }
+        public Int32 stop { get; set; }
+        public int length { get; set; }
+        public int orientation { get; set; }
+        public halotarget(string row)
+        {
+            if (!row.StartsWith("#"))
+            {
+                string[] entry = row.Split(new Char[] { '\t' });
+                string[] first = entry[0].Split(new Char[] { '|' });
+                target = first[0];
+                source = entry[1];
+                string[] splitsource = source.Split(new Char[] { '.' });
+                chromosome = int.Parse(splitsource[0].Replace("NC_", ""));
+                start = Int32.Parse(entry[2]);
+                stop = Int32.Parse(entry[3]);
+                length = stop - start;
+                orientation = int.Parse(entry[4]);
+            }
+        }
+    }
+    public class haloprobes : List<halotarget>
+    {
+        public string path { get; set; }
+        public haloprobes(string filename)
+        {
+            if (File.Exists(filename))
+            {
+                path = filename;
+                using (StreamReader r = new StreamReader(path))
+                {
+                    string line;
+                    while ((line = r.ReadLine()) != null)
+                    {
+                        if (line.Length > 3)
+                        {
+                            this.Add(new halotarget(line));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public class vdbashfile : List<string>
     {
         public string path { get; set; }
@@ -91,7 +140,7 @@ namespace SNPsummary
     {
         public string chr { get; set; }
         public Int32 pos { get; set; }
-        public char refb { get; set; }
+        public string refb { get; set; }
         public string var { get; set; }
         public string poolcall { get; set; }
         public string strandfilt { get; set; }
@@ -106,7 +155,7 @@ namespace SNPsummary
             string[] entry = row.Split(new Char[] { '\t' });
             chr = entry[0];
             pos = Int32.Parse(entry[1]);
-            refb = char.Parse(entry[2]);
+            refb = entry[2];
             var = entry[3];
             poolcall = entry[4];
             strandfilt = entry[5];
@@ -182,7 +231,7 @@ namespace SNPsummary
     {
         static int Main(string[] args)
         {
-            if (args.Length != 3)
+            if (args.Length != 4)
             {
                 usage(); 
                 Console.Write(args.Length);
@@ -195,8 +244,9 @@ namespace SNPsummary
             sample[] Samples = new sample[VSFILE.samplecount];
             varscanfile VarScan = new varscanfile(args[0], Samples);
             int coverage = Int32.Parse(args[2]);
+            haloprobes theregions = new haloprobes(args[3]);
 
-            printallpos(VarScan, Samples, vdbshfil, coverage);
+            printallpos(VarScan, Samples, vdbshfil, coverage, theregions);
 
             return (0);
         }
@@ -206,13 +256,16 @@ namespace SNPsummary
             Console.WriteLine(Environment.NewLine + "\t" + System.AppDomain.CurrentDomain.FriendlyName + Environment.NewLine);
             Console.WriteLine("\tParameters are in the following order");
             Console.WriteLine("\tThe path to the output from VarScan mpileup2snp   [samples.snp]");
+            Console.WriteLine("\tThe path to [vd.bash] file created by the perl script [contains sample names]");
             Console.WriteLine("\tMinimum number of reads at position [100]");
-            Console.WriteLine("\tThe path to [vd.bash] file created by the perl script [contains sample names]" + Environment.NewLine);
+            Console.WriteLine("\tThe path to [Halo_regions_file]" + Environment.NewLine);
         }
 
-        static int printallpos(varscanfile varpos, sample[] allsamples, vdbashfile vdbshfil, int cov)
+        static int printallpos(varscanfile varpos, sample[] allsamples, vdbashfile vdbshfil, int cov, haloprobes regions)
         {
 
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"identifiedsnps.txt"))
+            {
 
             string tempout = "";
             tempout += "CHR\tPOS\tREF";
@@ -225,8 +278,19 @@ namespace SNPsummary
                 foreach (KeyValuePair<string, sampleentry> CPS in allsamples[0])
                 {
                     bool ok = true;
+                    int CHR = 0;
+                    string targetregion = "";
+                    if (varpos[CPS.Key].chr == "X")
+                        CHR = 23;
+                    else
+                        CHR = int.Parse(varpos[CPS.Key].chr);
+                    foreach (halotarget item in regions)
+                    {
+                        if ((CHR == item.chromosome) && (varpos[CPS.Key].pos >= item.start) && (varpos[CPS.Key].pos <= item.stop))
+                        targetregion = item.target;
+                    }
                     tempout = "";
-                    tempout += varpos[CPS.Key].chr + "\t" + varpos[CPS.Key].pos + "\t" + varpos[CPS.Key].refb;
+                    tempout += varpos[CPS.Key].chr + "\t" + varpos[CPS.Key].pos + "\t" + varpos[CPS.Key].refb + "\t" + targetregion;
                     foreach (var item in allsamples)
                     {
                         if ((item[CPS.Key].Cov < cov) & (item != allsamples.Last()))
@@ -238,10 +302,12 @@ namespace SNPsummary
                     if (ok)
                     {
                         Console.WriteLine(tempout);
+                        file.WriteLine(varpos[CPS.Key].chr + "\t" + varpos[CPS.Key].pos + "\t" + varpos[CPS.Key].pos + "\t" + varpos[CPS.Key].refb + "/" + varpos[CPS.Key].var + "\t+");
                     }
 
                 }
 
+            }
             return 0;
         }
 

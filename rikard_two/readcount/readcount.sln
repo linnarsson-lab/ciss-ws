@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "readcount", "readcount\readcount.csproj", "{F9E43E9C-6224-4A42-B2C1-44C2CDB7F5F3}"
+EndProject
+Global
+	GlobalSection(SourceCodeControl) = preSolution
+		SccNumberOfProjects = 2
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = readcount\\readcount.csproj
+		SccLocalPath1 = .
+		SccProjectFilePathRelativizedFromConnection1 = readcount\\
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F9E43E9C-6224-4A42-B2C1-44C2CDB7F5F3}.Debug|x86.ActiveCfg = Debug|x86
+		{F9E43E9C-6224-4A42-B2C1-44C2CDB7F5F3}.Debug|x86.Build.0 = Debug|x86
+		{F9E43E9C-6224-4A42-B2C1-44C2CDB7F5F3}.Release|x86.ActiveCfg = Release|x86
+		{F9E43E9C-6224-4A42-B2C1-44C2CDB7F5F3}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

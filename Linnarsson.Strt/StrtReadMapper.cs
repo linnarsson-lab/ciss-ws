@@ -430,9 +430,8 @@ namespace Linnarsson.Strt
                 ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.projectName, mapFilePaths);
                 projDescr.resultDescriptions.Add(resultDescr);
                 System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(projDescr.GetType());
-                StreamWriter writer = new StreamWriter(Path.Combine(resultDescr.resultFolder, "config.xml"));
-                x.Serialize(writer, projDescr);
-                writer.Close();
+                using (StreamWriter writer = new StreamWriter(Path.Combine(resultDescr.resultFolder, "ProjectConfig.xml")))
+                    x.Serialize(writer, projDescr);
                 logWriter.WriteLine("{0} Results stored in {1}.", DateTime.Now, resultDescr.resultFolder);
                 logWriter.Flush();
             }
@@ -656,7 +655,7 @@ namespace Linnarsson.Strt
             return AnnotateMapFiles(genome, projectFolder, extractedFolder, mapFiles);
         }
 
-        public static readonly string ANNOTATION_VERSION = "40";
+        public static readonly string ANNOTATION_VERSION = "41";
         /// <summary>
         /// Annotate output from Bowtie alignment
         /// </summary>
@@ -789,6 +788,9 @@ namespace Linnarsson.Strt
             string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
             ResultDescription resultDescr = new ResultDescription(mapFilePaths, bowtieIndexVersion, outputFolder);
             ts.SaveResult(readCounter, resultDescr);
+            System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(props.GetType());
+            using (StreamWriter writer = new StreamWriter(Path.Combine(outputFolder, "SilverBulletConfig.xml")))
+                x.Serialize(writer, props);
             return resultDescr;
         }
 

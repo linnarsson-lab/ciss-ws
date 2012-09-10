@@ -21,16 +21,16 @@ namespace CorrCell
         /// </summary>
         /// <param name="expression">Input expression data</param>
         /// <param name="minValuesPerIvl">Minimum number of values in each bin to sample from</param>
-        public DataSampler(Expression expression, int minValuesPerIvl, bool plotDistributions)
+        public DataSampler(Expression expression, int minValuesPerIvl, string plotDistributionFileBase)
         {
             rnd = new Random(DateTime.Now.Millisecond);
             Dictionary<int, List<double>> meansByCount = SortMeansByCount(expression);
             DefineIntervalsOfMeans(minValuesPerIvl, meansByCount);
             Console.WriteLine(meansByCount.Count + " count levels made into " + countIvlStarts.Length + " intervals.");
-            if (plotDistributions)
+            if (plotDistributionFileBase != "" && plotDistributionFileBase != null)
             {
-                PlotMeansByCount(meansByCount);
-                PlotIntervals();
+                PlotMeansByCount(meansByCount, plotDistributionFileBase + "_expr_means_by_count.txt");
+                PlotIntervals(plotDistributionFileBase + "_expr_interval_data.txt");
             }
         }
 
@@ -107,9 +107,8 @@ namespace CorrCell
             return meansByCount;
         }
 
-        public static void PlotMeansByCount(Dictionary<int, List<double>> meansByCount)
+        public static void PlotMeansByCount(Dictionary<int, List<double>> meansByCount, string outFile)
         {
-            string outFile = "CorrCell_means_by_count.txt";
             Console.WriteLine("Writing data by count to " + outFile);
             int[] counts = meansByCount.Keys.ToArray();
             Array.Sort(counts);
@@ -123,9 +122,8 @@ namespace CorrCell
             writer.Close();
         }
 
-        public void PlotIntervals()
+        public void PlotIntervals(string outFile)
         {
-            string outFile = "CorrCell_interval_data.txt";
             Console.WriteLine("Writing data by intervals to " + outFile);
             StreamWriter writer = new StreamWriter(outFile);
             writer.WriteLine("IvlStart\tIvlEnd\tMidIvl\tNValues\tMeanOfMeans\tStdDev");

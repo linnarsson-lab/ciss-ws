@@ -31,7 +31,7 @@ namespace CorrCell
         /// of genes not in the file.
         /// </summary>
         /// <param name="pairFile"></param>
-        public void AnalyzePairedGenes(string pairFile)
+        public void AnalyzePairedGenes(string pairFile, string outFile)
         {
             List<Pair<int, int>> geneIdxPairs = ReadGenePairs(pairFile);
             List<int[]> histograms = new List<int[]>();
@@ -42,7 +42,6 @@ namespace CorrCell
             Console.WriteLine("Analyzing background using " + geneIdxPairs.Count + " gene pairs...");
             histograms.Add(CalcBkgHistogram(nHistoBins, geneIdxPairs, geneIdxPairs.Count));
             titles.Add("NonPairCount");
-            string outFile = pairFile + ".correlation";
             WriteHistograms(outFile, histograms, titles);
         }
 
@@ -52,7 +51,7 @@ namespace CorrCell
         /// of random samples of pairs of gene taken from two different classes.
         /// </summary>
         /// <param name="classFile"></param>
-        public void AnalyzeGeneClasses(string classFile)
+        public void AnalyzeGeneClasses(string classFile, string outFile)
         {
             Dictionary<string, List<int>> geneIdxClasses = ReadGeneClasses(classFile);
             List<int[]> histograms = new List<int[]>();
@@ -70,7 +69,6 @@ namespace CorrCell
             Console.WriteLine("Analyzing background...");
             histograms.Add(CalcBkgHistogram(nHistoBins, allGenePairs, allGenePairs.Count));
             titles.Add("NonPaired.Count");
-            string outFile = classFile + ".correlation";
             WriteHistograms(outFile, histograms, titles);
         }
 

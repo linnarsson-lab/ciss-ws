@@ -50,6 +50,11 @@ namespace CorrCell
             return ivlData[rnd.Next(ivlData.Count)];
         }
 
+        /// <summary>
+        /// Group possible means for each count into count intervals, to avoid two few means to sample from for individual counts
+        /// </summary>
+        /// <param name="minValuesPerIvl">Min number of means in each count bin</param>
+        /// <param name="meansByCount">The data to group</param>
         private void DefineIntervalsOfMeans(int minValuesPerIvl, Dictionary<int, List<double>> meansByCount)
         {
             List<double> ivlMeans = new List<double>();
@@ -80,6 +85,11 @@ namespace CorrCell
             countIvlStarts = tempIvlStarts.ToArray();
         }
 
+        /// <summary>
+        /// For every count value in Expression table, list the possible (gene) mean expression values it can correspond to
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <returns></returns>
         private static Dictionary<int, List<double>> SortMeansByCount(Expression expression)
         {
             Dictionary<int, List<double>> meansByCount = new Dictionary<int, List<double>>();

@@ -49,10 +49,11 @@ namespace CorrCell
             geneBName = nameB;
         }
 
+        public static string Header { get { return "GeneA\tGeneARow\tGeneB\tGeneBRow\tCorrCoef\tStdDev"; } }
+
         public override string ToString()
         {
-            return "Correlation between " + geneAName + " (" + geneAIdx + ") and " + geneBName + " (" + geneBIdx + ") is "
-                   + corrMean.ToString() + " +/- " + corrVariance.ToString();
+            return string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", geneAName, geneAIdx, geneBName, geneBIdx, corrMean, corrVariance);
         }
     }
 

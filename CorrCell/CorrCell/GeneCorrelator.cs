@@ -65,6 +65,14 @@ namespace CorrCell
             return cp;
         }
 
+        /// <summary>
+        /// Estimate the correlation between two series of count values, by averaging the repeated correlation coefficients
+        /// calculated from means expression values sampled for each count using the dataSampler
+        /// </summary>
+        /// <param name="dataSampler">Sampler that converts a count value into a possible mean expression value</param>
+        /// <param name="countsA">series of counts (for gene A)</param>
+        /// <param name="countsB">a corresponding series of counts (for gene B)</param>
+        /// <returns></returns>
         private DescriptiveStatistics EstimateCorrelation(DataSampler dataSampler, int[] countsA, int[] countsB)
         {
             DescriptiveStatistics ds = new DescriptiveStatistics();

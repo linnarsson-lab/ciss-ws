@@ -11,19 +11,20 @@ namespace CorrCell
     {
         static void Main(string[] args)
         {
+            int nSample = 1000;
+            int minMeanSamplesInBin = 200;
+            double fractionThreshold = 100.0;
+            double minExprLevel = 5.0;
+            bool plot = false;
+            string corrFile = "";
+            string pairFile = null;
+            string classFile = null;
+            CorrelationCalculator cc = CorrelationCalculators.Spearman;
             try
             {
                 if (args.Length == 0)
                     throw new ArgumentException();
                 int argIdx = 0;
-                int nSample = 500;
-                int minMeanSamplesInBin = 200;
-                double fractionThreshold = 100.0;
-                double minExprLevel = 0.0;
-                bool plot = false;
-                double minShowCorr = 0.0;
-                string pairFile = null;
-                string classFile = null;
                 while (argIdx < args.Length && args[argIdx][0] == '-')
                 {
                     if (args[argIdx] == "-s")
@@ -34,14 +35,18 @@ namespace CorrCell
                         fractionThreshold = double.Parse(args[++argIdx]);
                     else if (args[argIdx] == "-e")
                         minExprLevel = double.Parse(args[++argIdx]);
-                    else if (args[argIdx] == "-d")
-                        minShowCorr = double.Parse(args[++argIdx]);
+                    else if (args[argIdx] == "-o")
+                        corrFile = args[++argIdx];
                     else if (args[argIdx] == "-p")
                         pairFile = args[++argIdx];
                     else if (args[argIdx] == "-c")
                         classFile = args[++argIdx];
                     else if (args[argIdx] == "--plot")
                         plot = true;
+                    else if (args[argIdx] == "-P")
+                        cc = CorrelationCalculators.Pearson;
+                    else if (args[argIdx] == "-D")
+                        cc = CorrelationCalculators.Distance;
                     else throw new ArgumentException();
                     argIdx++;
                 }
@@ -51,16 +56,17 @@ namespace CorrCell
                 Expression expr = new Expression(args[argIdx]);
                 expr.FilterEmptyCells(fractionThreshold);
                 expr.FilterLowGenes(minExprLevel);
-                Console.WriteLine("Data size after empty cell filtering is {0} genes and {1} cells.", expr.GeneCount, expr.CellCount);
+                Console.WriteLine("Data size after empty cell/low level filtering is {0} genes and {1} cells.", expr.GeneCount, expr.CellCount);
                 Console.WriteLine("minCountBinSize=" + minMeanSamplesInBin + " NSamplings=" + nSample);
+                Console.WriteLine("Correlations calculated using method: " + cc.Method.Name);
                 DataSampler dataSampler = new DataSampler(expr, minMeanSamplesInBin, plot);
-                GeneCorrelator gc = new GeneCorrelator(nSample, minMeanSamplesInBin, CorrelationCalculators.Spearman, dataSampler);
+                GeneCorrelator gc = new GeneCorrelator(nSample, minMeanSamplesInBin, cc, dataSampler);
                 if (pairFile != null)
                     AnalyzePairedGenes(pairFile, expr, gc);
                 else if (classFile != null)
                     AnalyzeGeneClasses(classFile, expr, gc);
-                if (minShowCorr > 0.0)
-                    ShowCorrelations(minShowCorr, expr, gc);
+                if (corrFile != "")
+                    ShowCorrelations(corrFile, expr, gc);
             }
             catch (FileNotFoundException)
             {
@@ -70,16 +76,17 @@ namespace CorrCell
             {
                 Console.WriteLine("\nUsage:\n" + 
                                   "mono CorrCell.exe [-s CORRSAMPLESIZE] [-b MINCOUNTBINSIZE] [-p GENEPAIRFILE] [-c GENECLASSFILE]\n" +
-                                  "                  [-f FILTERTHRESHOLD] [-e EXPTHRESHOLD] [-d SHOWCORRTHRESHOLD] [--plot] EXPRESSIONFILE\n" +
-                                  "CORRSAMPLESIZE        number of samples to take when calculating correlation\n" +
-                                  "MINCOUNTBINSIZE       min number of means in each bin (interval) of count values\n" +
+                                  "                  [-f FILTERTHRESHOLD] [-e EXPTHRESHOLD] [-o OUTFILE] [--plot] [-P|-D] EXPRESSIONFILE\n" +
+                                  "CORRSAMPLESIZE        [" + nSample.ToString() + "] number of samples to take when calculating correlation\n" +
+                                  "MINCOUNTBINSIZE       [" + minMeanSamplesInBin.ToString() + "] min number of means in each bin (interval) of count values\n" +
                                   "GENEPAIRFILE          file of pairs of names of potentially correlated genes to compare against background\n" +
                                   "GENECLASSFILE         file of gene names (1st col) and their respective class names (2nd col)\n" + 
-                                  "FILTERTHRESHOLD       for filtering of empty cells. Min fraction of counts in cells compared with max cell\n" +
-                                  "EXPRTHRESHOLD         minimum average expression level of a gene to be used\n" +
-                                  "SHOWCORRTHRESHOLD     (> 0.0) Display list of correlations. Only higher correlations will be reported\n" +
+                                  "FILTERTHRESHOLD       [" + fractionThreshold.ToString() + "] filtering of empty cells. Min fraction of counts in cells compared with max cell\n" +
+                                  "EXPRTHRESHOLD         [" + minExprLevel.ToString() + "] minimum average expression level of a gene to be used\n" +
+                                  "OUTFILE               Output list of correlations for all gene pairs above EXPRTHRESHOLD.\n" +
                                   "--plot                used to output distributions to files.\n" + 
-                                  "EXPRESSIONFILE is the Lxxx_expression.tab output file from the STRT pipeline.");
+                                  "EXPRESSIONFILE is the Lxxx_expression.tab output file from the STRT pipeline." +
+                                  "-P -D                 change distance measure from Spearman to either Pearson or Distance");
             }
         }
 
@@ -95,12 +102,20 @@ namespace CorrCell
             gca.AnalyzeGeneClasses(classFile);
         }
 
-        private static void ShowCorrelations(double minShowCorr, Expression expr, GeneCorrelator gc)
+        /// <summary>
+        /// Display correlations between all gene pairs
+        /// </summary>
+        /// <param name="corrFile">File for output</param>
+        /// <param name="expr">Expression data matrix</param>
+        /// <param name="gc">Correlator method of choice</param>
+        private static void ShowCorrelations(string corrFile, Expression expr, GeneCorrelator gc)
         {
-            Console.WriteLine("Showing correlations > +/-" + minShowCorr);
-            foreach (CorrPair cp in gc.IterCorrelations(expr))
-                if (Math.Abs(cp.corrMean) > minShowCorr)
-                    Console.WriteLine(cp.ToString());
+            using (StreamWriter writer = new StreamWriter(corrFile))
+            {
+                writer.WriteLine(CorrPair.Header);
+                foreach (CorrPair cp in gc.IterCorrelations(expr))
+                        writer.WriteLine(cp.ToString());
+            }
         }
     }
 }

@@ -105,7 +105,7 @@ namespace CorrCell
         private static void AnalyzeGeneClasses(string classFile, Expression expr, GeneCorrelator gc, string outFileBase)
         {
             GeneClassAnalyzer gca = new GeneClassAnalyzer(expr, gc);
-            gca.AnalyzeGeneClasses(classFile, "_classes_distrib.tab");
+            gca.AnalyzeGeneClasses(classFile, outFileBase + "_classes_distrib.tab");
         }
 
         /// <summary>

@@ -94,7 +94,7 @@ namespace SNPsummary
         public Int32 Reads1 { get; set; }
         public Int32 Reads2 { get; set; }
         public double MAF { get; set; }
-        public double PValue { get; set; }
+        public double Pvalue { get; set; }
         public sampleentry(string row)
         {
 
@@ -108,7 +108,7 @@ namespace SNPsummary
             Reads1 = Int32.Parse(entry[2]);
             Reads2 = Int32.Parse(entry[3]);
             MAF = double.Parse(entry[4].Replace("%",""));
-            PValue = double.Parse(entry[5]);
+            Pvalue = double.Parse(entry[5]);
         }
     }
     public class sample : Dictionary<string, sampleentry>
@@ -267,9 +267,10 @@ namespace SNPsummary
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"identifiedsnps.txt"))
             {
 
-            string tempout = "";
-            tempout += "CHR\tPOS\tREF";
-            if (vdbshfil.Count == allsamples.Length)
+                string tempout = "";
+                tempout += "CHR\tPOS\tREF";
+                
+                if (vdbshfil.Count == allsamples.Length)
                 foreach (var sample in vdbshfil)
                 {
                     tempout += "\t" + sample;
@@ -297,7 +298,14 @@ namespace SNPsummary
                         {
                             ok = false;
                         }
-                        tempout += "\t" + item[CPS.Key].MAF + "/" + item[CPS.Key].Cov;
+                        if (cov == 0)
+                        {
+                            tempout += "\t" + item[CPS.Key].Cons + ":" + item[CPS.Key].Cov + ":" + item[CPS.Key].Reads1 + ":" + item[CPS.Key].Reads2 + ":" + item[CPS.Key].MAF + ":" + item[CPS.Key].Pvalue;
+                        }
+                        else
+                        {
+                            tempout += "\t" + item[CPS.Key].MAF;
+                        }
                     }
                     if (ok)
                     {

@@ -156,6 +156,8 @@ namespace CorrCell
                         if (line.StartsWith("RNA_SPIKE") || line.StartsWith("r_"))
                             continue;
                         string[] fields = line.Split('\t');
+                        if (fields[0] == "")
+                            continue;
                         int nDataFields = fields.Length - firstDataCol;
                         if (nDataFields != cellNames.Length)
                             throw new IOException("File format error - Wrong number of data columns:\n" + line);
@@ -167,6 +169,8 @@ namespace CorrCell
                     }
                 }
             }
+            if (!dataReached)
+                throw new IOException("File format error - The last line before data must start with 'Feature'!");
             geneNames = genes.ToArray();            
         }
 

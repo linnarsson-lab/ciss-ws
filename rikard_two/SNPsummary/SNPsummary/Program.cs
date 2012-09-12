@@ -268,7 +268,7 @@ namespace SNPsummary
             {
 
                 string tempout = "";
-                tempout += "CHR\tPOS\tREF";
+                tempout += "CHR\tPOS\tREF\tTARGET";
                 
                 if (vdbshfil.Count == allsamples.Length)
                 foreach (var sample in vdbshfil)

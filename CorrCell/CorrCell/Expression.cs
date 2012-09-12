@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.IO;
 
 namespace CorrCell
@@ -150,10 +151,21 @@ namespace CorrCell
                         }
                         else if (line.StartsWith("Feature\t"))
                             dataReached = true;
+                        else if (line.StartsWith("\t"))
+                        {
+                            Match m = Regex.Match(line, "\t[ABCDEFGH]0[0-9]\t[ABCDEFGH]0[0-9]\t");
+                            if (m.Success)
+                            {
+                                dataReached = true;
+                                cellNames = line.Substring(m.Index + 1).Trim().Split('\t');
+                                firstDataCol = line.Substring(0, m.Index + 1).Split('\t').Length;
+                                Console.WriteLine("Firstdatacol:" + firstDataCol.ToString());
+                            }
+                        }
                     }
                     else
                     {
-                        if (line.StartsWith("RNA_SPIKE") || line.StartsWith("r_"))
+                        if (line.StartsWith("RNA_SPIKE") || line.StartsWith("r_") || line.StartsWith("SingleMol"))
                             continue;
                         string[] fields = line.Split('\t');
                         if (fields[0] == "")

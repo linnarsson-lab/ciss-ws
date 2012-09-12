@@ -10,6 +10,8 @@ namespace Linnarsson.Strt
 {
     class PerLaneStats
     {
+        public static readonly int nMappedReadsPerFileAtSample = 500000;
+
         private Dictionary<string, int[]> nUniqueMolsPerLaneAndBc = new Dictionary<string, int[]>();
         private Dictionary<string, int[]> nMappedReadsPerLaneAndBc = new Dictionary<string, int[]>();
         private Barcodes barcodes;
@@ -22,21 +24,22 @@ namespace Linnarsson.Strt
             this.barcodes = barcodes;
         }
 
-        public void SetupForNextBc(int bcIdx)
+        public void BeforeFile(int bcIdx, int beforeNBcMappedReads, int beforeNBcUniqMols)
         {
-            lastNUniqMols = lastNMappedReads = 0;
+            lastNUniqMols = beforeNBcUniqMols;
+            lastNMappedReads = beforeNBcMappedReads;
             currentBcIdx = bcIdx;
         }
 
-        public void AddMapFileData(string mapFilePath, int currentNBcMappedReads, int currentNBcUniqMols)
+        public void AfterFile(string mapFilePath, int currentNBcMappedReads, int currentNBcUniqMols)
         {
+            if (Regex.Match(mapFilePath, "chr[sa]").Success)
+                return; // Do not analyze mappings to splices
             string runLane = SetupRunLane(mapFilePath);
             int laneNMappedReads = currentNBcMappedReads - lastNMappedReads;
             nMappedReadsPerLaneAndBc[runLane][currentBcIdx] += laneNMappedReads;
-            lastNMappedReads = currentNBcMappedReads;
             int laneNUniqMols = currentNBcUniqMols - lastNUniqMols;
             nUniqueMolsPerLaneAndBc[runLane][currentBcIdx] += laneNUniqMols;
-            lastNUniqMols = currentNBcUniqMols;
         }
 
         private string SetupRunLane(string mapFilePath)
@@ -57,19 +60,25 @@ namespace Linnarsson.Strt
             foreach (string runLane in nUniqueMolsPerLaneAndBc.Keys)
             {
                 double f = nUniqueMolsPerLaneAndBc[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx];
+                if (double.IsNaN(f)) f = 0.0;
                 result.Add(new Pair<string, double>(runLane, f));
             }
             return result;
         }
 
-        public double GetMeanFrac0()
+        public double GetMeanOfHighestLaneFracs()
         {
-            string runLane0 = nUniqueMolsPerLaneAndBc.Keys.ToArray()[0];
+            string[] runLanes = nUniqueMolsPerLaneAndBc.Keys.ToArray();
             DescriptiveStatistics ds = new DescriptiveStatistics();
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
             {
-                double v = nUniqueMolsPerLaneAndBc[runLane0][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane0][bcIdx];
-                ds.Add(v);
+                double max = 0.0;
+                foreach (string runLane in runLanes)
+                {
+                    double v = nUniqueMolsPerLaneAndBc[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx];
+                    if (!double.IsNaN(v)) max = Math.Max(max, v);
+                }
+                ds.Add(max);
             }
             return ds.Mean();
         }

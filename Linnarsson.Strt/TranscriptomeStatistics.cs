@@ -241,7 +241,6 @@ namespace Linnarsson.Strt
         /// <param name="bcMapFilePaths">Paths to files where all reads have the same barcode</param>
         private void ProcessBarcodeMapFiles(List<string> bcMapFilePaths)
         {
-            perLaneStats.SetupForNextBc(currentBcIdx);
             foreach (string mapFilePath in bcMapFilePaths)
             {
                 currentMapFilePath = mapFilePath;
@@ -250,6 +249,8 @@ namespace Linnarsson.Strt
                 MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, barcodes);
                 if (mapFileReader == null)
                     throw new Exception("Unknown read map file type : " + mapFilePath);
+                int nMappedReadsByFile = 0;
+                perLaneStats.BeforeFile(currentBcIdx, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx));
                 foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
                 {
                     if (mappingAdder.Add(mrm))
@@ -262,9 +263,9 @@ namespace Linnarsson.Strt
                     {
                         sampledLibraryDepths.Add(randomTagFilter.GetNumDistinctMappings());
                         sampledUniqueMolecules.Add(mappingAdder.NUniqueReadSignatures(currentBcIdx));
-                        perLaneStats.AddMapFileData(mapFilePath, nMappedReadsByBarcode[currentBcIdx],
-                                                    mappingAdder.NUniqueReadSignatures(currentBcIdx));
                     }
+                    if (++nMappedReadsByFile == PerLaneStats.nMappedReadsPerFileAtSample)
+                        perLaneStats.AfterFile(mapFilePath, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx));
                     if (mrm.HasAltMappings) nMultiReads++;
                     //else if (upstreamAnalyzer != null)
                     //    upstreamAnalyzer.CheckSeqUpstreamTSSite(mrm[0], currentBcIdx); // Analysis on raw read bases
@@ -666,7 +667,7 @@ namespace Linnarsson.Strt
 
         private void WritePerLaneStats(StreamWriter xmlFile)
         {
-            double meanFrac0 = perLaneStats.GetMeanFrac0();
+            double meanFrac0 = perLaneStats.GetMeanOfHighestLaneFracs();
             WritePerLaneStatsSection(xmlFile, "low", 0.0, meanFrac0);
             WritePerLaneStatsSection(xmlFile, "high", meanFrac0, 10.0);
         }
@@ -674,7 +675,7 @@ namespace Linnarsson.Strt
         private void WritePerLaneStatsSection(StreamWriter xmlFile, string sectionTitle, double minF, double maxF)
         {
             xmlFile.WriteLine("  <fracuniqueperlane>");
-            xmlFile.WriteLine("    <title>Fraction ({0}) of first {1} mapped reads in each lane that are distinct molecules</title>",
+            xmlFile.WriteLine("    <title>Fraction ({0}) distinct molecules among first {1} mapped reads in each lane</title>",
                               sectionTitle, libraryDepthSampleReadCountPerBc);
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
             {
@@ -685,7 +686,7 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("    <curve legend=\"{0}\" color=\"#{1:x2}{2:x2}{3:x2}\">",
                                   legend, (bcIdx * 47) % 255, (bcIdx * 21) % 255, (255 - (60 * bcIdx % 255)));
                 foreach (Pair<string, double> laneAndFrac in data)
-                    xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1:0.0000}\" />\n", laneAndFrac.First, laneAndFrac.Second);
+                    xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1:0.0000}\" />", laneAndFrac.First, laneAndFrac.Second);
                 xmlFile.WriteLine("    </curve>");
             }
             xmlFile.WriteLine("  </fracuniqueperlane>");

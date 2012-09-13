@@ -157,6 +157,13 @@ foreach ($allxml->childNodes AS $graphdata) {
          }
          echo "<br /></p></div>\n";
          break;
+       case "fracuniqueperlane":
+         $d = parseCurves($graphdata);
+         if (count($d["curves"][0]["xvalues"]) > 1) {
+           $graph = plotLines("textlin", "", $d["title"], $d["curves"], $d["xtitle"]);
+           addGraph($graph);
+         }
+         break;
        case "librarydepth":
          $d = parseCurves($graphdata);
          $graph = plotLines("linlin", "", $d["title"], $d["curves"], $d["xtitle"]);

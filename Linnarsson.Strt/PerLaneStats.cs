@@ -14,24 +14,27 @@ namespace Linnarsson.Strt
 
         private Dictionary<string, int[]> nUniqueMolsPerLaneAndBc = new Dictionary<string, int[]>();
         private Dictionary<string, int[]> nMappedReadsPerLaneAndBc = new Dictionary<string, int[]>();
+        private Dictionary<string, int[]> nDistinctMappingsPerLaneAndBc = new Dictionary<string, int[]>();
         private Barcodes barcodes;
         private int currentBcIdx;
         private int lastNMappedReads;
         private int lastNUniqMols;
+        private int lastNDistinctMappings;
 
         public PerLaneStats(Barcodes barcodes)
         {
             this.barcodes = barcodes;
         }
 
-        public void BeforeFile(int bcIdx, int beforeNBcMappedReads, int beforeNBcUniqMols)
+        public void BeforeFile(int bcIdx, int beforeNBcMappedReads, int beforeNBcUniqMols, int beforeNBcDistinctMappings)
         {
             lastNUniqMols = beforeNBcUniqMols;
             lastNMappedReads = beforeNBcMappedReads;
+            lastNDistinctMappings = beforeNBcDistinctMappings;
             currentBcIdx = bcIdx;
         }
 
-        public void AfterFile(string mapFilePath, int currentNBcMappedReads, int currentNBcUniqMols)
+        public void AfterFile(string mapFilePath, int currentNBcMappedReads, int currentNBcUniqMols, int currentNDistinctMappings)
         {
             if (Regex.Match(mapFilePath, "chr[sa]").Success)
                 return; // Do not analyze mappings to splices
@@ -40,6 +43,8 @@ namespace Linnarsson.Strt
             nMappedReadsPerLaneAndBc[runLane][currentBcIdx] += laneNMappedReads;
             int laneNUniqMols = currentNBcUniqMols - lastNUniqMols;
             nUniqueMolsPerLaneAndBc[runLane][currentBcIdx] += laneNUniqMols;
+            int laneNDistinctMappings = currentNDistinctMappings - lastNDistinctMappings;
+            nDistinctMappingsPerLaneAndBc[runLane][currentBcIdx] += laneNDistinctMappings;
         }
 
         private string SetupRunLane(string mapFilePath)
@@ -50,16 +55,25 @@ namespace Linnarsson.Strt
             {
                 nMappedReadsPerLaneAndBc[runLane] = new int[barcodes.Count];
                 nUniqueMolsPerLaneAndBc[runLane] = new int[barcodes.Count];
+                nDistinctMappingsPerLaneAndBc[runLane] = new int[barcodes.Count];
             }
             return runLane;
         }
 
         public List<Pair<string, double>> GetUniqueMolsPerMappedReads(int bcIdx)
         {
+            return GetBcFractions(bcIdx, nMappedReadsPerLaneAndBc);
+        }
+        public List<Pair<string, double>> GetDistinctMappingsPerMappedReads(int bcIdx)
+        {
+            return GetBcFractions(bcIdx, nDistinctMappingsPerLaneAndBc);
+        }
+        private List<Pair<string, double>> GetBcFractions(int bcIdx, Dictionary<string, int[]> dataSet)
+        {
             List<Pair<string, double>> result = new List<Pair<string, double>>();
-            foreach (string runLane in nUniqueMolsPerLaneAndBc.Keys)
+            foreach (string runLane in dataSet.Keys)
             {
-                double f = nUniqueMolsPerLaneAndBc[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx];
+                double f = dataSet[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx];
                 if (double.IsNaN(f)) f = 0.0;
                 result.Add(new Pair<string, double>(runLane, f));
             }
@@ -75,7 +89,9 @@ namespace Linnarsson.Strt
                 double max = 0.0;
                 foreach (string runLane in runLanes)
                 {
-                    double v = nUniqueMolsPerLaneAndBc[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx];
+                    double v = (barcodes.HasRandomBarcodes) ?
+                        nUniqueMolsPerLaneAndBc[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx] :
+                        nDistinctMappingsPerLaneAndBc[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx];
                     if (!double.IsNaN(v)) max = Math.Max(max, v);
                 }
                 ds.Add(max);

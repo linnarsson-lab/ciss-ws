@@ -250,7 +250,8 @@ namespace Linnarsson.Strt
                 if (mapFileReader == null)
                     throw new Exception("Unknown read map file type : " + mapFilePath);
                 int nMappedReadsByFile = 0;
-                perLaneStats.BeforeFile(currentBcIdx, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx));
+                perLaneStats.BeforeFile(currentBcIdx, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx),
+                                        randomTagFilter.GetNumDistinctMappings());
                 foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
                 {
                     if (mappingAdder.Add(mrm))
@@ -265,7 +266,8 @@ namespace Linnarsson.Strt
                         sampledUniqueMolecules.Add(mappingAdder.NUniqueReadSignatures(currentBcIdx));
                     }
                     if (++nMappedReadsByFile == PerLaneStats.nMappedReadsPerFileAtSample)
-                        perLaneStats.AfterFile(mapFilePath, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx));
+                        perLaneStats.AfterFile(mapFilePath, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx),
+                                                            randomTagFilter.GetNumDistinctMappings());
                     if (mrm.HasAltMappings) nMultiReads++;
                     //else if (upstreamAnalyzer != null)
                     //    upstreamAnalyzer.CheckSeqUpstreamTSSite(mrm[0], currentBcIdx); // Analysis on raw read bases
@@ -675,11 +677,14 @@ namespace Linnarsson.Strt
         private void WritePerLaneStatsSection(StreamWriter xmlFile, string sectionTitle, double minF, double maxF)
         {
             xmlFile.WriteLine("  <fracuniqueperlane>");
-            xmlFile.WriteLine("    <title>Fraction ({0}) distinct molecules among first {1} mapped reads in each lane</title>",
-                              sectionTitle, libraryDepthSampleReadCountPerBc);
+            string type = barcodes.HasRandomBarcodes ? "molecules" : "mappings";
+            xmlFile.WriteLine("    <title>Fraction ({0}) distinct {2} among first {1} mapped reads in each lane</title>",
+                              sectionTitle, libraryDepthSampleReadCountPerBc, type);
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
             {
-                List<Pair<string, double>> data = perLaneStats.GetUniqueMolsPerMappedReads(bcIdx);
+                List<Pair<string, double>> data = (barcodes.HasRandomBarcodes)?
+                                                        perLaneStats.GetUniqueMolsPerMappedReads(bcIdx) : 
+                                                        perLaneStats.GetDistinctMappingsPerMappedReads(bcIdx);
                 if (data[0].Second < minF || data[0].Second >= maxF)
                     continue;
                 string legend = string.Format("{0} [{1}]", barcodes.Seqs[bcIdx], barcodes.GetWellId(bcIdx));

@@ -17,6 +17,7 @@ namespace CorrCell
             double fractionThreshold = 100.0;
             double minExprLevel = 5.0;
             bool plot = false;
+            bool shuffleGenes = false;
             int all = -1;
             string outFileBase = "CorrCell_output";
             string pairFile = null;
@@ -45,6 +46,8 @@ namespace CorrCell
                         classFile = args[++argIdx];
                     else if (args[argIdx] == "--plot")
                         plot = true;
+                    else if (args[argIdx] == "--shuffle-genes")
+                        shuffleGenes = true;
                     else if (args[argIdx] == "-a")
                         all = int.Parse(args[++argIdx]);
                     else if (args[argIdx] == "-P")
@@ -61,6 +64,12 @@ namespace CorrCell
                 expr.FilterEmptyCells(fractionThreshold);
                 expr.FilterLowGenes(minExprLevel);
                 Console.WriteLine("Data size after empty cell/low level filtering is {0} genes and {1} cells.", expr.GeneCount, expr.CellCount);
+                if (shuffleGenes)
+                {
+                    Console.WriteLine("Random shuffling of gene values within cells to estimate background.");
+                    expr.ShuffleBetweenSimilarLevelGenes();
+                    outFileBase += "_shuffledGenes";
+                }
                 Console.WriteLine("minCountBinSize=" + minMeanSamplesInBin + " NSamplings=" + nSample);
                 Console.WriteLine("Correlations calculated using method: " + cc.Method.Name);
                 string plotFileBase = plot? outFileBase : "";
@@ -81,7 +90,7 @@ namespace CorrCell
             {
                 Console.WriteLine("\nUsage:\n" + 
                                   "mono CorrCell.exe [-s CORRSAMPLESIZE] [-b MINCOUNTBINSIZE] [-p GENEPAIRFILE] [-c GENECLASSFILE] [-a LIMIT]\n" +
-                                  "                  [-f FILTERTHRESHOLD] [-e EXPTHRESHOLD] -o OUTFILENAMEBASE [--plot] [-P|-D] EXPRFILE\n" +
+                                  "                  [-f FILTERTHRESHOLD] [-e EXPTHRESHOLD] -o OUTFILENAMEBASE [--plot] [--shuffle-genes] [-P|-D] EXPRFILE\n" +
                                   "CORRSAMPLESIZE        [" + nSample.ToString() + "] number of samples to take when calculating correlation\n" +
                                   "MINCOUNTBINSIZE       [" + minMeanSamplesInBin.ToString() + "] min number of means in each bin (interval) of count values\n" +
                                   "GENEPAIRFILE          file of pairs of names of potentially correlated genes to compare against background\n" +
@@ -90,7 +99,8 @@ namespace CorrCell
                                   "EXPRTHRESHOLD         [" + minExprLevel.ToString() + "] minimum average expression level of a gene to be used\n" +
                                   "-a LIMIT              output top LIMIT (0 == all) correlations for genes above EXPRTHRESHOLD.\n" +
                                   "OUTFILENAMEBASE       the output file(s) will get this basename (with different suffixes)\n" +
-                                  "--plot                used to output expression value distributions to files\n" + 
+                                  "--plot                used to output expression value distributions to files\n" +
+                                  "--shuffle-genes       shuffle values within cell between similar-level genes to estimate 'random' data background\n" +
                                   "EXPRFILE              the Lxxx_expression.tab output file from the STRT pipeline\n" +
                                   "-P -D                 change distance measure from Spearman to either Pearson or Distance");
             }
@@ -111,9 +121,10 @@ namespace CorrCell
         /// <summary>
         /// Display correlations between all gene pairs
         /// </summary>
-        /// <param name="outFileBase">File for output</param>
         /// <param name="expr">Expression data matrix</param>
         /// <param name="gc">Correlator method of choice</param>
+        /// <param name="outFileBase">File for output</param>
+        /// <param name="limit">Optional lower limit for the correlation value of displayed pairs</param>
         private static void ShowCorrelations(Expression expr, GeneCorrelator gc, string outFileBase, int limit)
         {
             if (limit > 0)

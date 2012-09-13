@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.IO;
+using Linnarsson.Mathematics;
 
 namespace CorrCell
 {
@@ -186,6 +187,10 @@ namespace CorrCell
             geneNames = genes.ToArray();            
         }
 
+        /// <summary>
+        /// Calculate the average total per cell
+        /// </summary>
+        /// <returns></returns>
         public double AllCellMean()
         {
             double total = 0.0;
@@ -193,6 +198,10 @@ namespace CorrCell
             return total / CellCount;
         }
 
+        /// <summary>
+        /// Remove cells that have total expression less than threshold parts of the average cell total
+        /// </summary>
+        /// <param name="fractionThreshold">A value of 100 will remove cells with total less than 1/100 of the average cell</param>
         public void FilterEmptyCells(double fractionThreshold)
         {
             double threshold = AllCellMean() / fractionThreshold;
@@ -215,6 +224,10 @@ namespace CorrCell
             cellNames = keepCellNames.ToArray();
         }
 
+        /// <summary>
+        /// Remove genes that have average expression level lower than minExprLevel
+        /// </summary>
+        /// <param name="minExprLevel"></param>
         public void FilterLowGenes(double minExprLevel)
         {
             List<int> keepGenes = new List<int>();
@@ -232,6 +245,36 @@ namespace CorrCell
             }
             data = newData;
             geneNames = keepGeneNames.ToArray();
+        }
+
+        /// <summary>
+        /// Shuffle values randomly within cells between genes of similar expression levels.
+        /// This result is a data set that should be un-correlated between gene pairs but preserve global
+        /// dependencies on expression level and cell totals.
+        /// </summary>
+        public void ShuffleBetweenSimilarLevelGenes()
+        {
+            Random rnd = new Random(DateTime.Now.Millisecond);
+            List<double> geneMeans = new List<double>(data.Count);
+            List<int> geneIndices = new List<int>(data.Count);
+            for (int geneIdx = 0; geneIdx < data.Count; geneIdx++)
+            {
+                geneMeans.Add(GeneMean(geneIdx));
+                geneIndices.Add(geneIdx);
+            }
+            Sort.QuickSort(geneMeans, geneIndices);
+            for (int takeIdx = 0; takeIdx < data.Count; takeIdx++)
+            {
+                for (int cellIdx = 0; cellIdx < CellCount; cellIdx++)
+                {
+                    int exchangeIdx = takeIdx + rnd.Next(21) - 10;
+                    while (exchangeIdx == takeIdx || exchangeIdx < 0 || exchangeIdx > data.Count)
+                        exchangeIdx = takeIdx + rnd.Next(21) - 10;
+                    int temp = data[geneIndices[takeIdx]][cellIdx];
+                    data[geneIndices[takeIdx]][cellIdx] = data[geneIndices[exchangeIdx]][cellIdx];
+                    data[geneIndices[exchangeIdx]][cellIdx] = temp;
+                }
+            }
         }
     }
 }

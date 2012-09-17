@@ -150,9 +150,9 @@ namespace CorrCell
                             firstDataCol = line.Substring(0, p).Split('\t').Length;
                             Console.WriteLine("Firstdatacol:" + firstDataCol.ToString());
                         }
-                        else if (line.StartsWith("Feature\t"))
+                        else if (line.StartsWith("Feature\t") && cellNames != null)
                             dataReached = true;
-                        else if (line.StartsWith("\t"))
+                        else if (line.StartsWith("\t") || line.StartsWith("Feature\t"))
                         {
                             Match m = Regex.Match(line, "\t[ABCDEFGH]0[0-9]\t[ABCDEFGH]0[0-9]\t");
                             if (m.Success)

@@ -268,7 +268,7 @@ namespace CorrCell
                 for (int cellIdx = 0; cellIdx < CellCount; cellIdx++)
                 {
                     int exchangeIdx = takeIdx + rnd.Next(21) - 10;
-                    while (exchangeIdx == takeIdx || exchangeIdx < 0 || exchangeIdx > data.Count)
+                    while (exchangeIdx == takeIdx || exchangeIdx < 0 || exchangeIdx >= data.Count)
                         exchangeIdx = takeIdx + rnd.Next(21) - 10;
                     int temp = data[geneIndices[takeIdx]][cellIdx];
                     data[geneIndices[takeIdx]][cellIdx] = data[geneIndices[exchangeIdx]][cellIdx];

@@ -1261,6 +1261,11 @@ namespace Linnarsson.Strt
             }
         }
 
+        /// <summary>
+        /// Write the "cap_hits.tab" containing ratios of 5' to rest-of-transcript hits for spikes and transcripts
+        /// </summary>
+        /// <param name="fileNameBase"></param>
+        /// <param name="averageReadLen"></param>
         private void WriteElongationEfficiency(string fileNameBase, int averageReadLen)
         {
             int capRegionSize = props.CapRegionSize;

@@ -527,6 +527,11 @@ namespace Linnarsson.Strt
             }
         }
 
+        /// <summary>
+        /// Write the "summary.xml" file
+        /// </summary>
+        /// <param name="readCounter"></param>
+        /// <param name="resultDescr"></param>
         private void WriteSummary(ReadCounter readCounter, ResultDescription resultDescr)
         {
             string xmlPath = OutputPathbase + "_summary.xml";
@@ -948,11 +953,15 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine(sb.ToString());
         }
 
+        /// <summary>
+        /// Write 5'->3' hit profiles for spikes and transcripts to "summary.xml" file
+        /// </summary>
+        /// <param name="xmlFile"></param>
         private void Add5To3PrimeHitProfile(StreamWriter xmlFile)
         {
             int averageReadLen = MappedTagItem.AverageReadLen;
             xmlFile.WriteLine("  <hitprofile>");
-            xmlFile.WriteLine("  <title>5'->3' read distr. Green=Transcripts/Blue=Spikes</title>");
+            xmlFile.WriteLine("  <title>5'->3' read distr. Red=Transcripts/Blue=Spikes</title>");
             xmlFile.WriteLine("	 <xtitle>Relative pos within transcript</xtitle>");
             int trLenBinSize = 500;
             int trLenBinHalfWidth = trLenBinSize / 2;
@@ -1001,15 +1010,15 @@ namespace Linnarsson.Strt
                     spikeColor += spikeColorStep;
                     for (int section = 0; section < nSections; section++)
                     {
-                        double eff = trSectionCounts[nSections - 1 - section] / trTotalCounts;
+                        double eff = trSectionCounts[section] / trTotalCounts;
                         double fracPos = (section + 0.5D) / (double)nSections;
                         xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", fracPos, eff);
                     }
                     xmlFile.WriteLine("    </curve>");
                 }
             }
-            int geneColor = 0x304030;
-            int geneColorStep = ((0xFF - 0x41) / trLenBinCount) * 0x0100;
+            int geneColor = 0x503030;
+            int geneColorStep = ((0xFF - 0x51) / trLenBinCount) * 0x010000;
             for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
             {
                 if (geneCounts[trLenBinIdx] < 10) continue;

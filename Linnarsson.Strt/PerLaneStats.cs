@@ -39,12 +39,9 @@ namespace Linnarsson.Strt
             if (Regex.Match(mapFilePath, "chr[sa]").Success)
                 return; // Do not analyze mappings to splices
             string runLane = SetupRunLane(mapFilePath);
-            int laneNMappedReads = currentNBcMappedReads - lastNMappedReads;
-            nMappedReadsPerLaneAndBc[runLane][currentBcIdx] += laneNMappedReads;
-            int laneNUniqMols = currentNBcUniqMols - lastNUniqMols;
-            nUniqueMolsPerLaneAndBc[runLane][currentBcIdx] += laneNUniqMols;
-            int laneNDistinctMappings = currentNDistinctMappings - lastNDistinctMappings;
-            nDistinctMappingsPerLaneAndBc[runLane][currentBcIdx] += laneNDistinctMappings;
+            nMappedReadsPerLaneAndBc[runLane][currentBcIdx] += currentNBcMappedReads - lastNMappedReads;
+            nUniqueMolsPerLaneAndBc[runLane][currentBcIdx] += currentNBcUniqMols - lastNUniqMols;
+            nDistinctMappingsPerLaneAndBc[runLane][currentBcIdx] += currentNDistinctMappings - lastNDistinctMappings;
         }
 
         private string SetupRunLane(string mapFilePath)
@@ -62,7 +59,7 @@ namespace Linnarsson.Strt
 
         public List<Pair<string, double>> GetUniqueMolsPerMappedReads(int bcIdx)
         {
-            return GetBcFractions(bcIdx, nMappedReadsPerLaneAndBc);
+            return GetBcFractions(bcIdx, nUniqueMolsPerLaneAndBc);
         }
         public List<Pair<string, double>> GetDistinctMappingsPerMappedReads(int bcIdx)
         {
@@ -80,21 +77,22 @@ namespace Linnarsson.Strt
             return result;
         }
 
-        public double GetMeanOfHighestLaneFracs()
+        public double GetMeanOfLaneFracMeans()
         {
             string[] runLanes = nUniqueMolsPerLaneAndBc.Keys.ToArray();
             DescriptiveStatistics ds = new DescriptiveStatistics();
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
             {
-                double max = 0.0;
+                double bcSum = 0.0;
                 foreach (string runLane in runLanes)
                 {
-                    double v = (barcodes.HasRandomBarcodes) ?
+                    double fileFrac = (barcodes.HasRandomBarcodes) ?
                         nUniqueMolsPerLaneAndBc[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx] :
                         nDistinctMappingsPerLaneAndBc[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx];
-                    if (!double.IsNaN(v)) max = Math.Max(max, v);
+                    if (!double.IsNaN(fileFrac))
+                        bcSum += fileFrac;
                 }
-                ds.Add(max);
+                ds.Add(bcSum / (double)runLanes.Length);
             }
             return ds.Mean();
         }

@@ -674,7 +674,7 @@ namespace Linnarsson.Strt
 
         private void WritePerLaneStats(StreamWriter xmlFile)
         {
-            double meanFrac0 = perLaneStats.GetMeanOfHighestLaneFracs();
+            double meanFrac0 = perLaneStats.GetMeanOfLaneFracMeans();
             WritePerLaneStatsSection(xmlFile, "low", 0.0, meanFrac0);
             WritePerLaneStatsSection(xmlFile, "high", meanFrac0, 10.0);
         }
@@ -684,7 +684,7 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  <fracuniqueperlane>");
             string type = barcodes.HasRandomBarcodes ? "molecules" : "mappings";
             xmlFile.WriteLine("    <title>Fraction ({0}) distinct {2} among first {1} mapped reads in each lane</title>",
-                              sectionTitle, libraryDepthSampleReadCountPerBc, type);
+                              sectionTitle, PerLaneStats.nMappedReadsPerFileAtSample, type);
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
             {
                 List<Pair<string, double>> data = (barcodes.HasRandomBarcodes)?
@@ -979,9 +979,9 @@ namespace Linnarsson.Strt
                     binnedEfficiencies[trLenBinIdx, section] = new DescriptiveStatistics();
             }
             int[] geneCounts = new int[trLenBinCount];
-            int spikeColor = 0x200040;
-            int spikeColorStep = ((0xFF - 0x41) / 8);
             int nMaxShownSpikes = 12;
+            int spikeColor = 0x00FFFF;
+            int spikeColorStep = -(0xFF00 / nMaxShownSpikes);
             foreach (GeneFeature gf in Annotations.geneFeatures.Values)
             {
                 if (gf.GetTranscriptHits() < minHitsPerGene || gf.GetTranscriptHits() > maxHitsPerGene)
@@ -1017,8 +1017,8 @@ namespace Linnarsson.Strt
                     xmlFile.WriteLine("    </curve>");
                 }
             }
-            int geneColor = 0x503030;
-            int geneColorStep = ((0xFF - 0x51) / trLenBinCount) * 0x010000;
+            int geneColor = 0xFFFF00;
+            int geneColorStep = -(0xFF00 / trLenBinCount);
             for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
             {
                 if (geneCounts[trLenBinIdx] < 10) continue;

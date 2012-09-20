@@ -257,13 +257,13 @@ namespace CorrCell
             Random rnd = new Random(DateTime.Now.Millisecond);
             List<double> geneMeans = new List<double>(data.Count);
             List<int> geneIndices = new List<int>(data.Count);
-            for (int geneIdx = 0; geneIdx < data.Count; geneIdx++)
+            for (int geneIdx = 0; geneIdx < GeneCount; geneIdx++)
             {
                 geneMeans.Add(GeneMean(geneIdx));
                 geneIndices.Add(geneIdx);
             }
             Sort.QuickSort(geneMeans, geneIndices);
-            for (int takeIdx = 0; takeIdx < data.Count; takeIdx++)
+            for (int takeIdx = 0; takeIdx < GeneCount; takeIdx++)
             {
                 for (int cellIdx = 0; cellIdx < CellCount; cellIdx++)
                 {
@@ -276,5 +276,24 @@ namespace CorrCell
                 }
             }
         }
+
+        public void TotalShuffle()
+        {
+            Random rnd = new Random(DateTime.Now.Millisecond);
+            for (int takeGeneIdx = 0; takeGeneIdx < GeneCount; takeGeneIdx++)
+            {
+                for (int takeCellIdx = 0; takeCellIdx < CellCount; takeCellIdx++)
+                {
+                    int putGeneIdx = rnd.Next(GeneCount);
+                    while (putGeneIdx == takeGeneIdx) putGeneIdx = rnd.Next(GeneCount);
+                    int putCellIdx = rnd.Next(CellCount);
+                    while (putCellIdx == takeGeneIdx) putCellIdx = rnd.Next(CellCount);
+                    int temp = data[takeGeneIdx][takeCellIdx];
+                    data[takeGeneIdx][takeCellIdx] = data[putCellIdx][putCellIdx];
+                    data[putCellIdx][putCellIdx] = temp;
+                }
+            }
+        }
+
     }
 }

@@ -18,6 +18,7 @@ namespace CorrCell
             double minExprLevel = 5.0;
             bool plot = false;
             bool shuffleGenes = false;
+            bool shuffleCells = false;
             bool totalShuffle = false;
             int all = -1;
             string outFileBase = "CorrCell_output";
@@ -49,6 +50,8 @@ namespace CorrCell
                         plot = true;
                     else if (args[argIdx] == "--shuffle-genes")
                         shuffleGenes = true;
+                    else if (args[argIdx] == "--shuffle-cells")
+                        shuffleCells = true;
                     else if (args[argIdx] == "--shuffle-all")
                         totalShuffle = true;
                     else if (args[argIdx] == "-a")
@@ -72,6 +75,12 @@ namespace CorrCell
                     Console.WriteLine("Random shuffling of gene values within cells to estimate background.");
                     expr.ShuffleBetweenSimilarLevelGenes();
                     outFileBase += "_shuffledGenes";
+                }
+                if (shuffleCells)
+                {
+                    Console.WriteLine("Random shuffling of each gene's values between cells to estimate background.");
+                    expr.ShuffleBetweenCells();
+                    outFileBase += "_shuffledCells";
                 }
                 if (totalShuffle)
                 {
@@ -110,6 +119,7 @@ namespace CorrCell
                                   "OUTFILENAMEBASE       the output file(s) will get this basename (with different suffixes)\n" +
                                   "--plot                used to output expression value distributions to files\n" +
                                   "--shuffle-genes       shuffle values within cell between similar-level genes to estimate 'random' data background\n" +
+                                  "--shuffle-cells       shuffle each gene's values between cell to estimate 'random' data background\n" +
                                   "--shuffle-all         shuffle all values randomly in expression table\n" + 
                                   "EXPRFILE              the Lxxx_expression.tab output file from the STRT pipeline\n" +
                                   "-P -D                 change distance measure from Spearman to either Pearson or Distance");

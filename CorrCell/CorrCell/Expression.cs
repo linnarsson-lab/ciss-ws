@@ -159,7 +159,7 @@ namespace CorrCell
                             {
                                 dataReached = true;
                                 cellNames = line.Substring(m.Index + 1).Trim().Split('\t');
-                                firstDataCol = line.Substring(0, m.Index + 1).Split('\t').Length;
+                                firstDataCol = line.Substring(0, m.Index).Split('\t').Length;
                                 Console.WriteLine("Firstdatacol:" + firstDataCol.ToString());
                             }
                         }
@@ -277,6 +277,9 @@ namespace CorrCell
             }
         }
 
+        /// <summary>
+        /// Shuffle all expression data randomly
+        /// </summary>
         public void TotalShuffle()
         {
             Random rnd = new Random(DateTime.Now.Millisecond);
@@ -289,8 +292,27 @@ namespace CorrCell
                     int putCellIdx = rnd.Next(CellCount);
                     while (putCellIdx == takeGeneIdx) putCellIdx = rnd.Next(CellCount);
                     int temp = data[takeGeneIdx][takeCellIdx];
-                    data[takeGeneIdx][takeCellIdx] = data[putCellIdx][putCellIdx];
-                    data[putCellIdx][putCellIdx] = temp;
+                    data[takeGeneIdx][takeCellIdx] = data[putGeneIdx][putCellIdx];
+                    data[putGeneIdx][putCellIdx] = temp;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Shuffle values between cells within one gene
+        /// </summary>
+        public void ShuffleBetweenCells()
+        {
+            Random rnd = new Random(DateTime.Now.Millisecond);
+            for (int cellIdx = 0; cellIdx < CellCount; cellIdx++)
+            {
+                for (int takeGeneIdx = 0; takeGeneIdx < GeneCount; takeGeneIdx++)
+                {
+                    int putGeneIdx = rnd.Next(GeneCount);
+                    while (putGeneIdx == takeGeneIdx) putGeneIdx = rnd.Next(GeneCount);
+                    int temp = data[takeGeneIdx][cellIdx];
+                    data[takeGeneIdx][cellIdx] = data[putGeneIdx][cellIdx];
+                    data[putGeneIdx][cellIdx] = temp;
                 }
             }
         }

@@ -58,6 +58,11 @@ namespace Linnarsson.Strt
         /// </summary>
         double[] labelingEfficiencyByBc;
 
+        /// <summary>
+        /// Return the total number of hits (may be read or molecules depending on settings)
+        /// </summary>
+        int TotalHits { get { return TotalHitsByAnnotType.Sum(); } }
+
         AbstractGenomeAnnotations Annotations;
         Barcodes barcodes;
 		DnaMotif[] motifs;
@@ -881,16 +886,17 @@ namespace Linnarsson.Strt
             List<string> sortedkeys = numkeys.ConvertAll((n) => n.ToString());
             sortedkeys.AddRange(alphakeys);
             string[] chrs = TotalHitsByAnnotTypeAndChr.Keys.ToArray();
+            double nTotalHits = TotalHits;
             foreach (string chr in sortedkeys)
             {
                 if (StrtGenome.IsASpliceAnnotationChr(chr))
                     continue;
                 string c = (chr.Length > 5)? chr.Substring(0,2) + ".." + chr.Substring(chr.Length - 2) : chr;
-                double nSense = TotalHitsByAnnotTypeAndChr[chr][AnnotType.EXON];
-                double nAsense = TotalHitsByAnnotTypeAndChr[chr][AnnotType.AEXON];
-                string ratio = (nAsense == 0)? "1:0" : string.Format("{0:0}", nSense / (double)nAsense);
+                double nSenseHits = TotalHitsByAnnotTypeAndChr[chr][AnnotType.EXON];
+                double nAsenseHits = TotalHitsByAnnotTypeAndChr[chr][AnnotType.AEXON];
+                string ratio = (nAsenseHits == 0)? "1:0" : string.Format("{0:0}", nSenseHits / (double)nAsenseHits);
                 xmlFile.WriteLine("    <point x=\"{0}#br#{1}\" y=\"{2:0.###}\" y2=\"{3:0.###}\" />",
-                                  c, ratio, 100.0d *(nSense / (double)TotalNMappedReads), 100.0d * (nAsense / (double)TotalNMappedReads));
+                                  c, ratio, 100.0d*(nSenseHits / nTotalHits), 100.0d*(nAsenseHits / nTotalHits));
             }
             xmlFile.WriteLine("  </senseantisensebychr>");
         }

@@ -612,16 +612,17 @@ namespace Linnarsson.Strt
 
         private void WriteMappingDepth(StreamWriter xmlFile)
         {
-            if (barcodes.Count > 24)
+            int nBc = sampledUniqueHitPositionsByBcIdx.Keys.Count;
+            if (nBc > 24)
             {
-                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings in odd-numbered barcode as fn. of reads processed",
-                                       sampledUniqueHitPositionsByBcIdx, 0, 2);
-                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings in even-numbered barcode as fn. of reads processed",
-                                       sampledUniqueHitPositionsByBcIdx, 1, 2);
+                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings per barcode as fn. of reads processed",
+                                       sampledUniqueHitPositionsByBcIdx, 0, nBc / 2);
+                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings per barcode as fn. of reads processed",
+                                       sampledUniqueHitPositionsByBcIdx, nBc / 2, nBc);
             }
             else
-                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings in each barcode as fn. of reads processed",
-                                       sampledUniqueHitPositionsByBcIdx, 0, 1);
+                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings in per barcode as fn. of reads processed",
+                                       sampledUniqueHitPositionsByBcIdx, 0, nBc);
         }
 
         private void WriteRandomFilterStats(StreamWriter xmlFile)
@@ -640,7 +641,7 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
             xmlFile.WriteLine("  </nuniqueateachrandomtagcoverage>");
             WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules in each barcode as fn. of reads processed",
-                                   sampledUniqueMoleculesByBcIdx, 0, 1);
+                                   sampledUniqueMoleculesByBcIdx, 0, sampledUniqueMoleculesByBcIdx.Keys.Count);
             xmlFile.WriteLine("  <moleculereadscountshistogram>");
             xmlFile.WriteLine("    <title>Distribution of number of times every unique molecule has been observed</title>");
             xmlFile.WriteLine("    <xtitle>Number of observations (reads)</xtitle>");
@@ -649,14 +650,14 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </moleculereadscountshistogram>");
         }
 
-        private void WriteAccuMoleculesByBc(StreamWriter xmlFile, string tag, string title, Dictionary<int, List<int>> data, int start, int step)
+        private void WriteAccuMoleculesByBc(StreamWriter xmlFile, string tag, string title, Dictionary<int, List<int>> data, int start, int stop)
         {
             xmlFile.WriteLine("  <{0}>", tag);
             xmlFile.WriteLine("    <title>{0}</title>", title);
             xmlFile.WriteLine("    <xtitle>Millions of reads processed</xtitle>");
             int[] bcIndices = data.Keys.ToArray();
             Array.Sort(bcIndices);
-            for (int bII = start; bII < bcIndices.Length; bII += step)
+            for (int bII = start; bII < stop; bII++)
             {
                 int bcIdx = bcIndices[bII];
                 List<int> curve = data[bcIdx];

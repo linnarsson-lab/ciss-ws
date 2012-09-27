@@ -12,7 +12,7 @@ defined('_JEXEC') or die('Restricted access');
     var searchelem = document.getElementById("row" + i + "search");
     while (searchelem != null) {
       var trelem = document.getElementById("row" + i);
-      if (ss == "" || searchelem.innerHTML.search(ss) >= 0) {
+      if (ss == "" || searchelem.innerHTML.search(new RegExp(ss, "i")) >= 0) {
         trelem.style.display = "table-row";
       } else {
             trelem.style.display = "none";
@@ -43,7 +43,8 @@ defined('_JEXEC') or die('Restricted access');
             <br />
             <nobr> Sort: $newestsorter $sampleidsorter $statussorter $buildsorter $usersorter
                    &nbsp;&nbsp;&nbsp;
-                   Filter: <input type=\"text\" id=\"freeSearch\" onkeyup=\"return doFreeSearch(this);\" />
+                   Filter: <input type=\"text\" id=\"freeSearch\" onkeyup=\"return doFreeSearch(this);\" 
+                                  title=\"Filters also on fields not visible in the table\" />
             </nobr>
          </legend>
          <table>

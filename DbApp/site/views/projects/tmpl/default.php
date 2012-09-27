@@ -66,7 +66,7 @@ defined('_JEXEC') or die('Restricted access');
     var searchelem = document.getElementById("row" + i + "search");
     while (searchelem != null) {
       var trelem = document.getElementById("row" + i);
-      if (ss == "" || searchelem.innerHTML.search(ss) >= 0) {
+      if (ss == "" || searchelem.innerHTML.search(new RegExp(ss, "i")) >= 0) {
         trelem.style.display = "table-row";
       } else {
             trelem.style.display = "none";
@@ -86,7 +86,8 @@ defined('_JEXEC') or die('Restricted access');
                <nobr>Sort: $newsorter $platesorter $nonasgnsorter $bcsetsorter $speciessorter $pisorter
                            $contactsorter $managersorter $statussorter
                            &nbsp;&nbsp;&nbsp;
-                           Filter: <input type=\"text\" id=\"freeSearch\" onkeyup=\"return doFreeSearch(this);\" />
+                           Filter: <input type=\"text\" id=\"freeSearch\" onkeyup=\"return doFreeSearch(this);\" 
+                                          title=\"Filters also by the fields not visible in this table\" />
                </nobr>
             </legend>
           <table><tr>
@@ -120,7 +121,7 @@ defined('_JEXEC') or die('Restricted access');
     function speciessort($a, $b) { return -strnatcasecmp($a->species, $b->species); }
     function nonasgnsort($a, $b) { $an = $a->plannedlanes - $a->assignedlanes;
                                    $bn = $b->plannedlanes - $b->assignedlanes;
-                                   if ($an == $bn) { return 0; }
+                                   if ($an == $bn) { return ($a->assignedlanes < $b->assignedlanes) ? -1 : 1; }
                                    return ($an > $bn) ? -1 : 1; }; 
   if ($sortKey == "newest") {
     usort($this->projects, "newestsort");

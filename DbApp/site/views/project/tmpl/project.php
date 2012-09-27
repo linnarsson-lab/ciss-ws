@@ -27,10 +27,10 @@ $editlink = "<a href=\"index.php?option=com_dbapp&view=project&layout=edit&contr
  
    $cancelcmt = ($project->status == 'cancelled')? " cancelled": "";
     echo "<h1>View of$cancelcmt sample $project->plateid </h1>";
-    echo "<div class='project'><fieldset>
+    echo "<div class=\"project\"><fieldset>
             <legend> $editlink &nbsp; $cancellink &nbsp; $removelink </legend>";
 
-    echo "<table><tr><td align=top>";
+    echo "<table><tr><td>";
     echo "<fieldset><legend>Project data</legend>";
     echo "<table><tr><th>Title:&nbsp;</th><td>" . $project->title . "</td></tr>";
     echo "<tr><th>P.I.:&nbsp;</th><td>" . $project->principalinvestigator . "</td></tr>";
@@ -38,14 +38,14 @@ $editlink = "<a href=\"index.php?option=com_dbapp&view=project&layout=edit&contr
     echo "<tr><th>Manager:&nbsp;</th><td>" . $project->person . "</td></tr></table>";
     echo "</fieldset></td>";
 
-    echo "<td align=top><fieldset><legend>Sample data</legend>";
+    echo "<td><fieldset><legend>Sample data</legend>";
     echo "<table><tr><th>Production date:&nbsp;</th><td>" . $project->platereference . "</td></tr>";
     echo "<tr><th>Species:&nbsp;</th><td>" . $project->species . "</td></tr>";
     echo "<tr><th>Tissue:</th><td>" . $project->tissue . "</td></tr>";
     echo "<tr><th>Sample&nbsp;type:</th><td>" . $project->sampletype . "</td></tr>";
     echo "<tr><th>Collection&nbsp;method:</th><td>" . $project->collectionmethod . "</td></tr></table>";
     echo "</fieldset></td>";
-    echo "<td align=top>";
+    echo "<td>";
 
     if ($project->status == 'cancelled') {
       echo "<br /><br /> &nbsp; Project is cancelled <br /> ";
@@ -58,7 +58,7 @@ $editlink = "<a href=\"index.php?option=com_dbapp&view=project&layout=edit&contr
       //} else if ($project->status != 'processing') {
       //  $projectlink = "<a href=index.php?option=com_dbapp&view=project&layout=project&controller=project&searchid=" 
       //                 . $project->id . "&inqueue=inqueue&Itemid=" . $itemid . ">PutInQueue</a>&nbsp;";
-      echo "&nbsp; To setup an analysis click 'New analysis' below</b> &nbsp; &nbsp; ";
+      echo "&nbsp; To setup an analysis click '<b>New analysis</b>' below &nbsp; &nbsp; ";
     }
     echo "</td></tr></table>";
 
@@ -83,7 +83,7 @@ if ($project->fileupload == 1) {
                     "<a href=\"index.php?option=com_dbapp&view=sequencingbatch&layout=edit&controller=sequencingbatch&searchid=0&ProjectId=" 
                   . $project->id . "&BatchNo="
                   . (count($this->seqbatches) + 1) . "&Itemid=" . $itemid . "\">New sequencing batch</a>";
-  echo "<div class='sequencingbatch'><fieldset><legend><nobr>Associated sequencing batches &nbsp; &nbsp; &nbsp;$newbatchlink</nobr></legend>";
+  echo "<div class=\"sequencingbatch\"><fieldset><legend><nobr>Associated sequencing batches &nbsp; &nbsp; &nbsp;$newbatchlink</nobr></legend>";
 
 if (count($this->seqbatches) != 0) {
   echo "<table>
@@ -109,8 +109,8 @@ if (count($this->seqbatches) != 0) {
         $illstring = "";
         foreach ($illrow as $ills) {
           $ill = preg_split('/-/', $ills);
-          $runlink = " <a href=index.php?option=com_dbapp&view=illuminarun&layout=illuminarun&controller=illuminarun&searchid=" 
-                     . $ill[0] . "&Itemid=" . $itemid . ">" . $ill[1] . "</a>&nbsp;";
+          $runlink = " <a href=\"index.php?option=com_dbapp&view=illuminarun&layout=illuminarun&controller=illuminarun&searchid=" 
+                     . $ill[0] . "&Itemid=" . $itemid . "\" >" . $ill[1] . " </a>&nbsp;";
           $illstring = $illstring . $runlink;
         }
         echo "<td> $illstring </td>";
@@ -124,16 +124,11 @@ if (count($this->seqbatches) != 0) {
       echo " No batch yet defined <br />";
 }
   echo "</fieldset></div>";
-
-    echo "<fieldset>";
-    echo "<b>User:&nbsp; </b>  " . $project->user . " &nbsp; &nbsp;<b>  Latest&nbsp;edit:&nbsp;</b>  " . $project->time . "  &nbsp; &nbsp;  &nbsp; &nbsp; ";
-    echo "<a href=index.php?option=com_dbapp&view=projects&Itemid=" . $itemid . ">Return to sample list</a>";
-    echo "</fieldset>";
     $newanalysislink = ($project->status == 'cancelled' || count($this->seqbatches) == 0)? "" :
-                 "<a href=index.php?option=com_dbapp&view=lanes&layout=setupanalysis&controller=lanes&&projectid="
-                 . $project->id . "&Itemid=" . $itemid . " >New analysis</a>";
+                 "<a href=\"index.php?option=com_dbapp&view=lanes&layout=setupanalysis&controller=lanes&&projectid="
+                 . $project->id . "&Itemid=" . $itemid . "\" >New analysis</a>";
 
-    echo "<div class='analysis'><fieldset><legend>Analysis results $newanalysislink</legend>";
+    echo "<div class=\"analysis\"><fieldset><legend>Analysis results $newanalysislink</legend>";
     if (count($this->analysis) != 0) {
       echo "<table>
               <tr>
@@ -157,7 +152,7 @@ if (count($this->seqbatches) != 0) {
         $analysissummary = "";
         $resultname = ($analys->status == 'ready')? "<b>Results file is missing!</b>" : "";
         if (file_exists($analys->resultspath)) {
-          $analysissummary = "<a href=index.php?option=com_dbapp&view=project&controller=project&layout=analysis&searchid=" . $analys->id . "&Itemid=" . $itemid . ">view</a>&nbsp;";  
+          $analysissummary = "<a href=\"index.php?option=com_dbapp&view=project&controller=project&layout=analysis&searchid=" . $analys->id . "&Itemid=" . $itemid . "\" >view</a>&nbsp;";  
           $a = explode('/', $analys->resultspath);
           $resultname = $a[sizeof($a)-1];
         }
@@ -210,4 +205,9 @@ if (count($this->seqbatches) != 0) {
       echo "  Not yet run <br />";
     }
     echo "<br /></fieldset></div>";
+
+    echo "<div><fieldset>";
+    echo "<b>User:&nbsp; </b>  " . $project->user . " &nbsp; &nbsp;<b>  Latest&nbsp;edit:&nbsp;</b>  " . $project->time . "  &nbsp; &nbsp;  &nbsp; &nbsp; ";
+    echo "<a href=\"index.php?option=com_dbapp&view=projects&Itemid=" . $itemid . "\" >Return to sample list</a>";
+    echo "</fieldset></div>";
 ?>

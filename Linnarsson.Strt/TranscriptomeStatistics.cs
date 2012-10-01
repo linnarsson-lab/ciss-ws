@@ -681,8 +681,12 @@ namespace Linnarsson.Strt
         private void WritePerLaneStats(StreamWriter xmlFile)
         {
             double meanFrac0 = perLaneStats.GetMeanOfLaneFracMeans();
-            WritePerLaneStatsSection(xmlFile, "low", 0.0, meanFrac0);
-            WritePerLaneStatsSection(xmlFile, "high", meanFrac0, 10.0);
+            //Console.WriteLine("meanFrac0={0}", meanFrac0);
+            if (!double.IsNaN(meanFrac0))
+            {
+                WritePerLaneStatsSection(xmlFile, "low", 0.0, meanFrac0);
+                WritePerLaneStatsSection(xmlFile, "high", meanFrac0, 1.0);
+            }
         }
 
         private void WritePerLaneStatsSection(StreamWriter xmlFile, string sectionTitle, double minF, double maxF)
@@ -693,16 +697,14 @@ namespace Linnarsson.Strt
                               sectionTitle, PerLaneStats.nMappedReadsPerFileAtSample, type);
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
             {
-                List<Pair<string, double>> data = (barcodes.HasRandomBarcodes)?
-                                                        perLaneStats.GetUniqueMolsPerMappedReads(bcIdx) : 
-                                                        perLaneStats.GetDistinctMappingsPerMappedReads(bcIdx);
-                if (data[0].Second < minF || data[0].Second >= maxF)
+                List<Pair<string, double>> data = perLaneStats.GetComplexityIndex(bcIdx);
+                if (data == null || data[0].Second < minF || data[0].Second >= maxF)
                     continue;
                 string legend = string.Format("{0} [{1}]", barcodes.Seqs[bcIdx], barcodes.GetWellId(bcIdx));
                 xmlFile.WriteLine("    <curve legend=\"{0}\" color=\"#{1:x2}{2:x2}{3:x2}\">",
                                   legend, (bcIdx * 47) % 255, (bcIdx * 21) % 255, (255 - (60 * bcIdx % 255)));
                 foreach (Pair<string, double> laneAndFrac in data)
-                    xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1:0.0000}\" />", laneAndFrac.First, laneAndFrac.Second);
+                    xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1:0.0000000}\" />", laneAndFrac.First, laneAndFrac.Second);
                 xmlFile.WriteLine("    </curve>");
             }
             xmlFile.WriteLine("  </fracuniqueperlane>");

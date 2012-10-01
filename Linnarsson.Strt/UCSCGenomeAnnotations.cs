@@ -664,7 +664,7 @@ namespace Linnarsson.Strt
                     }
                     sGfGroup.Sort();
                     if (sGfGroup.Count > 0)
-                        trShareFile.WriteLine("{0}\t{1}\t{2}", gf.Name, gf.GetTranscriptHits(), string.Join("\t", sGfGroup.ToArray()));
+                        trShareFile.WriteLine("{0}\t{1}\t{2}", gf.Name, gf.TranscriptReadsByBarcode.Sum(), string.Join("\t", sGfGroup.ToArray()));
                 }
             }
         }

@@ -10,7 +10,7 @@ namespace Linnarsson.Strt
 {
     class PerLaneStats
     {
-        public static readonly int nMappedReadsPerFileAtSample = 500000;
+        public static readonly int nMappedReadsPerFileAtSample = 200000;
 
         private Dictionary<string, int[]> nUniqueMolsPerLaneAndBc = new Dictionary<string, int[]>();
         private Dictionary<string, int[]> nMappedReadsPerLaneAndBc = new Dictionary<string, int[]>();
@@ -57,24 +57,29 @@ namespace Linnarsson.Strt
             return runLane;
         }
 
-        public List<Pair<string, double>> GetUniqueMolsPerMappedReads(int bcIdx)
+        public List<Pair<string, double>> GetComplexityIndex(int bcIdx)
         {
-            return GetBcFractions(bcIdx, nUniqueMolsPerLaneAndBc);
+            if (barcodes.HasRandomBarcodes)
+                return GetBcFractions(bcIdx, nUniqueMolsPerLaneAndBc);
+            else
+                return GetBcFractions(bcIdx, nDistinctMappingsPerLaneAndBc);
         }
-        public List<Pair<string, double>> GetDistinctMappingsPerMappedReads(int bcIdx)
-        {
-            return GetBcFractions(bcIdx, nDistinctMappingsPerLaneAndBc);
-        }
+
         private List<Pair<string, double>> GetBcFractions(int bcIdx, Dictionary<string, int[]> dataSet)
         {
+            bool anyNonzero = false;
             List<Pair<string, double>> result = new List<Pair<string, double>>();
             foreach (string runLane in dataSet.Keys)
             {
                 double f = dataSet[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx];
+                //Console.WriteLine("Bc={0} runLane={1} {2}/{3}={4}", bcIdx, runLane, 
+                //                  dataSet[runLane][bcIdx], nMappedReadsPerLaneAndBc[runLane][bcIdx], f);
                 if (double.IsNaN(f)) f = 0.0;
                 result.Add(new Pair<string, double>(runLane, f));
+                if (f > 0.0) anyNonzero = true;
             }
-            return result;
+            if (anyNonzero) return result;
+            return null;
         }
 
         public double GetMeanOfLaneFracMeans()
@@ -92,7 +97,7 @@ namespace Linnarsson.Strt
                     if (!double.IsNaN(fileFrac))
                         bcSum += fileFrac;
                 }
-                ds.Add(bcSum / (double)runLanes.Length);
+                if (bcSum > 0.0) ds.Add(bcSum / (double)runLanes.Length);
             }
             return ds.Mean();
         }

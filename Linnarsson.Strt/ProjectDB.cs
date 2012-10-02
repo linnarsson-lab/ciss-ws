@@ -298,11 +298,11 @@ namespace Linnarsson.Strt
             }
             foreach (LaneInfo extrInfo in projDescr.extractionInfos)
             {
-                if (extrInfo.nReads == 0)
+                if (extrInfo.nPFReads == 0)
                     continue; // Has been extracted earlier - no data to update
-                sql = string.Format(string.Format("UPDATE jos_aaalane SET yield=\"{0}\", pfyield=\"{1}\" WHERE laneno=\"{2}\" AND " + 
+                sql = string.Format(string.Format("UPDATE jos_aaalane SET strtyield=\"{0}\" WHERE laneno=\"{2}\" AND " + 
                                         "jos_aaailluminarunid= (SELECT id FROM jos_aaailluminarun WHERE illuminarunid=\"{3}\") ",
-                                        extrInfo.nReads, extrInfo.nPFReads, extrInfo.laneNo, extrInfo.runId));
+                                        extrInfo.nPFReads, extrInfo.laneNo, extrInfo.runId));
                 cmd = new MySqlCommand(sql, conn);
                 cmd.ExecuteNonQuery();
             }

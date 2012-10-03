@@ -35,7 +35,10 @@ namespace Linnarsson.Strt
                                                                    "NO_BARCODE-CGACT25", "NO_BARCODE-NNNA25", "NO_BARCODE-SAL1-T25",
                                                                    "NO_BARCODE-SOLEXA-ADP2_CONTAINING", "NO_BARCODE-INTERNAL-T20",
                                                                    "NO_VALID_BARCODE-UNCHARACTERIZED" };
-        public static int Parse(string category) { return Array.IndexOf(categories, category.ToUpper()); }
+        public static int Parse(string category) 
+        {
+            return Array.FindIndex(categories, (c) => category.Equals(c, StringComparison.CurrentCultureIgnoreCase));
+        }
 
     }
 

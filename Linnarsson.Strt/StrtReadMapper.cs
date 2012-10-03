@@ -277,10 +277,10 @@ namespace Linnarsson.Strt
 
         public void Extract(ProjectDescription pd)
         {
-            pd.extractionInfos = PathHandler.ListReadsFiles(pd.runIdsLanes.ToList());
+            pd.laneInfos = PathHandler.ListReadsFiles(pd.runIdsLanes.ToList());
             pd.extractionVersion = EXTRACTION_VERSION;
             string outputFolder = PathHandler.MakeExtractedFolder(pd.ProjectFolder, barcodes.Name, EXTRACTION_VERSION);
-            Extract(pd.extractionInfos, outputFolder);
+            Extract(pd.laneInfos, outputFolder);
         }
 
         public static readonly string EXTRACTION_VERSION = "31";
@@ -341,7 +341,7 @@ namespace Linnarsson.Strt
                     if (extrQ != null)
                         extrQ.Write(laneInfo);
                     laneInfo.nReads = readCounter.PartialTotal;
-                    laneInfo.nPFReads = readCounter.PartialCount(ReadStatus.VALID);
+                    laneInfo.nValidReads = readCounter.PartialCount(ReadStatus.VALID);
                 }
                 if (Background.CancellationPending) break;
             }
@@ -417,8 +417,8 @@ namespace Linnarsson.Strt
                 genome.ReadLen = GetReadLen(projDescr);
                 SetAvailableBowtieIndexVersion(projDescr, genome);
                 logWriter.WriteLine("{0} Mapping to {1}...", DateTime.Now, genome.GetBowtieSplcIndexName()); logWriter.Flush();
-                CreateBowtieMaps(genome, projDescr.extractionInfos);
-                List<string> mapFilePaths = LaneInfo.RetrieveAllMapFilePaths(projDescr.extractionInfos);
+                CreateBowtieMaps(genome, projDescr.laneInfos);
+                List<string> mapFilePaths = LaneInfo.RetrieveAllMapFilePaths(projDescr.laneInfos);
                 props.UseRPKM = projDescr.rpkm;
                 props.DirectionalReads = !projDescr.rpkm;
                 projDescr.SetGenomeData(genome);
@@ -450,7 +450,7 @@ namespace Linnarsson.Strt
 
         private int GetReadLen(ProjectDescription projDescr)
         {
-            List<string> extractedByBcFolders = projDescr.extractionInfos.ConvertAll(l => l.extractedFileFolder);
+            List<string> extractedByBcFolders = projDescr.laneInfos.ConvertAll(l => l.extractedFileFolder);
             return GetReadLen(extractedByBcFolders.ToArray());
         }
         private int GetReadLen(string extractedFolder)

@@ -53,7 +53,7 @@ namespace Linnarsson.Strt
         public string annotation { get; set; }
         public string variant { get; set; }
         public int gene5PrimeExtension { get; set; }
-        public List<LaneInfo> extractionInfos { get; set; }
+        public List<LaneInfo> laneInfos { get; set; }
         public string analysisId { get; set; }
         public List<ResultDescription> resultDescriptions { get; set; }
 
@@ -296,13 +296,13 @@ namespace Linnarsson.Strt
                 cmd.ExecuteNonQuery();
                 firstResult = false;
             }
-            foreach (LaneInfo extrInfo in projDescr.extractionInfos)
+            foreach (LaneInfo laneInfo in projDescr.laneInfos)
             {
-                if (extrInfo.nPFReads == 0)
+                if (laneInfo.nValidReads == 0)
                     continue; // Has been extracted earlier - no data to update
                 sql = string.Format(string.Format("UPDATE jos_aaalane SET strtyield=\"{0}\" WHERE laneno=\"{2}\" AND " + 
                                         "jos_aaailluminarunid= (SELECT id FROM jos_aaailluminarun WHERE illuminarunid=\"{3}\") ",
-                                        extrInfo.nPFReads, extrInfo.laneNo, extrInfo.runId));
+                                        laneInfo.nValidReads, laneInfo.laneNo, laneInfo.runId));
                 cmd = new MySqlCommand(sql, conn);
                 cmd.ExecuteNonQuery();
             }

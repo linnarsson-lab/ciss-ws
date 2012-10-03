@@ -16,8 +16,16 @@ namespace Linnarsson.Dna
         public string extractionTopFolder { get; set; }
 
         public string readFilePath { get; set; }
+
+        /// <summary>
+        /// Number of reads in fastQ file
+        /// </summary>
         public int nReads { get; set; }
-        public int nPFReads { get; set; }
+
+        /// <summary>
+        /// Number of valid STRT reads remaining after extraction filtering
+        /// </summary>
+        public int nValidReads { get; set; }
 
         public string slaskFilePath { get; set; }
         public string summaryFilePath { get; set; }
@@ -60,7 +68,7 @@ namespace Linnarsson.Dna
 
         public override string ToString()
         {
-            string s = "ExtrInfo: runId=" + runId + " laneNo=" + laneNo + "\n" +
+            string s = "LaneInfo: runId=" + runId + " laneNo=" + laneNo + "\n" +
                        "readFilePath=" + readFilePath + " nReads=" + nReads + "\n" +
                        "extrTopF= " + extractionTopFolder + "\n" +
                        ((extractedFilePaths != null && extractedFilePaths.Length > 0) ? "extrFilePaths[0]=" + extractedFilePaths[0] + "\n" : "") +

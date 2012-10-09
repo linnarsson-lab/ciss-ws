@@ -20,6 +20,7 @@ namespace CorrCell
             bool shuffleGenes = false;
             bool shuffleCells = false;
             bool totalShuffle = false;
+            bool useThreading = false;
             int all = -1;
             string outFileBase = "CorrCell_output";
             string pairFile = null;
@@ -54,6 +55,8 @@ namespace CorrCell
                         shuffleCells = true;
                     else if (args[argIdx] == "--shuffle-all")
                         totalShuffle = true;
+                    else if (args[argIdx] == "--parallel")
+                        useThreading = true;
                     else if (args[argIdx] == "-a")
                         all = int.Parse(args[++argIdx]);
                     else if (args[argIdx] == "-P")
@@ -93,10 +96,11 @@ namespace CorrCell
                 string plotFileBase = plot? outFileBase : "";
                 DataSampler dataSampler = new DataSampler(expr, minMeanSamplesInBin, plotFileBase);
                 GeneCorrelator gc = new GeneCorrelator(nSample, minMeanSamplesInBin, cc, dataSampler);
+                GeneClassAnalyzer gca = GeneClassAnalyzer.GetGeneClassAnalyzer(expr, gc, useThreading);
                 if (pairFile != null)
-                    AnalyzePairedGenes(pairFile, expr, gc, outFileBase);
+                    AnalyzePairedGenes(gca, pairFile, outFileBase);
                 else if (classFile != null)
-                    AnalyzeGeneClasses(classFile, expr, gc, outFileBase);
+                    AnalyzeGeneClasses(gca, classFile, outFileBase);
                 if (all >= 0)
                     ShowCorrelations(expr, gc, outFileBase, all);
             }
@@ -121,20 +125,19 @@ namespace CorrCell
                                   "--shuffle-genes       shuffle values within cell between similar-level genes to estimate 'random' data background\n" +
                                   "--shuffle-cells       shuffle each gene's values between cell to estimate 'random' data background\n" +
                                   "--shuffle-all         shuffle all values randomly in expression table\n" + 
+                                  "--parallel            allow parallel execution of samplings for speed-up\n" +
                                   "EXPRFILE              the Lxxx_expression.tab output file from the STRT pipeline\n" +
                                   "-P -D                 change distance measure from Spearman to either Pearson or Distance");
             }
         }
 
-        private static void AnalyzePairedGenes(string pairFile, Expression expr, GeneCorrelator gc, string outFileBase)
+        private static void AnalyzePairedGenes(GeneClassAnalyzer gca, string pairFile, string outFileBase)
         {
-            GeneClassAnalyzer gca = new GeneClassAnalyzer(expr, gc);
             gca.AnalyzePairedGenes(pairFile, outFileBase + "_pairs_distrib.tab");
         }
 
-        private static void AnalyzeGeneClasses(string classFile, Expression expr, GeneCorrelator gc, string outFileBase)
+        private static void AnalyzeGeneClasses(GeneClassAnalyzer gca, string classFile, string outFileBase)
         {
-            GeneClassAnalyzer gca = new GeneClassAnalyzer(expr, gc);
             gca.AnalyzeGeneClasses(classFile, outFileBase + "_classes_distrib.tab");
         }
 

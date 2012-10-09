@@ -254,7 +254,6 @@ namespace CorrCell
         /// </summary>
         public void ShuffleBetweenSimilarLevelGenes()
         {
-            Random rnd = new Random(DateTime.Now.Millisecond);
             List<double> geneMeans = new List<double>(data.Count);
             List<int> geneIndices = new List<int>(data.Count);
             for (int geneIdx = 0; geneIdx < GeneCount; geneIdx++)
@@ -267,9 +266,9 @@ namespace CorrCell
             {
                 for (int cellIdx = 0; cellIdx < CellCount; cellIdx++)
                 {
-                    int exchangeIdx = takeIdx + rnd.Next(21) - 10;
+                    int exchangeIdx = takeIdx + ThreadSafeRandom.Next(21) - 10;
                     while (exchangeIdx == takeIdx || exchangeIdx < 0 || exchangeIdx >= data.Count)
-                        exchangeIdx = takeIdx + rnd.Next(21) - 10;
+                        exchangeIdx = takeIdx + ThreadSafeRandom.Next(21) - 10;
                     int temp = data[geneIndices[takeIdx]][cellIdx];
                     data[geneIndices[takeIdx]][cellIdx] = data[geneIndices[exchangeIdx]][cellIdx];
                     data[geneIndices[exchangeIdx]][cellIdx] = temp;
@@ -282,15 +281,14 @@ namespace CorrCell
         /// </summary>
         public void TotalShuffle()
         {
-            Random rnd = new Random(DateTime.Now.Millisecond);
             for (int takeGeneIdx = 0; takeGeneIdx < GeneCount; takeGeneIdx++)
             {
                 for (int takeCellIdx = 0; takeCellIdx < CellCount; takeCellIdx++)
                 {
-                    int putGeneIdx = rnd.Next(GeneCount);
-                    while (putGeneIdx == takeGeneIdx) putGeneIdx = rnd.Next(GeneCount);
-                    int putCellIdx = rnd.Next(CellCount);
-                    while (putCellIdx == takeGeneIdx) putCellIdx = rnd.Next(CellCount);
+                    int putGeneIdx = ThreadSafeRandom.Next(GeneCount);
+                    while (putGeneIdx == takeGeneIdx) putGeneIdx = ThreadSafeRandom.Next(GeneCount);
+                    int putCellIdx = ThreadSafeRandom.Next(CellCount);
+                    while (putCellIdx == takeGeneIdx) putCellIdx = ThreadSafeRandom.Next(CellCount);
                     int temp = data[takeGeneIdx][takeCellIdx];
                     data[takeGeneIdx][takeCellIdx] = data[putGeneIdx][putCellIdx];
                     data[putGeneIdx][putCellIdx] = temp;
@@ -303,13 +301,12 @@ namespace CorrCell
         /// </summary>
         public void ShuffleBetweenCells()
         {
-            Random rnd = new Random(DateTime.Now.Millisecond);
             for (int cellIdx = 0; cellIdx < CellCount; cellIdx++)
             {
                 for (int takeGeneIdx = 0; takeGeneIdx < GeneCount; takeGeneIdx++)
                 {
-                    int putGeneIdx = rnd.Next(GeneCount);
-                    while (putGeneIdx == takeGeneIdx) putGeneIdx = rnd.Next(GeneCount);
+                    int putGeneIdx = ThreadSafeRandom.Next(GeneCount);
+                    while (putGeneIdx == takeGeneIdx) putGeneIdx = ThreadSafeRandom.Next(GeneCount);
                     int temp = data[takeGeneIdx][cellIdx];
                     data[takeGeneIdx][cellIdx] = data[putGeneIdx][cellIdx];
                     data[putGeneIdx][cellIdx] = temp;

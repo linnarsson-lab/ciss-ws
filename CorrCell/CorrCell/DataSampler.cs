@@ -12,7 +12,6 @@ namespace CorrCell
     /// </summary>
     public class DataSampler
     {
-        private Random rnd;
         private int[] countIvlStarts;
         private List<List<double>> meansByIvl = new List<List<double>>();
 
@@ -23,7 +22,6 @@ namespace CorrCell
         /// <param name="minValuesPerIvl">Minimum number of values in each bin to sample from</param>
         public DataSampler(Expression expression, int minValuesPerIvl, string plotDistributionFileBase)
         {
-            rnd = new Random(DateTime.Now.Millisecond);
             Dictionary<int, List<double>> meansByCount = SortMeansByCount(expression);
             DefineIntervalsOfMeans(minValuesPerIvl, meansByCount);
             Console.WriteLine(meansByCount.Count + " count levels made into " + countIvlStarts.Length + " intervals.");
@@ -47,7 +45,7 @@ namespace CorrCell
             if (ivlIdx < 0)
                 ivlIdx = ~ivlIdx - 1;
             List<double> ivlData = meansByIvl[ivlIdx];
-            return ivlData[rnd.Next(ivlData.Count)];
+            return ivlData[ThreadSafeRandom.Next(ivlData.Count)];
         }
 
         /// <summary>

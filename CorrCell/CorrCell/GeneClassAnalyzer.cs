@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using Linnarsson.Mathematics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CorrCell
 {
@@ -11,18 +13,26 @@ namespace CorrCell
     /// Used to compare the class-wise distibution(s) of gene pair correlation coefficients
     /// to a random background of non-candidate gene pairs
     /// </summary>
-    public class GeneClassAnalyzer
+    public abstract class GeneClassAnalyzer
     {
-        private Expression expr;
-        private GeneCorrelator gc;
-        private Random rnd;
+        public static GeneClassAnalyzer GetGeneClassAnalyzer(Expression expr, GeneCorrelator gc, bool useThreading)
+        {
+            if (useThreading)
+                return new MultiThreadGeneClassAnalyzer(expr, gc);
+            return new SingleThreadGeneClassAnalyzer(expr, gc);
+        }
+
+        protected abstract int[] CalcPairHistogram(int nHistoBins, List<Pair<int, int>> geneIdxPairs);
+        protected abstract int[] CalcBkgHistogram(int nHistoBins, List<Pair<int, int>> candidateCorrGeneIdxPairs, int nNonPairSamples);
+
+        protected Expression expr;
+        protected GeneCorrelator gc;
         private int nHistoBins = 40;
 
         public GeneClassAnalyzer(Expression expr, GeneCorrelator gc)
         {
             this.expr = expr;
             this.gc = gc;
-            rnd = new Random(DateTime.Now.Millisecond);
         }
 
         /// <summary>
@@ -150,7 +160,15 @@ namespace CorrCell
             return geneIdxPairs;
         }
 
-        private int[] CalcBkgHistogram(int nHistoBins, List<Pair<int, int>> candidateCorrGeneIdxPairs, int nNonPairSamples)
+    }
+
+    class SingleThreadGeneClassAnalyzer : GeneClassAnalyzer
+    {
+        public SingleThreadGeneClassAnalyzer(Expression expr, GeneCorrelator gc)
+            : base(expr, gc)
+        { }
+
+        protected override int[] CalcBkgHistogram(int nHistoBins, List<Pair<int, int>> candidateCorrGeneIdxPairs, int nNonPairSamples)
         {
             int[] nonPairHisto = new int[nHistoBins];
             for (int i = 0; i < nNonPairSamples; i++)
@@ -158,26 +176,64 @@ namespace CorrCell
                 int geneIdxA, geneIdxB;
                 do
                 {
-                    geneIdxA = rnd.Next(expr.GeneCount - 1);
-                    geneIdxB = rnd.Next(geneIdxA, expr.GeneCount);
+                    geneIdxA = ThreadSafeRandom.Next(expr.GeneCount - 1);
+                    geneIdxB = ThreadSafeRandom.Next(geneIdxA, expr.GeneCount);
                 } while (candidateCorrGeneIdxPairs.Any(p => (p.First == geneIdxA && p.Second == geneIdxB)));
                 double corr = gc.GetCorrelation(expr, geneIdxA, geneIdxB).corrMean;
-                nonPairHisto[(int)Math.Floor(Math.Abs(corr) * nHistoBins)]++;
+                int hit = (int)Math.Floor(Math.Abs(corr) * nHistoBins);
+                nonPairHisto[hit]++;
             }
             return nonPairHisto;
         }
 
-        private int[] CalcPairHistogram(int nHistoBins, List<Pair<int, int>> geneIdxPairs)
+        protected override int[] CalcPairHistogram(int nHistoBins, List<Pair<int, int>> geneIdxPairs)
         {
             int[] pairHisto = new int[nHistoBins];
             foreach (Pair<int, int> p in geneIdxPairs)
             {
                 double corr = gc.GetCorrelation(expr, p.First, p.Second).corrMean;
-                pairHisto[(int)Math.Floor(Math.Abs(corr) * nHistoBins)]++;
+                int hit = (int)Math.Floor(Math.Abs(corr) * nHistoBins);
+                pairHisto[hit]++;
             }
             return pairHisto;
         }
+    }
 
+    class MultiThreadGeneClassAnalyzer : GeneClassAnalyzer
+    {
+        public MultiThreadGeneClassAnalyzer(Expression expr, GeneCorrelator gc)
+            : base(expr, gc)
+        { }
+
+        protected override int[] CalcBkgHistogram(int nHistoBins, List<Pair<int, int>> candidateCorrGeneIdxPairs, int nNonPairSamples)
+        {
+            int[] nonPairHisto = new int[nHistoBins];
+            Parallel.For(0, nNonPairSamples, i =>
+            {
+                int geneIdxA, geneIdxB;
+                do
+                {
+                    geneIdxA = ThreadSafeRandom.Next(expr.GeneCount - 1);
+                    geneIdxB = ThreadSafeRandom.Next(geneIdxA, expr.GeneCount);
+                } while (candidateCorrGeneIdxPairs.Any(p => (p.First == geneIdxA && p.Second == geneIdxB)));
+                double corr = gc.GetCorrelation(expr, geneIdxA, geneIdxB).corrMean;
+                int hit = (int)Math.Floor(Math.Abs(corr) * nHistoBins);
+                nonPairHisto[hit]++;
+            });
+            return nonPairHisto;
+        }
+
+        protected override int[] CalcPairHistogram(int nHistoBins, List<Pair<int, int>> geneIdxPairs)
+        {
+            int[] pairHisto = new int[nHistoBins];
+            Parallel.ForEach<Pair<int, int>>(geneIdxPairs, p =>
+            {
+                double corr = gc.GetCorrelation(expr, p.First, p.Second).corrMean;
+                int hit = (int)Math.Floor(Math.Abs(corr) * nHistoBins);
+                pairHisto[hit]++;
+            });
+            return pairHisto;
+        }
     }
 
 }

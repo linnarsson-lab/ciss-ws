@@ -10,12 +10,13 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CorrCell</RootNamespace>
     <AssemblyName>CorrCell</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SccProjectName>SAK</SccProjectName>
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -53,12 +54,16 @@
     <Compile Include="GeneCorrelator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ThreadSafeRandom.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\MathLib\Linnarsson.Mathematics.csproj">
       <Project>{CA6815A6-BA36-47A6-A177-FE6C44099FC2}</Project>
       <Name>Linnarsson.Mathematics</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

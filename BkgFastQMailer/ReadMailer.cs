@@ -94,7 +94,7 @@ namespace BkgFastQMailer
                 destFilename += ".gz";
             }
             string destPath = Path.Combine(Props.props.ResultDownloadUrl, destFilename);
-            string scpArg = string.Format("-P 9952 {0} {1}", gzReadsPath, destPath);
+            string scpArg = string.Format("-P {0} {1} {2}", Props.props.ResultDownloadScpPort, gzReadsPath, destPath);
             Console.WriteLine(DateTime.Now.ToString() + ": scp " + scpArg);
             CmdCaller scpCmd = new CmdCaller("scp", scpArg);
             if (scpCmd.ExitCode != 0)

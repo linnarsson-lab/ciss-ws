@@ -24,8 +24,9 @@ namespace Linnarsson.Dna
         public string ReadsFolder = "\\\\192.168.1.12\\data\\reads"; // Where FastQ files of concatenated reads for each lane are gathered
         public string ProjectsFolder = "C:\\data\\strt";
         public string UploadsFolder = "C:\\data\\uploads";
-        public string ResultDownloadUrl = "strtserver@192.168.1.3:/srv/www/htdocs/strt/";
+        public string ResultDownloadUrl = "strtserver@192.168.1.2:/var/www/html/strt/";
         public string ResultDownloadFolderHttp = "http://linnarsson.mbb.ki.se/strt/";
+        public string ResultDownloadScpPort = "9922";
         public string FailureReportEmail = "peter.lonnerberg@ki.se";
         public string ProjectDBProcessorNotifierEmailSender = "peter.lonnerberg@ki.se";
         public string BowtieIndexFolder = "\\\\192.168.1.12\\sequtils\\bowtie-0.12.7\\indexes";
@@ -83,6 +84,7 @@ namespace Linnarsson.Dna
         public bool AnalyzeSeqUpstreamTSSite = false; // if true, will check if false reads were made by barcode matching in template
         public bool AnalyzeSpliceHitsByBarcode = false; // If true, will show transcript cross-junction hits per barcode
         public int GeneFeature5PrimeExtension = 0; // Extend all transcript 5' annotations to allow for unknown more upstream start sites.
+        public int CAPRegionSpan = 100; // Defines the +/- bp to consider as hits to 5' end for the CAP site hit counting.
 
         [NonSerialized]
         private Barcodes m_Barcodes;

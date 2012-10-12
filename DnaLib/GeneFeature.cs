@@ -68,8 +68,14 @@ namespace Linnarsson.Dna
         /// End position on chromosome of the gene locus including 3' flank sequence. Not adjusted for neighboring overlapping genes.
         /// </summary>
         public int LocusEnd { get { return End + LocusFlankLength; } }
+
         /// <summary>
-        /// Start position on chromosome of the leftmost exon
+        /// Holds the chromosomal position of the CAP site
+        /// </summary>
+        public int SavedCAPPos { get; private set; }
+
+        /// <summary>
+        /// Start position on chromosome of the leftmost exon. May be adjusted by 5' end extension defined by Props for '+' strand genes.
         /// </summary>
         public override int Start
         {
@@ -84,7 +90,7 @@ namespace Linnarsson.Dna
             }
         }
         /// <summary>
-        /// Inclusive end position on chromosome of the rightmost exon
+        /// Inclusive end position on chromosome of the rightmost exon. May be adjusted by 5' end extension defined by Props for '-' strand genes.
         /// </summary>
         public override int End
         {
@@ -109,6 +115,13 @@ namespace Linnarsson.Dna
         public int[] TranscriptReadsByBarcode;
         public int[] EstimatedTrueMolsByBarcode;
         public int[] NonConflictingTranscriptHitsByBarcode;
+
+        /// <summary>
+        /// Either molecules per barcode after rndTag mutation filtering, or total reads per barcode when no rndTag are used.
+        /// Only contains unquely mapping hits.
+        /// </summary>
+        public int[] CAPRegionHitsByBarcode;
+
         public List<double> VariationSamples;
         /// <summary>
         /// Used to analyse exon hit distribution
@@ -176,6 +189,7 @@ namespace Linnarsson.Dna
             TranscriptReadsByBarcode = new int[Props.props.Barcodes.Count];
             EstimatedTrueMolsByBarcode = new int[Props.props.Barcodes.Count];
             NonConflictingTranscriptHitsByBarcode = new int[Props.props.Barcodes.Count];
+            CAPRegionHitsByBarcode = new int[Props.props.Barcodes.Count];
             VariationSamples = new List<double>();
             TranscriptHitsByExonIdx = new int[exonStarts.Length];
             TranscriptHitsByJunction = new Dictionary<string, int>();
@@ -187,6 +201,7 @@ namespace Linnarsson.Dna
             locusHitIdx = 0;
             bcSNPCountsByRealChrPos = new SortedDictionary<int, SNPCountsByBarcode>();
             sharingGenes = new Dictionary<IFeature, int>();
+            SavedCAPPos = (strand == '+') ? exonStarts[0] : exonEnds[exonEnds.Length - 1];
         }
 
         public int GetExonLength(int i)
@@ -471,7 +486,11 @@ namespace Linnarsson.Dna
             TranscriptReadsByBarcode[item.bcIdx] += item.ReadCount;
             EstimatedTrueMolsByBarcode[item.bcIdx] += item.EstTrueMolCount;
             if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
+            {
                 NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
+                if (Math.Abs(item.HitMidPos - SavedCAPPos) < Props.props.CAPRegionSpan)
+                    CAPRegionHitsByBarcode[item.bcIdx] += item.MolCount;
+            }
             HitsByAnnotType[annotType] += item.MolCount;
             NonMaskedHitsByAnnotType[annotType] += item.MolCount; // Count all EXON/SPLC hits for counter-oriented genes in statistics
             if (Props.props.ShowTranscriptSharingGenes)

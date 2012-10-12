@@ -372,6 +372,7 @@ namespace Linnarsson.Strt
             if (props.AnalyzeSpliceHitsByBarcode)
                 WriteSplicesByGeneLocusAndBc(fileNameBase);
             string expressionFile = WriteExpressionTable(fileNameBase);
+            WriteCAPHitsTable(fileNameBase);
             string rpmFile = WriteBarcodedRPM(fileNameBase);
             if (!Environment.OSVersion.VersionString.Contains("Microsoft"))
             {
@@ -600,6 +601,29 @@ namespace Linnarsson.Strt
                 }
             }
             return exprPath;
+        }
+
+        private void WriteCAPHitsTable(string fileNameBase)
+        {
+            string exprPath = fileNameBase + "_CAPRegionHits.tab";
+            using (StreamWriter matrixFile = new StreamWriter(exprPath))
+            {
+                matrixFile.WriteLine("Total and per barcode uniquely mapping transcript hits within +/- {0} of CAP site.", props.CAPRegionSpan);
+                if (!props.DirectionalReads)
+                    matrixFile.WriteLine("NOTE: This is a non-STRT analysis with non-directional reads, so experimental meaning of 5' is a bit unclear.");
+                string matrixValType = barcodes.HasRandomBarcodes ? "(Values are molecule counts)" : "(Values are read counts)";
+                matrixFile.WriteLine("Feature\tChr\tCAPPos\tStrand\tTrscrHits\tSumCAPHits");
+                int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    int totalHits = gf.CAPRegionHitsByBarcode.Sum();
+                    matrixFile.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
+                                     gf.Name, gf.Chr, gf.SavedCAPPos, gf.Strand, gf.GetTranscriptHits(), totalHits);
+                    foreach (int idx in speciesBcIndexes)
+                        matrixFile.Write("\t{0}", gf.CAPRegionHitsByBarcode[idx]);
+                    matrixFile.WriteLine();
+                }
+            }
         }
 
         /// <summary>

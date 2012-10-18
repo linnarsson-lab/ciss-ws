@@ -18,9 +18,10 @@ namespace Linnarsson.Strt
         private static readonly int libraryDepthSampleMolsCountPerBc = 20000;
         private int trSampleDepth;
 
-        public static readonly int maxHotspotCount = 50;
-        public static readonly int minHotspotDistance = 5;
-        public static readonly int minMismatchReadCountForSNPDetection = 10;
+        private static readonly int maxHotspotCount = 50;
+        private static readonly int minHotspotDistance = 5;
+
+        private int minMismatchReadCountForSNPDetection;
 
         StreamWriter nonAnnotWriter = null;
         StreamWriter nonExonWriter = null;
@@ -112,7 +113,7 @@ namespace Linnarsson.Strt
         List<double> sampledUniqueMolecules = new List<double>();
         List<double> sampledExpressedTranscripts = new List<double>();
         Dictionary<int, List<int>> sampledDetectedTranscriptsByBcIdx = new Dictionary<int, List<int>>();
-        // For non-rndTagged samples the following to will be identical:
+        // For non-rndTagged samples the following two will be identical:
         Dictionary<int, List<int>> sampledUniqueMoleculesByBcIdx = new Dictionary<int, List<int>>();
         Dictionary<int, List<int>> sampledUniqueHitPositionsByBcIdx = new Dictionary<int, List<int>>();
 
@@ -151,11 +152,13 @@ namespace Linnarsson.Strt
             exonHitGeneNames = new List<string>(100);
             spliceChrId = Annotations.Genome.Annotation;
             randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
+            TagItem.SetRndTagMutationFilter(props);
             mappingAdder = new MappingAdder(annotations, randomTagFilter, barcodes);
             statsSampleDistPerBarcode = sampleDistForAccuStats / barcodes.Count;
             if (props.AnalyzeSeqUpstreamTSSite)
                 upstreamAnalyzer = new UpstreamAnalyzer(Annotations, barcodes);
             perLaneStats = new PerLaneStats(barcodes);
+            minMismatchReadCountForSNPDetection = props.MinAltNtsReadCountForSNPDetection;
         }
 
         public void SetSyntReadReporter(string syntLevelFile)
@@ -404,7 +407,7 @@ namespace Linnarsson.Strt
                                 if (!Directory.Exists(Path.GetDirectoryName(file)))
                                     Directory.CreateDirectory(Path.GetDirectoryName(file));
                                 rndTagProfileByGeneWriter = file.OpenWrite();
-                                rndTagProfileByGeneWriter.WriteLine("Gene\tBarcode\tTrPos\tEstMolCount\tReadCountsByRndTagIdx");
+                                rndTagProfileByGeneWriter.WriteLine("#Gene\tBarcode\tTrPos\tEstMolCount\tReadCountsByRndTagIdx");
                             }
                             int trPos = (gf.Strand == '+') ? 1 + trPosInChrDir : 1 + gf.Length - trPosInChrDir;
                             rndTagProfileByGeneWriter.Write("{0}\t{1}\t{2}\t{3}", gf.Name, barcodes.Seqs[currentBcIdx], trPos, estMolCount);
@@ -466,6 +469,7 @@ namespace Linnarsson.Strt
                 upstreamAnalyzer.WriteUpstreamStats(OutputPathbase);
             if (TestReporter != null)
                 TestReporter.Summarize(Annotations.geneFeatures);
+            WriteReadCountDistroByRndTagCount();
             WriteHitProfilesByBarcode();
             WriteRedundantExonHits();
             WriteASExonDistributionHistogram();
@@ -637,7 +641,7 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  <nuniqueateachrandomtagcoverage>");
             xmlFile.WriteLine("    <title>Unique alignmentposition-barcodes as fn. of # random tags they occur in</title>");
             xmlFile.WriteLine("    <xtitle>Number of different random tags</xtitle>");
-            for (int i = 0; i < randomTagFilter.nCasesPerRandomTagCount.Length; i++)
+            for (int i = 1; i < randomTagFilter.nCasesPerRandomTagCount.Length; i++)
                 xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
             xmlFile.WriteLine("  </nuniqueateachrandomtagcoverage>");
             WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules in each barcode as fn. of reads processed",
@@ -1456,12 +1460,12 @@ namespace Linnarsson.Strt
                             sb.Append(bcCounts.refNt);
                             foreach (char nt in nts)
                             {
+                                sb.Append('\t');
                                 int c; bool overflow;
                                 bcCounts.SummarizeNt(nt, genomeBarcodes, out c, out overflow);
                                 if (c >= SNPCountsByBarcode.MaxCount)
                                     sb.Append(">=");
                                 if (c > 0) sb.Append(c);
-                                sb.Append('\t');
                             }
                             snpFile.WriteLine("{0}{1}\t{2}\t{3}", first, posOnChr, typeName, sb);
                             first = "\t\t\t";
@@ -1579,6 +1583,25 @@ namespace Linnarsson.Strt
             {
                 int start = locations[cI];
                 writer.WriteLine("{0}\t{1}\t{2}\t{3}", chr, start + averageReadLength / 2, strand, topCounts[cI]);
+            }
+        }
+
+        private void WriteReadCountDistroByRndTagCount()
+        {
+            using (StreamWriter writer = new StreamWriter(OutputPathbase + "_ReadCountDistr_by_UMICount.tab"))
+            {
+                writer.WriteLine("#DetectedUMIs\t1ReadCases\t2ReadsCases...");
+                for (int rndTagIdx = 0; rndTagIdx < barcodes.RandomBarcodeCount; rndTagIdx++)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append(rndTagIdx);
+                    for (int nReads = 1; nReads < randomTagFilter.readDistributionByMolCount.GetLength(1); nReads++)
+                    {
+                        sb.Append('\t');
+                        sb.Append(randomTagFilter.readDistributionByMolCount[rndTagIdx, nReads]);
+                    }
+                    writer.WriteLine(sb);
+                }
             }
         }
 

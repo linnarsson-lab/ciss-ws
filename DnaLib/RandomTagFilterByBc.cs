@@ -181,12 +181,12 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Use to get the estimated molCount and read count profile for a specific genomic position and strand
+        /// Use to get the filtered molecule count and read count profile for a specific genomic position and strand
         /// </summary>
         /// <param name="pos"></param>
         /// <param name="strand"></param>
-        /// <param name="molCount">Number of reads as function of rndTag index at given genomic location, or null if no reads are found</param>
-        /// <param name="readProfile">Array with number of reads in each random label</param>
+        /// <param name="molCount">Estimated number of molecules detected after filtering</param>
+        /// <param name="readProfile">Array with number of reads in each rndTag</param>
         public void GetReadCounts(int pos, char strand, out int molCount, out ushort[] readProfile)
         {
             int posStrand = MakePosStrandIdx(pos, strand);
@@ -195,35 +195,14 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Generates (in arbitrary order) the number of times each registered molecule has been observed.
-        /// If rndTags are not used, generates the number of reads in each position.
+        /// Iterate all TagItems that contain any data
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<int> IterMoleculeReadCounts()
+        public IEnumerable<TagItem> IterNonEmptyTagItems()
         {
             foreach (TagItem tagItem in tagItems.Values)
-            {
-                ushort[] readsByRndTag = tagItem.GetReadCountsByRndTag();
-                if (readsByRndTag != null)
-                    foreach (ushort nOfRndTag in readsByRndTag)
-                        yield return (int)nOfRndTag;
-            }
-        }
-
-        /// <summary>
-        /// Analyse how many position-strand combinations have been observed in each rndTag
-        /// </summary>
-        /// <returns>Counts of distinct mappings by rndTagIdx</returns>
-        public int[] GetCasesByRndTagCount()
-        {
-            int[] nCasesByRndTagCount = new int[Math.Max(2, RandomTagFilterByBc.nRndTags + 1)];
-            foreach (TagItem molCountsAtPos in tagItems.Values)
-            {
-                int nUsedRndTags = Math.Min(RandomTagFilterByBc.nRndTags, molCountsAtPos.GetNumMolecules());
-                if (nUsedRndTags > 0)
-                    nCasesByRndTagCount[nUsedRndTags]++;
-            }
-            return nCasesByRndTagCount;
+                if (tagItem.HasReads)
+                    yield return tagItem;
         }
 
         /// <summary>
@@ -233,10 +212,7 @@ namespace Linnarsson.Strt
         /// <returns>Number of distinct mappings (position-strand) that have been observed, irrespective of rndTags</returns>
         public int GetNumDistinctMappings()
         {
-            int n = 0;
-            foreach (TagItem tagItem in tagItems.Values)
-                if (tagItem.HasReads) n++;
-            return n;
+            return tagItems.Values.Count(v => v.HasReads);
         }
 
         /// <summary>
@@ -287,6 +263,11 @@ namespace Linnarsson.Strt
         /// Histogram of number of times (reads) every molecule has been seen
         /// </summary>
         public int[] moleculeReadCountsHistogram;
+        /// <summary>
+        /// Histogram showing distribution of #reads for each number of rndTags detected across all mapped positions in the experiment
+        /// </summary>
+        public int[,] readDistributionByMolCount;
+
         public static readonly int MaxValueInReadCountHistogram = 1000;
 
         public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds)
@@ -300,6 +281,7 @@ namespace Linnarsson.Strt
             foreach (string chrId in chrIds)
                 chrTagDatas[chrId] = new ChrTagData(chrId);
             moleculeReadCountsHistogram = new int[MaxValueInReadCountHistogram + 1];
+            readDistributionByMolCount = new int[barcodes.RandomBarcodeCount, MaxValueInReadCountHistogram + 1];
         }
 
         /// <summary>
@@ -323,17 +305,29 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Need to call this after finishing every series of reads from the same barcode
         /// </summary>
-        /// <param name="newBcIdx"></param>
         public void FinishBarcode()
         {
             foreach (ChrTagData chrTagData in chrTagDatas.Values)
             {
-                int[] chrCounts = chrTagData.GetCasesByRndTagCount();
-                for (int i = 0; i < nCasesPerRandomTagCount.Length; i++)
-                    nCasesPerRandomTagCount[i] += chrCounts[i];
-                foreach (int count in chrTagData.IterMoleculeReadCounts())
-                    moleculeReadCountsHistogram[Math.Min(MaxValueInReadCountHistogram, count)]++;
+                if (nRndTags > 1)
+                    FinishBarcodeWRndTags(chrTagData);
                 chrTagData.FinishBarcode();
+            }
+        }
+
+        private void FinishBarcodeWRndTags(ChrTagData chrTagData)
+        {
+            foreach (TagItem tagItem in chrTagData.IterNonEmptyTagItems())
+            {
+                ushort[] readsByRndTag = tagItem.GetReadCountsByRndTag();
+                int nUsedRndTags = readsByRndTag.Count(c => c > 0);
+                nCasesPerRandomTagCount[nUsedRndTags]++;
+                foreach (ushort countInRndTag in readsByRndTag.Where(c => c > 0))
+                {
+                    int limitedCount = Math.Min(MaxValueInReadCountHistogram, countInRndTag);
+                    moleculeReadCountsHistogram[limitedCount]++;
+                    readDistributionByMolCount[nUsedRndTags, limitedCount]++;
+                }
             }
         }
 
@@ -385,9 +379,11 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Use to get the read count profile for a specific genomic location
         /// </summary>
+        /// <param name="chr"></param>
         /// <param name="pos"></param>
         /// <param name="strand"></param>
-        /// <returns>Number of reads as function of rndTag index at given genomic location, or null if no reads has hit that location</returns>
+        /// <param name="molCount">Filtered molecule count at given genomic location</param>
+        /// <param name="readProfile">Number of reads as function of rndTag index at given genomic location, or null if no reads has hit that location</param>
         public void GetReadCountProfile(string chr, int pos, char strand, out int molCount, out ushort[] readProfile)
         {
             molCount = 0;

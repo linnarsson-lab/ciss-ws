@@ -85,6 +85,9 @@ namespace Linnarsson.Dna
         public bool AnalyzeSpliceHitsByBarcode = false; // If true, will show transcript cross-junction hits per barcode
         public int GeneFeature5PrimeExtension = 0; // Extend all transcript 5' annotations to allow for unknown more upstream start sites.
         public int CAPRegionSpan = 100; // Defines the +/- bp to consider as hits to 5' end for the CAP site hit counting.
+        public string RndTagMutationFilter = "FractionOfMax";
+        public int RndTagMutationFilterParam = 50;
+        public int MinAltNtsReadCountForSNPDetection = 10; // Positions with less reads with the non-ref bases will not be considered for SNP analysis
 
         [NonSerialized]
         private Barcodes m_Barcodes;
@@ -134,6 +137,7 @@ namespace Linnarsson.Dna
             }
             internal static readonly Props instance = Read();
         }
+
     }
 
 }

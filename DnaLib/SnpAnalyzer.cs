@@ -9,7 +9,6 @@ namespace Linnarsson.Dna
     public class SnpAnalyzer
     {
         public static readonly double thresholdFractionAltHitsForMixPos = 0.25;
-        public static readonly int MinTotalHitsToShowBarcodedSnps = 10;
 
         /// <summary>
         /// Outputs SNP positions within all genes with the respective Nts and counts.
@@ -20,13 +19,16 @@ namespace Linnarsson.Dna
         public static void WriteSnpsByBarcode(string snpPath, Barcodes barcodes, int[] selectedBarcodes, 
                                               Dictionary<string, GeneFeature> geneFeatures)
         {
+            int minHitsToTestSNP = (barcodes.HasRandomBarcodes) ? Props.props.MinMoleculesToTestSnp : Props.props.MinReadsToTestSnp;
             using (StreamWriter snpFile = new StreamWriter(snpPath))
             {
                 if (barcodes.HasRandomBarcodes)
-                    snpFile.WriteLine("#Read counts at all positions that have at least one read with a non-reference nucleotide.");
+                    snpFile.WriteLine("#Read counts at positions with >= {0} hits and >= 1 non-reference nt hits.", minHitsToTestSNP);
                 else
-                    snpFile.WriteLine("#Molecule counts at all positions that have at least one molecule with a non-reference nucleotide,\n" +
-                                      "#Spurious molecules in random tags that likely are results of artefactial (PCR) mutations have been removed.");
+                {
+                    snpFile.WriteLine("#Molecule counts at positions with >= {0} hits and >= 1 non-reference nt hits,", minHitsToTestSNP);
+                    snpFile.WriteLine("#Spurious molecules in random tags that likely are results of artefactial (PCR) mutations have been removed.");
+                }
                 snpFile.Write("#Gene\tTrLen\tChr\tStrand\tChrPos\tTrPos\tNt\tTotal");
                 foreach (int bcIdx in selectedBarcodes)
                     snpFile.Write("\t{0}", barcodes.GetWellId(bcIdx));
@@ -61,7 +63,7 @@ namespace Linnarsson.Dna
                                 byBcNtStrings[nt].AppendFormat("\t{0}", SNPCountsByBarcode.MaxTestedString(count));
                             }
                         }
-                        if (trPos >= 0 && total >= SnpAnalyzer.MinTotalHitsToShowBarcodedSnps)
+                        if (trPos >= 0 && total >= minHitsToTestSNP)
                         {
                             int refTotal = totals['0'] - totals['A'] - totals['C'] - totals['G'] - totals['T'];
                             string refIdxStr = string.Join("\t", Array.ConvertAll(refCounts, (w) => w.ToString()));

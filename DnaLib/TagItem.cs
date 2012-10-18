@@ -68,11 +68,50 @@ namespace Linnarsson.Dna
     public class TagItem
     {
         /// <summary>
-        /// Threshold for removing molecules that are a result of mutated rnd tags.
-        /// RndTags having less than (1 / value) of the reads of the rndTag with maximum reads are not counted.
-        /// Need to investigate various seq depths before final decision. 20 may be more appropriate.
+        /// Threshold parameter for removing molecules that are a result of mutated rnd tags.
+        /// Actual meaning depends on the MutationThresholder selected.
         /// </summary>
-        public static int ratioForMutationFilter = 50;
+        private static int RndTagMutationFilterParameter = 50;
+
+        public static void SetRndTagMutationFilter(Props props)
+        {
+            if (props.RndTagMutationFilter == "FractionOfMax")
+                mutationThresholder = FractionOfMaxThresholder;
+            else if (props.RndTagMutationFilter == "FractionOfMean")
+                mutationThresholder = FractionOfMeanThresholder;
+            else
+                mutationThresholder = LowPassThresholder;
+            RndTagMutationFilterParameter = props.RndTagMutationFilterParam;
+        }
+
+        private delegate int MutationThresholder(TagItem tagItem);
+        private static MutationThresholder mutationThresholder;
+
+        private static int LowPassThresholder(TagItem tagItem)
+        {
+            return RndTagMutationFilterParameter;
+        }
+        private static int FractionOfMaxThresholder(TagItem tagItem)
+        {
+            int maxNumReads = tagItem.GetReadCountsByRndTag().Max();
+            return maxNumReads / RndTagMutationFilterParameter;
+        }
+        private static int FractionOfMeanThresholder(TagItem tagItem)
+        {
+            double sum = 0.0;
+            int n = 0;
+            foreach (int i in tagItem.GetReadCountsByRndTag())
+            {
+                if (i > 0) 
+                {
+                    sum += i;
+                    n++;
+                }
+                       
+            }
+            return (int)Math.Round(sum / n / RndTagMutationFilterParameter);
+        }
+
         /// <summary>
         /// Mirrors the number of rndTags from Barcodes
         /// </summary>
@@ -115,7 +154,7 @@ namespace Linnarsson.Dna
 
         public override string ToString()
         {
-            string res = string.Format("TagItem: #Mols={0} #Reads={1} HasAltMappings={2}\n  Locations:", GetNumMolecules(), GetNumReads(), hasAltMappings);
+            string res = string.Format("TagItem: #Mols={0} #Reads={1} HasAltMappings={2}\n  Locations:", GetNumNonZeroRndTags(), GetNumReads(), hasAltMappings);
             return res;
         }
 
@@ -218,8 +257,8 @@ namespace Linnarsson.Dna
             if (SNPCountsByOffset == null)
                 return null;
             List<SNPCounter> totalCounters = new List<SNPCounter>();
-            List<int> validRndTags = GetValidRndTags();
-            int nTotal = GetNumMolecules();
+            var validRndTags = GetValidRndTags();
+            ushort nTotal = (ushort)validRndTags.Count; //GetNumMolecules();
             foreach (KeyValuePair<byte, SNPCountsByRndTag> p in SNPCountsByOffset)
             {
                 if (p.Value != null)
@@ -227,7 +266,7 @@ namespace Linnarsson.Dna
                     int snpPosOnChr = readPosOnChr + p.Key;
                     SNPCounter countsAtOffset = new SNPCounter(snpPosOnChr);
                     p.Value.Summarize(countsAtOffset, validRndTags);
-                    countsAtOffset.nTotal = (ushort)nTotal;
+                    countsAtOffset.nTotal = nTotal;
                     totalCounters.Add(countsAtOffset);
                 }
             }
@@ -243,35 +282,44 @@ namespace Linnarsson.Dna
         {
             if (nRndTags == 1)
                 return noRndTagsValidRndTags;
-            List<int> validTagIndices = new List<int>();
-            int cutOff = readCountsByRndTag.Max() / ratioForMutationFilter;
-            for (int rndTagIdx = 0; rndTagIdx < readCountsByRndTag.Length; rndTagIdx++)
-                if (readCountsByRndTag[rndTagIdx] > cutOff)
-                    validTagIndices.Add(rndTagIdx);
-            return validTagIndices;
+            List<int> validRndTags = new List<int>();
+            int threshold = mutationThresholder(this);
+            for (int i = 0; i < readCountsByRndTag.Length; i++)
+                if (readCountsByRndTag[i] > threshold) validRndTags.Add(i);
+            return validRndTags;
         }
         /// <summary>
         /// Predefined for used by GetValidRdTags()
         /// </summary>
-        private static List<int> noRndTagsValidRndTags = new List<int>() { 0 };
+        private static List<int> noRndTagsValidRndTags = new List<int> { 0 };
 
         /// <summary>
         /// Get number of molecules (reads if rndTag not used) at this position-strand.
-        /// Simple % cutoff used to get rid of mutated rndTags.
+        /// Filters away mutated rndTags according to properties defined rule.
         /// </summary>
         /// <returns>Number of molecules (mutated rndTags excluded), or number of reads if no rndTags were used.</returns>
         public int GetNumMolecules()
         {
-            if (nRndTags == 1) return totalReadCount;
-            int n = 0;
-            if (readCountsByRndTag != null)
-            {
-                int maxNumReads = readCountsByRndTag.Max();
-                int cutOff = maxNumReads / ratioForMutationFilter;
-                foreach (int c in readCountsByRndTag)
-                    if (c > cutOff) n++;
-            }
-            return n;
+            if (nRndTags == 1) 
+                return totalReadCount;
+            if (readCountsByRndTag == null)
+                return 0;
+            int threshold = mutationThresholder(this);
+            return readCountsByRndTag.Count(v => v > threshold);
+        }
+
+        /// <summary>
+        /// Get number of rndTags with read count > 0 at this position-strand,
+        /// or total number of reads if rndTags are not used.
+        /// </summary>
+        /// <returns>Number of rndTags with any read, or number of reads if no rndTags were used.</returns>
+        public int GetNumNonZeroRndTags()
+        {
+            if (nRndTags == 1)
+                return totalReadCount;
+            if (readCountsByRndTag == null)
+                return 0;
+            return readCountsByRndTag.Count(v => v > 0);
         }
 
         /// <summary>

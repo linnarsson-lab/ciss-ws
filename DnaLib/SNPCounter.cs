@@ -215,7 +215,7 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="countsAtOffset"></param>
         /// <param name="validRndTags"></param>
-        public void Summarize(SNPCounter countsAtOffset, List<int> validRndTags)
+        public void Summarize(SNPCounter countsAtOffset, IEnumerable<int> validRndTags)
         {
             foreach (int rndTagIdx in validRndTags)
                 countsAtOffset.Add(GetNt(rndTagIdx), refNt);

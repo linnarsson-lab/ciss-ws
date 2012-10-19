@@ -114,7 +114,7 @@ namespace SilverBullet
 			}
 			// Locate the extraction folder
 			FolderBrowserDialog fbd = new FolderBrowserDialog();
-			fbd.Description = "Locate the extraction folder";
+			fbd.Description = "Locate the project folder";
 			fbd.ShowNewFolderButton = false;
 			fbd.SelectedPath = Props.props.ProjectsFolder;
 			if(fbd.ShowDialog() == DialogResult.OK)
@@ -123,16 +123,15 @@ namespace SilverBullet
 				gd.ShowDialog();
                 GeneVariantsDialog gvd = new GeneVariantsDialog();
                 gvd.ShowDialog();
-				string mapFolder = fbd.SelectedPath;
+				string projectFolder = fbd.SelectedPath;
 				SetupMapper(null);
 				Background.RunAsync( () =>
 				{
-                    Background.Message("Annotating...");
+                    Background.Message("(Mapping and) Annotating...");
                     try
                     {
                         gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
-                        string projectFolder = Path.GetDirectoryName(mapFolder);
-                        mapper.Annotate(mapFolder, gd.Genome);
+                        mapper.MapAndAnnotate(projectFolder, gd.Genome.GetBowtieMainIndexName(), gvd.AnalyzeAllGeneVariants);
                     }
                     catch (Exception exp)
                     {

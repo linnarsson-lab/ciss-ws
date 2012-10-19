@@ -59,6 +59,12 @@ namespace Linnarsson.Dna
             return m.Groups[1].Value + "*" + m.Groups[2].Value;
         }
 
+        /// <summary>
+        /// Construct the proper path to the layout file. It is located inside project folder unless Props.SampleLayoutFileFolder
+        /// points to a common folder for all layout files.
+        /// </summary>
+        /// <param name="projectNameOrFolder"></param>
+        /// <returns>Path to project layout file, even if it does not exist.</returns>
         public static string GetSampleLayoutPath(string projectNameOrFolder)
         {
             string layoutFolder = Props.props.SampleLayoutFileFolder;

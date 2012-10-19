@@ -152,6 +152,10 @@ namespace Linnarsson.Dna
             return annotationsPath;
         }
 
+        /// <summary>
+        /// Returns 'Build_Annotation', e.g. 'mm9_UCSC'
+        /// </summary>
+        /// <returns></returns>
         public string GetBowtieMainIndexName()
         {
             return Build + "_" + Annotation;

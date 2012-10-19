@@ -99,7 +99,7 @@ namespace SilverBullet
                 Background.RunAsync(() =>
                 {
                     Background.Message("Mapping...");
-                    mapper.Map(projectFolder, gd.Genome);
+                    mapper.Map(projectFolder, gd.Genome.GetBowtieMainIndexName(), gvd.AnalyzeAllGeneVariants);
                     Background.Message("Ready");
                     Console.WriteLine("Done.");
                 });

@@ -281,7 +281,7 @@ namespace Linnarsson.Strt
             foreach (string chrId in chrIds)
                 chrTagDatas[chrId] = new ChrTagData(chrId);
             moleculeReadCountsHistogram = new int[MaxValueInReadCountHistogram + 1];
-            readDistributionByMolCount = new int[barcodes.RandomBarcodeCount, MaxValueInReadCountHistogram + 1];
+            readDistributionByMolCount = new int[nRndTags + 1, MaxValueInReadCountHistogram + 1];
         }
 
         /// <summary>

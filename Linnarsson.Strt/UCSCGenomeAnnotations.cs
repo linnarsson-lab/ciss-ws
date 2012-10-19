@@ -608,12 +608,13 @@ namespace Linnarsson.Strt
             string exprPath = fileNameBase + "_CAPRegionHits.tab";
             using (StreamWriter matrixFile = new StreamWriter(exprPath))
             {
-                matrixFile.WriteLine("Total and per barcode uniquely mapping transcript hits within +/- {0} of CAP site.", props.CAPRegionSpan);
-                if (!props.DirectionalReads)
-                    matrixFile.WriteLine("NOTE: This is a non-STRT analysis with non-directional reads, so experimental meaning of 5' is a bit unclear.");
-                string matrixValType = barcodes.HasRandomBarcodes ? "(Values are molecule counts)" : "(Values are read counts)";
-                matrixFile.WriteLine("Feature\tChr\tCAPPos\tStrand\tTrscrHits\tSumCAPHits");
+                string hitType = barcodes.HasRandomBarcodes ? "molecule" : "read";
+                matrixFile.WriteLine("Total and per barcode uniquely mapping {0} within +/- {1} of CAP site.", hitType, props.CAPRegionSpan);
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+                matrixFile.Write("Feature\tChr\tCAPPos\tStrand\tAllTrscrHits\tSumCAPHits");
+                foreach (int idx in speciesBcIndexes)
+                    matrixFile.Write("\t{0}", barcodes.GetWellId(idx));
+                matrixFile.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     int totalHits = gf.CAPRegionHitsByBarcode.Sum();

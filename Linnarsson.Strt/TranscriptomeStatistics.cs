@@ -1590,15 +1590,30 @@ namespace Linnarsson.Strt
         {
             using (StreamWriter writer = new StreamWriter(OutputPathbase + "_ReadCountDistr_by_UMICount.tab"))
             {
-                writer.WriteLine("#DetectedUMIs\t1ReadCases\t2ReadsCases...");
-                for (int rndTagIdx = 0; rndTagIdx < barcodes.RandomBarcodeCount; rndTagIdx++)
+                int maxNReads = randomTagFilter.readDistributionByMolCount.GetLength(1) - 1;
+                bool nonZeroFound = false;
+                while (maxNReads > 0 &&  !nonZeroFound)
+                {
+                    for (int rndTagCount = 0; rndTagCount < barcodes.RandomBarcodeCount; rndTagCount++)
+                        if (randomTagFilter.readDistributionByMolCount[rndTagCount, maxNReads] > 0)
+                        {
+                            nonZeroFound = true;
+                            break;
+                        }
+                    maxNReads--;
+                }
+                writer.Write("#DetectedUMIs\tCasesOf1Read");
+                for (int nReads = 2; nReads <= maxNReads; nReads++)
+                    writer.Write("\tCasesOf{0}Reads", nReads);
+                writer.WriteLine();
+                for (int rndTagCount = 1; rndTagCount < barcodes.RandomBarcodeCount; rndTagCount++)
                 {
                     StringBuilder sb = new StringBuilder();
-                    sb.Append(rndTagIdx);
-                    for (int nReads = 1; nReads < randomTagFilter.readDistributionByMolCount.GetLength(1); nReads++)
+                    sb.Append(rndTagCount);
+                    for (int nReads = 1; nReads < maxNReads; nReads++)
                     {
                         sb.Append('\t');
-                        sb.Append(randomTagFilter.readDistributionByMolCount[rndTagIdx, nReads]);
+                        sb.Append(randomTagFilter.readDistributionByMolCount[rndTagCount, nReads]);
                     }
                     writer.WriteLine(sb);
                 }

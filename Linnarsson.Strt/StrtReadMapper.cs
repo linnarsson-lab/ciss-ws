@@ -427,7 +427,9 @@ namespace Linnarsson.Strt
                                     DateTime.Now, projDescr.analyzeVariants, props.DirectionalReads, props.UseRPKM,
                                     props.GeneFeature5PrimeExtension, props.TotalNumberOfAddedSpikeMolecules);
                 logWriter.Flush();
-                ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.projectName, mapFilePaths);
+                string resultFolderName = MakeDefaultResultFolderName(genome, projDescr.ProjectFolder, projDescr.projectName);
+                ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.projectName, resultFolderName,
+                                                                  mapFilePaths);
                 projDescr.resultDescriptions.Add(resultDescr);
                 System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(projDescr.GetType());
                 using (StreamWriter writer = new StreamWriter(Path.Combine(resultDescr.resultFolder, "ProjectConfig.xml")))
@@ -468,30 +470,6 @@ namespace Linnarsson.Strt
                 rc.AddExtractionSummary(summaryPath);
             }
             return rc.AverageReadLen;
-        }
-
-        /// <summary>
-        /// Uses the SampleLayout file to decide which species(s) to run bowtie and annotate against.
-        /// If it does not exist, use the default species supplied.
-        /// Note that this command line called method uses the standard (PathHandler) layout filename. When instead
-        /// using the ProjectDB, the layout filename is taken from the database to allow updates with alternatively versioned names.
-        /// </summary>
-        /// <param name="projectFolderOrName"></param>
-        /// <param name="defaultSpeciesArg">Species to use if no layout file exists in projectFolder</param>
-        /// <param name="analyzeAllGeneVariants">true to analyze all transcript splice variants defined in annoatation file</param>
-        /// <returns>The subpaths to result folder (one per species) under project folder</returns>
-        public List<string> MapAndAnnotateWithLayout(string projectFolderOrName, string defaultSpeciesArg, bool analyzeAllGeneVariants)
-        {
-            string projectFolder = PathHandler.GetRootedProjectFolder(projectFolderOrName);
-            string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
-            string[] speciesArgs = GetSpeciesArgs(projectFolder, defaultSpeciesArg);
-            List<string> resultSubFolders = new List<string>();
-            foreach (string speciesArg in speciesArgs)
-            {
-                string resultSubFolder = MapAndAnnotate(projectFolder, speciesArg, analyzeAllGeneVariants);
-                if (resultSubFolder != null) resultSubFolders.Add(resultSubFolder);
-            }
-            return resultSubFolders;
         }
 
         private string[] GetSpeciesArgs(string sampleLayoutPath, string defaultSpeciesArg)
@@ -642,7 +620,48 @@ namespace Linnarsson.Strt
             CreateBowtieMaps(genome, laneInfos);
         }
 
+        /// <summary>
+        /// Uses the SampleLayout file to decide which species(s) to run bowtie and annotate against.
+        /// If it does not exist, use the default species supplied.
+        /// Note that this command line called method uses the standard (PathHandler) layout filename. When instead
+        /// using the ProjectDB, the layout filename is taken from the database to allow updates with alternatively versioned names.
+        /// </summary>
+        /// <param name="projectFolderOrName"></param>
+        /// <param name="defaultSpeciesArg">Species to use if no layout file exists in projectFolder</param>
+        /// <param name="analyzeAllGeneVariants">true to analyze all transcript splice variants defined in annoatation file</param>
+        /// <returns>The subpaths to result folder (one per species) under project folder</returns>
+        public List<string> MapAndAnnotateWithLayout(string projectFolderOrName, string defaultSpeciesArg, bool analyzeAllGeneVariants)
+        {
+            string projectFolder = PathHandler.GetRootedProjectFolder(projectFolderOrName);
+            string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
+            string[] speciesArgs = GetSpeciesArgs(sampleLayoutPath, defaultSpeciesArg);
+            List<string> resultSubFolders = new List<string>();
+            foreach (string speciesArg in speciesArgs)
+            {
+                string resultSubFolder = MapAndAnnotate(projectFolder, speciesArg, analyzeAllGeneVariants);
+                if (resultSubFolder != null) resultSubFolders.Add(resultSubFolder);
+            }
+            return resultSubFolders;
+        }
+
+        public static readonly string ANNOTATION_VERSION = "41";
+        /// <summary>
+        /// First run Bowtie if .map files for selected build do not exist, then annotate the output
+        /// </summary>
+        /// <param name="projectOrExtractedFolderOrName">Either the path to a specific Extracted folder,
+        ///                             or the path of the projectFolder, in which case the latest
+        ///                             Extracted folder will be processed</param>
+        /// <param name="speciesArg">Any species annotation, like 'Hs', 'hg19', 'hg19_UCSC' or 'hg19_aVEGA'</param>
+        /// <param name="defaultGeneVariants">If '_a' or '_s' is not given is speciesArg, 'all' is selected if this is true</param>
+        /// <param name="resultFolderName">Set to a value if a non-standard result folder name is wanted</param>
+        /// <returns>subpath under ProjectMap to results, or null if no processing was needed</returns>
         public string MapAndAnnotate(string projectOrExtractedFolderOrName, string speciesArg, bool defaultGeneVariants)
+        {
+            return MapAndAnnotate(projectOrExtractedFolderOrName, speciesArg, defaultGeneVariants, "");
+        }
+
+        public string MapAndAnnotate(string projectOrExtractedFolderOrName, string speciesArg, 
+                                     bool defaultGeneVariants, string resultFolderName)
         {
             StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants);
             string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
@@ -652,27 +671,15 @@ namespace Linnarsson.Strt
             genome.ReadLen = GetReadLen(extractedFolder);
             CreateBowtieMaps(genome, laneInfos);
             List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(laneInfos);
-            return AnnotateMapFiles(genome, projectFolder, extractedFolder, mapFiles);
+            string barcodeSet = PathHandler.ParseBarcodeSet(extractedFolder);
+            SetBarcodeSet(barcodeSet);
+            string projectName = Path.GetFileName(projectFolder);
+            if (resultFolderName == "" || resultFolderName == null)
+                resultFolderName = MakeDefaultResultFolderName(genome, projectFolder, projectName);
+            ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, resultFolderName, mapFiles);
+            Console.WriteLine("Annotated {0} map files from {1} to {2}", mapFiles.Count, projectName, resultDescr.bowtieIndexVersion);
+            return resultDescr.resultFolder;
         }
-
-        public static readonly string ANNOTATION_VERSION = "41";
-        /// <summary>
-        /// Annotate output from Bowtie alignment
-        /// </summary>
-        /// <param name="projectOrExtractedFolderOrName">Either the path to a specific Extracted folder,
-        ///                             or the path of the projectFolder, in which case the latest
-        ///                             Extracted folder will be processed</param>
-        /// <param name="genome">Genome to annotate against</param>
-        /// <returns>subpath under ProjectMap to results, or null if no processing was needed</returns>
-        public string Annotate(string projectOrExtractedFolderOrName, StrtGenome genome)
-		{
-            string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
-            string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
-            string extractedFolder = SetupForLatestExtractedFolder(projectOrExtractedFolder);
-            List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
-            List<string> mapFiles = SetExistingMapFilePaths(genome, laneInfos);
-            return AnnotateMapFiles(genome, projectFolder, extractedFolder, mapFiles);
-		}
 
         private string SetupForLatestExtractedFolder(string projectOrExtractedFolder)
         {
@@ -701,16 +708,6 @@ namespace Linnarsson.Strt
                 allLanesMapFiles.AddRange(laneMapFiles);
             }
             return allLanesMapFiles;
-        }
-
-        private string AnnotateMapFiles(StrtGenome genome, string projectFolder, string extractedFolder, List<string> mapFiles)
-        {
-            string barcodeSet = PathHandler.ParseBarcodeSet(extractedFolder);
-            SetBarcodeSet(barcodeSet);
-            string projectName = Path.GetFileName(projectFolder);
-            ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, mapFiles);
-            Console.WriteLine("Annotated {0} map files from {1} to {2}", mapFiles.Count, projectName, resultDescr.bowtieIndexVersion);
-            return resultDescr.resultFolder;
         }
 
         private List<LaneInfo> SetupLaneInfosFromExistingExtraction(string extractedFolder)
@@ -754,12 +751,17 @@ namespace Linnarsson.Strt
             return summaryPaths.Keys.ToList();
         }
 
-        private ResultDescription ProcessAnnotation(StrtGenome genome, string projectFolder, string projectName, List<string> mapFilePaths)
+        private string MakeDefaultResultFolderName(StrtGenome genome, string projectFolder, string projectName)
+        {
+            return string.Format("{0}_{1}_{2}_{3}", projectName, barcodes.Name, genome.GetBowtieMainIndexName(), DateTime.Now.ToPathSafeString());
+        }
+
+        private ResultDescription ProcessAnnotation(StrtGenome genome, string projectFolder, string projectName, string resultFolderName,
+                                                    List<string> mapFilePaths)
         {
             if (mapFilePaths.Count == 0)
                 return null;
-            string resultSubFolder = string.Format("{0}_{1}_{2}_{3}", projectName, barcodes.Name, genome.GetBowtieMainIndexName(), DateTime.Now.ToPathSafeString());
-            string outputFolder = Path.Combine(projectFolder, resultSubFolder);
+            string outputFolder = Path.Combine(projectFolder, resultFolderName);
             ReadCounter readCounter = new ReadCounter();
             readCounter.AddExtractionSummaries(CollectExtractionSummaryPaths(mapFilePaths, genome));
             int averageReadLen = readCounter.AverageReadLen;

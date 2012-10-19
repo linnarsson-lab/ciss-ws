@@ -607,10 +607,6 @@ namespace Linnarsson.Strt
         public void Map(string projectOrExtractedFolderOrName, string speciesArg, bool defaultGeneVariants)
         {
             StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants);
-            Map(projectOrExtractedFolderOrName, genome);
-        }
-        public void Map(string projectOrExtractedFolderOrName, StrtGenome genome)
-        {
             string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
             string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
             string extractedFolder = SetupForLatestExtractedFolder(projectOrExtractedFolder);

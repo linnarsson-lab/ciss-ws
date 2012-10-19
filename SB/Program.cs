@@ -93,6 +93,7 @@ namespace CmdSilverBullet
 
                         case "ab":
                             List<string> genomeStrings = StrtGenome.GetValidGenomeStrings();
+                            string resultFolderName = "";
                             while (args.Length > argOffset + 1)
                             {
                                 bool optionMatch = false;
@@ -124,11 +125,6 @@ namespace CmdSilverBullet
                                     optionMatch = true;
                                     analyzeAllGeneVariants = false;
                                 }
-                                else if (opt == "false")
-                                {
-                                    optionMatch = true;
-                                    analyzeAllGeneVariants = false;
-                                }
                                 else if (opt == "5primemap")
                                 {
                                     optionMatch = true;
@@ -138,6 +134,11 @@ namespace CmdSilverBullet
                                 {
                                     optionMatch = true;
                                     props.UseMost5PrimeExonMapping = false;
+                                }
+                                else if (opt.StartsWith("-o"))
+                                {
+                                    optionMatch = true;
+                                    resultFolderName = opt.Substring(2);
                                 }
                                 else
                                     foreach (string s in genomeStrings)
@@ -160,7 +161,7 @@ namespace CmdSilverBullet
                             projectFolder = args[argOffset];
                             mapper = new StrtReadMapper(props);
                             if (speciesArg != "")
-                                mapper.MapAndAnnotate(projectFolder, speciesArg, analyzeAllGeneVariants);
+                                mapper.MapAndAnnotate(projectFolder, speciesArg, analyzeAllGeneVariants, resultFolderName);
                             else
                             {
                                 if (!File.Exists(PathHandler.GetSampleLayoutPath(projectFolder)))
@@ -310,8 +311,9 @@ namespace CmdSilverBullet
                 "      extract data, run Bowtie, and annotate in one sweep using default parameters.\n" +
                 "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +
                 "SB.exe x [<RunLaneSpec>]+ <Bc> <ProjectPath>         -   extract data from the reads folder.\n" +
-                "SB.exe ab [rpkm|rpm|multimap|5primemap|all|single]* [<Build>|<Idx>] <ProjectPath>|<ExtractedPath>\n" +
+                "SB.exe ab [-oNAME] [rpkm|rpm|multimap|5primemap|all|single]* [<Build>|<Idx>] <ProjectPath>|<ExtractedPath>\n" +
                 "      annotate data from .map files in latest/specified Extracted folder.\n" +
+                "      you can give a non-standard output folder name using -o\n" +
                 "      Use 'all'/'single' to force analysis of all/single transcript variants.\n" +
                 "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +
                 "      Use '5primemap' to annotate reads/molecules to (one of) the transcript(s) they match closest to 5' end.\n" +

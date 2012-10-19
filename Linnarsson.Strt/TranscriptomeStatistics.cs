@@ -1594,7 +1594,7 @@ namespace Linnarsson.Strt
                 bool nonZeroFound = false;
                 while (maxNReads > 0 &&  !nonZeroFound)
                 {
-                    for (int rndTagCount = 0; rndTagCount < barcodes.RandomBarcodeCount; rndTagCount++)
+                    for (int rndTagCount = 1; rndTagCount <= barcodes.RandomBarcodeCount; rndTagCount++)
                         if (randomTagFilter.readDistributionByMolCount[rndTagCount, maxNReads] > 0)
                         {
                             nonZeroFound = true;
@@ -1606,7 +1606,7 @@ namespace Linnarsson.Strt
                 for (int nReads = 2; nReads <= maxNReads; nReads++)
                     writer.Write("\tCasesOf{0}Reads", nReads);
                 writer.WriteLine();
-                for (int rndTagCount = 1; rndTagCount < barcodes.RandomBarcodeCount; rndTagCount++)
+                for (int rndTagCount = 1; rndTagCount <= barcodes.RandomBarcodeCount; rndTagCount++)
                 {
                     StringBuilder sb = new StringBuilder();
                     sb.Append(rndTagCount);

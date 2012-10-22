@@ -17,9 +17,10 @@ namespace readcount
             using (StreamReader r = new StreamReader(Data))
             {
                 string line;
+                 
                 while ((line = r.ReadLine()) != null)
                 {
-                    if (!line.Contains("Uploaded Variation"))
+                    if (!line.Contains("Uploaded Variation") && !line.Contains("#"))
                     {
                         string[] column = line.Split(new Char[] { '\t' });
                         if (!position.ContainsKey(column[1]))

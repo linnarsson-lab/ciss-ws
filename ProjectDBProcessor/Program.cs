@@ -230,7 +230,7 @@ namespace ProjectDBProcessor
                 string resultTarName = Path.GetFileName(resultDescr.resultFolder) + ".tar.gz";
                 string tempTarGzPath = Path.Combine(Path.GetTempPath(), resultTarName);
                 CompressResult(resultDescr.resultFolder, tempTarGzPath);
-                string cmdArg = string.Format("-P 9952 {0} {1}", tempTarGzPath, Props.props.ResultDownloadUrl);
+                string cmdArg = string.Format("-P {0} {1} {2}", Props.props.ResultDownloadScpPort, tempTarGzPath, Props.props.ResultDownloadUrl);
                 Console.WriteLine("scp " + cmdArg);
                 int cmdResult = CmdCaller.Run("scp", cmdArg);
                 if (cmdResult == 0)

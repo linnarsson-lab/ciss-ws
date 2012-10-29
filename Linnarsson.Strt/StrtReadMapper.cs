@@ -73,11 +73,14 @@ namespace Linnarsson.Strt
 
         public void MakeMaskedStrtChromosomes(StrtGenome genome)
         {
-            if (genome.GeneVariants == false) return;
+            //if (genome.GeneVariants == false) return;
             string strtDir = genome.GetStrtGenomesFolder();
             NonExonRepeatMasker nerm = new NonExonRepeatMasker();
-            Console.WriteLine("*** Making STRT genome by masking non-exonic repeat sequences ***");
-            nerm.Mask(genome, strtDir);
+            if (props.ProtectExonRepeatsFromMaskingInGenomeBuilds)
+                Console.WriteLine("*** Making STRT genome by masking non-exonic repeat sequences ***");
+            else
+                Console.WriteLine("*** Making STRT genome by masking all repeat sequences ***");
+            nerm.Mask(genome, strtDir, props.ProtectExonRepeatsFromMaskingInGenomeBuilds);
         }
 
         /// <summary>
@@ -640,7 +643,7 @@ namespace Linnarsson.Strt
             return resultSubFolders;
         }
 
-        public static readonly string ANNOTATION_VERSION = "41";
+        public static readonly string ANNOTATION_VERSION = "42";
         /// <summary>
         /// First run Bowtie if .map files for selected build do not exist, then annotate the output
         /// </summary>

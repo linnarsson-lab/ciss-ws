@@ -107,33 +107,37 @@ namespace Linnarsson.Strt
     }
 
     /// <summary>
-    /// Use to mask with N:s the nucleotides of the chromosomes that are repeats (indicated by lower case acgt) 
-    /// and do not correspond to transcripts in the genome. 5' and 3' UTR:s can be kept unmasked as well as short introns.
+    /// Use to mask with N:s the nucleotides of the chromosomes that are repeats, indicated by lower case acgt in fasta sequences.
+    /// Optionally keep repeats that correspond to transcripts in the genome, as well as 5' and 3' UTR:s and short introns.
     /// </summary>
     public class NonExonRepeatMasker
     {
-        private static readonly int defaultMinFlank = 500;
-        private static readonly int defaultMinIntronFlank = 50;
-        private static readonly int defaultMaxIntronToKeep = 400;
+        private int minFlank = 500;
+        private int minIntronFlank = 50;
+        private int maxIntronToKeep = 400;
 
-        public void Mask(StrtGenome genome, string outputFolder)
+        public NonExonRepeatMasker()
+        { }
+        public NonExonRepeatMasker(int minFlank, int minIntronFlank, int maxIntronToKeep)
         {
-            Mask(genome, outputFolder, defaultMinFlank, defaultMinIntronFlank, defaultMaxIntronToKeep);
+            this.minFlank = minFlank;
+            this.minIntronFlank = minIntronFlank;
+            this.maxIntronToKeep = Math.Max(maxIntronToKeep, 2 * minIntronFlank);
         }
-        public void Mask(StrtGenome genome, string outputFolder, int minFlank, int minIntronFlank, int maxIntronToKeep)
+
+        public void Mask(StrtGenome genome, string outputFolder, bool keepRepeatsInExons)
         {
-            if (maxIntronToKeep < minIntronFlank * 2)
-                maxIntronToKeep = minIntronFlank * 2;
-            Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
             if (!Directory.Exists(outputFolder))
                 Directory.CreateDirectory(outputFolder);
+            Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
             Dictionary<string, ChrIntervals> chrIntervals = new Dictionary<string, ChrIntervals>();
             foreach (string chrId in chrIdToFileMap.Keys)
             {
                 if (!StrtGenome.IsASpliceAnnotationChr(chrId))
                     chrIntervals[chrId] = new ChrIntervals(minFlank, minIntronFlank, maxIntronToKeep);
             }
-            DefineChrIntervals(genome, chrIntervals);
+            if (keepRepeatsInExons)
+                DefineProtectedChrIntervals(genome, chrIntervals);
             foreach (string chrId in chrIntervals.Keys)
             {
                 int nChanged = 0;
@@ -185,7 +189,12 @@ namespace Linnarsson.Strt
             writer.Close();
         }
 
-        private static void DefineChrIntervals(StrtGenome genome, Dictionary<string, ChrIntervals> chrIntervals)
+        /// <summary>
+        /// Setup all exonic intervals that should be protected from repeat masking
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <param name="chrIntervals"></param>
+        private static void DefineProtectedChrIntervals(StrtGenome genome, Dictionary<string, ChrIntervals> chrIntervals)
         {
             string tryAnnotationsPath = genome.MakeAnnotationsPath();
             string annotationsPath = PathHandler.ExistsOrGz(tryAnnotationsPath);

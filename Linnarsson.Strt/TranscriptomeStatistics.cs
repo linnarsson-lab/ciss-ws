@@ -121,6 +121,8 @@ namespace Linnarsson.Strt
         private PerLaneStats perLaneStats;
 
         private StreamWriter rndTagProfileByGeneWriter;
+        private List<GeneFeature> readsPerMoleculeHistogramGenes;
+        private readonly static int maxNReadsInPerMoleculeHistograms = 999;
 
         Dictionary<string, int> overlappingGeneFeatures = new Dictionary<string, int>();
         List<string> exonHitGeneNames;
@@ -297,8 +299,13 @@ namespace Linnarsson.Strt
             FinishBarcode();
         }
 
+        /// <summary>
+        /// Call this after all reads in a barcode have been processed, before next barcode (and after last)
+        /// </summary>
         private void FinishBarcode()
         {
+            if (Props.props.MakeGeneReadsPerMoleculeHistograms)
+                AddToGeneReadsPerMoleculeHistograms();
             MakeGeneRndTagProfiles();
             MakeBcWigglePlots();
             randomTagFilter.FinishBarcode();
@@ -378,6 +385,77 @@ namespace Linnarsson.Strt
             int t = nMappingsByBarcode[currentBcIdx] - trSampleDepth;
             if (t > 0 && t <= molCount) // Sample if we just passed the sampling point with current MappedTagItem
                 sampledExpressedTranscripts.Add(Annotations.GetNumExpressedGenes(currentBcIdx));
+        }
+
+        /// <summary>
+        /// Add data from current barcode of selected chr-positions to the read count-per-molecule histograms
+        /// </summary>
+        private void AddToGeneReadsPerMoleculeHistograms()
+        {
+            if (readsPerMoleculeHistogramGenes == null)
+                SelectGenesForReadsPerMoleculeHistograms();
+            foreach (GeneFeature gf in readsPerMoleculeHistogramGenes)
+            {
+                foreach (KeyValuePair<int, ushort[]> d in gf.readsPerMoleculeData)
+                {
+                    int estMolCount;
+                    ushort[] profile;
+                    int chrPos = d.Key;
+                    ushort[] histo = d.Value;
+                    randomTagFilter.GetReadCountProfile(gf.Chr, chrPos, gf.Strand, out estMolCount, out profile);
+                    if (profile != null)
+                        foreach (int nReads in profile.Where(v => v > 0))
+                            histo[Math.Min(maxNReadsInPerMoleculeHistograms, nReads)]++;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Determine which genes and positions should be used for the read count-per-molecule histograms
+        /// </summary>
+        private void SelectGenesForReadsPerMoleculeHistograms()
+        {
+            readsPerMoleculeHistogramGenes = new List<GeneFeature>();
+            foreach (int minLevel in new int[] { 150, 100, 60, 30, 10 })
+            {
+                int nGfs = 0;
+                foreach (GeneFeature gf in Annotations.geneFeatures.Values)
+                {
+                    if (gf.GetTranscriptHits() > minLevel && !readsPerMoleculeHistogramGenes.Contains(gf))
+                    {
+                        readsPerMoleculeHistogramGenes.Add(gf);
+                        gf.readsPerMoleculeData = new Dictionary<int, ushort[]>();
+                        ushort[] d = CompactGenePainter.GetTranscriptProfile(gf);
+                        for (int trPos = 0; trPos < d.Length; trPos++)
+                            if (d[trPos] > 0)
+                                gf.readsPerMoleculeData[gf.GetChrPos(trPos)] = new ushort[maxNReadsInPerMoleculeHistograms + 1];
+                        if (nGfs++ == 10) break;
+                    }
+                }
+            }
+        }
+
+        private void WriteGeneReadsPerMoleculeHistograms()
+        {
+            string file = OutputPathbase + "_ReadsPerMolHistograms.tab";
+            if (!Directory.Exists(Path.GetDirectoryName(file)))
+                Directory.CreateDirectory(Path.GetDirectoryName(file));
+            using (StreamWriter writer = file.OpenWrite())
+            {
+                writer.WriteLine("#Gene\tTrPos\tNReadsPerMolDistribution");
+                foreach (GeneFeature gf in readsPerMoleculeHistogramGenes)
+                {
+                    foreach (KeyValuePair<int, ushort[]> d in gf.readsPerMoleculeData)
+                    {
+                        int chrPos = d.Key;
+                        ushort[] histo = d.Value;
+                        writer.Write("{0}\t{1}", gf.Name, chrPos);
+                        foreach (uint count in histo)
+                            writer.Write("\t{0}", count);
+                        writer.WriteLine();
+                    }
+                }
+            }
         }
 
         private void MakeGeneRndTagProfiles()
@@ -469,6 +547,8 @@ namespace Linnarsson.Strt
                 upstreamAnalyzer.WriteUpstreamStats(OutputPathbase);
             if (TestReporter != null)
                 TestReporter.Summarize(Annotations.geneFeatures);
+            if (readsPerMoleculeHistogramGenes != null)
+                WriteGeneReadsPerMoleculeHistograms();
             WriteReadCountDistroByRndTagCount();
             WriteHitProfilesByBarcode();
             WriteRedundantExonHits();

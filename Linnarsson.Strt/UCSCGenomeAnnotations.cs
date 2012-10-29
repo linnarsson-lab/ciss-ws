@@ -371,7 +371,13 @@ namespace Linnarsson.Strt
             WriteSplicesByGeneLocus(fileNameBase);
             if (props.AnalyzeSpliceHitsByBarcode)
                 WriteSplicesByGeneLocusAndBc(fileNameBase);
+            if (barcodes.HasRandomBarcodes)
+            {
+                WriteTrueMolsTable(fileNameBase);
+                WriteReadsTable(fileNameBase);
+            }
             string expressionFile = WriteExpressionTable(fileNameBase);
+            WriteMinExpressionTable(fileNameBase);
             WriteCAPHitsTable(fileNameBase);
             string rpmFile = WriteBarcodedRPM(fileNameBase);
             if (!Environment.OSVersion.VersionString.Contains("Microsoft"))
@@ -505,6 +511,58 @@ namespace Linnarsson.Strt
             return 0;
         }
 
+        private void WriteReadsTable(string fileNameBase)
+        {
+            string readFile = fileNameBase + "_reads.tab";
+            Func<GeneFeature, int[]> getReads = x => x.TranscriptReadsByBarcode;
+            WriteBasicDataTable(readFile, "Total maximal read counts in barcodes for each gene and repeat.", getReads);
+            int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            using (StreamWriter outFile = new StreamWriter(readFile, true))
+            {
+                foreach (RepeatFeature rf in repeatFeatures.Values)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    foreach (int idx in speciesBcIndexes)
+                    {
+                        sb.Append("\t");
+                        sb.Append(rf.TotalReadsByBarcode[idx]);
+                    }
+                    outFile.WriteLine("{0}\t\t\t\t{1}\t{2}{3}", rf.Name, rf.GetLocusLength(), rf.TotalReadsByBarcode.Sum(), sb);
+                }
+            }
+        }
+
+        private void WriteTrueMolsTable(string fileNameBase)
+        {
+            Func<GeneFeature, int[]> getTrueMols = x => x.EstimatedTrueMolsByBarcode;
+            WriteBasicDataTable(fileNameBase + "_true_counts.tab", "Estimated true molecule counts.", getTrueMols);
+        }
+
+        private void WriteBasicDataTable(string fileName, string header, Func<GeneFeature, int[]> dataGetter)
+        {
+            using (StreamWriter outFile = new StreamWriter(fileName))
+            {
+                outFile.WriteLine(header);
+                WriteExtraDataTableHeaders(outFile);
+                WriteBarcodeHeaders(outFile, 5, "");
+                outFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tExonHits");
+                StringBuilder sbDatarow = new StringBuilder();
+                int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    int[] data = dataGetter(gf);
+                    foreach (int idx in speciesBcIndexes)
+                    {
+                        sbDatarow.Append("\t");
+                        sbDatarow.Append(data[idx]);
+                    }
+                    outFile.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}{6}",
+                                   gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), data.Sum(), sbDatarow);
+
+                }
+            }
+        }
+
         /// <summary>
         /// For each feature, write the total (for genes, transcript) hit count for every barcode
         /// </summary>
@@ -513,67 +571,36 @@ namespace Linnarsson.Strt
         private string WriteExpressionTable(string fileNameBase)
         {
             string exprPath = fileNameBase + "_expression.tab";
-            using (StreamWriter matrixFile = new StreamWriter(exprPath))
+            Func<GeneFeature, int[]> getMaxHits = x => x.TranscriptHitsByBarcode;
+            return WriteExtendedDataTable(exprPath, "maximum (including multireads)", getMaxHits);
+        }
+        private string WriteMinExpressionTable(string fileNameBase)
+        {
+            string exprPath = fileNameBase + "_expression_singlereads.tab";
+            Func<GeneFeature, int[]> getMaxHits = x => x.NonConflictingTranscriptHitsByBarcode;
+            return WriteExtendedDataTable(exprPath, "minimum (uniquely mapped)", getMaxHits);
+        }
+        private string WriteExtendedDataTable(string fileName, string dataType, Func<GeneFeature, int[]> dataGetter)
+        {
+            using (StreamWriter matrixFile = new StreamWriter(fileName))
             {
-                matrixFile.WriteLine("Length, total and per barcode maximum transcript hits for transcripts, and total length, total and per barcode (both sense & antisense) hits for repeat regions grouped by type.");
-                matrixFile.WriteLine("MinExonHits correspond to single reads, having a unique genome mapping.");
-                string exonHitType = "MaxExonHits";
-                if (props.UseMost5PrimeExonMapping && props.DirectionalReads)
-                {
-                    exonHitType = "ExonHits";
-                    matrixFile.WriteLine("Multireads are assigned to their most 5' exonic hit and included in ExonHits and table counts.");
-                }
-                else
-                {
-                    matrixFile.WriteLine("Multireads are multiply assigned to all their exonic hits and included in MaxExonHits and table counts.");
-                    matrixFile.WriteLine("NOTE: Also gene variants occupying the same locus share MaxExonHits and table counts.");
-                }
-                if (!props.DirectionalReads)
-                    matrixFile.WriteLine("NOTE: This is a non-STRT analysis with non-directional reads.");
+                matrixFile.WriteLine("Length, total and per barcode {0} transcript hits for transcripts, and total length, total and per barcode (both sense & antisense) hits for repeat regions grouped by type.", dataType);
+                matrixFile.WriteLine("The totals under MinExonHits correspond to single reads, having a unique genome mapping.");
+                WriteExtraDataTableHeaders(matrixFile);
                 string matrixValType = barcodes.HasRandomBarcodes ? "(Values are molecule counts)" : "(Values are read counts)";
                 WriteBarcodeHeaders(matrixFile, 6, matrixValType);
-                matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\t{0}", exonHitType);
-                StreamWriter readFile = null;
-                StreamWriter trueFile = null;
-                if (barcodes.HasRandomBarcodes)
-                {
-                    readFile = new StreamWriter(fileNameBase + "_reads.tab");
-                    readFile.WriteLine("Total maximal read counts in barcodes for each gene and repeat.");
-                    WriteBarcodeHeaders(readFile, 5, "");
-                    readFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\t{0}", exonHitType);
-                    trueFile = new StreamWriter(fileNameBase + "_true_counts.tab");
-                    trueFile.WriteLine("Estimated true molecule counts.");
-                    WriteBarcodeHeaders(trueFile, 5, "");
-                    trueFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\t{0}", exonHitType);
-                }
+                matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\tExonHits");
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     int ncHits = gf.NonConflictingTranscriptHitsByBarcode.Sum();
+                    int maxHits = gf.TranscriptHitsByBarcode.Sum();
                     matrixFile.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}",
-                                     gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), ncHits, gf.GetTranscriptHits());
+                                     gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), ncHits, maxHits);
+                    int[] data = dataGetter(gf);
                     foreach (int idx in speciesBcIndexes)
-                        matrixFile.Write("\t{0}", gf.TranscriptHitsByBarcode[idx]);
+                        matrixFile.Write("\t{0}", data[idx]);
                     matrixFile.WriteLine();
-                    if (readFile != null)
-                    {
-                        int totReads = 0, totTrue = 0;
-                        StringBuilder sbReads = new StringBuilder();
-                        StringBuilder sbTrue = new StringBuilder();
-                        foreach (int idx in speciesBcIndexes)
-                        {
-                            totReads += gf.TranscriptReadsByBarcode[idx];
-                            totTrue += gf.EstimatedTrueMolsByBarcode[idx];
-                            sbReads.Append("\t");
-                            sbReads.Append(gf.TranscriptReadsByBarcode[idx]);
-                            sbTrue.Append("\t");
-                            sbTrue.Append(gf.EstimatedTrueMolsByBarcode[idx]);
-                        }
-                        readFile.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}{6}",
-                                       gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), totReads, sbReads);
-                        trueFile.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}{6}",
-                                       gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), totTrue, sbTrue);
-                    }
                 }
                 foreach (RepeatFeature rf in repeatFeatures.Values)
                 {
@@ -581,26 +608,24 @@ namespace Linnarsson.Strt
                     foreach (int idx in speciesBcIndexes)
                         matrixFile.Write("\t{0}", rf.TotalHitsByBarcode[idx]);
                     matrixFile.WriteLine();
-                    if (readFile != null)
-                    {
-                        int totReads = 0;
-                        StringBuilder sb = new StringBuilder();
-                        foreach (int idx in speciesBcIndexes)
-                        {
-                            totReads += rf.TotalReadsByBarcode[idx];
-                            sb.Append("\t");
-                            sb.Append(rf.TotalReadsByBarcode[idx]);
-                        }
-                        readFile.WriteLine("{0}\t\t\t\t{1}\t{2}{3}", rf.Name, rf.GetLocusLength(), totReads, sb);
-                    }
-                }
-                if (readFile != null)
-                {
-                    readFile.Close(); readFile.Dispose();
-                    trueFile.Close(); trueFile.Dispose();
                 }
             }
-            return exprPath;
+            return fileName;
+        }
+
+        private void WriteExtraDataTableHeaders(StreamWriter tableOutFile)
+        {
+            if (props.UseMost5PrimeExonMapping && props.DirectionalReads)
+            {
+                tableOutFile.WriteLine("Multireads have been assigned to their most 5' exonic hit and included in totals under ExonHits.");
+            }
+            else
+            {
+                tableOutFile.WriteLine("Multireads are multiply assigned to all their exonic hits and included in totals under ExonHits.");
+                tableOutFile.WriteLine("NOTE: Also gene variants occupying the same locus share ExonHits and table counts.");
+            }
+            if (!props.DirectionalReads)
+                tableOutFile.WriteLine("NOTE: This is a non-STRT analysis with non-directional reads.");
         }
 
         private void WriteCAPHitsTable(string fileNameBase)

@@ -49,7 +49,7 @@ namespace readcount
                 }
             }
             StreamWriter sw;
-            sw = File.CreateText(Data + "out");
+            sw = File.CreateText(Data + ".joined");
             foreach (KeyValuePair<string, string> item in position)
             {
                 sw.WriteLine(item.Key + "\t" + symbol[item.Key] + "\t" + item.Value);

@@ -300,8 +300,8 @@ namespace Linnarsson.Strt
             {
                 if (laneInfo.nValidReads == 0)
                     continue; // Has been extracted earlier - no data to update
-                sql = string.Format(string.Format("UPDATE jos_aaalane SET strtyield=\"{0}\" WHERE laneno=\"{2}\" AND " + 
-                                        "jos_aaailluminarunid= (SELECT id FROM jos_aaailluminarun WHERE illuminarunid=\"{3}\") ",
+                sql = string.Format(string.Format("UPDATE jos_aaalane SET strtyield=\"{0}\" WHERE laneno=\"{1}\" AND " + 
+                                        "jos_aaailluminarunid= (SELECT id FROM jos_aaailluminarun WHERE illuminarunid=\"{2}\") ",
                                         laneInfo.nValidReads, laneInfo.laneNo, laneInfo.runId));
                 cmd = new MySqlCommand(sql, conn);
                 cmd.ExecuteNonQuery();

@@ -536,7 +536,8 @@ namespace Linnarsson.Strt
                     if (!File.Exists(fqUnmappedReadsPath))
                         CreateBowtieOutputFile(mainIndex, fqPath, outputMainPath, fqUnmappedReadsPath, laneInfo.bowtieLogFilePath);
                     string remainUnmappedPath = props.SaveNonMappedReads ? Path.Combine(mapFolder, bcIdx + ".fq-nonmapped") : "";
-                    CreateBowtieOutputFile(splcIndexName, fqUnmappedReadsPath, outputSplcPath, remainUnmappedPath, laneInfo.bowtieLogFilePath);
+                    if (File.Exists(fqUnmappedReadsPath)) // Have to check - all reads may have mapped directly
+                        CreateBowtieOutputFile(splcIndexName, fqUnmappedReadsPath, outputSplcPath, remainUnmappedPath, laneInfo.bowtieLogFilePath);
                 }
                 mapFiles.Add(outputSplcPath);
                 // Don't delete the fqUnmappedReadsPath - it is needed if rerun with changing all/single annotation versions

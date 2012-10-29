@@ -114,6 +114,9 @@ namespace Linnarsson.Dna
         /// </summary>
         public int[] TranscriptReadsByBarcode;
         public int[] EstimatedTrueMolsByBarcode;
+        /// <summary>
+        /// Either molecules per barcode after rndTag mutation filtering, or total reads per barcode when no rndTag are used.
+        /// </summary>
         public int[] NonConflictingTranscriptHitsByBarcode;
 
         /// <summary>
@@ -121,6 +124,11 @@ namespace Linnarsson.Dna
         /// Only contains unquely mapping hits.
         /// </summary>
         public int[] CAPRegionHitsByBarcode;
+
+        /// <summary>
+        /// Histograms of number of reads per molecule (accu across barcodes+rndTags) at selected chromosomal positions within gene.
+        /// </summary>
+        public Dictionary<int, ushort[]> readsPerMoleculeData;
 
         public List<double> VariationSamples;
         /// <summary>

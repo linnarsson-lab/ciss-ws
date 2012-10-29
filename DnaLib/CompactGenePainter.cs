@@ -101,8 +101,13 @@ namespace Linnarsson.Dna
             return imgData;
         }
 
+        /// <summary>
+        /// Make hit profile from 5' to 3' end in transcript direction
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <returns></returns>
         public static ushort[] GetTranscriptProfile(GeneFeature gf)
-        { // Meomory leakage in this one?? trImgData not GC?
+        {
             MakeLocusProfile(gf.Strand, gf.LocusHits);
             int trLen = gf.GetTranscriptLength();
             ushort[] trImgData = new ushort[trLen];

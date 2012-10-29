@@ -44,8 +44,8 @@ namespace Linnarsson.Dna
             new string[] { "Sox2" ,"Actb", "Nanog", "Klf4", "Calb1", "Rnr2", "Tmpo", "Trpm6", "Pou5f1",
                            "Rnr1", "Nd1", "Cox2", "Vcam1", "Zfp42", "Fgf2r", "Nt5e", "Runx2", "Taz",
                            "Osx", "Twist", "Ap1", "Sox9", "Sox6", "Sox5", "Bmp2", "Smad1", "Smad4" };
-        public string[] GenesToShowRndTagProfile =
-            new string[] { "Sox2" ,"Actb", "Nanog" };
+        public bool MakeGeneReadsPerMoleculeHistograms = true; // Will display histograms of #reads detected per molecule at various positions
+        public string[] GenesToShowRndTagProfile = new string[] { "Sox2" ,"Actb", "Nanog" };
         public bool SnpRndTagVerification = false;
         public int MinPhredScoreInRandomTag = 17;
         public int MinMoleculesToTestSnp = 4; // SNP analysis minimum coverage to test a potential SNP positions (when using random labels)
@@ -88,6 +88,7 @@ namespace Linnarsson.Dna
         public string RndTagMutationFilter = "FractionOfMax";
         public int RndTagMutationFilterParam = 50;
         public int MinAltNtsReadCountForSNPDetection = 10; // Positions with less reads with the non-ref bases will not be considered for SNP analysis
+        public bool ProtectExonRepeatsFromMaskingInGenomeBuilds = false; // If true, repeats inside or flanking exons will not have their seq replaced with 'N':s
 
         [NonSerialized]
         private Barcodes m_Barcodes;

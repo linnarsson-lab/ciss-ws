@@ -244,13 +244,13 @@ namespace CmdSilverBullet
                             break;
 
                         case "maskchr":
-                            NonExonRepeatMasker nerm = new NonExonRepeatMasker();
                             genome = StrtGenome.GetGenome(args[argOffset++]);
                             int minFlank = int.Parse(args[argOffset++]);
                             int minIntronFlank = int.Parse(args[argOffset++]);
                             int maxIntronToKeep = int.Parse(args[argOffset++]);
                             string outFolder = args[argOffset++];
-                            nerm.Mask(genome, outFolder, minFlank, minIntronFlank, maxIntronToKeep);
+                            NonExonRepeatMasker nerm = new NonExonRepeatMasker(minFlank, minIntronFlank, maxIntronToKeep);
+                            nerm.Mask(genome, outFolder, false);
                             break;
 
                         case "split":

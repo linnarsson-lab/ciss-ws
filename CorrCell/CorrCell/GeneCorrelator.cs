@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Linnarsson.Mathematics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CorrCell
 {
@@ -45,6 +47,33 @@ namespace CorrCell
                         continue;
                     yield return GetCorrelation(expr, geneIdxA, geneIdxB);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Estimate pair-wise correlations between all genes in the input data set,
+        /// sampling from the global distribution of means as function of counts
+        /// </summary>
+        /// <param name="expr"></param>
+        public IEnumerable<CorrPair> ParallelIterCorrelations(Expression expr)
+        {
+            int nGenes = expr.GeneCount;
+            for (int geneIdxA = 0; geneIdxA < nGenes - 1; geneIdxA++)
+            {
+                if (expr.GeneMean(geneIdxA) == 0.0)
+                    continue;
+                List<int> geneBIndices = new List<int>();
+                for (int geneIdxB = geneIdxA + 1; geneIdxB < nGenes; geneIdxB++)
+                    if (expr.GeneMean(geneIdxB) > 0.0)
+                        geneBIndices.Add(geneIdxB);
+                CorrPair[] corrPairs = new CorrPair[geneBIndices.Count];
+                Parallel.For(0, geneBIndices.Count, i =>
+                {
+                    int geneIdxB = geneBIndices[i];
+                    corrPairs[i] = GetCorrelation(expr, geneIdxA, geneIdxB);
+                });
+                foreach (CorrPair cp in corrPairs)
+                    yield return cp;
             }
         }
 

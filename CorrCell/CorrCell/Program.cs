@@ -161,7 +161,7 @@ namespace CorrCell
             using (StreamWriter writer = new StreamWriter(outFileBase + "_all_values.tab"))
             {
                 writer.WriteLine(CorrPair.Header);
-                foreach (CorrPair cp in gc.IterCorrelations(expr))
+                foreach (CorrPair cp in gc.ParallelIterCorrelations(expr))
                     writer.WriteLine(cp.ToString());
             }
         }
@@ -178,7 +178,7 @@ namespace CorrCell
         {
             IComparer<double> ic = new DoubleReverseComparer();
             SortedList<double, CorrPair> topPairs = new SortedList<double, CorrPair>(limit, ic);
-            foreach (CorrPair cp in gc.IterCorrelations(expr))
+            foreach (CorrPair cp in gc.ParallelIterCorrelations(expr))
             {
                 if (topPairs.Count == 0 || cp.corrMean > topPairs.Keys[topPairs.Count - 1])
                 {

@@ -5,6 +5,8 @@ using System.IO;
 
 namespace Linnarsson.Dna
 {
+    public enum ReadLimitType { None, TotalReads, TotalReadsPerBarcode, TotalValidReads, TotalValidReadsPerBarcode };
+
     /// <summary>
     /// Defines various configurations used by many classes.
     /// Defaults values are given here, but actual data is read from an XML file
@@ -89,8 +91,9 @@ namespace Linnarsson.Dna
         public int RndTagMutationFilterParam = 50;
         public int MinAltNtsReadCountForSNPDetection = 10; // Positions with less reads with the non-ref bases will not be considered for SNP analysis
         public bool ProtectExonRepeatsFromMaskingInGenomeBuilds = false; // If true, repeats inside or flanking exons will not have their seq replaced with 'N':s
+        public ReadLimitType ExtractionReadLimitType;
+        public int ExtractionReadLimit = 0;
 
-        [NonSerialized]
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {
             get { if (m_Barcodes == null) m_Barcodes = Barcodes.GetBarcodes(BarcodesName); return m_Barcodes; }

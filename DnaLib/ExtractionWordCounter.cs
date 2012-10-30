@@ -36,7 +36,7 @@ namespace Linnarsson.Dna
         private int nReads;
 
         /// <summary>
-        /// 
+        /// Analyze frequent subsequences in the Illumina reads, for detection of artefacts and contamination.
         /// </summary>
         /// <param name="wordLength">Length of subsequences to analyse for frequencies</param>
         public ExtractionWordCounter(int wordLength)

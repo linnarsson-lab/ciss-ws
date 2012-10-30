@@ -75,8 +75,31 @@ namespace CmdSilverBullet
 
                         case "x":
                             laneArgs = ExtractLaneArgs(args, ref argOffset);
-                            CheckArgs(args, argOffset + 2, argOffset + 2);
+                            CheckArgs(args, argOffset + 2, argOffset + 5);
                             props.BarcodesName = args[argOffset];
+                            if (args.Length > argOffset + 2 && args[argOffset + 1].StartsWith("-L"))
+                            {
+                                switch (args[argOffset + 1])
+                                {
+                                    case "-LTotalReads":
+                                        props.ExtractionReadLimitType = ReadLimitType.TotalReads;
+                                        break;
+                                    case "-LTotalReadsPerBc":
+                                        props.ExtractionReadLimitType = ReadLimitType.TotalReadsPerBarcode;
+                                        break;
+                                    case "-LValidReads":
+                                        props.ExtractionReadLimitType = ReadLimitType.TotalValidReads;
+                                        break;
+                                    case "-LValidReadsPerBc":
+                                        props.ExtractionReadLimitType = ReadLimitType.TotalValidReadsPerBarcode;
+                                        break;
+                                    default:
+                                        props.ExtractionReadLimitType = ReadLimitType.None;
+                                        break;
+                                }
+                                props.ExtractionReadLimit = int.Parse(args[argOffset + 2]);
+                                argOffset += 2;
+                            }
                             mapper = new StrtReadMapper(props);
                             projectFolder = args[argOffset + 1];
                             mapper.Extract(projectFolder, laneArgs);
@@ -310,7 +333,7 @@ namespace CmdSilverBullet
                 "SB.exe q [<RunLaneSpec>]+ [rpkm] <Bc> [<Build>|<Idx>] [all|single] <ProjectPath>\n" +
                 "      extract data, run Bowtie, and annotate in one sweep using default parameters.\n" +
                 "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +
-                "SB.exe x [<RunLaneSpec>]+ <Bc> <ProjectPath>         -   extract data from the reads folder.\n" +
+                "SB.exe x [<RunLaneSpec>]+ <Bc> [-Lt n] <ProjectPath>  -   extract data from the reads folder.\n" +
                 "SB.exe ab [-oNAME] [rpkm|rpm|multimap|5primemap|all|single]* [<Build>|<Idx>] <ProjectPath>|<ExtractedPath>\n" +
                 "      annotate data from .map files in latest/specified Extracted folder.\n" +
                 "      you can give a non-standard output folder name using -o\n" +
@@ -334,6 +357,7 @@ namespace CmdSilverBullet
                 "<Build> E.g. 'mm9', 'hg19', or 'gg3', <Annot> is 'UCSC', 'VEGA', or 'ENSEMBL' (Default: 'UCSC')\n" +
                 "<Idx>   Specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_VEGA'.\n" +
                 "<Bc>    'v2' (96x6-mer), 'v4' (48x6-mer, random tags), 'v4r' (no random tags), or 'no' for no barcodes.\n" +
+                "-Lt n   Limit number of reads used to n. t is one of TotalReads, ValidReads, TotalReadsPerBc, ValidReadsPerBc\n" +
                 "Define other barcode sets in 'Bc.barcodes' files in the barcodes directory in the project folder\n" +
                 "<readLen> Sequence length after barcode and GGG. For idx it should be 0-5 below actual data length.\n" +
                 "Paths are per default rooted in the data directory, so that e.g. 'L006' is enough as a ProjectPath.\n"

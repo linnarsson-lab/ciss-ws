@@ -42,6 +42,8 @@ namespace Linnarsson.Strt
 
     }
 
+    public enum LimitTest { UseThisRead, SkipThisRead, Break };
+
     public class ReadCounter
     {
         private int totalSum = 0;
@@ -54,6 +56,19 @@ namespace Linnarsson.Strt
         private List<int> totalBarcodeReads = new List<int>();
         private Dictionary<string, int> barcodeToReadsIdx = new Dictionary<string, int>();
 
+        private ReadLimitType readLimitType = ReadLimitType.None; // By default all reads in fq files will be analyzed
+        private int readLimit = 0; // Parameter to the read limiter
+
+        public ReadCounter()
+        { }
+        public ReadCounter(Props props)
+        {
+            validBarcodeReads = new List<int>(new int[props.Barcodes.Count]);
+            totalBarcodeReads = new List<int>(new int[props.Barcodes.Count]);
+            readLimitType = props.ExtractionReadLimitType;
+            readLimit = props.ExtractionReadLimit;
+        }
+
         /// <summary>
         /// Average read length over all files
         /// </summary>
@@ -61,7 +76,7 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Total valid read counts over all files, per barcode
         /// </summary>
-        public int[] ValidReadsByBarcode { get { return validBarcodeReads.ToArray(); } }
+        public List<int> ValidReadsByBarcode { get { return validBarcodeReads; } }
         public int ValidReads(int[] selectedBcIndexes)
         {
             int sum = 0;
@@ -72,7 +87,7 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Total valid and invalid read counts over all files, per barcode
         /// </summary>
-        public int[] TotalReadsByBarcode { get { return totalBarcodeReads.ToArray(); } }
+        public List<int> TotalReadsByBarcode { get { return totalBarcodeReads; } }
         public int TotalReads(int[] selectedBcIndexes)
         {
             int sum = 0;
@@ -91,17 +106,63 @@ namespace Linnarsson.Strt
         {
             return (totalSum > 0) ? (totalCounts[readStatus] / (double)totalSum) : 0.0;
         }
-        public void Add(int readStatus)
+
+        /// <summary>
+        /// Test if a read with readStatus and barcode can be added, or limit is reached
+        /// </summary>
+        /// <param name="readStatus">status of next read</param>
+        /// <param name="bcIdx">barcode of next read</param>
+        /// <returns>info wether to use read, skip read, or finish analysis</returns>
+        public LimitTest IsLimitReached(int readStatus, int bcIdx)
         {
-            Add(readStatus, 1);
+            switch (readLimitType)
+            {
+                case ReadLimitType.None:
+                    return LimitTest.UseThisRead;
+                case ReadLimitType.TotalReads:
+                    return GrandTotal >= readLimit ? LimitTest.Break : LimitTest.UseThisRead;
+                case ReadLimitType.TotalValidReads:
+                    return GrandCount(ReadStatus.VALID) >= readLimit ? LimitTest.Break : LimitTest.UseThisRead;
+                case ReadLimitType.TotalValidReadsPerBarcode:
+                    if (bcIdx < 0 || ValidReadsByBarcode[bcIdx] < readLimit) return LimitTest.UseThisRead;
+                    return (ValidReadsByBarcode.All(v => v >= readLimit)) ? LimitTest.Break : LimitTest.SkipThisRead;
+                case ReadLimitType.TotalReadsPerBarcode:
+                    if (bcIdx < 0 || TotalReadsByBarcode[bcIdx] < readLimit) return LimitTest.UseThisRead;
+                    return (TotalReadsByBarcode.All(v => v >= readLimit)) ? LimitTest.Break : LimitTest.SkipThisRead;
+                default:
+                    return LimitTest.UseThisRead;
+            }
         }
-        public void Add(int readStatus, int count)
+
+        /// <summary>
+        /// Add a read (during extraction) to the statistics.
+        /// </summary>
+        /// <param name="readStatus">Status of the read</param>
+        /// <param name="bcIdx">Barcode of the read</param>
+        public void AddARead(int readStatus, int bcIdx)
+        {
+            AddReads(readStatus, 1);
+            if (bcIdx >= 0)
+            {
+                totalBarcodeReads[bcIdx] += 1;
+                if (readStatus == ReadStatus.VALID)
+                    validBarcodeReads[bcIdx] += 1;
+            }
+        }
+
+        /// <summary>
+        /// A a number of reads (from statistics file) to the global statistics
+        /// </summary>
+        /// <param name="readStatus"></param>
+        /// <param name="count"></param>
+        public void AddReads(int readStatus, int count)
         {
             totalSum += count;
             partialSum += count;
             totalCounts[readStatus] += count;
             partialCounts[readStatus] += count;
         }
+
         public void AddReadFile(string path, int averageReadLen)
         {
             readFiles.Add(path);
@@ -181,7 +242,7 @@ namespace Linnarsson.Strt
                                 {
                                     int statusCategory = ReadStatus.Parse(fields[0]);
                                     if (statusCategory >= 0)
-                                        Add(statusCategory, int.Parse(fields[1]));
+                                        AddReads(statusCategory, int.Parse(fields[1]));
                                 }
                             }
                             catch (ReadFileEmptyException)

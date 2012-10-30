@@ -300,7 +300,7 @@ namespace Linnarsson.Strt
                                        DateTime.Compare(new FileInfo(laneInfo.readFilePath).LastWriteTime, new FileInfo(laneInfo.summaryFilePath).LastWriteTime) > 0;
                 if (someExtractionMissing || readFileIsNewer)
                 {
-                    ReadCounter readCounter = new ReadCounter();
+                    ReadCounter readCounter = new ReadCounter(props);
                     ExtractionWordCounter wordCounter = new ExtractionWordCounter(props.ExtractionCounterWordLength);
                     StreamWriter[] sws_barcoded = OpenStreamWriters(laneInfo.extractedFilePaths);
                     StreamWriter sw_slask = laneInfo.slaskFilePath.OpenWrite();
@@ -308,25 +308,27 @@ namespace Linnarsson.Strt
                     ExtractionQuality extrQ = (props.AnalyzeExtractionQualities) ? new ExtractionQuality(props.LargestPossibleReadLength) : null;
                     double totLen = 0.0;
                     long nRecords = 0;
-                    int[] nValidSTRTReadsByBc = new int[barcodes.Count];
-                    int[] nTotalBarcodedReadsByBc = new int[barcodes.Count];
                     foreach (FastQRecord fastQRecord in 
                                 BarcodedReadStream.Stream(barcodes, laneInfo.readFilePath, props.QualityScoreBase, laneInfo.idxSeqFilter))
                     {
                         FastQRecord rec = fastQRecord;
-                        if (extrQ != null) extrQ.Add(rec);
-                        wordCounter.AddRead(rec.Sequence);
                         int readStatus = readExtractor.Extract(ref rec, out bcIdx);
-                        readCounter.Add(readStatus);
-                        if (readStatus == ReadStatus.VALID)
+                        LimitTest testResult = readCounter.IsLimitReached(readStatus, bcIdx);
+                        if (testResult == LimitTest.Break)
+                            break;
+                        if (testResult == LimitTest.UseThisRead)
                         {
-                            totLen += rec.Sequence.Length;
-                            nRecords++;
-                            nValidSTRTReadsByBc[bcIdx]++;
-                            sws_barcoded[bcIdx].WriteLine(rec.ToString(props.QualityScoreBase));
+                            if (extrQ != null) extrQ.Add(rec);
+                            wordCounter.AddRead(rec.Sequence);
+                            readCounter.AddARead(readStatus, bcIdx);
+                            if (readStatus == ReadStatus.VALID)
+                            {
+                                totLen += rec.Sequence.Length;
+                                nRecords++;
+                                sws_barcoded[bcIdx].WriteLine(rec.ToString(props.QualityScoreBase));
+                            }
+                            else sw_slask.WriteLine(rec.ToString(props.QualityScoreBase));
                         }
-                        else sw_slask.WriteLine(rec.ToString(props.QualityScoreBase));
-                        if (bcIdx >= 0) nTotalBarcodedReadsByBc[bcIdx]++;
                     }
                     CloseStreamWriters(sws_barcoded);
                     sw_slask.Close();
@@ -336,8 +338,9 @@ namespace Linnarsson.Strt
                         readCounter.AddReadFile(laneInfo.readFilePath, averageReadLen);
                         sw_summary.WriteLine(readCounter.TotalsToTabString(barcodes.HasRandomBarcodes));
                         sw_summary.WriteLine("#\tBarcode\tValidSTRTReads\tTotalBarcodedReads");
-                        for (int bc = 0; bc < nValidSTRTReadsByBc.Length; bc++)
-                            sw_summary.WriteLine("BARCODEREADS\t{0}\t{1}\t{2}", barcodes.Seqs[bc], nValidSTRTReadsByBc[bc], nTotalBarcodedReadsByBc[bc]);
+                        for (bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                            sw_summary.WriteLine("BARCODEREADS\t{0}\t{1}\t{2}",
+                                                 barcodes.Seqs[bcIdx], readCounter.ValidReadsByBarcode[bcIdx], readCounter.TotalReadsByBarcode[bcIdx]);
                         sw_summary.WriteLine("\nBelow are the most common words among all reads.\n");
                         sw_summary.WriteLine(wordCounter.GroupsToString(200));
                     }

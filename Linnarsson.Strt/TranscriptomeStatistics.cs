@@ -1229,11 +1229,11 @@ namespace Linnarsson.Strt
                 WriteBarcodes(xmlFile, barcodeStats, bCodeLines);
                 if (barcodes.SpeciesByWell != null)
                     WriteSpeciesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
-                if (readCounter.ValidReadsByBarcode.Length == barcodes.Count)
+                if (readCounter.ValidReadsByBarcode.Count == barcodes.Count)
                 {
-                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, readCounter.ValidReadsByBarcode,
+                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, readCounter.ValidReadsByBarcode.ToArray(),
                                         "BARCODEDREADS", "Total barcoded reads by barcode", "barcoded reads");
-                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, readCounter.ValidReadsByBarcode,
+                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, readCounter.ValidReadsByBarcode.ToArray(),
                                         "VALIDSTRTREADS", "Total valid STRT reads by barcode", "valid STRT reads");
                 }
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, TotalHitsByBarcode,

@@ -105,6 +105,29 @@ namespace Linnarsson.Dna
             }
         }
 
+        public void JoinSpuriousSplices(int minEvents)
+        {
+            List<int> newStarts = new List<int>(ExonStarts.Length);
+            List<int> newEnds = new List<int>(ExonEnds.Length);
+            int startIdx = 0;
+            while (startIdx < ExonStarts.Length)
+            {
+                int endIdx = startIdx;
+                while (endIdx < ExonEnds.Length - 1 && ExonEnds[endIdx] + 10 >= ExonStarts[endIdx + 1])
+                    endIdx += 1;
+                newStarts.Add(ExonStarts[startIdx]);
+                newEnds.Add(ExonEnds[endIdx]);
+                startIdx = endIdx + 1;
+            }
+            if (newStarts.Count + minEvents <= ExonStarts.Length)
+            {
+                Console.WriteLine("JoinSpuriousSplices: Before:\n{0}", ToString());
+                ExonStarts = newStarts.ToArray();
+                ExonEnds = newEnds.ToArray();
+                Console.WriteLine("                     After:\n{0}", ToString());
+            }
+        }
+
         /// <summary>
         /// Either molecules per barcode after rndTag mutation filtering, or total reads per barcode when no rndTag are used.
         /// </summary>

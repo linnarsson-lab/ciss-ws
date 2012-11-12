@@ -81,7 +81,7 @@
     <Compile Include="ClusterPairs.cs" />
     <Compile Include="EssDistance.cs" />
     <Compile Include="EuclidianDistance.cs" />
-    <Compile Include="IDistanceMetric.cs" />
+    <Compile Include="DistanceMetric.cs" />
     <Compile Include="Element.cs" />
     <Compile Include="HAC.cs" />
     <Compile Include="Fusion.cs" />

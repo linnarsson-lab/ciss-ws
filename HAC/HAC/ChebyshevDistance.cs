@@ -5,9 +5,9 @@ using System.Text;
 
 namespace HAC
 {
-    public class ChebyshevDistance : IDistanceMetric
+    public class ChebyshevDistance : DistanceMetric
     {
-        public double GetDistance(object[] set1, object[] set2)
+        public override double GetDistance(object[] set1, object[] set2)
         {
             double maxv = 0.0;
             for (int i = 0; i < set1.Length; i++)

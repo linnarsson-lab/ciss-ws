@@ -5,9 +5,9 @@ using System.Text;
 
 namespace HAC
 {
-    public class CanberraDistance : IDistanceMetric
+    public class CanberraDistance : DistanceMetric
     {
-        public double GetDistance(object[] set1, object[] set2)
+        public override double GetDistance(object[] set1, object[] set2)
         {
             double snum = 0.0, sdenom_u = 0.0, sdenom_v = 0.0;
             for (int i = 0; i < set1.Length; i++)

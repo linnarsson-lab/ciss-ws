@@ -5,7 +5,7 @@ using System.Text;
 
 namespace HAC
 {
-    public class MinkowskiDistance : IDistanceMetric
+    public class MinkowskiDistance : DistanceMetric
     {
         private double p;
 
@@ -14,7 +14,7 @@ namespace HAC
             this.p = p;
         }
 
-        public double GetDistance(object[] set1, object[] set2)
+        public override double GetDistance(object[] set1, object[] set2)
         {
             double s = 0.0;
             for (int i = 0; i < set1.Length; i++)

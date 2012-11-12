@@ -5,9 +5,9 @@ using System.Text;
 
 namespace HAC
 {
-    public class JaccardDistance : IDistanceMetric
+    public class JaccardDistance : DistanceMetric
     {
-        public double GetDistance(object[] set1, object[] set2)
+        public override double GetDistance(object[] set1, object[] set2)
         {
             var interSect = set1.Intersect<object>(set2);
             if (interSect.Count() == 0)

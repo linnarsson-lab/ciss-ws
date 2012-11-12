@@ -45,8 +45,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Neighborhood.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SpatialExpressionFileParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HAC\HAC.csproj">

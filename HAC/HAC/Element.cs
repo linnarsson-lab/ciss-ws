@@ -13,7 +13,7 @@ namespace HAC
     {
         public static int defaultId = 1;
 
-        HashSet<object> dataPoints = new HashSet<object>();
+        List<object> dataPoints = new List<object>();
         public string Id { get; private set; }
 
         /// <summary>
@@ -33,6 +33,11 @@ namespace HAC
             defaultId++;
         }
 
+        public Element(string id)
+        {
+            Id = id;
+        }
+
         public Element(string id, object[] dataPoints)
         {
             Id = id;
@@ -50,6 +55,11 @@ namespace HAC
         {
             foreach (Element neighbor in neighbors)
                 this.neighbors.Add(neighbor);
+        }
+
+        public void AddNeighbor(Element neighbor)
+        {
+            this.neighbors.Add(neighbor);
         }
 
         public HashSet<Element> GetNeighbors()

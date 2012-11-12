@@ -98,6 +98,7 @@ namespace Linnarsson.Strt
         }
         private Props props;
         private AnnotationReader annotationReader;
+        private int minSpuriousSplicesToRemove = 5;
 
         /// <summary>
         /// ReadLen excludes the barcode and rndTag section.
@@ -213,6 +214,7 @@ namespace Linnarsson.Strt
                 chrGfs.Sort((gf1, gf2) => gf1.Start - gf2.Start);
                 foreach (GeneFeature gf in chrGfs.Where(g => genome.GeneVariants || !g.IsVariant())) // GeneFeatures now sorted by position on chromosome
                 {
+                    gf.JoinSpuriousSplices(minSpuriousSplicesToRemove);
                     gfEnds.Add(gf.End);
                     gfJPos.Add((int)jChrSeq.Count);
                     annotWriter.WriteLine(gf.ToString()); // Write the real chr annotations to output

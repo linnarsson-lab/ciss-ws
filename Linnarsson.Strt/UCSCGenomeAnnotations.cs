@@ -379,7 +379,7 @@ namespace Linnarsson.Strt
             string expressionFile = WriteExpressionTable(fileNameBase);
             WriteMinExpressionTable(fileNameBase);
             WriteCAPHitsTable(fileNameBase);
-            string rpmFile = WriteBarcodedRPM(fileNameBase);
+            string rpmFile = WriteNormalizedExpression(fileNameBase);
             if (!Environment.OSVersion.VersionString.Contains("Microsoft"))
             {
                 CmdCaller.Run("php", "strt2Qsingle.php " + rpmFile);
@@ -546,11 +546,11 @@ namespace Linnarsson.Strt
                 WriteExtraDataTableHeaders(outFile);
                 WriteBarcodeHeaders(outFile, 5, "");
                 outFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tExonHits");
-                StringBuilder sbDatarow = new StringBuilder();
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     int[] data = dataGetter(gf);
+                    StringBuilder sbDatarow = new StringBuilder();
                     foreach (int idx in speciesBcIndexes)
                     {
                         sbDatarow.Append("\t");
@@ -754,30 +754,29 @@ namespace Linnarsson.Strt
             }
         }
 
-        private string WriteBarcodedRPM(string fileNameBase)
+        private string WriteNormalizedExpression(string fileNameBase)
         {
-            string rpType = (props.UseRPKM) ? "RPKM" : "RPM";
+            bool molCounts = barcodes.HasRandomBarcodes;
+            string ROrM = molCounts ? "Mols" : "Reads";
+            string rpType = ROrM + (props.UseRPKM ? "PerKBases" : "") + (molCounts ? "Normalized" : "PerMillion");
             string rpmPath = fileNameBase + "_" + rpType + ".tab";
             using (StreamWriter matrixFile = new StreamWriter(rpmPath))
             using (StreamWriter simpleTableFile = new StreamWriter(fileNameBase + "_" + rpType + "_simple.txt"))
             {
+                string rpDescr = (molCounts ? "molecules " : "reads ") + "per " + (props.UseRPKM ? "kilobase transcript and " : "") +
+                                 (molCounts ? "normalized to the average across all samples" : "million");
+                matrixFile.WriteLine("Values in the table are " + rpDescr);
+                matrixFile.WriteLine("Note that added spikes and transcripts are normalized separately.");
                 if (props.DirectionalReads)
                 {
-                    matrixFile.WriteLine("Estimated detection limits as {0} thresholds calculated from 99% and 99.9% of the global distribution ", rpType);
-                    matrixFile.WriteLine("of AntiSense Exon hits, and the normalized {0} values for main gene transcripts in each barcode.", rpType);
+                    matrixFile.WriteLine("Given estimated detection limits as {0} thresholds calculated from 99% and 99.9% of the global distribution ", rpType);
+                    matrixFile.WriteLine("of AntiSense Exon hits, and the normalized {0} values for main transcripts in each barcode.", rpType);
                 }
                 if (!props.UseRPKM)
-                    matrixFile.WriteLine("SingleRead is the RPM value that corresponds to a single molecule(read) in each barcode.");
-                if (props.DirectionalReads)
-                {
-                    WriteBarcodeHeaders(matrixFile, 9, "(Values are " + rpType + ")");
-                    matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\tP=0.01\tP=0.001\tAverage\tCV");
-                }
-                else
-                {
-                    WriteBarcodeHeaders(matrixFile, 7, "(Values are " + rpType + ")");
-                    matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\tAverage\tCV");
-                }
+                    matrixFile.WriteLine("Single{0} is the value (in that barcode and spike or sample section) that corresponds to a single {1}.",
+                                         (molCounts ? "Mol" : "Read"), (molCounts ? "molecule" : "read"));
+                WriteBarcodeHeaders(matrixFile, (props.DirectionalReads ? 9 : 7), "");
+                matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\t{0}Average\tCV", (props.DirectionalReads ? "P=0.01\tP=0.001\t" : ""));
                 WriteRPMSection(matrixFile, true, null);
                 matrixFile.WriteLine();
                 foreach (int idx in barcodes.GenomeAndEmptyBarcodeIndexes(genome))
@@ -791,8 +790,8 @@ namespace Linnarsson.Strt
         private void WriteRPMSection(StreamWriter matrixFile, bool selectSpikes, StreamWriter simpleTableFile)
         {
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-            int[] totCountsByBarcode = GetTotalTranscriptCountsByBarcode(selectSpikes);
-            int totCount = totCountsByBarcode.Sum();
+            int[] totalByBarcode = GetTotalTranscriptCountsByBarcode(selectSpikes);
+            int totCount = totalByBarcode.Sum();
             List<double> ASReadsPerBase = GetExonASOrderedReadsPerBase(selectSpikes);
             Double RPkbM999 = Double.NaN;
             Double RPkbM99 = Double.NaN;
@@ -801,7 +800,7 @@ namespace Linnarsson.Strt
                 RPkbM99 = 1000 * 1.0E+6 * ASReadsPerBase[(int)Math.Floor(ASReadsPerBase.Count * 0.99)] / (double)totCount;
                 RPkbM999 = 1000 * 1.0E+6 * ASReadsPerBase[(int)Math.Floor(ASReadsPerBase.Count * 0.999)] / (double)totCount;
             }
-            double[] normFactors = CalcRPMNormFactors(totCountsByBarcode);
+            double[] normFactors = CalcNormalizationFactors(totalByBarcode);
             string normName = (props.UseRPKM) ? "Normalizer" : (barcodes.HasRandomBarcodes) ? "SingleMol" : "SingleRead";
             matrixFile.Write("{0}\t\t\t\t\t\t\t", normName);
             if (props.DirectionalReads) matrixFile.Write("\t\t");
@@ -823,9 +822,9 @@ namespace Linnarsson.Strt
                 DescriptiveStatistics ds = new DescriptiveStatistics();
                 foreach (int idx in speciesBcIndexes)
                 {
-                    double RPkM = (normFactors[idx] * gf.TranscriptHitsByBarcode[idx]) * 1000.0 / trLenFactor;
-                    ds.Add(RPkM);
-                    sb.AppendFormat("\t{0:G6}", RPkM);
+                    double normedValue = (normFactors[idx] * gf.TranscriptHitsByBarcode[idx]) * 1000.0 / trLenFactor;
+                    ds.Add(normedValue);
+                    sb.AppendFormat("\t{0:G6}", normedValue);
                 }
                 string CV = "N/A";
                 if (ds.Count > 2 && gf.GetTranscriptHits() > 0)
@@ -836,13 +835,18 @@ namespace Linnarsson.Strt
             }
         }
 
-        private double[] CalcRPMNormFactors(int[] totCountsByBarcode)
+        private double[] CalcNormalizationFactors(int[] totByBarcode)
         {
-            double[] normFactors = new double[totCountsByBarcode.Length];
-            for (int bcIdx = 0; bcIdx < totCountsByBarcode.Length; bcIdx++)
+            double normalizer = 1.0E+6;
+            if (barcodes.HasRandomBarcodes)
             {
-                normFactors[bcIdx] = (totCountsByBarcode[bcIdx] > 0) ?
-                                          (1.0E+6 / (double)totCountsByBarcode[bcIdx]) : 0;
+                double nValidBarcodes = totByBarcode.Count(v => v > 0);
+                normalizer = totByBarcode.Sum() / nValidBarcodes;
+            }
+            double[] normFactors = new double[totByBarcode.Length];
+            for (int bcIdx = 0; bcIdx < totByBarcode.Length; bcIdx++)
+            {
+                normFactors[bcIdx] = (totByBarcode[bcIdx] > 0) ? (normalizer / (double)totByBarcode[bcIdx]) : 0.0;
             }
             return normFactors;
         }

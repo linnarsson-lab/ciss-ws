@@ -8,13 +8,18 @@ namespace HAC
 {
     public class Cluster : IEnumerable
     {
+        private static int defaultId = 1;
+
         HashSet<Element> elements = new HashSet<Element>();
         HashSet<Cluster> neighbors = new HashSet<Cluster>();
         Fusion fusion;
+        public string Id { get; private set; }
 
         public Cluster(Fusion fusion)
         {
             this.fusion = fusion;
+            this.Id = "Cl" + defaultId;
+            defaultId++;
         }
 
         public Cluster(Fusion fusion, Element initialElement)
@@ -22,6 +27,8 @@ namespace HAC
             this.fusion = fusion;
             this.elements.Add(initialElement);
             DataPointCount = initialElement.DataPointCount;
+            this.Id = "Cl" + defaultId;
+            defaultId++;
         }
 
         public void InitNeighborsFromElements()
@@ -41,7 +48,7 @@ namespace HAC
                 this.elements.Add(e);
         }
 
-        internal Element[] GetElements()
+        public Element[] GetElements()
         {
             return elements.ToArray<Element>();
         }

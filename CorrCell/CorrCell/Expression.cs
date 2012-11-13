@@ -40,7 +40,7 @@ namespace CorrCell
         /// <summary>
         /// data[genes][cells]
         /// </summary>
-        private List<int[]> data = new List<int[]>();
+        private List<double[]> data = new List<double[]>();
 
         /// <summary>
         /// Number of genes in data the data set
@@ -57,7 +57,7 @@ namespace CorrCell
         /// <param name="geneIdx"></param>
         /// <param name="cellIdx"></param>
         /// <returns></returns>
-        public int GetValue(int geneIdx, int cellIdx)
+        public double GetValue(int geneIdx, int cellIdx)
         {
             return data[geneIdx][cellIdx];
         }
@@ -71,7 +71,7 @@ namespace CorrCell
         {
             int n = 0;
             double sum = 0.0;
-            foreach (int value in data[geneIdx])
+            foreach (double value in data[geneIdx])
             {
                 n++;
                 sum += value;
@@ -80,13 +80,13 @@ namespace CorrCell
         }
 
         /// <summary>
-        /// Get the counts for all cells of a specific gene
+        /// Get the counts for all cells of a specific gene as integers
         /// </summary>
         /// <param name="geneIdx"></param>
         /// <returns></returns>
-        public int[] GetGeneValues(int geneIdx)
+        public int[] GetGeneValuesAsInts(int geneIdx)
         {
-            return data[geneIdx];
+            return Array.ConvertAll(data[geneIdx], v => (int)Math.Round(v));
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace CorrCell
         public double CellSum(int cellIdx)
         {
             double sum = 0.0;
-            foreach (int value in IterCellValues(cellIdx))
+            foreach (double value in IterCellValues(cellIdx))
                 sum += value;
             return sum;
         }
@@ -107,7 +107,7 @@ namespace CorrCell
         /// </summary>
         /// <param name="cellIdx"></param>
         /// <returns></returns>
-        public IEnumerable<int> IterCellValues(int cellIdx)
+        public IEnumerable<double> IterCellValues(int cellIdx)
         {
             for (int geneIdx = 0; geneIdx < GeneCount; geneIdx++)
                 yield return data[geneIdx][cellIdx];
@@ -118,11 +118,11 @@ namespace CorrCell
         /// </summary>
         /// <param name="includeZeroGenes">If false, will skip genes with no expression</param>
         /// <returns></returns>
-        public IEnumerable<int> IterValues(bool includeZeroGenes)
+        public IEnumerable<double> IterValues(bool includeZeroGenes)
         {
             for (int geneIdx = 0; geneIdx < GeneCount; geneIdx++)
-                if (includeZeroGenes || GeneMean(geneIdx) > 0)
-                    foreach (int value in data[geneIdx])
+                if (includeZeroGenes || GeneMean(geneIdx) > 0.0)
+                    foreach (double value in data[geneIdx])
                         yield return value;
         }
 
@@ -174,9 +174,9 @@ namespace CorrCell
                         int nDataFields = fields.Length - firstDataCol;
                         if (nDataFields != cellNames.Length)
                             throw new IOException("File format error - Wrong number of data columns:\n" + line);
-                        int[] geneData = new int[nDataFields];
+                        double[] geneData = new double[nDataFields];
                         for (int col = firstDataCol; col < fields.Length; col++)
-                            geneData[col - firstDataCol] = int.Parse(fields[col]);
+                            geneData[col - firstDataCol] = double.Parse(fields[col]);
                         data.Add(geneData);
                         genes.Add(fields[0].ToLower());
                     }
@@ -194,7 +194,7 @@ namespace CorrCell
         public double AllCellMean()
         {
             double total = 0.0;
-            foreach (int value in IterValues(true)) total += value;
+            foreach (double value in IterValues(true)) total += value;
             return total / CellCount;
         }
 
@@ -213,7 +213,7 @@ namespace CorrCell
             }
             for (int geneIdx = 0; geneIdx < data.Count; geneIdx++)
             {
-                int[] newGeneData = new int[keepCells.Count];
+                double[] newGeneData = new double[keepCells.Count];
                 for (int i = 0; i < keepCells.Count; i++)
                     newGeneData[i] = data[geneIdx][keepCells[i]];
                 data[geneIdx] = newGeneData;
@@ -237,7 +237,7 @@ namespace CorrCell
                     keepGenes.Add(geneIdx);
             }
             List<string> keepGeneNames = new List<string>();
-            List<int[]> newData = new List<int[]>();
+            List<double[]> newData = new List<double[]>();
             foreach (int keepGeneIdx in keepGenes)
             {
                 newData.Add(data[keepGeneIdx]);
@@ -269,7 +269,7 @@ namespace CorrCell
                     int exchangeIdx = takeIdx + ThreadSafeRandom.Next(21) - 10;
                     while (exchangeIdx == takeIdx || exchangeIdx < 0 || exchangeIdx >= data.Count)
                         exchangeIdx = takeIdx + ThreadSafeRandom.Next(21) - 10;
-                    int temp = data[geneIndices[takeIdx]][cellIdx];
+                    double temp = data[geneIndices[takeIdx]][cellIdx];
                     data[geneIndices[takeIdx]][cellIdx] = data[geneIndices[exchangeIdx]][cellIdx];
                     data[geneIndices[exchangeIdx]][cellIdx] = temp;
                 }
@@ -289,7 +289,7 @@ namespace CorrCell
                     while (putGeneIdx == takeGeneIdx) putGeneIdx = ThreadSafeRandom.Next(GeneCount);
                     int putCellIdx = ThreadSafeRandom.Next(CellCount);
                     while (putCellIdx == takeGeneIdx) putCellIdx = ThreadSafeRandom.Next(CellCount);
-                    int temp = data[takeGeneIdx][takeCellIdx];
+                    double temp = data[takeGeneIdx][takeCellIdx];
                     data[takeGeneIdx][takeCellIdx] = data[putGeneIdx][putCellIdx];
                     data[putGeneIdx][putCellIdx] = temp;
                 }
@@ -307,7 +307,7 @@ namespace CorrCell
                 {
                     int putGeneIdx = ThreadSafeRandom.Next(GeneCount);
                     while (putGeneIdx == takeGeneIdx) putGeneIdx = ThreadSafeRandom.Next(GeneCount);
-                    int temp = data[takeGeneIdx][cellIdx];
+                    double temp = data[takeGeneIdx][cellIdx];
                     data[takeGeneIdx][cellIdx] = data[putGeneIdx][cellIdx];
                     data[putGeneIdx][cellIdx] = temp;
                 }

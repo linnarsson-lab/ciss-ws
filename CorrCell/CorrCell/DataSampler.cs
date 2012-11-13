@@ -94,7 +94,7 @@ namespace CorrCell
             for (int geneIdx = 0; geneIdx < expression.GeneCount; geneIdx++)
             {
                 double mean = expression.GeneMean(geneIdx);
-                foreach (int count in expression.GetGeneValues(geneIdx))
+                foreach (int count in expression.GetGeneValuesAsInts(geneIdx))
                 {
                     List<double> meansAtCount;
                     if (!meansByCount.TryGetValue(count, out meansAtCount))

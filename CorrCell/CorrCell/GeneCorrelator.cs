@@ -86,8 +86,8 @@ namespace CorrCell
         /// <returns></returns>
         public CorrPair GetCorrelation(Expression expr, int geneIdxA, int geneIdxB)
         {
-            int[] countsA = expr.GetGeneValues(geneIdxA);
-            int[] countsB = expr.GetGeneValues(geneIdxB);
+            int[] countsA = expr.GetGeneValuesAsInts(geneIdxA);
+            int[] countsB = expr.GetGeneValuesAsInts(geneIdxB);
             DescriptiveStatistics ds = EstimateCorrelation(dataSampler, countsA, countsB);
             CorrPair cp = new CorrPair(ds.Mean(), ds.Variance(), countsA, countsB,
                                        geneIdxA, geneIdxB, expr.GetGeneName(geneIdxA), expr.GetGeneName(geneIdxB));

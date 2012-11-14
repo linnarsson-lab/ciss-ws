@@ -53,7 +53,7 @@ namespace SHAC
             {
                 if (e.Message != null && e.Message != "")
                     Console.WriteLine(e.Message);
-                Console.WriteLine("Usage:\nSHAC -d DISTANCEMETHOD -l LINKAGEMETHOD -c NEIGHBORHOOD EXPRFILE");
+                Console.WriteLine("Usage:\nmono SHAC.exe -d DISTANCEMETHOD -l LINKAGEMETHOD -c NEIGHBORHOOD EXPRFILE");
                 Console.WriteLine("DISTANCEMETHOD is one of 'euclidian', 'manhattan', 'chebyshev', 'canberra', 'braycurtis', 'ess'");
                 Console.WriteLine("LINKAGEMETHOD is one of 'single', 'complete', 'average', 'centroid'");
                 Console.WriteLine("NEIGHBORHOOD is one of 'queen', 'rook'");
@@ -67,6 +67,11 @@ namespace SHAC
             ClusterResult result = hac.Cluster(nFinalClusters);
             WriteFinalClusters(result);
             WriteNodeList(result);
+            using (StreamWriter writer = new StreamWriter("intree"))
+            {
+                writer.WriteLine(MakePHYLIP(result));
+            }
+            Console.WriteLine("Wrote PHYLIP tree for use with drawgram.exe to file 'intree'");
             Console.WriteLine("\nPress Enter to exit");
             Console.In.Read();
         }
@@ -78,12 +83,12 @@ namespace SHAC
             {
                 Console.Write("Node {0}: ", nIdx++);
                 if (node.pair.Cluster1.ElementCount == 1)
-                    Console.Write("Elem" + node.pair.Cluster1.GetElements()[0].Id);
+                    Console.Write(node.pair.Cluster1.GetElements()[0].Id);
                 else
                     Console.Write(node.pair.Cluster1.Id);
                 Console.Write(" - " + node.pair.Distance + " - ");
                 if (node.pair.Cluster2.ElementCount == 1)
-                    Console.WriteLine("Elem" + node.pair.Cluster2.GetElements()[0].Id);
+                    Console.WriteLine(node.pair.Cluster2.GetElements()[0].Id);
                 else
                     Console.WriteLine(node.pair.Cluster2.Id);
             }
@@ -93,7 +98,7 @@ namespace SHAC
         {
             Console.WriteLine("Final cluster(s):");
             int i = 1;
-            foreach (Cluster c in result.clusters)
+            foreach (Cluster c in result.GetTopClusters())
             {
                 Console.WriteLine("Cluster {0}: ", i++);
                 foreach (Element e in c)
@@ -101,5 +106,40 @@ namespace SHAC
                 Console.WriteLine();
             }
         }
+
+        private static string MakePHYLIP(ClusterResult result)
+        {
+            if (result.GetTopClusters().Count > 1)
+            {
+                Console.WriteLine("Can only make PHYLIP output when there is one single top cluster.");
+                return "";
+            }
+            StringBuilder sb = new StringBuilder();
+            Cluster topCluster = result.GetTopClusters()[0];
+            AddToPHYLIP(topCluster, sb);
+            sb.Append(';');
+            return sb.ToString();
+        }
+
+        private static void AddToPHYLIP(Cluster c, StringBuilder sb)
+        {
+            sb.Append('(');
+            bool firstChild = true;
+            foreach (Cluster child in c.Children)
+            {
+                if (!firstChild)
+                    sb.Append(',');
+                firstChild = false;
+                if (child.IsLeaf)
+                    sb.Append(string.Format("{0}:{1:0.000}", child.GetElements()[0].Id, c.ChildrenDistance));
+                else
+                {
+                    AddToPHYLIP(child, sb);
+                    sb.Append(string.Format(":{0:0.000}", c.ChildrenDistance - child.ChildrenDistance));
+                }
+            }
+            sb.Append(')');
+        }
     }
+
 }

@@ -11,14 +11,20 @@ namespace HAC
         private static int defaultId = 1;
 
         HashSet<Element> elements = new HashSet<Element>();
+        public List<Cluster> Children = new List<Cluster>();
+        public double ChildrenDistance { get; set; }
+
+        public bool IsLeaf { get { return Children.Count == 0; } }
+
         HashSet<Cluster> neighbors = new HashSet<Cluster>();
         Fusion fusion;
+
         public string Id { get; private set; }
 
         public Cluster(Fusion fusion)
         {
             this.fusion = fusion;
-            this.Id = "Cl" + defaultId;
+            this.Id = "Node" + defaultId;
             defaultId++;
         }
 
@@ -55,6 +61,7 @@ namespace HAC
 
         internal void AddCluster(Cluster cluster)
         {
+            Children.Add(cluster);
             AddElements(cluster.GetElements());
             AddNeighbors(cluster.neighbors);
         }
@@ -89,6 +96,7 @@ namespace HAC
         }
 
         #endregion
+
 
     }
 }

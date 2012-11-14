@@ -64,7 +64,7 @@ namespace HAC
             // Return if the element (cluster) count is lower than countCluster
             if (clusters.Count <= countCluster)
             {
-                result.SetClusters(clusters);
+                result.SetTopClusters(clusters);
                 return result;
             }
 
@@ -90,6 +90,7 @@ namespace HAC
                 newCluster.AddCluster(lowestDistancePair.Cluster1);
                 //newCluster.AddElements(lowestDistancePair.Cluster2.GetElements());
                 newCluster.AddCluster(lowestDistancePair.Cluster2);
+                newCluster.ChildrenDistance = lowestDistancePair.Distance;
                 // b)Remove the two old clusters from clusters
                 clusters.Remove(lowestDistancePair.Cluster1);
                 clusters.Remove(lowestDistancePair.Cluster2);
@@ -106,7 +107,7 @@ namespace HAC
                 // e) Add the new cluster to clusters
                 clusters.Add(newCluster);
             }
-            result.SetClusters(clusters);
+            result.SetTopClusters(clusters);
             return result;
         }
 
@@ -132,7 +133,7 @@ namespace HAC
             // Return if the element (cluster) count is lower than countCluster
             if (clusters.Count <= countCluster)
             {
-                result.SetClusters(clusters);
+                result.SetTopClusters(clusters);
                 return result;
             }
 
@@ -157,6 +158,7 @@ namespace HAC
                 Cluster newCluster = new Cluster(this.fusion);
                 newCluster.AddCluster(lowestDistancePair.Cluster1);
                 newCluster.AddCluster(lowestDistancePair.Cluster2);
+                newCluster.ChildrenDistance = lowestDistancePair.Distance;
                 // b)Remove the two old clusters from clusters and adjust the neighbors of clusters
                 foreach (Cluster cl in clusters)
                 {
@@ -180,7 +182,7 @@ namespace HAC
                 // e) Add the new cluster to clusters
                 clusters.Add(newCluster);
             }
-            result.SetClusters(clusters);
+            result.SetTopClusters(clusters);
             return result;
         }
 

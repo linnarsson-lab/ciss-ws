@@ -21,7 +21,7 @@ namespace HAC_TEST
             // fusion and distance functions than single-linkage and jaccard index.
             // Use single value arrays or the Element.add(...) method if you want to cluster single values.
 
-            var clusters = hac.Cluster(2).GetClusters();
+            var clusters = hac.Cluster(2).GetTopClusters();
 
             for (int i = 0; i < clusters.Count(); i++)
             {

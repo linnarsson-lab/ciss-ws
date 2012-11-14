@@ -93,6 +93,7 @@ namespace Linnarsson.Dna
         public bool ProtectExonRepeatsFromMaskingInGenomeBuilds = false; // If true, repeats inside or flanking exons will not have their seq replaced with 'N':s
         public ReadLimitType ExtractionReadLimitType;
         public int ExtractionReadLimit = 0;
+        public string BackupDestinationFolder = "hiseq@130.237.142.75:/mnt/davidson/hiseq/data_reads/";
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

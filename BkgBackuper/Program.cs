@@ -14,7 +14,7 @@ namespace BkgBackuper
     class Program
     {
         static int minutesWait = 10;
-        static string backupDest = "hiseq@130.237.142.75:/mnt/davidson/hiseq/data_reads/";
+        static string backupDest = Props.props.BackupDestinationFolder;
         static int startHour = 17;
         static int stopHour = 8;
         static int nExceptions = 0;

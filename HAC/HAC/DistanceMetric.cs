@@ -17,6 +17,8 @@ namespace HAC
                     return new BrayCurtisDistance();
                 case "euclidian":
                     return new EuclidianDistance();
+                case "sqeuclidian":
+                    return new SquaredEuclidianDistance();
                 case "jaccard":
                     return new JaccardDistance();
                 case "manhattan":

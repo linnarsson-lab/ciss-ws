@@ -32,11 +32,10 @@ namespace HAC
         /// <param name="elements"></param>
         /// <param name="fusion"></param>
         /// <param name="metric"></param>
-        public HAC(Element[] elements, Fusion fusion, DistanceMetric metric)
+        public HAC(Element[] elements, Fusion fusion)
         {
             setElements(elements);
             this.fusion = fusion;
-            this.fusion.Metric = metric;
         }
 
         private void setElements(Element[] elements)

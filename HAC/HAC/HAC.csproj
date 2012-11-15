@@ -89,6 +89,8 @@
     <Compile Include="MinkowskiDistance.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SingleLinkage.cs" />
+    <Compile Include="SquaredEuclidianDistance.cs" />
+    <Compile Include="WardLinkage.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

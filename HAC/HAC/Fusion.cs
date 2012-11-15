@@ -14,21 +14,60 @@ namespace HAC
         }
         public abstract double CalculateDistance(Cluster cluster1, Cluster cluster2);
 
-        public static Fusion GetFusion(string fusionMethod)
+        public static Fusion GetFusion(string fusionMethod, DistanceMetric metric)
         {
+            Fusion fusion;
             switch (fusionMethod.ToLower())
             {
                 case "average":
-                    return new AverageLinkage();
+                    fusion = new AverageLinkage();
+                    break;
                 case "single":
-                    return new SingleLinkage();
+                    fusion = new SingleLinkage();
+                    break;
                 case "complete":
-                    return new CompleteLinkage();
+                    fusion = new CompleteLinkage();
+                    break;
                 case "centroid":
-                    return new CentroidLinkage();
+                    fusion = new CentroidLinkage();
+                    break;
+                case "ward":
+                    fusion = new WardLinkage();
+                    metric = new SquaredEuclidianDistance(); // Implicit metric of Ward's
+                    break;
                 default:
                     throw new ArgumentException("Unknown linkage type: " + fusionMethod);
+
             }
+            fusion.metric = metric;
+            return fusion;
         }
+
+        protected double GetSquaredEuclidianDist(object[] set1, object[] set2)
+        {
+            double s = 0.0;
+            for (int i = 0; i < set1.Length; i++)
+            {
+                double d = (double)set1[i] - (double)set2[i];
+                s += d * d;
+            }
+            return s;
+        }
+
+        protected static object[] GetClusterAverage(Cluster cluster)
+        {
+            int nPoints = cluster.DataPointCount;
+            double[] averages = new double[nPoints];
+            foreach (Element elementCluster1 in cluster)
+            {
+                object[] dp = elementCluster1.GetDataPoints();
+                for (int i = 0; i < nPoints; i++)
+                    averages[i] += (double)dp[i];
+            }
+            for (int i = 0; i < nPoints; i++)
+                averages[i] /= cluster.ElementCount;
+            return Array.ConvertAll(averages, v => (object)v);
+        }
+
     }
 }

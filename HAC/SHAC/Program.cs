@@ -45,8 +45,8 @@ namespace SHAC
                 }
                 if (!File.Exists(exprFile))
                     throw new ArgumentException("Input file does not exist: " + exprFile);
-                fusion = Fusion.GetFusion(linkageMethod);
                 distanceMetric = DistanceMetric.GetDistanceMetric(distanceMethod);
+                fusion = Fusion.GetFusion(linkageMethod, distanceMetric);
                 neighborhood = Neighborhood.GetNeighborhood(neighborhoodName);
             }
             catch (ArgumentException e)
@@ -63,9 +63,10 @@ namespace SHAC
                 return;
             }
             Element[] elements = SpatialExpressionFileParser.Parse(exprFile, neighborhood);
-            HAC.HAC hac = new HAC.HAC(elements, fusion, distanceMetric);
+            HAC.HAC hac = new HAC.HAC(elements, fusion);
             ClusterResult result = hac.Cluster(nFinalClusters);
-            WriteFinalClusters(result);
+            if (nFinalClusters > 1)
+                WriteFinalClusters(result);
             WriteNodeList(result);
             using (StreamWriter writer = new StreamWriter("intree"))
             {
@@ -81,22 +82,32 @@ namespace SHAC
             int nIdx = 1;
             foreach (ClusterNode node in result.nodes)
             {
+                Cluster c1 = node.pair.Cluster1;
+                Cluster c2 = node.pair.Cluster2;
                 Console.Write("Node {0}: ", nIdx++);
-                if (node.pair.Cluster1.ElementCount == 1)
-                    Console.Write(node.pair.Cluster1.GetElements()[0].Id);
+                if (c2.ElementCount == 1)
+                    WriteNodeLine(c2, c1, node.pair.Distance);
                 else
-                    Console.Write(node.pair.Cluster1.Id);
-                Console.Write(" - " + node.pair.Distance + " - ");
-                if (node.pair.Cluster2.ElementCount == 1)
-                    Console.WriteLine(node.pair.Cluster2.GetElements()[0].Id);
-                else
-                    Console.WriteLine(node.pair.Cluster2.Id);
+                    WriteNodeLine(c1, c2, node.pair.Distance);
             }
+        }
+
+        private static void WriteNodeLine(Cluster c1, Cluster c2, double distance)
+        {
+            if (c1.ElementCount == 1)
+                Console.Write(c1.GetElements()[0].Id);
+            else
+                Console.Write(c1.Id);
+            Console.Write(" - " + distance + " - ");
+            if (c2.ElementCount == 1)
+                Console.WriteLine(c2.GetElements()[0].Id);
+            else
+                Console.WriteLine(c2.Id);
         }
 
         private static void WriteFinalClusters(ClusterResult result)
         {
-            Console.WriteLine("Final cluster(s):");
+            Console.WriteLine("Final top clusters:");
             int i = 1;
             foreach (Cluster c in result.GetTopClusters())
             {

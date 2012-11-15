@@ -54,9 +54,9 @@ namespace SHAC
                 if (e.Message != null && e.Message != "")
                     Console.WriteLine(e.Message);
                 Console.WriteLine("Usage:\nmono SHAC.exe -d DISTANCEMETHOD -l LINKAGEMETHOD -c NEIGHBORHOOD EXPRFILE");
-                Console.WriteLine("DISTANCEMETHOD is one of 'euclidian', 'manhattan', 'chebyshev', 'canberra', 'braycurtis', 'ess'");
-                Console.WriteLine("LINKAGEMETHOD is one of 'single', 'complete', 'average', 'centroid'");
-                Console.WriteLine("NEIGHBORHOOD is one of 'queen', 'rook'");
+                Console.WriteLine("DISTANCEMETHOD is 'euclidian', 'manhattan', 'chebyshev', 'canberra', 'braycurtis', 'ess' or 'sqeuclidian'");
+                Console.WriteLine("LINKAGEMETHOD is 'single', 'complete', 'average', 'centroid' or 'ward'");
+                Console.WriteLine("NEIGHBORHOOD is 'queen' or 'rook'");
                 Console.WriteLine("EXPRFILE contains a table of data. The first line contains the name of each sample.\n" +
                                   "   The second and third lines have to contain the X and Y coordinate, respectively,\n" +
                                   "   of each sample. Gene names are in column one, samples start by column two.");

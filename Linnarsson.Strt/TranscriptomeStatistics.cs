@@ -978,7 +978,7 @@ namespace Linnarsson.Strt
             {
                 if (StrtGenome.IsASpliceAnnotationChr(chr))
                     continue;
-                string c = (chr.Length > 5)? chr.Substring(0,2) + ".." + chr.Substring(chr.Length - 2) : chr;
+                string c = chr; // (chr.Length > 5) ? chr.Substring(0, 2) + ".." + chr.Substring(chr.Length - 2) : chr;
                 double nSenseHits = TotalHitsByAnnotTypeAndChr[chr][AnnotType.EXON];
                 double nAsenseHits = TotalHitsByAnnotTypeAndChr[chr][AnnotType.AEXON];
                 string ratio = (nAsenseHits == 0)? "1:0" : string.Format("{0:0}", nSenseHits / (double)nAsenseHits);

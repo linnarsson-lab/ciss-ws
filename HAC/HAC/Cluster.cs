@@ -33,7 +33,7 @@ namespace HAC
                 sb.Append(" - Children:");
                 foreach (Cluster c in Children)
                     sb.Append(" " + c.Id);
-                sb.Append('\n');
+                sb.Append(string.Format(" Distance: {0}\n", ChildrenDistance));
             }
             sb.Append(string.Format("   {0} elements:", elements.Count));
             List<Element> es = elements.ToList();

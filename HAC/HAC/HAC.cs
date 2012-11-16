@@ -135,7 +135,7 @@ namespace HAC
                 return result;
 
             if (debug)
-                Console.WriteLine("----- Initial clusters: -----");
+                Console.WriteLine("----- Initial elements: -----");
             // 2. Calculate the distances of neighboring clusters to each other
             foreach (Cluster cl1 in clusters)
             {

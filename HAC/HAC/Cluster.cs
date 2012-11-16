@@ -25,24 +25,25 @@ namespace HAC
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append(string.Format("{0}. {1} elements:", Id, elements.Count));
+            sb.Append(Id + " ");
+            if (IsLeaf)
+                sb.Append(" - No children.\n");
+            else
+            {
+                sb.Append(" - Children:");
+                foreach (Cluster c in Children)
+                    sb.Append(" " + c.Id);
+                sb.Append('\n');
+            }
+            sb.Append(string.Format("   {0} elements:", elements.Count));
             List<Element> es = elements.ToList();
             es.Sort((x, y) => x.Id.CompareTo(y.Id));
             foreach (Element e in es)
                 sb.Append(" " + e.Id);
             sb.Append('\n');
-            if (IsLeaf)
-                sb.Append("   - no children.");
-            else
-            {
-                sb.Append("   Children:");
-                foreach (Cluster c in Children)
-                    sb.Append(" " + c.Id);
-                sb.Append('\n');
-            }
             if (HasSpatialRestriction)
             {
-                sb.Append(string.Format("   {0} Neighbors:", neighbors.Count));
+                sb.Append(string.Format("   {0} neighbors:", neighbors.Count));
                 List<Cluster> ns = neighbors.ToList();
                 ns.Sort((x, y) => x.Id.CompareTo(y.Id));
                 foreach (Cluster n in ns)

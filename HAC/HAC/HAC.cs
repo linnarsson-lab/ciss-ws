@@ -154,6 +154,11 @@ namespace HAC
             // 3. Merge clusters to new clusters and recalculate distances in a loop until there are only countCluster clusters
             while (clusters.Count > countCluster)
             {
+                if (!debug)
+                {
+                    Console.Out.Write(".");
+                    Console.Out.Flush();
+                }
                 // a) Merge: Create a new cluster and add the elements of the two old clusters                
                 ClusterPair lowestDistancePair = pairs.LowestDistancePair;
                 Cluster newCluster = new Cluster(this.fusion);

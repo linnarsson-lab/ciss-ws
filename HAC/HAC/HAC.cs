@@ -7,6 +7,8 @@ namespace HAC
 {
     public class HAC
     {
+        public bool debug = true;
+
         List<Element> elements = new List<Element>();
         ClusterPairs pairs = new ClusterPairs();
         Fusion fusion;
@@ -62,10 +64,7 @@ namespace HAC
 
             // Return if the element (cluster) count is lower than countCluster
             if (clusters.Count <= countCluster)
-            {
-                result.SetTopClusters(clusters);
                 return result;
-            }
 
             // 2. Calculate the distances of all clusters to all other clusters
             foreach (Cluster cl1 in clusters)
@@ -105,8 +104,8 @@ namespace HAC
                 }
                 // e) Add the new cluster to clusters
                 clusters.Add(newCluster);
+                result.AddNextFusion(newCluster);
             }
-            result.SetTopClusters(clusters);
             return result;
         }
 
@@ -128,17 +127,20 @@ namespace HAC
                 el.InitialCluster = cl;
                 clusters.Add(cl);
             }
+            foreach (Cluster c in clusters)
+                c.InitNeighborsFromElements();
 
             // Return if the element (cluster) count is lower than countCluster
             if (clusters.Count <= countCluster)
-            {
-                result.SetTopClusters(clusters);
                 return result;
-            }
 
+            if (debug)
+                Console.WriteLine("----- Initial clusters: -----");
             // 2. Calculate the distances of neighboring clusters to each other
             foreach (Cluster cl1 in clusters)
             {
+                if (debug)
+                    Console.WriteLine(cl1.ToString());
                 foreach (Cluster cl2 in clusters)
                 {
                     if (cl1 != cl2 && cl1.HasNeighbor(cl2))
@@ -155,9 +157,7 @@ namespace HAC
                 // a) Merge: Create a new cluster and add the elements of the two old clusters                
                 ClusterPair lowestDistancePair = pairs.LowestDistancePair;
                 Cluster newCluster = new Cluster(this.fusion);
-                newCluster.AddCluster(lowestDistancePair.Cluster1);
-                newCluster.AddCluster(lowestDistancePair.Cluster2);
-                newCluster.ChildrenDistance = lowestDistancePair.Distance;
+                newCluster.FromPair(lowestDistancePair);
                 // b)Remove the two old clusters from clusters and adjust the neighbors of clusters
                 foreach (Cluster cl in clusters)
                 {
@@ -180,8 +180,13 @@ namespace HAC
                 }
                 // e) Add the new cluster to clusters
                 clusters.Add(newCluster);
+                result.AddNextFusion(newCluster);
+                if (debug)
+                {
+                    Console.WriteLine("----- Cluster forming at next fusion: -----");
+                    Console.WriteLine(newCluster.ToString());
+                }
             }
-            result.SetTopClusters(clusters);
             return result;
         }
 

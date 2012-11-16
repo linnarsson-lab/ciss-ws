@@ -33,9 +33,9 @@ namespace SHAC
         {
             for (int i = 0; i < elements.Length; i++)
             {
-                for (int j = 0; j < elements.Length; j++)
+                for (int j = i + 1; j < elements.Length; j++)
                 {
-                    if (xPositions[i] + 1 == xPositions[j] && Math.Abs(yPositions[j] - yPositions[i]) <= 1)
+                    if (Math.Abs(xPositions[j] - xPositions[i]) <= 1 && Math.Abs(yPositions[j] - yPositions[i]) <= 1)
                     {
                         elements[i].AddNeighbor(elements[j]);
                         elements[j].AddNeighbor(elements[i]);
@@ -51,9 +51,10 @@ namespace SHAC
         {
             for (int i = 0; i < elements.Length; i++)
             {
-                for (int j = 0; j < elements.Length; j++)
+                for (int j = i + 1; j < elements.Length; j++)
                 {
-                    if (xPositions[i] + 1 == xPositions[j] && yPositions[i] == yPositions[j])
+                    if (Math.Abs(xPositions[i] - xPositions[j]) <= 1 && yPositions[i] == yPositions[j] ||
+                        Math.Abs(yPositions[i] - yPositions[j]) <= 1 && xPositions[i] == xPositions[j])
                     {
                         elements[i].AddNeighbor(elements[j]);
                         elements[j].AddNeighbor(elements[i]);

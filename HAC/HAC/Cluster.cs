@@ -15,16 +15,47 @@ namespace HAC
         public double ChildrenDistance { get; set; }
 
         public bool IsLeaf { get { return Children.Count == 0; } }
+        public bool HasSpatialRestriction { get { return neighbors.Count > 0; } }
 
         HashSet<Cluster> neighbors = new HashSet<Cluster>();
         Fusion fusion;
 
         public string Id { get; private set; }
 
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(string.Format("{0}. {1} elements:", Id, elements.Count));
+            List<Element> es = elements.ToList();
+            es.Sort((x, y) => x.Id.CompareTo(y.Id));
+            foreach (Element e in es)
+                sb.Append(" " + e.Id);
+            sb.Append('\n');
+            if (IsLeaf)
+                sb.Append("   - no children.");
+            else
+            {
+                sb.Append("   Children:");
+                foreach (Cluster c in Children)
+                    sb.Append(" " + c.Id);
+                sb.Append('\n');
+            }
+            if (HasSpatialRestriction)
+            {
+                sb.Append(string.Format("   {0} Neighbors:", neighbors.Count));
+                List<Cluster> ns = neighbors.ToList();
+                ns.Sort((x, y) => x.Id.CompareTo(y.Id));
+                foreach (Cluster n in ns)
+                    sb.Append(" " + n.Id);
+                sb.Append('\n');
+            }
+            return sb.ToString();
+        }
+
         public Cluster(Fusion fusion)
         {
             this.fusion = fusion;
-            this.Id = "Node" + defaultId;
+            this.Id = "Cluster" + defaultId;
             defaultId++;
         }
 
@@ -33,8 +64,7 @@ namespace HAC
             this.fusion = fusion;
             this.elements.Add(initialElement);
             DataPointCount = initialElement.DataPointCount;
-            this.Id = "Cl" + defaultId;
-            defaultId++;
+            this.Id = initialElement.Id;
         }
 
         public void InitNeighborsFromElements()
@@ -59,6 +89,15 @@ namespace HAC
             return elements.ToArray<Element>();
         }
 
+        internal void FromPair(ClusterPair pair)
+        {
+            AddCluster(pair.Cluster1);
+            AddCluster(pair.Cluster2);
+            ChildrenDistance = pair.Distance;
+            neighbors.Remove(pair.Cluster1);
+            neighbors.Remove(pair.Cluster2);
+        }
+
         internal void AddCluster(Cluster cluster)
         {
             Children.Add(cluster);
@@ -74,7 +113,9 @@ namespace HAC
 
         internal void UpdateNeighbors(Cluster newCluster, Cluster oldCluster1, Cluster oldCluster2)
         {
-            if (neighbors.Remove(oldCluster1) || neighbors.Remove(oldCluster2))
+            bool eitherINneighbors = neighbors.Remove(oldCluster1);
+            eitherINneighbors |= neighbors.Remove(oldCluster2);
+            if (eitherINneighbors)
                 neighbors.Add(newCluster);
         }
 

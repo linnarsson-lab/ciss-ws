@@ -11,8 +11,11 @@ namespace SHAC
     {
         static void Main(string[] args)
         {
+            bool debug = false;
             int nFinalClusters = 1;
             Fusion fusion;
+            string distanceMethod = "euclidian";
+            string linkageMethod = "average";
             DistanceMetric distanceMetric;
             Neighborhood neighborhood;
             string neighborhoodName = "queen";
@@ -21,12 +24,13 @@ namespace SHAC
             {
                 if (args == null || args.Length < 4)
                     throw new ArgumentException("");
-                string distanceMethod = "euclidian";
-                string linkageMethod = "average";
                 for (int argIdx = 0; argIdx < args.Length; argIdx++)
                 {
                     switch (args[argIdx])
                     {
+                        case "--debug":
+                            debug = true;
+                            break;
                         case "-d":
                             distanceMethod = args[++argIdx];
                             break;
@@ -53,7 +57,7 @@ namespace SHAC
             {
                 if (e.Message != null && e.Message != "")
                     Console.WriteLine(e.Message);
-                Console.WriteLine("Usage:\nmono SHAC.exe -d DISTANCEMETHOD -l LINKAGEMETHOD -c NEIGHBORHOOD EXPRFILE");
+                Console.WriteLine("Usage:\nmono SHAC.exe [--debug] -d DISTANCEMETHOD -l LINKAGEMETHOD -c NEIGHBORHOOD EXPRFILE");
                 Console.WriteLine("DISTANCEMETHOD is 'euclidian', 'manhattan', 'chebyshev', 'canberra', 'braycurtis', 'ess' or 'sqeuclidian'");
                 Console.WriteLine("LINKAGEMETHOD is 'single', 'complete', 'average', 'centroid' or 'ward'");
                 Console.WriteLine("NEIGHBORHOOD is 'queen' or 'rook'");
@@ -64,7 +68,10 @@ namespace SHAC
             }
             Element[] elements = SpatialExpressionFileParser.Parse(exprFile, neighborhood);
             HAC.HAC hac = new HAC.HAC(elements, fusion);
-            ClusterResult result = hac.Cluster(nFinalClusters);
+            hac.debug = debug;
+            ClusterResult result = hac.SpatialCluster(nFinalClusters);
+            Console.WriteLine("Spatial clustering of {0} [{1} cells X {2} values].\nDistance method: {3}, linkage method: {4}.",
+                               exprFile, elements.Length, elements[0].DataPointCount, distanceMethod, linkageMethod);
             if (nFinalClusters > 1)
                 WriteFinalClusters(result);
             WriteNodeList(result);
@@ -84,7 +91,7 @@ namespace SHAC
             {
                 Cluster c1 = node.pair.Cluster1;
                 Cluster c2 = node.pair.Cluster2;
-                Console.Write("Node {0}: ", nIdx++);
+                Console.Write("Cluster{0}: ", nIdx++);
                 if (c2.ElementCount == 1)
                     WriteNodeLine(c2, c1, node.pair.Distance);
                 else
@@ -107,26 +114,22 @@ namespace SHAC
 
         private static void WriteFinalClusters(ClusterResult result)
         {
-            Console.WriteLine("Final top clusters:");
+            Console.WriteLine("Order of fusions:");
             int i = 1;
-            foreach (Cluster c in result.GetTopClusters())
+            foreach (Cluster c in result.GetFusionList())
             {
-                Console.WriteLine("Cluster {0}: ", i++);
+                Console.WriteLine("{0}. {1}:", i++, c.Id);
                 foreach (Element e in c)
-                    Console.Write(e.Id + " ");
+                    Console.Write(" " + e.Id);
                 Console.WriteLine();
             }
         }
 
         private static string MakePHYLIP(ClusterResult result)
         {
-            if (result.GetTopClusters().Count > 1)
-            {
-                Console.WriteLine("Can only make PHYLIP output when there is one single top cluster.");
-                return "";
-            }
+            List<Cluster> fusionList = result.GetFusionList();
             StringBuilder sb = new StringBuilder();
-            Cluster topCluster = result.GetTopClusters()[0];
+            Cluster topCluster = fusionList[fusionList.Count - 1];
             AddToPHYLIP(topCluster, sb);
             sb.Append(';');
             return sb.ToString();

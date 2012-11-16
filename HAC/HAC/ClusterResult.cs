@@ -25,7 +25,7 @@ namespace HAC
     public class ClusterResult
     {
         public List<ClusterNode> nodes = new List<ClusterNode>();
-        private List<Cluster> topClusters = new List<Cluster>();
+        private List<Cluster> succesiveFusions = new List<Cluster>();
 
         public void AddPair(ClusterPair pair)
         {
@@ -40,14 +40,14 @@ namespace HAC
             nodes.Add(newNode);
         }
 
-        public void SetTopClusters(HashSet<Cluster> topClusters)
+        public void AddNextFusion(Cluster cluster)
         {
-            this.topClusters = topClusters.ToList();
+            this.succesiveFusions.Add(cluster);
         }
 
-        public List<Cluster> GetTopClusters()
+        public List<Cluster> GetFusionList()
         {
-            return topClusters;
+            return succesiveFusions;
         }
     }
 }

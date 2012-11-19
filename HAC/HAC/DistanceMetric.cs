@@ -13,6 +13,8 @@ namespace HAC
         {
             switch (metricName.ToLower())
             {
+                case "chisq":
+                    return new ChiSquareDistance();
                 case "braycurtis":
                     return new BrayCurtisDistance();
                 case "euclidian":

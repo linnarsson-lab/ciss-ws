@@ -73,8 +73,12 @@
     <Compile Include="CanberraDistance.cs" />
     <Compile Include="CentroidLinkage.cs" />
     <Compile Include="ChebyshevDistance.cs" />
+    <Compile Include="ChiSqTransform.cs" />
+    <Compile Include="ChiSquareDistance.cs" />
     <Compile Include="ClusterResult.cs" />
     <Compile Include="CompleteLinkage.cs" />
+    <Compile Include="NullTransformation.cs" />
+    <Compile Include="Transformation.cs" />
     <Compile Include="ManhattanDistance.cs" />
     <Compile Include="Cluster.cs" />
     <Compile Include="ClusterPair.cs" />
@@ -91,6 +95,7 @@
     <Compile Include="SingleLinkage.cs" />
     <Compile Include="SquaredEuclidianDistance.cs" />
     <Compile Include="WardLinkage.cs" />
+    <Compile Include="ZScoreTransform.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">

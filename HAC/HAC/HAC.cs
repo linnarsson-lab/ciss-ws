@@ -12,7 +12,6 @@ namespace HAC
         List<Element> elements = new List<Element>();
         ClusterPairs pairs = new ClusterPairs();
         Fusion fusion;
-        DistanceMetric metric;
 
         /// <summary>
         /// Creates a new HAC object that uses single-linkage as fusion function and the Jaccard index as distance metric 
@@ -23,8 +22,7 @@ namespace HAC
         {
             setElements(elements);
             this.fusion = new SingleLinkage();
-            this.metric = new JaccardDistance();
-            this.fusion.Metric = metric;
+            this.fusion.Metric = new JaccardDistance();
         }
 
         /// <summary>

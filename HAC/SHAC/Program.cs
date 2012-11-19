@@ -14,10 +14,12 @@ namespace SHAC
             bool debug = false;
             int nFinalClusters = 1;
             Fusion fusion;
+            string transformationMethod = "";
             string distanceMethod = "euclidian";
             string linkageMethod = "average";
             DistanceMetric distanceMetric;
             Neighborhood neighborhood;
+            Transformation transformation;
             string neighborhoodName = "queen";
             string exprFile = null;
             try
@@ -30,6 +32,9 @@ namespace SHAC
                     {
                         case "--debug":
                             debug = true;
+                            break;
+                        case "-t":
+                            transformationMethod = args[++argIdx];
                             break;
                         case "-d":
                             distanceMethod = args[++argIdx];
@@ -49,6 +54,7 @@ namespace SHAC
                 }
                 if (!File.Exists(exprFile))
                     throw new ArgumentException("Input file does not exist: " + exprFile);
+                transformation = Transformation.GetTransformation(transformationMethod);
                 distanceMetric = DistanceMetric.GetDistanceMetric(distanceMethod);
                 fusion = Fusion.GetFusion(linkageMethod, distanceMetric);
                 neighborhood = Neighborhood.GetNeighborhood(neighborhoodName);
@@ -57,8 +63,9 @@ namespace SHAC
             {
                 if (e.Message != null && e.Message != "")
                     Console.WriteLine(e.Message);
-                Console.WriteLine("Usage:\nmono SHAC.exe [--debug] -d DISTANCEMETHOD -l LINKAGEMETHOD -c NEIGHBORHOOD EXPRFILE");
-                Console.WriteLine("DISTANCEMETHOD is 'euclidian', 'manhattan', 'chebyshev', 'canberra', 'braycurtis', 'ess' or 'sqeuclidian'");
+                Console.WriteLine("Usage:\nmono SHAC.exe [--debug] [-t TRANSFORMATION] -d DISTANCEMETHOD -l LINKAGEMETHOD -c NEIGHBORHOOD EXPRFILE");
+                Console.WriteLine("TRANSFORMATION is 'score' or 'chisq'. Note that chisq distance for count data requires the transformation.");
+                Console.WriteLine("DISTANCEMETHOD is 'chisq', 'euclidian', 'manhattan', 'chebyshev', 'canberra', 'braycurtis', 'ess' or 'sqeuclidian'");
                 Console.WriteLine("LINKAGEMETHOD is 'single', 'complete', 'average', 'centroid' or 'ward'");
                 Console.WriteLine("NEIGHBORHOOD is 'queen' or 'rook'");
                 Console.WriteLine("EXPRFILE contains a table of data. The first line contains the name of each sample.\n" +
@@ -67,11 +74,13 @@ namespace SHAC
                 return;
             }
             Element[] elements = SpatialExpressionFileParser.Parse(exprFile, neighborhood);
+            transformation.Transform(elements);
             HAC.HAC hac = new HAC.HAC(elements, fusion);
             hac.debug = debug;
             ClusterResult result = hac.SpatialCluster(nFinalClusters);
-            Console.WriteLine("Spatial clustering of {0} [{1} cells X {2} values].\nDistance method: {3}, linkage method: {4}.",
-                               exprFile, elements.Length, elements[0].DataPointCount, distanceMethod, linkageMethod);
+            string t = (transformationMethod != "") ? (", " + transformationMethod + "-transformed") : "";
+            Console.WriteLine("Spatial clustering of {0} [{1} cells X {2} values{3}].\nDistance method: {4}, linkage method: {5}.",
+                               exprFile, elements.Length, elements[0].DataPointCount, t, distanceMethod, linkageMethod);
             if (nFinalClusters > 1)
                 WriteFinalClusters(result);
             WriteNodeList(result);

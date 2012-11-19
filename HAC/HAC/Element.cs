@@ -78,11 +78,18 @@ namespace HAC
                 this.dataPoints.Add(point);
         }
 
+        public object this[int i]
+        {
+            get { return this.dataPoints[i]; }
+            set { this.dataPoints[i] = value; }
+        }
+
         public object[] GetDataPoints()
         {
             return dataPoints.ToArray<object>();
         }
 
         public int DataPointCount { get { return dataPoints.Count; } }
+
     }
 }

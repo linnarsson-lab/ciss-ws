@@ -12,7 +12,15 @@ namespace HAC
     {
         public override double GetDistance(object[] set1, object[] set2)
         {
-            return Math.Sqrt(set1.Cast<double>().Sum() - set2.Cast<double>().Sum());
+            double s = 0.0;
+            for (int i = 0; i < set1.Length; i++)
+            {
+                double v1 = (double)set1[i];
+                double v2 = (double)set2[i];
+                if (!double.IsNaN(v1) && !double.IsNaN(v2))
+                    s += v1 + v2;
+            }
+            return Math.Sqrt(s);
         }
     }
 }

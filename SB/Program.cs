@@ -273,7 +273,7 @@ namespace CmdSilverBullet
                             int maxIntronToKeep = int.Parse(args[argOffset++]);
                             string outFolder = args[argOffset++];
                             NonExonRepeatMasker nerm = new NonExonRepeatMasker(minFlank, minIntronFlank, maxIntronToKeep);
-                            nerm.Mask(genome, outFolder, false);
+                            nerm.Mask(genome, outFolder);
                             break;
 
                         case "split":

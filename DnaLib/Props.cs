@@ -6,6 +6,7 @@ using System.IO;
 namespace Linnarsson.Dna
 {
     public enum ReadLimitType { None, TotalReads, TotalReadsPerBarcode, TotalValidReads, TotalValidReadsPerBarcode };
+    public enum RepeatMaskingType { None, Exon, All };
 
     /// <summary>
     /// Defines various configurations used by many classes.
@@ -90,7 +91,7 @@ namespace Linnarsson.Dna
         public string RndTagMutationFilter = "FractionOfMax";
         public int RndTagMutationFilterParam = 50;
         public int MinAltNtsReadCountForSNPDetection = 10; // Positions with less reads with the non-ref bases will not be considered for SNP analysis
-        public bool ProtectExonRepeatsFromMaskingInGenomeBuilds = false; // If true, repeats inside or flanking exons will not have their seq replaced with 'N':s
+        public RepeatMaskingType GenomeBuildRepeatMaskingType = RepeatMaskingType.Exon;
         public ReadLimitType ExtractionReadLimitType;
         public int ExtractionReadLimit = 0;
         public string BackupDestinationFolder = "hiseq@130.237.142.75:/mnt/davidson/hiseq/data_reads/";

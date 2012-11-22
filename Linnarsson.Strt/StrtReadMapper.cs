@@ -76,11 +76,7 @@ namespace Linnarsson.Strt
             //if (genome.GeneVariants == false) return;
             string strtDir = genome.GetStrtGenomesFolder();
             NonExonRepeatMasker nerm = new NonExonRepeatMasker();
-            if (props.ProtectExonRepeatsFromMaskingInGenomeBuilds)
-                Console.WriteLine("*** Making STRT genome by masking non-exonic repeat sequences ***");
-            else
-                Console.WriteLine("*** Making STRT genome by masking all repeat sequences ***");
-            nerm.Mask(genome, strtDir, props.ProtectExonRepeatsFromMaskingInGenomeBuilds);
+            nerm.Mask(genome, strtDir);
         }
 
         /// <summary>

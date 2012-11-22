@@ -115,6 +115,7 @@ namespace Linnarsson.Strt
         private int minFlank = 500;
         private int minIntronFlank = 50;
         private int maxIntronToKeep = 400;
+        private RepeatMaskingType maskingType = Props.props.GenomeBuildRepeatMaskingType;
 
         public NonExonRepeatMasker()
         { }
@@ -125,68 +126,101 @@ namespace Linnarsson.Strt
             this.maxIntronToKeep = Math.Max(maxIntronToKeep, 2 * minIntronFlank);
         }
 
-        public void Mask(StrtGenome genome, string outputFolder, bool keepRepeatsInExons)
+        public void Mask(StrtGenome genome, string outputFolder)
         {
+            ReportMethod();
             if (!Directory.Exists(outputFolder))
                 Directory.CreateDirectory(outputFolder);
             Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
+            Dictionary<string, ChrIntervals> chrIntervals = SetupIntervals(genome, chrIdToFileMap);
+            foreach (string chrId in chrIntervals.Keys)
+            {
+                string infile = chrIdToFileMap[chrId];
+                StreamReader fastaReader = new StreamReader(infile);
+                string headerLine = fastaReader.ReadLine();
+                StringBuilder seqBuilder = new StringBuilder();
+                string line = fastaReader.ReadLine();
+                seqBuilder.Append(line);
+                int lineLen = line.Length;
+                while ((line = fastaReader.ReadLine()) != null)
+                    seqBuilder.Append(line);
+                fastaReader.Close();
+                char[] seq = new char[seqBuilder.Length];
+                seqBuilder.CopyTo(0, seq, 0, seqBuilder.Length);
+                if (maskingType != RepeatMaskingType.None)
+                {
+                    ChrIntervals chrIvls = chrIntervals[chrId];
+                    int nChanged = MaskByIntervals(seq, chrIvls);
+                    Console.WriteLine("Chr{0}: {1} 'N':s added using {2} intervals.", chrId, nChanged, chrIvls.Count);
+                }
+                string outfile = Path.Combine(outputFolder, genome.MakeMaskedChrFileName(chrId));
+                WriteSequence(outfile, headerLine, seq, lineLen);
+            }
+        }
+
+        private Dictionary<string, ChrIntervals> SetupIntervals(StrtGenome genome, Dictionary<string, string> chrIdToFileMap)
+        {
             Dictionary<string, ChrIntervals> chrIntervals = new Dictionary<string, ChrIntervals>();
             foreach (string chrId in chrIdToFileMap.Keys)
             {
                 if (!StrtGenome.IsASpliceAnnotationChr(chrId))
                     chrIntervals[chrId] = new ChrIntervals(minFlank, minIntronFlank, maxIntronToKeep);
             }
-            if (keepRepeatsInExons)
+            if (maskingType == RepeatMaskingType.Exon)
                 DefineProtectedChrIntervals(genome, chrIntervals);
-            foreach (string chrId in chrIntervals.Keys)
+
+            return chrIntervals;
+        }
+
+        private void ReportMethod()
+        {
+            switch (maskingType)
             {
-                int nChanged = 0;
-                string infile = chrIdToFileMap[chrId];
-                StreamReader fastaReader = new StreamReader(infile);
-                string outfile = Path.Combine(outputFolder, genome.MakeMaskedChrFileName(chrId));
-                StreamWriter writer = new StreamWriter(outfile);
-                string line = fastaReader.ReadLine();
-                writer.WriteLine(line); // Header
-                StringBuilder seqBuilder = new StringBuilder();
-                line = fastaReader.ReadLine();
-                seqBuilder.Append(line);
-                int lineLen = line.Length;
-                while ((line = fastaReader.ReadLine()) != null)
-                    seqBuilder.Append(line);
-                char[] seq = new char[seqBuilder.Length];
-                seqBuilder.CopyTo(0, seq, 0, seqBuilder.Length);
-                fastaReader.Close();
-                int n = 0;
-                foreach (Pair<int, int> nonExons in chrIntervals[chrId].IterSpaces())
-                {
-                    n++;
-                    for (int idx = nonExons.First; idx <= Math.Min(seq.Length - 1, nonExons.Second); idx++)
-                    {
-                        if ("acgt".IndexOf(seq[idx]) >= 0)
-                        {
-                            seq[idx] = 'N';
-                            nChanged++;
-                        }
-                    }
-                }
-                WriteMaskedSequence(writer, seq, lineLen);
-                Console.WriteLine("Chr{0}: {1} 'N':s added using {2} intervals. Outfile: {3}", chrId, nChanged, chrIntervals[chrId].Count, outfile); 
+                case RepeatMaskingType.Exon:
+                    Console.WriteLine("*** Making STRT genome by masking non-exonic repeat sequences ***");
+                    break;
+                case RepeatMaskingType.All:
+                    Console.WriteLine("*** Making STRT genome by masking all repeat sequences ***");
+                    break;
+                default:
+                    Console.WriteLine("*** No masking of repeats is made ***");
+                    break;
             }
         }
 
-        private void WriteMaskedSequence(StreamWriter writer, char[] seq, int lineLen)
+        private static int MaskByIntervals(char[] seq, ChrIntervals chrIvls)
         {
-            char[] subseq = new char[lineLen];
-            int i = 0;
-            for (; i < seq.Length - lineLen; i += lineLen)
+            int nChanged = 0;
+            foreach (Pair<int, int> nonExons in chrIvls.IterSpaces())
             {
-                Array.Copy(seq, i, subseq, 0, lineLen);
+                for (int idx = nonExons.First; idx <= Math.Min(seq.Length - 1, nonExons.Second); idx++)
+                {
+                    if ("acgt".IndexOf(seq[idx]) >= 0)
+                    {
+                        seq[idx] = 'N';
+                        nChanged++;
+                    }
+                }
+            }
+            return nChanged;
+        }
+
+        private void WriteSequence(string outfile, string headerLine, char[] seq, int lineLen)
+        {
+            using (StreamWriter writer = new StreamWriter(outfile))
+            {
+                writer.WriteLine(headerLine);
+                char[] subseq = new char[lineLen];
+                int i = 0;
+                for (; i < seq.Length - lineLen; i += lineLen)
+                {
+                    Array.Copy(seq, i, subseq, 0, lineLen);
+                    writer.WriteLine(new string(subseq));
+                }
+                Array.Copy(seq, i, subseq, 0, seq.Length - i);
+                Array.Resize(ref subseq, seq.Length - i);
                 writer.WriteLine(new string(subseq));
             }
-            Array.Copy(seq, i, subseq, 0, seq.Length - i);
-            Array.Resize(ref subseq, seq.Length - i);
-            writer.WriteLine(new string(subseq));
-            writer.Close();
         }
 
         /// <summary>

@@ -54,6 +54,8 @@ namespace SHAC
                 }
                 if (!File.Exists(exprFile))
                     throw new ArgumentException("Input file does not exist: " + exprFile);
+                if (distanceMethod == "chisq" && transformationMethod != "chisq")
+                    Console.WriteLine("WARNING: Note that 'chisq' distance requires 'chisq' transformation for correct results.");
                 transformation = Transformation.GetTransformation(transformationMethod);
                 distanceMetric = DistanceMetric.GetDistanceMetric(distanceMethod);
                 fusion = Fusion.GetFusion(linkageMethod, distanceMetric);

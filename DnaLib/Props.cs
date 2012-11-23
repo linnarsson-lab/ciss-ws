@@ -5,8 +5,18 @@ using System.IO;
 
 namespace Linnarsson.Dna
 {
+    /// <summary>
+    /// Used in the Props.ExtractionReadLimitType to allow a limit on the number of reads to extract from the .fq file(s)
+    /// </summary>
     public enum ReadLimitType { None, TotalReads, TotalReadsPerBarcode, TotalValidReads, TotalValidReadsPerBarcode };
+    /// <summary>
+    /// Used in the Props.GenomeBuildRepeatMaskingType to specify if and which repeats should be masked when building STRT genomes
+    /// </summary>
     public enum RepeatMaskingType { None, Exon, All };
+    /// <summary>
+    /// Used in the Props.RndTagMutationFilter to define how molecules due to mutated random labels should be eliminated
+    /// </summary>
+    public enum RndTagMutationFilterMethod { FractionOfMax, FractionOfMean };
 
     /// <summary>
     /// Defines various configurations used by many classes.
@@ -88,7 +98,7 @@ namespace Linnarsson.Dna
         public bool AnalyzeSpliceHitsByBarcode = false; // If true, will show transcript cross-junction hits per barcode
         public int GeneFeature5PrimeExtension = 0; // Extend all transcript 5' annotations to allow for unknown more upstream start sites.
         public int CAPRegionSpan = 100; // Defines the +/- bp to consider as hits to 5' end for the CAP site hit counting.
-        public string RndTagMutationFilter = "FractionOfMax";
+        public RndTagMutationFilterMethod RndTagMutationFilter = RndTagMutationFilterMethod.FractionOfMax;
         public int RndTagMutationFilterParam = 50;
         public int MinAltNtsReadCountForSNPDetection = 10; // Positions with less reads with the non-ref bases will not be considered for SNP analysis
         public RepeatMaskingType GenomeBuildRepeatMaskingType = RepeatMaskingType.Exon;

@@ -75,9 +75,9 @@ namespace Linnarsson.Dna
 
         public static void SetRndTagMutationFilter(Props props)
         {
-            if (props.RndTagMutationFilter == "FractionOfMax")
+            if (props.RndTagMutationFilter == RndTagMutationFilterMethod.FractionOfMax)
                 mutationThresholder = FractionOfMaxThresholder;
-            else if (props.RndTagMutationFilter == "FractionOfMean")
+            else if (props.RndTagMutationFilter == RndTagMutationFilterMethod.FractionOfMean)
                 mutationThresholder = FractionOfMeanThresholder;
             else
                 mutationThresholder = LowPassThresholder;

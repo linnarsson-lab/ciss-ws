@@ -132,16 +132,29 @@ namespace Linnarsson.Dna
         private static string AnnotationsBuildRegex = "Annotations_[as]([^_]+)_.+txt";
         private static string AnnotationsBuildPattern = "Annotations_*.txt";
 
+        /// <summary>
+        /// Use the predefined ReadLen for the path
+        /// </summary>
+        /// <returns></returns>
         public string MakeAnnotationsPath()
         {
             string pathPattern = Path.Combine(GetStrtGenomesFolder(), AnnotationsFilePattern.Replace("#", VarAnnot));
             return ReplaceReadLen(ReadLen, pathPattern);
         }
-        public string GetAnAnnotationsPath()
+        /// <summary>
+        /// Search the genomes directory for some existing anntation file that best fits with current ReadLen
+        /// </summary>
+        /// <returns>Full annotations path or ""</returns>
+        private string GetAnAnnotationsPath()
         {
             string pathPattern = Path.Combine(GetStrtGenomesFolder(), AnnotationsFilePattern.Replace("#", VarAnnot));
             return FindABpVersion(ReadLen, pathPattern);
         }
+        /// <summary>
+        /// Search the genomes directory for the existing anntation file that best fits with current ReadLen.
+        /// throw exception if none appropriate is found.
+        /// </summary>
+        /// <returns></returns>
         public string VerifyAnAnnotationPath()
         {
             string tryAnnotationsPath = GetAnAnnotationsPath();

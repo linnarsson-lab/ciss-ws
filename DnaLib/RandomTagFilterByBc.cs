@@ -117,6 +117,11 @@ namespace Linnarsson.Strt
                 item = new TagItem(m.HasAltMappings);
                 tagItems[posStrand] = item;
             }
+            else if (item.hasAltMappings && !m.HasAltMappings && !m.HasMismatches && item.GetNumReads() == 1)
+            { // When the first mapped read contained mismatches and was a multiread, but the second is a perfect match singleread,
+              // rethink the TagItem to consist of singlereads. Increases the chance of detecting true exon signals.
+                item.hasAltMappings = false;
+            }
             if (!m.HasAltMappings && item.HasSNPs) // Should maybe move this code into new TagItem.Add(MultiReadMapping m)
             {                                      // and do IterMismatches(minPhredScore).
                 foreach (Mismatch mm in m.IterMismatches(0))

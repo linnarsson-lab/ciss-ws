@@ -229,7 +229,6 @@ namespace Linnarsson.Strt
             if (bcMapFilePaths.Count > 0)
                 ProcessBarcodeMapFiles(bcMapFilePaths);
             Console.WriteLine();
-
             if (Props.props.DebugAnnotation)
             {
                 nonAnnotWriter.Close(); nonAnnotWriter.Dispose();
@@ -329,10 +328,12 @@ namespace Linnarsson.Strt
             bool someAnnotationHit = false;
             bool someExonHit = false;
             exonHitGeneNames.Clear();
-            foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.strand, item.HitMidPos))
-            {
-                someExonHit = someAnnotationHit = true;
-                MarkStatus markStatus = (IterTranscriptMatchers.HasVariants || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
+            if (!item.hasAltMappings || !Annotations.HasRepeatMatch(item.chr, item.HitMidPos))
+            { // Will only try to annotate exon when the position is a singleread match, or when it is not repeat-like
+                foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.strand, item.HitMidPos))
+                {
+                    someExonHit = someAnnotationHit = true;
+                    MarkStatus markStatus = (IterTranscriptMatchers.HasVariants || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
                     if (!exonHitGeneNames.Contains(trMatch.Feature.Name))
                     { // If a gene is hit multiple times (happens if two diff. splices have same seq.), we should annotate it only once
                         exonHitGeneNames.Add(trMatch.Feature.Name);
@@ -343,15 +344,16 @@ namespace Linnarsson.Strt
                         TotalHitsByAnnotType[annotType] += molCount;
                         TotalHitsByBarcode[currentBcIdx] += molCount;
                     }
-            }
-            if (exonHitGeneNames.Count > 1)
-            {
-                exonHitGeneNames.Sort();
-                string combNames = string.Join("#", exonHitGeneNames.ToArray());
-                if (!overlappingGeneFeatures.ContainsKey(combNames))
-                    overlappingGeneFeatures[combNames] = molCount;
-                else
-                    overlappingGeneFeatures[combNames] += molCount;
+                }
+                if (exonHitGeneNames.Count > 1)
+                {
+                    exonHitGeneNames.Sort();
+                    string combNames = string.Join("#", exonHitGeneNames.ToArray());
+                    if (!overlappingGeneFeatures.ContainsKey(combNames))
+                        overlappingGeneFeatures[combNames] = molCount;
+                    else
+                        overlappingGeneFeatures[combNames] += molCount;
+                }
             }
             if (!someExonHit && item.chr != spliceChrId)
             { // Annotate all features of molecules that do not map to any transcript

@@ -21,6 +21,12 @@ namespace Linnarsson.Strt
 
         public int Count { get { return maskStarts.Count; } }
 
+        /// <summary>
+        /// holder for intervals on chromosome that should not have their repeats masked
+        /// </summary>
+        /// <param name="minFlank">save this amount of nts upstream and downstream of each gene</param>
+        /// <param name="minIntronFlank">save this amount of nts on each side of every exon</param>
+        /// <param name="maxIntronToKeep">introns smaller that this will be not be masked at all</param>
         public ChrIntervals(int minFlank, int minIntronFlank, int maxIntronToKeep)
         {
             this.maxIntronToKeep = maxIntronToKeep;
@@ -112,7 +118,7 @@ namespace Linnarsson.Strt
     /// </summary>
     public class NonExonRepeatMasker
     {
-        private int minFlank = 500;
+        private int minFlank = Props.props.LocusFlankLength; // 500
         private int minIntronFlank = 50;
         private int maxIntronToKeep = 400;
         private RepeatMaskingType maskingType = Props.props.GenomeBuildRepeatMaskingType;
@@ -157,7 +163,7 @@ namespace Linnarsson.Strt
                 WriteSequence(outfile, headerLine, seq, lineLen);
             }
         }
-
+         
         private Dictionary<string, ChrIntervals> SetupIntervals(StrtGenome genome, Dictionary<string, string> chrIdToFileMap)
         {
             Dictionary<string, ChrIntervals> chrIntervals = new Dictionary<string, ChrIntervals>();

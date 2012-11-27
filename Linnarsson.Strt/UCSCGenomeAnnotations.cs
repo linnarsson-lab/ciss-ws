@@ -74,11 +74,12 @@ namespace Linnarsson.Strt
                 totalMaskedIntronicFeatures += nMaskedIntronicFeatures;
 
             }
-            Console.WriteLine("{0} genes could have the 5' end extended with the full {1} bp.", totalFullyExtended5Primes, props.GeneFeature5PrimeExtension);
+            Console.WriteLine("{0} genes had the 5' exon extended {1} bp as specified by GeneFeature5PrimeExtension property.",
+                              totalFullyExtended5Primes, props.GeneFeature5PrimeExtension);
             if (nMarkedExons > 0)
                 Console.WriteLine("{0} overlapping anti-sense exons from {1} genes ({2} bps) were masked from statistics calculations.",
                               nMarkedExons, nMarkedGenes, totalMarkedLen);
-            Console.WriteLine("{0} USTR/DSTR/INTR features were masked from statistics beacuse they overlap with an exon.", totalMaskedIntronicFeatures);
+            Console.WriteLine("{0} USTR/DSTR/INTR features that overlap with an exon were masked from statistics calculations.", totalMaskedIntronicFeatures);
         }
 
         private void AdjustEndAndMarkUpOverlapsOnChr(string chrId, out int nMaskedASExons, out int nMaskedASGenes,

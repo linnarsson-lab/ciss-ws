@@ -122,6 +122,20 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
+        /// Checks if an alignment is within a repeat region
+        /// </summary>
+        /// <param name="chr"></param>
+        /// <param name="hitMidPos"></param>
+        /// <returns></returns>
+        public bool HasRepeatMatch(string chr, int hitMidPos)
+        {
+            if (NonExonAnnotations.ContainsKey(chr))
+                foreach (FtInterval ivl in NonExonAnnotations[chr].IterItems(hitMidPos))
+                    if (ivl.annotType == AnnotType.REPT) return true;
+            return false;
+        }
+
+        /// <summary>
         /// Check if there is a matching exonic interval (and that it is forward for directional reads)
         /// </summary>
         /// <param name="chr"></param>
@@ -349,6 +363,10 @@ namespace Linnarsson.Strt
         private Dictionary<string, QuickAnnotationMap> ExonAnnotations;
         private static FtInterval nullIvl = new FtInterval();
         private static FtInterval firstMatch;
+        /// <summary>
+        /// set immediately by each Iter method.
+        /// true if there are multiple transcripts (or variants) annotated at the hit position
+        /// </summary>
         public static bool HasVariants;
 
         public IterTranscriptMatchers(Dictionary<string, QuickAnnotationMap> exonAnnotations)

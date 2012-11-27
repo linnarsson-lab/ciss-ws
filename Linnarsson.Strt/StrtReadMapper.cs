@@ -282,7 +282,7 @@ namespace Linnarsson.Strt
             Extract(pd.laneInfos, outputFolder);
         }
 
-        public static readonly string EXTRACTION_VERSION = "31";
+        public static readonly string EXTRACTION_VERSION = "32";
         private void Extract(List<LaneInfo> laneInfos, string outputFolder)
         {
             DateTime start = DateTime.Now;
@@ -643,7 +643,7 @@ namespace Linnarsson.Strt
             return resultSubFolders;
         }
 
-        public static readonly string ANNOTATION_VERSION = "42";
+        public static readonly string ANNOTATION_VERSION = "43";
         /// <summary>
         /// First run Bowtie if .map files for selected build do not exist, then annotate the output
         /// </summary>

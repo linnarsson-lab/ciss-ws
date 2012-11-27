@@ -278,6 +278,7 @@ namespace Linnarsson.Strt
         private Dictionary<string, int> barcodesWithTSSeq;
         private char lastNtOfTSSeq;
         private int firstNegBarcodeIndex;
+        private string[] diNtRegexPatterns;
 
         public ReadExtractor(Props props)
         {
@@ -344,7 +345,9 @@ namespace Linnarsson.Strt
             }
             rec.Header = string.Format("{0}_{1}{2}", rec.Header, bcRandomPart, barcodeSeqs[bcIdx]);
             rec.Trim(insertStart, insertLength);
-            return TestComplexity(rSeq, insertStart, insertLength);
+            int status = TestComplexity(rSeq, insertStart, insertLength);
+            if (status != ReadStatus.VALID) return status;
+            return TestDinucleotideRepeats(rec.Sequence);
         }
 
         /// <summary>
@@ -380,6 +383,29 @@ namespace Linnarsson.Strt
             if (Regex.Match(rSeq, "GTCGACTTTTTTTTTTTTTTTTTTTTTTTTT").Success)
                 return ReadStatus.SAL1T25_IN_READ;
             return ReadStatus.VALID;
+        }
+
+        private int TestDinucleotideRepeats(string insertSeq)
+        {
+            if (diNtRegexPatterns == null)
+                SetupDiNtPatterns(insertSeq);
+            foreach (string pattern in diNtRegexPatterns)
+            {
+                if (Regex.Match(insertSeq, pattern).Success)
+                    return ReadStatus.COMPLEXITY_ERROR;
+            }
+            return ReadStatus.VALID;
+        }
+
+        private static string[] diNtPairs = new string[] { "AC", "AG", "AT", "CG", "CT", "GT" };
+        private void SetupDiNtPatterns(string insertSeq)
+        {
+            diNtRegexPatterns = new string[diNtPairs.Length];
+            for (int i = 0; i < diNtPairs.Length; i++)
+            {
+                diNtRegexPatterns[i] = "(" + diNtPairs[i] + ")" +
+                                       Regex.Escape("{") + ((insertSeq.Length - 4) / 2).ToString() + Regex.Escape("}");
+            }
         }
 
         private int AnalyzeNonBarcodeRead(string seq)

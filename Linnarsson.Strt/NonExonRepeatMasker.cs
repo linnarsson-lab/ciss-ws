@@ -118,7 +118,7 @@ namespace Linnarsson.Strt
     /// </summary>
     public class NonExonRepeatMasker
     {
-        private int minFlank = Props.props.LocusFlankLength; // 500
+        private int minFlank = 500;
         private int minIntronFlank = 50;
         private int maxIntronToKeep = 400;
         private RepeatMaskingType maskingType = Props.props.GenomeBuildRepeatMaskingType;

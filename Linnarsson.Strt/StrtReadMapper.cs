@@ -20,6 +20,8 @@ namespace Linnarsson.Strt
         private Props props;
         private Barcodes barcodes;
 
+        private string tempBowtieStartMsg;
+
         public StrtReadMapper(Props props)
         {
             this.props = props;
@@ -492,7 +494,9 @@ namespace Linnarsson.Strt
             string splcIndexName = genome.GetBowtieSplcIndexName();
             if (splcIndexName == "")
                 throw new Exception("Can not find a Bowtie index corresponding to " + genome.Build + "/" + genome.Annotation);
-            Console.WriteLine("Using bowtie index {0} with version {1}", splcIndexName, splcIndexVersion);
+            string maxAlt = (props.BowtieOptionPattern.Contains("MaxAlternativeMappings"))?
+                               string.Format(" and limiting alternative mappings to max {0}.", props.MaxAlternativeMappings) : "";
+            tempBowtieStartMsg = string.Format("Using bowtie index {0}{1}", splcIndexVersion, maxAlt);
             foreach (LaneInfo extrInfo in extrInfos)
                 CreateBowtieMaps(genome, extrInfo, splcIndexVersion, splcIndexName);
         }
@@ -581,6 +585,9 @@ namespace Linnarsson.Strt
         private bool CreateBowtieOutputFile(string bowtieIndex, string inputFqReadPath, string outputPath,
                                    string outputFqUnmappedReadPath, string bowtieLogFile)
         {
+            if (tempBowtieStartMsg != null)
+                Console.WriteLine(tempBowtieStartMsg);
+            tempBowtieStartMsg = null;
             int nThreads = props.NumberOfAlignmentThreadsDefault;
             string threadArg = (nThreads == 1) ? "" : string.Format("-p {0}", nThreads);
             string unmappedArg = "";
@@ -590,7 +597,9 @@ namespace Linnarsson.Strt
                 unmappedArg = string.Format(" --un {0} --max {1}", outputFqUnmappedReadPath, crapMaxPath);
             }
             string opts = props.BowtieOptionPattern.Replace("MaxAlignmentMismatches", 
-                        props.MaxAlignmentMismatches.ToString()).Replace("QualityScoreBase", props.QualityScoreBase.ToString());
+                        props.MaxAlignmentMismatches.ToString());
+            opts = opts.Replace("QualityScoreBase", props.QualityScoreBase.ToString());
+            opts = opts.Replace("MaxAlternativeMappings", props.MaxAlternativeMappings.ToString());
             string arguments = String.Format("{0} {1} {2} {3} \"{4}\" \"{5}\"", opts, threadArg,
                                                 unmappedArg, bowtieIndex, inputFqReadPath, outputPath);
             StreamWriter logWriter = new StreamWriter(bowtieLogFile, true);

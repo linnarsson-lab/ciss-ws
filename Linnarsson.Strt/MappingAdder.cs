@@ -11,11 +11,12 @@ namespace Linnarsson.Strt
     /// Depending on Props, a multiread is added to all its transcript mappings, or only one of them.
     /// A non-transcript read is added only to one (random, if several) mapping.
     /// At the same time, counts the number of newly mapping reads as well as duplicates.
+    /// New: Multireads will only be added if no mapping is to a repeat sequence
     /// </summary>
     public class MappingAdder
     {
-        private delegate void AddMapping(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping);
-        private AddMapping addMapping;
+        private delegate void AddMappingToTranscripts(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping);
+        private AddMappingToTranscripts addMappingToTranscripts;
         private AbstractGenomeAnnotations Annotations;
         private RandomTagFilterByBc randomTagFilter;
         private int[] nUniqueByBarcode;
@@ -60,13 +61,15 @@ namespace Linnarsson.Strt
 
         /// <summary>
         /// Add the read to one or several of its mappings, depending on Props.
+        /// If no transcript mapping is found, the read will be added to a random non-transcript mapping
+        /// New: Multireads will be added to its transcript mappings only if every repeat mapping is also a transcript
         /// </summary>
         /// <param name="mrm"></param>
         /// <returns>True if the read has some mapping to a transcript</returns>
         public bool Add(MultiReadMappings mrm)
         {
             bool hasSomeTrMapping, hasSomeNewMapping;
-            addMapping(mrm, out hasSomeTrMapping, out hasSomeNewMapping);
+            addMappingToTranscripts(mrm, out hasSomeTrMapping, out hasSomeNewMapping);
             if (!hasSomeTrMapping) // If no transcript mapping is found, add the read to the (random) first mapping it got
                 hasSomeNewMapping = randomTagFilter.Add(mrm[0]);
             if (hasSomeNewMapping)
@@ -81,16 +84,16 @@ namespace Linnarsson.Strt
             if (Props.props.ShowTranscriptSharingGenes)
             {
                 if (Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping)
-                    addMapping = AddToMost5PrimeExonMappingWSharedGenes;
+                    addMappingToTranscripts = AddToMost5PrimeExonMappingWSharedGenes;
                 else
-                    addMapping = AddToAllExonMappingsWSharedGenes;
+                    addMappingToTranscripts = AddToAllExonMappingsWSharedGenes;
             }
             else
             {
                 if (Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping)
-                    addMapping = AddToMost5PrimeExonMapping;
+                    addMappingToTranscripts = AddToMost5PrimeExonMapping;
                 else
-                    addMapping = AddToAllExonMappings;
+                    addMappingToTranscripts = AddToAllExonMappings;
             }
         }
 
@@ -103,6 +106,14 @@ namespace Linnarsson.Strt
         {
             hasSomeTrMapping = false;
             hasSomeNewMapping = false;
+            // New: If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
+            if (mrm.NMappings > 1)
+            {
+                foreach (MultiReadMapping m in mrm.IterMappings())
+                    if (Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
+                        return;
+            }
+            // End new
             foreach (MultiReadMapping m in mrm.IterMappings())
             {
                 if (Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
@@ -127,6 +138,10 @@ namespace Linnarsson.Strt
             int bestDist = int.MaxValue;
             foreach (MultiReadMapping m in mrm.IterMappings())
             {
+                // New: If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
+                if (mrm.NMappings > 1 && Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
+                    return;
+                // End new
                 foreach (FtInterval ivl in Annotations.IterExonAnnotations(m.Chr, m.Strand, m.HitMidPos))
                 {
                     int dist = ivl.GetTranscriptPos(m.HitMidPos);
@@ -152,9 +167,17 @@ namespace Linnarsson.Strt
         /// <returns>true if any transcript was hit</returns>
         private void AddToAllExonMappingsWSharedGenes(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping)
         {
-            Dictionary<IFeature, object> sharingRealFeatures = new Dictionary<IFeature, object>();
             hasSomeTrMapping = false;
             hasSomeNewMapping = false;
+            // New: If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
+            if (mrm.NMappings > 1)
+            {
+                foreach (MultiReadMapping m in mrm.IterMappings())
+                    if (Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
+                        return;
+            }
+            // End new
+            Dictionary<IFeature, object> sharingRealFeatures = new Dictionary<IFeature, object>();
             foreach (MultiReadMapping m in mrm.IterMappings())
             {
                 bool isTranscript = false;
@@ -187,6 +210,10 @@ namespace Linnarsson.Strt
             int bestDist = int.MaxValue;
             foreach (MultiReadMapping m in mrm.IterMappings())
             {
+                // New: If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
+                if (mrm.NMappings > 1 && Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
+                    return;
+                // End new
                 foreach (FtInterval ivl in Annotations.IterExonAnnotations(m.Chr, m.Strand, m.HitMidPos))
                 {
                     sharingRealFeatures[ivl.Feature.RealFeature] = null;

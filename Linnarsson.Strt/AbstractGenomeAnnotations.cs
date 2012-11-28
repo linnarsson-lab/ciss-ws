@@ -127,7 +127,7 @@ namespace Linnarsson.Strt
         /// <param name="chr"></param>
         /// <param name="hitMidPos"></param>
         /// <returns></returns>
-        public bool HasRepeatMatch(string chr, int hitMidPos)
+        public bool IsARepeat(string chr, int hitMidPos)
         {
             if (NonExonAnnotations.ContainsKey(chr))
                 foreach (FtInterval ivl in NonExonAnnotations[chr].IterItems(hitMidPos))

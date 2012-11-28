@@ -86,6 +86,8 @@ namespace Linnarsson.Strt
         /// </summary>
         int nExonAnnotatedReads = 0;
 
+        int nTooMultiMappingReads = 0;
+
         /// <summary>
         /// Number of reads that have alternative genomic mapping positions
         /// </summary>
@@ -127,6 +129,7 @@ namespace Linnarsson.Strt
         Dictionary<string, int> overlappingGeneFeatures = new Dictionary<string, int>();
         List<string> exonHitGeneNames;
         private string spliceChrId;
+        private static int nMaxMappings;
 
         public TranscriptomeStatistics(AbstractGenomeAnnotations annotations, Props props, string outputPathbase)
 		{
@@ -161,6 +164,7 @@ namespace Linnarsson.Strt
                 upstreamAnalyzer = new UpstreamAnalyzer(Annotations, barcodes);
             perLaneStats = new PerLaneStats(barcodes);
             minMismatchReadCountForSNPDetection = props.MinAltNtsReadCountForSNPDetection;
+            nMaxMappings = props.MaxAlternativeMappings - 1;
         }
 
         public void SetSyntReadReporter(string syntLevelFile)
@@ -198,7 +202,7 @@ namespace Linnarsson.Strt
                 snpRndTagVerifier = new SnpRndTagVerifier(Props.props, Annotations.Genome);
             string mapFileName = Path.GetFileName(mapFilePaths[0]);
             currentBcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
-            Console.Write("Annotatating {0} map files", mapFilePaths.Count);
+            Console.WriteLine("Annotatating {0} map files ignoring reads with > {0} alternative mappings.", mapFilePaths.Count, nMaxMappings);
 
             if (Props.props.DebugAnnotation)
             {
@@ -263,6 +267,11 @@ namespace Linnarsson.Strt
                                         randomTagFilter.GetNumDistinctMappings());
                 foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
                 {
+                    if (mrm.NMappings >= nMaxMappings)
+                    {
+                        nTooMultiMappingReads++;
+                        continue;
+                    }
                     if (mappingAdder.Add(mrm))
                         nExonAnnotatedReads++;
                     if (snpRndTagVerifier != null)
@@ -296,6 +305,7 @@ namespace Linnarsson.Strt
             foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, false))
                 Annotate(mtitem);
             FinishBarcode();
+            Console.WriteLine("\nnTooManyMultiMappings={0} after Bc:{1}", nTooMultiMappingReads, currentBcIdx);
         }
 
         /// <summary>
@@ -328,8 +338,11 @@ namespace Linnarsson.Strt
             bool someAnnotationHit = false;
             bool someExonHit = false;
             exonHitGeneNames.Clear();
-            if (!item.hasAltMappings || !Annotations.HasRepeatMatch(item.chr, item.HitMidPos))
-            { // Will only try to annotate exon when the position is a singleread match, or when it is not repeat-like
+            //if (item.chr == "11" && item.hitStartPos > 116736400 && item.hitStartPos < 116737100)
+            //    Console.WriteLine(item.ToString() + " hasRep:" + Annotations.HasRepeatMatch(item.chr, item.HitMidPos));
+            // Will only try to annotate exon when the position is a singleread match, or when it is not repeat-like
+            if (true) // (!item.hasAltMappings || !Annotations.IsARepeat(item.chr, item.HitMidPos))
+            { 
                 foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.strand, item.HitMidPos))
                 {
                     someExonHit = someAnnotationHit = true;

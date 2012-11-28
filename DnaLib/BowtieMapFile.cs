@@ -10,7 +10,7 @@ namespace Linnarsson.Dna
     public abstract class MapFile
     {
         public static readonly int SortedAnalysisWindowSize = 10000000;
-        public static readonly int MaxNMappings = 500;
+        public static int MaxNMappings = 500;
 
         protected Barcodes barcodes;
         protected MultiReadMappings mrm;
@@ -23,6 +23,7 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static MapFile GetMapFile(string file, Barcodes barcodes)
         {
+            MaxNMappings = Math.Max(MaxNMappings, Props.props.MaxAlternativeMappings);
             if (file.EndsWith(".map"))
                 return new BowtieMapFile(MaxNMappings, barcodes);
             if (file.EndsWith(".bam") || file.EndsWith(".sbam"))

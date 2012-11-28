@@ -79,8 +79,9 @@ namespace Linnarsson.Dna
         public int LargestPossibleReadLength = 300; // Used for dimensioning extraction quality calculators
         public int CapRegionSize = 200; // Used for elongation efficiency (full length cDNA) estimation.
         public int MaxAlignmentMismatches = 3;  // Should be the value used in bowtie calls
+        public int MaxAlternativeMappings = 25; // Experimental for new version handling of unique repeat positions
         public byte QualityScoreBase = 64; // For ASCII-encoding of phred scores
-        public string BowtieOptionPattern = "--phredQualityScoreBase-quals -a -v MaxAlignmentMismatches --best --strata";
+        public string BowtieOptionPattern = "--phredQualityScoreBase-quals -k MaxAlternativeMappings -v MaxAlignmentMismatches --best --strata";
         public double SyntheticReadsRandomMutationProb = 0.0; // Used only in synthetic data construction
         public double SyntheticReadsBackgroundFreq = 0.0; // Frequency of random background reads in synthetic data
         public bool SynthesizeReadsFromGeneVariants = false; // Used only in synthetic data construction

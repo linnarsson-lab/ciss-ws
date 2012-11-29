@@ -86,6 +86,9 @@ namespace Linnarsson.Strt
         /// </summary>
         int nExonAnnotatedReads = 0;
 
+        /// <summary>
+        /// Counts number of reads that were ignored due to too many alternative mappings
+        /// </summary>
         int nTooMultiMappingReads = 0;
 
         /// <summary>
@@ -192,6 +195,7 @@ namespace Linnarsson.Strt
         /// <param name="mapFilePaths"></param>
         public void ProcessMapFiles(List<string> mapFilePaths, int averageReadLen)
         {
+            nTooMultiMappingReads = 0;
             trSampleDepth = (barcodes.HasRandomBarcodes) ? libraryDepthSampleMolsCountPerBc : libraryDepthSampleReadCountPerBc;
             if (mapFilePaths.Count == 0)
                 return;
@@ -202,7 +206,7 @@ namespace Linnarsson.Strt
                 snpRndTagVerifier = new SnpRndTagVerifier(Props.props, Annotations.Genome);
             string mapFileName = Path.GetFileName(mapFilePaths[0]);
             currentBcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
-            Console.WriteLine("Annotatating {0} map files ignoring reads with > {0} alternative mappings.", mapFilePaths.Count, nMaxMappings);
+            Console.WriteLine("Annotatating {0} map files ignoring reads with > {1} alternative mappings.", mapFilePaths.Count, nMaxMappings);
 
             if (Props.props.DebugAnnotation)
             {
@@ -232,7 +236,7 @@ namespace Linnarsson.Strt
             }
             if (bcMapFilePaths.Count > 0)
                 ProcessBarcodeMapFiles(bcMapFilePaths);
-            Console.WriteLine();
+            Console.WriteLine("\nIgnored {0} reads with > {1} alternative mappings.", nTooMultiMappingReads, Props.props.MaxAlternativeMappings);
             if (Props.props.DebugAnnotation)
             {
                 nonAnnotWriter.Close(); nonAnnotWriter.Dispose();
@@ -305,7 +309,6 @@ namespace Linnarsson.Strt
             foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, false))
                 Annotate(mtitem);
             FinishBarcode();
-            Console.WriteLine("\nnTooManyMultiMappings={0} after Bc:{1}", nTooMultiMappingReads, currentBcIdx);
         }
 
         /// <summary>
@@ -858,16 +861,17 @@ namespace Linnarsson.Strt
             int nAllHits = TotalHitsByAnnotType.Sum();
             double dividend = nAllHits;
             double reducer = 1.0E6d;
-            string multiReadMethod = (Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping) ?
-                "[Multireads are mapped only with their most 5' transcript]" : "[Multireads are mapped with all their transcript hits]";
+            string mr = "Multireads" + (Props.props.UseMaxAltMappings? string.Format(" (max {0}-fold)", Props.props.MaxAlternativeMappings) : "");
+            string mrHead = mr + ((Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping) ?
+                            " are mapped only with their most 5' transcript" : " are mapped with all their transcript hits");
             if (barcodes.HasRandomBarcodes)
             {
                 dividend = nMappings;
                 reducer = 1.0E3d;
-                xmlFile.WriteLine("    <title>Molecule mappings distribution (10^3). [#samples].\n{0}</title>", multiReadMethod);
+                xmlFile.WriteLine("    <title>Molecule mappings distribution (10^3). [#samples].\n[{0}]</title>", mrHead);
             }
             else
-                xmlFile.WriteLine("    <title>Read mappings distribution (10^6) [#samples].\n{0}</title>", multiReadMethod);
+                xmlFile.WriteLine("    <title>Read mappings distribution (10^6) [#samples].\n[{0}]</title>", mrHead);
             xmlFile.WriteLine("    <point x=\"Mappings [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMappings / dividend, nMappings / reducer);
             xmlFile.WriteLine("    <point x=\"Annotated [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nAnnotatedMappings / dividend, nAnnotatedMappings / reducer);
             xmlFile.WriteLine("    <point x=\"Feature hits [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nAllHits / dividend, nAllHits / reducer);

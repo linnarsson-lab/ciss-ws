@@ -494,7 +494,7 @@ namespace Linnarsson.Strt
             string splcIndexName = genome.GetBowtieSplcIndexName();
             if (splcIndexName == "")
                 throw new Exception("Can not find a Bowtie index corresponding to " + genome.Build + "/" + genome.Annotation);
-            string maxAlt = (props.BowtieOptionPattern.Contains("MaxAlternativeMappings"))?
+            string maxAlt = (props.UseMaxAltMappings)?
                                string.Format(" and limiting alternative mappings to max {0}.", props.MaxAlternativeMappings) : "";
             tempBowtieStartMsg = string.Format("Using bowtie index {0}{1}", splcIndexVersion, maxAlt);
             foreach (LaneInfo extrInfo in extrInfos)

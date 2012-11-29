@@ -119,6 +119,8 @@ namespace Linnarsson.Dna
             set { m_BarcodesName = value; m_Barcodes = null; }
         }
 
+        public bool UseMaxAltMappings { get { return props.BowtieOptionPattern.Contains("MaxAlternativeMappings"); } }
+
         private static Props Read()
         {
             string appDir = AppDomain.CurrentDomain.BaseDirectory;

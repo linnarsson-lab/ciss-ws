@@ -264,7 +264,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Annotate a set of map files that have the same barcode
+        /// Annotate the set of all map files that have the same barcode
         /// </summary>
         /// <param name="bcIdxAndMapFilePaths">Barcode index and paths to all files with mapped reads of that barcode</param>
         private void ProcessBarcodeMapFiles(Pair<int, List<string>> bcIdxAndMapFilePaths)
@@ -277,7 +277,11 @@ namespace Linnarsson.Strt
             }
             SampleReadStatistics(nMappedReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
             AnnotateFeaturesFromTagItems();
-            FinishBarcode();
+            if (Props.props.MakeGeneReadsPerMoleculeHistograms)
+                AddToGeneReadsPerMoleculeHistograms();
+            MakeGeneRndTagProfiles();
+            MakeBcWigglePlots();
+            randomTagFilter.FinishBarcode();
         }
 
         private void AddReadMappingsToTagItems(string mapFilePath)
@@ -330,18 +334,6 @@ namespace Linnarsson.Strt
             }
             foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, false))
                 Annotate(mtitem);
-        }
-
-        /// <summary>
-        /// Call this after all reads in a barcode have been processed, before next barcode (and after last)
-        /// </summary>
-        private void FinishBarcode()
-        {
-            if (Props.props.MakeGeneReadsPerMoleculeHistograms)
-                AddToGeneReadsPerMoleculeHistograms();
-            MakeGeneRndTagProfiles();
-            MakeBcWigglePlots();
-            randomTagFilter.FinishBarcode();
         }
 
         public void SampleReadStatistics(int numReadsInBin)

@@ -1602,7 +1602,7 @@ namespace Linnarsson.Strt
             using (StreamWriter readWriter = (OutputPathbase + "_" + strandString + "_byread.wig.gz").OpenWrite())
             {
                 readWriter.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full",
-                    Path.GetFileNameWithoutExtension(OutputPathbase) + "_byread", strand);
+                    Path.GetFileNameWithoutExtension(OutputPathbase) + "_read_" + DateTime.Now.ToString("yyMMdd"), strand);
                 foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                 {
                     string chr = data.Key;
@@ -1615,7 +1615,7 @@ namespace Linnarsson.Strt
                 using (StreamWriter molWriter = (OutputPathbase + "_" + strandString + "_bymolecule.wig.gz").OpenWrite())
                 {
                     molWriter.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full",
-                        Path.GetFileNameWithoutExtension(OutputPathbase) + "_bymolecule", strand);
+                        Path.GetFileNameWithoutExtension(OutputPathbase) + "_mol_" + DateTime.Now.ToString("yyMMdd"), strand);
                     foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                     {
                         string chr = data.Key;

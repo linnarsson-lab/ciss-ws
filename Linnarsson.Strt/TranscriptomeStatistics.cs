@@ -193,19 +193,17 @@ namespace Linnarsson.Strt
         /// Annotate the complete set of map files from a study.
         /// </summary>
         /// <param name="mapFilePaths"></param>
+        /// <param name="averageReadLen">average length of the reads in map files. Used during SNP analysis</param>
         public void ProcessMapFiles(List<string> mapFilePaths, int averageReadLen)
         {
             nTooMultiMappingReads = 0;
             trSampleDepth = (barcodes.HasRandomBarcodes) ? libraryDepthSampleMolsCountPerBc : libraryDepthSampleReadCountPerBc;
             if (mapFilePaths.Count == 0)
                 return;
-            mapFilePaths.Sort(CompareMapFiles); // Important to have them sorted by barcode
             if (Props.props.AnalyzeSNPs)
                 RegisterPotentialSNPs(mapFilePaths, averageReadLen);
             if (Props.props.SnpRndTagVerification && barcodes.HasRandomBarcodes)
                 snpRndTagVerifier = new SnpRndTagVerifier(Props.props, Annotations.Genome);
-            string mapFileName = Path.GetFileName(mapFilePaths[0]);
-            currentBcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
             Console.WriteLine("Annotatating {0} map files ignoring reads with > {1} alternative mappings.", mapFilePaths.Count, nMaxMappings);
 
             if (Props.props.DebugAnnotation)
@@ -216,8 +214,27 @@ namespace Linnarsson.Strt
                 nonExonWriter = new StreamWriter(OutputPathbase + "_NONEXON.tab");
             }
 
+            foreach (Pair<int, List<string>> bcIdxAndMapFilePaths in IterMapFilesGroupedByBarcode(mapFilePaths))
+            {
+                Console.Write(".");
+                ProcessBarcodeMapFiles(bcIdxAndMapFilePaths);
+            }
+            Console.WriteLine("\nIgnored {0} reads with > {1} alternative mappings.", nTooMultiMappingReads, Props.props.MaxAlternativeMappings);
+
+            if (Props.props.DebugAnnotation)
+            {
+                nonAnnotWriter.Close(); nonAnnotWriter.Dispose();
+                nonExonWriter.Close(); nonExonWriter.Dispose();
+            }
+        }
+
+        private IEnumerable<Pair<int, List<string>>> IterMapFilesGroupedByBarcode(List<string> mapFilePaths)
+        {
+            mapFilePaths.Sort(CompareMapFiles); // Important to have them sorted by barcode
             HashSet<int> usedBcIdxs = new HashSet<int>();
             List<string> bcMapFilePaths = new List<string>();
+            string mapFileName = Path.GetFileName(mapFilePaths[0]);
+            int currentBcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
             foreach (string mapFilePath in mapFilePaths)
             {
                 Console.Write(".");
@@ -225,7 +242,7 @@ namespace Linnarsson.Strt
                 int bcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
                 if (bcIdx != currentBcIdx)
                 {
-                    ProcessBarcodeMapFiles(bcMapFilePaths);
+                    yield return new Pair<int, List<string>>(currentBcIdx, bcMapFilePaths);
                     bcMapFilePaths.Clear();
                     if (usedBcIdxs.Contains(bcIdx))
                         throw new Exception("Program or map file naming error: Revisiting an already analyzed barcode (" + bcIdx + ") is not allowed.");
@@ -235,13 +252,7 @@ namespace Linnarsson.Strt
                 bcMapFilePaths.Add(mapFilePath);
             }
             if (bcMapFilePaths.Count > 0)
-                ProcessBarcodeMapFiles(bcMapFilePaths);
-            Console.WriteLine("\nIgnored {0} reads with > {1} alternative mappings.", nTooMultiMappingReads, Props.props.MaxAlternativeMappings);
-            if (Props.props.DebugAnnotation)
-            {
-                nonAnnotWriter.Close(); nonAnnotWriter.Dispose();
-                nonExonWriter.Close(); nonExonWriter.Dispose();
-            }
+                yield return new Pair<int, List<string>>(currentBcIdx, bcMapFilePaths);
         }
 
         private void RegisterPotentialSNPs(List<string> mapFilePaths, int averageReadLen)
@@ -255,47 +266,58 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Annotate a set of map files that have the same barcode
         /// </summary>
-        /// <param name="bcMapFilePaths">Paths to files where all reads have the same barcode</param>
-        private void ProcessBarcodeMapFiles(List<string> bcMapFilePaths)
+        /// <param name="bcIdxAndMapFilePaths">Barcode index and paths to all files with mapped reads of that barcode</param>
+        private void ProcessBarcodeMapFiles(Pair<int, List<string>> bcIdxAndMapFilePaths)
         {
-            foreach (string mapFilePath in bcMapFilePaths)
+            currentBcIdx = bcIdxAndMapFilePaths.First;
+            foreach (string mapFilePath in bcIdxAndMapFilePaths.Second)
             {
-                currentMapFilePath = mapFilePath;
-                if (!File.Exists(mapFilePath))
-                    continue;
-                MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, barcodes);
-                if (mapFileReader == null)
-                    throw new Exception("Unknown read map file type : " + mapFilePath);
-                int nMappedReadsByFile = 0;
-                perLaneStats.BeforeFile(currentBcIdx, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx),
-                                        randomTagFilter.GetNumDistinctMappings());
-                foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
-                {
-                    if (mrm.NMappings >= nMaxMappings)
-                    {
-                        nTooMultiMappingReads++;
-                        continue;
-                    }
-                    if (mappingAdder.Add(mrm))
-                        nExonAnnotatedReads++;
-                    if (snpRndTagVerifier != null)
-                        snpRndTagVerifier.Add(mrm);
-                    if ((++nMappedReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
-                        SampleReadStatistics(statsSampleDistPerBarcode);
-                    if ((nMappedReadsByBarcode[currentBcIdx]) == libraryDepthSampleReadCountPerBc)
-                    {
-                        sampledLibraryDepths.Add(randomTagFilter.GetNumDistinctMappings());
-                        sampledUniqueMolecules.Add(mappingAdder.NUniqueReadSignatures(currentBcIdx));
-                    }
-                    if (++nMappedReadsByFile == PerLaneStats.nMappedReadsPerFileAtSample)
-                        perLaneStats.AfterFile(mapFilePath, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx),
-                                                            randomTagFilter.GetNumDistinctMappings());
-                    if (mrm.HasAltMappings) nMultiReads++;
-                    //else if (upstreamAnalyzer != null)
-                    //    upstreamAnalyzer.CheckSeqUpstreamTSSite(mrm[0], currentBcIdx); // Analysis on raw read bases
-                }
+                if (File.Exists(mapFilePath))
+                    AddReadMappingsToTagItems(mapFilePath);
             }
             SampleReadStatistics(nMappedReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
+            AnnotateFeaturesFromTagItems();
+            FinishBarcode();
+        }
+
+        private void AddReadMappingsToTagItems(string mapFilePath)
+        {
+            currentMapFilePath = mapFilePath;
+            MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, barcodes);
+            if (mapFileReader == null)
+                throw new Exception("Unknown read map file type : " + mapFilePath);
+            int nMappedReadsByFile = 0;
+            perLaneStats.BeforeFile(currentBcIdx, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx),
+                                    randomTagFilter.GetNumDistinctMappings());
+            foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
+            {
+                if (mrm.NMappings >= nMaxMappings)
+                {
+                    nTooMultiMappingReads++;
+                    continue;
+                }
+                if (mappingAdder.Add(mrm))
+                    nExonAnnotatedReads++;
+                if (snpRndTagVerifier != null)
+                    snpRndTagVerifier.Add(mrm);
+                if ((++nMappedReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
+                    SampleReadStatistics(statsSampleDistPerBarcode);
+                if ((nMappedReadsByBarcode[currentBcIdx]) == libraryDepthSampleReadCountPerBc)
+                {
+                    sampledLibraryDepths.Add(randomTagFilter.GetNumDistinctMappings());
+                    sampledUniqueMolecules.Add(mappingAdder.NUniqueReadSignatures(currentBcIdx));
+                }
+                if (++nMappedReadsByFile == PerLaneStats.nMappedReadsPerFileAtSample)
+                    perLaneStats.AfterFile(mapFilePath, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx),
+                                                        randomTagFilter.GetNumDistinctMappings());
+                if (mrm.HasAltMappings) nMultiReads++;
+                //else if (upstreamAnalyzer != null)
+                //    upstreamAnalyzer.CheckSeqUpstreamTSSite(mrm[0], currentBcIdx); // Analysis on raw read bases
+            }
+        }
+
+        private void AnnotateFeaturesFromTagItems()
+        {
             List<string> ctrlChrId = new List<string>();
             if (randomTagFilter.chrTagDatas.ContainsKey("CTRL"))
             { // First process CTRL chromosome to get the labeling efficiency
@@ -308,7 +330,6 @@ namespace Linnarsson.Strt
             }
             foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, false))
                 Annotate(mtitem);
-            FinishBarcode();
         }
 
         /// <summary>
@@ -341,35 +362,29 @@ namespace Linnarsson.Strt
             bool someAnnotationHit = false;
             bool someExonHit = false;
             exonHitGeneNames.Clear();
-            //if (item.chr == "11" && item.hitStartPos > 116736400 && item.hitStartPos < 116737100)
-            //    Console.WriteLine(item.ToString() + " hasRep:" + Annotations.HasRepeatMatch(item.chr, item.HitMidPos));
-            // Will only try to annotate exon when the position is a singleread match, or when it is not repeat-like
-            if (true) // (!item.hasAltMappings || !Annotations.IsARepeat(item.chr, item.HitMidPos))
-            { 
-                foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.strand, item.HitMidPos))
-                {
-                    someExonHit = someAnnotationHit = true;
-                    MarkStatus markStatus = (IterTranscriptMatchers.HasVariants || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
-                    if (!exonHitGeneNames.Contains(trMatch.Feature.Name))
-                    { // If a gene is hit multiple times (happens if two diff. splices have same seq.), we should annotate it only once
-                        exonHitGeneNames.Add(trMatch.Feature.Name);
-                        item.splcToRealChrOffset = 0;
-                        int annotType = trMatch.Mark(item, trMatch.ExtraData, markStatus);
-                        TotalHitsByAnnotTypeAndBarcode[annotType, currentBcIdx] += molCount;
-                        TotalHitsByAnnotTypeAndChr[item.chr][annotType] += molCount;
-                        TotalHitsByAnnotType[annotType] += molCount;
-                        TotalHitsByBarcode[currentBcIdx] += molCount;
-                    }
+            foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.strand, item.HitMidPos))
+            {
+                someExonHit = someAnnotationHit = true;
+                MarkStatus markStatus = (IterTranscriptMatchers.HasVariants || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
+                if (!exonHitGeneNames.Contains(trMatch.Feature.Name))
+                { // If a gene is hit multiple times (happens if two diff. splices have same seq.), we should annotate it only once
+                    exonHitGeneNames.Add(trMatch.Feature.Name);
+                    item.splcToRealChrOffset = 0;
+                    int annotType = trMatch.Mark(item, trMatch.ExtraData, markStatus);
+                    TotalHitsByAnnotTypeAndBarcode[annotType, currentBcIdx] += molCount;
+                    TotalHitsByAnnotTypeAndChr[item.chr][annotType] += molCount;
+                    TotalHitsByAnnotType[annotType] += molCount;
+                    TotalHitsByBarcode[currentBcIdx] += molCount;
                 }
-                if (exonHitGeneNames.Count > 1)
-                {
-                    exonHitGeneNames.Sort();
-                    string combNames = string.Join("#", exonHitGeneNames.ToArray());
-                    if (!overlappingGeneFeatures.ContainsKey(combNames))
-                        overlappingGeneFeatures[combNames] = molCount;
-                    else
-                        overlappingGeneFeatures[combNames] += molCount;
-                }
+            }
+            if (exonHitGeneNames.Count > 1)
+            {
+                exonHitGeneNames.Sort();
+                string combNames = string.Join("#", exonHitGeneNames.ToArray());
+                if (!overlappingGeneFeatures.ContainsKey(combNames))
+                    overlappingGeneFeatures[combNames] = molCount;
+                else
+                    overlappingGeneFeatures[combNames] += molCount;
             }
             if (!someExonHit && item.chr != spliceChrId)
             { // Annotate all features of molecules that do not map to any transcript

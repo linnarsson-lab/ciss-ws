@@ -16,7 +16,7 @@ defined('_JEXEC') or die('Restricted access'); ?>
                       . $task->id . "&Itemid=" . $itemid . "\">Cancel</a>";
     echo "<tr><td>" . $task->path . "&nbsp;</td><td>&nbsp;" . $task->priority;
     if ($task->priority > 1 && $task->status == "inqueue") {
-        echo "&nbsp;<a style=\"font-size:larger;text-decoration:none;\" href=\"index.php?option=com_dbapp&view=entry&layout=bupqueue&controller=entry&searchid="
+        echo "&nbsp;<a style=font-size:larger;text-decoration:none; href=\"index.php?option=com_dbapp&view=entry&layout=bupqueue&controller=entry&searchid="
              . $task->id . "&Itemid=" . $itemid . "&priority=" . ($task->priority - 1) . "\" title=\"Move forward in queue\">+</a>";
     }
     echo "</td><td>" . $task->status . "&nbsp;</td><td>" . $task->time 

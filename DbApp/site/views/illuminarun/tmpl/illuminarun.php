@@ -122,7 +122,7 @@ defined('_JEXEC') or die('Restricted access'); ?>
             <td>" . $lane->pi . "&nbsp;</td>
             <td>" . $lane->molarconcentration . "</td>
             <td>" . number_format($lane->yield / 1000000.0, 1) . "</td>
-            <td>" . number_format($lane->pfyield / $lane->yield, 2) . "</td>
+            <td>" . (($lane->yield > 0)? number_format($lane->pfyield / $lane->yield, 2) : "0") . "</td>
             <td>" . (($lane->Lstatus == "invalid")? "---" : "Yes") . "</td>
             <td>" . $lane->Lcomment . "</td>
        <!--     <td>" . $lane->Luser . "</td>

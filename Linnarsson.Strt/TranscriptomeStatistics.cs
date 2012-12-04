@@ -170,6 +170,13 @@ namespace Linnarsson.Strt
             nMaxMappings = props.MaxAlternativeMappings - 1;
         }
 
+        private string AssertOutputPathbase()
+        {
+            if (!Directory.Exists(Path.GetDirectoryName(OutputPathbase)))
+                Directory.CreateDirectory(Path.GetDirectoryName(OutputPathbase));
+            return OutputPathbase;
+        }
+
         public void SetSyntReadReporter(string syntLevelFile)
         {
             TestReporter = new SyntReadReporter(syntLevelFile, Annotations.Genome.GeneVariants, OutputPathbase, Annotations.geneFeatures);
@@ -208,9 +215,7 @@ namespace Linnarsson.Strt
 
             if (Props.props.DebugAnnotation)
             {
-                if (!Directory.Exists(Path.GetDirectoryName(OutputPathbase)))
-                    Directory.CreateDirectory(Path.GetDirectoryName(OutputPathbase));
-                nonAnnotWriter = new StreamWriter(OutputPathbase + "_NONANNOTATED.tab");
+                nonAnnotWriter = new StreamWriter(AssertOutputPathbase() + "_NONANNOTATED.tab");
                 nonExonWriter = new StreamWriter(OutputPathbase + "_NONEXON.tab");
             }
 
@@ -463,8 +468,6 @@ namespace Linnarsson.Strt
         private void WriteGeneReadsPerMoleculeHistograms()
         {
             string file = OutputPathbase + "_ReadsPerMolHistograms.tab";
-            if (!Directory.Exists(Path.GetDirectoryName(file)))
-                Directory.CreateDirectory(Path.GetDirectoryName(file));
             using (StreamWriter writer = file.OpenWrite())
             {
                 writer.WriteLine("#Gene\tTrPos\tNReadsPerMolDistribution");
@@ -506,9 +509,7 @@ namespace Linnarsson.Strt
                         {
                             if (rndTagProfileByGeneWriter == null)
                             {
-                                string file = OutputPathbase + "_rnd_tag_profiles.tab";
-                                if (!Directory.Exists(Path.GetDirectoryName(file)))
-                                    Directory.CreateDirectory(Path.GetDirectoryName(file));
+                                string file = AssertOutputPathbase() + "_rnd_tag_profiles.tab";
                                 rndTagProfileByGeneWriter = file.OpenWrite();
                                 rndTagProfileByGeneWriter.WriteLine("#Gene\tBarcode\tTrPos\tEstMolCount\tReadCountsByRndTagIdx");
                             }
@@ -533,17 +534,22 @@ namespace Linnarsson.Strt
 
         private void WriteBcWiggleStrand(int readLength, char strand)
         {
+            string bcWiggleSubfolder = AssertOutputPathbase() + "_wiggle_by_bc";
+            if (!Directory.Exists(bcWiggleSubfolder))
+                Directory.CreateDirectory(bcWiggleSubfolder);
             string fileNameHead = string.Format("{0}_{1}", currentBcIdx, ((strand == '+') ? "fw" : "rev"));
-            string filePathHead = Path.Combine(Path.GetDirectoryName(currentMapFilePath), fileNameHead);
+            string filePathHead = Path.Combine(bcWiggleSubfolder, fileNameHead);
             string fileByRead = filePathHead + "_byread.wig.gz";
             string fileByMol = filePathHead + "_bymolecule.wig.gz";
             if (File.Exists(fileByRead)) return;
             using (StreamWriter writerByRead = fileByRead.OpenWrite())
             using (StreamWriter writerByMol = (barcodes.HasRandomBarcodes && !File.Exists(fileByMol)? fileByMol.OpenWrite() : null))
             {
-                writerByRead.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full", fileNameHead + "_byread", strand);
+                writerByRead.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} {2} ({1})\" visibility=full",
+                                       fileNameHead + "_Read", strand, DateTime.Now.ToString("yyMMdd"));
                 if (writerByMol != null)
-                    writerByMol.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full", fileNameHead + "_bymolecule", strand);
+                    writerByMol.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} {2} ({1})\" visibility=full",
+                                          fileNameHead + "_Mol", strand, DateTime.Now.ToString("yyMMdd"));
                 int strandSign = (strand == '+') ? 1 : -1;
                 foreach (KeyValuePair<string, ChrTagData> tagDataPair in randomTagFilter.chrTagDatas)
                 {
@@ -1602,7 +1608,7 @@ namespace Linnarsson.Strt
             using (StreamWriter readWriter = (OutputPathbase + "_" + strandString + "_byread.wig.gz").OpenWrite())
             {
                 readWriter.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full",
-                    Path.GetFileNameWithoutExtension(OutputPathbase) + "_read_" + DateTime.Now.ToString("yyMMdd"), strand);
+                    Path.GetFileNameWithoutExtension(OutputPathbase) + "Read" + DateTime.Now.ToString("yyMMdd"), strand);
                 foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                 {
                     string chr = data.Key;
@@ -1615,7 +1621,7 @@ namespace Linnarsson.Strt
                 using (StreamWriter molWriter = (OutputPathbase + "_" + strandString + "_bymolecule.wig.gz").OpenWrite())
                 {
                     molWriter.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full",
-                        Path.GetFileNameWithoutExtension(OutputPathbase) + "_mol_" + DateTime.Now.ToString("yyMMdd"), strand);
+                        Path.GetFileNameWithoutExtension(OutputPathbase) + "Mol" + DateTime.Now.ToString("yyMMdd"), strand);
                     foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                     {
                         string chr = data.Key;

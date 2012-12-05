@@ -247,11 +247,11 @@ namespace Linnarsson.Dna
                                        Annotation = "UCSC" };
 		private static StrtGenome m_Mouse =
                       new StrtGenome { Description = "C57BL/6J", Abbrev = "mm",
-                                       Name = "Mouse", LatinName = "Mus Musculus", Build = "mm9",
+                                       Name = "Mouse", LatinName = "Mus Musculus", Build = "mm10",
                                        Annotation = "UCSC" };
         private static StrtGenome m_Chicken =
-                      new StrtGenome { Description = "galGal3", Abbrev = "gg",
-                                       Name = "Chicken", LatinName = "Gallus gallus", Build = "gg3",
+                      new StrtGenome { Description = "galGal4", Abbrev = "gg",
+                                       Name = "Chicken", LatinName = "Gallus gallus", Build = "gg4",
                                        Annotation = "UCSC" };
 
         public static StrtGenome Human { get { return m_Human; } }

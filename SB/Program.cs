@@ -195,13 +195,12 @@ namespace CmdSilverBullet
                             break;
 
                         case "jct":
-                            CheckArgs(args, 3, 6);
-                            argOffset = 1;
+                            CheckArgs(args, 2, 6);
                             if (int.TryParse(args[argOffset], out readLen))
                                 argOffset++;
                             genome = StrtGenome.GetBaseGenome(args[argOffset++]);
-                            if (args.Length > argOffset + 1)
-                                genome.Annotation = args[argOffset++];
+                            if (args.Length > argOffset)
+                                genome.Annotation = args[argOffset];
                             genome.ReadLen = readLen;
                             mapper = new StrtReadMapper(props);
                             mapper.BuildJunctions(genome);
@@ -212,8 +211,8 @@ namespace CmdSilverBullet
                             if (int.TryParse(args[argOffset], out readLen))
                                 argOffset++;
                             genome = StrtGenome.GetBaseGenome(args[argOffset++]);
-                            if (args.Length > argOffset + 1)
-                                genome.Annotation = args[argOffset + 1];
+                            if (args.Length > argOffset)
+                                genome.Annotation = args[argOffset];
                             genome.ReadLen = readLen;
                             mapper = new StrtReadMapper(props);
                             mapper.BuildJunctionsAndIndex(genome);

@@ -22,6 +22,8 @@ namespace Linnarsson.Dna
         public int AllCount { get { return m_Seqs.Length; } } // Includes negative barcodes
         protected int m_BarcodePos = 0;
         public int BarcodePos { get { return m_BarcodePos; } }
+        public int BarcodeEndPos { get { return m_BarcodePos + SeqLength; } }
+
         protected string[] m_WellIds = null;
         protected string[] m_SpeciesByWell = null;
         public string[] SpeciesByWell { get { return m_SpeciesByWell; } }
@@ -45,6 +47,9 @@ namespace Linnarsson.Dna
         public int RandomTagPos { get { return m_RandomTagPos; } }
         protected int m_RandomTagLen = 0;
         public int RandomTagLen { get { return m_RandomTagLen; } }
+        public int InsertStart { get { return m_InsertStart; } }
+        protected int m_InsertStart = 0;
+
         public int BarcodeFieldLen { get { return (RandomTagLen > 0)? (1 + RandomTagLen + SeqLength) : SeqLength; } }
 
         /// <summary>
@@ -112,12 +117,12 @@ namespace Linnarsson.Dna
             return SeqLength + m_TSSeq.Length;
         }
         /// <summary>
-        /// Find the position after rndTag, barcode and any GGG-triple, whichever is highest
+        /// Find the position after rndTag, barcode and any GGG-triple, or specified InsertStart, whichever is highest
         /// </summary>
         /// <returns>Positions where actual sequence should start</returns>
         public virtual int GetInsertStartPos()
         {
-            return Math.Max(m_BarcodePos + GetLengthOfBarcodesWithTSSeq(), m_RandomTagPos + m_RandomTagLen); 
+            return Math.Max(m_BarcodePos + GetLengthOfBarcodesWithTSSeq(), Math.Max(m_RandomTagPos + m_RandomTagLen, m_InsertStart));
         }
 
         public string ExtractBarcodesFromReadId(string readId, out int bcIdx, out int randomBcIdx)
@@ -637,6 +642,8 @@ namespace Linnarsson.Dna
                     }
                     else if (line.ToLower().StartsWith("#barcodepos="))
                         m_BarcodePos = int.Parse(line.Substring(12));
+                    else if (line.ToLower().StartsWith("#insertpos="))
+                        m_InsertStart = int.Parse(line.Substring(11));
                     else if (line.ToLower().StartsWith("#indexfile"))
                         BarcodesInIndexReads = true;
                     else if (line.ToLower().StartsWith("#allowsinglemutations"))

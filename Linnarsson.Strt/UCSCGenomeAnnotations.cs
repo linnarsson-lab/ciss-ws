@@ -379,7 +379,11 @@ namespace Linnarsson.Strt
             }
             string expressionFile = WriteExpressionTable(fileNameBase);
             WriteMinExpressionTable(fileNameBase);
-            WriteCAPHitsTable(fileNameBase);
+            if (props.DirectionalReads)
+            {
+                WriteCAPHitsTable(fileNameBase);
+                WriteExpressedAntisenseGenes(fileNameBase);
+            }
             string rpmFile = WriteNormalizedExpression(fileNameBase);
             if (!Environment.OSVersion.VersionString.Contains("Microsoft"))
             {
@@ -388,7 +392,6 @@ namespace Linnarsson.Strt
             }
             if (props.GenerateGeneLocusProfiles)
                 WriteLocusHitsByGeneLocus(fileNameBase);
-            WriteExpressedAntisenseGenes(fileNameBase);
             if (props.GenesToPaint != null && props.GenesToPaint.Length > 0)
             {
                 PaintSelectedGeneLocusImages(fileNameBase);

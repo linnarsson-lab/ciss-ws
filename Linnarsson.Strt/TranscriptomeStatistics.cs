@@ -580,7 +580,8 @@ namespace Linnarsson.Strt
                 TestReporter.Summarize(Annotations.geneFeatures);
             if (readsPerMoleculeHistogramGenes != null)
                 WriteGeneReadsPerMoleculeHistograms();
-            WriteReadCountDistroByRndTagCount();
+            if (barcodes.HasRandomBarcodes)
+                WriteReadCountDistroByRndTagCount();
             WriteHitProfilesByBarcode();
             WriteRedundantExonHits();
             WriteASExonDistributionHistogram();

@@ -42,7 +42,7 @@ namespace Linnarsson.Strt
                     yield return rec;
                 yield break;
             }
-            int indexEndPos = barcodes.GetInsertStartPos();
+            int indexEndPos = barcodes.BarcodeEndPos; //.GetInsertStartPos();
             IEnumerator<FastQRecord> readStream = FastQFile.Stream(readsFqPath, qualityScoreBase, true).GetEnumerator();
             string indexFqPath = Path.Combine(Path.GetDirectoryName(readsFqPath), ConvertToIndexFilename(Path.GetFileName(readsFqPath)));
             IEnumerator<FastQRecord> indexStream = FastQFile.Stream(indexFqPath, qualityScoreBase, true).GetEnumerator();

@@ -383,6 +383,7 @@ namespace Linnarsson.Strt
             {
                 WriteCAPHitsTable(fileNameBase);
                 WriteExpressedAntisenseGenes(fileNameBase);
+                WriteUniquehits(fileNameBase);
             }
             string rpmFile = WriteNormalizedExpression(fileNameBase);
             if (!Environment.OSVersion.VersionString.Contains("Microsoft"))
@@ -397,7 +398,6 @@ namespace Linnarsson.Strt
                 PaintSelectedGeneLocusImages(fileNameBase);
                 PaintSelectedGeneTranscriptImages(fileNameBase);
             }
-            WriteUniquehits(fileNameBase);
             WriteAnnotTypeAndExonCounts(fileNameBase);
             WriteElongationEfficiency(fileNameBase, averageReadLen);
         }

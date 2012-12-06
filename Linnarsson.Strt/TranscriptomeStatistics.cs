@@ -282,7 +282,7 @@ namespace Linnarsson.Strt
             }
             SampleReadStatistics(nMappedReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
             AnnotateFeaturesFromTagItems();
-            if (Props.props.MakeGeneReadsPerMoleculeHistograms)
+            if (Props.props.MakeGeneReadsPerMoleculeHistograms && barcodes.HasRandomBarcodes)
                 AddToGeneReadsPerMoleculeHistograms();
             MakeGeneRndTagProfiles();
             MakeBcWigglePlots();
@@ -578,10 +578,12 @@ namespace Linnarsson.Strt
                 upstreamAnalyzer.WriteUpstreamStats(OutputPathbase);
             if (TestReporter != null)
                 TestReporter.Summarize(Annotations.geneFeatures);
-            if (readsPerMoleculeHistogramGenes != null)
-                WriteGeneReadsPerMoleculeHistograms();
             if (barcodes.HasRandomBarcodes)
+            {
                 WriteReadCountDistroByRndTagCount();
+                if (readsPerMoleculeHistogramGenes != null)
+                    WriteGeneReadsPerMoleculeHistograms();
+            }
             WriteHitProfilesByBarcode();
             WriteRedundantExonHits();
             WriteASExonDistributionHistogram();

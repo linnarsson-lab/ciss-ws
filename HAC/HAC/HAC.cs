@@ -46,7 +46,7 @@ namespace HAC
         /// <summary>
         /// Creates countCluster clusters of the elements specified in the constructor.
         /// </summary>
-        /// <param name="countCluster"></param>
+        /// <param name="countCluster">stop when only count clusters remain</param>
         /// <returns></returns>
         public ClusterResult Cluster(int countCluster)
         {
@@ -109,9 +109,9 @@ namespace HAC
 
         /// <summary>
         /// Creates countCluster clusters of the elements specified in the constructor,
-        /// taking the spatial layout in account as a restriction on which elements that can fuse.
+        /// taking the spatial layout in account as a restriction on which elements that can fuse at each step
         /// </summary>
-        /// <param name="countCluster"></param>
+        /// <param name="countCluster">Stop when only count clusters remain</param>
         /// <returns></returns>
         public ClusterResult SpatialCluster(int countCluster)
         {

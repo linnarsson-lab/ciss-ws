@@ -22,10 +22,11 @@ namespace readcount
                 {
                     if (!line.Contains("Uploaded Variation") && !line.Contains("#"))
                     {
-                        string[] column = line.Split(new Char[] { '\t' });
+                        string[] column = line.Split('\t');
                         if (!position.ContainsKey(column[1]))
                         {
                             position[column[1]] = line.Replace("\t", "_");
+                            symbol[column[1]] = "";
                         }
                         else
                         {
@@ -35,12 +36,12 @@ namespace readcount
                         {
                             string[] name = column.Last().Split(new Char[] { ';' });
                             if (!symbol.ContainsKey(column[1]))
-                                symbol[column[1]] = "";
+                                symbol[column[1]] = "_";
                             foreach (string hgnc in name)
                             {
                                 if (hgnc.Contains("HGNC"))
                                 {
-                                    if (!symbol[column[1]].Contains(hgnc.Replace("HGNC=", ""))) 
+                                    if (!symbol[column[1]].Contains(hgnc.Replace("HGNC=", "")))
                                         symbol[column[1]] += "+" + hgnc.Replace("HGNC=", "");
                                 }
                             }

@@ -531,7 +531,7 @@ namespace Linnarsson.Strt
                         sb.Append("\t");
                         sb.Append(rf.TotalReadsByBarcode[idx]);
                     }
-                    outFile.WriteLine("{0}\t\t\t\t{1}\t{2}{3}", rf.Name, rf.GetLocusLength(), rf.TotalReadsByBarcode.Sum(), sb);
+                    outFile.WriteLine("r_{0}\t\t\t\t{1}\t{2}{3}", rf.Name, rf.GetLocusLength(), rf.TotalReadsByBarcode.Sum(), sb);
                 }
             }
         }

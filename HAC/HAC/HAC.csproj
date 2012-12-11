@@ -77,7 +77,10 @@
     <Compile Include="ChiSquareDistance.cs" />
     <Compile Include="ClusterResult.cs" />
     <Compile Include="CompleteLinkage.cs" />
+    <Compile Include="DistanceDataFilter.cs" />
+    <Compile Include="NullDistanceDataFilter.cs" />
     <Compile Include="NullTransformation.cs" />
+    <Compile Include="CommonThresholdDataFilter.cs" />
     <Compile Include="Transformation.cs" />
     <Compile Include="ManhattanDistance.cs" />
     <Compile Include="Cluster.cs" />

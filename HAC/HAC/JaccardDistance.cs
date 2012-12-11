@@ -7,6 +7,16 @@ namespace HAC
 {
     public class JaccardDistance : DistanceMetric
     {
+        public JaccardDistance()
+        { }
+
+        public JaccardDistance(DistanceDataFilter filter)
+            : base(filter)
+        {
+            if (filter.GetType() != typeof(NullDistanceDataFilter))
+                throw new ArgumentException("jaccard distance does not work with distance data filters.");
+        }
+
         public override double GetDistance(object[] set1, object[] set2)
         {
             var interSect = set1.Intersect<object>(set2);

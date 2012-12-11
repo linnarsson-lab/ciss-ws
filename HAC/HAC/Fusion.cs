@@ -31,12 +31,12 @@ namespace HAC
                 case "centroid":
                     fusion = new CentroidLinkage();
                     Console.WriteLine("Setting distance metric to squared Euclidian.");
-                    metric = new SquaredEuclidianDistance(); // Implicit metric of centroid
+                    metric = new SquaredEuclidianDistance(metric.DistanceDataFilter); // Implicit metric of centroid
                     break;
                 case "ward":
                     fusion = new WardLinkage();
                     Console.WriteLine("Setting distance metric to squared Euclidian.");
-                    metric = new SquaredEuclidianDistance(); // Implicit metric of Ward's
+                    metric = new SquaredEuclidianDistance(metric.DistanceDataFilter); // Implicit metric of Ward's
                     break;
                 default:
                     throw new ArgumentException("Unknown linkage type: " + fusionMethod);

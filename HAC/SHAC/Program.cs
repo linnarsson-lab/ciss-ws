@@ -17,9 +17,11 @@ namespace SHAC
             string transformationMethod = "";
             string distanceMethod = "euclidian";
             string linkageMethod = "average";
+            string dataFilterMethod = "";
             DistanceMetric distanceMetric;
             Neighborhood neighborhood;
             Transformation transformation;
+            DistanceDataFilter distanceDataFilter;
             string neighborhoodName = "queen";
             string exprFile = null;
             try
@@ -39,6 +41,9 @@ namespace SHAC
                         case "-d":
                             distanceMethod = args[++argIdx];
                             break;
+                        case "-f":
+                            dataFilterMethod = args[++argIdx];
+                            break;
                         case "-l":
                             linkageMethod = args[++argIdx];
                             break;
@@ -57,7 +62,14 @@ namespace SHAC
                 if (distanceMethod == "chisq" && transformationMethod != "chisq")
                     Console.WriteLine("WARNING: Note that 'chisq' distance requires 'chisq' transformation for correct results.");
                 transformation = Transformation.GetTransformation(transformationMethod);
-                distanceMetric = DistanceMetric.GetDistanceMetric(distanceMethod);
+                string filterParam = null;
+                if (dataFilterMethod.Contains('/'))
+                {
+                    dataFilterMethod = dataFilterMethod.Split('/')[0];
+                    filterParam = dataFilterMethod.Split('/')[1];
+                }
+                distanceDataFilter = DistanceDataFilter.GetDistanceDataFilter(dataFilterMethod, filterParam);
+                distanceMetric = DistanceMetric.GetDistanceMetric(distanceMethod, distanceDataFilter);
                 fusion = Fusion.GetFusion(linkageMethod, distanceMetric);
                 neighborhood = Neighborhood.GetNeighborhood(neighborhoodName);
             }
@@ -65,8 +77,9 @@ namespace SHAC
             {
                 if (e.Message != null && e.Message != "")
                     Console.WriteLine(e.Message);
-                Console.WriteLine("Usage:\nmono SHAC.exe [--debug] [-t TRANSFORMATION] -d DISTANCEMETHOD -l LINKAGEMETHOD -c NEIGHBORHOOD EXPRFILE");
+                Console.WriteLine("Usage:\nmono SHAC.exe [--debug] [-t TRANSFORMATION] [-f DATAFILTER] -d DISTANCEMETHOD -l LINKAGEMETHOD -c NEIGHBORHOOD EXPRFILE");
                 Console.WriteLine("TRANSFORMATION is 'score' or 'chisq'. Note that chisq distance for count data requires the transformation.");
+                Console.WriteLine("DATAFILTER is 'commonthreshold/F'. Only data points where both sample's values >= F will be used for distance.");
                 Console.WriteLine("DISTANCEMETHOD is 'chisq', 'euclidian', 'manhattan', 'chebyshev', 'canberra', 'braycurtis', 'ess' or 'sqeuclidian'");
                 Console.WriteLine("LINKAGEMETHOD is 'single', 'complete', 'average', 'centroid' or 'ward'");
                 Console.WriteLine("NEIGHBORHOOD is 'queen' or 'rook'");

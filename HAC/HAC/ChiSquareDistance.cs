@@ -10,6 +10,12 @@ namespace HAC
     /// </summary>
     class ChiSquareDistance : DistanceMetric
     {
+        public ChiSquareDistance(DistanceDataFilter filter) : base(filter)
+        {
+            if (filter.GetType() != typeof(NullDistanceDataFilter))
+                throw new ArgumentException("chisq distance does not work with distance data filters.");
+        }
+
         public override double GetDistance(object[] set1, object[] set2)
         {
             double s = 0.0;

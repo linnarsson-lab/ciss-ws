@@ -9,7 +9,12 @@ namespace HAC
     {
         private double p;
 
-        public MinkowskiDistance(double p)
+        public MinkowskiDistance(double p) : base()
+        {
+            this.p = p;
+        }
+        public MinkowskiDistance(double p, DistanceDataFilter filter)
+            : base(filter)
         {
             this.p = p;
         }
@@ -17,7 +22,7 @@ namespace HAC
         public override double GetDistance(object[] set1, object[] set2)
         {
             double s = 0.0;
-            for (int i = 0; i < set1.Length; i++)
+            foreach (int i in DistanceDataFilter.IterValidIndexes(set1, set2))
             {
                 double d = Math.Abs((double)set1[i] - (double)set2[i]);
                 s += Math.Pow(d, p);

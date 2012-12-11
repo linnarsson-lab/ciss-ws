@@ -7,10 +7,14 @@ namespace HAC
 {
     public class ChebyshevDistance : DistanceMetric
     {
+        public ChebyshevDistance(DistanceDataFilter filter)
+            : base(filter)
+        { }
+
         public override double GetDistance(object[] set1, object[] set2)
         {
             double maxv = 0.0;
-            for (int i = 0; i < set1.Length; i++)
+            foreach (int i in DistanceDataFilter.IterValidIndexes(set1, set2))
             {
                 double d = Math.Abs((double)set1[i] - (double)set2[i]);
                 if (d > maxv)

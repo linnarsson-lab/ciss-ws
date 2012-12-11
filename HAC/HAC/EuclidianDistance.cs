@@ -7,10 +7,14 @@ namespace HAC
 {
     public class EuclidianDistance : DistanceMetric
     {
+        public EuclidianDistance(DistanceDataFilter filter)
+            : base(filter)
+        { }
+
         public override double GetDistance(object[] set1, object[] set2)
         {
             double s = 0.0;
-            for (int i = 0; i < set1.Length; i++)
+            foreach (int i in DistanceDataFilter.IterValidIndexes(set1, set2))
             {
                 double d = (double)set1[i] - (double)set2[i];
                 s += d * d;

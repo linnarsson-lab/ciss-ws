@@ -15,6 +15,8 @@ namespace HAC
             {
                 case "commonthreshold":
                     return new CommonThresholdDataFilter(param);
+                case "eitherthreshold":
+                    return new EitherThresholdDataFilter(param);
                 default:
                     return new NullDistanceDataFilter();
             }

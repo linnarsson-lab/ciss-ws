@@ -65,8 +65,8 @@ namespace SHAC
                 string filterParam = null;
                 if (dataFilterMethod.Contains('/'))
                 {
-                    dataFilterMethod = dataFilterMethod.Split('/')[0];
                     filterParam = dataFilterMethod.Split('/')[1];
+                    dataFilterMethod = dataFilterMethod.Split('/')[0];
                 }
                 distanceDataFilter = DistanceDataFilter.GetDistanceDataFilter(dataFilterMethod, filterParam);
                 distanceMetric = DistanceMetric.GetDistanceMetric(distanceMethod, distanceDataFilter);

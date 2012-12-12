@@ -78,6 +78,7 @@
     <Compile Include="ClusterResult.cs" />
     <Compile Include="CompleteLinkage.cs" />
     <Compile Include="DistanceDataFilter.cs" />
+    <Compile Include="EitherThresholdDataFilter.cs" />
     <Compile Include="NullDistanceDataFilter.cs" />
     <Compile Include="NullTransformation.cs" />
     <Compile Include="CommonThresholdDataFilter.cs" />

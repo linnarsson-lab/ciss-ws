@@ -92,9 +92,9 @@ namespace Linnarsson.Strt
         {
             if (wiggleFw == null) return;
             int[] positions, molCounts, readCounts;
-            GetDistinctPositionsAndCounts('+', out positions, out molCounts, out readCounts);
+            GetDistinctPositionsAndCounts('+', null, out positions, out molCounts, out readCounts);
             wiggleFw.AddCounts(positions, molCounts, readCounts);
-            GetDistinctPositionsAndCounts('-', out positions, out molCounts, out readCounts);
+            GetDistinctPositionsAndCounts('-', null, out positions, out molCounts, out readCounts);
             wiggleRev.AddCounts(positions, molCounts, readCounts);
         }
 
@@ -227,7 +227,7 @@ namespace Linnarsson.Strt
         /// <param name="positions">All positions with some mapped read on given strand</param>
         /// <param name="molCountAtEachPosition">Number of distinct rndTags (=molecules) mapped at each of these positions</param>
         /// <param name="readCountAtEachPosition">Number of reads mapped at each of these positions</param>
-        public void GetDistinctPositionsAndCounts(char strand, out int[] positions,
+        public void GetDistinctPositionsAndCounts(char strand, int[] selectedAnnotTypes, out int[] positions,
                                                   out int[] molCountAtEachPosition, out int[] readCountAtEachPosition)
         {
             positions = new int[tagItems.Count];
@@ -236,7 +236,8 @@ namespace Linnarsson.Strt
             int strandIdx = (strand == '+') ? 0 : 1;
             int p = 0;
             foreach (KeyValuePair<int, TagItem> codedPair in tagItems)
-                if ((codedPair.Key & 1) == strandIdx)
+                if ((codedPair.Key & 1) == strandIdx &&
+                    (selectedAnnotTypes == null || selectedAnnotTypes.Contains(codedPair.Value.typeOfAnnotation)))
                 {
                     molCountAtEachPosition[p] = codedPair.Value.GetNumMolecules();
                     readCountAtEachPosition[p] = codedPair.Value.GetNumReads();

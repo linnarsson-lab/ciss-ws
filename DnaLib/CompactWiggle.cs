@@ -127,7 +127,8 @@ namespace Linnarsson.Dna
                 i = hitStartPositions[hitIdx++];
                 for (int cc = 0; cc < c0; cc++)
                     stops.Enqueue(i + readLength);
-                writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
+                if (i < chrLength && stops.Count > 0)
+                    writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
                 while (i < chrLength && stops.Count > 0)
                 {
                     while (hitIdx < hitStartPositions.Length && hitStartPositions[hitIdx] == i)

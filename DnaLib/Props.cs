@@ -59,6 +59,7 @@ namespace Linnarsson.Dna
                            "Osx", "Twist", "Ap1", "Sox9", "Sox6", "Sox5", "Bmp2", "Smad1", "Smad4" };
         public bool MakeGeneReadsPerMoleculeHistograms = true; // Will display histograms of #reads detected per molecule at various positions
         public string[] GenesToShowRndTagProfile = new string[] { "Sox2" ,"Actb", "Nanog" };
+        public int[] SelectedBcWiggleAnnotations;
         public bool SnpRndTagVerification = false;
         public int MinPhredScoreInRandomTag = 17;
         public int MinMoleculesToTestSnp = 4; // SNP analysis minimum coverage to test a potential SNP positions (when using random labels)

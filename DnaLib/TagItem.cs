@@ -43,6 +43,11 @@ namespace Linnarsson.Dna
             return (int)Math.Round(Math.Log(1 - numMolecules / (double)TagItem.nRndTags) / Math.Log(1 - TagItem.LabelingEfficiency / (double)TagItem.nRndTags));
         }
 
+        public void SetTypeOfAnnotation(int annotType)
+        {
+            this.m_TagItem.typeOfAnnotation = (short)annotType;
+        }
+
         public int bcIdx;
         public string chr;
         private int m_HitStartPos;
@@ -144,12 +149,18 @@ namespace Linnarsson.Dna
         public bool hasAltMappings;
 
         /// <summary>
+        /// Special use for output of wiggle plots for only specific annotations
+        /// </summary>
+        public short typeOfAnnotation { get; set; }
+
+        /// <summary>
         /// TagItem summarizes all reads that map to a specific (possibly redundant when hasAltMappings==true) (chr, pos, strand) combination[s].
         /// </summary>
         /// <param name="hasAltMappings">True indicates that the location is not unique in the genome</param>
         public TagItem(bool hasAltMappings)
         {
             this.hasAltMappings = hasAltMappings;
+            this.typeOfAnnotation = (short)AnnotType.NOHIT;
         }
 
         public override string ToString()
@@ -194,6 +205,7 @@ namespace Linnarsson.Dna
         /// </summary>
         public void Clear()
         {
+            typeOfAnnotation = (short)AnnotType.NOHIT;
             readCountsByRndTag = null;
             totalReadCount = 0;
             sharingGenes.Clear();

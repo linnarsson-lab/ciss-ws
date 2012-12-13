@@ -142,7 +142,9 @@ namespace Linnarsson.Strt
         public TranscriptomeStatistics(AbstractGenomeAnnotations annotations, Props props, string outputPathbase)
 		{
             this.SelectedBcWiggleAnnotations = (props.SelectedBcWiggleAnnotations.Length == 0) ? null : props.SelectedBcWiggleAnnotations;
-            Console.WriteLine("SelAnnots:" + string.Join(",", Array.ConvertAll(SelectedBcWiggleAnnotations, t => AnnotType.GetName(t))));
+            if (props.GenerateBarcodedWiggle && SelectedBcWiggleAnnotations != null)
+                Console.WriteLine("Selected annotation types for barcoded wiggle plots: "
+                                  + string.Join(",", Array.ConvertAll(SelectedBcWiggleAnnotations, t => AnnotType.GetName(t))));
             this.OutputPathbase = outputPathbase;
             AnnotType.DirectionalReads = props.DirectionalReads;
             barcodes = props.Barcodes;

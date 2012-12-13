@@ -44,10 +44,9 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Number of reads that are copies of a first unique signature. i.e., the position, strand, and rndTag are exactly the same.
         /// </summary>
-        /// <param name="bcIdx">Barcode index</param>
-        public int NDuplicateReads(int bcIdx)
+        public int[] NDuplicateReadsByBc()
         {
-            return nDuplicatesByBarcode[bcIdx];
+            return nDuplicatesByBarcode;
         }
 
         public MappingAdder(AbstractGenomeAnnotations annotations, RandomTagFilterByBc randomTagFilter, Barcodes barcodes)

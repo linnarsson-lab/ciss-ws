@@ -754,13 +754,13 @@ namespace Linnarsson.Strt
             int nBc = sampledUniqueHitPositionsByBcIdx.Keys.Count;
             if (nBc > 24)
             {
-                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings per barcode as fn. of reads processed",
+                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings per barcode vs. mapped reads processed",
                                        sampledUniqueHitPositionsByBcIdx, 0, nBc / 2);
-                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings per barcode as fn. of reads processed",
+                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings per barcode vs. mapped reads processed",
                                        sampledUniqueHitPositionsByBcIdx, nBc / 2, nBc);
             }
             else
-                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings in per barcode as fn. of reads processed",
+                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings per barcode vs. mapped reads processed",
                                        sampledUniqueHitPositionsByBcIdx, 0, nBc);
         }
 
@@ -774,12 +774,12 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", barcodes.MakeRandomTag(i), randomTagFilter.nReadsByRandomTag[i]);
             xmlFile.WriteLine("  </randomtagfrequence>");
             xmlFile.WriteLine("  <nuniqueateachrandomtagcoverage>");
-            xmlFile.WriteLine("    <title>Unique alignmentposition-barcodes as fn. of # random tags they occur in</title>");
+            xmlFile.WriteLine("    <title>Unique alignmentposition-barcodes vs. # random tags they occur in</title>");
             xmlFile.WriteLine("    <xtitle>Number of different random tags</xtitle>");
             for (int i = 1; i < randomTagFilter.nCasesPerRandomTagCount.Length; i++)
                 xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
             xmlFile.WriteLine("  </nuniqueateachrandomtagcoverage>");
-            WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules in each barcode as fn. of reads processed",
+            WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules per barcode vs. mapped reads processed",
                                    sampledUniqueMoleculesByBcIdx, 0, sampledUniqueMoleculesByBcIdx.Keys.Count);
             xmlFile.WriteLine("  <moleculereadscountshistogram>");
             xmlFile.WriteLine("    <title>Distribution of number of times every unique molecule has been observed</title>");
@@ -793,7 +793,7 @@ namespace Linnarsson.Strt
         {
             xmlFile.WriteLine("  <{0}>", tag);
             xmlFile.WriteLine("    <title>{0}</title>", title);
-            xmlFile.WriteLine("    <xtitle>Millions of reads processed</xtitle>");
+            xmlFile.WriteLine("    <xtitle>Millions of mapped reads</xtitle>");
             int[] bcIndices = data.Keys.ToArray();
             Array.Sort(bcIndices);
             for (int bII = start; bII < stop; bII++)

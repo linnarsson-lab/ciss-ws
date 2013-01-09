@@ -461,7 +461,9 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Determine which genes and positions should be used for the read count-per-molecule histograms
+        /// Determine which genes and positions should be used for the read count-per-molecule histograms.
+        /// Select 10 genes from each of five expression level intervals, and only the positions where any
+        /// hits have been found within current (i.e. first) barcode
         /// </summary>
         private void SelectGenesForReadsPerMoleculeHistograms()
         {

@@ -89,6 +89,11 @@ namespace Linnarsson.Dna
             RndTagMutationFilterParameter = props.RndTagMutationFilterParam;
         }
 
+        /// <summary>
+        /// Returns a hit count threshold for filtering away rnd labels that likely stem from mutations in other rnd labels
+        /// </summary>
+        /// <param name="tagItem"></param>
+        /// <returns></returns>
         private delegate int MutationThresholder(TagItem tagItem);
         private static MutationThresholder mutationThresholder;
 

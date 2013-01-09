@@ -15,7 +15,7 @@ namespace Linnarsson.Strt
     /// </summary>
     public class MappingAdder
     {
-        private delegate void AddMappingToTranscripts(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping);
+        private delegate MultiReadMapping AddMappingToTranscripts(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping);
         private AddMappingToTranscripts addMappingToTranscripts;
         private AbstractGenomeAnnotations Annotations;
         private RandomTagFilterByBc randomTagFilter;
@@ -68,9 +68,9 @@ namespace Linnarsson.Strt
         public bool Add(MultiReadMappings mrm)
         {
             bool hasSomeTrMapping, hasSomeNewMapping;
-            addMappingToTranscripts(mrm, out hasSomeTrMapping, out hasSomeNewMapping);
-            if (!hasSomeTrMapping) // If no transcript mapping is found, add the read to the (random) first mapping it got
-                hasSomeNewMapping = randomTagFilter.Add(mrm[0]);
+            MultiReadMapping nonTrMrm = addMappingToTranscripts(mrm, out hasSomeTrMapping, out hasSomeNewMapping);
+            if (nonTrMrm != null) // If no transcript mapping is found, add the read to the non-exon repeat or random first mapping it got
+                hasSomeNewMapping = randomTagFilter.Add(nonTrMrm);
             if (hasSomeNewMapping)
                 nUniqueByBarcode[mrm.BarcodeIdx]++;
             else
@@ -100,8 +100,8 @@ namespace Linnarsson.Strt
         /// Adds to every position where the read aligns to some transcript.
         /// </summary>
         /// <param name="mrm"></param>
-        /// <returns>true if any transcript was hit</returns>
-        private void AddToAllExonMappings(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping)
+        /// <returns>a non-exon mapping that should be added to when no exon mapping could be added to</returns>
+        private MultiReadMapping AddToAllExonMappings(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping)
         {
             hasSomeTrMapping = false;
             hasSomeNewMapping = false;
@@ -110,7 +110,7 @@ namespace Linnarsson.Strt
             {
                 foreach (MultiReadMapping m in mrm.IterMappings())
                     if (Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
-                        return;
+                        return m;
             }
             // End new
             foreach (MultiReadMapping m in mrm.IterMappings())
@@ -121,6 +121,7 @@ namespace Linnarsson.Strt
                     hasSomeNewMapping |= randomTagFilter.Add(m);
                 }
             }
+            return hasSomeTrMapping ? null : mrm[0];
         }
 
         /// <summary>
@@ -128,8 +129,8 @@ namespace Linnarsson.Strt
         /// If several positions have equal distance to a 5' end one is chosen by random.
         /// </summary>
         /// <param name="mrm"></param>
-        /// <returns>true if any transcript was hit</returns>
-        private void AddToMost5PrimeExonMapping(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping)
+        /// <returns>a non-exon mapping that should be added to when no exon mapping could be added to</returns>
+        private MultiReadMapping AddToMost5PrimeExonMapping(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping)
         {
             hasSomeTrMapping = false;
             hasSomeNewMapping = false;
@@ -139,7 +140,7 @@ namespace Linnarsson.Strt
             {
                 // New: If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
                 if (mrm.NMappings > 1 && Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
-                    return;
+                    return m;
                 // End new
                 foreach (FtInterval ivl in Annotations.IterExonAnnotations(m.Chr, m.Strand, m.HitMidPos))
                 {
@@ -156,6 +157,7 @@ namespace Linnarsson.Strt
                 hasSomeTrMapping = true;
                 hasSomeNewMapping = randomTagFilter.Add(bestMapping);
             }
+            return hasSomeTrMapping ? null : mrm[0];
         }
 
         /// <summary>
@@ -163,8 +165,8 @@ namespace Linnarsson.Strt
         /// Records the identities of the transcripts that compete for the read if it is a multiread
         /// </summary>
         /// <param name="mrm"></param>
-        /// <returns>true if any transcript was hit</returns>
-        private void AddToAllExonMappingsWSharedGenes(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping)
+        /// <returns>a non-exon mapping that should be added to when no exon mapping could be added to</returns>
+        private MultiReadMapping AddToAllExonMappingsWSharedGenes(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping)
         {
             hasSomeTrMapping = false;
             hasSomeNewMapping = false;
@@ -173,7 +175,7 @@ namespace Linnarsson.Strt
             {
                 foreach (MultiReadMapping m in mrm.IterMappings())
                     if (Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
-                        return;
+                        return m;
             }
             // End new
             Dictionary<IFeature, object> sharingRealFeatures = new Dictionary<IFeature, object>();
@@ -191,6 +193,7 @@ namespace Linnarsson.Strt
                     hasSomeNewMapping |= randomTagFilter.Add(m, sharingRealFeatures);
                 }
             }
+            return hasSomeTrMapping ? null : mrm[0];
         }
 
         /// <summary>
@@ -199,8 +202,8 @@ namespace Linnarsson.Strt
         /// Records the identities of the transcripts that compete for the read if it is a multiread
         /// </summary>
         /// <param name="mrm"></param>
-        /// <returns>true if any transcript was hit</returns>
-        private void AddToMost5PrimeExonMappingWSharedGenes(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping)
+        /// <returns>a non-exon mapping that should be added to when no exon mapping could be added to</returns>
+        private MultiReadMapping AddToMost5PrimeExonMappingWSharedGenes(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping)
         {
             Dictionary<IFeature, object> sharingRealFeatures = new Dictionary<IFeature, object>();
             hasSomeTrMapping = false;
@@ -211,7 +214,7 @@ namespace Linnarsson.Strt
             {
                 // New: If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
                 if (mrm.NMappings > 1 && Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
-                    return;
+                    return m;
                 // End new
                 foreach (FtInterval ivl in Annotations.IterExonAnnotations(m.Chr, m.Strand, m.HitMidPos))
                 {
@@ -229,6 +232,7 @@ namespace Linnarsson.Strt
                 hasSomeTrMapping = true;
                 hasSomeNewMapping = randomTagFilter.Add(bestMapping, sharingRealFeatures);
             }
+            return hasSomeTrMapping ? null : mrm[0];
         }
     }
 }

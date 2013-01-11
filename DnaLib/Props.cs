@@ -42,6 +42,9 @@ namespace Linnarsson.Dna
         public string ResultDownloadScpPort = "9922";
         public string FailureReportEmail = "peter.lonnerberg@ki.se";
         public string ProjectDBProcessorNotifierEmailSender = "peter.lonnerberg@ki.se";
+        public string OutgoingMailSender = "linnarsson-lab@ki.se";
+        public string OutgoingMailServer = "localhost";
+        public int OutgoingMailPort = 25;
         public string BowtieIndexFolder = "\\\\192.168.1.12\\sequtils\\bowtie-0.12.7\\indexes";
         public string OutputDocFile = "\\\\192.168.1.12\\data\\strt\\STRTOutputManual.pdf";
         public int BkgBackuperStartHour = 17;

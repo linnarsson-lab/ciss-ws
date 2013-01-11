@@ -148,19 +148,19 @@ namespace BkgFastQMailer
 
         private static void NotifyClient(string email, List<string> links)
         {
-            string from = "linnarsson-lab@ki.se";
+            string from =  Props.props.OutgoingMailSender;
+            string smtp = Props.props.OutgoingMailServer;
             string subject = "Read files available for download.";
-            string smtp = "localhost";
             StringBuilder sb = new StringBuilder();
             sb.Append("<html>");
             sb.Append("\n<p>You can download sequence reads from the following link(s):</p>");
             foreach (string link in links)
                 sb.Append(string.Format("\n<a href=\"{0}\">{0}</a><br />", link, link));
-            sb.Append("\n<p>The data will available for 14 days.</p>");
+            sb.Append("\n<p>The data will be available for 14 days.</p>");
             sb.Append("\n</html>");
             MailMessage message = new MailMessage(from, email, subject, sb.ToString());
             message.IsBodyHtml = true;
-            SmtpClient mailClient = new SmtpClient(smtp, 25);
+            SmtpClient mailClient = new SmtpClient(smtp, Props.props.OutgoingMailPort);
             mailClient.Send(message);
         }
 

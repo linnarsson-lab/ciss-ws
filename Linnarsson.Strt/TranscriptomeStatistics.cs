@@ -176,7 +176,7 @@ namespace Linnarsson.Strt
             TagItem.SetRndTagMutationFilter(props);
             mappingAdder = new MappingAdder(annotations, randomTagFilter, barcodes);
             statsSampleDistPerBarcode = sampleDistForAccuStats / barcodes.Count;
-            if (props.AnalyzeSeqUpstreamTSSite)
+            if (props.AnalyzeSeqUpstreamTSSite && barcodes.Count > 1)
                 upstreamAnalyzer = new UpstreamAnalyzer(Annotations, barcodes);
             perLaneStats = new PerLaneStats(barcodes);
             minMismatchReadCountForSNPDetection = props.MinAltNtsReadCountForSNPDetection;

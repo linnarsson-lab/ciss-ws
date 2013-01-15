@@ -1325,7 +1325,7 @@ namespace Linnarsson.Strt
             int capRegionSize = props.CapRegionSize;
             int trLenBinSize = 500;
             int nSections = 20;
-            using (StreamWriter capHitsFile = new StreamWriter(fileNameBase + "_cap_hits.tab"))
+            using (StreamWriter capHitsFile = new StreamWriter(fileNameBase + "_5to3_profiles.tab"))
             {
                 WriteSpikeElongationHitCurve(capHitsFile, trLenBinSize, nSections, averageReadLen);
                 WriteElongationHitCurve(capHitsFile, trLenBinSize, nSections, averageReadLen);

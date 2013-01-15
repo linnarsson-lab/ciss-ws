@@ -1455,13 +1455,14 @@ namespace Linnarsson.Strt
 
         private void WriteASExonDistributionHistogram()
         {
+            int[] histo;
+            double firstBinStart, binWidth, median;
+            MakeExonAntisenseHistogram(out histo, out median, out firstBinStart, out binWidth);
+            if (histo.Length == 1) return;
             using (StreamWriter ASHistFile = new StreamWriter(OutputPathbase + "_ASRPM_Histo.tab"))
             {
                 ASHistFile.WriteLine("#Distribution of Antisense RPM/bp transcript among all genes with any Antisense hit.");
                 ASHistFile.WriteLine("#BinStart\tCount");
-                int[] histo;
-                double firstBinStart, binWidth, median;
-                MakeExonAntisenseHistogram(out histo, out median, out firstBinStart, out binWidth);
                 for (int bin = 0; bin < histo.Length; bin++)
                 {
                     ASHistFile.WriteLine("{0}\t{1}", firstBinStart + bin * binWidth, histo[bin]);
@@ -1510,10 +1511,12 @@ namespace Linnarsson.Strt
 
         private void WriteRedundantExonHits()
         {
+            if (overlappingGeneFeatures.Count == 0)
+                return;
             Dictionary<string, List<string>> byGene = new Dictionary<string, List<string>>();
             using (StreamWriter redFile = new StreamWriter(OutputPathbase + "_shared_hits.tab"))
             {
-                redFile.WriteLine("#Reads\tGenomically overlapping transcripts competing for these reads");
+                redFile.WriteLine("#Reads\tGenomically overlapping transcripts competing for these reads, that all include them in their MaxExonHits.");
                 foreach (string combName in overlappingGeneFeatures.Keys)
                 {
                     int sharedHits = overlappingGeneFeatures[combName];
@@ -1532,7 +1535,7 @@ namespace Linnarsson.Strt
             }
             using (StreamWriter sharedFile = new StreamWriter(OutputPathbase + "_shared_hits_by_gene.tab"))
             {
-                sharedFile.WriteLine("#Transcript\tMinHits\tMaxHits\tNon-unique hits in the difference, that also map to other overlapping transcripts/variants");
+                sharedFile.WriteLine("#Transcript\tMinHits\tMaxHits\tNon-unique hits in the difference, that also have been annotated to other overlapping transcripts/variants");
                 foreach (string gene in byGene.Keys)
                 {
                     GeneFeature gf = Annotations.geneFeatures[gene];

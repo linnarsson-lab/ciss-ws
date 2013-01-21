@@ -1295,7 +1295,9 @@ namespace Linnarsson.Strt
         {
             using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_profiles.tab"))
             {
-                file.WriteLine("All hit counts to expressed transcripts from 5' to 3' end. Each data row truncated at last position > 0.");
+                string countType = (barcodes.HasRandomBarcodes) ? "molecule" : "read";
+                file.WriteLine("All hit {0} counts to expressed transcripts from 5' to 3' end. Each data row truncated at last position > 0.",
+                               countType);
                 file.Write("Gene\tChr\tTrDir\tTr5'Pos\tTr3'Pos\tTrLen");
                 for (int p = 1; p < 10000; p++)
                     file.Write("\tPos{0}", p);

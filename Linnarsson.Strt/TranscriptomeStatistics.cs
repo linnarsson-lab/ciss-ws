@@ -626,6 +626,8 @@ namespace Linnarsson.Strt
                 WriteWriggle();
                 WriteHotspots();
             }
+            if (Props.props.GenerateBed)
+                WriteBed();
             if (rndTagProfileByGeneWriter != null)
             {
                 rndTagProfileByGeneWriter.Close();
@@ -1635,6 +1637,24 @@ namespace Linnarsson.Strt
                     }
                 }
             }
+        }
+
+        private void WriteBed()
+        {
+            int averageReadLength = MappedTagItem.AverageReadLen;
+            using (StreamWriter readWriter = (OutputPathbase + "_byread.bed.gz").OpenWrite())
+            {
+                foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
+                {
+                    string chr = data.Key;
+                    if (!StrtGenome.IsSyntheticChr(chr) && Annotations.ChromosomeLengths.ContainsKey(chr))
+                    {
+                        data.Value.GetWiggle('+').WriteReadBed(readWriter, chr, '+', averageReadLength);
+                        data.Value.GetWiggle('-').WriteReadBed(readWriter, chr, '-', averageReadLength);
+                    }
+                }
+            }
+
         }
 
         private void WriteHotspots()

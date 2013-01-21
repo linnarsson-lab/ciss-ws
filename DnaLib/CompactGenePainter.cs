@@ -483,9 +483,9 @@ namespace Linnarsson.Dna
             int pWLastPos = searchStartLocusPos;
             int cWLastPos = searchStartLocusPos + dir * peakWindowSize;
             int cWNextPos = searchStartLocusPos + dir * (peakWindowSize + clearWindowSize);
-            for (int p = pWLastPos; p != cWLastPos; p += dir)
+            for (int p = pWLastPos; p != cWLastPos && p > 0 && p < locusProfile.Length - 1; p += dir)
                 pWCount += locusProfile[p];
-            for (int p = cWLastPos; p < cWNextPos; p += dir)
+            for (int p = cWLastPos; p < cWNextPos && p > 0 && p < locusProfile.Length - 1; p += dir)
                 cWCount += locusProfile[p];
             int acceptablePosition = -1;
             while (cWNextPos != searchEndLocusPos)
@@ -502,6 +502,9 @@ namespace Linnarsson.Dna
                 pWLastPos += dir;
                 cWLastPos += dir;
                 cWNextPos += dir;
+                if (pWLastPos < 0 || cWLastPos < 0 || cWNextPos < 0 ||
+                    pWLastPos >= locusProfile.Length || cWLastPos >= locusProfile.Length || cWNextPos >= locusProfile.Length)
+                    break;
             }
             return acceptablePosition;
         }

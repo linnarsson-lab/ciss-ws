@@ -52,6 +52,7 @@ namespace Linnarsson.Dna
 
         public bool DebugAnnotation = false; // Will give output files of non-annotated and non-exon reads
         public bool GenerateWiggle = true; // Generate wiggle files for upload to UCSC Genome Browser
+        public bool GenerateBed = false; // Generate read BED file
         public bool GenerateBarcodedWiggle = false; // Generate wiggle files per barcode for upload to UCSC Genome Browser
         public bool AnalyzeSNPs = true;
         public bool DetermineMotifs = false; // Analyse over-represented sequence motifs around read start

@@ -144,5 +144,25 @@ namespace Linnarsson.Dna
             }
         }
 
+        public void WriteReadBed(StreamWriter writer, string chr, char strand, int averageReadLength)
+        {
+            int[] hitStartPositions = readWiggle.Keys.ToArray();
+            int[] countAtEachPosition = readWiggle.Values.ToArray();
+            WriteToBedFile(writer, chr, averageReadLength, strand, hitStartPositions, countAtEachPosition);
+        }
+
+        public static void WriteToBedFile(StreamWriter writer, string chr, int readLength, char strand,
+                                           int[] hitStartPositions, int[] countAtEachPosition)
+        {
+            Array.Sort(hitStartPositions, countAtEachPosition);
+            for (int i = 0; i < hitStartPositions.Length; i++)
+            {
+                int readStartPos = (strand == '+')? hitStartPositions[i] : hitStartPositions[i] + i - 1;
+                string id = string.Format("{0}{1}{2}", chr, strand, readStartPos);
+                writer.WriteLine("chr{0}\t{1}\t{2}\t{3}\t{4}\t{5}", chr, hitStartPositions[i], hitStartPositions[i] + i - 1,
+                    id, countAtEachPosition[i], strand);
+            }
+        }
+
     }
 }

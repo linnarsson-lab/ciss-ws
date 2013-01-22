@@ -82,7 +82,6 @@ namespace Linnarsson.Dna
         public int MinExtractionInsertLength = 25; // Min acceptable read length excluding barcode and GGG
 		public int MinExtractionInsertNonAs = 5; // Min number of C/G/T in an acceptable read
         public int LargestPossibleReadLength = 300; // Used for dimensioning extraction quality calculators
-        public int CapRegionSize = 200; // Used for elongation efficiency (full length cDNA) estimation.
         public int MaxAlignmentMismatches = 3;  // Should be the value used in bowtie calls
         public int MaxAlternativeMappings = 25; // Experimental for new version handling of unique repeat positions
         public byte QualityScoreBase = 64; // For ASCII-encoding of phred scores
@@ -103,7 +102,7 @@ namespace Linnarsson.Dna
         public bool AnalyzeSeqUpstreamTSSite = false; // if true, will check if false reads were made by barcode matching in template
         public bool AnalyzeSpliceHitsByBarcode = false; // If true, will show transcript cross-junction hits per barcode
         public int GeneFeature5PrimeExtension = 0; // Extend all transcript 5' annotations to allow for unknown more upstream start sites.
-        public int CAPRegionSpan = 100; // Defines the +/- bp to consider as hits to 5' end for the CAP site hit counting.
+        public int CapRegionSize = 100; // Defines the size in bp to consider as hits to 5' end for the CAPRegion hit counting
         public RndTagMutationFilterMethod RndTagMutationFilter = RndTagMutationFilterMethod.FractionOfMax;
         public int RndTagMutationFilterParam = 50;
         public int MinAltNtsReadCountForSNPDetection = 10; // Positions with less reads with the non-ref bases will not be considered for SNP analysis

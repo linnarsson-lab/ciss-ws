@@ -520,7 +520,7 @@ namespace Linnarsson.Dna
             if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
             {
                 NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
-                if (Math.Abs(item.HitMidPos - SavedCAPPos) < Props.props.CAPRegionSpan)
+                if (Math.Abs(item.HitMidPos - SavedCAPPos) < Props.props.CapRegionSize)
                     CAPRegionHitsByBarcode[item.bcIdx] += item.MolCount;
             }
             HitsByAnnotType[annotType] += item.MolCount;

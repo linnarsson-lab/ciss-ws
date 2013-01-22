@@ -638,7 +638,8 @@ namespace Linnarsson.Strt
             using (StreamWriter matrixFile = new StreamWriter(exprPath))
             {
                 string hitType = barcodes.HasRandomBarcodes ? "molecule" : "read";
-                matrixFile.WriteLine("Total and per barcode uniquely mapping {0} within +/- {1} of CAP site.", hitType, props.CAPRegionSpan);
+                matrixFile.WriteLine("{0} hits within {1} bases ('CAP Region') downstream of transcript start (moved {2} bases 5' from original annotation).",
+                                     hitType, props.CapRegionSize, props.GeneFeature5PrimeExtension);
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 matrixFile.Write("Feature\tChr\tCAPPos\tStrand\tAllTrscrHits\tSumCAPHits");
                 foreach (int idx in speciesBcIndexes)
@@ -1324,7 +1325,6 @@ namespace Linnarsson.Strt
         /// <param name="averageReadLen"></param>
         private void WriteElongationEfficiency(string fileNameBase, int averageReadLen)
         {
-            int capRegionSize = props.CapRegionSize;
             int trLenBinSize = 500;
             int nSections = 20;
             using (StreamWriter capHitsFile = new StreamWriter(fileNameBase + "_5to3_profiles.tab"))
@@ -1334,11 +1334,11 @@ namespace Linnarsson.Strt
                 // The old style hit statistics profile below:
                 int minHitsPerGene = 50;
                 capHitsFile.WriteLine("\n\nFraction hits that are to the 5' {0} bases of genes with >= {1} hits, grouped by transcript length (BinSize={2})",
-                                     capRegionSize, minHitsPerGene, trLenBinSize);
+                                     props.CapRegionSize, minHitsPerGene, trLenBinSize);
                 capHitsFile.WriteLine("\n\nSpike RNAs:");
-                AnalyzeWriteElongationSection(capHitsFile, minHitsPerGene, capRegionSize, trLenBinSize, true);
+                AnalyzeWriteElongationSection(capHitsFile, minHitsPerGene, props.CapRegionSize, trLenBinSize, true);
                 capHitsFile.WriteLine("\nOther RNAs:");
-                AnalyzeWriteElongationSection(capHitsFile, minHitsPerGene, capRegionSize, trLenBinSize, false);
+                AnalyzeWriteElongationSection(capHitsFile, minHitsPerGene, props.CapRegionSize, trLenBinSize, false);
             }
         }
 

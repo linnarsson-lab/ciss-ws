@@ -116,7 +116,9 @@ namespace Linnarsson.Dna
 
         public bool IsTranscriptEffect()
         {
-            return effect == "nc_transcript" || effect == "non_synonymous_codon" || effect == "synonymous_codon";
+            return effect == "nc_transcript" || effect == "non_synonymous_codon" || effect == "synonymous_codon" ||
+                effect == "transcript_variant" || effect == "exon_variant" || effect == "non_coding_exon_variant" ||
+                effect == "nc_transcript_variant" || effect == "synonymous_variant" || effect == "missense_variant";
         }
     }
 

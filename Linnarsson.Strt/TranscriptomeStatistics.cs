@@ -533,10 +533,11 @@ namespace Linnarsson.Strt
                             {
                                 string file = AssertOutputPathbase() + "_rnd_tag_profiles.tab";
                                 rndTagProfileByGeneWriter = file.OpenWrite();
-                                rndTagProfileByGeneWriter.WriteLine("#Gene\tBarcode\tTrPos\tEstMolCount\tReadCountsByRndTagIdx");
+                                rndTagProfileByGeneWriter.WriteLine("#Gene\tBarcode\tChr\tStrand\tChrPos\tTrPos\tEstMolCount\tReadCountsByRndTagIdx");
                             }
                             int trPos = (gf.Strand == '+') ? 1 + trPosInChrDir : 1 + gf.Length - trPosInChrDir;
-                            rndTagProfileByGeneWriter.Write("{0}\t{1}\t{2}\t{3}", gf.Name, barcodes.Seqs[currentBcIdx], trPos, estMolCount);
+                            rndTagProfileByGeneWriter.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}", 
+                                gf.Name, barcodes.Seqs[currentBcIdx], gf.Chr, gf.Strand, chrPos, trPos, estMolCount);
                             foreach (int count in profile)
                                 rndTagProfileByGeneWriter.Write("\t{0}", count);
                             rndTagProfileByGeneWriter.WriteLine();

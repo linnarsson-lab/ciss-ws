@@ -5,6 +5,8 @@ using System.Text;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Net.Mail;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using Linnarsson.Utilities;
 using Linnarsson.Strt;
 using Linnarsson.Dna;
@@ -159,7 +161,10 @@ namespace BkgFastQMailer
             sb.Append("\n</html>");
             MailMessage message = new MailMessage(from, email, subject, sb.ToString());
             message.IsBodyHtml = true;
+            System.Net.ServicePointManager.ServerCertificateValidationCallback = 
+                (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) => true;
             SmtpClient mailClient = new SmtpClient(Props.props.OutgoingMailServer, Props.props.OutgoingMailPort);
+            mailClient.EnableSsl = true;
             System.Net.NetworkCredential cred = new System.Net.NetworkCredential(Props.props.OutgoingMailUser, Props.props.OutgoingMailPassword);
             mailClient.Credentials = cred;
             mailClient.Send(message);

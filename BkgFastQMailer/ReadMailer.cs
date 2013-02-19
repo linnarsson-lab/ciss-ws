@@ -149,7 +149,6 @@ namespace BkgFastQMailer
         private static void NotifyClient(string email, List<string> links)
         {
             string from =  Props.props.OutgoingMailSender;
-            string smtp = Props.props.OutgoingMailServer;
             string subject = "Read files available for download.";
             StringBuilder sb = new StringBuilder();
             sb.Append("<html>");
@@ -160,7 +159,9 @@ namespace BkgFastQMailer
             sb.Append("\n</html>");
             MailMessage message = new MailMessage(from, email, subject, sb.ToString());
             message.IsBodyHtml = true;
-            SmtpClient mailClient = new SmtpClient(smtp, Props.props.OutgoingMailPort);
+            SmtpClient mailClient = new SmtpClient(Props.props.OutgoingMailServer, Props.props.OutgoingMailPort);
+            System.Net.NetworkCredential cred = new System.Net.NetworkCredential(Props.props.OutgoingMailUser, Props.props.OutgoingMailPassword);
+            mailClient.Credentials = cred;
             mailClient.Send(message);
         }
 

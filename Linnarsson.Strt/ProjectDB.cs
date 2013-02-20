@@ -17,12 +17,10 @@ namespace Linnarsson.Strt
         public string bowtieIndexVersion { get; set; }
         public string resultFolder { get; set; }
         public List<string> mapFileFolders { get; set; }
-        public List<string> mapFilePaths { get; set; }
 
         public ResultDescription() { }
         public ResultDescription(List<string> mapFilePaths, string bowtieIndexVersion, string resultFolder)
         {
-            this.mapFilePaths = mapFilePaths;
             this.bowtieIndexVersion = bowtieIndexVersion;
             this.resultFolder = resultFolder;
             this.mapFileFolders = new List<string>();

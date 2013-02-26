@@ -570,12 +570,11 @@ namespace Linnarsson.Strt
             using (StreamWriter writerByRead = fileByRead.OpenWrite())
             using (StreamWriter writerByMol = (barcodes.HasRandomBarcodes && !File.Exists(fileByMol)? fileByMol.OpenWrite() : null))
             {
-                writerByRead.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} {2} ({1})\" visibility=full",
+                writerByRead.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} {2} ({1})\" visibility=full alwaysZero=on",
                                        fileNameHead + "_Read", strand, DateTime.Now.ToString("yyMMdd"));
                 if (writerByMol != null)
-                    writerByMol.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} {2} ({1})\" visibility=full",
+                    writerByMol.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} {2} ({1})\" visibility=full alwaysZero=on",
                                           fileNameHead + "_Mol", strand, DateTime.Now.ToString("yyMMdd"));
-                int strandSign = (strand == '+') ? 1 : -1;
                 foreach (KeyValuePair<string, ChrTagData> tagDataPair in randomTagFilter.chrTagDatas)
                 {
                     string chr = tagDataPair.Key;
@@ -585,9 +584,9 @@ namespace Linnarsson.Strt
                         int[] positions, molsAtEachPos, readsAtEachPos;
                         tagDataPair.Value.GetDistinctPositionsAndCounts(strand, SelectedBcWiggleAnnotations, 
                                                                         out positions, out molsAtEachPos, out readsAtEachPos);
-                        Wiggle.WriteToWigFile(writerByRead, chr, readLength, strandSign, chrLen, positions, readsAtEachPos);
+                        Wiggle.WriteToWigFile(writerByRead, chr, readLength, strand, chrLen, positions, readsAtEachPos);
                         if (writerByMol != null)
-                            Wiggle.WriteToWigFile(writerByMol, chr, readLength, strandSign, chrLen, positions, molsAtEachPos);
+                            Wiggle.WriteToWigFile(writerByMol, chr, readLength, strand, chrLen, positions, molsAtEachPos);
                     }
                 }
             }
@@ -1615,7 +1614,7 @@ namespace Linnarsson.Strt
             string strandString = (strand == '+') ? "fw" : "rev";
             using (StreamWriter readWriter = (OutputPathbase + "_" + strandString + "_byread.wig.gz").OpenWrite())
             {
-                readWriter.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full",
+                readWriter.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full alwaysZero=on",
                     Path.GetFileNameWithoutExtension(OutputPathbase) + "Read" + DateTime.Now.ToString("yyMMdd"), strand);
                 foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                 {
@@ -1628,7 +1627,7 @@ namespace Linnarsson.Strt
             {
                 using (StreamWriter molWriter = (OutputPathbase + "_" + strandString + "_bymolecule.wig.gz").OpenWrite())
                 {
-                    molWriter.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full",
+                    molWriter.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} ({1})\" visibility=full alwaysZero=on",
                         Path.GetFileNameWithoutExtension(OutputPathbase) + "Mol" + DateTime.Now.ToString("yyMMdd"), strand);
                     foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                     {
@@ -1644,6 +1643,7 @@ namespace Linnarsson.Strt
         {
             int averageReadLength = MappedTagItem.AverageReadLen;
             using (StreamWriter readWriter = (OutputPathbase + "_byread.bed.gz").OpenWrite())
+            using (StreamWriter molWriter = (barcodes.HasRandomBarcodes)? (OutputPathbase + "_bymol.bed.gz").OpenWrite() : null)
             {
                 foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                 {
@@ -1652,6 +1652,11 @@ namespace Linnarsson.Strt
                     {
                         data.Value.GetWiggle('+').WriteReadBed(readWriter, chr, '+', averageReadLength);
                         data.Value.GetWiggle('-').WriteReadBed(readWriter, chr, '-', averageReadLength);
+                        if (molWriter != null)
+                        {
+                            data.Value.GetWiggle('+').WriteMolBed(molWriter, chr, '+', averageReadLength);
+                            data.Value.GetWiggle('-').WriteMolBed(molWriter, chr, '-', averageReadLength);
+                        }
                     }
                 }
             }

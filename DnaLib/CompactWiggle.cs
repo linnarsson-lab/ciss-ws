@@ -90,18 +90,15 @@ namespace Linnarsson.Dna
 
         public void WriteMolWiggle(StreamWriter writer, string chr, char strand, int averageReadLength, int chrLength)
         {
-            WriteToWigFile(writer, chr, strand, averageReadLength, chrLength, molWiggle);
+            int[] hitStartPositions = molWiggle.Keys.ToArray();
+            int[] countAtEachPosition = molWiggle.Values.ToArray();
+            WriteToWigFile(writer, chr, averageReadLength, strand, chrLength, hitStartPositions, countAtEachPosition);
         }
         public void WriteReadWiggle(StreamWriter writer, string chr, char strand, int averageReadLength, int chrLength)
         {
-            WriteToWigFile(writer, chr, strand, averageReadLength, chrLength, readWiggle);
-        }
-        private void WriteToWigFile(StreamWriter writer, string chr, char strand, int readLength, int chrLength, SortedDictionary<int, int> wData)
-        {
-            int strandSign = (strand == '+') ? 1 : -1;
-            int[] hitStartPositions = wData.Keys.ToArray();
-            int[] countAtEachPosition = wData.Values.ToArray();
-            WriteToWigFile(writer, chr, readLength, strandSign, chrLength, hitStartPositions, countAtEachPosition);
+            int[] hitStartPositions = readWiggle.Keys.ToArray();
+            int[] countAtEachPosition = readWiggle.Values.ToArray();
+            WriteToWigFile(writer, chr, averageReadLength, strand, chrLength, hitStartPositions, countAtEachPosition);
         }
 
         /// <summary>
@@ -110,14 +107,15 @@ namespace Linnarsson.Dna
         /// <param name="writer">output file handler</param>
         /// <param name="chr">id of chromosome</param>
         /// <param name="readLength">average read length</param>
-        /// <param name="strandSign">1 for forward, -1 for reverse</param>
+        /// <param name="strand"></param>
         /// <param name="chrLength">(approximate) length of chromosome</param>
         /// <param name="hitStartPositions">start positions of reads on chromomsome</param>
         /// <param name="countAtEachPosition">number of reads at every start position</param>
-        public static void WriteToWigFile(StreamWriter writer, string chr, int readLength, int strandSign, int chrLength,
+        public static void WriteToWigFile(StreamWriter writer, string chr, int readLength, char strand, int chrLength,
                                            int[] hitStartPositions, int[] countAtEachPosition)
         {
             Array.Sort(hitStartPositions, countAtEachPosition);
+            int strandSign = (strand == '+') ? 1 : -1;
             Queue<int> stops = new Queue<int>();
             int hitIdx = 0;
             int i = 0;
@@ -151,15 +149,21 @@ namespace Linnarsson.Dna
             WriteToBedFile(writer, chr, averageReadLength, strand, hitStartPositions, countAtEachPosition);
         }
 
+        public void WriteMolBed(StreamWriter writer, string chr, char strand, int averageReadLength)
+        {
+            int[] hitStartPositions = molWiggle.Keys.ToArray();
+            int[] countAtEachPosition = molWiggle.Values.ToArray();
+            WriteToBedFile(writer, chr, averageReadLength, strand, hitStartPositions, countAtEachPosition);
+        }
+
         public static void WriteToBedFile(StreamWriter writer, string chr, int readLength, char strand,
                                            int[] hitStartPositions, int[] countAtEachPosition)
         {
             Array.Sort(hitStartPositions, countAtEachPosition);
             for (int i = 0; i < hitStartPositions.Length; i++)
             {
-                int readStartPos = (strand == '+')? hitStartPositions[i] : hitStartPositions[i] + i - 1;
-                string id = string.Format("{0}{1}{2}", chr, strand, readStartPos);
-                writer.WriteLine("chr{0}\t{1}\t{2}\t{3}\t{4}\t{5}", chr, hitStartPositions[i], hitStartPositions[i] + i - 1,
+                string id = string.Format("{0}{1}{2}", chr, strand, hitStartPositions[i]);
+                writer.WriteLine("chr{0}\t{1}\t{2}\t{3}\t{4}\t{5}", chr, hitStartPositions[i], hitStartPositions[i] + readLength - 1,
                     id, countAtEachPosition[i], strand);
             }
         }

@@ -138,6 +138,7 @@ namespace Linnarsson.Strt
         List<string> exonHitGeneNames;
         private string spliceChrId;
         private static int nMaxMappings;
+        private List<GeneFeature> gfsForRndTagProfile = new List<GeneFeature>();
 
         public TranscriptomeStatistics(AbstractGenomeAnnotations annotations, Props props, string outputPathbase)
 		{
@@ -181,6 +182,26 @@ namespace Linnarsson.Strt
             perLaneStats = new PerLaneStats(barcodes);
             minMismatchReadCountForSNPDetection = props.MinAltNtsReadCountForSNPDetection;
             nMaxMappings = props.MaxAlternativeMappings - 1;
+            SetupGfsForRndTagProfile();
+        }
+
+        private void SetupGfsForRndTagProfile()
+        {
+            if (Props.props.GenesToShowRndTagProfile != null && barcodes.HasRandomBarcodes)
+            {
+                foreach (string geneName in Props.props.GenesToShowRndTagProfile)
+                {
+                    string upperName = geneName.ToUpper();
+                    string variantName = geneName + "_v";
+                    string upperVariantName = upperName + "_v";
+                    foreach (KeyValuePair<string, GeneFeature> gfp in
+                        Annotations.geneFeatures.Where(kvp => (kvp.Key == geneName || kvp.Key == upperName ||
+                                                       kvp.Key.StartsWith(variantName) || kvp.Key.StartsWith(upperVariantName))))
+                    {
+                        gfsForRndTagProfile.Add(gfp.Value);
+                    }
+                }
+            }
         }
 
         private string AssertOutputPathbase()
@@ -510,39 +531,30 @@ namespace Linnarsson.Strt
 
         private void MakeGeneRndTagProfiles()
         {
-            if (Props.props.GenesToShowRndTagProfile != null && barcodes.HasRandomBarcodes)
+            foreach (GeneFeature gf in gfsForRndTagProfile)
             {
-                foreach (string geneName in Props.props.GenesToShowRndTagProfile)
+                int estMolCount;
+                ushort[] profile;
+                int trPos = (gf.Strand == '+') ? 1 : gf.Length;
+                int trDir = (gf.Strand == '+') ? 1 : -1;
+                foreach (int chrPos in gf.IterExonPositionsInChrDir())
                 {
-                    GeneFeature gf;
-                    if (Annotations.geneFeatures.ContainsKey(geneName))
-                        gf = Annotations.geneFeatures[geneName];
-                    else if (Annotations.geneFeatures.ContainsKey(geneName.ToUpper()))
-                        gf = Annotations.geneFeatures[geneName.ToUpper()];
-                    else
-                        continue;
-                    for (int trPosInChrDir = 0; trPosInChrDir < gf.Length; trPosInChrDir++)
+                    randomTagFilter.GetReadCountProfile(gf.Chr, chrPos, gf.Strand, out estMolCount, out profile);
+                    if (profile != null)
                     {
-                        int chrPos = gf.GetChrPosFromTrPosInChrDir(trPosInChrDir);
-                        int estMolCount;
-                        ushort[] profile;
-                        randomTagFilter.GetReadCountProfile(gf.Chr, chrPos, gf.Strand, out estMolCount, out profile);
-                        if (profile != null)
+                        if (rndTagProfileByGeneWriter == null)
                         {
-                            if (rndTagProfileByGeneWriter == null)
-                            {
-                                string file = AssertOutputPathbase() + "_rnd_tag_profiles.tab";
-                                rndTagProfileByGeneWriter = file.OpenWrite();
-                                rndTagProfileByGeneWriter.WriteLine("#Gene\tBarcode\tChr\tStrand\tChrPos\tTrPos\tEstMolCount\tReadCountsByRndTagIdx");
-                            }
-                            int trPos = (gf.Strand == '+') ? 1 + trPosInChrDir : 1 + gf.Length - trPosInChrDir;
-                            rndTagProfileByGeneWriter.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}", 
-                                gf.Name, barcodes.Seqs[currentBcIdx], gf.Chr, gf.Strand, chrPos, trPos, estMolCount);
-                            foreach (int count in profile)
-                                rndTagProfileByGeneWriter.Write("\t{0}", count);
-                            rndTagProfileByGeneWriter.WriteLine();
+                            string file = AssertOutputPathbase() + "_rnd_tag_profiles.tab";
+                            rndTagProfileByGeneWriter = file.OpenWrite();
+                            rndTagProfileByGeneWriter.WriteLine("#Gene\tBarcode\tChr\tStrand\tChrPos\tTrPos(>=1)\tEstMolCount\tReadCountsByRndTagIdx");
                         }
+                        rndTagProfileByGeneWriter.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}", 
+                            gf.Name, barcodes.Seqs[currentBcIdx], gf.Chr, gf.Strand, chrPos, trPos, estMolCount);
+                        foreach (int count in profile)
+                            rndTagProfileByGeneWriter.Write("\t{0}", count);
+                        rndTagProfileByGeneWriter.WriteLine();
                     }
+                    trPos += trDir;
                 }
             }
         }

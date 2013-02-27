@@ -186,7 +186,8 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Use to get the filtered molecule count and read count profile for a specific genomic position and strand
+        /// Use to get the filtered molecule count and read count profile for a specific genomic position and strand.
+        /// If no data exists, readProfile == null and moCount == 0.
         /// </summary>
         /// <param name="pos"></param>
         /// <param name="strand"></param>
@@ -195,8 +196,17 @@ namespace Linnarsson.Strt
         public void GetReadCounts(int pos, char strand, out int molCount, out ushort[] readProfile)
         {
             int posStrand = MakePosStrandIdx(pos, strand);
-            readProfile = tagItems[posStrand].GetReadCountsByRndTag();
-            molCount = tagItems[posStrand].GetNumMolecules();
+            TagItem t;
+            if (tagItems.TryGetValue(posStrand, out  t))
+            {
+                readProfile = t.GetReadCountsByRndTag();
+                molCount = t.GetNumMolecules();
+            }
+            else
+            {
+                readProfile = null;
+                molCount = 0;
+            }
         }
 
         /// <summary>
@@ -386,7 +396,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Use to get the read count profile for a specific genomic location
+        /// Use to get the read count profile for a specific genomic location.
         /// </summary>
         /// <param name="chr"></param>
         /// <param name="pos"></param>
@@ -395,14 +405,7 @@ namespace Linnarsson.Strt
         /// <param name="readProfile">Number of reads as function of rndTag index at given genomic location, or null if no reads has hit that location</param>
         public void GetReadCountProfile(string chr, int pos, char strand, out int molCount, out ushort[] readProfile)
         {
-            molCount = 0;
-            readProfile = null;
-            try
-            {
-                 chrTagDatas[chr].GetReadCounts(pos, strand, out molCount, out readProfile);
-            }
-            catch (KeyNotFoundException)
-            { }
+            chrTagDatas[chr].GetReadCounts(pos, strand, out molCount, out readProfile);
         }
 
         /// <summary>

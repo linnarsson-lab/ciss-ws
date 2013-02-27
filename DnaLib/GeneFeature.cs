@@ -389,6 +389,19 @@ namespace Linnarsson.Dna
             return -1;
         }
 
+        /// <summary>
+        /// Generates all exonic positions on chromosome starting at the lowest value, even for '-'-strand transcripts.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<int> IterExonPositionsInChrDir()
+        {
+            for (int i = 0; i < ExonCount; i++)
+            {
+                for (int chrPos = ExonStarts[i]; chrPos <= ExonEnds[i]; chrPos++)
+                    yield return chrPos;
+            }
+        }
+
         public int GetTranscriptPos(int chrPos, int junkExtraData)
         {
             return GetTranscriptPos(chrPos);

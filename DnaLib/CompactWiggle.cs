@@ -114,24 +114,26 @@ namespace Linnarsson.Dna
         public static void WriteToWigFile(StreamWriter writer, string chr, int readLength, char strand, int chrLength,
                                            int[] hitStartPositions, int[] countAtEachPosition)
         {
-            Array.Sort(hitStartPositions, countAtEachPosition);
+            int[] copyOfPositions = (int[])hitStartPositions.Clone();
+            int[] copyOfCounts = (int[])countAtEachPosition.Clone();
+            Array.Sort(copyOfPositions, copyOfCounts);
             int strandSign = (strand == '+') ? 1 : -1;
             Queue<int> stops = new Queue<int>();
             int hitIdx = 0;
             int i = 0;
-            while (i < chrLength && hitIdx < hitStartPositions.Length)
+            while (i < chrLength && hitIdx < copyOfPositions.Length)
             {
-                int c0 = countAtEachPosition[hitIdx];
-                i = hitStartPositions[hitIdx++];
+                int c0 = copyOfCounts[hitIdx];
+                i = copyOfPositions[hitIdx++];
                 for (int cc = 0; cc < c0; cc++)
                     stops.Enqueue(i + readLength);
                 if (i < chrLength && stops.Count > 0)
                     writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
                 while (i < chrLength && stops.Count > 0)
                 {
-                    while (hitIdx < hitStartPositions.Length && hitStartPositions[hitIdx] == i)
+                    while (hitIdx < copyOfPositions.Length && copyOfPositions[hitIdx] == i)
                     {
-                        int c = countAtEachPosition[hitIdx++];
+                        int c = copyOfCounts[hitIdx++];
                         for (int cc = 0; cc < c; cc++)
                             stops.Enqueue(i + readLength);
                     }
@@ -159,12 +161,14 @@ namespace Linnarsson.Dna
         public static void WriteToBedFile(StreamWriter writer, string chr, int readLength, char strand,
                                            int[] hitStartPositions, int[] countAtEachPosition)
         {
-            Array.Sort(hitStartPositions, countAtEachPosition);
-            for (int i = 0; i < hitStartPositions.Length; i++)
+            int[] copyOfPositions = (int[])hitStartPositions.Clone();
+            int[] copyOfCounts = (int[])countAtEachPosition.Clone();
+            Array.Sort(copyOfPositions, copyOfCounts);
+            for (int i = 0; i < copyOfPositions.Length; i++)
             {
-                string id = string.Format("{0}{1}{2}", chr, strand, hitStartPositions[i]);
-                writer.WriteLine("chr{0}\t{1}\t{2}\t{3}\t{4}\t{5}", chr, hitStartPositions[i], hitStartPositions[i] + readLength - 1,
-                    id, countAtEachPosition[i], strand);
+                string id = string.Format("{0}{1}{2}", chr, strand, copyOfPositions[i]);
+                writer.WriteLine("chr{0}\t{1}\t{2}\t{3}\t{4}\t{5}", chr, copyOfPositions[i], copyOfPositions[i] + readLength - 1,
+                    id, copyOfCounts[i], strand);
             }
         }
 

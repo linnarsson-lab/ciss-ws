@@ -236,13 +236,16 @@ namespace Linnarsson.Strt
             int strandIdx = (strand == '+') ? 0 : 1;
             int p = 0;
             foreach (KeyValuePair<int, TagItem> codedPair in tagItems)
-                if ((codedPair.Key & 1) == strandIdx &&
+            {
+                int numReads = codedPair.Value.GetNumReads();
+                if (numReads > 0 && (codedPair.Key & 1) == strandIdx &&
                     (selectedAnnotTypes == null || selectedAnnotTypes.Contains(codedPair.Value.typeOfAnnotation)))
                 {
+                    readCountAtEachPosition[p] = numReads;
                     molCountAtEachPosition[p] = codedPair.Value.GetNumMolecules();
-                    readCountAtEachPosition[p] = codedPair.Value.GetNumReads();
                     positions[p++] = codedPair.Key >> 1;
                 }
+            }
             Array.Resize(ref positions, p);
             Array.Resize(ref molCountAtEachPosition, p);
             Array.Resize(ref readCountAtEachPosition, p);

@@ -63,6 +63,8 @@ namespace Linnarsson.Dna
             new string[] { "Sox2" ,"Actb", "Nanog", "Klf4", "Calb1", "Rnr2", "Tmpo", "Trpm6", "Pou5f1",
                            "Rnr1", "Nd1", "Cox2", "Vcam1", "Zfp42", "Fgf2r", "Nt5e", "Runx2", "Taz",
                            "Osx", "Twist", "Ap1", "Sox9", "Sox6", "Sox5", "Bmp2", "Smad1", "Smad4" };
+        public string[] GenePaintIntervals =
+            new string[] {"Morf4l2,136741000,136744000", "Hnrnpf,117905000,117920000", "Use1,71366000,71370000", "Uba1,20658000,20665000"};
         public bool MakeGeneReadsPerMoleculeHistograms = true; // Will display histograms of #reads detected per molecule at various positions
         public string[] GenesToShowRndTagProfile = new string[] { "Sox2" ,"Actb", "Nanog" };
         public int[] SelectedBcWiggleAnnotations;

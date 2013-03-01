@@ -131,6 +131,38 @@ namespace Linnarsson.Dna
             return trImgData;
         }
 
+        /// <summary>
+        /// Paints a genes's molecules/reads onto an array of positions relative to ivlStart. Paints data from all barcodes if bcIdx==-1.
+        /// </summary>
+        /// <param name="gf">Gene to paint from</param>
+        /// <param name="ivlStart"></param>
+        /// <param name="ivlEnd"></param>
+        /// <param name="bcIdx">Either specific barcode or -1</param>
+        /// <param name="averageReadLen">To get paint stroke lengths correct</param>
+        /// <returns>Hit counts at each position from ivlStart to ivlEnd, inclusive.</returns>
+        public static int[] PaintHitsInInterval(GeneFeature gf, int ivlStart, int ivlEnd, int bcIdx, int averageReadLen)
+        {
+            int[] profile = new int[1 + ivlEnd - ivlStart];
+            int bcMask = (bcIdx >= 0) ? 127 : 0;
+            if (bcIdx == -1) bcIdx = 0;
+            int s = GeneFeature.GetStrandAsInt(gf.Strand);
+            int startOffset = - averageReadLen / 2;
+            int endOffset = (averageReadLen - 1) / 2;
+            foreach (int hit in gf.LocusHits)
+            {
+                int hitBcIdx = (hit >> 1) & 127;
+                int hitMidPos = (hit >> 8) + gf.LocusStart;
+                if ((hit & 1) == s && (hitBcIdx & bcMask) == bcIdx)
+                {
+                    int paintStart = Math.Max(ivlStart, hitMidPos + startOffset) - ivlStart;
+                    int paintEnd = Math.Min(ivlEnd, hitMidPos + endOffset) - ivlStart;
+                    for (int p = paintStart; p <= paintEnd; p++)
+                        profile[p]++;
+                }
+            }
+            return profile;
+        }
+
         private static void MakeLocusProfile(char chrStrand, int[] hits)
         {
             Array.Clear(locusProfile, 0, locusProfile.Length);

@@ -259,7 +259,10 @@ namespace Linnarsson.Dna
         public int Position;
         public string Mismatches;
 
-        public int HitMidPos { get { return Position + MappedTagItem.AverageReadLen / 2; } } //  { get { return Position + parent.SeqLen / 2; } }
+        /// <summary>
+        /// For even AverageReadLen, HitMidPos is to the right of the midpoint
+        /// </summary>
+        public int HitMidPos { get { return Position + MappedTagItem.AverageReadLen / 2; } }
         public string ReadId { get { return parent.ReadId; } }
         public int BcIdx { get { return parent.BarcodeIdx; } }
         public int RndTagIdx { get { return parent.RandomBcIdx; } }

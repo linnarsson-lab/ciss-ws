@@ -32,7 +32,7 @@ namespace Linnarsson.Strt
 
         /// <summary>
         /// PosAndStrand_on_Chr -> countsByRndTagIdx
-        /// Position stored as "(pos * 2) | strand" where strand in bit0: +/- => 0/1
+        /// Read start position stored as "(pos * 2) | strand" where strand in bit0: +/- => 0/1
         /// </summary>
         private Dictionary<int, TagItem> tagItems = new Dictionary<int, TagItem>();
 
@@ -189,7 +189,7 @@ namespace Linnarsson.Strt
         /// Use to get the filtered molecule count and read count profile for a specific genomic position and strand.
         /// If no data exists, readProfile == null and moCount == 0.
         /// </summary>
-        /// <param name="pos"></param>
+        /// <param name="pos">Requested hit start pos</param>
         /// <param name="strand"></param>
         /// <param name="molCount">Estimated number of molecules detected after filtering</param>
         /// <param name="readProfile">Array with number of reads in each rndTag</param>
@@ -231,10 +231,10 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Summarizes all hit positions and the the respective read and molecule count
+        /// Summarizes all hit start positions and the the respective read and molecule count
         /// </summary>
         /// <param name="strand">Strand to analyze</param>
-        /// <param name="positions">All positions with some mapped read on given strand</param>
+        /// <param name="positions">All positions with some mapped read start on given strand</param>
         /// <param name="molCountAtEachPosition">Number of distinct rndTags (=molecules) mapped at each of these positions</param>
         /// <param name="readCountAtEachPosition">Number of reads mapped at each of these positions</param>
         public void GetDistinctPositionsAndCounts(char strand, int[] selectedAnnotTypes, out int[] positions,

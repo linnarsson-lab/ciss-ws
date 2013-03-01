@@ -191,16 +191,24 @@ namespace Linnarsson.Strt
             {
                 foreach (string geneName in Props.props.GenesToShowRndTagProfile)
                 {
-                    string upperName = geneName.ToUpper();
-                    string variantName = geneName + "_v";
-                    string upperVariantName = upperName + "_v";
-                    foreach (KeyValuePair<string, GeneFeature> gfp in
-                        Annotations.geneFeatures.Where(kvp => (kvp.Key == geneName || kvp.Key == upperName ||
-                                                       kvp.Key.StartsWith(variantName) || kvp.Key.StartsWith(upperVariantName))))
+                    foreach (GeneFeature gf in IterMatchingGeneFeatures(geneName))
                     {
-                        gfsForRndTagProfile.Add(gfp.Value);
+                        gfsForRndTagProfile.Add(gf);
                     }
                 }
+            }
+        }
+
+        private IEnumerable<GeneFeature> IterMatchingGeneFeatures(string geneName)
+        {
+            string upperName = geneName.ToUpper();
+            string variantName = geneName + "_v";
+            string upperVariantName = upperName + "_v";
+            foreach (KeyValuePair<string, GeneFeature> gfp in
+                Annotations.geneFeatures.Where(kvp => (kvp.Key == geneName || kvp.Key == upperName ||
+                                                kvp.Key.StartsWith(variantName) || kvp.Key.StartsWith(upperVariantName))))
+            {
+                yield return gfp.Value;
             }
         }
 
@@ -611,6 +619,7 @@ namespace Linnarsson.Strt
 		/// <param name="OutputPathbase">A path and a filename prefix that will used to create all output files, e.g. "/data/Sample12_"</param>
 		public void SaveResult(ReadCounter readCounter, ResultDescription resultDescr)
 		{
+            PaintReadIntervals();
             if (upstreamAnalyzer != null)
                 upstreamAnalyzer.WriteUpstreamStats(OutputPathbase);
             if (TestReporter != null)
@@ -1673,6 +1682,41 @@ namespace Linnarsson.Strt
                 }
             }
 
+        }
+
+        private void PaintReadIntervals()
+        {
+            if (Props.props.GenePaintIntervals == null || Props.props.GenePaintIntervals.Length == 0)
+                return;
+            using (StreamWriter paintWriter = (OutputPathbase + "_PaintedIntervals.tab").OpenWrite())
+            {
+                string type = (barcodes.HasRandomBarcodes) ? "Molecule" : "Read";
+                paintWriter.WriteLine("Gene\tChr\tIvlStartPos\tStrand\tBcIdx\t{0} coverage at consecutive position in interval", type);
+                foreach (string paintIvl in Props.props.GenePaintIntervals)
+                {
+                    string[] parts = paintIvl.Split(',');
+                    if (parts.Length < 3)
+                        continue;
+                    string geneName = parts[0];
+                    int ivlStart, ivlEnd;
+                    if (!int.TryParse(parts[1], out ivlStart) || !int.TryParse(parts[2], out ivlEnd) || ivlEnd <= ivlStart)
+                        continue;
+                    foreach (GeneFeature gf in IterMatchingGeneFeatures(geneName))
+                    {
+                        if (ivlStart > gf.End || ivlEnd < gf.Start)
+                            continue;
+                        for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                        {
+                            int[] profile = CompactGenePainter.PaintHitsInInterval(gf,
+                                                    ivlStart, ivlEnd, bcIdx, MappedTagItem.AverageReadLen);
+                            paintWriter.Write("{0}\t{1}\t{2}\t{3}\t{4}", gf.Name, gf.Chr, ivlStart, gf.Strand, bcIdx);
+                            foreach (int v in profile)
+                                paintWriter.Write("\t{0}", v);
+                            paintWriter.WriteLine();
+                        }
+                    }
+                }
+            }
         }
 
         private void WriteHotspots()

@@ -157,10 +157,13 @@ namespace Linnarsson.Strt
         /// SNPPos and count data indexed by position-strand of the reads on the single verification chromosome to analyze
         /// </summary>
         public Dictionary<int, SnpRndTagVerChrPosData> dataByPosStrand = new Dictionary<int, SnpRndTagVerChrPosData>();
+
+        // Replaced for speedup:
+        //public HashSet<int> snpPosOnChr = new HashSet<int>();
         /// <summary>
         /// Holds all known SNP positions on the verification chromosome, read from GVF file
         /// </summary>
-        public HashSet<int> snpPosOnChr = new HashSet<int>();
+        public List<int> snpPosOnChr = new List<int>();
 
         public SnpRndTagVerChrData(Barcodes barcodes)
         {
@@ -169,7 +172,11 @@ namespace Linnarsson.Strt
 
         public void AddSnpPos(int pos)
         {
-            snpPosOnChr.Add(pos);
+            // Replaced for speedup:
+            //snpPosOnChr.Add(pos);
+            int insidx = snpPosOnChr.BinarySearch(pos);
+            if (insidx < 0)
+                snpPosOnChr.Insert(~insidx, pos);
         }
 
         public void Add(MultiReadMappings mrm)
@@ -179,14 +186,25 @@ namespace Linnarsson.Strt
             SnpRndTagVerChrPosData posDatas = null;
             if (!dataByPosStrand.TryGetValue(posStrand, out posDatas))
             {
-                foreach (int snpPos in snpPosOnChr)
-                {
-                    if (mrm[0].Contains(snpPos, SnpRndTagVerifier.snpMargin))
-                    {
-                        posDatas = new SnpRndTagVerChrPosData(snpPos, barcodes);
-                        dataByPosStrand[posStrand] = posDatas;
-                        break; // We found one SNP, and only one SNP is analyzed per position-strand
-                    }
+                // Replaced for speedup:
+                //foreach (int snpPos in snpPosOnChr)
+                //{
+                //    if (mrm[0].Contains(snpPos, SnpRndTagVerifier.snpMargin))
+                //    {
+                //        posDatas = new SnpRndTagVerChrPosData(snpPos, barcodes);
+                //        dataByPosStrand[posStrand] = posDatas;
+                //        break; // We found one SNP, and only one positions is analyzed per position-strand
+                //    }
+                //}
+                int fromidx = snpPosOnChr.BinarySearch(mrm[0].Position + SnpRndTagVerifier.snpMargin);
+                if (fromidx < 0) fromidx = ~fromidx;
+                int toidx = snpPosOnChr.BinarySearch(mrm[0].Position + mrm.SeqLen - SnpRndTagVerifier.snpMargin - 1);
+                if (toidx < 0) toidx = ~toidx;
+                if (toidx > fromidx)
+                { // Only one SNP is analyzed per position-strand
+                    int snpPos = snpPosOnChr[fromidx];
+                    posDatas = new SnpRndTagVerChrPosData(snpPos, barcodes);
+                    dataByPosStrand[posStrand] = posDatas;
                 }
                 if (posDatas == null) return;
             }
@@ -226,7 +244,7 @@ namespace Linnarsson.Strt
         public static int minMismatchPhredAsciiVal = 15 + 33; // Minimum quality of the SNP Nt for useful reads
         public static int minReads = 10; // Minumum number of reads in a position-barcode-strand to be worth analyzing
         public static int nMaxUsedRndTags = 50; // Errors may occur at rnd label saturation if two different molecules end up in the same label
-        public static int snpMargin = 4;
+        public static int snpMargin = 4; // Alignments with mismatches close to end can really be a splice junction at end of read
 
         /// <summary>
         /// </summary>

@@ -9,11 +9,10 @@ require_once ('strt2Qsingle.php');
   echo "<h1>STRT data export/download page</h1>";
   $menus = &JSite::getMenu();
   $menu  = $menus->getActive();
-//  $sortKey = JRequest::getVar('sortKey', "");
   $itemid = $menu->id;
 
   echo "<div class='analysis'><fieldset>
-         <form  name=input  action='index.php?option=com_dbapp&view=analysisresults&layout=joindata'  method=post   ><table>";
+         <form name=input action='index.php?option=com_dbapp&view=analysisresults&layout=joindata'  method=post ><table>";
   echo "<p>To download <b>Standard results files [.tab]</b> just click the link in the analysis column.</p>";
   echo "<p>To download data for <b>Qlucore [.gedata]</b> tick the boxes from relevant runs and click a submit button. You can only combine data from one genome type (identified by sub-tables), variables refer to gene count.</p>";
   echo "<p>N.B.: If you want to combine data, but they are within groups with different number of variables, it means they have been run against different database versions. Check up under the samples and rerun analysis of the older one.</p>";
@@ -26,10 +25,9 @@ require_once ('strt2Qsingle.php');
     $dirs = explode("/", $filePath);
     $gnms = explode("_", $dirs[count($dirs) - 1]);
     $sampleId = $dirs[count($dirs) - 2];
-    $qlucoreFile = $sampleId . "_RPM.gedata";
-    if (!file_exists($filePath . "/" . $qlucoreFile))
-      $qlucoreFile = $sampleId . "_RPKM.gedata";
-    if (file_exists($filePath . "/" . $qlucoreFile)) {
+    $gedataFiles = glob($filePath . "/*.gedata");
+    if (count($gedataFiles) > 0) {
+      $qlucoreFile = basename($gedataFiles[0]);
       $count++;
       $fh = fopen($filePath . "/" . $qlucoreFile, 'r');
       $line = stream_get_line($fh, 100, "\n\n");
@@ -42,12 +40,12 @@ require_once ('strt2Qsingle.php');
       }
       $outstring = "<tr><td colspan=7 bgcolor=yellow>Genome <b>" . $gnm . "</b> Variables <b>" . $out[0][2] . "</b></td></tr>_CUT_";
       $outstring .= "<tr><th>" . $sampleId . "</th>";
-      $outstring .= "<td align=center><input type=checkbox name=file" . $count . " value='" . $filePath . "/" . $qlucoreFile . "' /></td>";
-      $outstring .= "<td><a href=index.php?option=com_dbapp&view=analysisresults&layout=rawdownload&analysisid=" . $result->id . "  \"target=_blank\" >" . $dirs[4] . "</a></td>";
+      $outstring .= "\n  <td align=center><input type=checkbox name=file" . $count . " value='" . $filePath . "/" . $qlucoreFile . "' /></td>";
+      $outstring .= "\n  <td><a href=index.php?option=com_dbapp&view=analysisresults&layout=rawdownload&analysisid=" . $result->id . "  \"target=_blank\" >" . $dirs[4] . "</a></td>";
       $outstring .= "<td align=center>" . $out[0][0] . "</td>";
       $outstring .= "<td align=center>" . $out[0][1] . "</td>";
       $outstring .= "<td align=center>" . $out[0][2] . "</td>";
-      $outstring .= "<td align=center>" . $out[0][3] . "</td></tr>";
+      $outstring .= "<td align=center>" . $out[0][3] . "</td></tr>\n";
       array_push($outstrings, $outstring);
     }
   }
@@ -58,13 +56,11 @@ require_once ('strt2Qsingle.php');
     if ($outrow != $parts[0]) {
       $outrow = $parts[0];
       echo "<tr><td colspan=7 align=right ><input type=submit value=Submit /></td>" . $outrow;
-      echo "<tr><th>Sample</th><th>Export</th><th>Analysis</th><th>Samples</th><th>Attributes</th><th>Variables</th><th>Annotations</th></tr>";
+      echo "<tr><th>Sample</th><th>Export</th><th>Analysis</th><th>Samples</th><th>Attributes</th><th>Variables</th><th>Annotations</th></tr>\n";
       echo $parts[1];
     } else {
       echo $parts[1];
     }
   }
-  echo "</table></form>";
-// . count ($outstrings);
-
+  echo "</table>\n</form>";
 ?>

@@ -1,41 +1,40 @@
 <?php
 defined('_JEXEC') or die('Restricted access');
 require_once ('strt2Qsingle.php');
-?>
 
+echo "<h1>Analysis Result Download for Qlucore</h1>";
+$menus = &JSite::getMenu();
+$menu  = $menus->getActive();
+$sortKey = JRequest::getVar('sortKey', "");
+$itemid = $menu->id;
 
-<?php
-  echo "<h1>Analysis Result Download for Qlucore</h1>";
-  $menus = &JSite::getMenu();
-  $menu  = $menus->getActive();
-  $sortKey = JRequest::getVar('sortKey', "");
-  $itemid = $menu->id;
-
-if (1) {
-  $analysisid = JRequest::getVar("analysisid", "");
-  foreach ($this->items as $result) {
-    if ($result->id == $analysisid) {
-      $filePath = $result->resultspath;
+$analysisid = JRequest::getVar("analysisid", "");
+foreach ($this->items as $result) {
+  if ($result->id == $analysisid) {
+    $filePath = $result->resultspath;
+    $gedataFiles = glob($filePath . "/*.gedata");
+    if (count($gedataFiles) > 0) {
+      $shortName = $qlucoreFile = basename($gedataFiles[0]);
+      $qout = "/srv/www/htdocs/joomla16/tmp/" . $qlucoreFile;
+      copy($gedataFiles[0], $qout);
+    } else {
       $dirs = explode("/", $filePath);
       $sampleId = $dirs[count($dirs) - 2];
       $countType = "RPM";
       $testPath = $filePath . "/" . $sampleId . "_" . $countType . ".tab";
-      //echo "Testing " . $testPath; 
       if (!file_exists($testPath))
         $countType = "RPKM";
       $nameHead = $sampleId . "_" . $countType;
       $shortName = $nameHead . ".tab";
       $fileName = $filePath . "/" . $shortName;
       $qlucoreFile = $nameHead . ".gedata";
+      $qout = toQlucore($fileName);
     }
   }
-
-  $qout = toQlucore($fileName);
-
-//  echo $qout;
-  echo "<br /><br />To download right-click this link and save the file to your computer <a href=http://192.168.1.12/joomla16/tmp/" . $qlucoreFile . ">" . $qlucoreFile . "</a>";
 }
 
+echo "<br /><br />Right-click this link to the Qlucore data file and save it on your computer:<br /><br />";
+echo "<a href=http://192.168.1.12/joomla16/tmp/" . $qlucoreFile . ">" . $qlucoreFile . "</a>";
 ?>
 
 <script language="javascript">

@@ -2,7 +2,7 @@
 defined('_JEXEC') or die('Restricted access');
 
 
-  echo "<h1>Analysis Result Download for RPM and raw</h1>";
+  echo "<h1>Analysis Result Download for raw counts and normalized data</h1>";
   $menus = &JSite::getMenu();
   $menu  = $menus->getActive();
   $sortKey = JRequest::getVar('sortKey', "");
@@ -10,27 +10,47 @@ defined('_JEXEC') or die('Restricted access');
 
 $filePath = "";
 $tmpPath  = "/srv/www/htdocs/joomla16/tmp/";
-if (1) {
-  $analysisid = JRequest::getVar("analysisid", "");
-  foreach ($this->items as $result) {
-    if ($result->id == $analysisid) {
-      $filePath = $result->resultspath;
-      $dirs = explode("/", $filePath);
-//      $fileName = $filePath . "/" . $dirs[3] . "_RPM.tab";
-      $rpmName = $filePath . "/" . $dirs[3] . "_RPM.tab";
-      $rpmcsv = $tmpPath . $dirs[3] . "_RPM.tab";
-      $expName = $filePath . "/" . $dirs[3] . "_expression.tab";
-      $expcsv = $tmpPath . $dirs[3] . "_expression.tab";
+$pats = array("RPM.tab", "RPKM.tab", "MolsNormalized.tab", "ReadsPerMillion.tab", "ReadsPerKBasesPerMillion.tab");
+$analysisid = JRequest::getVar("analysisid", "");
+$rpmcsv = $expcsv = "";
+foreach ($this->items as $result) {
+  if ($result->id == $analysisid) {
+    $filePath = $result->resultspath;
+    $dirs = explode("/", $filePath);
+    $sampleId = $dirs[3];
+    foreach ($pats as $pat) {
+      $rpmName = $sampleId . "_" . $pat;
+      $rpmPath = $filePath . "/" . $rpmName;
+      if (file_exists($rpmPath)) {
+        $rpmcsv = $tmpPath . $rpmName;
+        break;
+      }
     }
-  }
-
-  if ((copy($rpmName, $rpmcsv)) && (copy($expName , $expcsv))) {
-    echo "<br /><br />To download right-click this link and save the file to your computer <a href=http://192.168.1.12/joomla16/tmp/" . $dirs[3] . "_RPM.tab >" . $dirs[3] . "_RPM.tab</a>";
-    echo "<br /><br />To download right-click this link and save the file to your computer <a href=http://192.168.1.12/joomla16/tmp/" . $dirs[3] . "_expression.tab >" . $dirs[3] . "_expression.tab</a>";
-  } else {
-    echo "<p>Copy failed are the results analyzed? Ask the system administrator.</p>";
+    $expName = $sampleId . "_expression.tab";
+    $expPath = $filePath . "/" . $expName;
+    if (file_exists($expPath)) {
+      $expcsv = $tmpPath . $expName;
+    }
   }
 }
 
+if ($rpmcsv == "" && $expcsv == "") {
+  echo "<p>Can neither locate raw expression nor normalized data. Is the sample analyzed?</p>";
+} else {
+  if ($rpmcsv != "") {
+    if (copy($rpmPath, $rpmcsv)) {
+      echo "<br /><br />Right-click this link to save normalized data to your computer: <a href=http://192.168.1.12/joomla16/tmp/$rpmName >$rpmName</a>\n";
+    } else {
+      echo "<p>Copy of $rpmPath failed - ask the system administrator for help.</p>";
+    }
+  }
+  if ($expcsv != "") {
+    if (copy($expPath , $expcsv)) {
+      echo "<br /><br />Right-click this link to save raw counts to your computer: <a href=http://192.168.1.12/joomla16/tmp/$expName>$expName</a>\n";
+    } else {
+      echo "<p>Copy of $expPath failed - ask the system administrator for help.</p>";
+    }
+  }
+}
 ?>
 

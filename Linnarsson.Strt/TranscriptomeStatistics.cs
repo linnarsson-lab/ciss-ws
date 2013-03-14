@@ -135,7 +135,7 @@ namespace Linnarsson.Strt
         private readonly static int maxNReadsInPerMoleculeHistograms = 999;
 
         Dictionary<string, int> overlappingGeneFeatures = new Dictionary<string, int>();
-        List<string> exonHitGeneNames;
+        List<IFeature> exonHitFeatures;
         private string spliceChrId;
         private static int nMaxMappings;
         private List<GeneFeature> gfsForRndTagProfile = new List<GeneFeature>();
@@ -171,7 +171,7 @@ namespace Linnarsson.Strt
             nMappedReadsByBarcode = new int[barcodes.Count];
             nMappingsByBarcode = new int[barcodes.Count];
             labelingEfficiencyByBc = new double[barcodes.Count];
-            exonHitGeneNames = new List<string>(100);
+            exonHitFeatures = new List<IFeature>(100);
             spliceChrId = Annotations.Genome.Annotation;
             randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
             TagItem.SetRndTagMutationFilter(props);
@@ -400,14 +400,14 @@ namespace Linnarsson.Strt
             nMappingsByBarcode[currentBcIdx] += molCount;
             bool someAnnotationHit = false;
             bool someExonHit = false;
-            exonHitGeneNames.Clear();
+            exonHitFeatures.Clear();
             foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.strand, item.HitMidPos))
             {
                 someExonHit = someAnnotationHit = true;
                 MarkStatus markStatus = (IterTranscriptMatchers.HasVariants || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
-                if (!exonHitGeneNames.Contains(trMatch.Feature.Name))
+                if (!exonHitFeatures.Contains(trMatch.Feature))
                 { // If a gene is hit multiple times (happens if two diff. splices have same seq.), we should annotate it only once
-                    exonHitGeneNames.Add(trMatch.Feature.Name);
+                    exonHitFeatures.Add(trMatch.Feature);
                     item.splcToRealChrOffset = 0;
                     int annotType = trMatch.Mark(item, trMatch.ExtraData, markStatus);
                     TotalHitsByAnnotTypeAndBarcode[annotType, currentBcIdx] += molCount;
@@ -417,15 +417,8 @@ namespace Linnarsson.Strt
                     item.SetTypeOfAnnotation(annotType);
                 }
             }
-            if (exonHitGeneNames.Count > 1)
-            {
-                exonHitGeneNames.Sort();
-                string combNames = string.Join("#", exonHitGeneNames.ToArray());
-                if (!overlappingGeneFeatures.ContainsKey(combNames))
-                    overlappingGeneFeatures[combNames] = molCount;
-                else
-                    overlappingGeneFeatures[combNames] += molCount;
-            }
+            if (exonHitFeatures.Count > 1)
+                RegisterOverlappingGeneFeatures(molCount);
             if (!someExonHit && item.chr != spliceChrId)
             { // Annotate all features of molecules that do not map to any transcript
                 foreach (FtInterval nonTrMatch in Annotations.IterNonTrMatches(item.chr, item.strand, item.HitMidPos))
@@ -464,6 +457,21 @@ namespace Linnarsson.Strt
             int t = nMappingsByBarcode[currentBcIdx] - trSampleDepth;
             if (t > 0 && t <= molCount) // Sample if we just passed the sampling point with current MappedTagItem
                 sampledExpressedTranscripts.Add(Annotations.GetNumExpressedGenes(currentBcIdx));
+        }
+
+        /// <summary>
+        /// Called when a read hits several genes at the same mapping position. Some genes may overlap, but
+        /// should usually only happen if two alt. splices match the read and point to the same true genomic position.
+        /// </summary>
+        /// <param name="molCount"></param>
+        private void RegisterOverlappingGeneFeatures(int molCount)
+        {
+            exonHitFeatures.Sort();
+            string combNames = string.Join("#", exonHitFeatures.ConvertAll<string>(v => v.Name).ToArray());
+            if (!overlappingGeneFeatures.ContainsKey(combNames))
+                overlappingGeneFeatures[combNames] = molCount;
+            else
+                overlappingGeneFeatures[combNames] += molCount;
         }
 
         /// <summary>
@@ -604,9 +612,14 @@ namespace Linnarsson.Strt
                         int[] positions, molsAtEachPos, readsAtEachPos;
                         tagDataPair.Value.GetDistinctPositionsAndCounts(strand, SelectedBcWiggleAnnotations, 
                                                                         out positions, out molsAtEachPos, out readsAtEachPos);
-                        Wiggle.WriteToWigFile(writerByRead, chr, readLength, strand, chrLen, positions, readsAtEachPos);
                         if (writerByMol != null)
-                            Wiggle.WriteToWigFile(writerByMol, chr, readLength, strand, chrLen, positions, molsAtEachPos);
+                        {
+                            int[] posCopy = (int[])positions.Clone();
+                            Array.Sort(posCopy, molsAtEachPos);
+                            Wiggle.WriteToWigFile(writerByMol, chr, readLength, strand, chrLen, posCopy, molsAtEachPos);
+                        }
+                        Array.Sort(positions, readsAtEachPos);
+                        Wiggle.WriteToWigFile(writerByRead, chr, readLength, strand, chrLen, positions, readsAtEachPos);
                     }
                 }
             }

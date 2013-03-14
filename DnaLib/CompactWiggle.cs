@@ -78,62 +78,59 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Get hit start positions and respective read count for all reads added to the Wiggle instance
+        /// Get ordered hit start positions and respective read count for all reads added to the Wiggle instance
         /// </summary>
-        /// <param name="positions"></param>
-        /// <param name="countAtEachPosition"></param>
-        public void GetReadPositionsAndCounts(out int[] positions, out int[] countAtEachPosition)
+        /// <param name="sortedPositions">Ordered hit start positions</param>
+        /// <param name="countAtEachSortedPosition"></param>
+        public void GetReadPositionsAndCounts(out int[] sortedPositions, out int[] countAtEachSortedPosition)
         {
-            positions = readWiggle.Keys.ToArray();
-            countAtEachPosition = readWiggle.Values.ToArray();
+            sortedPositions = readWiggle.Keys.ToArray();
+            countAtEachSortedPosition = readWiggle.Values.ToArray();
         }
 
         public void WriteMolWiggle(StreamWriter writer, string chr, char strand, int averageReadLength, int chrLength)
         {
-            int[] hitStartPositions = molWiggle.Keys.ToArray();
-            int[] countAtEachPosition = molWiggle.Values.ToArray();
-            WriteToWigFile(writer, chr, averageReadLength, strand, chrLength, hitStartPositions, countAtEachPosition);
+            int[] sortedHitStartPositions = molWiggle.Keys.ToArray();
+            int[] countAtEachSortedPosition = molWiggle.Values.ToArray();
+            WriteToWigFile(writer, chr, averageReadLength, strand, chrLength, sortedHitStartPositions, countAtEachSortedPosition);
         }
         public void WriteReadWiggle(StreamWriter writer, string chr, char strand, int averageReadLength, int chrLength)
         {
-            int[] hitStartPositions = readWiggle.Keys.ToArray();
-            int[] countAtEachPosition = readWiggle.Values.ToArray();
-            WriteToWigFile(writer, chr, averageReadLength, strand, chrLength, hitStartPositions, countAtEachPosition);
+            int[] sortedHitStartPositions = readWiggle.Keys.ToArray();
+            int[] countAtEachSortedPosition = readWiggle.Values.ToArray();
+            WriteToWigFile(writer, chr, averageReadLength, strand, chrLength, sortedHitStartPositions, countAtEachSortedPosition);
         }
 
         /// <summary>
-        /// Output wiggle formatted data for one strand of a chromosome
+        /// Output wiggle formatted data for one strand of a chromosome. N.B.: Positions/counts MUST be sorted on position!
         /// </summary>
         /// <param name="writer">output file handler</param>
         /// <param name="chr">id of chromosome</param>
         /// <param name="readLength">average read length</param>
         /// <param name="strand"></param>
         /// <param name="chrLength">(approximate) length of chromosome</param>
-        /// <param name="hitStartPositions">start positions of reads on chromomsome</param>
-        /// <param name="countAtEachPosition">number of reads at every start position</param>
+        /// <param name="sortedHitStartPositions">SORTED! start positions of reads on chromomsome</param>
+        /// <param name="countAtEachSortedPosition">number of reads at every corresponding SORTED start position</param>
         public static void WriteToWigFile(StreamWriter writer, string chr, int readLength, char strand, int chrLength,
-                                           int[] hitStartPositions, int[] countAtEachPosition)
+                                           int[] sortedHitStartPositions, int[] countAtEachSortedPosition)
         {
-            int[] copyOfPositions = (int[])hitStartPositions.Clone();
-            int[] copyOfCounts = (int[])countAtEachPosition.Clone();
-            Array.Sort(copyOfPositions, copyOfCounts);
             int strandSign = (strand == '+') ? 1 : -1;
             Queue<int> stops = new Queue<int>();
             int hitIdx = 0;
             int i = 0;
-            while (i < chrLength && hitIdx < copyOfPositions.Length)
+            while (i < chrLength && hitIdx < sortedHitStartPositions.Length)
             {
-                int c0 = copyOfCounts[hitIdx];
-                i = copyOfPositions[hitIdx++];
+                int c0 = countAtEachSortedPosition[hitIdx];
+                i = sortedHitStartPositions[hitIdx++];
                 for (int cc = 0; cc < c0; cc++)
                     stops.Enqueue(i + readLength);
                 if (i < chrLength && stops.Count > 0)
                     writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
                 while (i < chrLength && stops.Count > 0)
                 {
-                    while (hitIdx < copyOfPositions.Length && copyOfPositions[hitIdx] == i)
+                    while (hitIdx < sortedHitStartPositions.Length && sortedHitStartPositions[hitIdx] == i)
                     {
-                        int c = copyOfCounts[hitIdx++];
+                        int c = countAtEachSortedPosition[hitIdx++];
                         for (int cc = 0; cc < c; cc++)
                             stops.Enqueue(i + readLength);
                     }
@@ -146,29 +143,35 @@ namespace Linnarsson.Dna
 
         public void WriteReadBed(StreamWriter writer, string chr, char strand, int averageReadLength)
         {
-            int[] hitStartPositions = readWiggle.Keys.ToArray();
-            int[] countAtEachPosition = readWiggle.Values.ToArray();
-            WriteToBedFile(writer, chr, averageReadLength, strand, hitStartPositions, countAtEachPosition);
+            int[] sortedHitStartPositions = readWiggle.Keys.ToArray();
+            int[] countAtEachSortedPosition = readWiggle.Values.ToArray();
+            WriteToBedFile(writer, chr, averageReadLength, strand, sortedHitStartPositions, countAtEachSortedPosition);
         }
 
         public void WriteMolBed(StreamWriter writer, string chr, char strand, int averageReadLength)
         {
-            int[] hitStartPositions = molWiggle.Keys.ToArray();
-            int[] countAtEachPosition = molWiggle.Values.ToArray();
-            WriteToBedFile(writer, chr, averageReadLength, strand, hitStartPositions, countAtEachPosition);
+            int[] sortedHitStartPositions = molWiggle.Keys.ToArray();
+            int[] countAtEachSortedPosition = molWiggle.Values.ToArray();
+            WriteToBedFile(writer, chr, averageReadLength, strand, sortedHitStartPositions, countAtEachSortedPosition);
         }
 
-        public static void WriteToBedFile(StreamWriter writer, string chr, int readLength, char strand,
-                                           int[] hitStartPositions, int[] countAtEachPosition)
+        /// <summary>
+        /// Output BED formatted data for one strand of a chromosome. N.B.: Positions/counts MUST be sorted on position!
+        /// </summary>
+        /// <param name="writer">output file handler</param>
+        /// <param name="chr">id of chromosome</param>
+        /// <param name="readLength">average read length</param>
+        /// <param name="strand"></param>
+        /// <param name="sortedHitStartPositions">SORTED! start positions of reads on chromomsome</param>
+        /// <param name="countAtEachSortedPosition">number of reads at every corresponding SORTED start position</param>
+        private static void WriteToBedFile(StreamWriter writer, string chr, int readLength, char strand,
+                                           int[] sortedHitStartPositions, int[] countAtEachSortedPosition)
         {
-            int[] copyOfPositions = (int[])hitStartPositions.Clone();
-            int[] copyOfCounts = (int[])countAtEachPosition.Clone();
-            Array.Sort(copyOfPositions, copyOfCounts);
-            for (int i = 0; i < copyOfPositions.Length; i++)
+            for (int i = 0; i < sortedHitStartPositions.Length; i++)
             {
-                string id = string.Format("{0}{1}{2}", chr, strand, copyOfPositions[i]);
-                writer.WriteLine("chr{0}\t{1}\t{2}\t{3}\t{4}\t{5}", chr, copyOfPositions[i], copyOfPositions[i] + readLength - 1,
-                    id, copyOfCounts[i], strand);
+                string id = string.Format("{0}{1}{2}", chr, strand, sortedHitStartPositions[i]);
+                writer.WriteLine("chr{0}\t{1}\t{2}\t{3}\t{4}\t{5}", chr, sortedHitStartPositions[i], sortedHitStartPositions[i] + readLength - 1,
+                    id, countAtEachSortedPosition[i], strand);
             }
         }
 

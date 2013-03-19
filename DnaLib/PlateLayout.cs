@@ -88,6 +88,8 @@ namespace Linnarsson.Dna
                     for (int colIdx = 0; colIdx < fields.Length; colIdx++)
                         if (colIdx != sampleIdIdx && colIdx != speciesIdIdx)
                             otherFields.Add(fields[colIdx]);
+                    while (otherFields.Count + 2 < annotationIdx)
+                        otherFields.Add("");
                     AnnotationsBySampleId[sampleId] = otherFields.ToArray();
                 }
                 line = reader.ReadLine();

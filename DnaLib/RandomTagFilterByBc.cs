@@ -88,7 +88,7 @@ namespace Linnarsson.Strt
                 tagItem.Clear();
         }
 
-        private void AddToWiggle()
+/*        private void AddToWiggleOld()
         {
             if (wiggleFw == null) return;
             int[] positions, molCounts, readCounts;
@@ -96,6 +96,26 @@ namespace Linnarsson.Strt
             wiggleFw.AddCounts(positions, molCounts, readCounts);
             GetDistinctPositionsAndCounts('-', null, out positions, out molCounts, out readCounts);
             wiggleRev.AddCounts(positions, molCounts, readCounts);
+        }*/
+
+        public void AddToWiggle()
+        {
+            if (wiggleFw == null) return;
+            foreach (KeyValuePair<int, TagItem> codedPair in tagItems)
+            {
+                int numReads = codedPair.Value.GetNumReads();
+                if (numReads > 0)
+                {
+                    int hitStartPos = codedPair.Key >> 1;
+                    int nMols = codedPair.Value.GetNumMolecules();
+                    if (Props.props.LogMode && (hitStartPos % 76904040) < 40)
+                        Console.WriteLine("ChrTagData.AddToWiggle() hitStartPos={0} nReads={1} nMols={2}", hitStartPos, numReads, nMols);
+                    if ((codedPair.Key & 1) == 0)
+                        wiggleFw.AddCount(hitStartPos, numReads, nMols);
+                    else
+                        wiggleRev.AddCount(hitStartPos, numReads, nMols);
+                }
+            }
         }
 
         public Wiggle GetWiggle(char strand)
@@ -201,6 +221,9 @@ namespace Linnarsson.Strt
             {
                 readProfile = t.GetReadCountsByRndTag();
                 molCount = t.GetNumMolecules();
+                if (Props.props.LogMode && pos == 76904099)
+                    Console.WriteLine("ChrTagData.GetReadCounts() MolCount={0}", molCount);
+
             }
             else
             {
@@ -254,6 +277,9 @@ namespace Linnarsson.Strt
                     readCountAtEachPosition[p] = numReads;
                     molCountAtEachPosition[p] = codedPair.Value.GetNumMolecules();
                     positions[p++] = codedPair.Key >> 1;
+                    if (Props.props.LogMode && positions[p-1] == 76904099)
+                        Console.WriteLine("ChrTagData.GetDistinctPositionsAndCounts() MolCount={0}", molCountAtEachPosition[p - 1]);
+
                 }
             }
             Array.Resize(ref positions, p);
@@ -261,6 +287,10 @@ namespace Linnarsson.Strt
             Array.Resize(ref readCountAtEachPosition, p);
         }
 
+        internal int TagItemCount()
+        {
+            return tagItems.Count;
+        }
     }
 
     public class RandomTagFilterByBc
@@ -329,7 +359,9 @@ namespace Linnarsson.Strt
             foreach (ChrTagData chrTagData in chrTagDatas.Values)
             {
                 if (nRndTags > 1)
+                {
                     FinishBarcodeWRndTags(chrTagData);
+                }
                 chrTagData.FinishBarcode();
             }
         }
@@ -419,6 +451,14 @@ namespace Linnarsson.Strt
             foreach (ChrTagData chrTagData in chrTagDatas.Values)
                 nAllChr += chrTagData.GetNumDistinctMappings();
             return nAllChr;
+        }
+
+        public int TagItemCount()
+        {
+            int n = 0;
+            foreach (ChrTagData chrTagData in chrTagDatas.Values)
+                n += chrTagData.TagItemCount();
+            return n;
         }
     }
 }

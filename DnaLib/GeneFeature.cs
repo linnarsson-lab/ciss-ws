@@ -15,8 +15,6 @@ namespace Linnarsson.Dna
 
     public class GeneFeature : LocusFeature, TranscriptFeature
     {
-        public readonly static int LocusProfileBinSize = 50; // Move to Props
-
         public readonly static string pseudoGeneIndicator = "_p";
         public readonly static string altLocusIndicator = "_loc";
         public readonly static string nonUTRExtendedIndicator = variantIndicator + "Original";

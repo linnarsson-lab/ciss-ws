@@ -12,49 +12,27 @@ namespace Linnarsson.Dna
     /// </summary>
     public class Wiggle
     {
-        /// <summary>
-        /// Total counts (all barcodes) of molecules for each hit start position on one strand of the chromosome
-        /// </summary>
-        private SortedDictionary<int, int> molWiggle = new SortedDictionary<int, int>();
-        /// <summary>
-        /// Total counts (all barcodes) of reads for each hit start position on one strand of the chromosome
-        /// </summary>
-        private SortedDictionary<int, int> readWiggle = new SortedDictionary<int, int>();
+        private static readonly int readShift = 12;
+        private static uint molMask = (uint)(1 << readShift) - 1;
 
         /// <summary>
-        /// Add (after every barcode) the molecule and read counts at all hit positions
+        /// Total counts (all barcodes) of reads and molecules for each hit start position on one strand of the chromosome
+        /// Read count is shifted up readShift bits, and molecule count is kept in lower half.
+        /// Does not handle overflow currently.
         /// </summary>
-        /// <param name="hitStartPositions">Array of hit start positions</param>
-        /// <param name="molCounts">Corresponding molecule counts</param>
-        /// <param name="readCounts">Corresponding read counts</param>
-        public void AddCounts(int[] hitStartPositions, int[] molCounts, int[] readCounts)
-        {
-            for (int i = 0; i < hitStartPositions.Length; i++)
-            {
-                int hitStartPos = hitStartPositions[i];
-                if (readCounts[i] > 0)
-                    AddCount(readWiggle, hitStartPos, readCounts[i]);
-                if (molCounts[i] > 0)
-                    AddCount(molWiggle, hitStartPos, molCounts[i]);
-            }
-        }
+        private Dictionary<int, uint> wiggle = new Dictionary<int, uint>();
 
-        private void AddCount(SortedDictionary<int, int> wData, int hitStartPos, int count)
+        public void AddCount(int hitStartPos, int nReads, int nMols)
         {
-            if (!wData.ContainsKey(hitStartPos))
-                wData[hitStartPos] = count;
+            if (!wiggle.ContainsKey(hitStartPos))
+                wiggle[hitStartPos] = ((uint)nReads << readShift) | (uint)nMols;
             else
-                wData[hitStartPos] += count;
+                wiggle[hitStartPos] += ((uint)nReads << readShift) | (uint)nMols;
         }
 
-        /// <summary>
-        /// Add some reads at a hit position
-        /// </summary>
-        /// <param name="readStartPos"></param>
-        /// <param name="count"></param>
-        public void AddReads(int readStartPos, int count)
+        public void AddARead(int readStartPos)
         {
-            AddCount(readWiggle, readStartPos, count);
+            AddCount(readStartPos, 1, 0);
         }
 
         /// <summary>
@@ -67,38 +45,32 @@ namespace Linnarsson.Dna
         /// <returns>Number of reads covering position</returns>
         public int GetReadCount(int pos, int averageReadLength, int margin)
         {
-            return GetCount(readWiggle, pos, averageReadLength, margin);
-        }
-        private int GetCount(SortedDictionary<int, int> wData, int pos, int averageReadLength, int margin)
-        {
-            int count = 0;
+            int nReads = 0;
             for (int p = pos - averageReadLength + 1 + margin; p <= pos - margin; p++)
-                if (wData.ContainsKey(p)) count += wData[p];
-            return count;
+                if (wiggle.ContainsKey(p)) nReads += (int)(wiggle[p] >> readShift);
+            return nReads;
         }
 
         /// <summary>
-        /// Get ordered hit start positions and respective read count for all reads added to the Wiggle instance
+        /// Get sorted hit start positions and respective read count for all reads added to the Wiggle instance
         /// </summary>
-        /// <param name="sortedPositions">Ordered hit start positions</param>
+        /// <param name="sortedHitStartPositions">Ordered hit start positions</param>
         /// <param name="countAtEachSortedPosition"></param>
-        public void GetReadPositionsAndCounts(out int[] sortedPositions, out int[] countAtEachSortedPosition)
+        public void GetPositionsAndCounts(out int[] sortedHitStartPositions, out int[] countAtEachSortedPosition, bool byRead)
         {
-            sortedPositions = readWiggle.Keys.ToArray();
-            countAtEachSortedPosition = readWiggle.Values.ToArray();
+            sortedHitStartPositions = wiggle.Keys.ToArray();
+            Array.Sort(sortedHitStartPositions);
+            if (byRead)
+                countAtEachSortedPosition = Array.ConvertAll(sortedHitStartPositions, (p => (int)(wiggle[p] >> readShift)));
+            else
+                countAtEachSortedPosition = Array.ConvertAll(sortedHitStartPositions, (p => (int)(wiggle[p] & molMask)));
         }
 
-        public void WriteMolWiggle(StreamWriter writer, string chr, char strand, int averageReadLength, int chrLength)
+        public void WriteWiggle(StreamWriter writer, string chr, char strand, int averageReadLength, int chrLength, bool byRead)
         {
-            int[] sortedHitStartPositions = molWiggle.Keys.ToArray();
-            int[] countAtEachSortedPosition = molWiggle.Values.ToArray();
-            WriteToWigFile(writer, chr, averageReadLength, strand, chrLength, sortedHitStartPositions, countAtEachSortedPosition);
-        }
-        public void WriteReadWiggle(StreamWriter writer, string chr, char strand, int averageReadLength, int chrLength)
-        {
-            int[] sortedHitStartPositions = readWiggle.Keys.ToArray();
-            int[] countAtEachSortedPosition = readWiggle.Values.ToArray();
-            WriteToWigFile(writer, chr, averageReadLength, strand, chrLength, sortedHitStartPositions, countAtEachSortedPosition);
+            int[] positions, counts;
+            GetPositionsAndCounts(out positions, out counts, byRead);
+            WriteToWigFile(writer, chr, averageReadLength, strand, chrLength, positions, counts);
         }
 
         /// <summary>
@@ -141,18 +113,11 @@ namespace Linnarsson.Dna
             }
         }
 
-        public void WriteReadBed(StreamWriter writer, string chr, char strand, int averageReadLength)
+        public void WriteBed(StreamWriter writer, string chr, char strand, int averageReadLength, bool byRead)
         {
-            int[] sortedHitStartPositions = readWiggle.Keys.ToArray();
-            int[] countAtEachSortedPosition = readWiggle.Values.ToArray();
-            WriteToBedFile(writer, chr, averageReadLength, strand, sortedHitStartPositions, countAtEachSortedPosition);
-        }
-
-        public void WriteMolBed(StreamWriter writer, string chr, char strand, int averageReadLength)
-        {
-            int[] sortedHitStartPositions = molWiggle.Keys.ToArray();
-            int[] countAtEachSortedPosition = molWiggle.Values.ToArray();
-            WriteToBedFile(writer, chr, averageReadLength, strand, sortedHitStartPositions, countAtEachSortedPosition);
+            int[] positions, counts;
+            GetPositionsAndCounts(out positions, out counts, byRead);
+            WriteToBedFile(writer, chr, averageReadLength, strand, positions, counts);
         }
 
         /// <summary>
@@ -169,6 +134,8 @@ namespace Linnarsson.Dna
         {
             for (int i = 0; i < sortedHitStartPositions.Length; i++)
             {
+                if (countAtEachSortedPosition[i] == 0)
+                    continue;
                 string id = string.Format("{0}{1}{2}", chr, strand, sortedHitStartPositions[i]);
                 writer.WriteLine("chr{0}\t{1}\t{2}\t{3}\t{4}\t{5}", chr, sortedHitStartPositions[i], sortedHitStartPositions[i] + readLength - 1,
                     id, countAtEachSortedPosition[i], strand);

@@ -34,6 +34,8 @@ namespace Linnarsson.Dna
             this.m_Strand = strand;
             this.m_TagItem = tagItem;
             cachedMolCount = m_TagItem.GetNumMolecules();
+            if (Props.props.LogMode && hitStartPos == 76904099)
+                Console.WriteLine("MappedTagItem.Update() MolCount={0}", cachedMolCount);
             cachedReadCount = m_TagItem.GetNumReads();
             cachedEstTrueMolCount = EstimateFromSaturatedLabels(cachedMolCount);
             cachedSNPCounts = m_TagItem.GetTotalSNPCounts(m_HitStartPos);
@@ -140,7 +142,7 @@ namespace Linnarsson.Dna
         /// <summary>
         /// List of the genes that share this TagItem's counts. (If some reads are SNPed, the sharing genes may be not belong to all reads.)
         /// </summary>
-        public Dictionary<IFeature, int> sharingGenes = new Dictionary<IFeature, int>();
+        public Dictionary<IFeature, int> sharingGenes; // = new Dictionary<IFeature, int>();
 
         /// <summary>
         /// At each offset relative to the 5' pos on chr of the reads' alignment where some SNPs appear,
@@ -166,6 +168,8 @@ namespace Linnarsson.Dna
         {
             this.hasAltMappings = hasAltMappings;
             this.typeOfAnnotation = (short)AnnotType.NOHIT;
+            if (Props.props.ShowTranscriptSharingGenes)
+                sharingGenes = new Dictionary<IFeature, int>();
         }
 
         public override string ToString()
@@ -213,7 +217,8 @@ namespace Linnarsson.Dna
             typeOfAnnotation = (short)AnnotType.NOHIT;
             readCountsByRndTag = null;
             totalReadCount = 0;
-            sharingGenes.Clear();
+            if (sharingGenes != null)
+                sharingGenes.Clear();
             if (SNPCountsByOffset != null)
                 foreach (SNPCountsByRndTag counts in SNPCountsByOffset.Values)
                     if (counts != null)

@@ -12,7 +12,7 @@ namespace Linnarsson.Dna
     /// </summary>
     public class Wiggle
     {
-        private static readonly int readShift = 12;
+        private static readonly int readShift = 14; // Can handle up to 16k molecules and 256k reads per position.
         private static uint molMask = (uint)(1 << readShift) - 1;
 
         /// <summary>

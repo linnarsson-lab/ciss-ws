@@ -14,20 +14,28 @@ namespace Linnarsson.Dna
     {
         private static readonly int readShift = 14; // Can handle up to 16k molecules and 256k reads per position.
         private static uint molMask = (uint)(1 << readShift) - 1;
+        private static uint maxReads = (uint)(1 << (32 - readShift)) - 1;
 
         /// <summary>
         /// Total counts (all barcodes) of reads and molecules for each hit start position on one strand of the chromosome
         /// Read count is shifted up readShift bits, and molecule count is kept in lower half.
-        /// Does not handle overflow currently.
         /// </summary>
         private Dictionary<int, uint> wiggle = new Dictionary<int, uint>();
 
         public void AddCount(int hitStartPos, int nReads, int nMols)
         {
             if (!wiggle.ContainsKey(hitStartPos))
-                wiggle[hitStartPos] = ((uint)nReads << readShift) | (uint)nMols;
+                wiggle[hitStartPos] = (Math.Min(maxReads, (uint)nReads) << readShift) | Math.Min(molMask, (uint)nMols);
+                // Old unchecked version:
+                // wiggle[hitStartPos] = ((uint)nReads << readShift) | (uint)nMols;
             else
-                wiggle[hitStartPos] += ((uint)nReads << readShift) | (uint)nMols;
+            {
+                uint newReads = Math.Min(maxReads, (uint)nReads + (wiggle[hitStartPos] >> readShift));
+                uint newMols = Math.Min(molMask, (uint)nMols + (wiggle[hitStartPos] & molMask));
+                wiggle[hitStartPos] = (newReads << readShift) | newMols;
+                // Old unchecked version:
+                // wiggle[hitStartPos] += ((uint)nReads << readShift) | (uint)nMols;
+            }
         }
 
         public void AddARead(int readStartPos)

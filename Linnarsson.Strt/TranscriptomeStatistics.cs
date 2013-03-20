@@ -328,6 +328,8 @@ namespace Linnarsson.Strt
                 AddToGeneReadsPerMoleculeHistograms();
             MakeGeneRndTagProfiles();
             MakeBcWigglePlots();
+            if (Props.props.LogMode)
+                Console.WriteLine("Calling TranscriptomeStatistics.FinishBarcode() Bc={0} #TagItems={1}", currentBcIdx, randomTagFilter.TagItemCount());
             randomTagFilter.FinishBarcode();
         }
 
@@ -400,6 +402,8 @@ namespace Linnarsson.Strt
             nMappingsByBarcode[currentBcIdx] += molCount;
             bool someAnnotationHit = false;
             bool someExonHit = false;
+            if (Props.props.LogMode && item.hitStartPos == 76904099)
+                Console.WriteLine("TranscriptomeStatistics.Annotate() MolCount={0}", molCount);
             exonHitFeatures.Clear();
             foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.strand, item.HitMidPos))
             {
@@ -1264,7 +1268,7 @@ namespace Linnarsson.Strt
             Linnarsson.Mathematics.Sort.HeapSort(totalCountsByGene, validBcCountsByGene);
             validBcCountsByGene.Reverse(); // Get indices of genes in order of most->least expressed
             int nGenes = Math.Min(validBcCountsByGene.Count - 1, nPairs);
-            double[] CVs = new double[nGenes];
+            List<double> CVs = new List<double>(nGenes);
             int minValidWellCount = nAnnotatedMappings / genomeBcIndexes.Length / 20;
             int[] usefulBcIndexes = genomeBcIndexes.Where(bcIdx => totalsByBarcode[bcIdx] > minValidWellCount).ToArray();
             if (usefulBcIndexes.Length < 3)
@@ -1275,9 +1279,11 @@ namespace Linnarsson.Strt
                 List<double> normedBcValues = new List<double>();
                 foreach (int bcIdx in usefulBcIndexes)
                     normedBcValues.Add(bcodeCounts[bcIdx] / (double)totalsByBarcode[bcIdx]); // Normalized value
-                CVs[geneIdx] = DescriptiveStatistics.CV(normedBcValues.ToArray());
+                double cv = DescriptiveStatistics.CV(normedBcValues.ToArray());
+                if (!double.IsNaN(cv) && !double.IsInfinity(cv))
+                    CVs.Add(cv);
             }
-            return CVs;
+            return (CVs.Count > 2)? CVs.ToArray() : null;
         }
 
         private static void OutputCVBars(StreamWriter xmlFile, int nPairs, int nBins, double[] CVs)
@@ -1654,7 +1660,7 @@ namespace Linnarsson.Strt
                 {
                     string chr = data.Key;
                     if (!StrtGenome.IsSyntheticChr(chr) && Annotations.ChromosomeLengths.ContainsKey(chr))
-                        data.Value.GetWiggle(strand).WriteReadWiggle(readWriter, chr, strand, averageReadLength, Annotations.ChromosomeLengths[chr]);
+                        data.Value.GetWiggle(strand).WriteWiggle(readWriter, chr, strand, averageReadLength, Annotations.ChromosomeLengths[chr], true);
                 }
             }
             if (barcodes.HasRandomBarcodes)
@@ -1667,7 +1673,7 @@ namespace Linnarsson.Strt
                     {
                         string chr = data.Key;
                         if (!StrtGenome.IsSyntheticChr(chr) && Annotations.ChromosomeLengths.ContainsKey(chr))
-                            data.Value.GetWiggle(strand).WriteMolWiggle(molWriter, chr, strand, averageReadLength, Annotations.ChromosomeLengths[chr]);
+                            data.Value.GetWiggle(strand).WriteWiggle(molWriter, chr, strand, averageReadLength, Annotations.ChromosomeLengths[chr], false);
                     }
                 }
             }
@@ -1684,12 +1690,12 @@ namespace Linnarsson.Strt
                     string chr = data.Key;
                     if (!StrtGenome.IsSyntheticChr(chr) && Annotations.ChromosomeLengths.ContainsKey(chr))
                     {
-                        data.Value.GetWiggle('+').WriteReadBed(readWriter, chr, '+', averageReadLength);
-                        data.Value.GetWiggle('-').WriteReadBed(readWriter, chr, '-', averageReadLength);
+                        data.Value.GetWiggle('+').WriteBed(readWriter, chr, '+', averageReadLength, true);
+                        data.Value.GetWiggle('-').WriteBed(readWriter, chr, '-', averageReadLength, true);
                         if (molWriter != null)
                         {
-                            data.Value.GetWiggle('+').WriteMolBed(molWriter, chr, '+', averageReadLength);
-                            data.Value.GetWiggle('-').WriteMolBed(molWriter, chr, '-', averageReadLength);
+                            data.Value.GetWiggle('+').WriteBed(molWriter, chr, '+', averageReadLength, false);
+                            data.Value.GetWiggle('-').WriteBed(molWriter, chr, '-', averageReadLength, false);
                         }
                     }
                 }
@@ -1744,9 +1750,9 @@ namespace Linnarsson.Strt
                     if (StrtGenome.IsSyntheticChr(chr))
                         continue;
                     int[] positions, counts;
-                    data.Value.GetWiggle('+').GetReadPositionsAndCounts(out positions, out counts);
+                    data.Value.GetWiggle('+').GetPositionsAndCounts(out positions, out counts, true);
                     FindHotspots(writer, chr, '+', positions, counts);
-                    data.Value.GetWiggle('-').GetReadPositionsAndCounts(out positions, out counts);
+                    data.Value.GetWiggle('-').GetPositionsAndCounts(out positions, out counts, true);
                     FindHotspots(writer, chr, '-', positions, counts);
                 }
             }

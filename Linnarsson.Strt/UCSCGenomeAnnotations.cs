@@ -1111,13 +1111,13 @@ namespace Linnarsson.Strt
                 file.WriteLine("Binned number of hits to transcripts counting from 5' end of transcript");
                 file.Write("Gene\tTrLen\tTotHits\tExonHits\tFrom5'-");
                 for (int i = 0; i < 100; i++)
-                    file.Write("{0}\t", i * GeneFeature.LocusProfileBinSize);
+                    file.Write("{0}\t", i * props.LocusProfileBinSize);
                 file.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     if (!gf.IsExpressed()) continue;
                     file.Write("{0}\t{1}\t{2}\t{3}\t", gf.Name, gf.GetTranscriptLength(), gf.GetTotalHits(), gf.GetTranscriptHits());
-                    int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, GeneFeature.LocusProfileBinSize,
+                    int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, props.LocusProfileBinSize,
                                                                                          props.DirectionalReads, averageReadLen);
                     foreach (int c in trBinCounts)
                         file.Write("{0}\t", c);
@@ -1136,8 +1136,8 @@ namespace Linnarsson.Strt
             {
                 file.WriteLine("Binned number of hits to either strand of gene loci (including flanks) relative to 5' end of gene:");
                 file.Write("Gene\tTrscrDir\tLen\tChrStrand\tTotHits\t5'End->");
-                for (int i = 0; i < 100000 / GeneFeature.LocusProfileBinSize; i++)
-                    file.Write("{0}bp\t", i * GeneFeature.LocusProfileBinSize);
+                for (int i = 0; i < 100000 / props.LocusProfileBinSize; i++)
+                    file.Write("{0}bp\t", i * props.LocusProfileBinSize);
                 file.WriteLine();
                 int histoSize = 0;
                 foreach (GeneFeature gf in geneFeatures.Values)
@@ -1156,7 +1156,7 @@ namespace Linnarsson.Strt
         {
             char chrStrand = ((gf.Strand == '+') ^ sense) ? '-' : '+';
             file.Write("{0}\t{1}\t{2}\t{3}\t{4}", gf.Name, gf.Strand, gf.Length, chrStrand, gf.GetTotalHits(sense));
-            int maxBin = CompactGenePainter.MakeLocusHistogram(gf, chrStrand, GeneFeature.LocusProfileBinSize, ref histo);
+            int maxBin = CompactGenePainter.MakeLocusHistogram(gf, chrStrand, Props.props.LocusProfileBinSize, ref histo);
             for (int c = 0; c < maxBin; c++)
                 file.Write("\t{0}", histo[c]);
             file.WriteLine();

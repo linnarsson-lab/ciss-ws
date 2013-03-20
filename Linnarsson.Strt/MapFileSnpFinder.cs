@@ -36,7 +36,7 @@ namespace Linnarsson.Strt
         /// <param name="hitLen"></param>
         public void AddRead(int hitStartPos, int hitLen)
         {
-            wiggle.AddReads(hitStartPos, 1);
+            wiggle.AddARead(hitStartPos);
             totalsSet = false;
         }
         /// <summary>

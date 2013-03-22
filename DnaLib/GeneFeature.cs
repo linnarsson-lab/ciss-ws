@@ -230,7 +230,6 @@ namespace Linnarsson.Dna
             m_LocusHits = new int[1000];
             locusHitIdx = 0;
             bcSNPCountsByRealChrPos = new SortedDictionary<int, SNPCountsByBarcode>();
-            sharingGenes = new Dictionary<IFeature, int>();
             SavedCAPPos = (strand == '+') ? exonStarts[0] : exonEnds[exonEnds.Length - 1];
         }
 
@@ -536,13 +535,15 @@ namespace Linnarsson.Dna
             }
             HitsByAnnotType[annotType] += item.MolCount;
             NonMaskedHitsByAnnotType[annotType] += item.MolCount; // Count all EXON/SPLC hits for counter-oriented genes in statistics
-            if (Props.props.ShowTranscriptSharingGenes)
+            if (item.tagItem.sharingGenes != null)
                 AddSharingGenes(item);
             return annotType;
         }
 
         private void AddSharingGenes(MappedTagItem item)
         {
+            if (sharingGenes == null)
+                sharingGenes = new Dictionary<IFeature, int>();
             foreach (KeyValuePair<IFeature, int> pair in item.tagItem.sharingGenes)
                 if (pair.Key != this)
                 {

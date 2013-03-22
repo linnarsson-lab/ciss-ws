@@ -142,7 +142,7 @@ namespace Linnarsson.Dna
         /// <summary>
         /// List of the genes that share this TagItem's counts. (If some reads are SNPed, the sharing genes may be not belong to all reads.)
         /// </summary>
-        public Dictionary<IFeature, int> sharingGenes; // = new Dictionary<IFeature, int>();
+        public Dictionary<IFeature, int> sharingGenes;
 
         /// <summary>
         /// At each offset relative to the 5' pos on chr of the reads' alignment where some SNPs appear,
@@ -168,8 +168,6 @@ namespace Linnarsson.Dna
         {
             this.hasAltMappings = hasAltMappings;
             this.typeOfAnnotation = (short)AnnotType.NOHIT;
-            if (Props.props.ShowTranscriptSharingGenes)
-                sharingGenes = new Dictionary<IFeature, int>();
         }
 
         public override string ToString()
@@ -247,12 +245,14 @@ namespace Linnarsson.Dna
         /// <param name="sharingRealFeatures"></param>
         public void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures)
         {
+            if (sharingGenes == null)
+                sharingGenes = new Dictionary<IFeature, int>();
             foreach (IFeature sGf in sharingRealFeatures.Keys)
             {
-                if (this.sharingGenes.ContainsKey(sGf))
-                    this.sharingGenes[sGf] += 1;
+                if (sharingGenes.ContainsKey(sGf))
+                    sharingGenes[sGf] += 1;
                 else
-                    this.sharingGenes[sGf] = 1;
+                    sharingGenes[sGf] = 1;
             }
         }
 

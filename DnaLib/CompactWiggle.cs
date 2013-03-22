@@ -25,13 +25,17 @@ namespace Linnarsson.Dna
         public void AddCount(int hitStartPos, int nReads, int nMols)
         {
             if (!wiggle.ContainsKey(hitStartPos))
+            {
                 wiggle[hitStartPos] = (Math.Min(maxReads, (uint)nReads) << readShift) | Math.Min(molMask, (uint)nMols);
                 // Old unchecked version:
                 // wiggle[hitStartPos] = ((uint)nReads << readShift) | (uint)nMols;
+            }
             else
             {
-                uint newReads = Math.Min(maxReads, (uint)nReads + (wiggle[hitStartPos] >> readShift));
-                uint newMols = Math.Min(molMask, (uint)nMols + (wiggle[hitStartPos] & molMask));
+                uint newReads = (uint)nReads + (wiggle[hitStartPos] >> readShift);
+                if (newReads > maxReads) newReads = maxReads;
+                uint newMols = (uint)nMols + (wiggle[hitStartPos] & molMask);
+                if (newMols > molMask) newMols = molMask;
                 wiggle[hitStartPos] = (newReads << readShift) | newMols;
                 // Old unchecked version:
                 // wiggle[hitStartPos] += ((uint)nReads << readShift) | (uint)nMols;

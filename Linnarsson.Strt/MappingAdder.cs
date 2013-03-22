@@ -21,6 +21,7 @@ namespace Linnarsson.Strt
         private RandomTagFilterByBc randomTagFilter;
         private int[] nUniqueByBarcode;
         private int[] nDuplicatesByBarcode;
+        private Dictionary<IFeature, object> sharingRealFeatures; // Used to tell which features compete for multireads
 
         /// <summary>
         /// Total number of reads that have at least some unique position, strand, rndTag, barcode combination.
@@ -82,6 +83,7 @@ namespace Linnarsson.Strt
         {
             if (Props.props.ShowTranscriptSharingGenes)
             {
+                sharingRealFeatures = new Dictionary<IFeature, object>(Props.props.MaxAlternativeMappings * 2);
                 if (Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping)
                     addMappingToTranscripts = AddToMost5PrimeExonMappingWSharedGenes;
                 else
@@ -178,7 +180,7 @@ namespace Linnarsson.Strt
                         return m;
             }
             // End new
-            Dictionary<IFeature, object> sharingRealFeatures = new Dictionary<IFeature, object>();
+            sharingRealFeatures.Clear();
             foreach (MultiReadMapping m in mrm.IterMappings())
             {
                 bool isTranscript = false;
@@ -205,7 +207,7 @@ namespace Linnarsson.Strt
         /// <returns>a non-exon mapping that should be added to when no exon mapping could be added to</returns>
         private MultiReadMapping AddToMost5PrimeExonMappingWSharedGenes(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping)
         {
-            Dictionary<IFeature, object> sharingRealFeatures = new Dictionary<IFeature, object>();
+            sharingRealFeatures.Clear();
             hasSomeTrMapping = false;
             hasSomeNewMapping = false;
             MultiReadMapping bestMapping = null;

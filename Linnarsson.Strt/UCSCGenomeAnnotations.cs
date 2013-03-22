@@ -367,7 +367,8 @@ namespace Linnarsson.Strt
                 WriteTranscriptProfiles(fileNameBase);
                 WriteTranscriptHistograms(fileNameBase, averageReadLen);
             }
-            WriteSharedGenes(fileNameBase);
+            if (props.ShowTranscriptSharingGenes)
+                WriteSharedGenes(fileNameBase);
             WritePotentialErronousAnnotations(fileNameBase);
             WriteSplicesByGeneLocus(fileNameBase);
             if (props.AnalyzeSpliceHitsByBarcode)
@@ -710,6 +711,8 @@ namespace Linnarsson.Strt
                 trShareFile.WriteLine("Feature\t#Assigned Reads\tCompetes with genes...");
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
+                    if (gf.sharingGenes == null)
+                        continue;
                     List<string> sGfGroup = new List<string>();
                     foreach (KeyValuePair<IFeature, int> pair in gf.sharingGenes)
                     {

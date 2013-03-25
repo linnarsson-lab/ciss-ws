@@ -38,6 +38,8 @@ namespace Linnarsson.Dna
                 Dictionary<char, string> totalOverflow = new Dictionary<char, string>(5);
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
+                    if (gf.bcSNPCountsByRealChrPos == null)
+                        continue;
                     int trLen = gf.GetTranscriptLength();
                     foreach (KeyValuePair<int, SNPCountsByBarcode> chrPosAndBcCounts in gf.bcSNPCountsByRealChrPos)
                     {

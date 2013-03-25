@@ -54,7 +54,9 @@ namespace Linnarsson.Dna
             string[] hFields = line.Split('\t');
             for (int colIdx = 0; colIdx < hFields.Length; colIdx++)
             {
-                string title = hFields[colIdx];
+                string title = hFields[colIdx].Trim();
+                if (title == "")
+                    title = "Column" + (colIdx + 1).ToString();
                 if (title.ToLower() == "sampleid") sampleIdIdx = colIdx;
                 else if (title.ToLower() == "species") speciesIdIdx = colIdx;
                 else AnnotationIndexes[title] = annotationIdx++;
@@ -88,7 +90,7 @@ namespace Linnarsson.Dna
                     for (int colIdx = 0; colIdx < fields.Length; colIdx++)
                         if (colIdx != sampleIdIdx && colIdx != speciesIdIdx)
                             otherFields.Add(fields[colIdx]);
-                    while (otherFields.Count + 2 < annotationIdx)
+                    while (otherFields.Count < annotationIdx)
                         otherFields.Add("");
                     AnnotationsBySampleId[sampleId] = otherFields.ToArray();
                 }

@@ -229,7 +229,6 @@ namespace Linnarsson.Dna
             NonMaskedHitsByAnnotType = new int[AnnotType.Count];
             m_LocusHits = new int[1000];
             locusHitIdx = 0;
-            bcSNPCountsByRealChrPos = new SortedDictionary<int, SNPCountsByBarcode>();
             SavedCAPPos = (strand == '+') ? exonStarts[0] : exonEnds[exonEnds.Length - 1];
         }
 
@@ -878,6 +877,8 @@ namespace Linnarsson.Dna
         {
             if (item.SNPCounts == null)
                 return;
+            if (bcSNPCountsByRealChrPos == null)
+                bcSNPCountsByRealChrPos = new SortedDictionary<int, SNPCountsByBarcode>();
             foreach (SNPCounter snpCounter in item.SNPCounts)
             {
                 int snpPosOnRealChr = item.splcToRealChrOffset + snpCounter.posOnChr;

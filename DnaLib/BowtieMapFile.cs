@@ -88,6 +88,8 @@ namespace Linnarsson.Dna
                 while (line != null)
                 {
                     fields = line.Split('\t');
+                    if (fields.Length < 8)
+                        throw new FormatException("Too few columns in bowtie map file " + file + ". Is the file truncated?");
                     char strand = fields[1][0];
                     if (!line.StartsWith(combinedReadId))
                     {
@@ -122,6 +124,8 @@ namespace Linnarsson.Dna
                 while (line != null)
                 {
                     fields = line.Split('\t');
+                    if (fields.Length < 8)
+                        throw new FormatException("Too few columns in bowtie map file " + file + ". Is the file truncated?");
                     char strand = fields[1][0];
                     mrm.Init(fields[0], fields[4].Length, fields[5], strand, int.Parse(fields[6]));
                     mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);

@@ -1603,6 +1603,8 @@ namespace Linnarsson.Strt
                 snpFile.WriteLine("#Gene\tChr\tmRNALeftChrPos\tSNPChrPos\tType\tRefNt\tTotal\tMut-A\tMut-C\tMut-G\tMut-T");
                 foreach (GeneFeature gf in Annotations.geneFeatures.Values)
                 {
+                    if (gf.bcSNPCountsByRealChrPos == null)
+                        continue;
                     string first = string.Format("{0}\t{1}\t{2}\t", gf.Name, gf.Chr, gf.Start);
                     foreach (KeyValuePair<int, SNPCountsByBarcode> chrPosAndBcCounts in gf.bcSNPCountsByRealChrPos)
                     {
@@ -1707,35 +1709,39 @@ namespace Linnarsson.Strt
         {
             if (Props.props.GenePaintIntervals == null || Props.props.GenePaintIntervals.Length == 0)
                 return;
-            using (StreamWriter paintWriter = (OutputPathbase + "_PaintedIntervals.tab").OpenWrite())
+            StreamWriter paintWriter = null;
+            string type = (barcodes.HasRandomBarcodes) ? "Molecule" : "Read";
+            foreach (string paintIvl in Props.props.GenePaintIntervals)
             {
-                string type = (barcodes.HasRandomBarcodes) ? "Molecule" : "Read";
-                paintWriter.WriteLine("Gene\tChr\tIvlStartPos\tStrand\tBcIdx\t{0} coverage at consecutive position in interval", type);
-                foreach (string paintIvl in Props.props.GenePaintIntervals)
+                string[] parts = paintIvl.Split(',');
+                if (parts.Length < 3)
+                    continue;
+                string geneName = parts[0];
+                int ivlStart, ivlEnd;
+                if (!int.TryParse(parts[1], out ivlStart) || !int.TryParse(parts[2], out ivlEnd) || ivlEnd <= ivlStart)
+                    continue;
+                foreach (GeneFeature gf in IterMatchingGeneFeatures(geneName))
                 {
-                    string[] parts = paintIvl.Split(',');
-                    if (parts.Length < 3)
+                    if (ivlStart > gf.End || ivlEnd < gf.Start)
                         continue;
-                    string geneName = parts[0];
-                    int ivlStart, ivlEnd;
-                    if (!int.TryParse(parts[1], out ivlStart) || !int.TryParse(parts[2], out ivlEnd) || ivlEnd <= ivlStart)
-                        continue;
-                    foreach (GeneFeature gf in IterMatchingGeneFeatures(geneName))
+                    if (paintWriter == null)
                     {
-                        if (ivlStart > gf.End || ivlEnd < gf.Start)
-                            continue;
-                        for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
-                        {
-                            int[] profile = CompactGenePainter.PaintHitsInInterval(gf,
-                                                    ivlStart, ivlEnd, bcIdx, MappedTagItem.AverageReadLen);
-                            paintWriter.Write("{0}\t{1}\t{2}\t{3}\t{4}", gf.Name, gf.Chr, ivlStart, gf.Strand, bcIdx);
-                            foreach (int v in profile)
-                                paintWriter.Write("\t{0}", v);
-                            paintWriter.WriteLine();
-                        }
+                        paintWriter = (OutputPathbase + "_PaintedIntervals.tab").OpenWrite();
+                        paintWriter.WriteLine("Gene\tChr\tIvlStartPos\tStrand\tBcIdx\t{0} coverage at consecutive position in interval", type);
+                    }
+                    for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                    {
+                        int[] profile = CompactGenePainter.PaintHitsInInterval(gf,
+                                                ivlStart, ivlEnd, bcIdx, MappedTagItem.AverageReadLen);
+                        paintWriter.Write("{0}\t{1}\t{2}\t{3}\t{4}", gf.Name, gf.Chr, ivlStart, gf.Strand, bcIdx);
+                        foreach (int v in profile)
+                            paintWriter.Write("\t{0}", v);
+                        paintWriter.WriteLine();
                     }
                 }
             }
+            if (paintWriter != null)
+                paintWriter.Close();
         }
 
         private void WriteHotspots()

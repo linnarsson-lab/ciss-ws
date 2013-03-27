@@ -656,6 +656,8 @@ namespace Linnarsson.Dna
                     if (line.Length > 0 && !line.StartsWith("#"))
                     {
                         string[] fields = line.Split('\t');
+                        if (fields.Length == 1)
+                            fields = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                         if (fields.Length != 2)
                             throw new BarcodeFileException("ERROR: Barcode file definition lines should be SampleId TAB Barcode:" + line);
                         string sampleId = fields[0];

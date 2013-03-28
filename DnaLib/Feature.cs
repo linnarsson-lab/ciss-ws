@@ -8,6 +8,7 @@ namespace Linnarsson.Dna
 {
     public class LocusFeature : IFeature
     {
+
         public readonly static string variantIndicator = "_v";
 
         public virtual IFeature RealFeature { get { return this; } }
@@ -118,5 +119,9 @@ namespace Linnarsson.Dna
             yield break;
         }
 
+        public int CompareTo(object obj)
+        {
+            return Name.CompareTo(((IFeature)obj).Name);
+        }
     }
 }

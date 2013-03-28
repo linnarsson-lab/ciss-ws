@@ -82,6 +82,10 @@ namespace Linnarsson.Dna
             return AnnotType.REPT; // return new MarkResult(AnnotType.REPT, this); // Do not care about orientation for repeats
         }
 
+        public int CompareTo(object obj)
+        {
+            return Name.CompareTo(((IFeature)obj).Name);
+        }
     }
 
     public struct RmskLine

@@ -6,7 +6,7 @@ using Linnarsson.Mathematics;
 
 namespace Linnarsson.Dna
 {
-    public interface IFeature
+    public interface IFeature : IComparable
     {
         IFeature RealFeature { get; }
         string Name { get; set; }

@@ -179,8 +179,6 @@ namespace CmdSilverBullet
                             }
                             if (argOffset >= args.Length)
                                 throw new ArgumentException("You must specify a project name!");
-                            if (props.UseMost5PrimeExonMapping && !props.DirectionalReads)
-                                Console.WriteLine("Note that 5primemap is not very reasonable together with non-directional reads.");
                             projectFolder = args[argOffset];
                             mapper = new StrtReadMapper(props);
                             if (speciesArg != "")

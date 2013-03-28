@@ -6,6 +6,10 @@ using System.IO;
 namespace Linnarsson.Dna
 {
     /// <summary>
+    /// Determines whether non-directional multireads will be assigned to all or one random of alternative transcripts
+    /// </summary>
+    public enum MultiReadMappingType { All, Random };
+    /// <summary>
     /// Used in the Props.ExtractionReadLimitType to allow a limit on the number of reads to extract from the .fq file(s)
     /// </summary>
     public enum ReadLimitType { None, TotalReads, TotalReadsPerBarcode, TotalValidReads, TotalValidReadsPerBarcode };
@@ -102,6 +106,7 @@ namespace Linnarsson.Dna
         public string SampleLayoutFileFormat = "{0}_SampleLayout.txt"; // Formatter for sample layout filenames. Arg0 is project name
         public int TotalNumberOfAddedSpikeMolecules = 2500;
         public bool UseMost5PrimeExonMapping = false; // if true, exonic multireads get only one single hit at the transcript with closest 5' end
+        public MultiReadMappingType DefaultExonMapping = MultiReadMappingType.All; // Decides non-directional multiread mapping method
         public bool ShowTranscriptSharingGenes = true;
         public bool SaveNonMappedReads = false; // Non-mapped reads from Bowtie may be stored in separate files
         public bool AnalyzeSeqUpstreamTSSite = false; // if true, will check if false reads were made by barcode matching in template

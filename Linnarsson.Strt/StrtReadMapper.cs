@@ -652,7 +652,7 @@ namespace Linnarsson.Strt
             return resultSubFolders;
         }
 
-        public static readonly string ANNOTATION_VERSION = "43";
+        public static readonly string ANNOTATION_VERSION = "44";
         /// <summary>
         /// First run Bowtie if .map files for selected build do not exist, then annotate the output
         /// </summary>

@@ -22,6 +22,8 @@ namespace Linnarsson.Strt
         private int[] nUniqueByBarcode;
         private int[] nDuplicatesByBarcode;
         private Dictionary<IFeature, object> sharingRealFeatures; // Used to tell which features compete for multireads
+        private MultiReadMapping[] mappingChoices; // Used to list the valid available exon mappings of a multireads
+        private Random rnd = new Random(DateTime.Now.Millisecond); // Used in random selection of multireads mappings
 
         /// <summary>
         /// Total number of reads that have at least some unique position, strand, rndTag, barcode combination.
@@ -57,6 +59,7 @@ namespace Linnarsson.Strt
             nDuplicatesByBarcode = new int[barcodes.AllCount];
             nUniqueByBarcode = new int[barcodes.AllCount];
             SetMapperMethod();
+            mappingChoices = new MultiReadMapping[Props.props.MaxAlternativeMappings];
         }
 
         /// <summary>
@@ -86,15 +89,19 @@ namespace Linnarsson.Strt
                 sharingRealFeatures = new Dictionary<IFeature, object>(Props.props.MaxAlternativeMappings * 2);
                 if (Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping)
                     addMappingToTranscripts = AddToMost5PrimeExonMappingWSharedGenes;
-                else
+                else if (Props.props.DefaultExonMapping == MultiReadMappingType.All)
                     addMappingToTranscripts = AddToAllExonMappingsWSharedGenes;
+                else
+                    addMappingToTranscripts = AddToARandomExonMappingsWSharedGenes;
             }
             else
             {
                 if (Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping)
                     addMappingToTranscripts = AddToMost5PrimeExonMapping;
-                else
+                else if (Props.props.DefaultExonMapping == MultiReadMappingType.All)
                     addMappingToTranscripts = AddToAllExonMappings;
+                else
+                    addMappingToTranscripts = AddToARandomExonMapping;
             }
         }
 
@@ -107,14 +114,12 @@ namespace Linnarsson.Strt
         {
             hasSomeTrMapping = false;
             hasSomeNewMapping = false;
-            // New: If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
             if (mrm.NMappings > 1)
-            {
+            { // If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
                 foreach (MultiReadMapping m in mrm.IterMappings())
                     if (Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
                         return m;
             }
-            // End new
             foreach (MultiReadMapping m in mrm.IterMappings())
             {
                 if (Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
@@ -172,15 +177,14 @@ namespace Linnarsson.Strt
         {
             hasSomeTrMapping = false;
             hasSomeNewMapping = false;
-            // New: If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
             if (mrm.NMappings > 1)
-            {
+            { // If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
                 foreach (MultiReadMapping m in mrm.IterMappings())
                     if (Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
                         return m;
             }
-            // End new
             sharingRealFeatures.Clear();
+            int nMrms = 0;
             foreach (MultiReadMapping m in mrm.IterMappings())
             {
                 bool isTranscript = false;
@@ -190,10 +194,12 @@ namespace Linnarsson.Strt
                     sharingRealFeatures[ivl.Feature.RealFeature] = null;
                 }
                 if (isTranscript)
-                {
-                    hasSomeTrMapping = true;
-                    hasSomeNewMapping |= randomTagFilter.Add(m, sharingRealFeatures);
-                }
+                    mappingChoices[nMrms++] = m;
+            }
+            for (int mrmIdx = 0; mrmIdx < nMrms; mrmIdx++)
+            {
+                hasSomeTrMapping = true;
+                hasSomeNewMapping |= randomTagFilter.Add(mappingChoices[mrmIdx], sharingRealFeatures);
             }
             return hasSomeTrMapping ? null : mrm[0];
         }
@@ -214,10 +220,9 @@ namespace Linnarsson.Strt
             int bestDist = int.MaxValue;
             foreach (MultiReadMapping m in mrm.IterMappings())
             {
-                // New: If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
+                // If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
                 if (mrm.NMappings > 1 && Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
                     return m;
-                // End new
                 foreach (FtInterval ivl in Annotations.IterExonAnnotations(m.Chr, m.Strand, m.HitMidPos))
                 {
                     sharingRealFeatures[ivl.Feature.RealFeature] = null;
@@ -236,5 +241,68 @@ namespace Linnarsson.Strt
             }
             return hasSomeTrMapping ? null : mrm[0];
         }
+
+        /// <summary>
+        /// Adds a multireads to one random of its possible transcript mappings
+        /// </summary>
+        /// <param name="mrm"></param>
+        /// <param name="hasSomeTrMapping"></param>
+        /// <param name="hasSomeNewMapping"></param>
+        /// <returns></returns>
+        private MultiReadMapping AddToARandomExonMapping(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping)
+        {
+            hasSomeTrMapping = false;
+            hasSomeNewMapping = false;
+            if (mrm.NMappings > 1)
+            { // If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
+                foreach (MultiReadMapping m in mrm.IterMappings())
+                    if (Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
+                        return m;
+            }
+            int nMrms = 0;
+            foreach (MultiReadMapping m in mrm.IterMappings())
+            {
+                if (Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
+                    mappingChoices[nMrms++] = m;
+            }
+            if (nMrms > 0)
+            {
+                hasSomeTrMapping = true;
+                hasSomeNewMapping = randomTagFilter.Add(mappingChoices[rnd.Next(nMrms)]);
+            }
+            return hasSomeTrMapping ? null : mrm[0];
+        }
+
+        private MultiReadMapping AddToARandomExonMappingsWSharedGenes(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping)
+        {
+            hasSomeTrMapping = false;
+            hasSomeNewMapping = false;
+            if (mrm.NMappings > 1)
+            { // If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
+                foreach (MultiReadMapping m in mrm.IterMappings())
+                    if (Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
+                        return m;
+            }
+            sharingRealFeatures.Clear();
+            int nMrms = 0;
+            foreach (MultiReadMapping m in mrm.IterMappings())
+            {
+                bool isTranscript = false;
+                foreach (FtInterval ivl in Annotations.IterExonAnnotations(m.Chr, m.Strand, m.HitMidPos))
+                {
+                    isTranscript = true;
+                    sharingRealFeatures[ivl.Feature.RealFeature] = null;
+                }
+                if (isTranscript)
+                    mappingChoices[nMrms++] = m;
+            }
+            if (nMrms > 0)
+            {
+                hasSomeTrMapping = true;
+                hasSomeNewMapping = randomTagFilter.Add(mappingChoices[rnd.Next(nMrms)], sharingRealFeatures);
+            }
+            return hasSomeTrMapping ? null : mrm[0];
+        }
+
     }
 }

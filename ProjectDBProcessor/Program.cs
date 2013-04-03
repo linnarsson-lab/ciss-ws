@@ -148,6 +148,8 @@ namespace ProjectDBProcessor
         {
             logWriter.WriteLine(DateTime.Now.ToString() + " Processing " + projDescr.projectName + " - " + projDescr.LaneCount + " lanes [DBId=" + projDescr.analysisId + "]...");
             logWriter.Flush();
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             DateTime d = DateTime.Now;
             if (projDescr.layoutFile != "")
             {
@@ -170,7 +172,9 @@ namespace ProjectDBProcessor
             }
             StrtReadMapper mapper = new StrtReadMapper(Props.props);
             mapper.Process(projDescr, logWriter);
-            logWriter.WriteLine(DateTime.Now.ToString() + " ..." + projDescr.projectName + " done after " + DateTime.Now.Subtract(d) + ".");
+            sw.Stop();
+            TimeSpan ts = sw.Elapsed;
+            logWriter.WriteLine(DateTime.Now.ToString() + " ..." + projDescr.projectName + " done after " + ts + ".");
             logWriter.Flush();
         }
 

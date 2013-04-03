@@ -123,7 +123,8 @@ namespace BkgBackuper
                         triedSomeCopy = true;
                         try
                         {
-                            DateTime startTime = DateTime.Now;
+                            Stopwatch sw = new Stopwatch();
+                            sw.Start();
                             new ProjectDB().SetBackupStatus(readFile, "copying");
                             string cmdArg = string.Format("{0} {1}", readFile, backupDest);
                             logWriter.WriteLine(DateTime.Now.ToString() + " scp " + cmdArg);
@@ -132,7 +133,8 @@ namespace BkgBackuper
                             if (cmd.ExitCode == 0)
                             {
                                 new ProjectDB().SetBackupStatus(readFile, "copied");
-                                TimeSpan timeTaken = DateTime.Now.Subtract(startTime);
+                                sw.Stop();
+                                TimeSpan timeTaken = sw.Elapsed;
                                 if (fileLen > 100000)
                                 {
                                     currentBytesPerHour = fileLen / timeTaken.TotalHours;

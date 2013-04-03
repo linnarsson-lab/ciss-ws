@@ -263,7 +263,6 @@ namespace Linnarsson.Strt
 
             foreach (Pair<int, List<string>> bcIdxAndMapFilePaths in IterMapFilesGroupedByBarcode(mapFilePaths))
             {
-                Console.Write(".");
                 ProcessBarcodeMapFiles(bcIdxAndMapFilePaths);
             }
             Console.WriteLine("\nIgnored {0} reads with > {1} alternative mappings.", nTooMultiMappingReads, Props.props.MaxAlternativeMappings);
@@ -284,7 +283,6 @@ namespace Linnarsson.Strt
             int currentBcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
             foreach (string mapFilePath in mapFilePaths)
             {
-                Console.Write(".");
                 mapFileName = Path.GetFileName(mapFilePath);
                 int bcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
                 if (bcIdx != currentBcIdx)
@@ -319,6 +317,7 @@ namespace Linnarsson.Strt
             currentBcIdx = bcIdxAndMapFilePaths.First;
             foreach (string mapFilePath in bcIdxAndMapFilePaths.Second)
             {
+                Console.Write(".");
                 if (File.Exists(mapFilePath))
                     AddReadMappingsToTagItems(mapFilePath);
             }

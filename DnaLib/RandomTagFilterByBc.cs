@@ -108,8 +108,6 @@ namespace Linnarsson.Strt
                 {
                     int hitStartPos = codedPair.Key >> 1;
                     int nMols = codedPair.Value.GetNumMolecules();
-                    if (Props.props.LogMode && (hitStartPos % 76904040) < 40)
-                        Console.WriteLine("ChrTagData.AddToWiggle() hitStartPos={0} nReads={1} nMols={2}", hitStartPos, numReads, nMols);
                     if ((codedPair.Key & 1) == 0)
                         wiggleFw.AddCount(hitStartPos, numReads, nMols);
                     else
@@ -221,9 +219,6 @@ namespace Linnarsson.Strt
             {
                 readProfile = t.GetReadCountsByRndTag();
                 molCount = t.GetNumMolecules();
-                if (Props.props.LogMode && pos == 76904099)
-                    Console.WriteLine("ChrTagData.GetReadCounts() MolCount={0}", molCount);
-
             }
             else
             {
@@ -277,9 +272,6 @@ namespace Linnarsson.Strt
                     readCountAtEachPosition[p] = numReads;
                     molCountAtEachPosition[p] = codedPair.Value.GetNumMolecules();
                     positions[p++] = codedPair.Key >> 1;
-                    if (Props.props.LogMode && positions[p-1] == 76904099)
-                        Console.WriteLine("ChrTagData.GetDistinctPositionsAndCounts() MolCount={0}", molCountAtEachPosition[p - 1]);
-
                 }
             }
             Array.Resize(ref positions, p);

@@ -34,8 +34,6 @@ namespace Linnarsson.Dna
             this.m_Strand = strand;
             this.m_TagItem = tagItem;
             cachedMolCount = m_TagItem.GetNumMolecules();
-            if (Props.props.LogMode && hitStartPos == 76904099)
-                Console.WriteLine("MappedTagItem.Update() MolCount={0}", cachedMolCount);
             cachedReadCount = m_TagItem.GetNumReads();
             cachedEstTrueMolCount = EstimateFromSaturatedLabels(cachedMolCount);
             cachedSNPCounts = m_TagItem.GetTotalSNPCounts(m_HitStartPos);

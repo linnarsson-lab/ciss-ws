@@ -401,8 +401,6 @@ namespace Linnarsson.Strt
             nMappingsByBarcode[currentBcIdx] += molCount;
             bool someAnnotationHit = false;
             bool someExonHit = false;
-            if (Props.props.LogMode && item.hitStartPos == 76904099)
-                Console.WriteLine("TranscriptomeStatistics.Annotate() MolCount={0}", molCount);
             exonHitFeatures.Clear();
             foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.strand, item.HitMidPos))
             {

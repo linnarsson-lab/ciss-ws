@@ -785,8 +785,8 @@ namespace Linnarsson.Strt
             annotations.Load();
             string outputPathbase = Path.Combine(outputFolder, projectName);
             TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props, outputPathbase);
-            string syntLevelFile = PathHandler.GetSyntLevelFile(projectFolder);
-            if (File.Exists(syntLevelFile))
+            string syntLevelFile = PathHandler.GetSyntLevelFilePath(projectFolder, barcodes.HasRandomBarcodes);
+            if (syntLevelFile != "")
                 ts.SetSyntReadReporter(syntLevelFile);
             ts.ProcessMapFiles(mapFilePaths, averageReadLen);
             if (ts.GetNumMappedReads() == 0)

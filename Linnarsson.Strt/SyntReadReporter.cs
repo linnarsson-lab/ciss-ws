@@ -80,7 +80,7 @@ namespace Linnarsson.Strt
             bool variantGenes = genome.GeneVariants;
             Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
             Dictionary<string, List<GeneFeature>> chrIdToFeature = ReadGenesByChr(genome, chrIdToFileMap.Keys.ToList());
-            string outFileHead = Path.Combine(Props.props.ReadsFolder, "Run00000_L0_1_" + DateTime.Now.ToString("yyMMdd") + "_" + dataId + "_00000");
+            string outFileHead = PathHandler.MakeSyntLevelFileHead(dataId);
             string fqOutput = outFileHead + ".fq";
             StreamWriter fqWriter = fqOutput.OpenWrite();
             string snpOutput = outFileHead + ".snps";

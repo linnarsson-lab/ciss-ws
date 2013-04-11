@@ -75,9 +75,17 @@ namespace Linnarsson.Dna
             return Path.Combine(layoutFolder, layoutFilename);
         }
 
-        public static string GetSyntLevelFile(string projectFolder)
+        public static string GetSyntLevelFilePath(string projectFolder, bool useRndTags)
         {
-            return Path.Combine(projectFolder, "Run00000_L0_1_" + Props.props.TestAnalysisFileMarker + ".levels");
+            string molPart = useRndTags ? "mol" : "read";
+            string syntPat = Path.Combine(projectFolder, "Run00000_L0_1_" + Props.props.TestAnalysisFileMarker + "*." + molPart + "levels");
+            string[] syntPatMatches = Directory.GetFiles(projectFolder, syntPat);
+            return (syntPatMatches.Length == 1) ? syntPatMatches[0] : "";
+        }
+        public static string MakeSyntLevelFileHead(string dataId)
+        {
+            return Path.Combine(Props.props.ReadsFolder, "Run00000_L0_1_" + DateTime.Now.ToString("yyMMdd") +
+                                Props.props.TestAnalysisFileMarker + "_0000_" + dataId);
         }
 
         public static string[] GetRepeatMaskFiles(StrtGenome genome)

@@ -179,7 +179,9 @@ namespace CmdSilverBullet
                             }
                             if (argOffset >= args.Length)
                                 throw new ArgumentException("You must specify a project name!");
-                            projectFolder = args[argOffset];
+                            if (argOffset < args.Length - 1)
+                                throw new ArgumentException("Unrecognized argument (possibly a non-existing genome index): " + args[argOffset]);
+                            projectFolder = args[args.Length - 1];
                             mapper = new StrtReadMapper(props);
                             if (speciesArg != "")
                                 mapper.MapAndAnnotate(projectFolder, speciesArg, analyzeAllGeneVariants, resultFolderName);

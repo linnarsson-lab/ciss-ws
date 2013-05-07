@@ -29,7 +29,7 @@ namespace CmdSilverBullet
                 Props props = Props.props;
                 StrtReadMapper mapper;
                 string projectFolder;
-                List<string> laneArgs;
+                QXMAOptions options;
                 int readLen = props.StandardReadLen;
                 int argOffset = 1;
                 string cmd = args[0];
@@ -38,26 +38,14 @@ namespace CmdSilverBullet
                     switch (cmd)
                     {
                         case "q":
-                            laneArgs = ExtractLaneArgs(args, ref argOffset);
-                            if (args[argOffset].ToLower() == "rpkm")
-                            {
-                                argOffset++;
-                                props.DirectionalReads = false;
-                                props.UseRPKM = true;
-                            }
-                            CheckArgs(args, argOffset + 2, argOffset + 4);
-                            props.BarcodesName = args[argOffset++];
-                            if (args[argOffset] != "all" && args[argOffset] != "single" && args.Length > argOffset + 1)
-                                speciesArg = args[argOffset++];
-                            if (args[argOffset] == "all" || args[argOffset] == "single" && args.Length > argOffset + 1)
-                                analyzeAllGeneVariants = (args[argOffset++].ToLower().StartsWith("a")) ? true : false;
-                            projectFolder = args[argOffset];
+                            options = new QXMAOptions(args);
+                            props.DirectionalReads = options.directionalReads;
+                            props.UseRPKM = options.useRPKM;
+                            props.BarcodesName = options.barcodesName;
+                            projectFolder = options.projectFolder;
                             mapper = new StrtReadMapper(props);
-                            List<LaneInfo> extrInfos = mapper.Extract(projectFolder, laneArgs);
-                            if (speciesArg != "")
-                                mapper.MapAndAnnotate(projectFolder, speciesArg, analyzeAllGeneVariants);
-                            else
-                                mapper.MapAndAnnotateWithLayout(projectFolder, "NotSpecified", analyzeAllGeneVariants);
+                            List<LaneInfo> extrInfos = mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
+                            mapper.MapAndAnnotate(projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants, options.annotation, "");
                             break;
 
                         case "downloadmart":
@@ -74,124 +62,29 @@ namespace CmdSilverBullet
                             break;
 
                         case "x":
-                            laneArgs = ExtractLaneArgs(args, ref argOffset);
-                            CheckArgs(args, argOffset + 2, argOffset + 5);
-                            props.BarcodesName = args[argOffset];
-                            if (args.Length > argOffset + 2 && args[argOffset + 1].StartsWith("-L"))
-                            {
-                                switch (args[argOffset + 1])
-                                {
-                                    case "-LTotalReads":
-                                        props.ExtractionReadLimitType = ReadLimitType.TotalReads;
-                                        break;
-                                    case "-LTotalReadsPerBc":
-                                        props.ExtractionReadLimitType = ReadLimitType.TotalReadsPerBarcode;
-                                        break;
-                                    case "-LValidReads":
-                                        props.ExtractionReadLimitType = ReadLimitType.TotalValidReads;
-                                        break;
-                                    case "-LValidReadsPerBc":
-                                        props.ExtractionReadLimitType = ReadLimitType.TotalValidReadsPerBarcode;
-                                        break;
-                                    default:
-                                        props.ExtractionReadLimitType = ReadLimitType.None;
-                                        break;
-                                }
-                                props.ExtractionReadLimit = int.Parse(args[argOffset + 2]);
-                                argOffset += 2;
-                            }
+                            options = new QXMAOptions(args);
+                            props.BarcodesName = options.barcodesName;
+                            props.ExtractionReadLimitType = options.extractionReadLimitType;
+                            props.ExtractionReadLimit = options.extractionReadLimit;
+                            projectFolder = options.projectFolder;
                             mapper = new StrtReadMapper(props);
-                            projectFolder = args[argOffset + 1];
-                            mapper.Extract(projectFolder, laneArgs);
+                            mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
                             break;
 
                         case "bt":
-                            CheckArgs(args, 4, 4);
-                            speciesArg = args[1];
-                            analyzeAllGeneVariants = (args[2].ToLower().StartsWith("a")) ? true : false;
-                            projectFolder = args[3];
+                            options = new QXMAOptions(args);
                             mapper = new StrtReadMapper(props);
-                            mapper.Map(projectFolder, speciesArg, analyzeAllGeneVariants);
+                            mapper.Map(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants, options.annotation);
                             break;
 
                         case "ab":
-                            List<string> genomeStrings = StrtGenome.GetValidGenomeStrings();
-                            string resultFolderName = "";
-                            while (args.Length > argOffset + 1)
-                            {
-                                bool optionMatch = false;
-                                string opt = args[argOffset].ToLower();
-                                if (opt == "rpkm")
-                                {
-                                    optionMatch = true;
-                                    props.DirectionalReads = false;
-                                    props.UseRPKM = true;
-                                }
-                                else if (opt == "rpm")
-                                {
-                                    optionMatch = true;
-                                    props.DirectionalReads = true;
-                                    props.UseRPKM = false;
-                                }
-                                else if (opt == "all")
-                                {
-                                    optionMatch = true;
-                                    analyzeAllGeneVariants = true;
-                                }
-                                else if (opt == "single")
-                                {
-                                    optionMatch = true;
-                                    analyzeAllGeneVariants = false;
-                                }
-                                else if (opt == "false")
-                                {
-                                    optionMatch = true;
-                                    analyzeAllGeneVariants = false;
-                                }
-                                else if (opt == "5primemap")
-                                {
-                                    optionMatch = true;
-                                    props.UseMost5PrimeExonMapping = true;
-                                }
-                                else if (opt == "multimap")
-                                {
-                                    optionMatch = true;
-                                    props.UseMost5PrimeExonMapping = false;
-                                }
-                                else if (opt.StartsWith("-o"))
-                                {
-                                    optionMatch = true;
-                                    resultFolderName = opt.Substring(2);
-                                }
-                                else
-                                    foreach (string s in genomeStrings)
-                                    {
-                                        if (s.ToLower() == opt)
-                                        {
-                                            optionMatch = true;
-                                            speciesArg = s;
-                                            break;
-                                        }
-                                    }
-                                if (!optionMatch)
-                                    break;
-                                argOffset++;
-                            }
-                            if (argOffset >= args.Length)
-                                throw new ArgumentException("You must specify a project name!");
-                            if (argOffset < args.Length - 1)
-                                throw new ArgumentException("Unrecognized argument (possibly a non-existing genome index): " + args[argOffset]);
-                            projectFolder = args[args.Length - 1];
+                            options = new QXMAOptions(args);
+                            props.DirectionalReads = false;
+                            props.UseRPKM = true;
+                            props.UseMost5PrimeExonMapping = true;
                             mapper = new StrtReadMapper(props);
-                            if (speciesArg != "")
-                                mapper.MapAndAnnotate(projectFolder, speciesArg, analyzeAllGeneVariants, resultFolderName);
-                            else
-                            {
-                                if (!File.Exists(PathHandler.GetSampleLayoutPath(projectFolder)))
-                                    throw new ArgumentException("No layout file exists - you must give a valid species/build: "
-                                                                + string.Join(", ", genomeStrings.ToArray()));
-                                mapper.MapAndAnnotateWithLayout(projectFolder, "NoSpeciesGiven", analyzeAllGeneVariants);
-                            }
+                            mapper.MapAndAnnotate(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
+                                                            options.annotation, options.resultFolder);
                             break;
 
                         case "jct":

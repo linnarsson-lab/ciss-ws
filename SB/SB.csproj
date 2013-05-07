@@ -90,6 +90,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="QXMAOptions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DnaLib\Linnarsson.Dna.csproj">

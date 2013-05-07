@@ -40,7 +40,7 @@ namespace SilverBullet
             if (rld.projectName != "" && barcodeSet != null && laneArgs.Count > 0)
             {
                 SetupMapper(barcodeSet);
-                Background.RunAsync(() => { mapper.Extract(rld.projectName, laneArgs); Console.WriteLine("Done."); });
+                Background.RunAsync(() => { mapper.Extract(rld.projectName, laneArgs, null); Console.WriteLine("Done."); });
 			}
 		}
 	
@@ -99,7 +99,7 @@ namespace SilverBullet
                 Background.RunAsync(() =>
                 {
                     Background.Message("Mapping...");
-                    mapper.Map(projectFolder, gd.Genome.GetBowtieMainIndexName(), gvd.AnalyzeAllGeneVariants);
+                    mapper.Map(projectFolder, gd.Genome.GetBowtieMainIndexName(), gvd.AnalyzeAllGeneVariants, "UCSC");
                     Background.Message("Ready");
                     Console.WriteLine("Done.");
                 });
@@ -131,7 +131,7 @@ namespace SilverBullet
                     try
                     {
                         gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
-                        mapper.MapAndAnnotate(projectFolder, gd.Genome.GetBowtieMainIndexName(), gvd.AnalyzeAllGeneVariants);
+                        mapper.MapAndAnnotate(projectFolder, gd.Genome.GetBowtieMainIndexName(), gvd.AnalyzeAllGeneVariants, "UCSC", "");
                     }
                     catch (Exception exp)
                     {

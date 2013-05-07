@@ -10,7 +10,7 @@ namespace Linnarsson.Dna
 {
 	public class StrtGenome
 	{
-        public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE", "ENSEMBL" };
+        public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE" };
         public static string chrCTRLId = "CTRL";
 
         public override string ToString()
@@ -47,17 +47,6 @@ namespace Linnarsson.Dna
         public bool GeneVariants { get; set; }
         public string GeneVariantsChar { get { return GeneVariants ? "a" : "s"; } }
         public string VarAnnot { get { return GeneVariantsChar + Annotation; } }
-
-        public static string AddVariantChar(string speciesArg, bool defaultGeneVariants)
-        {
-            char variantChar = defaultGeneVariants ? 'a' : 's';
-            int variantPos = speciesArg.IndexOf('_') + 1;
-            if (variantPos == 0)
-                return speciesArg + "_" + variantChar;
-            if ("as".Contains(speciesArg[variantPos]))
-                return speciesArg.Substring(0, variantPos) + variantChar + speciesArg.Substring(variantPos + 1);
-            return speciesArg.Replace("_", "_" + variantChar);
-        }
 
         public string GetOriginalGenomeFolder()
         {
@@ -335,8 +324,7 @@ namespace Linnarsson.Dna
         {
             return GetGenome(speciesArg, defaultGeneVariants, "", true);
         }
-        public static StrtGenome GetGenome(string speciesArg, bool defaultGeneVariants, string defaultAnnotation,
-                                           bool requireStrtFolder)
+        public static StrtGenome GetGenome(string speciesArg, bool defaultGeneVariants, string defaultAnnotation, bool requireStrtFolder)
         {
             string spOrBuild = speciesArg;
             string annotation = defaultAnnotation;

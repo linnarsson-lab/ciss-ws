@@ -148,6 +148,14 @@ namespace Linnarsson.Dna
             return new string(tag);
         }
 
+        public static string[] GetAllBarcodeSetNames()
+        {
+            string[] allBcNames = PathHandler.GetAllCustomBarcodeSets();
+            Array.Resize(ref allBcNames, allBcNames.Length + 6);
+            Array.Copy(new string[] { "v1", "v2", "v3", "PE_8", "no", "Lin8" }, 0, allBcNames, allBcNames.Length - 6, 6);
+            return allBcNames;
+        }
+
         public static Barcodes GetBarcodes(string barcodeSet)
         {
             Barcodes bc = null;

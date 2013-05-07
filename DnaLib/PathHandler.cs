@@ -309,6 +309,12 @@ namespace Linnarsson.Dna
             return Path.Combine(bcPath, bcSetName + ".barcodes");
         }
 
+        public static string[] GetAllCustomBarcodeSets()
+        {
+            string[] bcFiles = Directory.GetFiles(Path.Combine(Props.props.ProjectsFolder, "barcodes"), "*.barcodes");
+            return Array.ConvertAll(bcFiles, f => Path.GetFileNameWithoutExtension(f));
+        }
+
         public static string ParseBarcodeSet(string extractedFolder)
         {
             Match m = Regex.Match(extractedFolder, ".*Extract[^_]+_([^_]+)");

@@ -51,10 +51,10 @@ namespace Linnarsson.Dna
         {
             item.splcToRealChrOffset = offsets[partIdx];
             if (item.HitMidPos < realFeature.Start || item.HitMidPos > realFeature.End)
-                Console.WriteLine("ERROR in SplicedGeneLocus.MarkHit: PartIdx=" + partIdx + "offset[pIdx]=" + offsets[partIdx] +
-                                  " Strand=" + Strand + "\n  " + "Gene=" + realFeature.Name +
-                                  " LocusStart=" + realFeature.LocusStart + " LocusEnd=" + realFeature.LocusEnd + "\n" +
-                                  " MappedTagItem:" + item.ToString());
+                Console.WriteLine("ERROR in SplicedGeneLocus.MarkHit: PartIdx=" + partIdx + " offset=" + offsets[partIdx] + " Strand=" + Strand + 
+                                  "\n  Gene=" + realFeature.Name + " Start=" + realFeature.Start + " End=" + realFeature.End + 
+                                  " LocusStart= + " + realFeature.LocusStart + " LocusEnd=" + realFeature.LocusEnd +
+                                  "\n  " + item.ToString());
             return realFeature.MarkSpliceHit(item, realExonIds[partIdx], junctionIds[partIdx], markType);
         }
 

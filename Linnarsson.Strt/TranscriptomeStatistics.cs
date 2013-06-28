@@ -939,9 +939,9 @@ namespace Linnarsson.Strt
             int nAllHits = TotalHitsByAnnotType.Sum();
             double dividend = nAllHits;
             double reducer = 1.0E6d;
-            string mr = "Multireads" + (Props.props.UseMaxAltMappings? string.Format(" (max {0}-fold)", Props.props.MaxAlternativeMappings) : "");
+            string mr = "Multireads" + (Props.props.UseMaxAltMappings? string.Format(" (< {0}-fold)", Props.props.MaxAlternativeMappings) : "");
             string mrHead = mr + ((Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping) ?
-                            " are mapped only with their most 5' transcript" : " are mapped with all their transcript hits");
+                            " are assigned only to their most 5' transcript" : " are assigned to all their transcript hits");
             if (barcodes.HasRandomBarcodes)
             {
                 dividend = nMappings;

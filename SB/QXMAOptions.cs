@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Linnarsson.Dna;
 
 namespace CmdSilverBullet
@@ -25,6 +26,7 @@ namespace CmdSilverBullet
         public QXMAOptions(string[] args)
         {
             int argOffset = 1;
+            int tempVer;
             string[] allBcSetNames = Barcodes.GetAllBarcodeSetNames();
             while (argOffset < args.Length - 1)
             {
@@ -77,6 +79,8 @@ namespace CmdSilverBullet
                     default:
                         if (opt.StartsWith("-o"))
                             resultFolder = opt.Substring(1);
+                        else if (Array.IndexOf(allBcSetNames, opt) >= 0)
+                            barcodesName = opt;
                         else if (Array.IndexOf(new string[] { "hs", "hg", "mm", "gg", "ce", "cg" }, opt.ToLower()) >= 0)
                             speciesAbbrev = opt.ToLower();
                         else if ((opt[0] == 'a' || opt[0] == 's') && Array.IndexOf(new string[] { "UCSC", "VEGA", "ENSE" }, opt.Substring(1)) >= 0)
@@ -84,8 +88,9 @@ namespace CmdSilverBullet
                             geneVariantsChar = opt.Substring(0,1);
                             annotation = opt.Substring(1);
                         }
-                        else if (Array.IndexOf(allBcSetNames, opt) >= 0)
-                            barcodesName = opt;
+                        else if (opt.Length >= 3 && Array.IndexOf(new string[] { "hs", "hg", "mm", "gg", "ce", "cg" }, opt.Substring(0, 2).ToLower()) >= 0
+                            && int.TryParse(opt.Substring(2), out tempVer))
+                            speciesAbbrev = opt;
                         break;
                 }
                 argOffset++;

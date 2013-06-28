@@ -16,10 +16,12 @@ namespace Linnarsson.Dna
         /// <returns>Folder for bowtie indexes</returns>
         public static string GetBowtieIndicesFolder()
         {
+            if (Props.props.BowtieIndexFolder != "" && Props.props.BowtieIndexFolder != null)
+                return Props.props.BowtieIndexFolder;
             string pathVar = Environment.GetEnvironmentVariable("PATH");
             string[] vars = pathVar.Contains(";")? pathVar.Split(';') : pathVar.Split(':');
             foreach (string v in vars)
-                if (v.Contains("bowtie")) return Path.Combine(v, "indexes");
+                if (!v.Contains("bowtie2") && v.Contains("bowtie")) return Path.Combine(v, "indexes");
             return Props.props.BowtieIndexFolder;
         }
 

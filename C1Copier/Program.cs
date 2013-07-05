@@ -12,6 +12,7 @@ namespace C1Copier
 {
     class Program
     {
+        static StreamWriter logWriter;
         static int minutesWait = 10;
         static int nExceptions = 0;
         static string c1RunsFolder = "/data2/c1-runs";
@@ -57,7 +58,7 @@ namespace C1Copier
                 Console.WriteLine("Can not find {0}. Creating it.", logFile);
                 File.Create(logFile).Close();
             }
-            using (StreamWriter logWriter = new StreamWriter(File.Open(logFile, FileMode.Append)))
+            using (logWriter = new StreamWriter(File.Open(logFile, FileMode.Append)))
             {
                 logWriter.WriteLine(DateTime.Now.ToString() + " Starting C1Copier");
                 logWriter.Flush();
@@ -66,10 +67,10 @@ namespace C1Copier
                 {
                     try
                     {
-                        bool canCopy = true;
-                        while (canCopy)
+                        bool copying = true;
+                        while (copying)
                         {
-                            canCopy = TryCopy(logWriter);
+                            copying = TryCopy(logWriter);
                         }
                     }
                     catch (Exception e)
@@ -125,6 +126,8 @@ namespace C1Copier
                     double area = double.Parse(fields[3]);
                     double diameter = double.Parse(fields[4]);
                     string imgPath = Path.Combine(imgSubfolder, imgfilePattern.Replace("*", well));
+                    if (!File.Exists(imgPath))
+                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Image file does not exist: " + imgPath);
                     Cell newCell = new Cell(null, metadata["PlateId"], well, diameter, area, metadata["Tissue/cell type/source"], imgPath);
                     cells.Add(newCell);
                 }

@@ -450,5 +450,20 @@ namespace Linnarsson.Strt
             conn.Close();
             return waitingFiles;
         }
+
+        public string InsertProject(Dictionary<string, string> metadata)
+        {
+            string sql = "INSERT INTO project";
+            IssueNonQuery(sql);
+            sql = "SELECT MAX(id) FROM project";
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            string projectId = rdr.GetString(0);
+            rdr.Close();
+            conn.Close();
+            return projectId;
+        }
     }
 }

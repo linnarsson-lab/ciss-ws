@@ -47,6 +47,8 @@ namespace SilverBullet
 		private void Form1_Load(object sender, EventArgs e)
 		{
 			Console.WriteLine("SilverBullet single-cell transcriptome mapping tool\r\nVersion 1.0, (C) Sten Linnarsson 2012\r\n");
+            Console.WriteLine("Current assembly version is {0}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
+            Console.WriteLine("Props.AssemblyVersion is {0}", Props.props.AssemblyVersion);
 		}
 
 		private void interruptToolStripMenuItem_Click(object sender, EventArgs e)

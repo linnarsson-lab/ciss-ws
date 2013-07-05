@@ -136,6 +136,8 @@ namespace Linnarsson.Dna
 
         public bool UseMaxAltMappings { get { return props.BowtieOptionPattern.Contains("MaxAlternativeMappings"); } }
 
+        public string AssemblyVersion { get { return System.Reflection.Assembly.GetEntryAssembly().GetName().Version.ToString(); } }
+
         private static Props Read()
         {
             string appDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -150,6 +152,7 @@ namespace Linnarsson.Dna
                 props = new Props();
                 SimpleXmlSerializer.ToXmlFile(configFilePath, props);
             }
+            
             return props;
         }
 

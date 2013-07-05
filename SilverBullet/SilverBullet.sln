@@ -21,9 +21,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BkgFastQMailer", "..\BkgFas
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BkgBackuper", "..\BkgBackuper\BkgBackuper.csproj", "{65D5A557-6C2A-4B3E-9D28-59FF119453FA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "C1Copier", "..\C1Copier\C1Copier.csproj", "{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Linnarsson.C1", "C1\Linnarsson.C1.csproj", "{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}"
+EndProject
 Global
 	GlobalSection(SourceCodeControl) = preSolution
-		SccNumberOfProjects = 11
+		SccNumberOfProjects = 13
 		SccProjectName0 = Perforce\u0020Project
 		SccLocalPath0 = ..
 		SccProvider0 = MSSCCI:Perforce\u0020SCM
@@ -49,6 +53,12 @@ Global
 		SccProjectUniqueName10 = ..\\BkgBackuper\\BkgBackuper.csproj
 		SccLocalPath10 = ..
 		SccProjectFilePathRelativizedFromConnection10 = BkgBackuper\\
+		SccProjectUniqueName11 = C1\\Linnarsson.C1.csproj
+		SccLocalPath11 = ..
+		SccProjectFilePathRelativizedFromConnection11 = SilverBullet\\C1\\
+		SccProjectUniqueName12 = ..\\C1Copier\\C1Copier.csproj
+		SccLocalPath12 = ..
+		SccProjectFilePathRelativizedFromConnection12 = C1Copier\\
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -212,6 +222,36 @@ Global
 		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.TestRelease|Mixed Platforms.Build.0 = Release|x86
 		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.TestRelease|x86.ActiveCfg = Release|x86
 		{65D5A557-6C2A-4B3E-9D28-59FF119453FA}.TestRelease|x86.Build.0 = Release|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.Debug|x86.ActiveCfg = Debug|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.Debug|x86.Build.0 = Debug|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.Release|Any CPU.ActiveCfg = Release|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.Release|Mixed Platforms.Build.0 = Release|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.Release|x86.ActiveCfg = Release|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.Release|x86.Build.0 = Release|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.TestRelease|Any CPU.ActiveCfg = Release|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.TestRelease|Mixed Platforms.ActiveCfg = Release|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.TestRelease|Mixed Platforms.Build.0 = Release|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.TestRelease|x86.ActiveCfg = Release|x86
+		{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}.TestRelease|x86.Build.0 = Release|x86
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.Release|x86.ActiveCfg = Release|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.TestRelease|Any CPU.ActiveCfg = Release|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.TestRelease|Any CPU.Build.0 = Release|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.TestRelease|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.TestRelease|Mixed Platforms.Build.0 = Release|Any CPU
+		{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}.TestRelease|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -23,7 +23,6 @@ namespace CmdSilverBullet
         {
             if (args.Length >= 1 + 0)
             {
-                string speciesArg = "";
                 bool analyzeAllGeneVariants = Props.props.AnalyzeAllGeneVariants;
                 StrtGenome genome;
                 Props props = Props.props;

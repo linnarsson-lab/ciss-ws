@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using MySql.Data.MySqlClient;
 
-namespace Linnarsson.C1
+namespace Linnarsson.C1Model
 {
     public class C1DB
     {

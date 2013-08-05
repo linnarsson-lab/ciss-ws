@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Linnarsson.C1
+namespace Linnarsson.C1Model
 {
     public class Cell
     {

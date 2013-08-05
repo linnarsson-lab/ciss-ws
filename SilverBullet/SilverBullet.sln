@@ -23,7 +23,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BkgBackuper", "..\BkgBackup
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "C1Copier", "..\C1Copier\C1Copier.csproj", "{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Linnarsson.C1", "C1\Linnarsson.C1.csproj", "{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Linnarsson.C1Model", "C1\Linnarsson.C1Model.csproj", "{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}"
 EndProject
 Global
 	GlobalSection(SourceCodeControl) = preSolution
@@ -53,12 +53,12 @@ Global
 		SccProjectUniqueName10 = ..\\BkgBackuper\\BkgBackuper.csproj
 		SccLocalPath10 = ..
 		SccProjectFilePathRelativizedFromConnection10 = BkgBackuper\\
-		SccProjectUniqueName11 = C1\\Linnarsson.C1.csproj
+		SccProjectUniqueName11 = ..\\C1Copier\\C1Copier.csproj
 		SccLocalPath11 = ..
-		SccProjectFilePathRelativizedFromConnection11 = SilverBullet\\C1\\
-		SccProjectUniqueName12 = ..\\C1Copier\\C1Copier.csproj
+		SccProjectFilePathRelativizedFromConnection11 = C1Copier\\
+		SccProjectUniqueName12 = C1\\Linnarsson.C1Model.csproj
 		SccLocalPath12 = ..
-		SccProjectFilePathRelativizedFromConnection12 = C1Copier\\
+		SccProjectFilePathRelativizedFromConnection12 = SilverBullet\\C1\\
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

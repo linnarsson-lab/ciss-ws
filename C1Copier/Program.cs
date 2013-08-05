@@ -5,7 +5,7 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
-using Linnarsson.C1;
+using Linnarsson.C1Model;
 using Linnarsson.Strt;
 
 namespace C1Copier

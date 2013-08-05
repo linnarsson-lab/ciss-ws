@@ -18,17 +18,17 @@ namespace Linnarsson.Dna
             this.sourceName = sourceName;
         }
 
-        public override Dictionary<string, List<GeneFeature>> BuildGeneModelsByChr()
+        public override void BuildGeneModelsByChr()
         {
             ClearGenes();
             ReadVEGAMart();
             ReadRefFlat();
-            return genesByChr;
         }
 
         private void ReadVEGAMart()
         {
-            string martPath = GetAnnotationPath(sourceName + "_mart_export.txt");
+            string martPath = MakeFullAnnotationPath(sourceName + "_mart_export.txt", true);
+            VisitedAnnotationPaths = martPath;
             int n = 0;
             foreach (GeneFeature gf in IterAnnotationFile(martPath))
             {
@@ -44,9 +44,10 @@ namespace Linnarsson.Dna
         private void ReadRefFlat()
         {
             int refN = 0;
-            string refFlatPath = GetAnnotationPath("refFlat.txt");
+            string refFlatPath = MakeFullAnnotationPath("refFlat.txt", false);
             if (File.Exists(refFlatPath))
             {
+                VisitedAnnotationPaths += ";" + refFlatPath;
                 foreach (GeneFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(refFlatPath))
                 {
                     if (ShouldAdd(gf))

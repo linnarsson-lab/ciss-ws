@@ -33,7 +33,8 @@ namespace Linnarsson.Dna
             this.genome = genome;
         }
 
-        public abstract Dictionary<string, List<GeneFeature>> BuildGeneModelsByChr();
+        public string VisitedAnnotationPaths = "";
+        public abstract void BuildGeneModelsByChr();
 
         public int PseudogeneCount { get { return pseudogeneCount; } }
         public int ChrCount { get { return genesByChr.Count; } }
@@ -71,12 +72,12 @@ namespace Linnarsson.Dna
             pseudogeneCount = 0;
         }
  
-        protected string GetAnnotationPath(string annotationFilename)
+        protected string MakeFullAnnotationPath(string annotationFilename, bool checkExists)
         {
             string genomeFolder = genome.GetOriginalGenomeFolder();
             string annotationPath = Path.Combine(genomeFolder, annotationFilename);
             annotationPath = PathHandler.ExistsOrGz(annotationPath);
-            if (annotationPath == null)
+            if (checkExists && annotationPath == null)
                 throw new FileNotFoundException(string.Format("Could not find {0} in {1}", annotationFilename, genomeFolder));
             return annotationPath;
         }

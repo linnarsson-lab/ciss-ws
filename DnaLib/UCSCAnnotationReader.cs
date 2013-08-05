@@ -13,10 +13,11 @@ namespace Linnarsson.Dna
             : base(genome)
         {}
 
-        public override Dictionary<string, List<GeneFeature>> BuildGeneModelsByChr()
+        public override void BuildGeneModelsByChr()
         {
             ClearGenes();
-            string refFlatPath = GetAnnotationPath("refFlat.txt");
+            string refFlatPath = MakeFullAnnotationPath("refFlat.txt", true);
+            VisitedAnnotationPaths = refFlatPath;
             int n = 0;
             foreach (GeneFeature gf in IterAnnotationFile(refFlatPath))
             {
@@ -25,7 +26,6 @@ namespace Linnarsson.Dna
             }
             string varTxt = (genome.GeneVariants) ? " genes and" : " main gene";
             Console.WriteLine("Read {0}{1} variants from {2}", n, varTxt, refFlatPath);
-            return genesByChr;
         }
 
         // Iterates the features of a refFlat-formatted file, making no changes/variant detections of the data.

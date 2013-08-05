@@ -47,6 +47,7 @@ namespace Linnarsson.Dna
         public bool GeneVariants { get; set; }
         public string GeneVariantsChar { get { return GeneVariants ? "a" : "s"; } }
         public string VarAnnot { get { return GeneVariantsChar + Annotation; } }
+        public string BuildVarAnnot { get { return Build + "_" + VarAnnot; } }
 
         public string GetOriginalGenomeFolder()
         {

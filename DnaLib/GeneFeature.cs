@@ -104,6 +104,11 @@ namespace Linnarsson.Dna
             }
         }
 
+        /// <summary>
+        /// The extension that was made of the 5' end of the 1st exon
+        /// </summary>
+        public int Extension5Prime { get { return (Strand == '+') ? SavedCAPPos - Start : End - SavedCAPPos; } }
+
         public void JoinSpuriousSplices(int minEvents)
         {
             List<int> newStarts = new List<int>(ExonStarts.Length);
@@ -701,6 +706,14 @@ namespace Linnarsson.Dna
                 s.AppendFormat("{0},", end+1);
             return s.ToString();
         }
+        /// <summary>
+        /// 1-based psl-like string of start positions
+        /// </summary>
+        public string ExonStartsString { get { return string.Join(",", Array.ConvertAll(ExonStarts, v => (v+1).ToString())); } }
+        /// <summary>
+        /// 1-based psl-like string of inclusive end positions
+        /// </summary>
+        public string ExonEndsString { get { return string.Join(",", Array.ConvertAll(ExonEnds, v => (v + 1).ToString())); } }
 
         /// <summary>
         /// Decrease length of flank(s) if there is a too close neighboring gene exon (in same orientation).

@@ -128,7 +128,8 @@ namespace C1Copier
                     string imgPath = Path.Combine(imgSubfolder, imgfilePattern.Replace("*", well));
                     if (!File.Exists(imgPath))
                         logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Image file does not exist: " + imgPath);
-                    Cell newCell = new Cell(null, metadata["PlateId"], well, diameter, area, metadata["Tissue/cell type/source"], imgPath);
+                    Cell newCell = new Cell(null, metadata["Plate"], well, diameter, area, 
+                                            metadata["Principal Investigator"], metadata["Operator"]);
                     cells.Add(newCell);
                 }
             }
@@ -148,6 +149,7 @@ namespace C1Copier
                     line = r.ReadLine();
                 }
             }
+            data["Plate"] = chipId;
             return data;
         }
 

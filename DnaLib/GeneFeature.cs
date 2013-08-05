@@ -207,7 +207,11 @@ namespace Linnarsson.Dna
         public bool MaskedUSTR;
         public bool MaskedDSTR;
 
-        public GeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds)
+        public string TranscriptID;
+        public string TranscriptType;
+
+        public GeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds,
+                           string transcriptId, string transcriptType)
             : base(name, chr, strand, exonStarts[0], exonEnds[exonEnds.Length - 1])
         {
             ExonStarts = exonStarts;
@@ -230,6 +234,8 @@ namespace Linnarsson.Dna
             m_LocusHits = new int[1000];
             locusHitIdx = 0;
             SavedCAPPos = (strand == '+') ? exonStarts[0] : exonEnds[exonEnds.Length - 1];
+            this.TranscriptID = transcriptId;
+            this.TranscriptType = transcriptType;
         }
 
         public int GetExonLength(int i)

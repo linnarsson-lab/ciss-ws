@@ -87,7 +87,7 @@ namespace Linnarsson.Dna
             {
                 string header = martReader.ReadLine();
                 int exStartCol = -1, exEndCol = -1, chrCol = -1,
-                    strandCol = -1, nameCol = -1, typeCol = 0, trIdCol = -1;
+                    strandCol = -1, nameCol = -1, typeCol = 0, trIdCol = -1, descrCol = -1;
                 string[] fields = header.Split('\t');
                 for (int i = 0; i < fields.Length; i++)
                 {
@@ -97,25 +97,26 @@ namespace Linnarsson.Dna
                     else if (f.StartsWith("Exon Chr End")) exEndCol = i;
                     else if (f == "Chromosome Name") chrCol = i;
                     else if (f == "Strand") strandCol = i;
+                    else if (f == "Description") descrCol = i;
                     else if (f == "External Gene ID" || f == "Associated Gene Name") nameCol = i;
+                    else if (f == "Transcript Biotype") typeCol = i;
                     else if (f == "Gene Biotype") typeCol = i;
                 }
-                if (exStartCol == -1 || exEndCol == -1 || chrCol == -1 || strandCol == -1 || nameCol == -1)
+                if (trIdCol == -1 || exStartCol == -1 || exEndCol == -1 || chrCol == -1 || strandCol == -1 || nameCol == -1 || typeCol == -1)
                     throw new FormatException("BioMart input file misses some columns.\n" +
-                        "Required: Transcript ID, Exon Chr Start, Exon Chr End, Chromosome Name, Strand, External Gene ID");
+                        "Required: Transcript ID, Exon Chr Start, Exon Chr End, Chromosome Name, Strand, External Gene ID, Biotype");
                 List<Interval> exons = new List<Interval>();
-                string name = "";
-                string currentTrId = "";
-                string chr = "";
                 char strand = '+';
+                string name = "", currentTrId = "", chr = "", trType = null, trId = null;
                 string line = martReader.ReadLine();
                 while (line != null)
                 {
                     fields = line.Split('\t');
-                    string trId = fields[trIdCol].Trim();
+                    trId = fields[trIdCol].Trim();
+                    trType = fields[typeCol].Trim();
                     if (exons.Count > 0 && trId != currentTrId) // Handle every splice variant as a gene variant
                     {
-                        yield return CreateGeneFeature(name, chr, strand, exons);
+                        yield return CreateGeneFeature(name, chr, strand, exons, trId, trType);
                         exons.Clear();
                     }
                     if (exons.Count == 0)
@@ -123,7 +124,7 @@ namespace Linnarsson.Dna
                         currentTrId = trId;
                         name = fields[nameCol].Trim();
                         if (name == "") name = trId;
-                        if (fields[typeCol].Contains("pseudogene"))
+                        if (trType.Contains("pseudogene"))
                         {
                             pseudogeneCount++;
                             int n = 1;
@@ -139,12 +140,12 @@ namespace Linnarsson.Dna
                     line = martReader.ReadLine();
                 }
                 if (name != "")
-                    yield return CreateGeneFeature(name, chr, strand, exons);
+                    yield return CreateGeneFeature(name, chr, strand, exons, trId, trType);
             }
         }
 
         private IFeature CreateGeneFeature(string name, string chr, char strand,
-                                   List<Interval> exons)
+                                   List<Interval> exons, string trId, string trType)
         {
             exons.Sort((i1, i2) => (i1.Start == i2.Start) ? 0 : (i1.Start > i2.Start) ? 1 : -1);
             int i = 0;
@@ -166,7 +167,7 @@ namespace Linnarsson.Dna
                 exonStarts[i] = (int)exons[i].Start;
                 exonEnds[i] = (int)exons[i].End;
             }
-            return new GeneFeature(name, chr, strand, exonStarts, exonEnds);
+            return new GeneFeature(name, chr, strand, exonStarts, exonEnds, trId, trType);
         }
 
     }

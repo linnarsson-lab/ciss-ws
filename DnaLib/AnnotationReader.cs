@@ -14,6 +14,15 @@ namespace Linnarsson.Dna
 
     public abstract class AnnotationReader
     {
+        public static AnnotationReader GetAnnotationReader(StrtGenome genome)
+        {
+            if (genome.Annotation == "VEGA")
+                return new BioMartAnnotationReader(genome, "VEGA");
+            if (genome.Annotation.StartsWith("ENSE"))
+                return new BioMartAnnotationReader(genome, genome.Annotation);
+            return new UCSCAnnotationReader(genome);
+        }
+
         protected StrtGenome genome;
         protected Dictionary<string, GeneFeature> nameToGene;
         protected Dictionary<string, List<GeneFeature>> genesByChr;
@@ -26,6 +35,35 @@ namespace Linnarsson.Dna
 
         public abstract Dictionary<string, List<GeneFeature>> BuildGeneModelsByChr();
 
+        public int PseudogeneCount { get { return pseudogeneCount; } }
+        public int ChrCount { get { return genesByChr.Count; } }
+        public List<string> ChrNames { get { return genesByChr.Keys.ToList(); } }
+
+        public int GeneCount(string chrId)
+        {
+            return genesByChr.ContainsKey(chrId)? genesByChr[chrId].Count : 0;
+        }
+
+        public IEnumerable<GeneFeature> IterChrSortedGeneModels()
+        {
+            foreach (string chrId in genesByChr.Keys)
+            {
+                List<GeneFeature> chrGfs = genesByChr[chrId];
+                chrGfs.Sort((gf1, gf2) => gf1.Start - gf2.Start);
+                foreach (GeneFeature gf in chrGfs)
+                    yield return gf;
+            }
+        }
+
+        public IEnumerable<GeneFeature> IterChrSortedGeneModels(string chrId)
+        {
+            if (!genesByChr.ContainsKey(chrId)) yield break;
+            List<GeneFeature> chrGfs = genesByChr[chrId];
+            chrGfs.Sort((gf1, gf2) => gf1.Start - gf2.Start);
+            foreach (GeneFeature gf in chrGfs)
+                yield return gf;
+        }
+
         protected void ClearGenes()
         {
             nameToGene = new Dictionary<string, GeneFeature>();
@@ -33,11 +71,6 @@ namespace Linnarsson.Dna
             pseudogeneCount = 0;
         }
  
-        public virtual int GetPseudogeneCount()
-        {
-            return pseudogeneCount;
-        }
-
         protected string GetAnnotationPath(string annotationFilename)
         {
             string genomeFolder = genome.GetOriginalGenomeFolder();
@@ -119,7 +152,10 @@ namespace Linnarsson.Dna
                     i--;
                 }
             }
-            GeneFeature newFeature = new GeneFeature(gf1.Name, gf1.Chr, gf1.Strand, newStarts.ToArray(), newEnds.ToArray());
+            string combTrId = (gf1.TranscriptID == gf2.TranscriptID)? gf1.TranscriptID : (gf1.TranscriptID + ";" + gf2.TranscriptID);
+            string combTrType = (gf1.TranscriptType == gf2.TranscriptType) ? gf1.TranscriptType : (gf1.TranscriptType + ";" + gf2.TranscriptType);
+            GeneFeature newFeature = new GeneFeature(gf1.Name, gf1.Chr, gf1.Strand, newStarts.ToArray(), newEnds.ToArray(), combTrId, combTrType
+                );
             return newFeature;
         }
 

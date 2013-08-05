@@ -313,8 +313,8 @@ namespace Linnarsson.Strt
 
         public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds)
         {
-            hasRndTags = barcodes.HasRandomBarcodes;
-            nRndTags = barcodes.RandomBarcodeCount;
+            hasRndTags = barcodes.HasRandomTags;
+            nRndTags = barcodes.RandomTagCount;
             TagItem.nRndTags = nRndTags;
             nReadsByRandomTag = new int[nRndTags];
             nCasesPerRandomTagCount = new int[nRndTags + 1];

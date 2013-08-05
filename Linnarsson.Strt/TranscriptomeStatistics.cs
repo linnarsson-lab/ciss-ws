@@ -187,7 +187,7 @@ namespace Linnarsson.Strt
 
         private void SetupGfsForRndTagProfile()
         {
-            if (Props.props.GenesToShowRndTagProfile != null && barcodes.HasRandomBarcodes)
+            if (Props.props.GenesToShowRndTagProfile != null && barcodes.HasRandomTags)
             {
                 foreach (string geneName in Props.props.GenesToShowRndTagProfile)
                 {
@@ -246,12 +246,12 @@ namespace Linnarsson.Strt
         public void ProcessMapFiles(List<string> mapFilePaths, int averageReadLen)
         {
             nTooMultiMappingReads = 0;
-            trSampleDepth = (barcodes.HasRandomBarcodes) ? libraryDepthSampleMolsCountPerBc : libraryDepthSampleReadCountPerBc;
+            trSampleDepth = (barcodes.HasRandomTags) ? libraryDepthSampleMolsCountPerBc : libraryDepthSampleReadCountPerBc;
             if (mapFilePaths.Count == 0)
                 return;
             if (Props.props.AnalyzeSNPs)
                 RegisterPotentialSNPs(mapFilePaths, averageReadLen);
-            if (Props.props.SnpRndTagVerification && barcodes.HasRandomBarcodes)
+            if (Props.props.SnpRndTagVerification && barcodes.HasRandomTags)
                 snpRndTagVerifier = new SnpRndTagVerifier(Props.props, Annotations.Genome);
             Console.WriteLine("Annotatating {0} map files ignoring reads with > {1} alternative mappings.", mapFilePaths.Count, nMaxMappings);
 
@@ -323,7 +323,7 @@ namespace Linnarsson.Strt
             }
             SampleReadStatistics(nMappedReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
             AnnotateFeaturesFromTagItems();
-            if (Props.props.MakeGeneReadsPerMoleculeHistograms && barcodes.HasRandomBarcodes)
+            if (Props.props.MakeGeneReadsPerMoleculeHistograms && barcodes.HasRandomTags)
                 AddToGeneReadsPerMoleculeHistograms();
             MakeGeneRndTagProfiles();
             MakeBcWigglePlots();
@@ -597,7 +597,7 @@ namespace Linnarsson.Strt
             string fileByMol = filePathHead + "_bymolecule.wig.gz";
             if (File.Exists(fileByRead)) return;
             using (StreamWriter writerByRead = fileByRead.OpenWrite())
-            using (StreamWriter writerByMol = (barcodes.HasRandomBarcodes && !File.Exists(fileByMol)? fileByMol.OpenWrite() : null))
+            using (StreamWriter writerByMol = (barcodes.HasRandomTags && !File.Exists(fileByMol)? fileByMol.OpenWrite() : null))
             {
                 writerByRead.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} {2} ({1})\" visibility=full alwaysZero=on",
                                        fileNameHead + "_Read", strand, DateTime.Now.ToString("yyMMdd"));
@@ -638,7 +638,7 @@ namespace Linnarsson.Strt
                 upstreamAnalyzer.WriteUpstreamStats(OutputPathbase);
             if (TestReporter != null)
                 TestReporter.Summarize(Annotations.geneFeatures);
-            if (barcodes.HasRandomBarcodes)
+            if (barcodes.HasRandomTags)
             {
                 WriteReadCountDistroByRndTagCount();
                 if (readsPerMoleculeHistogramGenes != null)
@@ -734,7 +734,7 @@ namespace Linnarsson.Strt
                                   "  </librarycomplexity>", libraryDepthSampleReadCountPerBc,
                                      DefaultMedian(sampledLibraryDepths, "N/A"), DefaultMedian(sampledUniqueMolecules, "N/A"),
                                      trSampleDepth, DefaultMedian(sampledExpressedTranscripts, "N/A"),
-                                     (barcodes.HasRandomBarcodes) ? "molecules" : "reads", sampledLibraryDepths.Count,
+                                     (barcodes.HasRandomTags) ? "molecules" : "reads", sampledLibraryDepths.Count,
                                      sampledUniqueMolecules.Count, sampledExpressedTranscripts.Count);
                 WriteReadsBySpecies(xmlFile);
                 WriteFeatureStats(xmlFile);
@@ -766,9 +766,9 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("    <GeneFeature5PrimeExtension>{0}</GeneFeature5PrimeExtension>", Props.props.GeneFeature5PrimeExtension);
             xmlFile.WriteLine("    <LocusFlankLength>{0}</LocusFlankLength>", Props.props.LocusFlankLength);
             xmlFile.WriteLine("    <UseMost5PrimeExonMapping>{0}</UseMost5PrimeExonMapping>", Props.props.UseMost5PrimeExonMapping);
-            if (Props.props.AnalyzeSNPs && barcodes.HasRandomBarcodes)
+            if (Props.props.AnalyzeSNPs && barcodes.HasRandomTags)
                 xmlFile.WriteLine("    <MinMoleculesToTestSnp>{0}</MinMoleculesToTestSnp>", Props.props.MinMoleculesToTestSnp);
-            if (Props.props.AnalyzeSNPs && !barcodes.HasRandomBarcodes)
+            if (Props.props.AnalyzeSNPs && !barcodes.HasRandomTags)
                 xmlFile.WriteLine("    <MinReadsToTestSnp>{0}</MinReadsToTestSnp>", Props.props.MinReadsToTestSnp);
             xmlFile.WriteLine("  </settings>");
         }
@@ -807,7 +807,7 @@ namespace Linnarsson.Strt
 
         private void WriteRandomFilterStats(StreamWriter xmlFile)
         {
-            if (!barcodes.HasRandomBarcodes) return;
+            if (!barcodes.HasRandomTags) return;
             xmlFile.WriteLine("  <randomtagfrequence>");
             xmlFile.WriteLine("    <title>Number of reads detected in each random tag</title>");
             xmlFile.WriteLine("    <xtitle>Random tag index (AAAA...TTTT)</xtitle>");
@@ -872,7 +872,7 @@ namespace Linnarsson.Strt
         private void WritePerLaneStatsSection(StreamWriter xmlFile, string sectionTitle, double minF, double maxF)
         {
             xmlFile.WriteLine("  <fracuniqueperlane>");
-            string type = barcodes.HasRandomBarcodes ? "molecules" : "mappings";
+            string type = barcodes.HasRandomTags ? "molecules" : "mappings";
             xmlFile.WriteLine("    <title>Fraction ({0}) distinct {2} among first {1} mapped reads in each lane</title>",
                               sectionTitle, PerLaneStats.nMappedReadsPerFileAtSample, type);
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
@@ -931,7 +931,7 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("    <point x=\"Mapped [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, TotalNMappedReads / speciesReads, TotalNMappedReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Multireads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMultiReads / speciesReads, nMultiReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Exon/Splc [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nExonAnnotatedReads / speciesReads, nExonAnnotatedReads / 1.0E6d);
-            if (barcodes.HasRandomBarcodes)
+            if (barcodes.HasRandomTags)
                 xmlFile.WriteLine("    <point x=\"Duplicates [{0}] ({1:0%})\" y=\"{2}\" />", 
                                   spBcCount, mappingAdder.TotalNDuplicateReads / speciesReads, mappingAdder.TotalNDuplicateReads / 1.0E6d);
             xmlFile.WriteLine("  </reads>");
@@ -942,7 +942,7 @@ namespace Linnarsson.Strt
             string mr = "Multireads" + (Props.props.UseMaxAltMappings? string.Format(" (< {0}-fold)", Props.props.MaxAlternativeMappings) : "");
             string mrHead = mr + ((Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping) ?
                             " are assigned only to their most 5' transcript" : " are assigned to all their transcript hits");
-            if (barcodes.HasRandomBarcodes)
+            if (barcodes.HasRandomTags)
             {
                 dividend = nMappings;
                 reducer = 1.0E3d;
@@ -992,8 +992,8 @@ namespace Linnarsson.Strt
                 nAnnotationsHits += TotalHitsByBarcode[bcIdx];
             }
             xmlFile.WriteLine("  <reads species=\"{0}\">", speciesName);
-            string molTitle = (barcodes.HasRandomBarcodes)? "molecule": "read";
-            double reducer = (barcodes.HasRandomBarcodes)? 1.0E6d : 1.0E3d;
+            string molTitle = (barcodes.HasRandomTags)? "molecule": "read";
+            double reducer = (barcodes.HasRandomTags)? 1.0E6d : 1.0E3d;
             xmlFile.WriteLine("    <title>Distribution of {0} hits (10^{3}) by categories in {1} {2} wells</title>",
                               molTitle, speciesBcIndexes.Length, speciesName, (int)Math.Log10(reducer));
             xmlFile.WriteLine("    <point x=\"Mapped {0}s (100%)\" y=\"{1}\" />", molTitle, nUniqueMolecules / reducer);
@@ -1160,8 +1160,8 @@ namespace Linnarsson.Strt
             int trLen1stBinStart = trLen1stBinMid - trLenBinHalfWidth;
             int trLenBinCount = 4;
             int nSections = 20;
-            int minHitsPerGene = (barcodes.HasRandomBarcodes) ? 50 : nSections * 10;
-            int maxHitsPerGene = (barcodes.HasRandomBarcodes) ? (int)(0.7 * barcodes.RandomBarcodeCount * barcodes.Count) : int.MaxValue;
+            int minHitsPerGene = (barcodes.HasRandomTags) ? 50 : nSections * 10;
+            int maxHitsPerGene = (barcodes.HasRandomTags) ? (int)(0.7 * barcodes.RandomTagCount * barcodes.Count) : int.MaxValue;
             DescriptiveStatistics[,] binnedEfficiencies = new DescriptiveStatistics[trLenBinCount, nSections];
             for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
             {
@@ -1314,7 +1314,7 @@ namespace Linnarsson.Strt
             using (StreamWriter barcodeStats = new StreamWriter(OutputPathbase + "_barcode_summary.tab"))
             using (StreamWriter bCodeLines = new StreamWriter(OutputPathbase + "_barcode_oneliners.tab"))
             {
-                string molT = (barcodes.HasRandomBarcodes) ? "molecules" : "reads";
+                string molT = (barcodes.HasRandomTags) ? "molecules" : "reads";
                 barcodeStats.WriteLine("Total annotated {0}: {1}\n", molT, nAnnotatedMappings);
                 xmlFile.WriteLine("  <barcodestats>");
                 xmlFile.Write("    <barcodestat section=\"wellids\">");
@@ -1336,7 +1336,7 @@ namespace Linnarsson.Strt
                 }
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, nMappedReadsByBarcode,
                                     "MAPPEDREADS", "Total mapped reads by barcode", "mapped reads");
-                if (barcodes.HasRandomBarcodes)
+                if (barcodes.HasRandomTags)
                     WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, mappingAdder.NDuplicateReadsByBc(),
                                     "DUPLICATE_READS", "Duplicate reads of molecules (same UMI/position/strand) by barcode", "redundant reads (PCR)");
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, nNonAnnotatedItemsByBc,
@@ -1351,7 +1351,7 @@ namespace Linnarsson.Strt
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, Annotations.SampleBarcodeExpressedGenes(),
                                     "TRANSCRIPTS", "Detected transcripts by barcode", "detected transcripts");
             }
-            if (barcodes.HasRandomBarcodes)
+            if (barcodes.HasRandomTags)
             {
                 xmlFile.Write("    <barcodestat section=\"labeling efficiency ({0} spike mols)\">", Props.props.TotalNumberOfAddedSpikeMolecules);
                 for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
@@ -1387,7 +1387,7 @@ namespace Linnarsson.Strt
 
         private void WriteFeaturesByBarcode(StreamWriter xmlFile, StreamWriter barcodeStats, StreamWriter bCodeLines, int[] genomeBcIndexes)
         {
-            string molTitle = (barcodes.HasRandomBarcodes) ? "molecules" : "reads";
+            string molTitle = (barcodes.HasRandomTags) ? "molecules" : "reads";
             for (var annotType = 0; annotType < AnnotType.Count; annotType++)
             {
                 if (annotType == AnnotType.AREPT) continue;
@@ -1592,8 +1592,8 @@ namespace Linnarsson.Strt
             {
                 char[] nts = new char[] { '0', 'A', 'C', 'G', 'T' };
                 int thres = (int)(SnpAnalyzer.thresholdFractionAltHitsForMixPos * 100);
-                int minHitsToTestSNP = (barcodes.HasRandomBarcodes) ? Props.props.MinMoleculesToTestSnp : Props.props.MinReadsToTestSnp;
-                string minTxt = (barcodes.HasRandomBarcodes) ? "Molecules" : "Reads";
+                int minHitsToTestSNP = (barcodes.HasRandomTags) ? Props.props.MinMoleculesToTestSnp : Props.props.MinReadsToTestSnp;
+                string minTxt = (barcodes.HasRandomTags) ? "Molecules" : "Reads";
                 snpFile.WriteLine("SNP positions found in " + genomeBarcodes.Length + " barcodes belonging to species.");
                 snpFile.WriteLine("#(minimum {0} {3}/Pos required to check, limits used heterozygous: {1}-{2}% AltNt and homozygous: >{2}% Alt Nt)",
                                   minHitsToTestSNP, thres, 100 - thres, minTxt);
@@ -1662,7 +1662,7 @@ namespace Linnarsson.Strt
                         data.Value.GetWiggle(strand).WriteWiggle(readWriter, chr, strand, averageReadLength, Annotations.ChromosomeLengths[chr], true);
                 }
             }
-            if (barcodes.HasRandomBarcodes)
+            if (barcodes.HasRandomTags)
             {
                 using (StreamWriter molWriter = (OutputPathbase + "_" + strandString + "_bymolecule.wig.gz").OpenWrite())
                 {
@@ -1682,7 +1682,7 @@ namespace Linnarsson.Strt
         {
             int averageReadLength = MappedTagItem.AverageReadLen;
             using (StreamWriter readWriter = (OutputPathbase + "_byread.bed.gz").OpenWrite())
-            using (StreamWriter molWriter = (barcodes.HasRandomBarcodes)? (OutputPathbase + "_bymol.bed.gz").OpenWrite() : null)
+            using (StreamWriter molWriter = (barcodes.HasRandomTags)? (OutputPathbase + "_bymol.bed.gz").OpenWrite() : null)
             {
                 foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                 {
@@ -1707,7 +1707,7 @@ namespace Linnarsson.Strt
             if (Props.props.GenePaintIntervals == null || Props.props.GenePaintIntervals.Length == 0)
                 return;
             StreamWriter paintWriter = null;
-            string type = (barcodes.HasRandomBarcodes) ? "Molecule" : "Read";
+            string type = (barcodes.HasRandomTags) ? "Molecule" : "Read";
             foreach (string paintIvl in Props.props.GenePaintIntervals)
             {
                 string[] parts = paintIvl.Split(',');
@@ -1815,7 +1815,7 @@ namespace Linnarsson.Strt
                 bool nonZeroFound = false;
                 while (maxNReads > 0 &&  !nonZeroFound)
                 {
-                    for (int rndTagCount = 1; rndTagCount <= barcodes.RandomBarcodeCount; rndTagCount++)
+                    for (int rndTagCount = 1; rndTagCount <= barcodes.RandomTagCount; rndTagCount++)
                         if (randomTagFilter.readDistributionByMolCount[rndTagCount, maxNReads] > 0)
                         {
                             nonZeroFound = true;
@@ -1827,7 +1827,7 @@ namespace Linnarsson.Strt
                 for (int nReads = 2; nReads <= maxNReads; nReads++)
                     writer.Write("\tCasesOf{0}Reads", nReads);
                 writer.WriteLine();
-                for (int rndTagCount = 1; rndTagCount <= barcodes.RandomBarcodeCount; rndTagCount++)
+                for (int rndTagCount = 1; rndTagCount <= barcodes.RandomTagCount; rndTagCount++)
                 {
                     StringBuilder sb = new StringBuilder();
                     sb.Append(rndTagCount);
@@ -1859,8 +1859,8 @@ namespace Linnarsson.Strt
                 for (int section = 0; section < nSections; section++)
                     profileFile.Write("\t{0}", (section + 0.5D) / (double)nSections);
                 profileFile.WriteLine("\nBarcode\tTrLenFrom\tTrLenTo\tFraction within interval of all reads.");
-                int minHitsPerGene = (barcodes.HasRandomBarcodes) ? 50 : nSections * 10;
-                int maxHitsPerGene = (barcodes.HasRandomBarcodes) ? (int)(0.7 * barcodes.RandomBarcodeCount * barcodes.Count) : int.MaxValue;
+                int minHitsPerGene = (barcodes.HasRandomTags) ? 50 : nSections * 10;
+                int maxHitsPerGene = (barcodes.HasRandomTags) ? (int)(0.7 * barcodes.RandomTagCount * barcodes.Count) : int.MaxValue;
                 for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                 {
                     DescriptiveStatistics[,] binnedEfficiencies = new DescriptiveStatistics[trLenBinCount, nSections];

@@ -118,7 +118,7 @@ namespace Linnarsson.Strt
             dataByBc = new SnpRndTagVerChrPosBcData[barcodes.Count];
             this.snpPos = snpPos;
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
-                dataByBc[bcIdx] = new SnpRndTagVerChrPosBcData(barcodes.RandomBarcodeCount);
+                dataByBc[bcIdx] = new SnpRndTagVerChrPosBcData(barcodes.RandomTagCount);
         }
         public void Add(int bc, int rndTagIdx, Mismatch m)
         {
@@ -353,7 +353,7 @@ namespace Linnarsson.Strt
         {
             writer.WriteLine(header);
             writer.Write("ReadPos\tChr\tStrand\tSNPPos\tAltNts\tBarcode\tProblem\tBcIsHeZ\tTotal\tNt");
-            for (int i = 0; i < barcodes.RandomBarcodeCount; i++)
+            for (int i = 0; i < barcodes.RandomTagCount; i++)
                 writer.Write("\t#InTag" + i);
             writer.WriteLine();
         }

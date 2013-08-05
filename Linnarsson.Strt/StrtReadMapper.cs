@@ -45,7 +45,7 @@ namespace Linnarsson.Strt
             Console.WriteLine("*** Updating annotation file for {0} using {1} ***",
                               genome.GetBowtieMainIndexName(), Path.GetFileName(errorsPath));
             Background.Message("Updating annotations...");
-            AnnotationBuilder builder = AnnotationBuilder.GetAnnotationBuilder(props, genome);
+            AnnotationBuilder builder = new AnnotationBuilder(props, AnnotationReader.GetAnnotationReader(genome));
             builder.UpdateSilverBulletGenes(genome, errorsPath);
             Console.WriteLine("Done.");
             Background.Progress(100);
@@ -61,7 +61,7 @@ namespace Linnarsson.Strt
             AssertStrtGenomeFolder(genome);
             DateTime startTime = DateTime.Now;
             Console.WriteLine("*** Build of spliced exon junctions for {0} started at {1} ***", genome.GetBowtieMainIndexName(), DateTime.Now);
-            AnnotationBuilder builder = AnnotationBuilder.GetAnnotationBuilder(props, genome);
+            AnnotationBuilder builder = new AnnotationBuilder(props, AnnotationReader.GetAnnotationReader(genome));
             builder.BuildExonSplices(genome);
         }
 
@@ -167,7 +167,7 @@ namespace Linnarsson.Strt
 					count++;
 					int insertLength = rec.Sequence.Length;
 					StreamWriter f = sw_slask;
-                    int i = Array.IndexOf(barcodes.Seqs, rec.Sequence.Substring(0, barcodes.SeqLength));
+                    int i = Array.IndexOf(barcodes.Seqs, rec.Sequence.Substring(0, barcodes.BarcodeLen));
                     if (i >= 0 && i < barcodes.FirstNegBarcodeIndex)
                     {
                         string bc = barcodes.Seqs[i];
@@ -286,7 +286,7 @@ namespace Linnarsson.Strt
             Extract(pd.laneInfos, outputFolder);
         }
 
-        public static readonly string EXTRACTION_VERSION = "32";
+        public static readonly string EXTRACTION_VERSION = "33";
         private void Extract(List<LaneInfo> laneInfos, string outputFolder)
         {
             DateTime start = DateTime.Now;
@@ -336,7 +336,7 @@ namespace Linnarsson.Strt
                     {
                         int averageReadLen = (int)Math.Round(totLen / nRecords);
                         readCounter.AddReadFile(laneInfo.readFilePath, averageReadLen);
-                        sw_summary.WriteLine(readCounter.TotalsToTabString(barcodes.HasRandomBarcodes));
+                        sw_summary.WriteLine(readCounter.TotalsToTabString(barcodes.HasRandomTags));
                         sw_summary.WriteLine("#\tBarcode\tValidSTRTReads\tTotalBarcodedReads");
                         for (bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                             sw_summary.WriteLine("BARCODEREADS\t{0}\t{1}\t{2}",
@@ -412,7 +412,7 @@ namespace Linnarsson.Strt
             props.TotalNumberOfAddedSpikeMolecules = projDescr.SpikeMoleculeCount;
             logWriter.WriteLine("{0} Extracting {1} lanes with barcodes {2}...", DateTime.Now, projDescr.runIdsLanes.Length, projDescr.barcodeSet);
             logWriter.Flush();
-            if (barcodes.HasRandomBarcodes)
+            if (barcodes.HasRandomTags)
                 logWriter.WriteLine("{0} MinPhredScoreInRandomTag={1}", DateTime.Now, props.MinPhredScoreInRandomTag);
             Extract(projDescr);
             string[] speciesArgs = GetSpeciesArgs(projDescr.SampleLayoutPath, projDescr.defaultSpecies);
@@ -777,7 +777,7 @@ namespace Linnarsson.Strt
             annotations.Load();
             string outputPathbase = Path.Combine(outputFolder, OutputFilePrefix);
             TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props, outputPathbase);
-            string syntLevelFile = PathHandler.GetSyntLevelFilePath(projectFolder, barcodes.HasRandomBarcodes);
+            string syntLevelFile = PathHandler.GetSyntLevelFilePath(projectFolder, barcodes.HasRandomTags);
             if (syntLevelFile != "")
                 ts.SetSyntReadReporter(syntLevelFile);
             ts.ProcessMapFiles(mapFilePaths, averageReadLen);

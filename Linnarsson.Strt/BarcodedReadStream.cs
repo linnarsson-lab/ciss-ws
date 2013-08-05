@@ -36,13 +36,15 @@ namespace Linnarsson.Strt
         /// <returns></returns>
         public static IEnumerable<FastQRecord> Stream(Barcodes barcodes, string readsFqPath, byte qualityScoreBase, string idxSeqFilter)
         {
-            if (!barcodes.BarcodesInIndexReads && idxSeqFilter.Length == 0)
+            if (!barcodes.BarcodesInIndexReads && !barcodes.RandomTagsInIndexReads && idxSeqFilter.Length == 0)
             {
                 foreach (FastQRecord rec in FastQFile.Stream(readsFqPath, qualityScoreBase))
                     yield return rec;
                 yield break;
             }
-            int indexEndPos = barcodes.BarcodeEndPos; //.GetInsertStartPos();
+            int indexCopyLen = Math.Max( barcodes.RandomTagsInIndexReads? barcodes.RandomTagEndPos : 0,
+                                         barcodes.BarcodesInIndexReads? barcodes.BarcodeEndPos : 0);
+            byte[] indexQsCopyBuffer = new byte[indexCopyLen];
             IEnumerator<FastQRecord> readStream = FastQFile.Stream(readsFqPath, qualityScoreBase, true).GetEnumerator();
             string indexFqPath = Path.Combine(Path.GetDirectoryName(readsFqPath), ConvertToIndexFilename(Path.GetFileName(readsFqPath)));
             IEnumerator<FastQRecord> indexStream = FastQFile.Stream(indexFqPath, qualityScoreBase, true).GetEnumerator();
@@ -57,11 +59,10 @@ namespace Linnarsson.Strt
                 {
                     if (read.Header != index.Header.Replace("_R2_", "_R1_"))
                         throw new FormatException("Read file and index file headers do not match at " + read.Header + " in " + readsFqPath + "!");
-                    if (barcodes.BarcodesInIndexReads)
+                    if (indexCopyLen > 0)
                     {
-                        byte[] indexQs = new byte[indexEndPos];
-                        Array.Copy(index.Qualities, indexQs, indexEndPos);
-                        read.Insert(0, index.Sequence.Substring(0, indexEndPos), indexQs);
+                        Array.Copy(index.Qualities, indexQsCopyBuffer, indexCopyLen);
+                        read.Insert(0, index.Sequence.Substring(0, indexCopyLen), indexQsCopyBuffer);
                     }
                     yield return read;
                 }

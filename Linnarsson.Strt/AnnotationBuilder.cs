@@ -88,14 +88,6 @@ namespace Linnarsson.Strt
 
     public class AnnotationBuilder
     {
-        public static AnnotationBuilder GetAnnotationBuilder(Props props, StrtGenome genome)
-        {
-            if (genome.Annotation == "VEGA")
-                return new AnnotationBuilder(props, new BioMartAnnotationReader(genome, "VEGA"));
-            if (genome.Annotation.StartsWith("ENSE"))
-                return new AnnotationBuilder(props, new BioMartAnnotationReader(genome, genome.Annotation));
-            return new AnnotationBuilder(props, new UCSCAnnotationReader(genome));
-        }
         private Props props;
         private AnnotationReader annotationReader;
         private int minSpuriousSplicesToRemove = 5;
@@ -188,10 +180,10 @@ namespace Linnarsson.Strt
             int smallestReadMatchDistFromEnd = Math.Max(0, props.MinExtractionInsertLength / 2 - props.MaxAlignmentMismatches);
             string junctionsChrId = "chr" + genome.Annotation;
             Console.WriteLine("Reading genes for genome {0} and annotations {1}...", genome.Annotation, genome.Build);
-            Dictionary<string, List<GeneFeature>> gfByChr = annotationReader.BuildGeneModelsByChr();
-            Console.WriteLine("...read data for {0} chromosomes from annotation files:", gfByChr.Count);
-            Console.WriteLine(string.Join(",", gfByChr.Keys.ToArray()));
-            Console.WriteLine("{0} genes are annotated as pseudogenes.", annotationReader.GetPseudogeneCount());
+            annotationReader.BuildGeneModelsByChr();
+            Console.WriteLine("...read data for {0} chromosomes from annotation files:", annotationReader.ChrCount);
+            Console.WriteLine(string.Join(",", annotationReader.ChrNames.ToArray()));
+            Console.WriteLine("{0} genes are annotated as pseudogenes.", annotationReader.PseudogeneCount);
             Console.WriteLine("ReadLen={0} MaxMismatches={1} MaxExonsSkip={2}", ReadLen, MaxAlignmentMismatches, MaxExonsSkip);
             DnaSequence jChrSeq = new LongDnaSequence();
             Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
@@ -199,20 +191,18 @@ namespace Linnarsson.Strt
             StreamWriter chrWriter = PrepareJunctionChrFile(genome, junctionsChrId);
             foreach (string chrId in chrIdToFileMap.Keys)
             {
-                if (!gfByChr.ContainsKey(chrId))
+                if (annotationReader.GeneCount(chrId) == 0)
                     continue;
                 DnaSequence chrSeq = AbstractGenomeAnnotations.readChromosomeFile(chrIdToFileMap[chrId]);
-                List<GeneFeature> chrGfs = gfByChr[chrId];
-                Console.WriteLine("Processing chr {0} ({1} genes)...", chrId, chrGfs.Count);
+                Console.WriteLine("Processing chr {0} ({1} genes)...", chrId, annotationReader.GeneCount(chrId));
                 /* We can not rely on that the versions of each gene are consecutive in input file.
                     One and the same junction-sequence could also potentially have two different gene names.
-                    Thus, sort the genes along the chromosome and check if every new junction is already
+                    Thus, genes are sorted along the chromosome and we check if every new junction is already
                     in the junctionChr starting from the last gene with any overlap to current gene. */
                 List<long> gfEnds = new List<long>();
                 List<long> gfJPos = new List<long>();
                 int lastOverlappingGfIdx = 0;
-                chrGfs.Sort((gf1, gf2) => gf1.Start - gf2.Start);
-                foreach (GeneFeature gf in chrGfs.Where(g => genome.GeneVariants || !g.IsVariant())) // GeneFeatures now sorted by position on chromosome
+                foreach (GeneFeature gf in annotationReader.IterChrSortedGeneModels(chrId)) // GeneFeatures now sorted by position on chromosome
                 {
                     gf.JoinSpuriousSplices(minSpuriousSplicesToRemove);
                     gfEnds.Add(gf.End);

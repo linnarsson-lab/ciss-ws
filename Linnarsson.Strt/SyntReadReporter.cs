@@ -59,7 +59,7 @@ namespace Linnarsson.Strt
         public string SettingsString()
         {
             return "Genome: " + genome.Build + " source: " + genome.Annotation + ((genome.GeneVariants) ? "all" : "single") + " transcript models\r\n" +
-                   "Barcode set: " + barcodes.Name + (barcodes.HasRandomBarcodes ? (" (" + nRndTags.ToString()) : " (no") + " random labels)\r\n" +
+                   "Barcode set: " + barcodes.Name + (barcodes.HasRandomTags ? (" (" + nRndTags.ToString()) : " (no") + " random labels)\r\n" +
                    "Read lengths sampled from: " + string.Join(",", Array.ConvertAll(readLengthSamples, v => v.ToString())) + "\r\n" +
                    "Average #reads per molecule: " + meanReadsPerMolecule + " Average expr level of a gene within a barcode: " + meanMolExprLevelPerBc +
                    "Probility of a gene to be expressed: " + ProbGeneExpressed + "\r\n" +
@@ -89,7 +89,7 @@ namespace Linnarsson.Strt
             StreamWriter readWriter = readOutput.OpenWrite();
             string molOutput = outFileHead + ".mollevels";
             StreamWriter molWriter = null;
-            if (barcodes.HasRandomBarcodes)
+            if (barcodes.HasRandomTags)
                 molWriter = SetupWriter(genome, molOutput);
             int nReads = 0; int nBkgSeqs = 0, nSNPs = 0;
             foreach (string chrId in chrIdToFeature.Keys)
@@ -157,7 +157,7 @@ namespace Linnarsson.Strt
                         }
                         nDistinctRndTagsPerBc[bcIdx] = rndTagsUsed.Sum();
                     }
-                    if (barcodes.HasRandomBarcodes)
+                    if (barcodes.HasRandomTags)
                     {
                         WriteExprReportLine(molWriter, gf.Name, nMolsPerBc);
                         WriteExprReportLine(molWriter, "(distinct RndTags)", nDistinctRndTagsPerBc);
@@ -288,7 +288,7 @@ namespace Linnarsson.Strt
             string extraGs = new String('G', Math.Max(0, rnd.Next(11) - 7));
             string bcGGGSeq = barcodesGGG[bcIdx] + extraGs;
             string rndTag = "";
-            if (barcodes.HasRandomBarcodes)
+            if (barcodes.HasRandomTags)
             {
                 if (rndTagIdx == -1)
                     rndTagIdx = rnd.Next(nRndTags);

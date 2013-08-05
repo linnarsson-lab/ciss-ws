@@ -373,7 +373,7 @@ namespace Linnarsson.Strt
             WriteSplicesByGeneLocus(fileNameBase);
             if (props.AnalyzeSpliceHitsByBarcode)
                 WriteSplicesByGeneLocusAndBc(fileNameBase);
-            if (barcodes.HasRandomBarcodes)
+            if (barcodes.HasRandomTags)
             {
                 WriteTrueMolsTable(fileNameBase);
                 WriteReadsTable(fileNameBase);
@@ -592,7 +592,7 @@ namespace Linnarsson.Strt
                 matrixFile.WriteLine("Length, total and per barcode {0} transcript hits for transcripts, and total length, total and per barcode (both sense & antisense) hits for repeat regions grouped by type.", dataType);
                 matrixFile.WriteLine("The totals under MinExonHits correspond to single reads, having a unique genome mapping.");
                 WriteExtraDataTableHeaders(matrixFile);
-                string matrixValType = barcodes.HasRandomBarcodes ? "(Values are molecule counts)" : "(Values are read counts)";
+                string matrixValType = barcodes.HasRandomTags ? "(Values are molecule counts)" : "(Values are read counts)";
                 WriteBarcodeHeaders(matrixFile, 6, matrixValType);
                 matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\tExonHits");
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
@@ -638,7 +638,7 @@ namespace Linnarsson.Strt
             string exprPath = fileNameBase + "_CAPRegionHits.tab";
             using (StreamWriter matrixFile = new StreamWriter(exprPath))
             {
-                string hitType = barcodes.HasRandomBarcodes ? "molecule" : "read";
+                string hitType = barcodes.HasRandomTags ? "molecule" : "read";
                 matrixFile.WriteLine("{0} hits within {1} bases ('CAP Region') downstream of transcript start (moved {2} bases 5' from original annotation).",
                                      hitType, props.CapRegionSize, props.GeneFeature5PrimeExtension);
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
@@ -764,7 +764,7 @@ namespace Linnarsson.Strt
 
         private string WriteNormalizedExpression(string fileNameBase)
         {
-            bool molCounts = barcodes.HasRandomBarcodes;
+            bool molCounts = barcodes.HasRandomTags;
             string ROrM = molCounts ? "Mols" : "Reads";
             string rpType = ROrM + (props.UseRPKM ? "PerKBases" : "") + (molCounts ? "Normalized" : "PerMillion");
             string rpmPath = fileNameBase + "_" + rpType + ".tab";
@@ -809,7 +809,7 @@ namespace Linnarsson.Strt
                 RPkbM999 = 1000 * 1.0E+6 * ASReadsPerBase[(int)Math.Floor(ASReadsPerBase.Count * 0.999)] / (double)totCount;
             }
             double[] normFactors = CalcNormalizationFactors(totalByBarcode);
-            string normName = (props.UseRPKM) ? "Normalizer" : (barcodes.HasRandomBarcodes) ? "SingleMol" : "SingleRead";
+            string normName = (props.UseRPKM) ? "Normalizer" : (barcodes.HasRandomTags) ? "SingleMol" : "SingleRead";
             matrixFile.Write("{0}\t\t\t\t\t\t\t", normName);
             if (props.DirectionalReads) matrixFile.Write("\t\t");
             foreach (int idx in speciesBcIndexes)
@@ -846,7 +846,7 @@ namespace Linnarsson.Strt
         private double[] CalcNormalizationFactors(int[] totByBarcode)
         {
             double normalizer = 1.0E+6;
-            if (barcodes.HasRandomBarcodes)
+            if (barcodes.HasRandomTags)
             {
                 double nValidBarcodes = totByBarcode.Count(v => v > 0);
                 normalizer = totByBarcode.Sum() / nValidBarcodes;
@@ -1299,7 +1299,7 @@ namespace Linnarsson.Strt
         {
             using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_profiles.tab"))
             {
-                string countType = (barcodes.HasRandomBarcodes) ? "molecule" : "read";
+                string countType = (barcodes.HasRandomTags) ? "molecule" : "read";
                 file.WriteLine("All hit {0} counts to expressed transcripts from 5' to 3' end. Each data row truncated at last position > 0.",
                                countType);
                 file.Write("Gene\tChr\tTrDir\tTr5'Pos\tTr3'Pos\tTrLen");

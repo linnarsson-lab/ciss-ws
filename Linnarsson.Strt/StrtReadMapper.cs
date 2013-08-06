@@ -773,7 +773,7 @@ namespace Linnarsson.Strt
             MappedTagItem.AverageReadLen = averageReadLen;
             genome.ReadLen = averageReadLen;
             UpdateGenesToPaint(projectFolder, props);
-            AbstractGenomeAnnotations annotations = new UCSCGenomeAnnotations(props, genome);
+            AbstractGenomeAnnotations annotations = new GenomeAnnotationsOnFile(props, genome);
             annotations.Load();
             string outputPathbase = Path.Combine(outputFolder, OutputFilePrefix);
             TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props, outputPathbase);

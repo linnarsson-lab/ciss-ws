@@ -180,8 +180,8 @@ namespace Linnarsson.Strt
             int smallestReadMatchDistFromEnd = Math.Max(0, props.MinExtractionInsertLength / 2 - props.MaxAlignmentMismatches);
             string junctionsChrId = "chr" + genome.Annotation;
             Console.WriteLine("Reading genes for genome {0} and annotations {1}...", genome.Annotation, genome.Build);
-            annotationReader.BuildGeneModelsByChr();
-            Console.WriteLine("...read data for {0} chromosomes from annotation files:", annotationReader.ChrCount);
+            int nModels = annotationReader.BuildGeneModelsByChr();
+            Console.WriteLine("...read data for {0} gene models on {1} chromosomes from annotation files:", nModels, annotationReader.ChrCount);
             Console.WriteLine(string.Join(",", annotationReader.ChrNames.ToArray()));
             Console.WriteLine("{0} genes are annotated as pseudogenes.", annotationReader.PseudogeneCount);
             Console.WriteLine("ReadLen={0} MaxMismatches={1} MaxExonsSkip={2}", ReadLen, MaxAlignmentMismatches, MaxExonsSkip);

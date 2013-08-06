@@ -54,6 +54,7 @@
     <Compile Include="AnnotationBuilder.cs" />
     <Compile Include="BarcodedReadStream.cs" />
     <Compile Include="BowtieMapFileSorter.cs" />
+    <Compile Include="GenomeAnnotationsInDatabase.cs" />
     <Compile Include="MapFileSnpFinder.cs" />
     <Compile Include="MappingAdder.cs" />
     <Compile Include="NonExonRepeatMasker.cs" />

@@ -10,7 +10,7 @@ namespace C1
     {
         static void Main(string[] args)
         {
-            if (args.Length < 1 || args.Length > 2)
+            if (args.Length != 1)
             {
                 Console.WriteLine("Usage:\nmono C1FeatureLoader.exe GENOME\nwhere genome is e.g. 'mm10', 'mm10_aUCSC', 'hg19_sENSE'");
                 return;

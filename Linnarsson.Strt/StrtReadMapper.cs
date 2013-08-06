@@ -773,7 +773,7 @@ namespace Linnarsson.Strt
             MappedTagItem.AverageReadLen = averageReadLen;
             genome.ReadLen = averageReadLen;
             UpdateGenesToPaint(projectFolder, props);
-            AbstractGenomeAnnotations annotations = new GenomeAnnotationsOnFile(props, genome);
+            GenomeAnnotations annotations = new GenomeAnnotationsOnFile(props, genome);
             annotations.Load();
             string outputPathbase = Path.Combine(outputFolder, OutputFilePrefix);
             TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props, outputPathbase);
@@ -909,7 +909,7 @@ namespace Linnarsson.Strt
                 foreach (string chrId in chrIdToFeature.Keys)
                 {
                     Console.Write(chrId + "."); Console.Out.Flush();
-                    DnaSequence chrSeq = AbstractGenomeAnnotations.ReadChromosomeFile(chrIdToFileMap[chrId]);
+                    DnaSequence chrSeq = GenomeAnnotations.ReadChromosomeFile(chrIdToFileMap[chrId]);
                     foreach (LocusFeature f in chrIdToFeature[chrId])
                     {
                         string readStart = "";

@@ -10,7 +10,7 @@ using System.Security.AccessControl;
 
 namespace Linnarsson.Strt
 {
-    public class GenomeAnnotationsOnFile : AbstractGenomeAnnotations
+    public class GenomeAnnotationsOnFile : GenomeAnnotations
     {
 
         public GenomeAnnotationsOnFile(Props props, StrtGenome genome) : base(props, genome)

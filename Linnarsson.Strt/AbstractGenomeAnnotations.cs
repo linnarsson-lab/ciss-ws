@@ -12,7 +12,7 @@ using Linnarsson.Dna;
 
 namespace Linnarsson.Strt
 {
-    public abstract class AbstractGenomeAnnotations
+    public abstract class GenomeAnnotations
     {
         public static int annotationBinSize = 30000;
 
@@ -60,7 +60,7 @@ namespace Linnarsson.Strt
 
         protected abstract void RegisterGenesAndIntervals();
 
-        protected AbstractGenomeAnnotations(Props props, StrtGenome genome)
+        protected GenomeAnnotations(Props props, StrtGenome genome)
 		{
             this.props = props;
             this.genome = genome;

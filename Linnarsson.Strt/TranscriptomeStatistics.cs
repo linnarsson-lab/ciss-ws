@@ -69,7 +69,7 @@ namespace Linnarsson.Strt
         /// </summary>
         int TotalHits { get { return TotalHitsByAnnotType.Sum(); } }
 
-        AbstractGenomeAnnotations Annotations;
+        GenomeAnnotations Annotations;
         Barcodes barcodes;
 		DnaMotif[] motifs;
         int currentBcIdx = 0;
@@ -140,7 +140,7 @@ namespace Linnarsson.Strt
         private static int nMaxMappings;
         private List<GeneFeature> gfsForRndTagProfile = new List<GeneFeature>();
 
-        public TranscriptomeStatistics(AbstractGenomeAnnotations annotations, Props props, string outputPathbase)
+        public TranscriptomeStatistics(GenomeAnnotations annotations, Props props, string outputPathbase)
 		{
             SelectedBcWiggleAnnotations = props.SelectedBcWiggleAnnotations;
             if (props.SelectedBcWiggleAnnotations != null && props.SelectedBcWiggleAnnotations.Length == 0)

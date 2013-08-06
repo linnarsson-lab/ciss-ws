@@ -17,7 +17,7 @@ namespace Linnarsson.Strt
     {
         private delegate MultiReadMapping AddMappingToTranscripts(MultiReadMappings mrm, out bool hasSomeTrMapping, out bool hasSomeNewMapping);
         private AddMappingToTranscripts addMappingToTranscripts;
-        private AbstractGenomeAnnotations Annotations;
+        private GenomeAnnotations Annotations;
         private RandomTagFilterByBc randomTagFilter;
         private int[] nUniqueByBarcode;
         private int[] nDuplicatesByBarcode;
@@ -52,7 +52,7 @@ namespace Linnarsson.Strt
             return nDuplicatesByBarcode;
         }
 
-        public MappingAdder(AbstractGenomeAnnotations annotations, RandomTagFilterByBc randomTagFilter, Barcodes barcodes)
+        public MappingAdder(GenomeAnnotations annotations, RandomTagFilterByBc randomTagFilter, Barcodes barcodes)
         {
             this.Annotations = annotations;
             this.randomTagFilter = randomTagFilter;

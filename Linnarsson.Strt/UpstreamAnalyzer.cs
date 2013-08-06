@@ -12,11 +12,11 @@ namespace Linnarsson.Strt
         private int[] upstreamTests;
         private int[,] upstreamEquals;
         private HashSet<string>[] hitsByBcIdx;
-        private AbstractGenomeAnnotations Annotations;
+        private GenomeAnnotations Annotations;
         private Dictionary<string, int> barcodesWTSSeqMap;
         private Barcodes barcodes;
 
-        public UpstreamAnalyzer(AbstractGenomeAnnotations annotations, Barcodes barcodes)
+        public UpstreamAnalyzer(GenomeAnnotations annotations, Barcodes barcodes)
         {
             upstreamEquals = new int[barcodes.Count, barcodes.Count];
             upstreamTests = new int[barcodes.Count];

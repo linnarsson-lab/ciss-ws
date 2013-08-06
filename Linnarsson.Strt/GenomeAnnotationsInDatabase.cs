@@ -6,7 +6,7 @@ using Linnarsson.Dna;
 
 namespace Linnarsson.Strt
 {
-    public class GenomeAnnotationsInDatabase : AbstractGenomeAnnotations
+    public class GenomeAnnotationsInDatabase : GenomeAnnotations
     {
         public GenomeAnnotationsInDatabase(Props props, StrtGenome genome)
             : base(props, genome)

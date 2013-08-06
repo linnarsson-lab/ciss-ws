@@ -743,7 +743,7 @@ namespace Linnarsson.Strt
                 WriteMappingDepth(xmlFile);
                 WritePerLaneStats(xmlFile);
                 AddSpikes(xmlFile);
-                Annotations.WriteSpikeDetection(xmlFile);
+                WriteSpikeDetection(xmlFile);
                 Add5To3PrimeHitProfile(xmlFile);
                 AddCVHistogram(xmlFile);
                 WriteBarcodeStats(xmlFile, readCounter);
@@ -753,6 +753,41 @@ namespace Linnarsson.Strt
             if (!Environment.OSVersion.VersionString.Contains("Microsoft"))
             {
                 CmdCaller.Run("php", "make_html_summary.php " + xmlPath);
+            }
+        }
+
+        public void WriteSpikeDetection(StreamWriter xmlFile)
+        {
+            StringBuilder sbt = new StringBuilder();
+            StringBuilder sbf = new StringBuilder();
+            foreach (GeneFeature gf in Annotations.IterTranscripts(true))
+            {
+                if (!gf.IsExpressed())
+                    continue;
+                int total = 0;
+                int detected = 0;
+                for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                {
+                    int bcHits = gf.TranscriptHitsByBarcode[bcIdx];
+                    total += bcHits;
+                    if (bcHits > 0) detected++;
+                }
+                double fraction = (detected / (double)barcodes.Count);
+                string spikeId = gf.Name.Replace("RNA_SPIKE_", "");
+                sbt.Append(string.Format("      <point x=\"#{0}\" y=\"{1:0}\" />\n", spikeId, total));
+                sbf.Append(string.Format("      <point x=\"#{0}\" y=\"{1:0.###}\" />\n", spikeId, fraction));
+            }
+            if (sbt.Length > 0)
+            {
+                xmlFile.WriteLine("  <spikedetection>");
+                xmlFile.WriteLine("    <title>Detection of spikes across all {0} wells</title>", barcodes.Count);
+                xmlFile.WriteLine("    <curve legend=\"total reads\" yaxis=\"right\" color=\"black\">");
+                xmlFile.Write(sbt.ToString());
+                xmlFile.WriteLine("    </curve>");
+                xmlFile.WriteLine("    <curve legend=\"frac. of wells\" yaxis=\"left\" color=\"blue\">");
+                xmlFile.Write(sbf.ToString());
+                xmlFile.WriteLine("    </curve>");
+                xmlFile.WriteLine("  </spikedetection>");
             }
         }
 

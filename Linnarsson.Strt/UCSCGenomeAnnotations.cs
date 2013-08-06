@@ -52,11 +52,6 @@ namespace Linnarsson.Strt
             Console.WriteLine("{0} annotated repeat types.", repeatFeatures.Count);
         }
 
-        public override string[] GetChromosomeIds()
-        {
- 	        return ExonAnnotations.Keys.ToArray();
-        }
-
         private void AdjustEndsAndMarkUpOverlaps()
         {
             int nMarkedExons = 0, nMarkedGenes = 0, totalMarkedLen = 0, totalFullyExtended5Primes = 0, totalMaskedIntronicFeatures = 0;
@@ -89,7 +84,7 @@ namespace Linnarsson.Strt
             int[] exonEnds;
             bool[] startSortedExonStrands;
             GeneFeature[] geneFeatureByExon;
-            CollectExonsOfAllGenes(chrId, out sortedExonStarts, out exonEnds, out startSortedExonStrands, out geneFeatureByExon);
+            AnnotationReader.CollectExonsOfAllGenes(chrId, geneFeatures.Values, out sortedExonStarts, out exonEnds, out startSortedExonStrands, out geneFeatureByExon);
             int[] sortedExonEnds = (int[])exonEnds.Clone();
             bool[] endSortedExonStrands = (bool[])startSortedExonStrands.Clone();
             Sort.QuickSort(sortedExonEnds, endSortedExonStrands);
@@ -122,47 +117,6 @@ namespace Linnarsson.Strt
             }
         }
 
-        /// <summary>
-        /// All four arrays will come out sorted on the exon Starts
-        /// </summary>
-        /// <param name="chrId"></param>
-        /// <param name="sortedExonStarts"></param>
-        /// <param name="exonEnds"></param>
-        /// <param name="exonStrands"></param>
-        /// <param name="gFeatureByExon"></param>
-        private void CollectExonsOfAllGenes(string chrId, out int[] sortedExonStarts, out int[] exonEnds,
-                                             out bool[] exonStrands, out GeneFeature[] gFeatureByExon)
-        {
-            sortedExonStarts = new int[30000];
-            exonEnds = new int[30000];
-            exonStrands = new bool[30000];
-            gFeatureByExon = new GeneFeature[30000];
-            int exonIdx = 0;
-            foreach (GeneFeature gf in geneFeatures.Values)
-            {
-                if (gf.Chr == chrId)
-                    for (int i = 0; i < gf.ExonCount; i++)
-                    {
-                        sortedExonStarts[exonIdx] = gf.ExonStarts[i];
-                        exonEnds[exonIdx] = gf.ExonEnds[i];
-                        exonStrands[exonIdx] = (gf.Strand == '+')? true : false;
-                        gFeatureByExon[exonIdx] = gf;
-                        if (++exonIdx >= sortedExonStarts.Length)
-                        {
-                            Array.Resize(ref sortedExonStarts, exonIdx + 20000);
-                            Array.Resize(ref exonEnds, exonIdx + 20000);
-                            Array.Resize(ref exonStrands, exonIdx + 20000);
-                            Array.Resize(ref gFeatureByExon, exonIdx + 20000);
-                        }
-                    }
-            }
-            Array.Resize(ref sortedExonStarts, exonIdx);
-            Array.Resize(ref exonEnds, exonIdx);
-            Array.Resize(ref exonStrands, exonIdx);
-            Array.Resize(ref gFeatureByExon, exonIdx);
-            Sort.QuickSort(sortedExonStarts, exonEnds, exonStrands, gFeatureByExon);
-        }
-
         private void ReadChromsomeSequences(Dictionary<string, string> chrIdToFileMap)
         {
             string[] selectedChrIds = props.SeqStatsChrIds;
@@ -178,7 +132,7 @@ namespace Linnarsson.Strt
                     int chrLen;
                     if (needChromosomeSequences && Array.IndexOf(selectedChrIds, chrId) >= 0)
                     {
-                        DnaSequence chrSeq = readChromosomeFile(chrIdToFileMap[chrId]);
+                        DnaSequence chrSeq = ReadChromosomeFile(chrIdToFileMap[chrId]);
                         chrLen = (int)chrSeq.Count;
                         ChromosomeSequences.Add(chrId, chrSeq);
                     }
@@ -320,40 +274,7 @@ namespace Linnarsson.Strt
             return true;
         }
 
-        public override int GetTotalAnnotCounts(int annotType, bool excludeMasked)
-        {
-            int totCounts = 0;
-            if (annotType == AnnotType.REPT || annotType == AnnotType.AREPT)
-                foreach (RepeatFeature rf in repeatFeatures.Values)
-                    totCounts += rf.GetTotalHits();
-            else
-                foreach (GeneFeature gf in geneFeatures.Values)
-                    totCounts += gf.GetAnnotCounts(annotType, excludeMasked);
-            return totCounts;
-        }
-
-        public override int GetTotalAnnotLength(int annotType, bool excludeMasked)
-        {
-            if (annotType == AnnotType.REPT || annotType == AnnotType.AREPT)
-                return GetTotalRepeatLength();
-            int totLen = 0;
-            foreach (GeneFeature gf in geneFeatures.Values)
-                totLen += gf.GetAnnotLength(annotType, excludeMasked);
-            return totLen;
-        }
-        public override int GetTotalAnnotLength(int annotType)
-        {
-            return GetTotalAnnotLength(annotType, false);
-        }
-
-        public int GetTotalRepeatLength()
-        {
-            int totLen = 0;
-            foreach (RepeatFeature rf in repeatFeatures.Values)
-                totLen += rf.GetLocusLength();
-            return totLen;
-        }
-
+        #region SaveResults
         public override void SaveResult(string fileNameBase, int averageReadLen)
         {
             WriteIntronCounts(fileNameBase);
@@ -724,41 +645,6 @@ namespace Linnarsson.Strt
                     if (sGfGroup.Count > 0)
                         trShareFile.WriteLine("{0}\t{1}\t{2}", gf.Name, gf.TranscriptReadsByBarcode.Sum(), string.Join("\t", sGfGroup.ToArray()));
                 }
-            }
-        }
-
-        public override void WriteSpikeDetection(StreamWriter xmlFile)
-        {
-            StringBuilder sbt = new StringBuilder();
-            StringBuilder sbf = new StringBuilder();
-            foreach (GeneFeature gf in IterTranscripts(true))
-            {
-                if (!gf.IsExpressed())
-                    continue;
-                int total = 0;
-                int detected = 0;
-                for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
-                {
-                    int bcHits = gf.TranscriptHitsByBarcode[bcIdx];
-                    total += bcHits;
-                    if (bcHits > 0) detected++;
-                }
-                double fraction = (detected / (double)barcodes.Count);
-                string spikeId = gf.Name.Replace("RNA_SPIKE_", "");
-                sbt.Append(string.Format("      <point x=\"#{0}\" y=\"{1:0}\" />\n", spikeId, total));
-                sbf.Append(string.Format("      <point x=\"#{0}\" y=\"{1:0.###}\" />\n", spikeId, fraction));
-            }
-            if (sbt.Length > 0)
-            {
-                xmlFile.WriteLine("  <spikedetection>");
-                xmlFile.WriteLine("    <title>Detection of spikes across all {0} wells</title>", barcodes.Count);
-                xmlFile.WriteLine("    <curve legend=\"total reads\" yaxis=\"right\" color=\"black\">");
-                xmlFile.Write(sbt.ToString());
-                xmlFile.WriteLine("    </curve>");
-                xmlFile.WriteLine("    <curve legend=\"frac. of wells\" yaxis=\"left\" color=\"blue\">");
-                xmlFile.Write(sbf.ToString());
-                xmlFile.WriteLine("    </curve>");
-                xmlFile.WriteLine("  </spikedetection>");
             }
         }
 
@@ -1481,7 +1367,7 @@ namespace Linnarsson.Strt
             }
             capHitsFile.WriteLine();
         }
-
+        #endregion
     }
 
 }

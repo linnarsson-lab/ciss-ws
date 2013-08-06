@@ -909,7 +909,7 @@ namespace Linnarsson.Strt
                 foreach (string chrId in chrIdToFeature.Keys)
                 {
                     Console.Write(chrId + "."); Console.Out.Flush();
-                    DnaSequence chrSeq = AbstractGenomeAnnotations.readChromosomeFile(chrIdToFileMap[chrId]);
+                    DnaSequence chrSeq = AbstractGenomeAnnotations.ReadChromosomeFile(chrIdToFileMap[chrId]);
                     foreach (LocusFeature f in chrIdToFeature[chrId])
                     {
                         string readStart = "";

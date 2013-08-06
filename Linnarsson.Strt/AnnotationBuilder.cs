@@ -193,7 +193,7 @@ namespace Linnarsson.Strt
             {
                 if (annotationReader.GeneCount(chrId) == 0)
                     continue;
-                DnaSequence chrSeq = AbstractGenomeAnnotations.readChromosomeFile(chrIdToFileMap[chrId]);
+                DnaSequence chrSeq = AbstractGenomeAnnotations.ReadChromosomeFile(chrIdToFileMap[chrId]);
                 Console.WriteLine("Processing chr {0} ({1} genes)...", chrId, annotationReader.GeneCount(chrId));
                 /* We can not rely on that the versions of each gene are consecutive in input file.
                     One and the same junction-sequence could also potentially have two different gene names.

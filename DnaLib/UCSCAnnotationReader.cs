@@ -13,19 +13,20 @@ namespace Linnarsson.Dna
             : base(genome)
         {}
 
-        public override void BuildGeneModelsByChr()
+        public override int BuildGeneModelsByChr()
         {
             ClearGenes();
             string refFlatPath = MakeFullAnnotationPath("refFlat.txt", true);
             VisitedAnnotationPaths = refFlatPath;
-            int n = 0;
+            int n = 0, nCreated = 0;
             foreach (GeneFeature gf in AnnotationReader.IterAnnotationFile(refFlatPath))
             {
-                    AddGeneModel(gf);
-                    n++;
+                if (AddGeneModel(gf)) nCreated++;
+                n++;
             }
             string varTxt = (genome.GeneVariants) ? " genes and" : " main gene";
             Console.WriteLine("Read {0}{1} variants from {2}", n, varTxt, refFlatPath);
+            return nCreated;
         }
 
     }

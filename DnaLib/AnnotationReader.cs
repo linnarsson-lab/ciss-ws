@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using Linnarsson.Mathematics;
+using Linnarsson.Dna;
 
 namespace Linnarsson.Dna
 {
@@ -29,7 +30,7 @@ namespace Linnarsson.Dna
             this.genome = genome;
         }
 
-        public abstract void BuildGeneModelsByChr();
+        public abstract int BuildGeneModelsByChr();
 
         protected StrtGenome genome;
         protected Dictionary<string, GeneFeature> nameToGene;
@@ -83,17 +84,17 @@ namespace Linnarsson.Dna
             return annotationPath;
         }
 
-        protected void AddGeneModel(GeneFeature gf)
+        protected bool AddGeneModel(GeneFeature gf)
         {
             if (!genesByChr.ContainsKey(gf.Chr))
                 genesByChr[gf.Chr] = new List<GeneFeature>();
             if (genome.GeneVariants)
-                AddToVariantGeneModels(gf);
+                return AddToVariantGeneModels(gf);
             else
-                AddToSingleGeneModels(gf);
+                return AddToSingleGeneModels(gf);
         }
 
-        private void AddToSingleGeneModels(GeneFeature gf)
+        private bool AddToSingleGeneModels(GeneFeature gf)
         {
             List<GeneFeature> chrGfs = genesByChr[gf.Chr];
             try
@@ -112,7 +113,7 @@ namespace Linnarsson.Dna
                         chrGfs[idx] = combinedGf;
                         nameToGene[oldGf.Name] = combinedGf;
                         nameToGene[locName] = combinedGf;
-                        return;
+                        return false;
                     }
                     v++;
                     locName = string.Format("{0}{1}{2}", gf.Name, GeneFeature.altLocusIndicator, + v);
@@ -129,6 +130,7 @@ namespace Linnarsson.Dna
             // Add a new (could be first or secondary with same name) locus
             chrGfs.Add(gf);
             nameToGene[gf.Name] = gf;
+            return true;
         }
 
         private GeneFeature CreateExonUnion(GeneFeature gf1, GeneFeature gf2)
@@ -161,7 +163,7 @@ namespace Linnarsson.Dna
             return newFeature;
         }
 
-        private void AddToVariantGeneModels(GeneFeature gf)
+        private bool AddToVariantGeneModels(GeneFeature gf)
         {
             try
             {
@@ -184,54 +186,15 @@ namespace Linnarsson.Dna
             catch (KeyNotFoundException) { }
             genesByChr[gf.Chr].Add(gf);
             nameToGene[gf.Name] = gf;
+            return true;
         }
 
-        public void Extend5PrimeEnds()
+        public void AdjustGeneFeatures(GeneFeatureModifiers m)
         {
-            int[] sortedExonStarts;
-            int[] exonEnds;
-            bool[] startSortedExonStrands;
-            GeneFeature[] geneFeatureByExon;
-            foreach (string chrId in genesByChr.Keys)
+            foreach (List<GeneFeature> chrGenes in genesByChr.Values)
             {
-                List<GeneFeature> chrGenes = genesByChr[chrId];
-                CollectExonsOfAllGenes(chrId, chrGenes, out sortedExonStarts, out exonEnds, out startSortedExonStrands, out geneFeatureByExon);
-                int[] sortedExonEnds = (int[])exonEnds.Clone();
-                bool[] endSortedExonStrands = (bool[])startSortedExonStrands.Clone();
-                Sort.QuickSort(sortedExonEnds, endSortedExonStrands);
-                foreach (GeneFeature gf in chrGenes)
-                {
-                    gf.AdjustFlanksAnd5PrimeExtend(sortedExonStarts, startSortedExonStrands, exonEnds, endSortedExonStrands);
-                }
+                m.Process(chrGenes);
             }
-        }
-
-        /// <summary>
-        /// All four arrays will come out sorted by exon Start positions on chromosome.
-        /// </summary>
-        public static void CollectExonsOfAllGenes(string chrId, IEnumerable<GeneFeature> geneFeatures, out int[] sortedExonStarts,
-                                                  out int[] exonEnds, out bool[] exonStrands, out GeneFeature[] gFeatureByExon)
-        {
-            int nExons = 0;
-            foreach (GeneFeature gf in geneFeatures.Where(gf => gf.Chr == chrId))
-                nExons += gf.ExonCount;
-            sortedExonStarts = new int[nExons];
-            exonEnds = new int[nExons];
-            exonStrands = new bool[nExons];
-            gFeatureByExon = new GeneFeature[nExons];
-            int exonIdx = 0;
-            foreach (GeneFeature gf in geneFeatures.Where(gf => gf.Chr == chrId))
-            {
-                for (int i = 0; i < gf.ExonCount; i++)
-                {
-                    sortedExonStarts[exonIdx] = gf.ExonStarts[i];
-                    exonEnds[exonIdx] = gf.ExonEnds[i];
-                    exonStrands[exonIdx] = (gf.Strand == '+') ? true : false;
-                    gFeatureByExon[exonIdx] = gf;
-                    exonIdx++;
-                }
-            }
-            Sort.QuickSort(sortedExonStarts, exonEnds, exonStrands, gFeatureByExon);
         }
 
         // Iterates the features of a refFlat-formatted file, making no changes/variant detections of the data.

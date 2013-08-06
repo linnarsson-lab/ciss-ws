@@ -742,8 +742,8 @@ namespace Linnarsson.Dna
                     int newStart = Math.Max(Start - Props.props.GeneFeature5PrimeExtension, sortedMaskEnds[idx] + 1);
                     extension = Start - newStart;
                     //if (extension < Props.props.GeneFeature5PrimeExtension)
-                        Console.WriteLine("Adjusting extension on {0}: oldStart={1} newStart={2}. Competing End={3} newLeftFlankLength={4}",
-                                     Name, Start, newStart, sortedMaskEnds[idx], LeftFlankLength);
+                    //    Console.WriteLine("Adjusting extension on {0}: oldStart={1} newStart={2}. Competing End={3} newLeftFlankLength={4}",
+                    //                 Name, Start, newStart, sortedMaskEnds[idx], LeftFlankLength);
                     Start = newStart;
                 }
             }

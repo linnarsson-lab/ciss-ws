@@ -18,32 +18,34 @@ namespace Linnarsson.Dna
             this.sourceName = sourceName;
         }
 
-        public override void BuildGeneModelsByChr()
+        public override int BuildGeneModelsByChr()
         {
             ClearGenes();
-            ReadMartGenes();
-            ReadRefFlatGenes();
+            int nCreated = ReadMartGenes();
+            nCreated += ReadRefFlatGenes();
+            return nCreated;
         }
 
-        private void ReadMartGenes()
+        private int ReadMartGenes()
         {
             string martPath = MakeFullAnnotationPath(sourceName + "_mart_export.txt", true);
             VisitedAnnotationPaths = martPath;
-            int n = 0;
+            int nRead = 0, nCreated = 0;
             foreach (GeneFeature gf in IterMartFile(martPath))
             {
                 if (!gf.Chr.Contains("random"))
                 {
-                    AddGeneModel(gf);
-                    n++;
+                    if (AddGeneModel(gf)) nCreated++;
+                    nRead++;
                 }
             }
-            Console.WriteLine("Read {0} genes and variants from {1}", n, martPath);
+            Console.WriteLine("Read {0} genes and variants from {1}", nRead, martPath);
+            return nCreated;
         }
 
-        private void ReadRefFlatGenes()
+        private int ReadRefFlatGenes()
         {
-            int refN = 0;
+            int refN = 0, nCreated = 0;
             string refFlatPath = MakeFullAnnotationPath("refFlat.txt", false);
             if (File.Exists(refFlatPath))
             {
@@ -52,12 +54,13 @@ namespace Linnarsson.Dna
                 {
                     if (ShouldAdd(gf))
                     {
-                        AddGeneModel(gf);
+                        if (AddGeneModel(gf)) nCreated++;
                         refN++;
                     }
                 }
                 Console.WriteLine("Added {0} genes and their variants from {1}", refN, refFlatPath);
             }
+            return nCreated;
         }
 
         private bool ShouldAdd(GeneFeature gf)

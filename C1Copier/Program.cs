@@ -5,21 +5,15 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
-using Linnarsson.C1Model;
 using Linnarsson.Strt;
 
-namespace C1Copier
+namespace C1
 {
     class Program
     {
         static StreamWriter logWriter;
         static int minutesWait = 10;
         static int nExceptions = 0;
-        static string c1RunsFolder = "/data2/c1-runs";
-        static string captureFilename = "capture_report.txt";
-        static string metadataFilename = "metadata.txt";
-        static string imgSubfoldername = "";
-        static string imgfilePattern = "well_*.png";
 
         static void Main(string[] args)
         {
@@ -31,9 +25,9 @@ namespace C1Copier
                 {
                     string arg = args[i];
                     if (arg == "-i")
-                        c1RunsFolder = args[++i];
+                        C1Props.props.C1RunsFolder = args[++i];
                     else if (arg.StartsWith("-i"))
-                        c1RunsFolder = arg.Substring(2);
+                        C1Props.props.C1RunsFolder = arg.Substring(2);
                     else if (arg == "-l")
                         logFile = args[++i];
                     else if (arg.StartsWith("-l"))
@@ -86,7 +80,7 @@ namespace C1Copier
         private static bool TryCopy(StreamWriter logWriter)
         {
             bool someCopyDone = false;
-            string[] availableChips = Directory.GetDirectories(c1RunsFolder, "*-*-*");
+            string[] availableChips = Directory.GetDirectories(C1Props.props.C1RunsFolder, "*-*-*");
             List<string> loadedPlateIds = new C1DB().GetAllPlateIds();
             foreach (string chipId in availableChips)
             {
@@ -114,8 +108,11 @@ namespace C1Copier
         private static List<Cell> ReadCellData(string chipId, Dictionary<string, string> metadata)
         {
             List<Cell> cells = new List<Cell>();
-            string imgSubfolder = Path.Combine(Path.Combine(c1RunsFolder, chipId), imgSubfoldername);
-            using (StreamReader r = new StreamReader(Path.Combine(imgSubfolder, captureFilename)))
+            string chipFolder = Path.Combine(C1Props.props.C1RunsFolder, chipId);
+            string[] bfFolders = Directory.GetDirectories(chipFolder, C1Props.props.C1BFImageSubfoldernamePattern);
+            Array.Sort(bfFolders);
+            string bfFolder = bfFolders[bfFolders.Length - 1];
+            using (StreamReader r = new StreamReader(Path.Combine(bfFolder, C1Props.props.C1CaptureFilenamePattern)))
             {
                 string header = r.ReadLine();
                 string line = r.ReadLine();
@@ -125,11 +122,21 @@ namespace C1Copier
                     string well = fields[0] + fields[1];
                     double area = double.Parse(fields[3]);
                     double diameter = double.Parse(fields[4]);
-                    string imgPath = Path.Combine(imgSubfolder, imgfilePattern.Replace("*", well));
-                    if (!File.Exists(imgPath))
-                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Image file does not exist: " + imgPath);
                     Cell newCell = new Cell(null, metadata["Plate"], well, diameter, area, 
-                                            metadata["Principal Investigator"], metadata["Operator"]);
+                                            metadata["Principal Investigator"], metadata["Operator"], metadata["Comments"]);
+                    List<CellImage> cellImages = new List<CellImage>();
+                    foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)
+                    {
+                        string[] imgFolders = Directory.GetDirectories(chipFolder, imgSubfolderPat);
+                        Array.Sort(imgFolders);
+                        string imgFolder = imgFolders[imgFolders.Length - 1];
+                        string imgPath = Path.Combine(imgFolder, C1Props.props.C1ImageFilenamePattern.Replace("*", well));
+                        if (imgFolder == bfFolder && !File.Exists(imgPath))
+                            logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Image file does not exist: " + imgPath);
+                        else
+                            cellImages.Add(new CellImage(null, null, imgSubfolderPat, imgSubfolderPat, false, imgPath));
+                    }
+                    newCell.cellImages = cellImages;
                     cells.Add(newCell);
                 }
             }
@@ -139,7 +146,8 @@ namespace C1Copier
         private static Dictionary<string, string> ReadMetaData(string chipId)
         {
             Dictionary<string, string> data = new Dictionary<string,string>();
-            using (StreamReader r = new StreamReader(Path.Combine(Path.Combine(c1RunsFolder, chipId), metadataFilename)))
+            string m = Path.Combine(Path.Combine(C1Props.props.C1RunsFolder, chipId), C1Props.props.C1MetadataFilenamePattern);
+            using (StreamReader r = new StreamReader(m))
             {
                 string line = r.ReadLine();
                 while (line != null)

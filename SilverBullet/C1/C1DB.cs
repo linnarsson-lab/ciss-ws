@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using MySql.Data.MySqlClient;
 
-namespace Linnarsson.C1Model
+namespace C1
 {
     public class C1DB
     {
@@ -35,22 +35,15 @@ namespace Linnarsson.C1Model
 
         private int InsertAndGetLastId(string sql, string tableName)
         {
-            int lastId = -1; // Indicates failure
             MySqlConnection conn = new MySqlConnection(connectionString);
-            try
-            {
-                conn.Open();
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                cmd.ExecuteNonQuery();
-                string lastIdSql = "SELECT MAX(id) FROM " + tableName;
-                cmd = new MySqlCommand(lastIdSql, conn);
-                MySqlDataReader rdr = cmd.ExecuteReader();
-                lastId = rdr.GetInt32(0);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("{0}: {1}", DateTime.Now, ex);
-            }
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            cmd.ExecuteNonQuery();
+            string lastIdSql = string.Format("SELECT MAX({0}ID) AS LastId FROM {0}", tableName);
+            cmd = new MySqlCommand(lastIdSql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            rdr.Read();
+            int lastId = int.Parse(rdr["LastId"].ToString());
             conn.Close();
             return lastId;
         }
@@ -98,7 +91,7 @@ namespace Linnarsson.C1Model
         public void InsertTranscriptome(Transcriptome t)
         {
             string sql = "INSERT INTO Transcriptome (Name, Organism, Source, RawFileURL, Description, BuildDate, BuilderVersion, AnnotationVersion, AnalysisDate) " +
-                         "VALUES ({0},'{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}')";
+                         "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}')";
             sql = string.Format(sql, t.Name, t.Organism, t.Source, t.RawFileURL, t.Description, 
                                      t.BuildDate, t.BuilderVersion, t.AnnotationVersion, t.AnalysisDate);
             int transcriptomeId = InsertAndGetLastId(sql, "Transcriptome");
@@ -107,7 +100,7 @@ namespace Linnarsson.C1Model
 
         public void InsertTranscript(Transcript t)
         {
-            string sql = "INSERT INTO Transcript (TranscriptomeID, Name, Type, Gene, Description, Chromosome, Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds) " +
+            string sql = "INSERT INTO Transcript (TranscriptomeID, Name, Type, GeneName, Description, Chromosome, Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds) " +
                          "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}')";
             sql = string.Format(sql, t.TranscriptomeID, t.Name, t.Type, t.GeneName, t.Description, t.Chromosome,
                                      t.Start, t.End, t.Length, t.Strand, t.Extension5Prime, t.ExonStarts, t.ExonEnds);

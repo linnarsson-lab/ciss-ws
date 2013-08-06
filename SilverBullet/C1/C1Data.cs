@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Linnarsson.C1Model
+namespace C1
 {
     public class Cell
     {
@@ -22,9 +22,10 @@ namespace Linnarsson.C1Model
         public double Area { get; set; }
         public string PI { get; set; }
         public string Operator { get; set; }
+        public string Comments { get; set; }
         public List<CellImage> cellImages { get; set; }
 
-        public Cell(int? cellId, string plate, string well, double diameter, double area, string PI, string op)
+        public Cell(int? cellId, string plate, string well, double diameter, double area, string PI, string op, string comments)
         {
             this.CellID = cellId;
             this.Plate = plate;
@@ -33,19 +34,21 @@ namespace Linnarsson.C1Model
             this.Area = area;
             this.PI = PI;
             this.Operator = op;
+            this.Comments = comments;
+            this.cellImages = new List<CellImage>();
         }
     }
 
     public class CellImage
     {
         public int? CellImageID { get; set; }
-        public int CellID { get; set; }
+        public int? CellID { get; set; }
         public string Reporter { get; set; }                 // channel used for imaging
         public string Marker { get; set; }                   // "TH-GFP"
         public bool Detection { get; set; }                  // true if stain was detected
         public string RelativePath { get; set; }             // Location of image file
 
-        public CellImage(int? cellImageId, int cellId, string reporter, string marker, bool detection, string relPath)
+        public CellImage(int? cellImageId, int? cellId, string reporter, string marker, bool detection, string relPath)
         {
             this.CellImageID = cellImageId;
             this.CellID = cellId;
@@ -134,7 +137,7 @@ namespace Linnarsson.C1Model
             this.Strand = strand;
             this.Extension5Prime = extension5Prime;
             this.ExonStarts = exonStarts;
-            this.ExonEnds = ExonEnds;
+            this.ExonEnds = exonEnds;
         }
     }
 

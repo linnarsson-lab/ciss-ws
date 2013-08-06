@@ -46,7 +46,14 @@
   <ItemGroup>
     <Compile Include="C1DB.cs" />
     <Compile Include="C1Data.cs" />
+    <Compile Include="C1Props.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\UtilitiesLib\Linnarsson.Utilities.csproj">
+      <Project>{EE3E20A0-525F-408B-96F7-44D586F8E0B9}</Project>
+      <Name>Linnarsson.Utilities</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -895,7 +895,7 @@ namespace Linnarsson.Strt
                 if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
                 chrIdToFeature[chrId] = new List<LocusFeature>();
             }
-            foreach (LocusFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(annotationsPath))
+            foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationsPath))
                 if (chrIdToFeature.ContainsKey(gf.Chr))
                     chrIdToFeature[gf.Chr].Add(gf);
             using (StreamWriter outWriter = new StreamWriter(outFile))

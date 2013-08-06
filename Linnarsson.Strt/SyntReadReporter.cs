@@ -221,7 +221,7 @@ namespace Linnarsson.Strt
                 if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
                 chrIdToFeature[chrId] = new List<GeneFeature>();
             }
-            foreach (LocusFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(annotationsPath))
+            foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationsPath))
                 if (chrIdToFeature.ContainsKey(gf.Chr))
                     chrIdToFeature[gf.Chr].Add((GeneFeature)gf);
             return chrIdToFeature;

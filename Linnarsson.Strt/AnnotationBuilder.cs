@@ -348,7 +348,7 @@ namespace Linnarsson.Strt
                 string originalFlag = GeneFeature.nonUTRExtendedIndicator;
                 long nc = 0;
                 Console.WriteLine("Updating annotation file...");
-                foreach (LocusFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(annotationPath))
+                foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationPath))
                 {
                     string gfTxt = gf.ToString();
                     nc += gfTxt.Length;

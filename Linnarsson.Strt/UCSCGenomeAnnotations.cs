@@ -274,7 +274,7 @@ namespace Linnarsson.Strt
             int nLines = 0;
             int nGeneFeatures = 0;
             int nTooLongFeatures = 0;
-            foreach (LocusFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(annotationsPath))
+            foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationsPath))
             {
                 nLines++;
                 if (noGeneVariants && gf.IsVariant())

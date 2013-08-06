@@ -240,7 +240,7 @@ namespace Linnarsson.Strt
             string annotationsPath = PathHandler.ExistsOrGz(tryAnnotationsPath);
             if (annotationsPath == null)
                 throw new Exception("Could not find annotation file: " + tryAnnotationsPath + " (or .gz)");
-            foreach (LocusFeature f in new UCSCAnnotationReader(genome).IterAnnotationFile(annotationsPath))
+            foreach (LocusFeature f in AnnotationReader.IterAnnotationFile(annotationsPath))
                 if (chrIntervals.ContainsKey(f.Chr))
                 {
                     GeneFeature gf = (GeneFeature)f;

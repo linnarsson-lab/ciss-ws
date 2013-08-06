@@ -192,9 +192,10 @@ namespace Linnarsson.Dna
             int[] exonEnds;
             bool[] startSortedExonStrands;
             GeneFeature[] geneFeatureByExon;
-            foreach (List<GeneFeature> chrGenes in genesByChr.Values)
+            foreach (string chrId in genesByChr.Keys)
             {
-                CollectExonsOfAllGenes(chrGenes, out sortedExonStarts, out exonEnds, out startSortedExonStrands, out geneFeatureByExon);
+                List<GeneFeature> chrGenes = genesByChr[chrId];
+                CollectExonsOfAllGenes(chrId, chrGenes, out sortedExonStarts, out exonEnds, out startSortedExonStrands, out geneFeatureByExon);
                 int[] sortedExonEnds = (int[])exonEnds.Clone();
                 bool[] endSortedExonStrands = (bool[])startSortedExonStrands.Clone();
                 Sort.QuickSort(sortedExonEnds, endSortedExonStrands);
@@ -206,20 +207,20 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// All four arrays will come out sorted by exon Start positions on chromosome
+        /// All four arrays will come out sorted by exon Start positions on chromosome.
         /// </summary>
-        private void CollectExonsOfAllGenes(List<GeneFeature> chrGenes, out int[] sortedExonStarts, out int[] exonEnds,
-                                             out bool[] exonStrands, out GeneFeature[] gFeatureByExon)
+        public static void CollectExonsOfAllGenes(string chrId, IEnumerable<GeneFeature> geneFeatures, out int[] sortedExonStarts,
+                                                  out int[] exonEnds, out bool[] exonStrands, out GeneFeature[] gFeatureByExon)
         {
             int nExons = 0;
-            foreach (GeneFeature gf in chrGenes)
+            foreach (GeneFeature gf in geneFeatures.Where(gf => gf.Chr == chrId))
                 nExons += gf.ExonCount;
             sortedExonStarts = new int[nExons];
             exonEnds = new int[nExons];
             exonStrands = new bool[nExons];
             gFeatureByExon = new GeneFeature[nExons];
             int exonIdx = 0;
-            foreach (GeneFeature gf in chrGenes)
+            foreach (GeneFeature gf in geneFeatures.Where(gf => gf.Chr == chrId))
             {
                 for (int i = 0; i < gf.ExonCount; i++)
                 {
@@ -227,6 +228,7 @@ namespace Linnarsson.Dna
                     exonEnds[exonIdx] = gf.ExonEnds[i];
                     exonStrands[exonIdx] = (gf.Strand == '+') ? true : false;
                     gFeatureByExon[exonIdx] = gf;
+                    exonIdx++;
                 }
             }
             Sort.QuickSort(sortedExonStarts, exonEnds, exonStrands, gFeatureByExon);

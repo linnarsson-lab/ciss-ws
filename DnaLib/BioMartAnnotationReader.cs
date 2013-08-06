@@ -21,16 +21,16 @@ namespace Linnarsson.Dna
         public override void BuildGeneModelsByChr()
         {
             ClearGenes();
-            ReadVEGAMart();
-            ReadRefFlat();
+            ReadMartGenes();
+            ReadRefFlatGenes();
         }
 
-        private void ReadVEGAMart()
+        private void ReadMartGenes()
         {
             string martPath = MakeFullAnnotationPath(sourceName + "_mart_export.txt", true);
             VisitedAnnotationPaths = martPath;
             int n = 0;
-            foreach (GeneFeature gf in IterAnnotationFile(martPath))
+            foreach (GeneFeature gf in IterMartFile(martPath))
             {
                 if (!gf.Chr.Contains("random"))
                 {
@@ -41,14 +41,14 @@ namespace Linnarsson.Dna
             Console.WriteLine("Read {0} genes and variants from {1}", n, martPath);
         }
 
-        private void ReadRefFlat()
+        private void ReadRefFlatGenes()
         {
             int refN = 0;
             string refFlatPath = MakeFullAnnotationPath("refFlat.txt", false);
             if (File.Exists(refFlatPath))
             {
                 VisitedAnnotationPaths += ";" + refFlatPath;
-                foreach (GeneFeature gf in new UCSCAnnotationReader(genome).IterAnnotationFile(refFlatPath))
+                foreach (GeneFeature gf in AnnotationReader.IterAnnotationFile(refFlatPath))
                 {
                     if (ShouldAdd(gf))
                     {
@@ -81,7 +81,7 @@ namespace Linnarsson.Dna
             return true;
         }
 
-        protected IEnumerable<IFeature> IterAnnotationFile(string martPath)
+        private IEnumerable<IFeature> IterMartFile(string martPath)
         {
             Dictionary<string, bool> uniqNames = new Dictionary<string, bool>();
             using (StreamReader martReader = new StreamReader(martPath))

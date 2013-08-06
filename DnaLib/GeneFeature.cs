@@ -18,7 +18,7 @@ namespace Linnarsson.Dna
         public readonly static string pseudoGeneIndicator = "_p";
         public readonly static string altLocusIndicator = "_loc";
         public readonly static string nonUTRExtendedIndicator = variantIndicator + "Original";
-        public static int LocusFlankLength;
+        public static int LocusFlankLength = Props.props.LocusFlankLength;
 
         /// <summary>
         /// Counts number of reads that are shared with each of other GeneFeatures
@@ -713,7 +713,7 @@ namespace Linnarsson.Dna
         /// <summary>
         /// 1-based psl-like string of inclusive end positions
         /// </summary>
-        public string ExonEndsString { get { return string.Join(",", Array.ConvertAll(ExonEnds, v => (v + 1).ToString())); } }
+        public string ExonEndsString { get { return string.Join(",", Array.ConvertAll(ExonEnds, v => (v+1).ToString())); } }
 
         /// <summary>
         /// Decrease length of flank(s) if there is a too close neighboring gene exon (in same orientation).
@@ -742,8 +742,8 @@ namespace Linnarsson.Dna
                     int newStart = Math.Max(Start - Props.props.GeneFeature5PrimeExtension, sortedMaskEnds[idx] + 1);
                     extension = Start - newStart;
                     //if (extension < Props.props.GeneFeature5PrimeExtension)
-                    //    Console.WriteLine("Adjusting extension on {0}: oldStart={1} newStart={2}. Competing End={3} newLeftFlankLength={4}",
-                    //                 Name, Start, newStart, sortedMaskEnds[idx], LeftFlankLength);
+                        Console.WriteLine("Adjusting extension on {0}: oldStart={1} newStart={2}. Competing End={3} newLeftFlankLength={4}",
+                                     Name, Start, newStart, sortedMaskEnds[idx], LeftFlankLength);
                     Start = newStart;
                 }
             }

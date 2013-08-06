@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using Linnarsson.Mathematics;
 
 namespace Linnarsson.Dna
 {
@@ -23,19 +24,19 @@ namespace Linnarsson.Dna
             return new UCSCAnnotationReader(genome);
         }
 
-        protected StrtGenome genome;
-        protected Dictionary<string, GeneFeature> nameToGene;
-        protected Dictionary<string, List<GeneFeature>> genesByChr;
-        protected int pseudogeneCount = 0;
-
         public AnnotationReader(StrtGenome genome)
         {
             this.genome = genome;
         }
 
-        public string VisitedAnnotationPaths = "";
         public abstract void BuildGeneModelsByChr();
 
+        protected StrtGenome genome;
+        protected Dictionary<string, GeneFeature> nameToGene;
+        protected Dictionary<string, List<GeneFeature>> genesByChr;
+        protected int pseudogeneCount = 0;
+
+        public string VisitedAnnotationPaths = "";
         public int PseudogeneCount { get { return pseudogeneCount; } }
         public int ChrCount { get { return genesByChr.Count; } }
         public List<string> ChrNames { get { return genesByChr.Keys.ToList(); } }
@@ -183,6 +184,102 @@ namespace Linnarsson.Dna
             catch (KeyNotFoundException) { }
             genesByChr[gf.Chr].Add(gf);
             nameToGene[gf.Name] = gf;
+        }
+
+        public void Extend5PrimeEnds()
+        {
+            int[] sortedExonStarts;
+            int[] exonEnds;
+            bool[] startSortedExonStrands;
+            GeneFeature[] geneFeatureByExon;
+            foreach (List<GeneFeature> chrGenes in genesByChr.Values)
+            {
+                CollectExonsOfAllGenes(chrGenes, out sortedExonStarts, out exonEnds, out startSortedExonStrands, out geneFeatureByExon);
+                int[] sortedExonEnds = (int[])exonEnds.Clone();
+                bool[] endSortedExonStrands = (bool[])startSortedExonStrands.Clone();
+                Sort.QuickSort(sortedExonEnds, endSortedExonStrands);
+                foreach (GeneFeature gf in chrGenes)
+                {
+                    gf.AdjustFlanksAnd5PrimeExtend(sortedExonStarts, startSortedExonStrands, exonEnds, endSortedExonStrands);
+                }
+            }
+        }
+
+        /// <summary>
+        /// All four arrays will come out sorted by exon Start positions on chromosome
+        /// </summary>
+        private void CollectExonsOfAllGenes(List<GeneFeature> chrGenes, out int[] sortedExonStarts, out int[] exonEnds,
+                                             out bool[] exonStrands, out GeneFeature[] gFeatureByExon)
+        {
+            int nExons = 0;
+            foreach (GeneFeature gf in chrGenes)
+                nExons += gf.ExonCount;
+            sortedExonStarts = new int[nExons];
+            exonEnds = new int[nExons];
+            exonStrands = new bool[nExons];
+            gFeatureByExon = new GeneFeature[nExons];
+            int exonIdx = 0;
+            foreach (GeneFeature gf in chrGenes)
+            {
+                for (int i = 0; i < gf.ExonCount; i++)
+                {
+                    sortedExonStarts[exonIdx] = gf.ExonStarts[i];
+                    exonEnds[exonIdx] = gf.ExonEnds[i];
+                    exonStrands[exonIdx] = (gf.Strand == '+') ? true : false;
+                    gFeatureByExon[exonIdx] = gf;
+                }
+            }
+            Sort.QuickSort(sortedExonStarts, exonEnds, exonStrands, gFeatureByExon);
+        }
+
+        // Iterates the features of a refFlat-formatted file, making no changes/variant detections of the data.
+        public static IEnumerable<IFeature> IterAnnotationFile(string refFlatPath)
+        {
+            using (StreamReader refReader = new StreamReader(refFlatPath))
+            {
+                string line = refReader.ReadLine();
+                while (line.StartsWith("@") || line.StartsWith("#"))
+                    line = refReader.ReadLine();
+                string[] f = line.Split('\t');
+                if (f.Length < 11)
+                    throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should be >= 11 TAB-delimited columns.");
+                while (line != null)
+                {
+                    if (line != "" && !line.StartsWith("#"))
+                    {
+                        IFeature ft = FromAnnotationFileLine(line);
+                        yield return ft;
+                    }
+                    line = refReader.ReadLine();
+                }
+            }
+        }
+
+        private static IFeature FromAnnotationFileLine(string annotFileLine)
+        {
+            string[] record = annotFileLine.Split('\t');
+            string name = record[0].Trim();
+            string trId = record[1].Trim();
+            string chr = record[2].Trim();
+            char strand = record[3].Trim()[0];
+            int nExons = int.Parse(record[8]);
+            int[] exonStarts = SplitField(record[9], nExons, 0);
+            int[] exonEnds = SplitField(record[10], nExons, -1); // Convert to inclusive ends
+            if (record.Length == 11)
+                return new GeneFeature(name, chr, strand, exonStarts, exonEnds, trId, null);
+            int[] offsets = SplitField(record[11], nExons, 0);
+            int[] realExonIds = SplitField(record[12], nExons, 0);
+            string[] exonsStrings = record[13].Split(',');
+            return new SplicedGeneFeature(name, chr, strand, exonStarts, exonEnds, offsets, realExonIds, exonsStrings);
+        }
+
+        private static int[] SplitField(string field, int nParts, int offset)
+        {
+            int[] parts = new int[nParts];
+            string[] items = field.Split(',');
+            for (int i = 0; i < nParts; i++)
+                parts[i] = int.Parse(items[i]) + offset;
+            return parts;
         }
 
     }

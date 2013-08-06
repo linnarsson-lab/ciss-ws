@@ -9,7 +9,7 @@ using Linnarsson.Strt;
 
 namespace C1
 {
-    class Program
+    class C1Copier
     {
         static StreamWriter logWriter;
         static int minutesWait = 10;

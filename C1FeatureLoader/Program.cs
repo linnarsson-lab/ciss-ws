@@ -6,7 +6,7 @@ using Linnarsson.Dna;
 
 namespace C1
 {
-    class Program
+    class C1FeatureLoader
     {
         static void Main(string[] args)
         {

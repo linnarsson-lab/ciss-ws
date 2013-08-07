@@ -134,19 +134,19 @@ namespace ProjectDBProcessor
             {
                 projDescr.status = ProjectDescription.STATUS_FAILED;
                 projDescr.managerEmails = Props.props.FailureReportEmail;
-                logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.projectName + " ***\n" + e);
+                logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.plateId + " ***\n" + e);
                 logWriter.Flush();
                 results.Add(e.ToString());
             }
             NotifyManager(projDescr, results);
             projectDB.UpdateAnalysisStatus(projDescr);
-            logWriter.WriteLine(DateTime.Now.ToString() + " " + projDescr.projectName + "[analysisId=" + projDescr.analysisId + "] finished with status " + projDescr.status);
+            logWriter.WriteLine(DateTime.Now.ToString() + " " + projDescr.plateId + "[analysisId=" + projDescr.analysisId + "] finished with status " + projDescr.status);
             logWriter.Flush();
         }
 
         private static void ProcessItem(ProjectDescription projDescr)
         {
-            logWriter.WriteLine(DateTime.Now.ToString() + " Processing " + projDescr.projectName + " - " + projDescr.LaneCount + " lanes [DBId=" + projDescr.analysisId + "]...");
+            logWriter.WriteLine(DateTime.Now.ToString() + " Processing " + projDescr.plateId + " - " + projDescr.LaneCount + " lanes [DBId=" + projDescr.analysisId + "]...");
             logWriter.Flush();
             Stopwatch sw = new Stopwatch();
             sw.Start();
@@ -166,7 +166,7 @@ namespace ProjectDBProcessor
                 }
                 else
                 {
-                    logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: " + projDescr.projectName + " - layout file does not exist: " + layoutSrcPath);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: " + projDescr.plateId + " - layout file does not exist: " + layoutSrcPath);
                     logWriter.Flush();
                 }
             }
@@ -174,7 +174,7 @@ namespace ProjectDBProcessor
             mapper.Process(projDescr, logWriter);
             sw.Stop();
             TimeSpan ts = sw.Elapsed;
-            logWriter.WriteLine(DateTime.Now.ToString() + " ..." + projDescr.projectName + " done after " + ts + ".");
+            logWriter.WriteLine(DateTime.Now.ToString() + " ..." + projDescr.plateId + " done after " + ts + ".");
             logWriter.Flush();
         }
 
@@ -184,8 +184,8 @@ namespace ProjectDBProcessor
             string from = Props.props.ProjectDBProcessorNotifierEmailSender;
             string smtp = "localhost";
             bool success = (projDescr.status == ProjectDescription.STATUS_READY);
-            string subject = (success)? "Results ready from STRT project " + projDescr.projectName :
-                                        "Failure processing STRT project " + projDescr.projectName;
+            string subject = (success)? "Results ready from STRT project " + projDescr.plateId :
+                                        "Failure processing STRT project " + projDescr.plateId;
             StringBuilder sb = new StringBuilder();
             sb.Append("<html>");
             if (success)

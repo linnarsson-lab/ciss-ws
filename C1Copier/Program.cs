@@ -66,11 +66,7 @@ namespace C1
                 {
                     try
                     {
-                        bool copying = true;
-                        while (copying)
-                        {
-                            copying = TryCopy(logWriter);
-                        }
+                        TryCopy(logWriter);
                     }
                     catch (Exception e)
                     {
@@ -80,27 +76,33 @@ namespace C1
                         break;
                     Thread.Sleep(1000 * 60 * minutesWait);
                 }
-                logWriter.WriteLine(DateTime.Now.ToString() + "C1Copier quit");
+                logWriter.WriteLine(DateTime.Now.ToString() + " C1Copier quit");
             }
         }
 
         private static bool TryCopy(StreamWriter logWriter)
         {
             bool someCopyDone = false;
-            string[] availableChips = Directory.GetDirectories(C1Props.props.C1RunsFolder, "*-*-*");
-            List<string> loadedPlateIds = new C1DB().GetAllPlateIds();
-            foreach (string chipId in availableChips)
+            string[] availableChipDirs = Directory.GetDirectories(C1Props.props.C1RunsFolder, "*-*-*");
+            List<string> loadedChipDirs = new ProjectDB().GetProjectColumn("plateid", "C1-%", "platereference");
+            foreach (string chipDir in availableChipDirs)
             {
-                if (!loadedPlateIds.Contains(chipId))
+                if (!loadedChipDirs.Contains(chipDir))
                 {
-                    Dictionary<string, string> metadata = ReadMetaData(chipId);
+                    Dictionary<string, string> metadata = ReadMetaData(chipDir);
                     if (metadata == null)
                     {
-                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping " + chipId + " - no metadata file found.");
+                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping " + chipDir + " - no metadata file found.");
                         continue;
                     }
+                    metadata["Chipfolder"] = chipDir;
                     InsertNewProject(metadata);
-                    List<Cell> celldata = ReadCellData(chipId, metadata);
+                    List<Cell> celldata = ReadCellData(chipDir, metadata);
+                    if (celldata == null)
+                    {
+                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping " + chipDir + " - no celldata found.");
+                        continue;
+                    }
                     InsertCells(celldata);
                     someCopyDone = true;
                 }
@@ -117,36 +119,63 @@ namespace C1
             }
         }
 
+        private static string GetLastMatchingFile(string folder, string filePattern)
+        {
+            string[] matching = Directory.GetFiles(folder, filePattern);
+            if (matching.Length == 0)
+                return null;
+            Array.Sort(matching);
+            return matching[matching.Length - 1];
+        }
+        private static string GetLastMatchingFolder(string folder, string filePattern)
+        {
+            string[] matching = Directory.GetDirectories(folder, filePattern);
+            if (matching.Length == 0)
+                return null;
+            Array.Sort(matching);
+            return matching[matching.Length - 1];
+        }
+
         private static List<Cell> ReadCellData(string chipId, Dictionary<string, string> metadata)
         {
             List<Cell> cells = new List<Cell>();
             string chipFolder = Path.Combine(C1Props.props.C1RunsFolder, chipId);
-            string[] bfFolders = Directory.GetDirectories(chipFolder, C1Props.props.C1BFImageSubfoldernamePattern);
-            Array.Sort(bfFolders);
-            string bfFolder = bfFolders[bfFolders.Length - 1];
-            using (StreamReader r = new StreamReader(Path.Combine(bfFolder, C1Props.props.C1CaptureFilenamePattern)))
+            string BFFolder = GetLastMatchingFolder(chipFolder, C1Props.props.C1BFImageSubfoldernamePattern);
+            if (BFFolder == null)
+                return null;
+            string lastCapPath = GetLastMatchingFile(BFFolder, C1Props.props.C1CaptureFilenamePattern);
+            if (lastCapPath == null) return null;
+            using (StreamReader r = new StreamReader(lastCapPath))
             {
-                string header = r.ReadLine();
-                string line = r.ReadLine();
-                while (line != null)
+                string line = r.ReadLine(); // Header
+                while ((line = r.ReadLine()) != null)
                 {
+                    if ((line = line.Trim()).Length == 0)
+                        continue;
                     string[] fields = line.Split('\t');
                     string well = fields[0] + fields[1];
                     double area = double.Parse(fields[3]);
                     double diameter = double.Parse(fields[4]);
-                    Cell newCell = new Cell(null, metadata["Plate"], well, diameter, area, 
-                                            metadata["Principal Investigator"], metadata["Operator"], metadata["Comments"]);
+                    Cell newCell = new Cell(null, metadata["Plate"], well, metadata["Protocol"],
+                                    DateTime.Parse(metadata["Date of Run"]), metadata["Species"],
+                                    "", "", '-', metadata["Tissue/cell type/source"], "", diameter, area, 
+                                    metadata["Principal Investigator"], metadata["Operator"], metadata["Comments"]);
                     List<CellImage> cellImages = new List<CellImage>();
                     foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)
                     {
-                        string[] imgFolders = Directory.GetDirectories(chipFolder, imgSubfolderPat);
-                        Array.Sort(imgFolders);
-                        string imgFolder = imgFolders[imgFolders.Length - 1];
+                        string imgFolder = GetLastMatchingFolder(chipFolder, imgSubfolderPat);
+                        Console.WriteLine(imgFolder);
+                        if (imgFolder == null)
+                            continue;
                         string imgPath = Path.Combine(imgFolder, C1Props.props.C1ImageFilenamePattern.Replace("*", well));
-                        if (imgFolder == bfFolder && !File.Exists(imgPath))
+                        Console.WriteLine(imgPath);
+                        if (imgFolder == BFFolder && !File.Exists(imgPath))
+                        {
                             logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Image file does not exist: " + imgPath);
-                        else
-                            cellImages.Add(new CellImage(null, null, imgSubfolderPat, imgSubfolderPat, false, imgPath));
+                            continue;
+                        }
+                        string imgFolderName = Path.GetFileName(imgFolder);
+                        cellImages.Add(new CellImage(null, null, imgFolderName, imgFolderName, false, imgPath));
                     }
                     newCell.cellImages = cellImages;
                     cells.Add(newCell);
@@ -155,16 +184,12 @@ namespace C1
             return cells;
         }
 
-        private static Dictionary<string, string> ReadMetaData(string chipId)
+        private static Dictionary<string, string> ReadMetaData(string chipDir)
         {
-            Dictionary<string, string> data = new Dictionary<string,string>();
-            string mPat = Path.Combine(C1Props.props.C1RunsFolder, chipId);
-            string[] mPaths = Directory.GetFiles(mPat, C1Props.props.C1MetadataFilenamePattern);
-            if (mPaths.Length == 0)
-                return null;
-            Array.Sort(mPaths);
-            string lastMPath = mPaths[mPaths.Length - 1];
-            using (StreamReader r = new StreamReader(lastMPath))
+            string lastMetaFilePath = GetLastMatchingFile(chipDir, C1Props.props.C1MetadataFilenamePattern);
+            if (lastMetaFilePath == null) return null;
+            Dictionary<string, string> data = new Dictionary<string, string>();
+            using (StreamReader r = new StreamReader(lastMetaFilePath))
             {
                 string line = r.ReadLine();
                 while (line != null)
@@ -174,14 +199,26 @@ namespace C1
                     line = r.ReadLine();
                 }
             }
+            string chipId = Path.GetFileName(chipDir);
             data["Plate"] = chipId;
             return data;
         }
 
-        private static void InsertNewProject(Dictionary<string, string> metadata)
+        /// <summary>
+        /// Insert a new project into STRT pipeline
+        /// </summary>
+        /// <param name="m">metadata from the C1 folder</param>
+        private static void InsertNewProject(Dictionary<string, string> m)
         {
-            string plateId = new ProjectDB().InsertProject(metadata);
-            metadata["PlateId"] = plateId;
+            string layoutFile = ""; // TODO: May be wanted to bring more specific metadata on each cell
+            string chipId = m["Chip serial number"];
+            string sp = m["Species"].ToLower();
+            if (sp == "mouse" || sp.StartsWith("mus")) sp = "Mm";
+            if (sp == "human" || sp.StartsWith("homo")) sp = "Hs";
+            ProjectDescription pd = new ProjectDescription(m["Scientist"], m["Operator"], m["Principal Investigator"],
+                chipId, DateTime.Parse(m["Date of Run"]), ("C1-"+chipId), m["Chipfolder"], sp, m["Tissue/cell type/source"],
+                "single cell", "C1", "", m["Protocol"], "Tn5", "", layoutFile, m["Comments"], 0);
+            new ProjectDB().InsertNewProject(pd);
         }
 
     }

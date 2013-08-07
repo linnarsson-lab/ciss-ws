@@ -25,11 +25,22 @@ namespace C1
         public string Comments { get; set; }
         public List<CellImage> cellImages { get; set; }
 
-        public Cell(int? cellId, string plate, string well, double diameter, double area, string PI, string op, string comments)
+        public Cell(int? cellId, string plate, string well, 
+                    string strtProtocol, DateTime dateCollected, string species, string strain,
+                    string age, char sex, string tissue, string treatment,
+                    double diameter, double area, string PI, string op, string comments)
         {
             this.CellID = cellId;
             this.Plate = plate;
             this.Well = well;
+            this.StrtProtocol = strtProtocol;
+            this.DateCollected = dateCollected;
+            this.Species = species;
+            this.Strain = strain;
+            this.Age = age;
+            this.Sex = sex;
+            this.Tissue = tissue;
+            this.Treatment = treatment;
             this.Diameter = diameter;
             this.Area = area;
             this.PI = PI;

@@ -18,8 +18,8 @@ namespace C1
         public static readonly string configFilename = "C1Config.xml"; // Filename of machine specific Props
 
         public string C1RunsFolder = "/data2/c1-runs";
-        public string C1CaptureFilenamePattern = "capture_report.txt";
-        public string C1MetadataFilenamePattern = "metadata.txt";
+        public string C1CaptureFilenamePattern = "capture_rep*.txt";
+        public string C1MetadataFilenamePattern = "*metadata*.txt";
         public string C1BFImageSubfoldernamePattern = "BF_*";
         public string[] C1AllImageSubfoldernamePatterns = new string[] { "BF_*", "Filter1_*", "Filter2_*", "Filter3_*" };
         public string C1ImageFilenamePattern = "well_*.png";

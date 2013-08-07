@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Globalization;
 using MySql.Data.MySqlClient;
 
 namespace C1
 {
     public class C1DB
     {
-        private readonly static string connectionString = "server=192.168.1.12;uid=cuser;pwd=3pmknHQyl;database=cells10k;Connect Timeout=300;";
+        private readonly static string connectionString = "server=192.168.1.12;uid=cuser;pwd=3pmknHQyl;database=cells10k;Connect Timeout=300;Charset=utf8;";
 
         public C1DB()
         {
@@ -16,6 +17,7 @@ namespace C1
 
         private bool IssueNonQuery(string sql)
         {
+            Console.WriteLine(sql);
             bool success = true;
             MySqlConnection conn = new MySqlConnection(connectionString);
             try
@@ -35,11 +37,13 @@ namespace C1
 
         private int InsertAndGetLastId(string sql, string tableName)
         {
+            Console.WriteLine(sql);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             cmd.ExecuteNonQuery();
             string lastIdSql = string.Format("SELECT MAX({0}ID) AS LastId FROM {0}", tableName);
+            Console.WriteLine(sql);
             cmd = new MySqlCommand(lastIdSql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             rdr.Read();
@@ -111,11 +115,13 @@ namespace C1
 
         public void InsertCell(Cell c)
         {
+            CultureInfo cult = new CultureInfo("sv-SE"); 
             string sql = "INSERT INTO Cell (Plate, Well, StrtProtocol, DateCollected, Species, " +
-                                            "Strain, Age, Sex, Tissue, Treatment, Diameter, Area, PI, Operator) " +
-                               "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}')";
-            sql = string.Format(sql, c.Plate, c.Well, c.StrtProtocol, c.DateCollected, c.Species, c.Strain, c.Age, c.Sex, c.Tissue,
-                                     c.Treatment, c.Diameter, c.Area, c.PI, c.Operator);
+                                            "Strain, Age, Sex, Tissue, Treatment, Diameter, Area, PI, Operator, Comments) " +
+                               "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}')";
+            sql = string.Format(sql, c.Plate, c.Well, c.StrtProtocol, c.DateCollected.ToString(cult), c.Species,
+                                     c.Strain, c.Age, c.Sex, c.Tissue,
+                                     c.Treatment, c.Diameter, c.Area, c.PI, c.Operator, c.Comments);
             int cellId = InsertAndGetLastId(sql, "Cell");
             foreach (CellImage ci in c.cellImages)
             {

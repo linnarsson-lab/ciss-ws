@@ -407,7 +407,7 @@ namespace Linnarsson.Strt
         /// <param name="logWriter">File for log information</param>
         public void Process(ProjectDescription projDescr, StreamWriter logWriter)
         {
-            Console.WriteLine("StrtReadMapper.Process(" + projDescr.projectName + ")");
+            Console.WriteLine("StrtReadMapper.Process(" + projDescr.plateId + ")");
             SetBarcodeSet(projDescr.barcodeSet);
             props.TotalNumberOfAddedSpikeMolecules = projDescr.SpikeMoleculeCount;
             logWriter.WriteLine("{0} Extracting {1} lanes with barcodes {2}...", DateTime.Now, projDescr.runIdsLanes.Length, projDescr.barcodeSet);
@@ -433,8 +433,8 @@ namespace Linnarsson.Strt
                                     DateTime.Now, projDescr.analyzeVariants, props.DirectionalReads, props.UseRPKM,
                                     props.GeneFeature5PrimeExtension, props.TotalNumberOfAddedSpikeMolecules);
                 logWriter.Flush();
-                string resultFolderName = MakeDefaultResultFolderName(genome, projDescr.ProjectFolder, projDescr.projectName);
-                ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.projectName, resultFolderName,
+                string resultFolderName = MakeDefaultResultFolderName(genome, projDescr.ProjectFolder, projDescr.plateId);
+                ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.plateId, resultFolderName,
                                                                   mapFilePaths);
                 projDescr.resultDescriptions.Add(resultDescr);
                 System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(projDescr.GetType());
@@ -451,7 +451,7 @@ namespace Linnarsson.Strt
             if (bowtieIndexVersion == "" && genome.Annotation != "UCSC")
             {
                 Console.WriteLine("Could not find a Bowtie index for {0} - trying UCSC instead for {1}",
-                                  genome.Annotation, projDescr.projectName);
+                                  genome.Annotation, projDescr.plateId);
                 genome.Annotation = "UCSC";
             }
         }

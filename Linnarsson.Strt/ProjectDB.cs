@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Xml.Serialization;
+using System.Globalization;
 using Linnarsson.Utilities;
 using Linnarsson.Dna;
 using System.Text.RegularExpressions;
@@ -35,8 +36,8 @@ namespace Linnarsson.Strt
     [Serializable()]
     public class ProjectDescription
     {
-        public string projectName { get; set; }
-        public string ProjectFolder { get { return Path.Combine(Props.props.ProjectsFolder, projectName); } }
+        public string plateId { get; set; }
+        public string ProjectFolder { get { return Path.Combine(Props.props.ProjectsFolder, plateId); } }
         public string managerEmails { get; set; }
         public string[] runIdsLanes { get; set; }
         public int[] runNumbers { get; set; }
@@ -69,17 +70,34 @@ namespace Linnarsson.Strt
         public static readonly string STATUS_READY = "ready";
         public static readonly string STATUS_FAILED = "failed";
 
+        public string title { get; set; }
+        public DateTime productionDate { get; set; }
+        public string tissue { get; set; }
+        public string description { get; set; }
+        public string protocol { get; set; }
+        public string comment { get; set; }
+        public string plateReference { get; set; }
+        public string sampleType { get; set; }
+        public string collectionMethod { get; set; }
+        public string labBookPage { get; set; }
+        public string contact { get; set; }
+        public string manager { get; set; }
+        public string client { get; set; }
+
         /// <summary>
         /// Default constructor needed only for serialization!!
         /// </summary>
         public ProjectDescription()
         { }
 
-        public ProjectDescription(string projectName, string barcodesName, string defaultSpecies, List<string> laneInfos,
+        /// <summary>
+        /// Constructor when starting analysis of projects in database
+        /// </summary>
+        public ProjectDescription(string plateId, string barcodesName, string defaultSpecies, List<string> laneInfos,
                           string layoutFile, string status, string emails, string defaultBuild, string variants, string analysisId,
                           bool rpkm, int spikeMoleculeCount)
         {
-            this.projectName = projectName;
+            this.plateId = plateId;
             this.barcodeSet = barcodesName;
             this.defaultSpecies = defaultSpecies;
             this.runIdsLanes = laneInfos.ToArray();
@@ -95,6 +113,35 @@ namespace Linnarsson.Strt
             this.resultDescriptions = new List<ResultDescription>();
         }
 
+        /// <summary>
+        /// Constructor for inserting new projects
+        /// </summary>
+        public ProjectDescription(string contact, string manager, string client, 
+                    string title, DateTime productiondate, string plateid, string platereference, string species,
+                    string tissue, string sampletype, string collectionmethod, string description, string protocol,
+                    string barcodeSet, string labbookpage, string layoutFile, string comment, int spikeMoleculeCount)
+        {
+            this.contact = contact;
+            this.manager = manager;
+            this.client = client;
+            this.title = title;
+            this.productionDate = productiondate;
+            this.plateId = plateid;
+            this.plateReference = platereference;
+            this.defaultSpecies = species;
+            this.tissue = tissue;
+            this.sampleType = sampletype;
+            this.collectionMethod = collectionmethod;
+            this.description = description;
+            this.protocol = protocol;
+            this.barcodeSet = barcodeSet;
+            this.labBookPage = labbookpage;
+            this.layoutFile = layoutFile;
+            this.comment = comment;
+            this.SpikeMoleculeCount = spikeMoleculeCount;
+            this.status = STATUS_INQUEUE;
+        }
+
         public void SetGenomeData(StrtGenome genome)
         {
             build = genome.Build;
@@ -105,7 +152,7 @@ namespace Linnarsson.Strt
 
         public override string ToString()
         {
-            return string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\n", projectName, string.Join("|", runIdsLanes.ToArray()), barcodeSet, 
+            return string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\n", plateId, string.Join("|", runIdsLanes.ToArray()), barcodeSet, 
                                   defaultSpecies, ProjectFolder, layoutFile, status, managerEmails);
         }
         public int LaneCount
@@ -149,7 +196,7 @@ namespace Linnarsson.Strt
     
     public class ProjectDB
     {
-        private readonly static string connectionString = "server=192.168.1.12;uid=cuser;pwd=3pmknHQyl;database=joomla;Connect Timeout=300;";
+        private readonly static string connectionString = "server=192.168.1.12;uid=cuser;pwd=3pmknHQyl;database=joomla;Connect Timeout=300;Charset=utf8;";
 
         public ProjectDB()
         {
@@ -451,16 +498,101 @@ namespace Linnarsson.Strt
             return waitingFiles;
         }
 
-        public string InsertProject(Dictionary<string, string> metadata)
+        /// <summary>
+        /// Obtain a list of string values from a single column of a table
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <returns></returns>
+        private List<string> GetStrings(string sql)
         {
-            string sql = "INSERT INTO project";
-            IssueNonQuery(sql);
-            sql = "SELECT MAX(id) FROM project";
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
-            string projectId = rdr.GetString(0);
+            List<string> result = new List<string>();
+            while (rdr.Read())
+                result.Add(rdr.GetString(0));
+            rdr.Close();
+            conn.Close();
+            return result;
+        }
+
+        public List<string> GetProjectColumn(string likeCol, string likeFilter, string resultCol)
+        {
+            string sql = string.Format("SELECT {0} FROM jos_aaaproject WHERE {1} LIKE '{2}'", resultCol, likeCol, likeFilter);
+            return GetStrings(sql);
+        }
+       
+        /// <summary>
+        /// Try to get a unique primary key from table by matching a person's name with a column
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="field"></param>
+        /// <param name="person">Full or partial person's name</param>
+        /// <param name="failId">The return value on no</param>
+        /// <returns></returns>
+        private int TryGetId(string table, string field, string person, int failId)
+        {
+            string sql = string.Format("SELECT id, {0} FROM {1}", field, table);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            List<int> idOfExactMatch = new List<int>();
+            List<int> idOfLastMatch = new List<int>();
+            List<int> idOfFirstMatch = new List<int>();
+            List<int> idOfInitialsMatch = new List<int>();
+            person = person.Trim().ToLower();
+            string last = "#.#", first = "#.#", initials = "#.#";
+            string[] parts = person.Split(' ');
+            if (parts.Length >= 2)
+            {
+                first = parts[0];
+                last = parts[parts.Length - 1];
+                initials = string.Join("", Array.ConvertAll(parts, n => n[0].ToString()));
+            }
+            while (rdr.Read())
+            {
+                int id = rdr.GetInt32(0);
+                string name = rdr.GetString(1).Trim().ToLower();
+                if (name == person) idOfExactMatch.Add(id);
+                if (name.StartsWith(first)) idOfFirstMatch.Add(id);
+                if (name.EndsWith(last)) idOfLastMatch.Add(id);
+                string nameInitials = string.Join("", Array.ConvertAll(name.Split(' '), n => n[0].ToString()));
+                if (person == nameInitials || initials == name) idOfInitialsMatch.Add(id);
+            }
+            rdr.Close();
+            conn.Close();
+            return (idOfExactMatch.Count == 1) ? idOfExactMatch[0] : (idOfLastMatch.Count == 1) ? idOfLastMatch[0] :
+                (idOfFirstMatch.Count == 1) ? idOfFirstMatch[0] : (idOfInitialsMatch.Count == 1) ? idOfInitialsMatch[0] : failId;
+        }
+
+        public int InsertNewProject(ProjectDescription pd)
+        {
+            if (pd.SpikeMoleculeCount == 0)
+                pd.SpikeMoleculeCount = Props.props.TotalNumberOfAddedSpikeMolecules;
+            int contactId = TryGetId("jos_aaacontact", "contactperson", pd.contact, 1);
+            int managerId = TryGetId("jos_aaamanager", "person", pd.manager, 1);
+            int clientId = TryGetId("jos_aaaclient", "principalinvestigator", pd.client, 1);
+            string sql = "INSERT INTO jos_aaaproject (jos_aaacontactid, jos_aaamanagerid, jos_aaaclientid, " +
+                "title, productiondate, plateid, platereference, species, tissue, sampletype, " +
+                "collectionmethod, weightconcentration, fragmentlength, molarconcentration, description, " +
+                "protocol, barcodeset, labbookpage, layoutfile, status, comment, user, spikemolecules) " +
+                " VALUES('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}'," +
+                "'{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}','{19}','{20}','{21}','{22}')";
+            CultureInfo cult = new CultureInfo("sv-SE");
+            sql = string.Format(sql, contactId, managerId, clientId,
+                 pd.title, pd.productionDate.ToString(cult), pd.plateId, pd.plateReference, pd.defaultSpecies, pd.tissue, 
+                 pd.sampleType, pd.collectionMethod, 0, 0, 0, pd.description, pd.protocol, pd.barcodeSet, pd.labBookPage,
+                 pd.layoutFile, pd.status, pd.comment, "system", pd.SpikeMoleculeCount);
+            IssueNonQuery(sql);
+            sql = "SELECT MAX(id) FROM jos_aaaproject";
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            rdr.Read();
+            int projectId = rdr.GetInt32(0);
             rdr.Close();
             conn.Close();
             return projectId;

@@ -78,24 +78,24 @@ namespace C1
     public class Transcriptome
     {
         public int? TranscriptomeID { get; set; }
-        public string Name { get; set; }                      // "mm10-ense-all"
+        public string Name { get; set; }                      // "mm10_aENSE"
         public string Organism { get; set; }
         public string Source { get; set; }                    // "ENSEMBL"
-        public string RawFileURL { get; set; }
+        public string GenomeFolder { get; set; }
         public string Description { get; set; }
         public DateTime BuildDate { get; set; }
         public string BuilderVersion { get; set; }            // "28"
         public string AnnotationVersion { get; set; }         // "43"
         public DateTime AnalysisDate { get; set; }
 
-        public Transcriptome(int? transcriptomeId, string name, string organism, string source, string rawFileURL, string description,
+        public Transcriptome(int? transcriptomeId, string name, string organism, string source, string genomeFolder, string description,
                              DateTime buildDate, string builderVersion, DateTime analysisDate, string annotationVersion)
         {
             this.TranscriptomeID = transcriptomeId;
             this.Name = name;
             this.Organism = organism;
             this.Source = source;
-            this.RawFileURL = rawFileURL;
+            this.GenomeFolder = genomeFolder;
             this.Description = description;
             this.BuildDate = buildDate;
             this.BuilderVersion = builderVersion;

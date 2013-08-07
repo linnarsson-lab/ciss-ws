@@ -14,6 +14,8 @@ namespace C1
         static StreamWriter logWriter;
         static int minutesWait = 10;
         static int nExceptions = 0;
+        static int maxNExceptions = 10;
+        static bool runOnce = false;
 
         static void Main(string[] args)
         {
@@ -32,6 +34,8 @@ namespace C1
                         logFile = args[++i];
                     else if (arg.StartsWith("-l"))
                         logFile = arg.Substring(2);
+                    else if (arg == "-s")
+                        runOnce = true;
                     else throw new ArgumentException("OptionError");
                     i++;
                 }
@@ -43,6 +47,7 @@ namespace C1
                 Console.WriteLine("\nOptions:\n\n" +
                                   "-i<file>     - specify a non-standard c1 input folder\n" +
                                   "-l<file>     - specify a non-standard log file\n" +
+                                  "-s           - run only a single time, then quit\n" +
                                   "Put in crontab for starting at every reboot.\n" +
                                   "\nLogfile defaults to a name with Pid included like: " + logFile);
                 return;
@@ -57,7 +62,7 @@ namespace C1
                 logWriter.WriteLine(DateTime.Now.ToString() + " Starting C1Copier");
                 logWriter.Flush();
                 Console.WriteLine("C1Copier started at " + DateTime.Now.ToString() + " and logging to " + logFile);
-                while (nExceptions < 10)
+                while (nExceptions < maxNExceptions)
                 {
                     try
                     {
@@ -71,6 +76,8 @@ namespace C1
                     {
                         logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: " + e.ToString());
                     }
+                    if (runOnce)
+                        break;
                     Thread.Sleep(1000 * 60 * minutesWait);
                 }
                 logWriter.WriteLine(DateTime.Now.ToString() + "C1Copier quit");
@@ -87,6 +94,11 @@ namespace C1
                 if (!loadedPlateIds.Contains(chipId))
                 {
                     Dictionary<string, string> metadata = ReadMetaData(chipId);
+                    if (metadata == null)
+                    {
+                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping " + chipId + " - no metadata file found.");
+                        continue;
+                    }
                     InsertNewProject(metadata);
                     List<Cell> celldata = ReadCellData(chipId, metadata);
                     InsertCells(celldata);
@@ -146,8 +158,13 @@ namespace C1
         private static Dictionary<string, string> ReadMetaData(string chipId)
         {
             Dictionary<string, string> data = new Dictionary<string,string>();
-            string m = Path.Combine(Path.Combine(C1Props.props.C1RunsFolder, chipId), C1Props.props.C1MetadataFilenamePattern);
-            using (StreamReader r = new StreamReader(m))
+            string mPat = Path.Combine(C1Props.props.C1RunsFolder, chipId);
+            string[] mPaths = Directory.GetFiles(mPat, C1Props.props.C1MetadataFilenamePattern);
+            if (mPaths.Length == 0)
+                return null;
+            Array.Sort(mPaths);
+            string lastMPath = mPaths[mPaths.Length - 1];
+            using (StreamReader r = new StreamReader(lastMPath))
             {
                 string line = r.ReadLine();
                 while (line != null)

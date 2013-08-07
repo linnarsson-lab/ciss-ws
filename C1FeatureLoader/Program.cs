@@ -29,7 +29,8 @@ namespace C1
             annotationReader.AdjustGeneFeatures(m);
             Console.WriteLine("...{0} genes had their 5' end extended, {1} with the maximal {2} bps.",
                                m.nExtended, m.nFullyExtended5Primes, Props.props.GeneFeature5PrimeExtension);
-            Transcriptome tt = new Transcriptome(null, genome.BuildVarAnnot, genome.Abbrev, genome.Annotation, annotationReader.VisitedAnnotationPaths,
+            Transcriptome tt = new Transcriptome(null, genome.BuildVarAnnot, genome.Abbrev, genome.Annotation, 
+                                                 annotationReader.VisitedAnnotationPaths,
                                                  "", DateTime.Now, "1", DateTime.MinValue, null);
             Console.WriteLine("Inserting transcriptome metadata into database...");
             C1DB db = new C1DB();

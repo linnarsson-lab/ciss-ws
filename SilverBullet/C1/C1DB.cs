@@ -17,7 +17,7 @@ namespace C1
 
         private bool IssueNonQuery(string sql)
         {
-            Console.WriteLine(sql);
+            //Console.WriteLine(sql);
             bool success = true;
             MySqlConnection conn = new MySqlConnection(connectionString);
             try
@@ -37,13 +37,13 @@ namespace C1
 
         private int InsertAndGetLastId(string sql, string tableName)
         {
-            Console.WriteLine(sql);
+            //Console.WriteLine(sql);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             cmd.ExecuteNonQuery();
             string lastIdSql = string.Format("SELECT MAX({0}ID) AS LastId FROM {0}", tableName);
-            Console.WriteLine(sql);
+            //Console.WriteLine(sql);
             cmd = new MySqlCommand(lastIdSql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             rdr.Read();

@@ -137,11 +137,12 @@ namespace C1
 
         public void InsertTranscriptome(Transcriptome t)
         {
+            CultureInfo cult = new CultureInfo("sv-SE");
             string sql = "INSERT INTO Transcriptome (Name, Organism, Source, GenomeFolder, Description, " +
                                                     "BuildDate, BuilderVersion, AnnotationVersion, AnalysisDate) " +
                                  "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}')";
             sql = string.Format(sql, t.Name, t.Organism, t.Source, t.GenomeFolder, t.Description, 
-                                     t.BuildDate, t.BuilderVersion, t.AnnotationVersion, t.AnalysisDate);
+                                     t.BuildDate.ToString(cult), t.BuilderVersion, t.AnnotationVersion, t.AnalysisDate.ToString(cult));
             int transcriptomeId = InsertAndGetLastId(sql, "Transcriptome");
             t.TranscriptomeID = transcriptomeId;
         }

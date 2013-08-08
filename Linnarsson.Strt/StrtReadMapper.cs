@@ -773,7 +773,7 @@ namespace Linnarsson.Strt
             MappedTagItem.AverageReadLen = averageReadLen;
             genome.ReadLen = averageReadLen;
             UpdateGenesToPaint(projectFolder, props);
-            GenomeAnnotations annotations = new GenomeAnnotationsOnFile(props, genome);
+            GenomeAnnotations annotations = new GenomeAnnotations(props, genome);
             annotations.Load();
             string outputPathbase = Path.Combine(outputFolder, OutputFilePrefix);
             TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props, outputPathbase);
@@ -885,7 +885,6 @@ namespace Linnarsson.Strt
         {
             if (readLen > 0) genome.ReadLen = readLen;
             bool variantGenes = genome.GeneVariants;
-            string annotationsPath = genome.VerifyAnAnnotationPath();
             if (makeSplices)
                 Console.WriteLine("Making all splices that have >= {0} bases overhang and max {1} exons excised.", minOverhang, maxSkip);
             Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
@@ -895,6 +894,7 @@ namespace Linnarsson.Strt
                 if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
                 chrIdToFeature[chrId] = new List<LocusFeature>();
             }
+            string annotationsPath = genome.VerifyAnAnnotationPath();
             foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationsPath))
                 if (chrIdToFeature.ContainsKey(gf.Chr))
                     chrIdToFeature[gf.Chr].Add(gf);

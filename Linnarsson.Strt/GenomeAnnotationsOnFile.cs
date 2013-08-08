@@ -16,36 +16,14 @@ namespace Linnarsson.Strt
         public GenomeAnnotationsOnFile(Props props, StrtGenome genome) : base(props, genome)
         { }
 
-        protected override void RegisterGenesAndIntervals()
+        protected void RegisterGenesAndIntervals() 
         {
             string annotationsPath = genome.VerifyAnAnnotationPath();
-            LoadAnnotationsFile(annotationsPath);
+            foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationsPath))
+                RegisterGeneFeature(gf);
             AdjustEndsAndMarkUpOverlaps();
             foreach (GeneFeature gf in geneFeatures.Values)
                 AddGeneIntervals((GeneFeature)gf);
-        }
-
-        private void LoadAnnotationsFile(string annotationsPath)
-        {
-            int nLines = 0;
-            int nGeneFeatures = 0;
-            int nTooLongFeatures = 0;
-            foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationsPath))
-            {
-                nLines++;
-                if (noGeneVariants && gf.IsVariant())
-                    continue;
-                if (gf.Length > props.MaxFeatureLength)
-                    nTooLongFeatures++;
-                else if (RegisterGeneFeature(gf))
-                {
-                    nGeneFeatures++;
-                }
-            }
-            string exlTxt = (nTooLongFeatures == 0) ? "" : string.Format(" (Excluding {0} spanning > {1} bp.)",
-                                                                         nTooLongFeatures, props.MaxFeatureLength);
-            string exclV = noGeneVariants ? "main" : "complete";
-            Console.WriteLine("{0} {1} gene variants will be mapped.{2}", nGeneFeatures, exclV, exlTxt);
         }
 
         private void AdjustEndsAndMarkUpOverlaps()

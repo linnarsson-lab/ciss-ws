@@ -9,10 +9,11 @@ using System.Drawing.Imaging;
 using Linnarsson.Utilities;
 using Linnarsson.Mathematics;
 using Linnarsson.Dna;
+using C1;
 
 namespace Linnarsson.Strt
 {
-    public abstract class GenomeAnnotations
+    public class GenomeAnnotations
     {
         public static int annotationBinSize = 30000;
 
@@ -58,9 +59,7 @@ namespace Linnarsson.Strt
         protected bool needChromosomeLengths;
         public bool noGeneVariants;
 
-        protected abstract void RegisterGenesAndIntervals();
-
-        protected GenomeAnnotations(Props props, StrtGenome genome)
+        public GenomeAnnotations(Props props, StrtGenome genome)
 		{
             this.props = props;
             this.genome = genome;
@@ -82,7 +81,7 @@ namespace Linnarsson.Strt
         public void Load()
         {
             SetupChromsomes();
-            RegisterGenesAndIntervals();
+            SetupGenesAndIntervals();
             SetupRepeats();
         }
 
@@ -97,6 +96,52 @@ namespace Linnarsson.Strt
             }
             if (needChromosomeSequences || needChromosomeLengths)
                 ReadChromsomeSequences(ChrIdToFileMap);
+        }
+
+        private void SetupGenesAndIntervals()
+        {
+            C1DB db = new C1DB();
+            Transcriptome tm = db.GetTranscriptome(genome.BuildVarAnnot);
+            string annotationsPath = genome.VerifyAnAnnotationPath();
+            bool transcriptsFromDb = (tm != null);
+            if (transcriptsFromDb)
+            {
+                foreach (Transcript tt in db.IterTranscripts(tm.TranscriptomeID.Value))
+                {
+                    LocusFeature feature = GeneFeatureFromTranscript(tt);
+                    RegisterGeneFeature(feature);
+                }
+                ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
+            }
+            string onlySplcChrFromFile = (transcriptsFromDb) ? genome.Annotation : "";
+            foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationsPath))
+            {
+                if (gf.Chr != onlySplcChrFromFile)
+                {
+                    RegisterGeneFeature(gf);
+                }
+            }
+            if (!transcriptsFromDb)
+                ModifyGeneFeatures(new GeneFeature5PrimeAndOverlapMarkUpModifier());
+            foreach (GeneFeature gf in geneFeatures.Values)
+                AddGeneIntervals((GeneFeature)gf);
+        }
+
+        private static GeneFeature GeneFeatureFromTranscript(Transcript tt)
+        {
+            int[] exonStarts = AnnotationReader.SplitField(tt.ExonStarts, 0);
+            int[] exonEnds = AnnotationReader.SplitField(tt.ExonEnds, -1); // Convert to inclusive ends
+            return new GeneFeature(tt.Name, tt.Chromosome, tt.Strand, null, null, tt.TranscriptID.Value);
+        }
+
+        private void ModifyGeneFeatures(GeneFeatureModifiers m)
+        {
+            foreach (string chrId in GetChromosomeIds())
+            {
+                if (!StrtGenome.IsSyntheticChr(chrId))
+                    m.Process(geneFeatures.Values.Where(gf => gf.Chr == chrId));
+            }
+            Console.WriteLine(m.GetStatsOutput());
         }
 
         private void SetupRepeats()
@@ -646,6 +691,25 @@ namespace Linnarsson.Strt
                 return 1;
             }
             return 0;
+        }
+
+        public IEnumerable<Expression> IterExpressions()
+        {
+            Expression exprHolder = new Expression();
+            for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+            {
+                string cellId = barcodes.GetAnnotation("CellID", bcIdx);
+                exprHolder.CellID = cellId;
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    exprHolder.TranscriptID = gf.Name;
+                    exprHolder.UniqueMolecules = gf.NonConflictingTranscriptHitsByBarcode[bcIdx];
+                    exprHolder.UniqueReads = gf.NonConflictingTranscriptReadsByBarcode[bcIdx];
+                    exprHolder.MaxMolecules = gf.TranscriptHitsByBarcode[bcIdx];
+                    exprHolder.MaxReads = gf.TranscriptReadsByBarcode[bcIdx];
+                    yield return exprHolder;
+                }
+            }
         }
 
         private void WriteReadsTable(string fileNameBase)

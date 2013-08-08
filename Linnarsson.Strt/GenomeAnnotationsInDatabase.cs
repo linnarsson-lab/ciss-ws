@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Linnarsson.Dna;
+using C1;
 
 namespace Linnarsson.Strt
 {
@@ -12,31 +13,50 @@ namespace Linnarsson.Strt
             : base(props, genome)
         { }
 
-        protected override void RegisterGenesAndIntervals()
+        protected void RegisterGenesAndIntervals()
         {
-            MarkUpOverlaps();
+            C1DB db = new C1DB();
+            Transcriptome tm = db.GetTranscriptome(genome.BuildVarAnnot);
+            string annotationsPath = genome.VerifyAnAnnotationPath();
+            bool transcriptsFromDb = (tm != null);
+            if (transcriptsFromDb)
+            {
+                foreach (Transcript tt in db.IterTranscripts(tm.TranscriptomeID.Value))
+                {
+                    LocusFeature feature = GeneFeatureFromTranscript(tt);
+                    RegisterGeneFeature(feature);
+                }
+                ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
+            }
+            string onlySplcChrFromFile = (transcriptsFromDb) ? genome.Annotation : "";
+            foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationsPath))
+            {
+                if (gf.Chr != onlySplcChrFromFile)
+                {
+                    RegisterGeneFeature(gf);
+                }
+            }
+            if (!transcriptsFromDb)
+                ModifyGeneFeatures(new GeneFeature5PrimeAndOverlapMarkUpModifier());
             foreach (GeneFeature gf in geneFeatures.Values)
                 AddGeneIntervals((GeneFeature)gf);
-
-            
-            throw new NotImplementedException();
         }
 
-        private void MarkUpOverlaps()
+        private static GeneFeature GeneFeatureFromTranscript(Transcript tt)
         {
-            GeneFeatureOverlapMarkUpModifier m = new GeneFeatureOverlapMarkUpModifier();
+            int[] exonStarts = AnnotationReader.SplitField(tt.ExonStarts, 0);
+            int[] exonEnds = AnnotationReader.SplitField(tt.ExonEnds, -1); // Convert to inclusive ends
+            return new GeneFeature(tt.Name, tt.Chromosome, tt.Strand, null, null, tt.TranscriptID.Value);
+        }
+
+        private void ModifyGeneFeatures(GeneFeatureModifiers m)
+        {
             foreach (string chrId in GetChromosomeIds())
             {
                 if (!StrtGenome.IsSyntheticChr(chrId))
                     m.Process(geneFeatures.Values.Where(gf => gf.Chr == chrId));
             }
-            Console.WriteLine("{0} genes had the 5' exon extended {1} bp as specified by GeneFeature5PrimeExtension property.",
-                              m.nFullyExtended5Primes, Props.props.GeneFeature5PrimeExtension);
-            if (m.nMarkedExons > 0)
-                Console.WriteLine("{0} overlapping anti-sense exons from {1} genes ({2} bps) were masked from statistics calculations.",
-                              m.nMarkedExons, m.nMarkedGenes, m.totalMarkedLen);
-            Console.WriteLine("{0} USTR/DSTR/INTR features that overlap with an exon were masked from statistics calculations.", m.nMaskedIntronicFeatures);
+            Console.WriteLine(m.GetStatsOutput());
         }
-
     }
 }

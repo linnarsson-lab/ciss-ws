@@ -19,7 +19,7 @@ namespace Linnarsson.Dna
             string refFlatPath = MakeFullAnnotationPath("refFlat.txt", true);
             VisitedAnnotationPaths = refFlatPath;
             int n = 0, nCreated = 0;
-            foreach (GeneFeature gf in AnnotationReader.IterAnnotationFile(refFlatPath))
+            foreach (ExtendedGeneFeature gf in AnnotationReader.IterAnnotationFile(refFlatPath))
             {
                 if (AddGeneModel(gf)) nCreated++;
                 n++;

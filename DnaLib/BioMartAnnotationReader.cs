@@ -31,7 +31,7 @@ namespace Linnarsson.Dna
             string martPath = MakeFullAnnotationPath(sourceName + "_mart_export.txt", true);
             VisitedAnnotationPaths = martPath;
             int nRead = 0, nCreated = 0;
-            foreach (GeneFeature gf in IterMartFile(martPath))
+            foreach (ExtendedGeneFeature gf in IterMartFile(martPath))
             {
                 if (!gf.Chr.Contains("random"))
                 {
@@ -50,7 +50,7 @@ namespace Linnarsson.Dna
             if (File.Exists(refFlatPath))
             {
                 VisitedAnnotationPaths += ";" + refFlatPath;
-                foreach (GeneFeature gf in AnnotationReader.IterAnnotationFile(refFlatPath))
+                foreach (ExtendedGeneFeature gf in AnnotationReader.IterAnnotationFile(refFlatPath))
                 {
                     if (ShouldAdd(gf))
                     {
@@ -63,7 +63,7 @@ namespace Linnarsson.Dna
             return nCreated;
         }
 
-        private bool ShouldAdd(GeneFeature gf)
+        private bool ShouldAdd(ExtendedGeneFeature gf)
         {
             if (gf.Chr.Contains("random")) return false;
             try
@@ -71,7 +71,7 @@ namespace Linnarsson.Dna
                 if (genesByChr[gf.Chr].FindIndex(
                         (g) => g.NonVariantName == gf.Name) >= 0)
                     return false;
-                foreach (GeneFeature oldGf in genesByChr[gf.Chr])
+                foreach (ExtendedGeneFeature oldGf in genesByChr[gf.Chr])
                     if (oldGf.IsSameTranscript(gf, 5))
                     {
                         oldGf.Name = gf.Name + "/" + oldGf.Name;
@@ -91,12 +91,12 @@ namespace Linnarsson.Dna
             {
                 string header = martReader.ReadLine();
                 int exStartCol = -1, exEndCol = -1, chrCol = -1,
-                    strandCol = -1, nameCol = -1, typeCol = 0, trIdCol = -1, descrCol = -1;
+                    strandCol = -1, nameCol = -1, typeCol = 0, trNameCol = -1, descrCol = -1;
                 string[] fields = header.Split('\t');
                 for (int i = 0; i < fields.Length; i++)
                 {
                     string f = fields[i].Trim();
-                    if (f.ToLower().Contains("transcript id")) trIdCol = i;
+                    if (f.ToLower().Contains("transcript id")) trNameCol = i;
                     if (f.StartsWith("Exon Chr Start")) exStartCol = i;
                     else if (f.StartsWith("Exon Chr End")) exEndCol = i;
                     else if (f == "Chromosome Name") chrCol = i;
@@ -106,28 +106,28 @@ namespace Linnarsson.Dna
                     else if (f == "Transcript Biotype") typeCol = i;
                     else if (f == "Gene Biotype") typeCol = i;
                 }
-                if (trIdCol == -1 || exStartCol == -1 || exEndCol == -1 || chrCol == -1 || strandCol == -1 || nameCol == -1 || typeCol == -1)
+                if (trNameCol == -1 || exStartCol == -1 || exEndCol == -1 || chrCol == -1 || strandCol == -1 || nameCol == -1 || typeCol == -1)
                     throw new FormatException("BioMart input file misses some columns.\n" +
                         "Required: Transcript ID, Exon Chr Start, Exon Chr End, Chromosome Name, Strand, External Gene ID, Biotype");
                 List<Interval> exons = new List<Interval>();
                 char strand = '+';
-                string name = "", currentTrId = "", chr = "", trType = null, trId = null;
+                string name = "", currentTrName = "", chr = "", trType = null, trName = null;
                 string line = martReader.ReadLine();
                 while (line != null)
                 {
                     fields = line.Split('\t');
-                    trId = fields[trIdCol].Trim();
+                    trName = fields[trNameCol].Trim();
                     trType = fields[typeCol].Trim();
-                    if (exons.Count > 0 && trId != currentTrId) // Handle every splice variant as a gene variant
+                    if (exons.Count > 0 && trName != currentTrName) // Handle every splice variant as a gene variant
                     {
-                        yield return CreateGeneFeature(name, chr, strand, exons, trId, trType);
+                        yield return CreateGeneFeature(name, chr, strand, exons, trName, trType);
                         exons.Clear();
                     }
                     if (exons.Count == 0)
                     {
-                        currentTrId = trId;
+                        currentTrName = trName;
                         name = fields[nameCol].Trim();
-                        if (name == "") name = trId;
+                        if (name == "") name = trName;
                         if (trType.Contains("pseudogene"))
                         {
                             pseudogeneCount++;
@@ -144,7 +144,7 @@ namespace Linnarsson.Dna
                     line = martReader.ReadLine();
                 }
                 if (name != "")
-                    yield return CreateGeneFeature(name, chr, strand, exons, trId, trType);
+                    yield return CreateGeneFeature(name, chr, strand, exons, trName, trType);
             }
         }
 
@@ -171,7 +171,7 @@ namespace Linnarsson.Dna
                 exonStarts[i] = (int)exons[i].Start;
                 exonEnds[i] = (int)exons[i].End;
             }
-            return new GeneFeature(name, chr, strand, exonStarts, exonEnds, trId, trType);
+            return new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, 0, trId, trType);
         }
 
     }

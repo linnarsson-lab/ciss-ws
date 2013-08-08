@@ -11,6 +11,11 @@ namespace Linnarsson.Dna
 
     public abstract class GeneFeatureModifiers
     {
+        public virtual string GetStatsOutput()
+        {
+            return "";
+        }
+
         public int nMarkedExons { get; private set; }
         public int nMarkedGenes { get; private set; }
         public int nFullyExtended5Primes { get; private set; }
@@ -106,12 +111,25 @@ namespace Linnarsson.Dna
         {
             processSteps = Extend5PrimeEnds;
         }
+
+        public override string GetStatsOutput()
+        {
+            return string.Format("{0} genes had their 5' end extended, {1} with the maximal {2} bps.",
+                                 nExtended, nFullyExtended5Primes, Props.props.GeneFeature5PrimeExtension);
+        }
     }
+
     public class GeneFeatureOverlapMarkUpModifier : GeneFeatureModifiers
     {
         public GeneFeatureOverlapMarkUpModifier()
         {
             processSteps = MarkUpOverlapsOnChr;
+        }
+        public override string GetStatsOutput()
+        {
+            return string.Format("{0} overlapping anti-sense exons from {1} genes ({2} bps) were masked from statistics calculations.\n" +
+                                 "{3} USTR/DSTR/INTR features that overlap with an exon were masked from statistics calculations.",
+                                 nMarkedExons, nMarkedGenes, totalMarkedLen, nMaskedIntronicFeatures);
         }
     }
     public class GeneFeature5PrimeAndOverlapMarkUpModifier : GeneFeatureModifiers
@@ -120,6 +138,15 @@ namespace Linnarsson.Dna
         {
             processSteps = Extend5PrimeEnds;
             processSteps += MarkUpOverlapsOnChr;
+        }
+
+        public override string GetStatsOutput()
+        {
+            return string.Format("{0} genes had their 5' end extended, {1} with the maximal {2} bps.\n",
+                                 nExtended, nFullyExtended5Primes, Props.props.GeneFeature5PrimeExtension) +
+                   string.Format("{0} overlapping anti-sense exons from {1} genes ({2} bps) were masked from statistics calculations.\n" +
+                                 "{3} USTR/DSTR/INTR features that overlap with an exon were masked from statistics calculations.",
+                                 nMarkedExons, nMarkedGenes, totalMarkedLen, nMaskedIntronicFeatures);
         }
     }
 }

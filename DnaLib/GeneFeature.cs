@@ -140,6 +140,10 @@ namespace Linnarsson.Dna
         /// Always total reads per barcode
         /// </summary>
         public int[] TranscriptReadsByBarcode;
+        /// <summary>
+        /// Unique reads per barcode
+        /// </summary>
+        public int[] NonConflictingTranscriptReadsByBarcode;
         public int[] EstimatedTrueMolsByBarcode;
         /// <summary>
         /// Either molecules per barcode after rndTag mutation filtering, or total reads per barcode when no rndTag are used.
@@ -212,11 +216,9 @@ namespace Linnarsson.Dna
         public bool MaskedUSTR;
         public bool MaskedDSTR;
 
-        public string TranscriptID;
-        public string TranscriptType;
+        public int TranscriptID;
 
-        public GeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds,
-                           string transcriptId, string transcriptType)
+        public GeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds, int transcriptID)
             : base(name, chr, strand, exonStarts[0], exonEnds[exonEnds.Length - 1])
         {
             ExonStarts = exonStarts;
@@ -226,6 +228,7 @@ namespace Linnarsson.Dna
             MaskedINTR = new bool[exonEnds.Length - 1];
             TranscriptHitsByBarcode = new int[Props.props.Barcodes.Count];
             TranscriptReadsByBarcode = new int[Props.props.Barcodes.Count];
+            NonConflictingTranscriptReadsByBarcode = new int[Props.props.Barcodes.Count];
             EstimatedTrueMolsByBarcode = new int[Props.props.Barcodes.Count];
             NonConflictingTranscriptHitsByBarcode = new int[Props.props.Barcodes.Count];
             CAPRegionHitsByBarcode = new int[Props.props.Barcodes.Count];
@@ -239,8 +242,7 @@ namespace Linnarsson.Dna
             m_LocusHits = new int[1000];
             locusHitIdx = 0;
             SavedCAPPos = (strand == '+') ? exonStarts[0] : exonEnds[exonEnds.Length - 1];
-            this.TranscriptID = transcriptId;
-            this.TranscriptType = transcriptType;
+            this.TranscriptID = transcriptID;
         }
 
         public int GetExonLength(int i)
@@ -540,6 +542,7 @@ namespace Linnarsson.Dna
             if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
             {
                 NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
+                NonConflictingTranscriptReadsByBarcode[item.bcIdx] += item.ReadCount;
                 if (Math.Abs(item.HitMidPos - SavedCAPPos) < Props.props.CapRegionSize)
                     CAPRegionHitsByBarcode[item.bcIdx] += item.MolCount;
             }
@@ -909,6 +912,23 @@ namespace Linnarsson.Dna
                 }
                 bcSnpCounts.Add(item.bcIdx, snpCounter);
             }
+        }
+    }
+
+    /// <summary>
+    /// Includes extra annotation needed when constructing a STRT genome
+    /// </summary>
+    public class ExtendedGeneFeature : GeneFeature
+    {
+        public string TranscriptType;
+        public string TranscriptName;
+
+        public ExtendedGeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds,
+                                  int transcriptId, string transcriptType, string transcriptName)
+            : base(name, chr, strand, exonStarts, exonEnds, transcriptId)
+        {
+            this.TranscriptType = transcriptType;
+            this.TranscriptName = transcriptName;
         }
     }
 }

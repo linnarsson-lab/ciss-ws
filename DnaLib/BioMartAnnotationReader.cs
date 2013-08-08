@@ -50,7 +50,7 @@ namespace Linnarsson.Dna
             if (File.Exists(refFlatPath))
             {
                 VisitedAnnotationPaths += ";" + refFlatPath;
-                foreach (ExtendedGeneFeature gf in AnnotationReader.IterAnnotationFile(refFlatPath))
+                foreach (ExtendedGeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
                 {
                     if (ShouldAdd(gf))
                     {

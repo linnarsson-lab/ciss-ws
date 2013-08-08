@@ -192,28 +192,42 @@ namespace Linnarsson.Dna
 
         public void AdjustGeneFeatures(GeneFeatureModifiers m)
         {
-            foreach (List<GeneFeature> chrGenes in genesByChr.Values.Cast<List<GeneFeature>>())
+            foreach (List<ExtendedGeneFeature> chrGenes in genesByChr.Values)
             {
-                m.Process(chrGenes);
+                List<GeneFeature> gfs = new List<GeneFeature>(chrGenes.Count);
+                foreach (ExtendedGeneFeature e in chrGenes)
+                    gfs.Add((GeneFeature)e);
+                m.Process(gfs);
+            }
+        }
+
+        public void AddCtrlGeneModels()
+        {
+            string CTRLGenesPath = PathHandler.GetCTRLGenesPath();
+            if (File.Exists(CTRLGenesPath))
+            {
+                int nCTRLs = 0;
+                VisitedAnnotationPaths += ";" + CTRLGenesPath;
+                foreach (ExtendedGeneFeature gf in AnnotationReader.IterRefFlatFile(CTRLGenesPath))
+                    if (AddGeneModel(gf)) nCTRLs++;
+                Console.WriteLine("Added {0} CTRL genes from {1}.", nCTRLs, CTRLGenesPath);
             }
         }
 
         // Iterates the features of a refFlat-formatted file, making no changes/variant detections of the data.
-        public static IEnumerable<IFeature> IterAnnotationFile(string refFlatPath)
+        public static IEnumerable<IFeature> IterRefFlatFile(string refFlatPath)
         {
             using (StreamReader refReader = new StreamReader(refFlatPath))
             {
                 string line = refReader.ReadLine();
-                while (line.StartsWith("@") || line.StartsWith("#"))
-                    line = refReader.ReadLine();
                 string[] f = line.Split('\t');
                 if (f.Length < 11)
-                    throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should be >= 11 TAB-delimited columns.");
+                    throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should be 11 TAB-delimited columns.");
                 while (line != null)
                 {
                     if (line != "" && !line.StartsWith("#"))
                     {
-                        IFeature ft = FromAnnotationFileLine(line);
+                        ExtendedGeneFeature ft = ExtendedGeneFeatureFromRefFlatLine(line);
                         yield return ft;
                     }
                     line = refReader.ReadLine();
@@ -221,9 +235,46 @@ namespace Linnarsson.Dna
             }
         }
 
-        private static IFeature FromAnnotationFileLine(string annotFileLine)
+        private static ExtendedGeneFeature ExtendedGeneFeatureFromRefFlatLine(string line)
         {
-            string[] record = annotFileLine.Split('\t');
+            string[] record = line.Split('\t');
+            string name = record[0].Trim();
+            string trName = record[1].Trim();
+            if (trName == "") trName = name;
+            string chr = record[2].Trim();
+            char strand = record[3].Trim()[0];
+            int nExons = int.Parse(record[8]);
+            int[] exonStarts = SplitField(record[9], 0);
+            int[] exonEnds = SplitField(record[10], -1); // Convert to inclusive ends
+            return new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, 0, "gene", trName);
+        }
+
+        // Iterates the features of a STRT (refFlat-formatted) transcript file, making no changes/variant detections of the data.
+        public static IEnumerable<IFeature> IterSTRTAnnotationsFile(string STRTAnnotationsPath)
+        {
+            using (StreamReader annotReader = new StreamReader(STRTAnnotationsPath))
+            {
+                string line = annotReader.ReadLine();
+                while (line.StartsWith("@") || line.StartsWith("#"))
+                    line = annotReader.ReadLine();
+                string[] f = line.Split('\t');
+                if (f.Length < 11)
+                    throw new AnnotationFileException("Wrong format of file " + STRTAnnotationsPath + " Should be >= 11 TAB-delimited columns.");
+                while (line != null)
+                {
+                    if (line != "" && !line.StartsWith("#"))
+                    {
+                        IFeature ft = FromSTRTAnnotationsLine(line);
+                        yield return ft;
+                    }
+                    line = annotReader.ReadLine();
+                }
+            }
+        }
+
+        private static IFeature FromSTRTAnnotationsLine(string line)
+        {
+            string[] record = line.Split('\t');
             string name = record[0].Trim();
             string trName = record[1].Trim();
             string chr = record[2].Trim();
@@ -242,7 +293,7 @@ namespace Linnarsson.Dna
         public static int[] SplitField(string field, int offset)
         {
             string[] items = field.Split(',');
-            int nParts = items.Length;
+            int nParts = items.Length - 1;
             int[] parts = new int[nParts];
             for (int i = 0; i < nParts; i++)
                 parts[i] = int.Parse(items[i]) + offset;

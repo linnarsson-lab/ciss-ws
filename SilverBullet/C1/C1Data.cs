@@ -86,6 +86,28 @@ namespace C1
         }
     }
 
+    public class Expression
+    {
+        public string CellID { get; set; }
+        public string TranscriptID { get; set; }
+        public int UniqueReads { get; set; }
+        public int UniqueMolecules { get; set; }
+        public int MaxReads { get; set; }
+        public int MaxMolecules { get; set; }
+
+        public Expression()
+        { }
+        public Expression(string cellId, string transcriptId, int minReads, int minMols, int maxReads, int maxMols)
+        {
+            this.CellID = cellId;
+            this.TranscriptID = transcriptId;
+            this.UniqueReads = minReads;
+            this.UniqueMolecules = minMols;
+            this.MaxReads = maxReads;
+            this.MaxMolecules = maxMols;
+        }
+    }
+
     public class Transcriptome
     {
         public int? TranscriptomeID { get; set; }
@@ -150,6 +172,7 @@ namespace C1
             this.ExonStarts = exonStarts;
             this.ExonEnds = exonEnds;
         }
+
     }
 
     public class FeatureAnnotation

@@ -52,6 +52,11 @@ namespace C1
             return lastId;
         }
 
+        /// <summary>
+        /// Returns Transcriptome data for the specified genome data
+        /// </summary>
+        /// <param name="buildVarAnnot">e.g. "mm10_sUCSC"</param>
+        /// <returns>null if no match exists in database</returns>
         public Transcriptome GetTranscriptome(string buildVarAnnot)
         {
             Transcriptome t = null;
@@ -151,5 +156,21 @@ namespace C1
             int transcriptomeId = InsertAndGetLastId(sql, "Transcript");
             t.TranscriptID = transcriptomeId;
         }
+
+        public void InsertExpressions(IEnumerable<Expression> exprIterator)
+        {
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            string sqlPat = "INSERT INTO Expression (CellID, TranscriptID, UniqueMolecules, UniqueReads, MaxMolecules, MaxReads) " +
+                            "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')";
+            foreach (Expression e in exprIterator)
+            {
+                string sql = string.Format(sqlPat, e.CellID, e.TranscriptID, e.UniqueMolecules, e.UniqueReads, e.MaxMolecules, e.MaxReads);
+                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                cmd.ExecuteNonQuery();
+            }
+            conn.Close();
+        }
+
     }
 }

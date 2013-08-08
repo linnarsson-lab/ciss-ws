@@ -37,10 +37,10 @@ namespace C1
             db.InsertTranscriptome(tt);
             Console.WriteLine("Inserting transcripts into database...");
             int n = 0;
-            foreach (GeneFeature gf in annotationReader.IterChrSortedGeneModels())
+            foreach (ExtendedGeneFeature gf in annotationReader.IterChrSortedGeneModels())
             {
                 string type = gf.TranscriptType == "" ? "gene" : gf.TranscriptType;
-                Transcript t = new Transcript(null, tt.TranscriptomeID.Value, gf.TranscriptID, type, gf.NonVariantName, "",
+                Transcript t = new Transcript(null, tt.TranscriptomeID.Value, gf.TranscriptName, type, gf.NonVariantName, "",
                                       gf.Chr, gf.Start, gf.End, gf.GetTranscriptLength(), gf.Strand,
                                       gf.Extension5Prime, gf.ExonStartsString, gf.ExonEndsString);
                 db.InsertTranscript(t);

@@ -894,8 +894,8 @@ namespace Linnarsson.Strt
                 if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
                 chrIdToFeature[chrId] = new List<LocusFeature>();
             }
-            string annotationsPath = genome.VerifyAnAnnotationPath();
-            foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationsPath))
+            string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
+            foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
                 if (chrIdToFeature.ContainsKey(gf.Chr))
                     chrIdToFeature[gf.Chr].Add(gf);
             using (StreamWriter outWriter = new StreamWriter(outFile))

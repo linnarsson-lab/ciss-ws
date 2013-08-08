@@ -214,14 +214,14 @@ namespace Linnarsson.Strt
 
         private static Dictionary<string, List<GeneFeature>> ReadGenesByChr(StrtGenome genome, List<string> chrIds)
         {
-            string annotationsPath = genome.VerifyAnAnnotationPath();
             Dictionary<string, List<GeneFeature>> chrIdToFeature = new Dictionary<string, List<GeneFeature>>();
             foreach (string chrId in chrIds)
             {
                 if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
                 chrIdToFeature[chrId] = new List<GeneFeature>();
             }
-            foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationsPath))
+            string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
+            foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
                 if (chrIdToFeature.ContainsKey(gf.Chr))
                     chrIdToFeature[gf.Chr].Add((GeneFeature)gf);
             return chrIdToFeature;

@@ -339,16 +339,16 @@ namespace Linnarsson.Strt
             Dictionary<string, int> geneToNewPos = ReadErrorsFile(errorsPath);
             Console.WriteLine("There are {0} genes to have their first/last extended.", geneToNewPos.Count);
             Background.Progress(5);
-            string annotationPath = genome.MakeAnnotationsPath();
-            long fileSize = new FileInfo(annotationPath).Length;
-            string updatedPath = annotationPath + ".extended";
+            string STRTAnnotationPath = genome.MakeAnnotationsPath();
+            long fileSize = new FileInfo(STRTAnnotationPath).Length;
+            string updatedPath = STRTAnnotationPath + ".extended";
             using (StreamWriter writer = new StreamWriter(updatedPath))
             {
                 string lastOriginal = "";
                 string originalFlag = GeneFeature.nonUTRExtendedIndicator;
                 long nc = 0;
                 Console.WriteLine("Updating annotation file...");
-                foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationPath))
+                foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationPath))
                 {
                     string gfTxt = gf.ToString();
                     nc += gfTxt.Length;

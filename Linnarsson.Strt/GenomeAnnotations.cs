@@ -85,7 +85,6 @@ namespace Linnarsson.Strt
             SetupRepeats();
         }
 
-
         private void SetupChromsomes()
         {
             ChrIdToFileMap = genome.GetStrtChrFilesMap();
@@ -101,10 +100,9 @@ namespace Linnarsson.Strt
         private void SetupGenesAndIntervals()
         {
             C1DB db = new C1DB();
+            string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
             Transcriptome tm = db.GetTranscriptome(genome.BuildVarAnnot);
-            string annotationsPath = genome.VerifyAnAnnotationPath();
-            bool transcriptsFromDb = (tm != null);
-            if (transcriptsFromDb)
+            if (tm != null)
             {
                 foreach (Transcript tt in db.IterTranscripts(tm.TranscriptomeID.Value))
                 {
@@ -112,17 +110,16 @@ namespace Linnarsson.Strt
                     RegisterGeneFeature(feature);
                 }
                 ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
+                foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
+                    if (gf.Chr == genome.Annotation)
+                        RegisterGeneFeature(gf);
             }
-            string onlySplcChrFromFile = (transcriptsFromDb) ? genome.Annotation : "";
-            foreach (LocusFeature gf in AnnotationReader.IterAnnotationFile(annotationsPath))
+            else
             {
-                if (gf.Chr != onlySplcChrFromFile)
-                {
+                foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
                     RegisterGeneFeature(gf);
-                }
-            }
-            if (!transcriptsFromDb)
                 ModifyGeneFeatures(new GeneFeature5PrimeAndOverlapMarkUpModifier());
+            }
             foreach (GeneFeature gf in geneFeatures.Values)
                 AddGeneIntervals((GeneFeature)gf);
         }

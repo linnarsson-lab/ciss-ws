@@ -54,7 +54,6 @@
     <Compile Include="AnnotationBuilder.cs" />
     <Compile Include="BarcodedReadStream.cs" />
     <Compile Include="BowtieMapFileSorter.cs" />
-    <Compile Include="GenomeAnnotationsInDatabase.cs" />
     <Compile Include="MapFileSnpFinder.cs" />
     <Compile Include="MappingAdder.cs" />
     <Compile Include="NonExonRepeatMasker.cs" />
@@ -72,7 +71,6 @@
     <Compile Include="SyntReadReporter.cs" />
     <Compile Include="TranscriptMatchers.cs" />
     <Compile Include="TranscriptomeStatistics.cs" />
-    <Compile Include="GenomeAnnotationsOnFile.cs" />
     <Compile Include="UCSCGenomeDownloader.cs" />
     <Compile Include="UpstreamAnalyzer.cs" />
     <Compile Include="XMLReportCreator.cs" />

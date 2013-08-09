@@ -160,6 +160,7 @@ namespace C1
         public int Extension5Prime { get; set; }            // 5' extension of first exon for detection of missed CAP sites.
         public string ExonStarts { get; set; }              // 0-based comma-separated "refFlat.txt"/psl line
         public string ExonEnds { get; set; }                // 0-based exclusive comma-separated "refFlat.txt"/psl line
+        public List<TranscriptAnnotation> TranscriptAnnotations { get; set; }
 
         public Transcript(int? transcriptId, int transcriptomeId, string name, string type, string geneName, string description,
                        string chromosome, int start, int end, int length, char strand, int extension5Prime, string exonStarts, string exonEnds)
@@ -178,6 +179,7 @@ namespace C1
             this.Extension5Prime = extension5Prime;
             this.ExonStarts = exonStarts;
             this.ExonEnds = exonEnds;
+            this.TranscriptAnnotations = new List<TranscriptAnnotation>();
         }
         public override string ToString()
         {
@@ -189,21 +191,26 @@ namespace C1
         }
     }
 
-    public class FeatureAnnotation
+    public class TranscriptAnnotation
     {
-        public int? FeatureAnnotationID { get; set; }
-        public int FeatureID { get; set; }
+        public int? TranscriptAnnotationID { get; set; }
+        public int TranscriptID { get; set; }
         public string Name { get; set; }                    // "go-process"
         public string Value { get; set; }                   // "GO:0034355"
         public string Comment { get; set; }                 // "transcription"
 
-        public FeatureAnnotation(int? featureAnnotationId, int featureId, string name, string value, string comment)
+        public TranscriptAnnotation(int? transcriptAnnotationId, int transcriptId, string name, string value, string comment)
         {
-            this.FeatureAnnotationID = featureAnnotationId;
-            this.FeatureID = featureId;
+            this.TranscriptAnnotationID = transcriptAnnotationId;
+            this.TranscriptID = transcriptId;
             this.Name = name;
             this.Value = value;
             this.Comment = comment;
+        }
+        public override string ToString()
+        {
+            return string.Format("TranscriptAnnotation(ID={0}, TranscriptID={1}, Name={2}, Value={3}, Comment={4})",
+                                 TranscriptAnnotationID, TranscriptID, Name, Value, Comment);
         }
     }
 }

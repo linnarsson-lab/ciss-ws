@@ -166,6 +166,18 @@ namespace C1
                                      t.Start, t.End, t.Length, t.Strand, t.Extension5Prime, t.ExonStarts, t.ExonEnds);
             int transcriptomeId = InsertAndGetLastId(sql, "Transcript");
             t.TranscriptID = transcriptomeId;
+            foreach (TranscriptAnnotation ta in t.TranscriptAnnotations)
+            {
+                ta.TranscriptID = t.TranscriptID.Value;
+                InsertTranscriptAnnotation(ta);
+            }
+        }
+
+        public void InsertTranscriptAnnotation(TranscriptAnnotation ta)
+        {
+            string sql = "INSERT INTO TranscriptAnnotation (TranscriptID, Name, Value, Comment) VALUES ('{0}','{1}','{2}','{3}','{4})";
+            sql = string.Format(sql, ta.TranscriptID, ta.Name, ta.Value, ta.Comment);
+            IssueNonQuery(sql);
         }
 
         public void InsertExpressions(IEnumerable<Expression> exprIterator)

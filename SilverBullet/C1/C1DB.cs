@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Globalization;
 using MySql.Data.MySqlClient;
+using MySql.Data;
 
 namespace C1
 {
@@ -149,10 +150,11 @@ namespace C1
 
         public void InsertTranscript(Transcript t)
         {
+            string description = MySqlHelper.EscapeString(t.Description);
             string sql = "INSERT INTO Transcript (TranscriptomeID, Name, Type, GeneName, Description, Chromosome, " +
                                                  "Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds) " +
                                 "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}')";
-            sql = string.Format(sql, t.TranscriptomeID, t.Name, t.Type, t.GeneName, t.Description, t.Chromosome,
+            sql = string.Format(sql, t.TranscriptomeID, t.Name, t.Type, t.GeneName, description, t.Chromosome,
                                      t.Start, t.End, t.Length, t.Strand, t.Extension5Prime, t.ExonStarts, t.ExonEnds);
             int transcriptomeId = InsertAndGetLastId(sql, "Transcript");
             t.TranscriptID = transcriptomeId;

@@ -17,6 +17,7 @@ namespace C1
                 return;
             }
             StrtGenome genome = StrtGenome.GetGenome(args[0]);
+            TranscriptAnnotator ta = new TranscriptAnnotator(genome);
             string organism = genome.Abbrev;
             string trName = genome.BuildVarAnnot;
             Props.props.DirectionalReads = true;
@@ -42,6 +43,7 @@ namespace C1
             {
                 string type = gf.TranscriptType == "" ? "gene" : gf.TranscriptType;
                 Transcript t = AnnotationReader.TranscriptFromExtendedGeneFeature(gf);
+                ta.Annotate(ref t);
                 t.TranscriptomeID = tt.TranscriptomeID.Value;
                 db.InsertTranscript(t);
                 n++;

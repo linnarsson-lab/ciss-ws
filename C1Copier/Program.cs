@@ -153,7 +153,7 @@ namespace C1
                     if ((line = line.Trim()).Length == 0)
                         continue;
                     string[] fields = line.Split('\t');
-                    string well = fields[0] + fields[1];
+                    string well = string.Format("{0}{1:00}", fields[0], fields[1]);
                     double area = double.Parse(fields[3]);
                     double diameter = double.Parse(fields[4]);
                     Cell newCell = new Cell(null, metadata["Plate"], well, metadata["Protocol"],

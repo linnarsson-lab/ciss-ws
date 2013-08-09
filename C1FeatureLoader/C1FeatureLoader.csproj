@@ -47,6 +47,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TranscriptAnnotator.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DnaLib\Linnarsson.Dna.csproj">
@@ -60,6 +61,10 @@
     <ProjectReference Include="..\SilverBullet\C1\Linnarsson.C1Model.csproj">
       <Project>{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}</Project>
       <Name>Linnarsson.C1Model</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\UtilitiesLib\Linnarsson.Utilities.csproj">
+      <Project>{EE3E20A0-525F-408B-96F7-44D586F8E0B9}</Project>
+      <Name>Linnarsson.Utilities</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

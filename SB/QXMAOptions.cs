@@ -17,9 +17,9 @@ namespace CmdSilverBullet
         public int extractionReadLimit = 0;
         public bool useMost5PrimeExonMapping = true;
         public string speciesAbbrev = "";
-        public string geneVariantsChar = "";
+        public string geneVariantsChar = Props.props.AnalyzeAllGeneVariants? "a" : "s";
         public bool analyzeAllGeneVariants { get { return geneVariantsChar == "a"; } }
-        public string annotation = "";
+        public string annotation = "UCSC";
         public string resultFolder;
         public string projectFolder;
 
@@ -27,6 +27,7 @@ namespace CmdSilverBullet
         {
             int argOffset = 1;
             int tempVer;
+            Match m;
             string[] allBcSetNames = Barcodes.GetAllBarcodeSetNames();
             while (argOffset < args.Length - 1)
             {
@@ -91,6 +92,15 @@ namespace CmdSilverBullet
                         else if (opt.Length >= 3 && Array.IndexOf(new string[] { "hs", "hg", "mm", "gg", "ce", "cg" }, opt.Substring(0, 2).ToLower()) >= 0
                             && int.TryParse(opt.Substring(2), out tempVer))
                             speciesAbbrev = opt;
+                        else
+                        {
+                            if ((m = Regex.Match(opt, "(..[0-9]*)_([as]?)(UCSC|VEGA|ENSE)")).Success)
+                            {
+                                speciesAbbrev = m.Groups[0].Value;
+                                geneVariantsChar = m.Groups[1].Value;
+                                annotation = m.Groups[2].Value;
+                            }
+                        }
                         break;
                 }
                 argOffset++;

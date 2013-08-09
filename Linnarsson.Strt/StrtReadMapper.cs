@@ -9,6 +9,7 @@ using Linnarsson.Utilities;
 using Linnarsson.Mathematics;
 using Linnarsson.Mathematics.SortSearch;
 using System.Text.RegularExpressions;
+using C1;
 
 namespace Linnarsson.Strt
 {
@@ -754,7 +755,7 @@ namespace Linnarsson.Strt
             return string.Format("{0}_{1}_{2}_{3}", projectName, barcodes.Name, genome.GetBowtieMainIndexName(), DateTime.Now.ToPathSafeString());
         }
 
-        private ResultDescription ProcessAnnotation(StrtGenome genome, string projectFolder, string OutputFilePrefix, 
+        private ResultDescription ProcessAnnotation(StrtGenome genome, string projectFolder, string projectId, 
                                                     string resultFolderName, List<string> mapFilePaths)
         {
             if (mapFilePaths.Count == 0)
@@ -775,7 +776,7 @@ namespace Linnarsson.Strt
             UpdateGenesToPaint(projectFolder, props);
             GenomeAnnotations annotations = new GenomeAnnotations(props, genome);
             annotations.Load();
-            string outputPathbase = Path.Combine(outputFolder, OutputFilePrefix);
+            string outputPathbase = Path.Combine(outputFolder, projectId);
             TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props, outputPathbase);
             string syntLevelFile = PathHandler.GetSyntLevelFilePath(projectFolder, barcodes.HasRandomTags);
             if (syntLevelFile != "")
@@ -790,6 +791,8 @@ namespace Linnarsson.Strt
             string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
             ResultDescription resultDescr = new ResultDescription(mapFilePaths, bowtieIndexVersion, outputFolder);
             ts.SaveResult(readCounter, resultDescr);
+            if (projectId.StartsWith(C1Props.C1ProjectPrefix))
+                new C1DB().InsertExpressions(annotations.IterExpressions(projectId));
             System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(props.GetType());
             using (StreamWriter writer = new StreamWriter(Path.Combine(outputFolder, "SilverBulletConfig.xml")))
                 x.Serialize(writer, props);

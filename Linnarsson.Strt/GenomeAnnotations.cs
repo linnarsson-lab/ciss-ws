@@ -78,10 +78,12 @@ namespace Linnarsson.Strt
             IterTranscriptMatches = new IterTranscriptMatchers(ExonAnnotations).GetMatcher();
         }
 
+        #region LoadData
         public void Load()
         {
             SetupChromsomes();
-            SetupGenesAndIntervals();
+            SetupGenes();
+            SetupIntervals();
             SetupRepeats();
         }
 
@@ -95,62 +97,6 @@ namespace Linnarsson.Strt
             }
             if (needChromosomeSequences || needChromosomeLengths)
                 ReadChromsomeSequences(ChrIdToFileMap);
-        }
-
-        private void SetupGenesAndIntervals()
-        {
-            C1DB db = new C1DB();
-            string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
-            Transcriptome tm = db.GetTranscriptome(genome.BuildVarAnnot);
-            if (tm != null)
-            {
-                foreach (Transcript tt in db.IterTranscripts(tm.TranscriptomeID.Value))
-                {
-                    LocusFeature feature = GeneFeatureFromTranscript(tt);
-                    RegisterGeneFeature(feature);
-                }
-                ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
-                foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
-                    if (gf.Chr == genome.Annotation)
-                        RegisterGeneFeature(gf);
-            }
-            else
-            {
-                foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
-                    RegisterGeneFeature(gf);
-                ModifyGeneFeatures(new GeneFeature5PrimeAndOverlapMarkUpModifier());
-            }
-            foreach (GeneFeature gf in geneFeatures.Values)
-                AddGeneIntervals((GeneFeature)gf);
-        }
-
-        private static GeneFeature GeneFeatureFromTranscript(Transcript tt)
-        {
-            int[] exonStarts = AnnotationReader.SplitField(tt.ExonStarts, 0);
-            int[] exonEnds = AnnotationReader.SplitField(tt.ExonEnds, -1); // Convert to inclusive ends
-            return new GeneFeature(tt.Name, tt.Chromosome, tt.Strand, null, null, tt.TranscriptID.Value);
-        }
-
-        private void ModifyGeneFeatures(GeneFeatureModifiers m)
-        {
-            foreach (string chrId in GetChromosomeIds())
-            {
-                if (!StrtGenome.IsSyntheticChr(chrId))
-                    m.Process(geneFeatures.Values.Where(gf => gf.Chr == chrId));
-            }
-            Console.WriteLine(m.GetStatsOutput());
-        }
-
-        private void SetupRepeats()
-        {
-            string[] rmskFiles = PathHandler.GetRepeatMaskFiles(genome);
-            Console.Write("Reading {0} masking files..", rmskFiles.Length);
-            foreach (string rmskFile in rmskFiles)
-            {
-                Console.Write(".");
-                LoadRepeatMaskFile(rmskFile);
-            }
-            Console.WriteLine("{0} annotated repeat types.", repeatFeatures.Count);
         }
 
         private void ReadChromsomeSequences(Dictionary<string, string> chrIdToFileMap)
@@ -188,27 +134,60 @@ namespace Linnarsson.Strt
             Console.WriteLine();
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="geneId"></param>
-        /// <returns>Sequence of transcript in mRNA sense orientation,
-        /// or null if chromosomes are not loaded.</returns>
-        public DnaSequence GetTranscriptSequence(string geneName)
+        private void SetupGenes()
         {
-            GeneFeature gf = geneFeatures[geneName];
-            DnaSequence trSeq = null;
-            if (ChromosomeSequences.ContainsKey(gf.Chr))
+            C1DB db = new C1DB();
+            string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
+            Transcriptome tm = db.GetTranscriptome(genome.BuildVarAnnot);
+            int n = 0;
+            if (tm != null)
             {
-                DnaSequence chrSeq = ChromosomeSequences[gf.Chr];
-                trSeq = new ShortDnaSequence();
-                for (int i = 0; i < gf.ExonCount; i++)
+                foreach (Transcript tt in db.IterTranscripts(tm.TranscriptomeID.Value))
                 {
-                    trSeq.Append(chrSeq.SubSequence(gf.ExonStarts[i], gf.GetExonLength(i)));
+                    LocusFeature feature = AnnotationReader.GeneFeatureFromTranscript(tt);
+                    if (RegisterGeneFeature(feature)) n++;
                 }
-                if (gf.Strand == '-') trSeq.RevComp();
+                Console.WriteLine("Read {0} transcript models for {1} from database.", n, tm.Name);
+                ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
+                foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
+                    if (gf.Chr == genome.Annotation)
+                        RegisterGeneFeature(gf);
             }
-            return trSeq;
+            else
+            {
+                Console.WriteLine("Read {0} gene models from {1}...", n, STRTAnnotationsPath);
+                foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
+                    if (RegisterGeneFeature(gf)) n++;
+                ModifyGeneFeatures(new GeneFeature5PrimeAndOverlapMarkUpModifier());
+            }
+        }
+
+        private void ModifyGeneFeatures(GeneFeatureModifiers m)
+        {
+            foreach (string chrId in GetChromosomeIds())
+            {
+                if (!StrtGenome.IsSyntheticChr(chrId))
+                    m.Process(geneFeatures.Values.Where(gf => gf.Chr == chrId));
+            }
+            Console.WriteLine(m.GetStatsOutput());
+        }
+
+        private void SetupIntervals()
+        {
+            foreach (GeneFeature gf in geneFeatures.Values)
+                AddGeneIntervals((GeneFeature)gf);
+        }
+
+        private void SetupRepeats()
+        {
+            string[] rmskFiles = PathHandler.GetRepeatMaskFiles(genome);
+            Console.Write("Reading {0} masking files..", rmskFiles.Length);
+            foreach (string rmskFile in rmskFiles)
+            {
+                Console.Write(".");
+                LoadRepeatMaskFile(rmskFile);
+            }
+            Console.WriteLine("{0} annotated repeat types.", repeatFeatures.Count);
         }
 
         private void LoadRepeatMaskFile(string rmskPath)
@@ -526,6 +505,7 @@ namespace Linnarsson.Strt
             }
             return chrSeq;
         }
+        #endregion
 
         #region SaveResults
         public void SaveResult(string fileNameBase, int averageReadLen)
@@ -690,16 +670,16 @@ namespace Linnarsson.Strt
             return 0;
         }
 
-        public IEnumerable<Expression> IterExpressions()
+        public IEnumerable<Expression> IterExpressions(string projectId)
         {
+            Dictionary<string, int> cellIdByBcIdx = new C1DB().GetCellIdByWell(projectId);
             Expression exprHolder = new Expression();
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
             {
-                string cellId = barcodes.GetAnnotation("CellID", bcIdx);
-                exprHolder.CellID = cellId;
+                exprHolder.CellID = cellIdByBcIdx[barcodes.GetWellId(bcIdx)].ToString();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    exprHolder.TranscriptID = gf.Name;
+                    exprHolder.TranscriptID = gf.TranscriptID;
                     exprHolder.UniqueMolecules = gf.NonConflictingTranscriptHitsByBarcode[bcIdx];
                     exprHolder.UniqueReads = gf.NonConflictingTranscriptReadsByBarcode[bcIdx];
                     exprHolder.MaxMolecules = gf.TranscriptHitsByBarcode[bcIdx];

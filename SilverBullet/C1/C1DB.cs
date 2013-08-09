@@ -10,6 +10,11 @@ namespace C1
 {
     public class C1DB
     {
+        /// <summary>
+        /// set to true to run without executing any inserts to database
+        /// </summary>
+        private readonly bool test = false;
+
         private readonly static string connectionString = "server=192.168.1.12;uid=cuser;pwd=3pmknHQyl;database=cells10k;Connect Timeout=300;Charset=utf8;";
 
         public C1DB()
@@ -18,14 +23,16 @@ namespace C1
 
         private bool IssueNonQuery(string sql)
         {
-            //Console.WriteLine(sql);
             bool success = true;
             MySqlConnection conn = new MySqlConnection(connectionString);
             try
             {
                 conn.Open();
                 MySqlCommand cmd = new MySqlCommand(sql, conn);
-                cmd.ExecuteNonQuery();
+                if (test)
+                    Console.WriteLine(sql);
+                else
+                    cmd.ExecuteNonQuery();
             }
             catch (Exception ex)
             {
@@ -38,13 +45,14 @@ namespace C1
 
         private int InsertAndGetLastId(string sql, string tableName)
         {
-            //Console.WriteLine(sql);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
-            cmd.ExecuteNonQuery();
+            if (test)
+                Console.WriteLine(sql);
+            else
+                cmd.ExecuteNonQuery();
             string lastIdSql = string.Format("SELECT MAX({0}ID) AS LastId FROM {0}", tableName);
-            //Console.WriteLine(sql);
             cmd = new MySqlCommand(lastIdSql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             rdr.Read();
@@ -170,7 +178,10 @@ namespace C1
             {
                 string sql = string.Format(sqlPat, e.CellID, e.TranscriptID, e.UniqueMolecules, e.UniqueReads, e.MaxMolecules, e.MaxReads);
                 MySqlCommand cmd = new MySqlCommand(sql, conn);
-                cmd.ExecuteNonQuery();
+                if (test)
+                    Console.WriteLine(sql);
+                else
+                    cmd.ExecuteNonQuery();
             }
             conn.Close();
         }

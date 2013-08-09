@@ -31,6 +31,11 @@ namespace Linnarsson.Dna
             this.genome = genome;
         }
 
+        /// <summary>
+        /// Read external gene definition files (UCSC refFlat.txt, VEGA mart files...)
+        /// and construct transcript models for single or variant annotations
+        /// </summary>
+        /// <returns>Number of transcript models constructed</returns>
         public abstract int BuildGeneModelsByChr();
 
         protected StrtGenome genome;
@@ -48,6 +53,10 @@ namespace Linnarsson.Dna
             return genesByChr.ContainsKey(chrId)? genesByChr[chrId].Count : 0;
         }
 
+        /// <summary>
+        /// Iterate all gene models, order by increasing start position
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<ExtendedGeneFeature> IterChrSortedGeneModels()
         {
             foreach (string chrId in genesByChr.Keys)
@@ -59,6 +68,11 @@ namespace Linnarsson.Dna
             }
         }
 
+        /// <summary>
+        /// Iterate the genes features on specified chromosome, order by increasing start position
+        /// </summary>
+        /// <param name="chrId">Specified chromosome</param>
+        /// <returns></returns>
         public IEnumerable<ExtendedGeneFeature> IterChrSortedGeneModels(string chrId)
         {
             if (!genesByChr.ContainsKey(chrId)) yield break;
@@ -68,6 +82,9 @@ namespace Linnarsson.Dna
                 yield return gf;
         }
 
+        /// <summary>
+        /// Clear data before building gene models
+        /// </summary>
         protected void ClearGenes()
         {
             nameToGene = new Dictionary<string, ExtendedGeneFeature>();
@@ -190,6 +207,11 @@ namespace Linnarsson.Dna
             return true;
         }
 
+        /// <summary>
+        /// Adjust genes according to the filters/modifiers supplied.
+        /// Can be 5' end, masking of overlaps etc...
+        /// </summary>
+        /// <param name="m"></param>
         public void AdjustGeneFeatures(GeneFeatureModifiers m)
         {
             foreach (List<ExtendedGeneFeature> chrGenes in genesByChr.Values)
@@ -201,6 +223,9 @@ namespace Linnarsson.Dna
             }
         }
 
+        /// <summary>
+        /// Adds the transcript models from the spike control chromosome
+        /// </summary>
         public void AddCtrlGeneModels()
         {
             string CTRLGenesPath = PathHandler.GetCTRLGenesPath();
@@ -214,23 +239,22 @@ namespace Linnarsson.Dna
             }
         }
 
-        // Iterates the features of a refFlat-formatted file, making no changes/variant detections of the data.
+        // Iterates the transcripts of a UCSC refFlat-formatted file, making no changes/variant detections of the data.
         public static IEnumerable<IFeature> IterRefFlatFile(string refFlatPath)
         {
             using (StreamReader refReader = new StreamReader(refFlatPath))
             {
-                string line = refReader.ReadLine();
-                string[] f = line.Split('\t');
-                if (f.Length < 11)
-                    throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should be 11 TAB-delimited columns.");
-                while (line != null)
+                string line;
+                while ((line = refReader.ReadLine()) != null)
                 {
-                    if (line != "" && !line.StartsWith("#"))
-                    {
-                        ExtendedGeneFeature ft = ExtendedGeneFeatureFromRefFlatLine(line);
-                        yield return ft;
-                    }
-                    line = refReader.ReadLine();
+                    line = line.Trim();
+                    if (line == "" || line.StartsWith("#"))
+                        continue;
+                    string[] f = line.Split('\t');
+                    if (f.Length < 11)
+                        throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should be 11 TAB-delimited columns.");
+                    ExtendedGeneFeature ft = ExtendedGeneFeatureFromRefFlatLine(line);
+                    yield return ft;
                 }
             }
         }
@@ -245,11 +269,15 @@ namespace Linnarsson.Dna
             char strand = record[3].Trim()[0];
             int nExons = int.Parse(record[8]);
             int[] exonStarts = SplitField(record[9], 0);
-            int[] exonEnds = SplitField(record[10], -1); // Convert to inclusive ends
+            int[] exonEnds = SplitExonEndsField(record[10]); // Convert to inclusive ends
             return new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, 0, "gene", trName);
         }
 
-        // Iterates the features of a STRT (refFlat-formatted) transcript file, making no changes/variant detections of the data.
+        /// <summary>
+        /// Iterates the transcript models of a STRT (refFlat-like) transcript file
+        /// </summary>
+        /// <param name="STRTAnnotationsPath"></param>
+        /// <returns></returns>
         public static IEnumerable<IFeature> IterSTRTAnnotationsFile(string STRTAnnotationsPath)
         {
             using (StreamReader annotReader = new StreamReader(STRTAnnotationsPath))
@@ -281,7 +309,7 @@ namespace Linnarsson.Dna
             char strand = record[3].Trim()[0];
             int nExons = int.Parse(record[8]);
             int[] exonStarts = SplitField(record[9], 0);
-            int[] exonEnds = SplitField(record[10], -1); // Convert to inclusive ends
+            int[] exonEnds = SplitExonEndsField(record[10]); // Convert to inclusive ends
             if (record.Length == 11)
                 return new GeneFeature(name, chr, strand, exonStarts, exonEnds, 0);
             int[] offsets = SplitField(record[11], 0);
@@ -290,6 +318,10 @@ namespace Linnarsson.Dna
             return new SplicedGeneFeature(name, chr, strand, exonStarts, exonEnds, offsets, realExonIds, exonsStrings);
         }
 
+        public static int[] SplitExonEndsField(string exonEnds)
+        {
+            return SplitField(exonEnds, -1);
+        }
         public static int[] SplitField(string field, int offset)
         {
             string[] items = field.Split(',');
@@ -299,6 +331,21 @@ namespace Linnarsson.Dna
                 parts[i] = int.Parse(items[i]) + offset;
             return parts;
         }
-    }
 
+        public static GeneFeature GeneFeatureFromTranscript(Transcript tt)
+        {
+            int[] exonStarts = SplitField(tt.ExonStarts, 0); // 0-based
+            int[] exonEnds = SplitExonEndsField(tt.ExonEnds); // Convert to 0-based inclusive ends
+            return new GeneFeature(tt.GeneName, tt.Chromosome, tt.Strand, exonStarts, exonEnds, tt.TranscriptID.Value);
+        }
+
+        public static Transcript TranscriptFromExtendedGeneFeature(ExtendedGeneFeature gf)
+        {
+            string type = gf.TranscriptType == "" ? "gene" : gf.TranscriptType;
+            return new Transcript(null, 0, gf.TranscriptName, type, gf.NonVariantName, "",
+                                  gf.Chr, gf.Start + 1, gf.End + 1, gf.GetTranscriptLength(), gf.Strand,
+                                  gf.Extension5Prime, gf.ExonStartsString, gf.ExonEndsString);
+        }
+
+    }
 }

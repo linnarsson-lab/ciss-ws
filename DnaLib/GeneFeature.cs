@@ -69,12 +69,12 @@ namespace Linnarsson.Dna
         public int LocusEnd { get { return End + LocusFlankLength; } }
 
         /// <summary>
-        /// Holds the chromosomal position of the CAP site
+        /// 0-based chromosomal position of the CAP site
         /// </summary>
         public int SavedCAPPos { get; private set; }
 
         /// <summary>
-        /// Start position on chromosome of the leftmost exon. May be adjusted by 5' end extension defined by Props for '+' strand genes.
+        /// 0-based start position on chromosome of the leftmost exon. May be adjusted by 5' end extension defined by Props for '+' strand genes.
         /// </summary>
         public override int Start
         {
@@ -89,7 +89,7 @@ namespace Linnarsson.Dna
             }
         }
         /// <summary>
-        /// Inclusive end position on chromosome of the rightmost exon. May be adjusted by 5' end extension defined by Props for '-' strand genes.
+        /// 0-based inclusive end position on chromosome of the rightmost exon. May be adjusted by 5' end extension defined by Props for '-' strand genes.
         /// </summary>
         public override int End
         {
@@ -193,11 +193,11 @@ namespace Linnarsson.Dna
 
         public int ExonCount { get { return ExonStarts.Length; } }
         /// <summary>
-        /// Zero-based start positions in chromosome
+        /// 0-based start positions in chromosome
         /// </summary>
         public int[] ExonStarts;
         /// <summary>
-        /// Zero-based last positions in chromosome
+        /// 0-based inclusive last positions in chromosome
         /// </summary>
         public int[] ExonEnds;
 
@@ -710,13 +710,13 @@ namespace Linnarsson.Dna
             return s.ToString();
         }
         /// <summary>
-        /// 1-based psl-like string of start positions
+        /// 0-based psl-like string of start positions
         /// </summary>
-        public string ExonStartsString { get { return string.Join(",", Array.ConvertAll(ExonStarts, v => (v+1).ToString())); } }
+        public string ExonStartsString { get { return string.Join(",", Array.ConvertAll(ExonStarts, v => v.ToString())) + ","; } }
         /// <summary>
-        /// 1-based psl-like string of inclusive end positions
+        /// 0-based psl-like string of exclusive end positions
         /// </summary>
-        public string ExonEndsString { get { return string.Join(",", Array.ConvertAll(ExonEnds, v => (v+1).ToString())); } }
+        public string ExonEndsString { get { return string.Join(",", Array.ConvertAll(ExonEnds, v => (v+1).ToString())) +","; } }
 
         /// <summary>
         /// Decrease length of flank(s) if there is a too close neighboring gene exon (in same orientation).

@@ -16,6 +16,8 @@ namespace C1
     {
         [NonSerialized]
         public static readonly string configFilename = "C1Config.xml"; // Filename of machine specific Props
+        [NonSerialized]
+        public static readonly string C1ProjectPrefix = "C1-"; // Prefix used for cells10k plates in ProjectDB.
 
         public string C1RunsFolder = "/data2/c1-runs";
         public string C1CaptureFilenamePattern = "capture_rep*.txt";

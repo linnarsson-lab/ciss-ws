@@ -60,7 +60,7 @@ namespace C1
         public Transcriptome GetTranscriptome(string buildVarAnnot)
         {
             Transcriptome t = null;
-            string sql = string.Format("SELECT * FROM Transcriptome WHERE Name = '{0}'", buildVarAnnot);
+            string sql = string.Format("SELECT * FROM Transcriptome WHERE Name ='{0}'", buildVarAnnot);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -75,7 +75,7 @@ namespace C1
 
         public IEnumerable<Transcript> IterTranscripts(int transcriptomeId)
         {
-            string sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID = '{0}' ORDER BY TranscriptID", transcriptomeId);
+            string sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' ORDER BY TranscriptID", transcriptomeId);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -171,6 +171,20 @@ namespace C1
                 cmd.ExecuteNonQuery();
             }
             conn.Close();
+        }
+
+        public Dictionary<string, int> GetCellIdByWell(string projectId)
+        {
+            Dictionary<string, int> cellIdByWell = new Dictionary<string, int>();
+            string sql = string.Format("SELECT Well, CellID FROM Cell WHERE Plate='{0}' ORDER BY Well", projectId);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                cellIdByWell.Add(rdr.GetString(0), rdr.GetInt32(1));
+            conn.Close();
+            return cellIdByWell;
         }
 
     }

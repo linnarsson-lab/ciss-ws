@@ -89,7 +89,7 @@ namespace C1
     public class Expression
     {
         public string CellID { get; set; }
-        public string TranscriptID { get; set; }
+        public int TranscriptID { get; set; }
         public int UniqueReads { get; set; }
         public int UniqueMolecules { get; set; }
         public int MaxReads { get; set; }
@@ -97,7 +97,7 @@ namespace C1
 
         public Expression()
         { }
-        public Expression(string cellId, string transcriptId, int minReads, int minMols, int maxReads, int maxMols)
+        public Expression(string cellId, int transcriptId, int minReads, int minMols, int maxReads, int maxMols)
         {
             this.CellID = cellId;
             this.TranscriptID = transcriptId;
@@ -135,6 +135,13 @@ namespace C1
             this.AnalysisDate = analysisDate;
             this.AnnotationVersion = annotationVersion;
         }
+        public override string ToString()
+        {
+            return string.Format("Transcriptome(ID={0}, Name={1}, Organism={2}, Source={3}, GenomeFolder={4}, Description={5}, " +
+                                 "BuildDate={6}, BuilderVersion={7}, AnnotationVersion={8}, AnalysisDate={9})",
+                                 TranscriptomeID, Name, Organism, Source, GenomeFolder, Description,
+                                 BuildDate, BuilderVersion, AnnotationVersion, AnalysisDate);
+        }
     }
 
     public class Transcript
@@ -146,13 +153,13 @@ namespace C1
         public string GeneName { get; set; }                // "JunB"
         public string Description { get; set; }
         public string Chromosome { get; set; }              // "chrX"
-        public int Start { get; set; }                      // According to build source - excludes any 5' extension. 1-based
+        public int Start { get; set; }                      // 1-based, includes any 5' extension
         public int End { get; set; }                        // Inclusive, 1-based
         public int Length { get; set; }                     // For an mRNA, the length of the transcript, not locus
         public char Strand { get; set; }                    // '+', '-', or '0'
-        public int Extension5Prime { get; set; }            // Extension of first exon for detection of missed CAP sites.
-        public string ExonStarts { get; set; }              // Formatted as a comma-separated "refFlat.txt"/psl line
-        public string ExonEnds { get; set; }                // Formatted as a comma-separated "refFlat.txt"/psl line
+        public int Extension5Prime { get; set; }            // 5' extension of first exon for detection of missed CAP sites.
+        public string ExonStarts { get; set; }              // 0-based comma-separated "refFlat.txt"/psl line
+        public string ExonEnds { get; set; }                // 0-based exclusive comma-separated "refFlat.txt"/psl line
 
         public Transcript(int? transcriptId, int transcriptomeId, string name, string type, string geneName, string description,
                        string chromosome, int start, int end, int length, char strand, int extension5Prime, string exonStarts, string exonEnds)
@@ -172,7 +179,14 @@ namespace C1
             this.ExonStarts = exonStarts;
             this.ExonEnds = exonEnds;
         }
-
+        public override string ToString()
+        {
+            return string.Format("Transcript(ID={0}, TranscriptomeID={13}, Name={1}, Type={2}, GeneName={3}, Description={4}, Chromosome={5}, " +
+                                 "Start={6}, End={7}, Length={8}, Strand={9}, Extension5Prime={10}\n" +
+                                 "ExonStarts={11}\nExonEnds={12})",
+                                 TranscriptID, Name, Type, GeneName, Description, Chromosome,
+                                 Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds, TranscriptomeID);
+        }
     }
 
     public class FeatureAnnotation

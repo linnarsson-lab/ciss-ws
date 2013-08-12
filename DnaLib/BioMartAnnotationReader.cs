@@ -171,7 +171,6 @@ namespace Linnarsson.Dna
                 exonEnds[i] = (int)exons[i].End;
             }
             ExtendedGeneFeature egf = new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, 0, trType, trId);
-            Console.WriteLine(egf);
             return egf;
         }
 

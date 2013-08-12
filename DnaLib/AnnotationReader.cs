@@ -151,14 +151,14 @@ namespace Linnarsson.Dna
             return true;
         }
 
-        private ExtendedGeneFeature CreateExonUnion(ExtendedGeneFeature gf1, ExtendedGeneFeature gf2)
+        private ExtendedGeneFeature CreateExonUnion(ExtendedGeneFeature oldGf, ExtendedGeneFeature newGf)
         {
-            List<int> newStarts = gf1.ExonStarts.ToList();
-            List<int> newEnds = gf1.ExonEnds.ToList();
-            for (int i2 = 0; i2 < gf2.ExonCount; i2++)
+            List<int> newStarts = oldGf.ExonStarts.ToList();
+            List<int> newEnds = oldGf.ExonEnds.ToList();
+            for (int i2 = 0; i2 < newGf.ExonCount; i2++)
             {
-                int start2 = gf2.ExonStarts[i2];
-                int end2 = gf2.ExonEnds[i2];
+                int start2 = newGf.ExonStarts[i2];
+                int end2 = newGf.ExonEnds[i2];
                 int insertPoint = newStarts.FindIndex(s => s > start2);
                 if (insertPoint == -1) insertPoint = newStarts.Count;
                 newStarts.Insert(insertPoint, start2);
@@ -174,9 +174,9 @@ namespace Linnarsson.Dna
                     i--;
                 }
             }
-            string combTrName = (gf1.TranscriptName == gf2.TranscriptName)? gf1.TranscriptName : (gf1.TranscriptName + ";" + gf2.TranscriptName);
-            string combTrType = (gf1.TranscriptType == gf2.TranscriptType) ? gf1.TranscriptType : (gf1.TranscriptType + ";" + gf2.TranscriptType);
-            ExtendedGeneFeature newFeature = new ExtendedGeneFeature(gf1.Name, gf1.Chr, gf1.Strand, 
+            string combTrName = oldGf.TranscriptName.Contains(newGf.TranscriptName)? oldGf.TranscriptName : (oldGf.TranscriptName + ";" + newGf.TranscriptName);
+            string combTrType = oldGf.TranscriptType.Contains(newGf.TranscriptType) ? oldGf.TranscriptType : (oldGf.TranscriptType + ";" + newGf.TranscriptType);
+            ExtendedGeneFeature newFeature = new ExtendedGeneFeature(oldGf.Name, oldGf.Chr, oldGf.Strand, 
                                                     newStarts.ToArray(), newEnds.ToArray(), 0, combTrType, combTrName);
             return newFeature;
         }
@@ -342,7 +342,7 @@ namespace Linnarsson.Dna
         public static Transcript TranscriptFromExtendedGeneFeature(ExtendedGeneFeature gf)
         {
             string type = gf.TranscriptType == "" ? "gene" : gf.TranscriptType;
-            return new Transcript(null, 0, gf.TranscriptName, type, gf.NonVariantName, "",
+            return new Transcript(null, 0, gf.TranscriptName, type, gf.NonVariantName, "",  "",
                                   gf.Chr, gf.Start + 1, gf.End + 1, gf.GetTranscriptLength(), gf.Strand,
                                   gf.Extension5Prime, gf.ExonStartsString, gf.ExonEndsString);
         }

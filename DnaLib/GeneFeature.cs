@@ -930,5 +930,15 @@ namespace Linnarsson.Dna
             this.TranscriptType = transcriptType;
             this.TranscriptName = transcriptName;
         }
+        public override string ToString()
+        {
+            return string.Format("ExtendedGeneFeature(Name={0}, TrName={1}, Chr={2}, Strand={3}, Start={4} End={5}, " +
+                                 "TrType={6}, TrId={7} Extension5Prime={8}\n" +
+                                 "ExonStarts={9}\nExonEnds={10})",
+                                 Name, TranscriptName, Chr, Strand, Start, End, 
+                                 TranscriptType, TranscriptID, Extension5Prime,
+                                 ExonStarts, ExonEnds);
+        }
+
     }
 }

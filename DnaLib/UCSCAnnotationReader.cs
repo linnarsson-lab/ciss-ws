@@ -21,7 +21,8 @@ namespace Linnarsson.Dna
             int n = 0, nCreated = 0;
             foreach (ExtendedGeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
             {
-                if (AddGeneModel(gf)) nCreated++;
+                bool newModel = AddGeneModel(gf);
+                if (newModel) nCreated++;
                 n++;
             }
             string varTxt = (genome.GeneVariants) ? " genes and" : " main gene";

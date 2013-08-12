@@ -112,15 +112,14 @@ namespace Linnarsson.Dna
                 List<Interval> exons = new List<Interval>();
                 char strand = '+';
                 string name = "", currentTrName = "", chr = "", trType = null, trName = null;
-                string line = martReader.ReadLine();
-                while (line != null)
+                string line;
+                while ((line = martReader.ReadLine()) != null)
                 {
                     fields = line.Split('\t');
                     trName = fields[trNameCol].Trim();
-                    trType = fields[typeCol].Trim();
                     if (exons.Count > 0 && trName != currentTrName) // Handle every splice variant as a gene variant
                     {
-                        yield return CreateGeneFeature(name, chr, strand, exons, trName, trType);
+                        yield return CreateGeneFeature(name, chr, strand, exons, currentTrName, trType);
                         exons.Clear();
                     }
                     if (exons.Count == 0)
@@ -128,6 +127,7 @@ namespace Linnarsson.Dna
                         currentTrName = trName;
                         name = fields[nameCol].Trim();
                         if (name == "") name = trName;
+                        trType = fields[typeCol].Trim();
                         if (trType.Contains("pseudogene"))
                         {
                             pseudogeneCount++;
@@ -141,7 +141,6 @@ namespace Linnarsson.Dna
                         strand = (fields[strandCol].Trim() == "1") ? '+' : '-';
                     }
                     exons.Add(new Interval(int.Parse(fields[exStartCol]) - 1, int.Parse(fields[exEndCol]) - 1));
-                    line = martReader.ReadLine();
                 }
                 if (name != "")
                     yield return CreateGeneFeature(name, chr, strand, exons, trName, trType);
@@ -171,7 +170,9 @@ namespace Linnarsson.Dna
                 exonStarts[i] = (int)exons[i].Start;
                 exonEnds[i] = (int)exons[i].End;
             }
-            return new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, 0, trId, trType);
+            ExtendedGeneFeature egf = new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, 0, trType, trId);
+            Console.WriteLine(egf);
+            return egf;
         }
 
     }

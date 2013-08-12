@@ -50,16 +50,18 @@ namespace C1
         }
     }
 
+    public enum Detection { Yes, No, Unknown };
+
     public class CellImage
     {
         public int? CellImageID { get; set; }
         public int? CellID { get; set; }
         public string Reporter { get; set; }                 // channel used for imaging
         public string Marker { get; set; }                   // "TH-GFP"
-        public bool Detection { get; set; }                  // true if stain was detected
+        public Detection Detection { get; set; }             // was this marker detected?
         public string RelativePath { get; set; }             // Location of image file
 
-        public CellImage(int? cellImageId, int? cellId, string reporter, string marker, bool detection, string relPath)
+        public CellImage(int? cellImageId, int? cellId, string reporter, string marker, Detection detection, string relPath)
         {
             this.CellImageID = cellImageId;
             this.CellID = cellId;
@@ -151,6 +153,7 @@ namespace C1
         public string Name { get; set; }             // "ENSMUS232243"
         public string Type { get; set; }             // "miRNA", "pseudogene", "coding"
         public string GeneName { get; set; }                // "JunB"
+        public string EntrezID { get; set; }
         public string Description { get; set; }
         public string Chromosome { get; set; }              // "chrX"
         public int Start { get; set; }                      // 1-based, includes any 5' extension
@@ -162,7 +165,7 @@ namespace C1
         public string ExonEnds { get; set; }                // 0-based exclusive comma-separated "refFlat.txt"/psl line
         public List<TranscriptAnnotation> TranscriptAnnotations { get; set; }
 
-        public Transcript(int? transcriptId, int transcriptomeId, string name, string type, string geneName, string description,
+        public Transcript(int? transcriptId, int transcriptomeId, string name, string type, string geneName, string entrezId, string description,
                        string chromosome, int start, int end, int length, char strand, int extension5Prime, string exonStarts, string exonEnds)
         {
             this.TranscriptID = transcriptId;
@@ -170,6 +173,7 @@ namespace C1
             this.Name = name;
             this.Type = type;
             this.GeneName = geneName;
+            this.EntrezID = entrezId;
             this.Description = description;
             this.Chromosome = chromosome;
             this.Start = start;
@@ -183,10 +187,11 @@ namespace C1
         }
         public override string ToString()
         {
-            return string.Format("Transcript(ID={0}, TranscriptomeID={13}, Name={1}, Type={2}, GeneName={3}, Description={4}, Chromosome={5}, " +
-                                 "Start={6}, End={7}, Length={8}, Strand={9}, Extension5Prime={10}\n" +
-                                 "ExonStarts={11}\nExonEnds={12})",
-                                 TranscriptID, Name, Type, GeneName, Description, Chromosome,
+            return string.Format("Transcript(ID={0}, TranscriptomeID={14}, Name={1}, Type={2}, GeneName={3}, EntrezID={4}, " +
+                                 "Description={5}, Chromosome={6}, " +
+                                 "Start={7}, End={8}, Length={9}, Strand={10}, Extension5Prime={11}\n" +
+                                 "ExonStarts={12}\nExonEnds={13})",
+                                 TranscriptID, Name, Type, GeneName, EntrezID, Description, Chromosome,
                                  Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds, TranscriptomeID);
         }
     }
@@ -194,23 +199,23 @@ namespace C1
     public class TranscriptAnnotation
     {
         public int? TranscriptAnnotationID { get; set; }
-        public int TranscriptID { get; set; }
-        public string Name { get; set; }                    // "go-process"
+        public int? TranscriptID { get; set; }
+        public string Source { get; set; }                    // "go-process"
         public string Value { get; set; }                   // "GO:0034355"
-        public string Comment { get; set; }                 // "transcription"
+        public string Description { get; set; }                 // "transcription"
 
-        public TranscriptAnnotation(int? transcriptAnnotationId, int transcriptId, string name, string value, string comment)
+        public TranscriptAnnotation(int? transcriptAnnotationId, int? transcriptId, string name, string value, string comment)
         {
             this.TranscriptAnnotationID = transcriptAnnotationId;
             this.TranscriptID = transcriptId;
-            this.Name = name;
+            this.Source = name;
             this.Value = value;
-            this.Comment = comment;
+            this.Description = comment;
         }
         public override string ToString()
         {
-            return string.Format("TranscriptAnnotation(ID={0}, TranscriptID={1}, Name={2}, Value={3}, Comment={4})",
-                                 TranscriptAnnotationID, TranscriptID, Name, Value, Comment);
+            return string.Format("TranscriptAnnotation(ID={0}, TranscriptID={1}, Source={2}, Value={3}, Description={4})",
+                                 TranscriptAnnotationID, TranscriptID, Source, Value, Description);
         }
     }
 }

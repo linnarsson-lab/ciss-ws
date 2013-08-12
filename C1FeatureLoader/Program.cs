@@ -25,11 +25,8 @@ namespace C1
             Console.WriteLine("Building gene models...");
             int nModels = annotationReader.BuildGeneModelsByChr();
             Console.WriteLine("...{0} gene models constructed.", nModels);
-            Console.WriteLine("Extending 5' ends...");
-            GeneFeature5PrimeModifier m = new GeneFeature5PrimeModifier();
-            annotationReader.AdjustGeneFeatures(m);
-            Console.WriteLine("...{0} genes had their 5' end extended, {1} with the maximal {2} bps.",
-                               m.nExtended, m.nFullyExtended5Primes, Props.props.GeneFeature5PrimeExtension);
+            if (Props.props.GeneFeature5PrimeExtension > 0)
+                Extend5Primes(annotationReader);
             annotationReader.AddCtrlGeneModels();
             Transcriptome tt = new Transcriptome(null, genome.BuildVarAnnot, genome.Abbrev, genome.Annotation, 
                                                  annotationReader.VisitedAnnotationPaths,
@@ -49,6 +46,15 @@ namespace C1
                 n++;
             }
             Console.WriteLine("...totally {0} transcripts.", n);
+        }
+
+        private static void Extend5Primes(AnnotationReader annotationReader)
+        {
+            Console.WriteLine("Extending 5' ends...");
+            GeneFeature5PrimeModifier m = new GeneFeature5PrimeModifier();
+            annotationReader.AdjustGeneFeatures(m);
+            Console.WriteLine("...{0} genes had their 5' end extended, {1} with the maximal {2} bps.",
+                               m.nExtended, m.nFullyExtended5Primes, Props.props.GeneFeature5PrimeExtension);
         }
     }
 }

@@ -175,7 +175,7 @@ namespace C1
                             continue;
                         }
                         string imgFolderName = Path.GetFileName(imgFolder);
-                        cellImages.Add(new CellImage(null, null, imgFolderName, imgFolderName, false, imgPath));
+                        cellImages.Add(new CellImage(null, null, imgFolderName, imgFolderName, Detection.Unknown, imgPath));
                     }
                     newCell.cellImages = cellImages;
                     cells.Add(newCell);

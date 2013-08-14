@@ -145,10 +145,10 @@ namespace Linnarsson.Strt
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {
                     if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
-                    item.AddSNP(m.RndTagIdx, mm);
+                    item.AddSNP(m.UMIIdx, mm);
                 }
             }
-            return item.Add(m.RndTagIdx);
+            return item.Add(m.UMIIdx);
         }
 
         /// <summary>
@@ -171,11 +171,11 @@ namespace Linnarsson.Strt
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {
                     if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
-                    item.AddSNP(m.RndTagIdx, mm);
+                    item.AddSNP(m.UMIIdx, mm);
                 }
             }
             item.AddSharedGenes(sharingRealFeatures);
-            return item.Add(m.RndTagIdx);
+            return item.Add(m.UMIIdx);
         }
 
         /// <summary>
@@ -313,8 +313,8 @@ namespace Linnarsson.Strt
 
         public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds)
         {
-            hasRndTags = barcodes.HasRandomTags;
-            nRndTags = barcodes.RandomTagCount;
+            hasRndTags = barcodes.HasUMIs;
+            nRndTags = barcodes.UMICount;
             TagItem.nRndTags = nRndTags;
             nReadsByRandomTag = new int[nRndTags];
             nCasesPerRandomTagCount = new int[nRndTags + 1];
@@ -381,7 +381,7 @@ namespace Linnarsson.Strt
         /// <returns>True if the chr-strand-pos-bc-rndTag combination is new</returns>
         public bool Add(MultiReadMapping m)
         {
-            nReadsByRandomTag[m.RndTagIdx]++;
+            nReadsByRandomTag[m.UMIIdx]++;
             bool isNew = chrTagDatas[m.Chr].Add(m);
             return isNew | !hasRndTags;
         }
@@ -396,7 +396,7 @@ namespace Linnarsson.Strt
         /// <returns>True if the chr-strand-pos-bc-rndTag combination is new</returns>
         public bool Add(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures)
         {
-            nReadsByRandomTag[m.RndTagIdx]++;
+            nReadsByRandomTag[m.UMIIdx]++;
             bool isNew = chrTagDatas[m.Chr].Add(m, sharingRealFeatures);
             return isNew | !hasRndTags;
         }

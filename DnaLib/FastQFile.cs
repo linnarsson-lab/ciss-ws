@@ -276,17 +276,22 @@ namespace Linnarsson.Dna
            Sequence = Sequence.Substring(start, len);
         }
 
+        /// <summary>
+        /// Insert a sequence and corresponding qualities into the record
+        /// </summary>
+        /// <param name="pos">Insertion position in record</param>
+        /// <param name="insertSeq">Sequence to insert</param>
+        /// <param name="insertQualities">If longer than insertSeq, only uses the same length from start</param>
         public void Insert(int pos, string insertSeq, byte[] insertQualities)
         {
-            if (insertSeq.Length != insertQualities.Length)
+            if (insertSeq.Length > insertQualities.Length)
                 throw new FormatException("FastQRecord.Insert(" + pos + ", " + insertSeq + ",[ " + insertQualities.Length +
-                                          "]): Sequence and qualities must have matching length!");
-            if (pos > insertQualities.Length) pos = insertQualities.Length;
+                                          "]): Qualities must be at least of sequence length!");
             Sequence = Sequence.Substring(0, pos) + insertSeq + Sequence.Substring(pos);
-            byte[] newQualities = new byte[insertQualities.Length + Qualities.Length];
+            byte[] newQualities = new byte[insertSeq.Length + Qualities.Length];
             Array.Copy(Qualities, 0, newQualities, 0, pos);
-            Array.Copy(insertQualities, 0, newQualities, pos, insertQualities.Length);
-            Array.Copy(Qualities, pos, newQualities, pos + insertQualities.Length, Qualities.Length - pos);
+            Array.Copy(insertQualities, 0, newQualities, pos, insertSeq.Length);
+            Array.Copy(Qualities, pos, newQualities, pos + insertSeq.Length, Qualities.Length - pos);
             Qualities = newQualities;
         }
 

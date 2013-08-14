@@ -92,7 +92,7 @@ namespace Linnarsson.Dna
                 writer = new BinaryWriter(File.Open(outfile, FileMode.Create), Encoding.UTF8);
                 writer.Write(FileType);
                 writer.Write(hasCommonBarcode);
-                writer.Write(hasCommonBarcode? (byte)mrms.BarcodeIdx : (byte)0);
+                writer.Write(hasCommonBarcode? (byte)mrms.BcIdx : (byte)0);
                 writer.Write((byte)barcodes.Name.Length);
                 writer.Write(barcodes.Name);
                 writer.Write((byte)m.Groups[0].Length);
@@ -100,9 +100,9 @@ namespace Linnarsson.Dna
             }
             writer.Write((ushort)T);
             writer.Write((uint)C);
-            writer.Write((ushort)mrms.RandomBcIdx);
+            writer.Write((ushort)mrms.UMIIdx);
             if (!hasCommonBarcode)
-                writer.Write((byte)mrms.BarcodeIdx);
+                writer.Write((byte)mrms.BcIdx);
             int qDirBit = (mrms.QualityDir == '+') ? 128 : 0;
             if (mrms.QualityString.Length > 127)
                 throw new FormatException("Can not compress sequences > 127 nts");

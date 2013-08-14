@@ -305,13 +305,13 @@ namespace Linnarsson.Dna
             return Path.Combine("Data", Path.Combine("Intensities", "BaseCalls"));
         }
 
-        public static string MakeBarcodeFilePath(string bcSetName)
+        public static string MakeBarcodeFilePath(string barcodeSetName)
         {
             string bcPath = Path.Combine(Props.props.ProjectsFolder, "barcodes");
-            return Path.Combine(bcPath, bcSetName + ".barcodes");
+            return Path.Combine(bcPath, barcodeSetName + ".barcodes");
         }
 
-        public static string[] GetAllCustomBarcodeSets()
+        public static string[] GetAllCustomBarcodeSetNames()
         {
             string[] bcFiles = Directory.GetFiles(Path.Combine(Props.props.ProjectsFolder, "barcodes"), "*.barcodes");
             return Array.ConvertAll(bcFiles, f => Path.GetFileNameWithoutExtension(f));

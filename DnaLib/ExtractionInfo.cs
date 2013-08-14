@@ -9,8 +9,17 @@ namespace Linnarsson.Dna
     [Serializable()]
     public class LaneInfo
     {
-        public string runId { get; set; }
+        /// <summary>
+        /// Unique Illumina 9-char run/plate Id
+        /// </summary>
+        public string illuminaRunId { get; set; }
+        /// <summary>
+        /// Number of the lane (0-7)
+        /// </summary>
         public string laneNo { get; set; }
+        /// <summary>
+        /// Optionally filter the reads to keep only those starting the index (2nd) read with the given sequence.
+        /// </summary>
         public string idxSeqFilter { get; set; }
 
         public string extractionTopFolder { get; set; }
@@ -47,7 +56,7 @@ namespace Linnarsson.Dna
         public LaneInfo(string readFilePath, string runId, char laneNo, string idxSeqFilter)
         {
             this.readFilePath = readFilePath;
-            this.runId = runId;
+            this.illuminaRunId = runId;
             this.laneNo = laneNo.ToString();
             this.idxSeqFilter = idxSeqFilter;
         }
@@ -68,7 +77,7 @@ namespace Linnarsson.Dna
 
         public override string ToString()
         {
-            string s = "LaneInfo: runId=" + runId + " laneNo=" + laneNo + "\n" +
+            string s = "LaneInfo: illuminaRunId=" + illuminaRunId + " laneNo=" + laneNo + "\n" +
                        "readFilePath=" + readFilePath + " nReads=" + nReads + "\n" +
                        "extrTopF= " + extractionTopFolder + "\n" +
                        ((extractedFilePaths != null && extractedFilePaths.Length > 0) ? "extrFilePaths[0]=" + extractedFilePaths[0] + "\n" : "") +

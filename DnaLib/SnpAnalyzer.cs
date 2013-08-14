@@ -19,10 +19,10 @@ namespace Linnarsson.Dna
         public static void WriteSnpsByBarcode(string snpPath, Barcodes barcodes, int[] selectedBarcodes, 
                                               Dictionary<string, GeneFeature> geneFeatures)
         {
-            int minHitsToTestSNP = (barcodes.HasRandomTags) ? Props.props.MinMoleculesToTestSnp : Props.props.MinReadsToTestSnp;
+            int minHitsToTestSNP = (barcodes.HasUMIs) ? Props.props.MinMoleculesToTestSnp : Props.props.MinReadsToTestSnp;
             using (StreamWriter snpFile = new StreamWriter(snpPath))
             {
-                if (barcodes.HasRandomTags)
+                if (barcodes.HasUMIs)
                     snpFile.WriteLine("#Read counts at positions with >= {0} hits and >= 1 non-reference nt hits.", minHitsToTestSNP);
                 else
                 {

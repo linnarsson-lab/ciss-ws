@@ -18,7 +18,7 @@ namespace Linnarsson.Dna
 	{
         protected string[] m_Seqs;
         public string[] Seqs { get { return m_Seqs; } }
-        public int Count { get { return m_FirstNegBarcodeIndex; } }
+        public int Count { get { return m_FirstNegativeBcIdx; } }
         public int AllCount { get { return m_Seqs.Length; } } // Includes negative barcodes
         protected int m_BarcodePos = 0;
         public int BarcodePos { get { return m_BarcodePos; } }
@@ -37,23 +37,27 @@ namespace Linnarsson.Dna
         protected string m_Name;
         public string Name { get { return m_Name; } }
 
-        protected int m_FirstNegBarcodeIndex;
-        public int FirstNegBarcodeIndex { get { return m_FirstNegBarcodeIndex; } }
+        protected int m_FirstNegativeBcIdx;
+        public int FirstNegativeBcIdx { get { return m_FirstNegativeBcIdx; } }
 
-        public bool HasRandomTags { get { return m_RandomTagLen > 0; } }
-        public bool BarcodesInIndexReads { get; set; }
-        public bool RandomTagsInIndexReads { get; set; }
-        public int RandomTagCount { get { return 1 << (2 * m_RandomTagLen); } }
-        protected int m_RandomTagPos = 0;
-        public int RandomTagPos { get { return m_RandomTagPos; } }
-        protected int m_RandomTagLen = 0;
-        public int RandomTagLen { get { return m_RandomTagLen; } }
-        public int RandomTagEndPos { get { return m_RandomTagPos + m_RandomTagLen; } }
+        protected int m_UMIPos = 0;
+        public int UMIPos { get { return m_UMIPos; } }
+        protected int m_UMILen = 0;
+        public int UMILen { get { return m_UMILen; } }
+        public int UMIEndPos { get { return m_UMIPos + m_UMILen; } }
+        public int UMICount { get { return 1 << (2 * m_UMILen); } }
+        public bool HasUMIs { get { return m_UMILen > 0; } }
+
+        protected int m_PrefixRead2 = 0;
+        public int PrefixRead2 { get { return m_PrefixRead2; } }
+        protected int m_PrefixRead3 = 0;
+        public int PrefixRead3 { get { return m_PrefixRead3; } }
+        public bool NeedRead2Or3 { get { return m_PrefixRead2 > 0 || m_PrefixRead3 > 0; } }
 
         public int InsertStart { get { return m_InsertStart; } }
         protected int m_InsertStart = 0;
 
-        public int BarcodeFieldLen { get { return (RandomTagLen > 0)? (1 + RandomTagLen + BarcodeLen) : BarcodeLen; } }
+        public int BarcodeFieldLen { get { return (UMILen > 0)? (1 + UMILen + BarcodeLen) : BarcodeLen; } }
 
         /// <summary>
         /// Set to true to allow extraction step to correct single base substitutions in barcodes.
@@ -62,7 +66,7 @@ namespace Linnarsson.Dna
         private Dictionary<string, int> barcodeToIdx;
         public int NOBARIdx = 0;
         public static readonly string NOBARCODE = "NOBAR";
-        public int GetBarcodeIdx(string bc)
+        public int GetBcIdx(string barcode)
         {
             if (barcodeToIdx == null)
             {
@@ -71,7 +75,7 @@ namespace Linnarsson.Dna
                     barcodeToIdx[m_Seqs[bcIdx]] = bcIdx;
                 barcodeToIdx[NOBARCODE] = 0;
             }
-            return barcodeToIdx[bc];
+            return barcodeToIdx[barcode];
         }
 
         protected string m_TSSeq = "GGG";
@@ -120,49 +124,57 @@ namespace Linnarsson.Dna
             return BarcodeLen + m_TSSeq.Length;
         }
         /// <summary>
-        /// Find the position after rndTag, barcode and any GGG-triple, or specified InsertStart, whichever is highest
+        /// Find the position after UMI, barcode and any GGG-triple, or specified InsertStart, whichever is highest
         /// </summary>
         /// <returns>Positions where actual sequence should start</returns>
         public virtual int GetInsertStartPos()
         {
-            return Math.Max(m_BarcodePos + GetLengthOfBarcodesWithTSSeq(), Math.Max(m_RandomTagPos + m_RandomTagLen, m_InsertStart));
+            return Math.Max(m_BarcodePos + GetLengthOfBarcodesWithTSSeq(), Math.Max(m_UMIPos + m_UMILen, m_InsertStart));
         }
 
-        public string ExtractBarcodesFromReadId(string readId, out int bcIdx, out int randomBcIdx)
+        /// <summary>
+        /// Strip the barcode and UMI from the ReadId
+        /// </summary>
+        /// <param name="readId">ReadId from STRT extracted FastQ file</param>
+        /// <param name="bcIdx">barcode as an index</param>
+        /// <param name="UMIIdx">UMI as an index</param>
+        /// <returns>ReadId stripped from barcode/UMI parts</returns>
+        public string StripBarcodesFromReadId(string readId, out int bcIdx, out int UMIIdx)
         {
-            bcIdx = GetBarcodeIdx(readId.Substring(readId.Length - m_BarcodeLen));
-            randomBcIdx = 0;
+            bcIdx = GetBcIdx(readId.Substring(readId.Length - m_BarcodeLen));
+            UMIIdx = 0;
             int p = readId.Length - BarcodeFieldLen;
-            for (int i = 0; i < m_RandomTagLen; i++)
+            for (int i = 0; i < m_UMILen; i++)
             {
-                randomBcIdx = (randomBcIdx << 2) | ("ACGT".IndexOf(readId[p++]));
+                UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(readId[p++]));
             }
             return readId.Substring(0, readId.Length - BarcodeFieldLen - 1);
         }
-        public string MakeRandomTag(int randomBcIdx)
+
+        public string MakeUMISeq(int UMIIdx)
         {
-            char[] tag = new char[m_RandomTagLen];
-            int p = m_RandomTagLen - 1;
-            for (int i = 0; i < m_RandomTagLen; i++)
+            char[] UMISeq = new char[m_UMILen];
+            int p = m_UMILen - 1;
+            for (int i = 0; i < m_UMILen; i++)
             {
-                tag[p--] = "ACGT"[randomBcIdx & 3];
-                randomBcIdx = randomBcIdx >> 2;
+                UMISeq[p--] = "ACGT"[UMIIdx & 3];
+                UMIIdx = UMIIdx >> 2;
             }
-            return new string(tag);
+            return new string(UMISeq);
         }
 
         public static string[] GetAllBarcodeSetNames()
         {
-            string[] allBcNames = PathHandler.GetAllCustomBarcodeSets();
-            Array.Resize(ref allBcNames, allBcNames.Length + 6);
-            Array.Copy(new string[] { "v1", "v2", "v3", "PE_8", "no", "Lin8" }, 0, allBcNames, allBcNames.Length - 6, 6);
-            return allBcNames;
+            string[] allBarcodeSetNames = PathHandler.GetAllCustomBarcodeSetNames();
+            Array.Resize(ref allBarcodeSetNames, allBarcodeSetNames.Length + 6);
+            Array.Copy(new string[] { "v1", "v2", "v3", "PE_8", "no", "Lin8" }, 0, allBarcodeSetNames, allBarcodeSetNames.Length - 6, 6);
+            return allBarcodeSetNames;
         }
 
-        public static Barcodes GetBarcodes(string barcodeSet)
+        public static Barcodes GetBarcodes(string barcodeSetName)
         {
             Barcodes bc = null;
-            switch (barcodeSet.ToLower())
+            switch (barcodeSetName.ToLower())
             {
                 case "v1":
                     bc = new STRTv1Barcodes();
@@ -183,7 +195,7 @@ namespace Linnarsson.Dna
                     bc = new NoBarcodes();
                     break;
                 default:
-                    bc = new CustomBarcodes(barcodeSet);
+                    bc = new CustomBarcodes(barcodeSetName);
                     break;
             }
             return bc;
@@ -201,10 +213,10 @@ namespace Linnarsson.Dna
             }
         }
 
-        private bool GenomeMatchesWell(StrtGenome genome, int barcodeIdx, bool strict)
+        private bool GenomeMatchesWell(StrtGenome genome, int bcIdx, bool strict)
         {
             if (m_SpeciesByWell == null) return true;
-            string speciesId = m_SpeciesByWell[barcodeIdx].ToLower();
+            string speciesId = m_SpeciesByWell[bcIdx].ToLower();
             return (speciesId == "empty" && !strict)
                    || speciesId.StartsWith(genome.Abbrev.ToLower()) || speciesId.StartsWith(genome.Name.ToLower())
                    || speciesId.StartsWith(genome.LatinName.ToLower());
@@ -532,7 +544,7 @@ namespace Linnarsson.Dna
         {
             this.m_Seqs = Barcodes.STRT_v1;
             this.m_BarcodeLen = 5;
-            this.m_FirstNegBarcodeIndex = Barcodes.STRT_v1_FirstNegBarcodeIndex;
+            this.m_FirstNegativeBcIdx = Barcodes.STRT_v1_FirstNegBarcodeIndex;
             this.m_Name = "v1";
             SetupPlate();
         }
@@ -544,7 +556,7 @@ namespace Linnarsson.Dna
         {
             this.m_Seqs = Barcodes.PE_8;
             this.m_BarcodeLen = 6;
-            this.m_FirstNegBarcodeIndex = m_Seqs.Length;
+            this.m_FirstNegativeBcIdx = m_Seqs.Length;
             this.m_Name = "PE_8";
             this.m_WellIds = new string[] { "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8" }; 
 			this.m_TSSeq = "";
@@ -558,7 +570,7 @@ namespace Linnarsson.Dna
 		{
 			this.m_Seqs = Barcodes.PE_8;
 			this.m_BarcodeLen = 6;
-			this.m_FirstNegBarcodeIndex = m_Seqs.Length;
+			this.m_FirstNegativeBcIdx = m_Seqs.Length;
 			this.m_Name = "Lin8";
 			this.m_TSSeq = "TTAA";
             this.m_TSTrimNt = ' ';
@@ -571,7 +583,7 @@ namespace Linnarsson.Dna
         {
             this.m_Seqs = Barcodes.STRT_v2;
             this.m_BarcodeLen = 6;
-            this.m_FirstNegBarcodeIndex = m_Seqs.Length;
+            this.m_FirstNegativeBcIdx = m_Seqs.Length;
             this.m_Name = "v2";
             SetupPlate();
         }
@@ -583,10 +595,10 @@ namespace Linnarsson.Dna
         {
             this.m_Seqs = Barcodes.STRT_v2;
             this.m_BarcodeLen = 6;
-            this.m_FirstNegBarcodeIndex = m_Seqs.Length;
+            this.m_FirstNegativeBcIdx = m_Seqs.Length;
             this.m_Name = "v3";
-            this.m_RandomTagPos = 0;
-            this.m_RandomTagLen = 4;
+            this.m_UMIPos = 0;
+            this.m_UMILen = 4;
             this.m_BarcodePos = 4;
             SetupPlate();
         }
@@ -598,7 +610,7 @@ namespace Linnarsson.Dna
         {
             this.m_Seqs = Barcodes.NO_BARCODES;
             this.m_BarcodeLen = 5;
-            this.m_FirstNegBarcodeIndex = m_Seqs.Length;
+            this.m_FirstNegativeBcIdx = m_Seqs.Length;
             this.m_Name = "No";
             this.m_TSSeq = "";
             this.m_TSTrimNt = ' ';
@@ -622,46 +634,44 @@ namespace Linnarsson.Dna
 
     public class CustomBarcodes : Barcodes
     {
-        public CustomBarcodes(string bcSetName)
+        public CustomBarcodes(string barcodeSetName)
         {
-            m_Name = bcSetName;
+            m_Name = barcodeSetName;
             m_BarcodeLen = 0;
             m_TSSeq = "";
             m_TSTrimNt = ' ';
-            string path = PathHandler.MakeBarcodeFilePath(bcSetName);
+            string path = PathHandler.MakeBarcodeFilePath(barcodeSetName);
             if (!File.Exists(path))
                 throw new FileNotFoundException("ERROR: Can not find barcode file " + path);
             List<string> sampleIds = new List<string>();
             List<string> barcodes = new List<string>();
             using (StreamReader reader = new StreamReader(path))
             {
-                string line = reader.ReadLine();
-                while (line.StartsWith("#"))
+                string line;
+                while ((line = reader.ReadLine().Trim().Replace(" ", "").ToLower()).StartsWith("#"))
                 {
-                    line = line.Trim().Replace(" ", "");
-                    if (line.ToLower().StartsWith("#remove=") && line.Length > 8)
+                    if (line.StartsWith("#remove=") && line.Length > 8)
                         m_TSSeq = line.Substring(8);
-                    else if (line.ToLower().StartsWith("#trim=") & line.Length > 6)
+                    else if (line.StartsWith("#trim=") & line.Length > 6)
                         m_TSTrimNt = line[6];
-                    else if (line.ToLower().StartsWith("#randomtagpos="))
+                    else if (line.StartsWith("#umipos="))
                     {
-                        m_RandomTagPos = int.Parse(line.Substring(14));
+                        m_UMIPos = int.Parse(line.Substring(8));
                     }
-                    else if (line.ToLower().StartsWith("#randomtaglen="))
+                    else if (line.StartsWith("#umilen="))
                     {
-                        m_RandomTagLen = int.Parse(line.Substring(14));
+                        m_UMILen = int.Parse(line.Substring(8));
                     }
-                    else if (line.ToLower().StartsWith("#barcodepos="))
+                    else if (line.StartsWith("#barcodepos="))
                         m_BarcodePos = int.Parse(line.Substring(12));
-                    else if (line.ToLower().StartsWith("#insertpos="))
+                    else if (line.StartsWith("#insertpos="))
                         m_InsertStart = int.Parse(line.Substring(11));
-                    else if (line.ToLower().StartsWith("#indexfilebarcodes"))
-                        BarcodesInIndexReads = true;
-                    else if (line.ToLower().StartsWith("#indexfilerandomtags"))
-                        RandomTagsInIndexReads = true;
-                    else if (line.ToLower().StartsWith("#allowsinglemutations"))
+                    else if (line.StartsWith("#allowsinglemutations"))
                         AllowSingleMutations = true;
-                    line = reader.ReadLine();
+                    else if (line.StartsWith("#prefixread2="))
+                        m_PrefixRead2 = int.Parse(line.Substring(13));
+                    else if (line.StartsWith("#prefixread3="))
+                        m_PrefixRead3 = int.Parse(line.Substring(13));
                 }
                 while (line != null)
                 {
@@ -688,7 +698,7 @@ namespace Linnarsson.Dna
             }
             m_WellIds = sampleIds.ToArray();
             m_Seqs = barcodes.ToArray();
-            m_FirstNegBarcodeIndex = m_Seqs.Length;
+            m_FirstNegativeBcIdx = m_Seqs.Length;
         }
     }
 

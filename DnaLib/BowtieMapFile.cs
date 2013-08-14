@@ -268,8 +268,8 @@ namespace Linnarsson.Dna
         /// </summary>
         public int HitMidPos { get { return Position + MappedTagItem.AverageReadLen / 2; } }
         public string ReadId { get { return parent.ReadId; } }
-        public int BcIdx { get { return parent.BarcodeIdx; } }
-        public int RndTagIdx { get { return parent.RandomBcIdx; } }
+        public int BcIdx { get { return parent.BcIdx; } }
+        public int UMIIdx { get { return parent.UMIIdx; } }
         public int SeqLen { get { return parent.SeqLen; } }
         public bool HasAltMappings { get { return parent.HasAltMappings; } }
         public bool HasMismatches { get { return Mismatches != ""; } }
@@ -348,8 +348,8 @@ namespace Linnarsson.Dna
         private Barcodes Barcodes;
 
         public string ReadId;
-        public int BarcodeIdx;
-        public int RandomBcIdx = 0;
+        public int BcIdx;
+        public int UMIIdx = 0;
         public int SeqLen;
         public string QualityString { get; private set; }
         public char QualityDir { get; private set; }
@@ -383,7 +383,7 @@ namespace Linnarsson.Dna
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("MultiReadMappings: ReadID=" + ReadId + " BcIdx=" + BarcodeIdx + " RndTagIdx=" + RandomBcIdx);
+            sb.Append("MultiReadMappings: ReadID=" + ReadId + " BcIdx=" + BcIdx + " UMIIdx=" + UMIIdx);
             sb.Append("\n      Mappings.Length=" + Mappings.Length + " NMappings=" + NMappings + " HasAltMappings=" + HasAltMappings);
             foreach (MultiReadMapping m in IterMappings())
                 sb.Append("\n    " + m.ToString());
@@ -392,7 +392,7 @@ namespace Linnarsson.Dna
 
         public void Init(string combinedReadId, int seqLen, string qualityString, char qualityDirection, int altMappings)
         {
-            ReadId = Barcodes.ExtractBarcodesFromReadId(combinedReadId, out BarcodeIdx, out RandomBcIdx);
+            ReadId = Barcodes.StripBarcodesFromReadId(combinedReadId, out BcIdx, out UMIIdx);
             SeqLen = seqLen;
             AltMappings = altMappings;
             NMappings = 0;

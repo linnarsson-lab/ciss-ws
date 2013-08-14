@@ -89,6 +89,7 @@
     <Compile Include="ContigCoordinateConverter.cs" />
     <Compile Include="CsFastaFile.cs" />
     <Compile Include="DnaMotif.cs" />
+    <Compile Include="DnaSequence.cs" />
     <Compile Include="ExonJunctionBuilder.cs" />
     <Compile Include="ExtractionQuality.cs" />
     <Compile Include="ExtractionWordCounter.cs" />

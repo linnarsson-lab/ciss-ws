@@ -76,9 +76,9 @@ namespace Linnarsson.Strt
             if (nonTrMrm != null) // If no transcript mapping is found, add the read to the non-exon repeat or random first mapping it got
                 hasSomeNewMapping = randomTagFilter.Add(nonTrMrm);
             if (hasSomeNewMapping)
-                nUniqueByBarcode[mrm.BarcodeIdx]++;
+                nUniqueByBarcode[mrm.BcIdx]++;
             else
-                nDuplicatesByBarcode[mrm.BarcodeIdx]++;
+                nDuplicatesByBarcode[mrm.BcIdx]++;
             return hasSomeTrMapping;
         }
 

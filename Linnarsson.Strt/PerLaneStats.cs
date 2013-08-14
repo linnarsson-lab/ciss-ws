@@ -59,7 +59,7 @@ namespace Linnarsson.Strt
 
         public List<Pair<string, double>> GetComplexityIndex(int bcIdx)
         {
-            if (barcodes.HasRandomTags)
+            if (barcodes.HasUMIs)
                 return GetBcFractions(bcIdx, nUniqueMolsPerLaneAndBc);
             else
                 return GetBcFractions(bcIdx, nDistinctMappingsPerLaneAndBc);
@@ -91,7 +91,7 @@ namespace Linnarsson.Strt
                 double bcSum = 0.0;
                 foreach (string runLane in runLanes)
                 {
-                    double fileFrac = (barcodes.HasRandomTags) ?
+                    double fileFrac = (barcodes.HasUMIs) ?
                         nUniqueMolsPerLaneAndBc[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx] :
                         nDistinctMappingsPerLaneAndBc[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx];
                     if (!double.IsNaN(fileFrac))

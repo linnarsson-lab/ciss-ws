@@ -169,7 +169,7 @@ namespace Linnarsson.Strt
 					int insertLength = rec.Sequence.Length;
 					StreamWriter f = sw_slask;
                     int i = Array.IndexOf(barcodes.Seqs, rec.Sequence.Substring(0, barcodes.BarcodeLen));
-                    if (i >= 0 && i < barcodes.FirstNegBarcodeIndex)
+                    if (i >= 0 && i < barcodes.FirstNegativeBcIdx)
                     {
                         string bc = barcodes.Seqs[i];
                         if (!bcodeFiles.ContainsKey(bc))
@@ -310,7 +310,7 @@ namespace Linnarsson.Strt
                     double totLen = 0.0;
                     long nRecords = 0;
                     foreach (FastQRecord fastQRecord in 
-                                BarcodedReadStream.Stream(barcodes, laneInfo.readFilePath, props.QualityScoreBase, laneInfo.idxSeqFilter))
+                             BarcodedReadStream.Stream(barcodes, laneInfo.readFilePath, props.QualityScoreBase, laneInfo.idxSeqFilter))
                     {
                         FastQRecord rec = fastQRecord;
                         int readStatus = readExtractor.Extract(ref rec, out bcIdx);
@@ -337,7 +337,7 @@ namespace Linnarsson.Strt
                     {
                         int averageReadLen = (int)Math.Round(totLen / nRecords);
                         readCounter.AddReadFile(laneInfo.readFilePath, averageReadLen);
-                        sw_summary.WriteLine(readCounter.TotalsToTabString(barcodes.HasRandomTags));
+                        sw_summary.WriteLine(readCounter.TotalsToTabString(barcodes.HasUMIs));
                         sw_summary.WriteLine("#\tBarcode\tValidSTRTReads\tTotalBarcodedReads");
                         for (bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                             sw_summary.WriteLine("BARCODEREADS\t{0}\t{1}\t{2}",
@@ -413,7 +413,7 @@ namespace Linnarsson.Strt
             props.TotalNumberOfAddedSpikeMolecules = projDescr.SpikeMoleculeCount;
             logWriter.WriteLine("{0} Extracting {1} lanes with barcodes {2}...", DateTime.Now, projDescr.runIdsLanes.Length, projDescr.barcodeSet);
             logWriter.Flush();
-            if (barcodes.HasRandomTags)
+            if (barcodes.HasUMIs)
                 logWriter.WriteLine("{0} MinPhredScoreInRandomTag={1}", DateTime.Now, props.MinPhredScoreInRandomTag);
             Extract(projDescr);
             string[] speciesArgs = GetSpeciesArgs(projDescr.SampleLayoutPath, projDescr.defaultSpecies);
@@ -778,7 +778,7 @@ namespace Linnarsson.Strt
             annotations.Load();
             string outputPathbase = Path.Combine(outputFolder, projectId);
             TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props, outputPathbase);
-            string syntLevelFile = PathHandler.GetSyntLevelFilePath(projectFolder, barcodes.HasRandomTags);
+            string syntLevelFile = PathHandler.GetSyntLevelFilePath(projectFolder, barcodes.HasUMIs);
             if (syntLevelFile != "")
                 ts.SetSyntReadReporter(syntLevelFile);
             ts.ProcessMapFiles(mapFilePaths, averageReadLen);

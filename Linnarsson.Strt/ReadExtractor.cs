@@ -270,14 +270,14 @@ namespace Linnarsson.Strt
         private readonly static int maxExtraTSNts = 6; // Limit # of extra (G) Nts (in addition to min#==3) to remove from template switching
         private int barcodePos;
         private int insertStartPos;
-        private int rndBcPos;
-        private int rndBcLen;
+        private int UMIPos;
+        private int UMILen;
         private int minReadLength;
         private int minInsertNonAs;
         private string[] barcodeSeqs;
         private Dictionary<string, int> barcodesWithTSSeq;
         private char lastNtOfTSSeq;
-        private int firstNegBarcodeIndex;
+        private int firstNegativeBcIdx;
         private string[] diNtPatterns;
 
         public ReadExtractor(Props props)
@@ -286,14 +286,14 @@ namespace Linnarsson.Strt
             bcWithTSSeqLen = barcodes.GetLengthOfBarcodesWithTSSeq();
             barcodePos = barcodes.BarcodePos;
             insertStartPos = barcodes.GetInsertStartPos();
-            rndBcPos = barcodes.RandomTagPos;
-            rndBcLen = barcodes.RandomTagLen;
+            UMIPos = barcodes.UMIPos;
+            UMILen = barcodes.UMILen;
             minReadLength = barcodes.GetInsertStartPos() + props.MinExtractionInsertLength;
             minInsertNonAs = props.MinExtractionInsertNonAs;
             barcodeSeqs = barcodes.Seqs;
             barcodesWithTSSeq = barcodes.GetBcWTSSeqToBcIdxMap();
             lastNtOfTSSeq = barcodes.TSTrimNt;
-            firstNegBarcodeIndex = barcodes.FirstNegBarcodeIndex;
+            firstNegativeBcIdx = barcodes.FirstNegativeBcIdx;
         }
 
         /// <summary>
@@ -304,7 +304,7 @@ namespace Linnarsson.Strt
         /// <returns>A ReadStatus that indicates if the read was valid</returns>
         public int Extract(ref FastQRecord rec, out int bcIdx)
         {
-            int minQualityInRandomTag = Props.props.MinPhredScoreInRandomTag;
+            int minQualityInUMI = Props.props.MinPhredScoreInRandomTag;
             rec.TrimBBB();
             bcIdx = -1;
             string rSeq = rec.Sequence;
@@ -315,7 +315,7 @@ namespace Linnarsson.Strt
                 bcIdx = -1;
                 return AnalyzeNonBarcodeRead(rSeq);
             }
-            if (bcIdx >= firstNegBarcodeIndex)
+            if (bcIdx >= firstNegativeBcIdx)
             {
                 bcIdx = -1;
                 return ReadStatus.NEGATIVE_BARCODE_ERROR;
@@ -323,16 +323,16 @@ namespace Linnarsson.Strt
             int insertLength = TrimTrailingNAndCheckAs(rSeq);
             if (insertLength < minReadLength)
                 return ReadStatus.LENGTH_ERROR;
-            string bcRandomPart = "";
-            if (rndBcLen > 0)
+            string headerUMISection = "";
+            if (UMILen > 0)
             {
-                for (int i = rndBcPos; i < rndBcPos + rndBcLen; i++)
+                for (int i = UMIPos; i < UMIPos + UMILen; i++)
                 {
-                    if (rec.Qualities[i] < minQualityInRandomTag)
+                    if (rec.Qualities[i] < minQualityInUMI)
                         return ReadStatus.LOW_QUALITY_IN_RANDOM_TAG;
                 }
-                bcRandomPart = string.Format("{0}.", rSeq.Substring(rndBcPos, rndBcLen));
-                if (bcRandomPart.Contains('N'))
+                headerUMISection = string.Format("{0}.", rSeq.Substring(UMIPos, UMILen));
+                if (headerUMISection.Contains('N'))
                     return ReadStatus.N_IN_RANDOM_TAG;
             }
             int insertStart = insertStartPos;
@@ -343,7 +343,7 @@ namespace Linnarsson.Strt
                 insertStart++;
                 insertLength--;
             }
-            rec.Header = string.Format("{0}_{1}{2}", rec.Header, bcRandomPart, barcodeSeqs[bcIdx]);
+            rec.Header = string.Format("{0}_{1}{2}", rec.Header, headerUMISection, barcodeSeqs[bcIdx]);
             rec.Trim(insertStart, insertLength);
             int status = TestComplexity(rSeq, insertStart, insertLength);
             if (status != ReadStatus.VALID) return status;

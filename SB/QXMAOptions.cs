@@ -92,6 +92,8 @@ namespace CmdSilverBullet
                         else if (opt.Length >= 3 && Array.IndexOf(new string[] { "hs", "hg", "mm", "gg", "ce", "cg" }, opt.Substring(0, 2).ToLower()) >= 0
                             && int.TryParse(opt.Substring(2), out tempVer))
                             speciesAbbrev = opt;
+                        else if (Regex.Match(opt, "[0-9A-Za-z]+:[0-9]+").Success)
+                            laneArgs.Add(opt);
                         else
                         {
                             if ((m = Regex.Match(opt, "(..[0-9]*)_([as]?)(UCSC|VEGA|ENSE)")).Success)

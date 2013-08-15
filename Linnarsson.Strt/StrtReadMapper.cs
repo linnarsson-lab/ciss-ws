@@ -765,12 +765,7 @@ namespace Linnarsson.Strt
                 outputFolder += "_" + DateTime.Now.ToPathSafeString();
             ReadCounter readCounter = new ReadCounter();
             readCounter.AddExtractionSummaries(CollectExtractionSummaryPaths(mapFilePaths, genome));
-            int averageReadLen = readCounter.AverageReadLen;
-            if (averageReadLen == 0)
-            {
-                averageReadLen = EstimateReadLengthFromMapFiles(mapFilePaths);
-                Console.WriteLine("WARNING: Could not read any extraction summary files - estimated read length from first map file = " + averageReadLen);
-            }
+            int averageReadLen = DetermineAverageReadLen(mapFilePaths, readCounter);
             MappedTagItem.AverageReadLen = averageReadLen;
             genome.ReadLen = averageReadLen;
             UpdateGenesToPaint(projectFolder, props);
@@ -791,12 +786,39 @@ namespace Linnarsson.Strt
             string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
             ResultDescription resultDescr = new ResultDescription(mapFilePaths, bowtieIndexVersion, outputFolder);
             ts.SaveResult(readCounter, resultDescr);
-            if (projectId.StartsWith(C1Props.C1ProjectPrefix))
-                new C1DB().InsertExpressions(annotations.IterExpressions(projectId));
+            InsertCells10kData(projectId, annotations);
             System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(props.GetType());
             using (StreamWriter writer = new StreamWriter(Path.Combine(outputFolder, "SilverBulletConfig.xml")))
                 x.Serialize(writer, props);
             return resultDescr;
+        }
+
+        private static void InsertCells10kData(string projectId, GenomeAnnotations annotations)
+        {
+            if (projectId.StartsWith(C1Props.C1ProjectPrefix))
+            {
+                Console.WriteLine("Saving results to cells10k database...");
+                try
+                {
+                    new C1DB().InsertExpressions(annotations.IterExpressions(projectId));
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Error inserting data to cells2k: {0}", e);
+                }
+            }
+        }
+
+        private int DetermineAverageReadLen(List<string> mapFilePaths, ReadCounter readCounter)
+        {
+            int averageReadLen;
+            averageReadLen = readCounter.AverageReadLen;
+            if (averageReadLen == 0)
+            {
+                averageReadLen = EstimateReadLengthFromMapFiles(mapFilePaths);
+                Console.WriteLine("WARNING: Could not read any extraction summary files - estimated read length from first map file = " + averageReadLen);
+            }
+            return averageReadLen;
         }
 
         private int EstimateReadLengthFromMapFiles(List<string> mapFilePaths)

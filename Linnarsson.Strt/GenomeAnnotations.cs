@@ -155,9 +155,9 @@ namespace Linnarsson.Strt
             }
             else
             {
-                Console.WriteLine("Read {0} gene models from {1}...", n, STRTAnnotationsPath);
                 foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
                     if (RegisterGeneFeature(gf)) n++;
+                Console.WriteLine("Read {0} gene models from {1}...", n, STRTAnnotationsPath);
                 ModifyGeneFeatures(new GeneFeature5PrimeAndOverlapMarkUpModifier());
             }
         }

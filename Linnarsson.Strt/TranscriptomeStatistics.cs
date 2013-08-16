@@ -974,7 +974,7 @@ namespace Linnarsson.Strt
             int nAllHits = TotalHitsByAnnotType.Sum();
             double dividend = nAllHits;
             double reducer = 1.0E6d;
-            string mr = "Multireads" + (Props.props.UseMaxAltMappings? string.Format(" (< {0}-fold)", Props.props.MaxAlternativeMappings) : "");
+            string mr = "Multireads" + (Props.props.UseMaxAltMappings? string.Format(" (&lt; {0}-fold)", Props.props.MaxAlternativeMappings) : "");
             string mrHead = mr + ((Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping) ?
                             " are assigned only to their most 5' transcript" : " are assigned to all their transcript hits");
             if (barcodes.HasUMIs)
@@ -1128,15 +1128,10 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("    <point x=\"Detected tr. variants\" y=\"{0}\" />", Annotations.GetNumExpressedGenes());
             xmlFile.WriteLine("    <point x=\"Detected main tr. variants\" y=\"{0}\" />", Annotations.GetNumExpressedMainGeneVariants());
             int[] bcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
-            int nGenesInAllBarcodes = 0;
-            foreach (GeneFeature gf in Annotations.geneFeatures.Values)
-            {
-                foreach (int bcIdx in bcIndexes)
-                    if (gf.TranscriptHitsByBarcode[bcIdx] == 0) goto EXIT;
-                nGenesInAllBarcodes++;
-            EXIT: ;
-            }
-            xmlFile.WriteLine("    <point x=\"in every species well ({0})\" y=\"{1}\" />", bcIndexes.Length, nGenesInAllBarcodes);
+            int sumExprTr = 0;
+            foreach (int bcIdx in bcIndexes)
+                sumExprTr += Annotations.geneFeatures.Values.Count(gf => gf.IsExpressed());
+            xmlFile.WriteLine("    <point x=\"Mean per species well ({0})\" y=\"{1}\" />", bcIndexes.Length, (int)(sumExprTr / bcIndexes.Count()));
             xmlFile.WriteLine("    <point x=\"Detected repeat classes\" y=\"{0}\" />", Annotations.GetNumExpressedRepeats());
             xmlFile.WriteLine("  </features>");
         }

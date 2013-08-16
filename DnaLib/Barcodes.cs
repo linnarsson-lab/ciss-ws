@@ -648,8 +648,9 @@ namespace Linnarsson.Dna
             using (StreamReader reader = new StreamReader(path))
             {
                 string line;
-                while ((line = reader.ReadLine().Trim().Replace(" ", "").ToLower()).StartsWith("#"))
+                while ((line = reader.ReadLine().Trim()).StartsWith("#"))
                 {
+                    line = line.Replace(" ", "").ToLower();
                     if (line.StartsWith("#remove=") && line.Length > 8)
                         m_TSSeq = line.Substring(8);
                     else if (line.StartsWith("#trim=") & line.Length > 6)

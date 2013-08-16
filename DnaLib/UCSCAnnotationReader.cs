@@ -21,6 +21,7 @@ namespace Linnarsson.Dna
             int n = 0, nCreated = 0;
             foreach (ExtendedGeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
             {
+                if (gf.TranscriptType == "") gf.TranscriptType = "transcript";
                 bool newModel = AddGeneModel(gf);
                 if (newModel) nCreated++;
                 n++;

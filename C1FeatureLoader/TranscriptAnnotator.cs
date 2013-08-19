@@ -30,11 +30,11 @@ namespace C1
 
     abstract class SimpleAnnotator
     {
-        protected Dictionary<string, string> keyToValueMap = new Dictionary<string, string>();
+        protected Dictionary<string, string[]> keyToValueMap = new Dictionary<string, string[]>();
 
         public abstract void Annotate(ref Transcript t);
 
-        public SimpleAnnotator(StrtGenome genome, string annotationFile, int keyCol, int valueCol, string annotType)
+        public SimpleAnnotator(StrtGenome genome, string annotationFile, int[] keyCols, int[] valueCols, string annotType)
         {
             string aPath = PathHandler.ExistsOrGz(Path.Combine(genome.GetOriginalGenomeFolder(), annotationFile));
             if (aPath == null)
@@ -50,7 +50,9 @@ namespace C1
                     if (line == "" || line.StartsWith("#") || line.StartsWith("!"))
                         continue;
                     string[] fields = line.Split('\t');
-                    keyToValueMap[fields[keyCol].Trim()] = fields[valueCol].Trim();
+                    string[] values = Array.ConvertAll(valueCols, col => fields[col].Trim());
+                    foreach (int keyCol in keyCols)
+                        keyToValueMap[fields[keyCol].Trim()] = values;
                 }
             }
             Console.WriteLine("Initiated {0} annotator with {1} items from {2}", annotType, keyToValueMap.Count, aPath);
@@ -63,14 +65,24 @@ namespace C1
         private static string annotationFilename = "kgXref.txt";
 
         public kgXrefAnnotator(StrtGenome genome)
-            : base(genome, annotationFilename, 1, 7, "descriptions")
+            : base(genome, annotationFilename, new int[] {1, 4}, new int[] {7}, "descriptions")
         { }
 
         public override void Annotate(ref Transcript t)
         {
-            string d;
-            if (t.Description == "" && keyToValueMap.TryGetValue(t.Name.Split(';')[0], out d))
-                t.Description = d;
+            string[] values;
+            if (t.Description == "")
+            {
+                bool hit = false;
+                foreach (string name in t.Name.Split(';'))
+                    if (keyToValueMap.TryGetValue(name, out values))
+                    {
+                        t.Description = values[0];
+                        break;
+                    }
+                if (!hit && keyToValueMap.TryGetValue(t.GeneName, out values))
+                    t.Description = values[0];
+            }
         }
     }
 
@@ -79,14 +91,33 @@ namespace C1
         private static string annotationFilename = "refLink.txt";
 
         public RefLinkAnnotator(StrtGenome genome)
-            : base(genome, annotationFilename, 2, 6, "ENTREZ ids")
+            : base(genome, annotationFilename, new int[] {0, 2}, new int[] {1, 6}, "ENTREZIds & Descriptions")
         { }
 
         public override void Annotate(ref Transcript t)
         {
-            string id;
-            if (keyToValueMap.TryGetValue(t.Name.Split(';')[0], out id))
-                t.EntrezID = id;
+            string[] values;
+            if (t.Description == "" || t.EntrezID == "")
+            {
+                bool hit = false;
+                foreach (string name in t.Name.Split(';'))
+                    if (keyToValueMap.TryGetValue(name, out values))
+                    {
+                        if (t.Description == "")
+                            t.Description = values[0];
+                        if (t.EntrezID == "")
+                            t.EntrezID = values[1];
+                        hit = true;
+                        break;
+                    }
+                if (!hit && keyToValueMap.TryGetValue(t.GeneName, out values))
+                {
+                    if (t.Description == "")
+                        t.Description = values[0];
+                    if (t.EntrezID == "")
+                        t.EntrezID = values[1];
+                }
+            }
         }
     }
 

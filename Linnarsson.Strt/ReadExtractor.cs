@@ -266,34 +266,25 @@ namespace Linnarsson.Strt
 
     public class ReadExtractor
     {
-        private int bcWithTSSeqLen;
         private readonly static int maxExtraTSNts = 6; // Limit # of extra (G) Nts (in addition to min#==3) to remove from template switching
-        private int barcodePos;
+        private Barcodes barcodes;
         private int insertStartPos;
+        private int minTotalReadLength;
         private int UMIPos;
         private int UMILen;
-        private int minReadLength;
         private int minInsertNonAs;
-        private string[] barcodeSeqs;
-        private Dictionary<string, int> barcodesWithTSSeq;
-        private char lastNtOfTSSeq;
-        private int firstNegativeBcIdx;
+        private int minQualityInUMI;
         private string[] diNtPatterns;
 
         public ReadExtractor(Props props)
         {
-            Barcodes barcodes = props.Barcodes;
-            bcWithTSSeqLen = barcodes.GetLengthOfBarcodesWithTSSeq();
-            barcodePos = barcodes.BarcodePos;
+            barcodes = props.Barcodes;
             insertStartPos = barcodes.GetInsertStartPos();
+            minTotalReadLength = barcodes.GetInsertStartPos() + props.MinExtractionInsertLength;
             UMIPos = barcodes.UMIPos;
             UMILen = barcodes.UMILen;
-            minReadLength = barcodes.GetInsertStartPos() + props.MinExtractionInsertLength;
             minInsertNonAs = props.MinExtractionInsertNonAs;
-            barcodeSeqs = barcodes.Seqs;
-            barcodesWithTSSeq = barcodes.GetBcWTSSeqToBcIdxMap();
-            lastNtOfTSSeq = barcodes.TSTrimNt;
-            firstNegativeBcIdx = barcodes.FirstNegativeBcIdx;
+            minQualityInUMI = Props.props.MinPhredScoreInRandomTag;
         }
 
         /// <summary>
@@ -304,24 +295,19 @@ namespace Linnarsson.Strt
         /// <returns>A ReadStatus that indicates if the read was valid</returns>
         public int Extract(ref FastQRecord rec, out int bcIdx)
         {
-            int minQualityInUMI = Props.props.MinPhredScoreInRandomTag;
             rec.TrimBBB();
             bcIdx = -1;
             string rSeq = rec.Sequence;
-            if (rSeq.Length <= bcWithTSSeqLen)
+            if (rSeq.Length <= insertStartPos)
                 return ReadStatus.SEQ_QUALITY_ERROR;
-            if (!barcodesWithTSSeq.TryGetValue(rSeq.Substring(barcodePos, bcWithTSSeqLen), out bcIdx))
+            int insertStart;
+            if (!barcodes.VerifyBarcodeAndTS(rSeq, maxExtraTSNts, out bcIdx, out insertStart))
             {
                 bcIdx = -1;
                 return AnalyzeNonBarcodeRead(rSeq);
             }
-            if (bcIdx >= firstNegativeBcIdx)
-            {
-                bcIdx = -1;
-                return ReadStatus.NEGATIVE_BARCODE_ERROR;
-            }
             int insertLength = TrimTrailingNAndCheckAs(rSeq);
-            if (insertLength < minReadLength)
+            if (insertLength < minTotalReadLength)
                 return ReadStatus.LENGTH_ERROR;
             string headerUMISection = "";
             if (UMILen > 0)
@@ -335,15 +321,9 @@ namespace Linnarsson.Strt
                 if (headerUMISection.Contains('N'))
                     return ReadStatus.N_IN_RANDOM_TAG;
             }
-            int insertStart = insertStartPos;
+
             insertLength -= insertStart;
-            int nTsNt = maxExtraTSNts;
-            while (nTsNt-- > 0 && rSeq[insertStart] == lastNtOfTSSeq)
-            {
-                insertStart++;
-                insertLength--;
-            }
-            rec.Header = string.Format("{0}_{1}{2}", rec.Header, headerUMISection, barcodeSeqs[bcIdx]);
+            rec.Header = string.Format("{0}_{1}{2}", rec.Header, headerUMISection, barcodes.Seqs[bcIdx]);
             rec.Trim(insertStart, insertLength);
             int status = TestComplexity(rSeq, insertStart, insertLength);
             if (status != ReadStatus.VALID) return status;
@@ -360,12 +340,12 @@ namespace Linnarsson.Strt
         private int TrimTrailingNAndCheckAs(string rSeq)
         {
             int insertLength = rSeq.Length;
-            while (insertLength >= minReadLength && rSeq[insertLength - 1] == 'N')
+            while (insertLength >= minTotalReadLength && rSeq[insertLength - 1] == 'N')
                 insertLength--;
             int nonATailLen = insertLength;
-            while (nonATailLen >= minReadLength && rSeq[nonATailLen - 1] == 'A')
+            while (nonATailLen >= minTotalReadLength && rSeq[nonATailLen - 1] == 'A')
                 nonATailLen--;
-            if (nonATailLen < minReadLength) return nonATailLen;
+            if (nonATailLen < minTotalReadLength) return nonATailLen;
             return insertLength;
         }
 

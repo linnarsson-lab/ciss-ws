@@ -41,7 +41,6 @@ namespace Linnarsson.Strt
         public int[] readLengthSamples = new int [4] { 50, 50, 50, 50 };
         private int maxReadLength;
         private int readNumber;
-        private string[] barcodesGGG;
         private string firstFiller;
         private string midFiller;
 
@@ -50,7 +49,6 @@ namespace Linnarsson.Strt
             this.barcodes = barcodes;
             this.genome = genome;
             nRndTags = 1 << (2 * barcodes.UMILen);
-            barcodesGGG = barcodes.GetBarcodesWithTSSeq();
             firstFiller = new string('T', barcodes.UMIPos);
             midFiller = new string('T', barcodes.BarcodePos - barcodes.UMILen - barcodes.UMIPos);
             maxReadLength = DescriptiveStatistics.Max(readLengthSamples);
@@ -284,9 +282,9 @@ namespace Linnarsson.Strt
 
         private string MakeBarcodePart(int bcIdx, int rndTagIdx)
         {
-            if (bcIdx < 0) bcIdx = rnd.Next(barcodesGGG.Length);
+            if (bcIdx < 0) bcIdx = rnd.Next(barcodes.Count);
             string extraGs = new String('G', Math.Max(0, rnd.Next(11) - 7));
-            string bcGGGSeq = barcodesGGG[bcIdx] + extraGs;
+            string bcGGGSeq = barcodes.Seqs[bcIdx] + barcodes.TSSeq + extraGs;
             string rndTag = "";
             if (barcodes.HasUMIs)
             {

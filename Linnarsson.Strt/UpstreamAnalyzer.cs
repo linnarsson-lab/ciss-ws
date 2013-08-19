@@ -13,7 +13,6 @@ namespace Linnarsson.Strt
         private int[,] upstreamEquals;
         private HashSet<string>[] hitsByBcIdx;
         private GenomeAnnotations Annotations;
-        private Dictionary<string, int> barcodesWTSSeqMap;
         private Barcodes barcodes;
 
         public UpstreamAnalyzer(GenomeAnnotations annotations, Barcodes barcodes)
@@ -22,7 +21,6 @@ namespace Linnarsson.Strt
             upstreamTests = new int[barcodes.Count];
             Annotations = annotations;
             this.barcodes = barcodes;
-            barcodesWTSSeqMap = barcodes.GetBcWTSSeqToBcIdxMap();
             hitsByBcIdx = new HashSet<string>[barcodes.Count];
             for (int i = 0; i < barcodes.Count; i++)
                 hitsByBcIdx[i] = new HashSet<string>();
@@ -51,7 +49,7 @@ namespace Linnarsson.Strt
         {
             if (StrtGenome.IsSyntheticChr(chr) || !Annotations.HasChromosome(chr)) return;
             DnaSequence chrSeq = Annotations.ChromosomeSequences[chr];
-            int l = barcodes.GetLengthOfBarcodesWithTSSeq();
+            int l = barcodes.GetInsertStartPos();
             DnaSequence upSeq = null;
             if (strand == '+')
             {
@@ -64,8 +62,8 @@ namespace Linnarsson.Strt
                 upSeq = chrSeq.SubSequence(pos + readLen, l);
                 upSeq.RevComp();
             }
-            int upstreamBcIdx = -1;
-            if (barcodesWTSSeqMap.TryGetValue(upSeq.ToString(), out upstreamBcIdx))
+            int upstreamBcIdx, insertPos;
+            if (barcodes.VerifyBarcodeAndTS(upSeq.ToString(), 0, out upstreamBcIdx, out insertPos))
             {
                 upstreamEquals[currentBcIdx, upstreamBcIdx] += count;
                 if (currentBcIdx == upstreamBcIdx)
@@ -83,14 +81,13 @@ namespace Linnarsson.Strt
             using (StreamWriter writer = new StreamWriter(file))
             {
                 writer.WriteLine("ActualBarcode\t#AnalyzedCases");
-                string[] actualBcs = barcodesWTSSeqMap.Keys.ToArray();
-                foreach (string s in actualBcs)
+                foreach (string s in barcodes.Seqs)
                     writer.Write("\t{0}", s);
                 writer.WriteLine("\tHits with same barcode upstream.");
-                for (int actualBcIdx = 0; actualBcIdx < actualBcs.Length; actualBcIdx++)
+                for (int actualBcIdx = 0; actualBcIdx < barcodes.Count; actualBcIdx++)
                 {
-                    writer.Write("{0}\t{1}", actualBcs[actualBcIdx], upstreamTests[actualBcIdx]);
-                    for (int foundBcIdx = 0; foundBcIdx < actualBcs.Length; foundBcIdx++)
+                    writer.Write("{0}\t{1}", barcodes.Seqs[actualBcIdx], upstreamTests[actualBcIdx]);
+                    for (int foundBcIdx = 0; foundBcIdx < barcodes.Count; foundBcIdx++)
                         writer.Write("\t{0}", upstreamEquals[actualBcIdx, foundBcIdx]);
                     writer.WriteLine("\t" + string.Join(",", hitsByBcIdx[actualBcIdx].ToArray()));
                 }

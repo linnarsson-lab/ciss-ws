@@ -268,6 +268,11 @@ namespace Linnarsson.Dna
 			return (int)(-10 * Math.Log10(prob));
 		}
 
+        /// <summary>
+        /// Replace Sequence and Qualities by a subsection of the read
+        /// </summary>
+        /// <param name="start">First position of replacement</param>
+        /// <param name="len">Length to keep</param>
         public void Trim(int start, int len)
         {
            byte[] newQualities = new byte[len];

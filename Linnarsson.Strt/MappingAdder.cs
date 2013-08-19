@@ -56,8 +56,8 @@ namespace Linnarsson.Strt
         {
             this.Annotations = annotations;
             this.randomTagFilter = randomTagFilter;
-            nDuplicatesByBarcode = new int[barcodes.AllCount];
-            nUniqueByBarcode = new int[barcodes.AllCount];
+            nDuplicatesByBarcode = new int[barcodes.Count];
+            nUniqueByBarcode = new int[barcodes.Count];
             SetMapperMethod();
             mappingChoices = new MultiReadMapping[Props.props.MaxAlternativeMappings];
         }

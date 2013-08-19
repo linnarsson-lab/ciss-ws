@@ -169,7 +169,7 @@ namespace Linnarsson.Strt
 					int insertLength = rec.Sequence.Length;
 					StreamWriter f = sw_slask;
                     int i = Array.IndexOf(barcodes.Seqs, rec.Sequence.Substring(0, barcodes.BarcodeLen));
-                    if (i >= 0 && i < barcodes.FirstNegativeBcIdx)
+                    if (i >= 0)
                     {
                         string bc = barcodes.Seqs[i];
                         if (!bcodeFiles.ContainsKey(bc))
@@ -221,21 +221,14 @@ namespace Linnarsson.Strt
                 string fileName = Path.GetFileNameWithoutExtension(file);
                 Console.WriteLine("Processing {0}", fileName);
 
-                int bcWithTSSeqLen = barcodes.GetLengthOfBarcodesWithTSSeq();
                 int[] barcodeCounts = new int[barcodes.Count];
-                string[] barcodesWTSSeq = barcodes.GetBarcodesWithTSSeq();
                 foreach (FastQRecord rec in FastQFile.Stream(file, props.QualityScoreBase))
                 {
                     count++;
                     if (count > MAX_READS) break;
-                    for (int i = 0; i < barcodesWTSSeq.Length; i++)
-                    {
-                        if (barcodesWTSSeq[i] == rec.Sequence.Substring(0, bcWithTSSeqLen))
-                        {
-                            barcodeCounts[i]++;
-                            break;
-                        }
-                    }
+                    int bcIdx, insertStart;
+                    if (barcodes.VerifyBarcodeAndTS(rec.Sequence, 0, out bcIdx, out insertStart))
+                        barcodeCounts[bcIdx]++;
                     if ((DateTime.Now - start).TotalSeconds > 2)
                     {
                         start = DateTime.Now;
@@ -287,7 +280,7 @@ namespace Linnarsson.Strt
             Extract(pd.laneInfos, outputFolder);
         }
 
-        public static readonly string EXTRACTION_VERSION = "33";
+        public static readonly string EXTRACTION_VERSION = "34";
         private void Extract(List<LaneInfo> laneInfos, string outputFolder)
         {
             DateTime start = DateTime.Now;
@@ -366,7 +359,7 @@ namespace Linnarsson.Strt
         private void SetExtractedFilesInfo(LaneInfo laneInfo, string extractedByBcFolder)
         {
             laneInfo.extractedFileFolder = extractedByBcFolder;
-            string[] extractedFilePaths = new string[Math.Max(1, barcodes.AllCount)];
+            string[] extractedFilePaths = new string[Math.Max(1, barcodes.Count)];
             for (int i = 0; i < extractedFilePaths.Length; i++)
                 extractedFilePaths[i] = Path.Combine(extractedByBcFolder, i.ToString() + ".fq");
             laneInfo.extractedFilePaths = extractedFilePaths;
@@ -858,7 +851,7 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="fastaFile">Path to input file</param>
         /// <param name="projectFolder"></param>
-        /// <param name="minReadLength">Minimum read length excluding barcode+GGG</param>
+        /// <param name="minReadLength">Minimum read length excluding barcode+GGG[G...]</param>
         /// <param name="maxReadLength">Longer sequences are trunctated at this length</param>
         public void ConvertToReads(string fastaFile, string projectFolder,
                                    int minReadLength, int maxReadLength)
@@ -870,26 +863,21 @@ namespace Linnarsson.Strt
             int nTot = 0, nBarcoded = 0, nTooShort = 0;
             using (StreamWriter writer = new StreamWriter(outFile))
             {
-                string[] barcodesGGG = barcodes.GetBarcodesWithTSSeq();
                 foreach (FastaRecord rec in FastaFile.Stream(fastaFile))
                 {
                     nTot++;
-                    foreach (string bcGGG in barcodesGGG)
+                    string seq = rec.Sequence.ToString();
+                    int bcIdx, insertPos;
+                    if (barcodes.VerifyBarcodeAndTS(seq, 6, out bcIdx, out insertPos))
                     {
-                        string seq = rec.Sequence.ToString();
-                        int pos = seq.IndexOf(bcGGG);
-                        if (pos >= 0)
+                        if (seq.Length - insertPos >= minReadLength)
                         {
-                            if (seq.Length - pos >= minReadLength)
-                            {
-                                int seqLen = Math.Min(maxReadLength, seq.Length - pos);
-                                writer.WriteLine(">{0}\n{1}", rec.HeaderLine, seq.Substring(pos, seqLen));
-                                nBarcoded++;
-                            }
-                            else
-                                nTooShort++;
-                            break;
+                            int seqLen = Math.Min(maxReadLength, seq.Length - insertPos);
+                            writer.WriteLine(">{0}\n{1}", rec.HeaderLine, seq.Substring(insertPos, seqLen));
+                            nBarcoded++;
                         }
+                        else
+                            nTooShort++;
                     }
                 }
             }

@@ -22,9 +22,9 @@ namespace C1
             string trName = genome.BuildVarAnnot;
             Props.props.DirectionalReads = true;
             AnnotationReader annotationReader = AnnotationReader.GetAnnotationReader(genome);
-            Console.WriteLine("Building gene models...");
+            Console.WriteLine("Building transcript models...");
             int nModels = annotationReader.BuildGeneModelsByChr();
-            Console.WriteLine("...{0} gene models constructed.", nModels);
+            Console.WriteLine("...{0} models constructed.", nModels);
             if (Props.props.GeneFeature5PrimeExtension > 0)
                 Extend5Primes(annotationReader);
             annotationReader.AddCtrlGeneModels();
@@ -45,7 +45,7 @@ namespace C1
                 db.InsertTranscript(t);
                 n++;
             }
-            Console.WriteLine("...totally {0} transcripts.", n);
+            Console.WriteLine("...totally {0} transcript models.", n);
         }
 
         private static void Extend5Primes(AnnotationReader annotationReader)
@@ -53,7 +53,7 @@ namespace C1
             Console.WriteLine("Extending 5' ends...");
             GeneFeature5PrimeModifier m = new GeneFeature5PrimeModifier();
             annotationReader.AdjustGeneFeatures(m);
-            Console.WriteLine("...{0} genes had their 5' end extended, {1} with the maximal {2} bps.",
+            Console.WriteLine("...{0} models had their 5' end extended, {1} with the maximal {2} bps.",
                                m.nExtended, m.nFullyExtended5Primes, Props.props.GeneFeature5PrimeExtension);
         }
     }

@@ -84,7 +84,7 @@ namespace BkgFastQMailer
             }
         }
 
-        private static string PublishReadsForDownload(string readsPath)
+        private string PublishReadsForDownload(string readsPath)
         {
             string readsFileLink = "";
             string destFilename = Path.GetFileName(readsPath);
@@ -100,7 +100,8 @@ namespace BkgFastQMailer
             Console.WriteLine(DateTime.Now.ToString() + ": scp " + scpArg);
             CmdCaller scpCmd = new CmdCaller("scp", scpArg);
             if (scpCmd.ExitCode != 0)
-                throw new IOException("Could not call OS 'scp' command: " + scpCmd.StdError);
+                throw new IOException("Failed OS call, exit code " + scpCmd.ExitCode.ToString() + ":\nscp " + scpArg
+                                      + "\n" + scpCmd.StdError);
             readsFileLink = Props.props.ResultDownloadFolderHttp + destFilename;
             if (useTempGzReadsFile)
                 RemoveTempFile(gzReadsPath);
@@ -129,22 +130,22 @@ namespace BkgFastQMailer
             return gzReadsPath;
         }
 
-        private static void RemoveTempFile(string gzReadsPath)
+        private void RemoveTempFile(string gzReadsPath)
         {
             try
             {
                 CmdCaller chmodCmd = new CmdCaller("chmod", "u+w " + gzReadsPath);
                 if (chmodCmd.ExitCode != 0)
-                    Console.WriteLine(DateTime.Now.ToString() + " Could not 'chmod u+w': " + gzReadsPath + " Error: " + chmodCmd.StdError);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " Could not 'chmod u+w': " + gzReadsPath + " Error: " + chmodCmd.StdError);
                 File.Delete(gzReadsPath);
             }
             catch (IOException e)
             {
-                Console.WriteLine(DateTime.Now.ToString() + " Could not delete tmp file " + gzReadsPath + " Error: " + e);
+                logWriter.WriteLine(DateTime.Now.ToString() + " Could not delete tmp file " + gzReadsPath + " Error: " + e);
             }
             catch (UnauthorizedAccessException e)
             {
-                Console.WriteLine(DateTime.Now.ToString() + " Could not delete tmp file " + gzReadsPath + " Error: " + e);
+                logWriter.WriteLine(DateTime.Now.ToString() + " Could not delete tmp file " + gzReadsPath + " Error: " + e);
             }
         }
 

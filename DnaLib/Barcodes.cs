@@ -16,13 +16,20 @@ namespace Linnarsson.Dna
     
 	public abstract class Barcodes
 	{
-        protected string[] m_Seqs;
-        public string[] Seqs { get { return m_Seqs; } }
+        private string[] m_Seqs;
+        public string[] Seqs { 
+            get { return m_Seqs; }
+            protected set {
+                m_Seqs = value;
+                m_BarcodeLen = m_Seqs[0].Length;
+                MakeBcSeqToBcIdxMap();
+            }
+        }
         public int Count { get { return m_Seqs.Length; } }
 
         protected int m_BarcodePos = 0;
         public int BarcodePos { get { return m_BarcodePos; } }
-        protected int m_BarcodeLen;
+        private int m_BarcodeLen;
         public int BarcodeLen { get { return m_BarcodeLen; } }
         public int BarcodeEndPos { get { return m_BarcodePos + m_BarcodeLen; } }
 
@@ -73,9 +80,7 @@ namespace Linnarsson.Dna
         public Barcodes(string bcSetName, string[] seqs)
         {
             m_Name = bcSetName;
-            m_Seqs = seqs;
-            m_BarcodeLen = m_Seqs[0].Length;
-            MakeBcSeqToBcIdxMap();
+            Seqs = seqs;
         }
 
         public virtual void MakeBcSeqToBcIdxMap()
@@ -594,7 +599,7 @@ namespace Linnarsson.Dna
                 throw new FileNotFoundException("ERROR: Can not find barcode file " + path);
             List<string> sampleIds = new List<string>();
             List<string> barcodes = new List<string>();
-            m_BarcodeLen = 0;
+            int bcSeqLen = 0;
             using (StreamReader reader = new StreamReader(path))
             {
                 string line;
@@ -636,8 +641,8 @@ namespace Linnarsson.Dna
                             throw new BarcodeFileException("ERROR: Barcode file definition lines should be SampleId TAB Barcode:" + line);
                         string sampleId = fields[0];
                         string bc = fields[1];
-                        if (m_BarcodeLen == 0) m_BarcodeLen = bc.Length;
-                        else if (m_BarcodeLen != bc.Length)
+                        if (bcSeqLen == 0) bcSeqLen = bc.Length;
+                        else if (bcSeqLen != bc.Length)
                             throw new BarcodeFileException("ERROR: Barcodes have different lengths: " + path);
                         if (sampleIds.Contains(sampleId))
                             throw new BarcodeFileException("ERROR: SampledIds in barcode file must be unique: " + sampleId);
@@ -648,8 +653,7 @@ namespace Linnarsson.Dna
                 }
             }
             m_WellIds = sampleIds.ToArray();
-            m_Seqs = barcodes.ToArray();
-            MakeBcSeqToBcIdxMap();
+            Seqs = barcodes.ToArray();
         }
     }
 

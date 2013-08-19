@@ -10,7 +10,7 @@ namespace CmdSilverBullet
     public class QXMAOptions
     {
         public List<string> laneArgs = new List<string>();
-        public string barcodesName;
+        public string barcodesName = "Unknown";
         public bool useRPKM = false;
         public bool directionalReads { get { return !useRPKM; } }
         public ReadLimitType extractionReadLimitType = ReadLimitType.None;

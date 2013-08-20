@@ -24,23 +24,32 @@ namespace Linnarsson.Dna
         public int nExtended { get; private set; }
         public Dictionary<string, int> antisensePairExons = new Dictionary<string, int>();
 
-        private IEnumerable<GeneFeature> chrGenes;
+        private List<GeneFeature> chrGenes;
 
         private int[] sortedExonStarts;
         private int[] exonEnds;
         private bool[] startSortedExonStrands;
-        int[] sortedExonEnds;
-        bool[] endSortedExonStrands;
+        private bool[] endSortedExonStrands;
         private GeneFeature[] geneFeatureByExon;
         protected ProcessStep processSteps;
 
-        public void Process(IEnumerable<GeneFeature> chrGenes)
+        public void Process(List<GeneFeature> chrGenes)
         {
             this.chrGenes = chrGenes;
             CollectExonsFromChrGenes();
+            /*Console.WriteLine("GeneFeatureModifers.Process({0} genes)", chrGenes.Count);
+            Console.WriteLine("{0} geneFeatureByExon: {1},{2},{3},{4}...",
+                     geneFeatureByExon.Length, geneFeatureByExon[0].Name, geneFeatureByExon[1].Name, geneFeatureByExon[2].Name, geneFeatureByExon[3].Name);
+            Console.WriteLine("{0} sortedExonStarts: {1},{2},{3},{4}...",
+                     sortedExonStarts.Length, sortedExonStarts[0], sortedExonStarts[1], sortedExonStarts[2], sortedExonStarts[3]);
+            Console.WriteLine("{0} exonEnds: {1},{2},{3},{4}...",
+                     exonEnds.Length, exonEnds[0], exonEnds[1], exonEnds[2], exonEnds[3]);
+            Console.WriteLine("{0} startSortedExonStrands: {1},{2},{3},{4}...",
+                     startSortedExonStrands.Length, startSortedExonStrands[0], startSortedExonStrands[1], startSortedExonStrands[2], startSortedExonStrands[3]);
+            Console.WriteLine("{0} endSortedExonStrands: {1},{2},{3},{4}...",
+                     endSortedExonStrands.Length, endSortedExonStrands[0], endSortedExonStrands[1], endSortedExonStrands[2], endSortedExonStrands[3]);*/
             processSteps();
         }
-
 
         public void MarkUpOverlapsOnChr()
         {
@@ -99,9 +108,9 @@ namespace Linnarsson.Dna
                 }
             }
             Sort.QuickSort(sortedExonStarts, exonEnds, startSortedExonStrands, geneFeatureByExon);
-            sortedExonEnds = (int[])exonEnds.Clone();
+            int[] sortHelperByExonEnds = (int[])exonEnds.Clone();
             endSortedExonStrands = (bool[])startSortedExonStrands.Clone();
-            Sort.QuickSort(sortedExonEnds, endSortedExonStrands);
+            Sort.QuickSort(sortHelperByExonEnds, endSortedExonStrands);
         }
     }
 
@@ -127,8 +136,8 @@ namespace Linnarsson.Dna
         }
         public override string GetStatsOutput()
         {
-            return string.Format("{0} overlapping anti-sense exons from {1} genes ({2} bps) were masked from statistics calculations.\n" +
-                                 "{3} USTR/DSTR/INTR features that overlap with an exon were masked from statistics calculations.",
+            string asPart = Props.props.DirectionalReads? "{0} overlapping anti-sense exons from {1} genes ({2} bps) were masked from statistics calculations.\n" : "";
+            return string.Format(asPart + "{3} USTR/DSTR/INTR features that overlap with an exon were masked from statistics calculations.",
                                  nMarkedExons, nMarkedGenes, totalMarkedLen, nMaskedIntronicFeatures);
         }
     }
@@ -142,10 +151,10 @@ namespace Linnarsson.Dna
 
         public override string GetStatsOutput()
         {
+            string asPart = Props.props.DirectionalReads ? "{0} overlapping anti-sense exons from {1} genes ({2} bps) were masked from statistics calculations.\n" : "";
             return string.Format("{0} genes had their 5' end extended, {1} with the maximal {2} bps.\n",
                                  nExtended, nFullyExtended5Primes, Props.props.GeneFeature5PrimeExtension) +
-                   string.Format("{0} overlapping anti-sense exons from {1} genes ({2} bps) were masked from statistics calculations.\n" +
-                                 "{3} USTR/DSTR/INTR features that overlap with an exon were masked from statistics calculations.",
+                   string.Format(asPart + "{3} USTR/DSTR/INTR features that overlap with an exon were masked from statistics calculations.",
                                  nMarkedExons, nMarkedGenes, totalMarkedLen, nMaskedIntronicFeatures);
         }
     }

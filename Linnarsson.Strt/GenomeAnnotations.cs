@@ -139,27 +139,47 @@ namespace Linnarsson.Strt
             C1DB db = new C1DB();
             string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
             Transcriptome tm = db.GetTranscriptome(genome.BuildVarAnnot);
-            int n = 0;
+            int nModels = 0, nSpliceModels = 0, nExons = 0, nJunctions = 0, nSkipped = 0;
             if (tm != null)
             {
                 foreach (Transcript tt in db.IterTranscripts(tm.TranscriptomeID.Value))
                 {
                     LocusFeature feature = AnnotationReader.GeneFeatureFromTranscript(tt);
-                    if (RegisterGeneFeature(feature)) n++;
+                    int nParts = RegisterGeneFeature(feature);
+                    if (nParts > 0) { nModels++; nExons += nParts; }
+                    else if (nParts < 0) { nSpliceModels++; nJunctions -= nParts; }
+                    else nSkipped++;
                 }
-                Console.WriteLine("Read {0} transcript models for {1} from database.", n, tm.Name);
+                Console.WriteLine("Read {0} transcript models totalling {1} exons from database {2}.", nModels, nExons, tm.Name);
                 ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
-                foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
-                    if (gf.Chr == genome.Annotation)
-                        RegisterGeneFeature(gf);
+                foreach (LocusFeature spliceGf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
+                    if (spliceGf.Chr == genome.Annotation)
+                    {
+                        int nParts = RegisterGeneFeature(spliceGf);
+                        if (nParts > 0) { nModels++; nExons += nParts; }
+                        else if (nParts < 0) { nSpliceModels++; nJunctions -= nParts; }
+                        else nSkipped++;
+                    }
+                Console.WriteLine("Added {0} splice junctions for {1} transcript models from {2}.",
+                                  nJunctions, nSpliceModels, STRTAnnotationsPath);
             }
             else
             {
                 foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
-                    if (RegisterGeneFeature(gf)) n++;
-                Console.WriteLine("Read {0} gene models from {1}...", n, STRTAnnotationsPath);
+                {
+                    int nParts = RegisterGeneFeature(gf);
+                    if (nParts > 0) { nModels++; nExons += nParts; }
+                    else if (nParts < 0) { nSpliceModels++; nJunctions -= nParts; }
+                    else nSkipped++;
+                }
+                Console.WriteLine("Read {0}:\n{1} transcript models totalling {2} exons, {3} with splices totalling {4} junctions.",
+                                   STRTAnnotationsPath, nModels, nExons, nSpliceModels, nJunctions);
                 ModifyGeneFeatures(new GeneFeature5PrimeAndOverlapMarkUpModifier());
             }
+            if (nSkipped > 0)
+                Console.WriteLine("Skipped {0} transcripts/splice models", nSkipped);
+            int trLen = geneFeatures.Sum(gf => gf.Value.GetTranscriptLength());
+            Console.WriteLine("Total length of all transcript models (including overlaps): {0} bp.", trLen);
         }
 
         private void ModifyGeneFeatures(GeneFeatureModifiers m)
@@ -167,7 +187,10 @@ namespace Linnarsson.Strt
             foreach (string chrId in GetChromosomeIds())
             {
                 if (!StrtGenome.IsSyntheticChr(chrId))
-                    m.Process(geneFeatures.Values.Where(gf => gf.Chr == chrId));
+                {
+                    //Console.WriteLine("ModifyGeneFeatures() on chromsome {0}", chrId);
+                    m.Process(geneFeatures.Values.Where(gf => gf.Chr == chrId).ToList());
+                }
             }
             Console.WriteLine(m.GetStatsOutput());
         }
@@ -233,28 +256,30 @@ namespace Linnarsson.Strt
         /// Adds a normal gene or a splice gene to the set of features
         /// </summary>
         /// <param name="gf"></param>
-        /// <returns>true if gf represents a new gene, and not an artificial splice gene.</returns>
-        protected bool RegisterGeneFeature(LocusFeature gf)
+        /// <returns># exons if gf represents a new gene, -#splices if gf represents a series of splice on the junction chr.</returns>
+        protected int RegisterGeneFeature(LocusFeature gf)
         {
             if (genome.Annotation == gf.Chr) // I.e., we are on the splice chromosome
             { // Requires that real loci are registered before artificial splice loci.
+                int nJunctions = 0;
                 if (lastLoadedGeneName == gf.Name)
                 {    // Link from artificial splice chromosome to real locus
                     ((SplicedGeneFeature)gf).BindToRealFeature(geneFeatures[gf.Name]);
                     AddGeneIntervals((SplicedGeneFeature)gf);
+                    nJunctions = -((SplicedGeneFeature)gf).JunctionCount;
                 }
                 lastLoadedGeneName = "";
-                return false;
+                return nJunctions;
             }
             if (geneFeatures.ContainsKey(gf.Name))
             {
                 Console.WriteLine("WARNING: Duplicated gene name in annotation file: {0}", gf.Name);
                 lastLoadedGeneName = "";
-                return false;
+                return 0;
             }
             geneFeatures[gf.Name] = (GeneFeature)gf;
             lastLoadedGeneName = gf.Name;
-            return true;
+            return ((GeneFeature)gf).ExonCount;
         }
 
 
@@ -314,7 +339,7 @@ namespace Linnarsson.Strt
         public IEnumerable<FtInterval> IterNonTrMatches(string chr, char strand, int hitMidPos)
         {
             if (AnnotType.DirectionalReads)
-            {
+            { // First check for antisense hits
                 foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
                     if (ivl.Strand != strand) yield return ivl;
             }

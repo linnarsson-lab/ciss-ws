@@ -569,6 +569,7 @@ namespace Linnarsson.Dna
 
         public int MarkSpliceHit(MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
         {
+            //Console.WriteLine("GeneFeature.MarkSpliceHit on {0}, type {1} using {2}", Name, markType, item);
             int exonIdx = (Strand == '+') ? exonId - 1 : ExonCount - exonId;
             int annotType = (item.strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
             if (markType == MarkStatus.NONEXONIC_MAPPING)
@@ -820,12 +821,14 @@ namespace Linnarsson.Dna
         /// <returns>Indices of mask intervals that overlapped</returns>
         public List<int> MaskOverlappingAntisenseExons(int[] sortedMaskStarts, int[] sortedMaskEnds, bool[] sortedMaskStrands)
         {
+            //Console.WriteLine("1:GeneFeature.MaskOverlappingAntisenseExons({0})", Name);
             List<int> idxOfMasked = new List<int>();
             if (!Props.props.DirectionalReads) return idxOfMasked;
             bool antisenseStrand = (Strand == '+')? false: true;
-            //int maskRegionIdx = Array.FindIndex(sortedMaskEnds, (end => end >= Start));
             int maskRegionIdx = Array.BinarySearch(sortedMaskEnds, Start);
             if (maskRegionIdx < 0) maskRegionIdx = ~maskRegionIdx;
+            //Console.WriteLine("2:maskRegionIdx={0} sortedMaskStart={1} sortedMaskEnd={2}",
+            //                  maskRegionIdx, sortedMaskStarts[maskRegionIdx], sortedMaskEnds[maskRegionIdx]);
             while (maskRegionIdx < sortedMaskStarts.Length && sortedMaskStarts[maskRegionIdx] <= End)
             {
                 if (sortedMaskStrands[maskRegionIdx] == antisenseStrand)

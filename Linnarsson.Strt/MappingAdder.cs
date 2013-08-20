@@ -73,6 +73,9 @@ namespace Linnarsson.Strt
         {
             bool hasSomeTrMapping, hasSomeNewMapping;
             MultiReadMapping nonTrMrm = addMappingToTranscripts(mrm, out hasSomeTrMapping, out hasSomeNewMapping);
+            //if (mrm[0].Chr == "UCSC")
+            //    Console.WriteLine("MappingAdder.Add Chr=UCSC{0} Pos={1} MidPos={2} Id={3} HasSomeTrMapping: {4}, nonTrMrm: {5}",
+            //                      mrm[0].Strand, mrm[0].Position, mrm[0].HitMidPos, mrm.ReadId, hasSomeTrMapping, nonTrMrm != null);
             if (nonTrMrm != null) // If no transcript mapping is found, add the read to the non-exon repeat or random first mapping it got
                 hasSomeNewMapping = randomTagFilter.Add(nonTrMrm);
             if (hasSomeNewMapping)

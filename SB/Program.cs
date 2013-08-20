@@ -78,9 +78,8 @@ namespace CmdSilverBullet
 
                         case "ab":
                             options = new QXMAOptions(args);
-                            props.DirectionalReads = false;
-                            props.UseRPKM = true;
-                            props.UseMost5PrimeExonMapping = true;
+                            props.DirectionalReads = options.directionalReads;
+                            props.UseRPKM = options.useRPKM;
                             mapper = new StrtReadMapper(props);
                             mapper.MapAndAnnotate(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
                                                             options.annotation, options.resultFolder);

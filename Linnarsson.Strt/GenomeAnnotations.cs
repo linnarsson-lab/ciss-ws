@@ -18,11 +18,6 @@ namespace Linnarsson.Strt
         public static int annotationBinSize = 30000;
 
         /// <summary>
-        /// Used during gene loading to bind splices correctly to genes
-        /// </summary>
-        private string lastLoadedGeneName;
-
-        /// <summary>
         /// The actual chromosome sequences - only those needed for stat calc.
         /// </summary>
         public Dictionary<string, DnaSequence> ChromosomeSequences { get; set; }
@@ -144,8 +139,8 @@ namespace Linnarsson.Strt
             {
                 foreach (Transcript tt in db.IterTranscripts(tm.TranscriptomeID.Value))
                 {
-                    LocusFeature feature = AnnotationReader.GeneFeatureFromTranscript(tt);
-                    int nParts = RegisterGeneFeature(feature);
+                    LocusFeature gf = AnnotationReader.GeneFeatureFromTranscript(tt);
+                    int nParts = RegisterGeneFeature(gf);
                     if (nParts > 0) { nModels++; nExons += nParts; }
                     else if (nParts < 0) { nSpliceModels++; nJunctions -= nParts; }
                     else nSkipped++;
@@ -261,24 +256,22 @@ namespace Linnarsson.Strt
         {
             if (genome.Annotation == gf.Chr) // I.e., we are on the splice chromosome
             { // Requires that real loci are registered before artificial splice loci.
-                int nJunctions = 0;
-                if (lastLoadedGeneName == gf.Name)
-                {    // Link from artificial splice chromosome to real locus
-                    ((SplicedGeneFeature)gf).BindToRealFeature(geneFeatures[gf.Name]);
-                    AddGeneIntervals((SplicedGeneFeature)gf);
-                    nJunctions = -((SplicedGeneFeature)gf).JunctionCount;
+                if (!geneFeatures.ContainsKey(gf.Name))
+                {
+                    Console.WriteLine("WARNING: Junctions defined in annotation file but gene is missing: {0}", gf.Name);
+                    return 0;
                 }
-                lastLoadedGeneName = "";
-                return nJunctions;
+                // Link from artificial splice chromosome to real locus
+                ((SplicedGeneFeature)gf).BindToRealFeature(geneFeatures[gf.Name]);
+                AddGeneIntervals((SplicedGeneFeature)gf);
+                return -((SplicedGeneFeature)gf).JunctionCount;
             }
             if (geneFeatures.ContainsKey(gf.Name))
             {
                 Console.WriteLine("WARNING: Duplicated gene name in annotation file: {0}", gf.Name);
-                lastLoadedGeneName = "";
                 return 0;
             }
             geneFeatures[gf.Name] = (GeneFeature)gf;
-            lastLoadedGeneName = gf.Name;
             return ((GeneFeature)gf).ExonCount;
         }
 

@@ -219,6 +219,7 @@ namespace Linnarsson.Strt
                 chrIdToFeature[chrId] = new List<GeneFeature>();
             }
             string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
+            Console.WriteLine("Annotations are taken from " + STRTAnnotationsPath);
             foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
                 if (chrIdToFeature.ContainsKey(gf.Chr))
                     chrIdToFeature[gf.Chr].Add((GeneFeature)gf);

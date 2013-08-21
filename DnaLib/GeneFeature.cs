@@ -720,45 +720,39 @@ namespace Linnarsson.Dna
         public string ExonEndsString { get { return string.Join(",", Array.ConvertAll(ExonEnds, v => (v+1).ToString())) +","; } }
 
         /// <summary>
-        /// Decrease length of flank(s) if there is a too close neighboring gene exon (in same orientation).
         /// Extend 5' end according to GeneFeature5PrimeExtension or as far as the closest neighboring gene exon (in same orientation).
         /// </summary>
         /// <param name="sortedMaskStarts">starts of all gene's exons on chr</param>
         /// <param name="sortedMaskEnds">ends of all gene's exons on chr</param>
         /// <param name="sortedMaskStrands">strands of all gene's exons. true = '+', false = '-'</param>
-        /// <remarks>Actual length of 5' extension</remarks>
-        public int AdjustFlanksAnd5PrimeExtend(int[] sortedMaskStarts, bool[] startSortedMaskStrands, int[] sortedMaskEnds, bool[] endSortedMaskStrands)
+        /// <returns>Actual length of 5' extension</returns>
+        public int Extend5Prime(int[] sortedMaskStarts, bool[] startSortedMaskStrands, int[] sortedMaskEnds, bool[] endSortedMaskStrands)
         {
             int extension = 0;
             int idx;
             bool strand = (Strand == '+') ? true : false;
             bool strandMatters = (Props.props.DirectionalReads)? true : false;
-            idx = Array.BinarySearch(sortedMaskEnds, Start - 1);
-            if (idx < 0) idx = ~idx;
-            idx -= 1;
-            while (idx >= 0 && strandMatters && endSortedMaskStrands[idx] != strand)
-                idx--;
-            if (idx >= 0)
+            if (Strand == '+')
             {
-                LeftFlankLength = Math.Min(LocusFlankLength, Start - sortedMaskEnds[idx]);
-                if (Strand == '+')
+                idx = Array.BinarySearch(sortedMaskEnds, Start - 1);
+                if (idx < 0) idx = ~idx;
+                idx -= 1;
+                while (idx >= 0 && strandMatters && endSortedMaskStrands[idx] != strand)
+                    idx--;
+                if (idx >= 0)
                 {
                     int newStart = Math.Max(Start - Props.props.GeneFeature5PrimeExtension, sortedMaskEnds[idx] + 1);
                     extension = Start - newStart;
-                    //if (extension < Props.props.GeneFeature5PrimeExtension)
-                    //    Console.WriteLine("Adjusting extension on {0}: oldStart={1} newStart={2}. Competing End={3} newLeftFlankLength={4}",
-                    //                 Name, Start, newStart, sortedMaskEnds[idx], LeftFlankLength);
                     Start = newStart;
                 }
             }
-            idx = Array.BinarySearch(sortedMaskStarts, End + 1);
-            if (idx < 0) idx = ~idx;
-            while (idx < sortedMaskStarts.Length && strandMatters && startSortedMaskStrands[idx] != strand)
-                idx++;
-            if (idx < sortedMaskStarts.Length)
+            else
             {
-                RightFlankLength = Math.Min(LocusFlankLength, sortedMaskStarts[idx] - End);
-                if (Strand == '-')
+                idx = Array.BinarySearch(sortedMaskStarts, End + 1);
+                if (idx < 0) idx = ~idx;
+                while (idx < sortedMaskStarts.Length && strandMatters && startSortedMaskStrands[idx] != strand)
+                    idx++;
+                if (idx < sortedMaskStarts.Length)
                 {
                     int newEnd = Math.Min(End + Props.props.GeneFeature5PrimeExtension, sortedMaskStarts[idx] - 1);
                     extension = newEnd - End;
@@ -769,6 +763,33 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
+        /// Decrease length of flank(s) if there is a too close neighboring gene exon (in same orientation).
+        /// </summary>
+        /// <param name="sortedMaskStarts">starts of all gene's exons on chr</param>
+        /// <param name="sortedMaskEnds">ends of all gene's exons on chr</param>
+        /// <param name="sortedMaskStrands">strands of all gene's exons. true = '+', false = '-'</param>
+        public int AdjustFlanks(int[] sortedMaskStarts, bool[] startSortedMaskStrands, int[] sortedMaskEnds, bool[] endSortedMaskStrands)
+        {
+            int idx;
+            bool strand = (Strand == '+') ? true : false;
+            bool strandMatters = (Props.props.DirectionalReads) ? true : false;
+            idx = Array.BinarySearch(sortedMaskEnds, Start - 1);
+            if (idx < 0) idx = ~idx;
+            idx -= 1;
+            while (idx >= 0 && strandMatters && endSortedMaskStrands[idx] != strand)
+                idx--;
+            if (idx >= 0)
+                LeftFlankLength = Math.Min(LocusFlankLength, Start - sortedMaskEnds[idx]);
+            idx = Array.BinarySearch(sortedMaskStarts, End + 1);
+            if (idx < 0) idx = ~idx;
+            while (idx < sortedMaskStarts.Length && strandMatters && startSortedMaskStrands[idx] != strand)
+                idx++;
+            if (idx < sortedMaskStarts.Length)
+                RightFlankLength = Math.Min(LocusFlankLength, sortedMaskStarts[idx] - End);
+            return (LocusFlankLength - LeftFlankLength) + (LocusFlankLength - RightFlankLength);
+        }
+
+        /// <summary>
         /// Mark up all USTR,DSTR, INTR that overlap with other genes exons, irrespective of orientation
         /// </summary>
         /// <param name="sortedMaskStarts"></param>
@@ -776,11 +797,9 @@ namespace Linnarsson.Dna
         /// <returns>Number of features masked</returns>
         public int MaskOverlappingUSTRDSTRINTR(int[] sortedMaskStarts, int[] sortedMaskEnds)
         {
-            int nMaskedIntrons = 0;
+            int nMaskedFeatures = 0;
             int idx = Array.BinarySearch(sortedMaskEnds, LocusStart);
             if (idx < 0) idx = ~idx;
-            //int idx = Array.FindIndex(sortedMaskEnds, (end => end >= LocusStart));
-            // 
             if (idx >= 0)
             {
                 while (idx < sortedMaskStarts.Length && sortedMaskStarts[idx] <= LocusEnd)
@@ -789,13 +808,13 @@ namespace Linnarsson.Dna
                     int maskEnd = sortedMaskEnds[idx];
                     if (maskStart < Start && maskEnd > LeftMatchStart)
                     {
-                        nMaskedIntrons++;
+                        nMaskedFeatures++;
                         if (Strand == '+') MaskedUSTR = true;
                         else MaskedDSTR = true;
                     }
                     if (maskStart < RightMatchEnd && maskEnd > End)
                     {
-                        nMaskedIntrons++;
+                        nMaskedFeatures++;
                         if (Strand == '+') MaskedDSTR = true;
                         else MaskedUSTR = true;
                     }
@@ -803,14 +822,14 @@ namespace Linnarsson.Dna
                     {
                         if (maskStart < ExonStarts[i + 1] && maskEnd > ExonEnds[i])
                         {
-                            nMaskedIntrons++;
+                            nMaskedFeatures++;
                             MaskedINTR[i] = true;
                         }
                     }
                     idx++;
                 }
             }
-            return nMaskedIntrons;
+            return nMaskedFeatures;
         }
 
         /// <summary>

@@ -151,7 +151,6 @@ namespace Linnarsson.Dna
             string annotationsPath = PathHandler.ExistsOrGz(tryAnnotationsPath);
             if (annotationsPath == null)
                 throw new Exception("Could not find annotation file " + MakeAnnotationsPath() + " or one with similar read length.");
-            Console.WriteLine("Annotations are taken from " + annotationsPath);
             return annotationsPath;
         }
 

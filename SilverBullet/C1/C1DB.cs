@@ -65,20 +65,27 @@ namespace C1
         /// Returns Transcriptome data for the specified genome data
         /// </summary>
         /// <param name="buildVarAnnot">e.g. "mm10_sUCSC"</param>
-        /// <returns>null if no match exists in database</returns>
+        /// <returns>null if no match exists in database, or can not connect</returns>
         public Transcriptome GetTranscriptome(string buildVarAnnot)
         {
             Transcriptome t = null;
-            string sql = string.Format("SELECT * FROM Transcriptome WHERE Name ='{0}'", buildVarAnnot);
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            if (rdr.Read()) t = new Transcriptome(rdr.GetInt32("TranscriptomeID"), rdr.GetString("Name"), rdr.GetString("Organism"), 
-                                                  rdr.GetString("Source"), rdr.GetString("GenomeFolder"), rdr.GetString("Description"),
-                                                  rdr.GetDateTime("BuildDate"), rdr.GetString("BuilderVersion"), rdr.GetDateTime("AnalysisDate"),
-                                                  rdr.GetString("AnnotationVersion"));
-            conn.Close();
+            try
+            {
+                string sql = string.Format("SELECT * FROM Transcriptome WHERE Name ='{0}'", buildVarAnnot);
+                MySqlConnection conn = new MySqlConnection(connectionString);
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                MySqlDataReader rdr = cmd.ExecuteReader();
+                if (rdr.Read()) t = new Transcriptome(rdr.GetInt32("TranscriptomeID"), rdr.GetString("Name"), rdr.GetString("Organism"),
+                                                      rdr.GetString("Source"), rdr.GetString("GenomeFolder"), rdr.GetString("Description"),
+                                                      rdr.GetDateTime("BuildDate"), rdr.GetString("BuilderVersion"), rdr.GetDateTime("AnalysisDate"),
+                                                      rdr.GetString("AnnotationVersion"));
+                conn.Close();
+            }
+            catch (MySqlException e)
+            {
+                Console.WriteLine("{0}: {1}", DateTime.Now, e);
+            }
             return t;
         }
 

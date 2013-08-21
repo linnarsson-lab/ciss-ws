@@ -279,8 +279,8 @@ namespace Linnarsson.Strt
         public ReadExtractor(Props props)
         {
             barcodes = props.Barcodes;
-            insertStartPos = barcodes.GetInsertStartPos();
-            minTotalReadLength = barcodes.GetInsertStartPos() + props.MinExtractionInsertLength;
+            insertStartPos = barcodes.InsertOrGGGPos;
+            minTotalReadLength = barcodes.InsertOrGGGPos + props.MinExtractionInsertLength;
             UMIPos = barcodes.UMIPos;
             UMILen = barcodes.UMILen;
             minInsertNonAs = props.MinExtractionInsertNonAs;

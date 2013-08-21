@@ -342,7 +342,7 @@ namespace Linnarsson.Dna
         public static Transcript TranscriptFromExtendedGeneFeature(ExtendedGeneFeature gf)
         {
             string type = gf.TranscriptType == "" ? "gene" : gf.TranscriptType;
-            return new Transcript(null, 0, gf.TranscriptName, type, gf.NonVariantName, "",  "",
+            return new Transcript(null, 0, gf.TranscriptName, type, gf.Name, "",  "",
                                   gf.Chr, gf.Start + 1, gf.End + 1, gf.GetTranscriptLength(), gf.Strand,
                                   gf.Extension5Prime, gf.ExonStartsString, gf.ExonEndsString);
         }

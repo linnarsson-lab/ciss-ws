@@ -57,8 +57,22 @@ namespace Linnarsson.Dna
         public int PrefixRead3 { get { return m_PrefixRead3; } }
         public bool NeedRead2Or3 { get { return m_PrefixRead2 > 0 || m_PrefixRead3 > 0; } }
 
-        protected int m_InsertStart = 0;
-        public int InsertStart { get { return m_InsertStart; } }
+        /// <summary>
+        /// Do not read directly - use property InsertStart instead
+        /// </summary>
+        protected int m_InsertOrGGGPos = -1;
+        /// <summary>
+        /// Find the position after UMI, barcode, or specified InsertStart, whichever is highest
+        /// </summary>
+        public int InsertOrGGGPos 
+        {
+            get
+            {
+                if (m_InsertOrGGGPos == -1)
+                    m_InsertOrGGGPos = Math.Max(m_BarcodePos + m_BarcodeLen, m_UMIPos + m_UMILen);
+                return m_InsertOrGGGPos;
+            }
+        }
 
         public int BarcodeFieldLen { get { return (m_UMILen > 0)? (1 + m_UMILen + m_BarcodeLen) : m_BarcodeLen; } }
 
@@ -115,34 +129,27 @@ namespace Linnarsson.Dna
         /// <param name="read">the full read</param>
         /// <param name="maxTrimExtraGs">max extra 'G':s to remove</param>
         /// <param name="bcIdx">the detected barcode index, or -1 on failure</param>
-        /// <param name="insertPos">the position of the actual insert, after any GGG...</param>
+        /// <param name="actualInsertPos">the position of the actual insert, after any GGG...</param>
         /// <returns>true on successful detection of barcodes (and GGG)</returns>
-        public bool VerifyBarcodeAndTS(string read, int maxTrimExtraGs, out int bcIdx, out int insertPos)
+        public bool VerifyBarcodeAndTS(string read, int maxTrimExtraGs, out int bcIdx, out int actualInsertPos)
         {
             bcIdx = -1;
-            insertPos = m_InsertStart + TSSeq.Length;
+            actualInsertPos = InsertOrGGGPos + TSSeq.Length;
+            //Console.WriteLine("BcPos={0} BcLen={1} InsOrGGG={2} Actual={3} TSSeq={4} \n{5}",
+            //                  BarcodePos, BarcodeLen, InsertOrGGGPos, actualInsertPos, TSSeq, read);
             if (bcSeqToBcIdxMap.TryGetValue(read.Substring(BarcodePos, BarcodeLen), out bcIdx))
             {
-                if (TSSeq != null & read.Substring(m_InsertStart, TSSeq.Length) == TSSeq)
+                if (read.Substring(InsertOrGGGPos, TSSeq.Length) == TSSeq)
                 {
-                    while (maxTrimExtraGs > 0 && read.Length > insertPos && read[insertPos] == m_TSTrimNt)
+                    while (maxTrimExtraGs > 0 && read.Length > actualInsertPos && read[actualInsertPos] == m_TSTrimNt)
                     {
-                        insertPos++;
+                        actualInsertPos++;
                         maxTrimExtraGs--;
                     }
                     return true;
                 }
             }
             return false;
-        }
-
-        /// <summary>
-        /// Find the position after UMI, barcode and any GGG-triple, or specified InsertStart, whichever is highest
-        /// </summary>
-        /// <returns>Positions where actual sequence should start</returns>
-        public virtual int GetInsertStartPos()
-        {
-            return Math.Max(m_BarcodePos + m_BarcodeLen + m_TSSeq.Length, Math.Max(m_UMIPos + m_UMILen, m_InsertStart));
         }
 
         /// <summary>
@@ -621,7 +628,7 @@ namespace Linnarsson.Dna
                     else if (line.StartsWith("#barcodepos="))
                         m_BarcodePos = int.Parse(line.Substring(12));
                     else if (line.StartsWith("#insertpos="))
-                        m_InsertStart = int.Parse(line.Substring(11));
+                        m_InsertOrGGGPos = int.Parse(line.Substring(11));
                     else if (line.StartsWith("#allowsinglemutations"))
                         AllowSingleMutations = true;
                     else if (line.StartsWith("#prefixread2="))

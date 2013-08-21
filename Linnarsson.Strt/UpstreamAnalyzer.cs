@@ -49,7 +49,7 @@ namespace Linnarsson.Strt
         {
             if (StrtGenome.IsSyntheticChr(chr) || !Annotations.HasChromosome(chr)) return;
             DnaSequence chrSeq = Annotations.ChromosomeSequences[chr];
-            int l = barcodes.GetInsertStartPos();
+            int l = barcodes.InsertOrGGGPos;
             DnaSequence upSeq = null;
             if (strand == '+')
             {

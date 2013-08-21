@@ -85,6 +85,19 @@ namespace CmdSilverBullet
                                                             options.annotation, options.resultFolder);
                             break;
 
+                        case "rf":
+                            options = new QXMAOptions(args);
+                            props.DirectionalReads = options.directionalReads;
+                            props.UseRPKM = options.useRPKM;
+                            genome = StrtGenome.GetGenome(options.speciesAbbrev, options.analyzeAllGeneVariants, options.annotation, false);
+                            GenomeAnnotations annotations = new GenomeAnnotations(props, genome);
+                            annotations.Load();
+                            StreamWriter writer = options.projectFolder.OpenWrite();
+                            foreach (GeneFeature gf in annotations.geneFeatures.Values)
+                                writer.WriteLine(gf);
+                            writer.Close();
+                            break;
+
                         case "jct":
                             CheckArgs(args, 2, 6);
                             if (int.TryParse(args[argOffset], out readLen))
@@ -220,6 +233,7 @@ namespace CmdSilverBullet
                 }
             }
             Console.WriteLine("\nUsage:\n\n" +
+                "SB.exe rf [rpkm] <Build> [<Annot>] <Outfile>       -    load transcripts and dump to refFlat-like file.\n" +
                 "SB.exe q [<RunLaneSpec>]+ [rpkm] <Bc> [<Build>|<Idx>] [all|single] <ProjectPath>\n" +
                 "      extract data, run Bowtie, and annotate in one sweep using default parameters.\n" +
                 "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +

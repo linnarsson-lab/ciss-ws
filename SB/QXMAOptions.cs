@@ -79,7 +79,7 @@ namespace CmdSilverBullet
                         break;
                     default:
                         if (opt.StartsWith("-o"))
-                            resultFolder = opt.Substring(1);
+                            resultFolder = opt.Substring(2);
                         else if (Array.IndexOf(allBcSetNames, opt) >= 0)
                             barcodesName = opt;
                         else if (Array.IndexOf(new string[] { "hs", "hg", "mm", "gg", "ce", "cg" }, opt.ToLower()) >= 0)

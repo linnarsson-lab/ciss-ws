@@ -336,13 +336,13 @@ namespace Linnarsson.Dna
         {
             int[] exonStarts = SplitField(tt.ExonStarts, 0); // 0-based
             int[] exonEnds = SplitExonEndsField(tt.ExonEnds); // Convert to 0-based inclusive ends
-            return new GeneFeature(tt.GeneName, tt.Chromosome, tt.Strand, exonStarts, exonEnds, tt.TranscriptID.Value);
+            return new GeneFeature(tt.UniqueGeneName, tt.Chromosome, tt.Strand, exonStarts, exonEnds, tt.TranscriptID.Value);
         }
 
         public static Transcript TranscriptFromExtendedGeneFeature(ExtendedGeneFeature gf)
         {
             string type = gf.TranscriptType == "" ? "gene" : gf.TranscriptType;
-            return new Transcript(null, 0, gf.TranscriptName, type, gf.Name, "",  "",
+            return new Transcript(null, 0, gf.TranscriptName, type, gf.NonVariantName, gf.Name, "",  "",
                                   gf.Chr, gf.Start + 1, gf.End + 1, gf.GetTranscriptLength(), gf.Strand,
                                   gf.Extension5Prime, gf.ExonStartsString, gf.ExonEndsString);
         }

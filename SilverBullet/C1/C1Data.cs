@@ -153,6 +153,7 @@ namespace C1
         public string Name { get; set; }             // "ENSMUS232243"
         public string Type { get; set; }             // "miRNA", "pseudogene", "coding"
         public string GeneName { get; set; }                // "JunB"
+        public string UniqueGeneName { get; set; }          // "JunB_v2"
         public string EntrezID { get; set; }
         public string Description { get; set; }
         public string Chromosome { get; set; }              // "chrX"
@@ -165,14 +166,16 @@ namespace C1
         public string ExonEnds { get; set; }                // 0-based exclusive comma-separated "refFlat.txt"/psl line
         public List<TranscriptAnnotation> TranscriptAnnotations { get; set; }
 
-        public Transcript(int? transcriptId, int transcriptomeId, string name, string type, string geneName, string entrezId, string description,
-                       string chromosome, int start, int end, int length, char strand, int extension5Prime, string exonStarts, string exonEnds)
+        public Transcript(int? transcriptId, int transcriptomeId, string name, string type, string geneName, string uniqueGeneName,
+                          string entrezId, string description, string chromosome, int start, int end, int length,
+                         char strand, int extension5Prime, string exonStarts, string exonEnds)
         {
             this.TranscriptID = transcriptId;
             this.TranscriptomeID = transcriptomeId;
             this.Name = name;
             this.Type = type;
             this.GeneName = geneName;
+            this.UniqueGeneName = uniqueGeneName;
             this.EntrezID = entrezId;
             this.Description = description;
             this.Chromosome = chromosome;

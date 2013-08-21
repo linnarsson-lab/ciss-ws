@@ -28,7 +28,8 @@ namespace Linnarsson.Dna
         private List<GeneFeature> chrGenes;
 
         private int[] sortedExonStarts;
-        private int[] exonEnds;
+        private int[] startSortedExonEnds;
+        private int[] endSortedExonEnds;
         private bool[] startSortedExonStrands;
         private bool[] endSortedExonStrands;
         private GeneFeature[] geneFeatureByExon;
@@ -45,9 +46,9 @@ namespace Linnarsson.Dna
             CollectExonsFromChrGenes();
             foreach (GeneFeature gf in chrGenes)
             {
-                nShrunkFlanks += (gf.AdjustFlanks(sortedExonStarts, startSortedExonStrands, exonEnds, endSortedExonStrands) > 0)? 1 : 0;
-                nMaskedIntronicFeatures += gf.MaskOverlappingUSTRDSTRINTR(sortedExonStarts, exonEnds);
-                List<int> indicesOfMasked = gf.MaskOverlappingAntisenseExons(sortedExonStarts, exonEnds, startSortedExonStrands);
+                nShrunkFlanks += (gf.AdjustFlanks(sortedExonStarts, startSortedExonStrands, endSortedExonEnds, endSortedExonStrands) > 0)? 1 : 0;
+                nMaskedIntronicFeatures += gf.MaskOverlappingUSTRDSTRINTR(sortedExonStarts, startSortedExonEnds);
+                List<int> indicesOfMasked = gf.MaskOverlappingAntisenseExons(sortedExonStarts, startSortedExonEnds, startSortedExonStrands);
                 if (indicesOfMasked.Count > 0)
                 {
                     nMarkedExons += indicesOfMasked.Count;
@@ -76,9 +77,10 @@ namespace Linnarsson.Dna
         public void Extend5PrimeEnds()
         {
             CollectExonsFromChrGenes();
+            //Console.WriteLine("Process {0} chrGenes {1} exonStarts.", chrGenes.Count, sortedExonStarts.Length);
             foreach (GeneFeature gf in chrGenes)
             {
-                int extension = gf.Extend5Prime(sortedExonStarts, startSortedExonStrands, exonEnds, endSortedExonStrands);
+                int extension = gf.Extend5Prime(sortedExonStarts, startSortedExonStrands, endSortedExonEnds, endSortedExonStrands);
                 if (extension == Props.props.GeneFeature5PrimeExtension) nFullyExtended5Primes++;
                 if (extension > 0) nExtended++;
             }
@@ -95,7 +97,7 @@ namespace Linnarsson.Dna
             foreach (GeneFeature gf in chrGenes)
                 nExons += gf.ExonCount;
             sortedExonStarts = new int[nExons];
-            exonEnds = new int[nExons];
+            startSortedExonEnds = new int[nExons];
             startSortedExonStrands = new bool[nExons];
             geneFeatureByExon = new GeneFeature[nExons];
             int exonIdx = 0;
@@ -104,16 +106,16 @@ namespace Linnarsson.Dna
                 for (int i = 0; i < gf.ExonCount; i++)
                 {
                     sortedExonStarts[exonIdx] = gf.ExonStarts[i];
-                    exonEnds[exonIdx] = gf.ExonEnds[i];
+                    startSortedExonEnds[exonIdx] = gf.ExonEnds[i];
                     startSortedExonStrands[exonIdx] = (gf.Strand == '+') ? true : false;
                     geneFeatureByExon[exonIdx] = gf;
                     exonIdx++;
                 }
             }
-            Sort.QuickSort(sortedExonStarts, exonEnds, startSortedExonStrands, geneFeatureByExon);
-            int[] sortHelperByExonEnds = (int[])exonEnds.Clone();
+            Sort.QuickSort(sortedExonStarts, startSortedExonEnds, startSortedExonStrands, geneFeatureByExon);
+            endSortedExonEnds = (int[])startSortedExonEnds.Clone();
             endSortedExonStrands = (bool[])startSortedExonStrands.Clone();
-            Sort.QuickSort(sortHelperByExonEnds, endSortedExonStrands);
+            Sort.QuickSort(endSortedExonEnds, endSortedExonStrands);
         }
     }
 

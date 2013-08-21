@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
 using MySql.Data;
 
@@ -98,8 +99,11 @@ namespace C1
             MySqlDataReader rdr = cmd.ExecuteReader();
             while (rdr.Read())
             {
+                string uniqueName = rdr.GetString("GeneName");
+                Match m = Regex.Match(uniqueName, "_v[0-9]+$");
+                string geneName = (m.Success)? uniqueName.Substring(0, m.Index) : uniqueName;
                 Transcript t = new Transcript(rdr.GetInt32("TranscriptID"), rdr.GetInt32("TranscriptomeID"), rdr.GetString("Name"),
-                                              rdr.GetString("Type"), rdr.GetString("GeneName"), rdr.GetString("EntrezID"),
+                                              rdr.GetString("Type"), geneName, uniqueName, rdr.GetString("EntrezID"),
                                               rdr.GetString("Description"),
                                               rdr.GetString("Chromosome"), rdr.GetInt32("Start"), rdr.GetInt32("End"), 
                                               rdr.GetInt32("Length"), rdr.GetChar("Strand"), rdr.GetInt32("Extension5Prime"),
@@ -171,7 +175,7 @@ namespace C1
             string sql = "REPLACE INTO Transcript (TranscriptomeID, Name, Type, GeneName, EntrezID, Description, Chromosome, " +
                                                  "Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds) " +
                                 "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}')";
-            sql = string.Format(sql, t.TranscriptomeID, t.Name, t.Type, t.GeneName, t.EntrezID, description, t.Chromosome,
+            sql = string.Format(sql, t.TranscriptomeID, t.Name, t.Type, t.UniqueGeneName, t.EntrezID, description, t.Chromosome,
                                      t.Start, t.End, t.Length, t.Strand, t.Extension5Prime, t.ExonStarts, t.ExonEnds);
             int transcriptomeId = InsertAndGetLastId(sql, "Transcript");
             t.TranscriptID = transcriptomeId;

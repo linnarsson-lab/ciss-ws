@@ -181,15 +181,18 @@ namespace C1
     class BiosystemsAnnotator
     {
         private Dictionary<string, List<int>> entrezIDToBiosystem = new Dictionary<string, List<int>>();
-        private Biosystems biosystems;
+        private Biosystems biosystems = null;
 
         public BiosystemsAnnotator(StrtGenome genome)
         { 
             string bsid2InfoPath = PathHandler.ExistsOrGz(Path.Combine(Props.props.GenomesFolder, "biosystems/bsid2info.sed"));
             string genePath = PathHandler.ExistsOrGz(Path.Combine(Props.props.GenomesFolder, "biosystems/biosystems_gene"));
             if (bsid2InfoPath == null || genePath == null)
-                Console.WriteLine("Please download [0} and {1] from NCBI Biosystems and rerun to get pathway annotations.", 
+            {
+                Console.WriteLine("Please download {0} and {1} from NCBI Biosystems and rerun to get pathway annotations.",
                                   bsid2InfoPath, genePath);
+                return;
+            }
             biosystems = Biosystems.FromFile(bsid2InfoPath);
             using (StreamReader r = genePath.OpenRead())
             {

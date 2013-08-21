@@ -722,11 +722,11 @@ namespace Linnarsson.Dna
         /// <summary>
         /// Extend 5' end according to GeneFeature5PrimeExtension or as far as the closest neighboring gene exon (in same orientation).
         /// </summary>
-        /// <param name="sortedMaskStarts">starts of all gene's exons on chr</param>
-        /// <param name="sortedMaskEnds">ends of all gene's exons on chr</param>
+        /// <param name="startSortedMaskStarts">starts of all gene's exons on chr</param>
+        /// <param name="endSortedMaskEnds">ends of all gene's exons on chr</param>
         /// <param name="sortedMaskStrands">strands of all gene's exons. true = '+', false = '-'</param>
         /// <returns>Actual length of 5' extension</returns>
-        public int Extend5Prime(int[] sortedMaskStarts, bool[] startSortedMaskStrands, int[] sortedMaskEnds, bool[] endSortedMaskStrands)
+        public int Extend5Prime(int[] startSortedMaskStarts, bool[] startSortedMaskStrands, int[] endSortedMaskEnds, bool[] endSortedMaskStrands)
         {
             int extension = 0;
             int idx;
@@ -734,31 +734,35 @@ namespace Linnarsson.Dna
             bool strandMatters = (Props.props.DirectionalReads)? true : false;
             if (Strand == '+')
             {
-                idx = Array.BinarySearch(sortedMaskEnds, Start - 1);
+                idx = Array.BinarySearch(endSortedMaskEnds, Start - 1);
                 if (idx < 0) idx = ~idx;
                 idx -= 1;
                 while (idx >= 0 && strandMatters && endSortedMaskStrands[idx] != strand)
                     idx--;
+                //if (NonVariantName == "Snord1b" || NonVariantName == "1810032O08Rik" || NonVariantName == "RP23-313J14.6")
+                //    Console.WriteLine("Before Extend5Prime:strandMatters: {0}, idx={1} ends[idx]={2}", strandMatters, idx, endSortedMaskEnds[idx]);
                 if (idx >= 0)
                 {
-                    int newStart = Math.Max(Start - Props.props.GeneFeature5PrimeExtension, sortedMaskEnds[idx] + 1);
+                    int newStart = Math.Max(Start - Props.props.GeneFeature5PrimeExtension, endSortedMaskEnds[idx] + 1);
                     extension = Start - newStart;
                     Start = newStart;
                 }
             }
             else
             {
-                idx = Array.BinarySearch(sortedMaskStarts, End + 1);
+                idx = Array.BinarySearch(startSortedMaskStarts, End + 1);
                 if (idx < 0) idx = ~idx;
-                while (idx < sortedMaskStarts.Length && strandMatters && startSortedMaskStrands[idx] != strand)
+                while (idx < startSortedMaskStarts.Length && strandMatters && startSortedMaskStrands[idx] != strand)
                     idx++;
-                if (idx < sortedMaskStarts.Length)
+                if (idx < startSortedMaskStarts.Length)
                 {
-                    int newEnd = Math.Min(End + Props.props.GeneFeature5PrimeExtension, sortedMaskStarts[idx] - 1);
+                    int newEnd = Math.Min(End + Props.props.GeneFeature5PrimeExtension, startSortedMaskStarts[idx] - 1);
                     extension = newEnd - End;
                     End = newEnd;
                 }
             }
+            //if (NonVariantName == "Snord1b" || NonVariantName == "1810032O08Rik" || NonVariantName == "RP23-313J14.6")
+            //    Console.WriteLine(extension + "bp, after: " + this);
             return extension;
         }
 
@@ -766,20 +770,20 @@ namespace Linnarsson.Dna
         /// Decrease length of flank(s) if there is a too close neighboring gene exon (in same orientation).
         /// </summary>
         /// <param name="sortedMaskStarts">starts of all gene's exons on chr</param>
-        /// <param name="sortedMaskEnds">ends of all gene's exons on chr</param>
+        /// <param name="endSortedMaskEnds">ends of all gene's exons on chr</param>
         /// <param name="sortedMaskStrands">strands of all gene's exons. true = '+', false = '-'</param>
-        public int AdjustFlanks(int[] sortedMaskStarts, bool[] startSortedMaskStrands, int[] sortedMaskEnds, bool[] endSortedMaskStrands)
+        public int AdjustFlanks(int[] sortedMaskStarts, bool[] startSortedMaskStrands, int[] endSortedMaskEnds, bool[] endSortedMaskStrands)
         {
             int idx;
             bool strand = (Strand == '+') ? true : false;
             bool strandMatters = (Props.props.DirectionalReads) ? true : false;
-            idx = Array.BinarySearch(sortedMaskEnds, Start - 1);
+            idx = Array.BinarySearch(endSortedMaskEnds, Start - 1);
             if (idx < 0) idx = ~idx;
             idx -= 1;
             while (idx >= 0 && strandMatters && endSortedMaskStrands[idx] != strand)
                 idx--;
             if (idx >= 0)
-                LeftFlankLength = Math.Min(LocusFlankLength, Start - sortedMaskEnds[idx]);
+                LeftFlankLength = Math.Min(LocusFlankLength, Start - endSortedMaskEnds[idx]);
             idx = Array.BinarySearch(sortedMaskStarts, End + 1);
             if (idx < 0) idx = ~idx;
             while (idx < sortedMaskStarts.Length && strandMatters && startSortedMaskStrands[idx] != strand)
@@ -954,12 +958,17 @@ namespace Linnarsson.Dna
         }
         public override string ToString()
         {
+            StringBuilder s = new StringBuilder();
+            s.Append("\nExonStarts=");
+            foreach (int start in ExonStarts)
+                s.AppendFormat("{0},", start);
+            s.Append("\nExonEnds=");
+            foreach (int end in ExonEnds)
+                s.AppendFormat("{0},", end + 1);
             return string.Format("ExtendedGeneFeature(Name={0}, TrName={1}, Chr={2}, Strand={3}, Start={4} End={5}, " +
-                                 "TrType={6}, TrId={7} Extension5Prime={8}\n" +
-                                 "ExonStarts={9}\nExonEnds={10})",
+                                 "TrType={6}, TrId={7} Extension5Prime={8}{9}",
                                  Name, TranscriptName, Chr, Strand, Start, End, 
-                                 TranscriptType, TranscriptID, Extension5Prime,
-                                 ExonStarts, ExonEnds);
+                                 TranscriptType, TranscriptID, Extension5Prime, s);
         }
 
     }

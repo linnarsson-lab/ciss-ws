@@ -6,9 +6,9 @@ using System.IO;
 namespace Linnarsson.Dna
 {
     /// <summary>
-    /// Determines whether non-directional multireads will be assigned to all or one random of alternative transcripts
+    /// Determines whether (non-directional) multireads will be assigned to all or one random of alternative transcripts
     /// </summary>
-    public enum MultiReadMappingType { All, Random };
+    public enum MultiReadMappingType { All, Random, Most5Prime };
     /// <summary>
     /// Used in the Props.ExtractionReadLimitType to allow a limit on the number of reads to extract from the .fq file(s)
     /// </summary>
@@ -105,8 +105,8 @@ namespace Linnarsson.Dna
         public string SampleLayoutFileFolder = ""; // If empty, the PlateLayout file is looked for in the project folder
         public string SampleLayoutFileFormat = "{0}_SampleLayout.txt"; // Formatter for sample layout filenames. Arg0 is project name
         public int TotalNumberOfAddedSpikeMolecules = 2500;
-        public bool UseMost5PrimeExonMapping = false; // if true, exonic multireads get only one single hit at the transcript with closest 5' end
-        public MultiReadMappingType DefaultExonMapping = MultiReadMappingType.All; // Decides non-directional multiread mapping method
+        public bool UseMost5PrimeExonMapping = true; // if true, exonic multireads get only one single hit at the transcript with closest 5' end
+        public MultiReadMappingType DefaultExonMapping = MultiReadMappingType.Random; // Decides non-directional multiread mapping method
         public bool ShowTranscriptSharingGenes = true;
         public bool SaveNonMappedReads = false; // Non-mapped reads from Bowtie may be stored in separate files
         public bool AnalyzeSeqUpstreamTSSite = false; // if true, will check if false reads were made by barcode matching in template
@@ -133,6 +133,8 @@ namespace Linnarsson.Dna
             get { if (m_BarcodesName == null) m_BarcodesName = DefaultBarcodeSet; return m_BarcodesName; }
             set { m_BarcodesName = value; m_Barcodes = null; }
         }
+
+        public MultiReadMappingType SelectedMappingType { get { return (DirectionalReads && UseMost5PrimeExonMapping) ? MultiReadMappingType.Most5Prime : DefaultExonMapping; } }
 
         public bool UseMaxAltMappings { get { return props.BowtieOptionPattern.Contains("MaxAlternativeMappings"); } }
 

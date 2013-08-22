@@ -661,9 +661,9 @@ namespace Linnarsson.Strt
                 string spResultFolderName = resultFolderName;
                 if (resultFolderName == "" || resultFolderName == null)
                     spResultFolderName = MakeDefaultResultFolderName(genome, projectFolder, projectName);
-                Console.WriteLine("Annotating {0} lanes of {1} against {2}. DirectionalReads={3} RPKM={4} UseMost5'Mapping={5}...", 
+                Console.WriteLine("Annotating {0} lanes of {1} against {2}.\nDirectionalReads={3} RPKM={4} SelectedMappingType={5}...", 
                               laneInfos.Count, projectName, genome.GetBowtieSplcIndexName(),
-                              props.DirectionalReads, props.UseRPKM, props.UseMost5PrimeExonMapping);
+                              props.DirectionalReads, props.UseRPKM, props.SelectedMappingType);
                 CreateBowtieMaps(genome, laneInfos);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(laneInfos);
                 ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, spResultFolderName, mapFiles);

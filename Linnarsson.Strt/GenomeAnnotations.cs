@@ -134,7 +134,7 @@ namespace Linnarsson.Strt
             C1DB db = new C1DB();
             string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
             Transcriptome tm = db.GetTranscriptome(genome.BuildVarAnnot);
-            int nModels = 0, nSpliceModels = 0, nExons = 0, nJunctions = 0, nSkipped = 0;
+            int nModels = 0, nSpliceModels = 0, nExons = 0;
             if (tm != null)
             {
                 foreach (Transcript tt in db.IterTranscripts(tm.TranscriptomeID.Value))
@@ -142,8 +142,7 @@ namespace Linnarsson.Strt
                     LocusFeature gf = AnnotationReader.GeneFeatureFromTranscript(tt);
                     int nParts = RegisterGeneFeature(gf);
                     if (nParts > 0) { nModels++; nExons += nParts; }
-                    else if (nParts < 0) { nSpliceModels++; nJunctions -= nParts; }
-                    else nSkipped++;
+                    else nSpliceModels -= nParts;
                 }
                 Console.WriteLine("Read {0} transcript models totalling {1} exons from database {2}.", nModels, nExons, tm.Name);
                 ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
@@ -152,11 +151,9 @@ namespace Linnarsson.Strt
                     {
                         int nParts = RegisterGeneFeature(spliceGf);
                         if (nParts > 0) { nModels++; nExons += nParts; }
-                        else if (nParts < 0) { nSpliceModels++; nJunctions -= nParts; }
-                        else nSkipped++;
+                        else nSpliceModels -= nParts;
                     }
-                Console.WriteLine("Added {0} splice junctions for {1} transcript models from {2}.",
-                                  nJunctions, nSpliceModels, STRTAnnotationsPath);
+                Console.WriteLine("Added splice junctions for {0} transcript models from {1}.", nSpliceModels, STRTAnnotationsPath);
             }
             else
             {
@@ -164,15 +161,12 @@ namespace Linnarsson.Strt
                 {
                     int nParts = RegisterGeneFeature(gf);
                     if (nParts > 0) { nModels++; nExons += nParts; }
-                    else if (nParts < 0) { nSpliceModels++; nJunctions -= nParts; }
-                    else nSkipped++;
+                    else nSpliceModels -= nParts;
                 }
-                Console.WriteLine("Read {0}:\n{1} transcript models totalling {2} exons, {3} with splices totalling {4} junctions.",
-                                   STRTAnnotationsPath, nModels, nExons, nSpliceModels, nJunctions);
+                Console.WriteLine("Read {0}:\n{1} transcript models totalling {2} exons, {3} with splices.",
+                                   STRTAnnotationsPath, nModels, nExons, nSpliceModels);
                 ModifyGeneFeatures(new GeneFeature5PrimeAndOverlapMarkUpModifier());
             }
-            if (nSkipped > 0)
-                Console.WriteLine("Skipped {0} transcripts/splice models", nSkipped);
             int trLen = geneFeatures.Sum(gf => gf.Value.GetTranscriptLength());
             Console.WriteLine("Total length of all transcript models (including overlaps): {0} bp.", trLen);
         }
@@ -251,7 +245,7 @@ namespace Linnarsson.Strt
         /// Adds a normal gene or a splice gene to the set of features
         /// </summary>
         /// <param name="gf"></param>
-        /// <returns># exons if gf represents a new gene, -#splices if gf represents a series of splice on the junction chr.</returns>
+        /// <returns># exons if gf represents a new gene, -1 if gf represents a series of splices on the junction chr.</returns>
         protected int RegisterGeneFeature(LocusFeature gf)
         {
             if (genome.Annotation == gf.Chr) // I.e., we are on the splice chromosome
@@ -264,7 +258,7 @@ namespace Linnarsson.Strt
                 // Link from artificial splice chromosome to real locus
                 ((SplicedGeneFeature)gf).BindToRealFeature(geneFeatures[gf.Name]);
                 AddGeneIntervals((SplicedGeneFeature)gf);
-                return -((SplicedGeneFeature)gf).JunctionCount;
+                return -1;
             }
             if (geneFeatures.ContainsKey(gf.Name))
             {

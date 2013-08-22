@@ -29,8 +29,6 @@ namespace Linnarsson.Dna
         private int[] exonEnds;
         private GeneFeature realFeature;
 
-        public int JunctionCount { get { return exonStarts.Length / 2; } }
-
         public SplicedGeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds,
                                 int[] offsets, int[] realExonIds, string[] spliceStrings)
             : base(name, chr, strand, exonStarts[0], exonEnds.Max())
@@ -75,5 +73,6 @@ namespace Linnarsson.Dna
         {
             return realFeature.GetTranscriptPos(hitMidPos + offsets[extraData]);
         }
+
     }
 }

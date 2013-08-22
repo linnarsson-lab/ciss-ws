@@ -330,6 +330,7 @@ namespace Linnarsson.Strt
             if (Props.props.LogMode)
                 Console.WriteLine("Calling TranscriptomeStatistics.FinishBarcode() Bc={0} #TagItems={1}", currentBcIdx, randomTagFilter.TagItemCount());
             randomTagFilter.FinishBarcode();
+            Console.WriteLine("#SPLC: {0} #ASPLC: {1}", TotalHitsByAnnotType[AnnotType.SPLC], TotalHitsByAnnotType[AnnotType.ASPLC]);
         }
 
         private void AddReadMappingsToTagItems(string mapFilePath)

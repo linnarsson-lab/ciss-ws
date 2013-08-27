@@ -1542,7 +1542,7 @@ namespace Linnarsson.Strt
                 foreach (string spikeName in labelingEfficiencyEstimator.efficiencyBySpike.Keys)
                 {
                     double expected = labelingEfficiencyEstimator.AddedCount(spikeName);
-                    effFile.Write("{0}\t{1}\t{2}", spikeName, Annotations.geneFeatures[spikeName].GetTranscriptLength(), (int)Math.Round(expected));
+                    effFile.Write("{0}\t{1}\t{2}", spikeName, Annotations.geneFeatures[spikeName].GetTranscriptLength(), expected);
                     for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                         effFile.Write("\t{0}", labelingEfficiencyEstimator.efficiencyBySpike[spikeName][bcIdx]);
                     effFile.WriteLine();

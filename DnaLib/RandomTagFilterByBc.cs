@@ -195,7 +195,14 @@ namespace Linnarsson.Strt
                 {
                     int hitStartPos = cPair.Key >> 1;
                     char strand = ((cPair.Key & 1) == 0) ? '+' : '-';
-                    item.Update(hitStartPos, strand, cPair.Value);
+                    try
+                    {
+                        item.Update(hitStartPos, strand, cPair.Value);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("ERROR: {0} at chr={1}, strand={2}, hitStart={3}, bcIdx={4}!", e.Message, chrId, strand, hitStartPos, bcIdx);
+                    }
                     item.splcToRealChrOffset = 0; // Need always reset this
                     yield return item;
                 }

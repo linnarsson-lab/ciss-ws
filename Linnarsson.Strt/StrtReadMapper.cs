@@ -624,7 +624,7 @@ namespace Linnarsson.Strt
             CreateBowtieMaps(genome, laneInfos);
         }
 
-        public static readonly string ANNOTATION_VERSION = "44";
+        public static readonly string ANNOTATION_VERSION = "45";
 
         /// <summary>
         /// Uses the SampleLayout file to decide which species(s) to run bowtie and annotate against.
@@ -774,7 +774,7 @@ namespace Linnarsson.Strt
             if (ts.GetNumMappedReads() == 0)
                 Console.WriteLine("WARNING: contigIds of reads do not seem to match with genome Ids.\nWas the Bowtie index made on a different genome or contig set?");
             Console.WriteLine("Totally {0} annotations: {1} expressed genes and {2} expressed repeat types.",
-                              ts.GetNumMappedReads(), annotations.GetNumExpressedGenes(), annotations.GetNumExpressedRepeats());
+                              ts.GetNumMappedReads(), annotations.GetNumExpressedTranscripts(), annotations.GetNumExpressedRepeats());
             Directory.CreateDirectory(outputFolder);
             Console.WriteLine("Saving to {0}...", outputFolder);
             string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);

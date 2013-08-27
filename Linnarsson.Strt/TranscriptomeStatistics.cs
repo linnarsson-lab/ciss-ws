@@ -56,10 +56,6 @@ namespace Linnarsson.Strt
         /// Number of hits to distinct annotations in each barcode (multireads can get a count for each mapping)
         /// </summary>
         int[] TotalHitsByBarcode;
-        /// <summary>
-        /// Estimates of labelling efficiency based on the known number of spike molecules added to the samples.
-        /// </summary>
-        double[] labelingEfficiencyByBc;
 
         int[] nNonAnnotatedItemsByBc;
         int[] nNonAnnotatedMolsByBc;
@@ -68,6 +64,8 @@ namespace Linnarsson.Strt
         /// Return the total number of hits (may be read or molecules depending on settings)
         /// </summary>
         int TotalHits { get { return TotalHitsByAnnotType.Sum(); } }
+
+        LabelingEfficiencyEstimator labelingEfficiencyEstimator;
 
         GenomeAnnotations Annotations;
         Barcodes barcodes;
@@ -152,13 +150,8 @@ namespace Linnarsson.Strt
             AnnotType.DirectionalReads = props.DirectionalReads;
             barcodes = props.Barcodes;
             Annotations = annotations;
-            DetermineMotifs = props.DetermineMotifs;
             AnalyzeAllGeneVariants = !Annotations.noGeneVariants;
-			motifs = new DnaMotif[barcodes.Count];
-			for(int i = 0; i < motifs.Length; i++)
-			{
-				motifs[i] = new DnaMotif(40);
-			}
+            SetupMotifs(props);
             TotalHitsByBarcode = new int[barcodes.Count];
             nNonAnnotatedItemsByBc = new int[barcodes.Count];
             nNonAnnotatedMolsByBc = new int[barcodes.Count];
@@ -170,7 +163,6 @@ namespace Linnarsson.Strt
             TotalHitsByAnnotType = new int[AnnotType.Count];
             nMappedReadsByBarcode = new int[barcodes.Count];
             nMappingsByBarcode = new int[barcodes.Count];
-            labelingEfficiencyByBc = new double[barcodes.Count];
             exonHitFeatures = new List<IFeature>(100);
             spliceChrId = Annotations.Genome.Annotation;
             randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
@@ -183,6 +175,18 @@ namespace Linnarsson.Strt
             minMismatchReadCountForSNPDetection = props.MinAltNtsReadCountForSNPDetection;
             nMaxMappings = props.MaxAlternativeMappings - 1;
             SetupGfsForRndTagProfile();
+            labelingEfficiencyEstimator = new LabelingEfficiencyEstimator(barcodes, PathHandler.GetCTRLConcPath(), props.TotalNumberOfAddedSpikeMolecules);
+            MappedTagItem.labelingEfficiencyEstimator = labelingEfficiencyEstimator;
+        }
+
+        private void SetupMotifs(Props props)
+        {
+            DetermineMotifs = props.DetermineMotifs;
+            motifs = new DnaMotif[barcodes.Count];
+            for (int i = 0; i < motifs.Length; i++)
+            {
+                motifs[i] = new DnaMotif(40);
+            }
         }
 
         private void SetupGfsForRndTagProfile()
@@ -374,12 +378,14 @@ namespace Linnarsson.Strt
             List<string> ctrlChrId = new List<string>();
             if (randomTagFilter.chrTagDatas.ContainsKey("CTRL"))
             { // First process CTRL chromosome to get the labeling efficiency
+                //TagItem.LabelingEfficiency = 1.0; // Needed to avoid overflow in real mol estimate calculator
                 ctrlChrId.Add("CTRL");
                 foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, true))
                     Annotate(mtitem);
-                double labelingEfficiency = Annotations.GetEfficiencyFromSpikes(currentBcIdx);
-                TagItem.LabelingEfficiency = labelingEfficiency;
-                labelingEfficiencyByBc[currentBcIdx] = labelingEfficiency;
+                labelingEfficiencyEstimator.CalcEfficiencyFromSpikes(Annotations.geneFeatures.Values, currentBcIdx);
+                //double labelingEfficiency = Annotations.GetEfficiencyFromSpikes(currentBcIdx);
+                //TagItem.LabelingEfficiency = labelingEfficiency;
+                //labelingEfficiencyByBc[currentBcIdx] = labelingEfficiency;
             }
             foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, false))
                 Annotate(mtitem);
@@ -458,7 +464,7 @@ namespace Linnarsson.Strt
             }
             int t = nMappingsByBarcode[currentBcIdx] - trSampleDepth;
             if (t > 0 && t <= molCount) // Sample if we just passed the sampling point with current MappedTagItem
-                sampledExpressedTranscripts.Add(Annotations.GetNumExpressedGenes(currentBcIdx));
+                sampledExpressedTranscripts.Add(Annotations.GetNumExpressedTranscripts(currentBcIdx));
         }
 
         /// <summary>
@@ -645,6 +651,7 @@ namespace Linnarsson.Strt
                 if (readsPerMoleculeHistogramGenes != null)
                     WriteGeneReadsPerMoleculeHistograms();
             }
+            WriteSpikeEfficiencies();
             WriteHitProfilesByBarcode();
             WriteRedundantExonHits();
             WriteASExonDistributionHistogram();
@@ -897,7 +904,6 @@ namespace Linnarsson.Strt
         private void WritePerLaneStats(StreamWriter xmlFile)
         {
             double meanFrac0 = perLaneStats.GetMeanOfLaneFracMeans();
-            //Console.WriteLine("meanFrac0={0}", meanFrac0);
             if (!double.IsNaN(meanFrac0))
             {
                 WritePerLaneStatsSection(xmlFile, "low", 0.0, meanFrac0);
@@ -1126,13 +1132,14 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  <features>");
             xmlFile.WriteLine("    <title>Overall detection of features</title>");
             if (!Annotations.noGeneVariants)
-                xmlFile.WriteLine("    <point x=\"Detected tr. variants\" y=\"{0}\" />", Annotations.GetNumExpressedGenes());
-            xmlFile.WriteLine("    <point x=\"Detected main tr. variants\" y=\"{0}\" />", Annotations.GetNumExpressedMainGeneVariants());
+                xmlFile.WriteLine("    <point x=\"Detected tr. variants\" y=\"{0}\" />", Annotations.GetNumExpressedTranscripts());
+            xmlFile.WriteLine("    <point x=\"Detected main tr. variants\" y=\"{0}\" />", Annotations.GetNumExpressedMainTranscriptVariants());
             int[] bcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
             int sumExprTr = 0;
             foreach (int bcIdx in bcIndexes)
-                sumExprTr += Annotations.geneFeatures.Values.Count(gf => gf.IsExpressed());
+                sumExprTr += Annotations.geneFeatures.Values.Count(gf => (!gf.IsSpike() && gf.IsExpressed(bcIdx)));
             xmlFile.WriteLine("    <point x=\"Mean per species well ({0})\" y=\"{1}\" />", bcIndexes.Length, (int)(sumExprTr / bcIndexes.Count()));
+            xmlFile.WriteLine("    <point x=\"Detected spikes\" y=\"{0}\" />", Annotations.GetNumExpressedSpikes());
             xmlFile.WriteLine("    <point x=\"Detected repeat classes\" y=\"{0}\" />", Annotations.GetNumExpressedRepeats());
             xmlFile.WriteLine("  </features>");
         }
@@ -1267,10 +1274,11 @@ namespace Linnarsson.Strt
             int nBins = 40;
             List<double[]> validBcCountsByGene = new List<double[]>();
             List<int> totalCountsByGene = new List<int>();
-            List<int> spikeIndices = new List<int>();
             int[] totalsByBarcode = new int[barcodes.Count];
             foreach (GeneFeature gf in Annotations.geneFeatures.Values)
             {
+                if (gf.IsSpike())
+                    continue;
                 double[] gfValidBcCounts = new double[barcodes.Count];
                 int gfTotal = 0;
                 foreach (int bcIdx in genomeBcIndexes)
@@ -1379,7 +1387,7 @@ namespace Linnarsson.Strt
                 WriteFeaturesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, TotalTranscriptMolsByBarcode,
                                     "TRNSR_DETECTING_" + molT.ToUpper(), "Transcript detecting " + molT + " by barcode", "tr. detecting " + molT);
-                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, Annotations.SampleBarcodeExpressedGenes(),
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, Annotations.GetByBcNumExpressedTranscripts(),
                                     "TRANSCRIPTS", "Detected transcripts by barcode", "detected transcripts");
             }
             if (barcodes.HasUMIs)
@@ -1388,8 +1396,8 @@ namespace Linnarsson.Strt
                 for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                 {
                     if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
-                    if (genomeBcIndexes.Contains(bcIdx)) xmlFile.Write("    <d>{0:0.###}</d>", labelingEfficiencyByBc[bcIdx]);
-                    else xmlFile.Write("    <d>({0:0.###})</d>", labelingEfficiencyByBc[bcIdx]);
+                    if (genomeBcIndexes.Contains(bcIdx)) xmlFile.Write("    <d>{0:0.###}</d>", labelingEfficiencyEstimator.LabelingEfficiencyByBc[bcIdx]);
+                    else xmlFile.Write("    <d>({0:0.###})</d>", labelingEfficiencyEstimator.LabelingEfficiencyByBc[bcIdx]);
                 }
                 xmlFile.WriteLine("\n    </barcodestat>");
             }
@@ -1521,6 +1529,25 @@ namespace Linnarsson.Strt
         public int GetNumMappedReads()
         {
             return nAnnotatedMappings;
+        }
+
+        private void WriteSpikeEfficiencies()
+        {
+            using (StreamWriter effFile = new StreamWriter(OutputPathbase + "_spike_efficiencies.tab"))
+            {
+                effFile.Write("Spike\tLength\tAdded#");
+                for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                    effFile.Write("\t" + barcodes.Seqs[bcIdx]);
+                effFile.WriteLine();
+                foreach (string spikeName in labelingEfficiencyEstimator.efficiencyBySpike.Keys)
+                {
+                    double expected = labelingEfficiencyEstimator.AddedCount(spikeName);
+                    effFile.Write("{0}\t{1}\t{2}", spikeName, Annotations.geneFeatures[spikeName].GetTranscriptLength(), (int)Math.Round(expected));
+                    for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                        effFile.Write("\t{0}", labelingEfficiencyEstimator.efficiencyBySpike[spikeName][bcIdx]);
+                    effFile.WriteLine();
+                }
+            }
         }
 
         private void WriteASExonDistributionHistogram()

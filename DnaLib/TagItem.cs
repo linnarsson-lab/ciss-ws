@@ -11,6 +11,7 @@ namespace Linnarsson.Dna
     public class MappedTagItem
     {
         public static int AverageReadLen;
+        public static LabelingEfficiencyEstimator labelingEfficiencyEstimator;
 
         private int cachedMolCount;
         private int cachedReadCount;
@@ -33,14 +34,21 @@ namespace Linnarsson.Dna
             this.m_HitStartPos = hitStartPos;
             this.m_Strand = strand;
             this.m_TagItem = tagItem;
-            cachedMolCount = m_TagItem.GetNumMolecules();
-            cachedReadCount = m_TagItem.GetNumReads();
-            cachedEstTrueMolCount = EstimateFromSaturatedLabels(cachedMolCount);
             cachedSNPCounts = m_TagItem.GetTotalSNPCounts(m_HitStartPos);
-        }
-        public static int EstimateFromSaturatedLabels(int numMolecules)
-        {
-            return (int)Math.Round(Math.Log(1 - numMolecules / (double)TagItem.nRndTags) / Math.Log(1 - TagItem.LabelingEfficiency / (double)TagItem.nRndTags));
+            cachedReadCount = m_TagItem.GetNumReads();
+
+            int observedMolCount = m_TagItem.GetNumMolecules(); // Possibly filter away mutated UMIs
+            if (observedMolCount < TagItem.nRndTags)
+            {
+                cachedMolCount = labelingEfficiencyEstimator.UMICollisionCompensate(observedMolCount); // Compensate for UMI collision effect
+                cachedEstTrueMolCount = labelingEfficiencyEstimator.EstimateTrueCount(observedMolCount);
+            }
+            else
+            {
+                cachedMolCount = labelingEfficiencyEstimator.UMICollisionCompensate(observedMolCount - 1);
+                cachedEstTrueMolCount = labelingEfficiencyEstimator.EstimateTrueCount(observedMolCount - 1);
+                throw new Exception("All UMIs are used up!");
+            }
         }
 
         public void SetTypeOfAnnotation(int annotType)
@@ -126,7 +134,6 @@ namespace Linnarsson.Dna
         /// Mirrors the number of rndTags from Barcodes
         /// </summary>
         public static int nRndTags;
-        public static double LabelingEfficiency;
 
         /// <summary>
         /// Counts number of reads in each rndTag

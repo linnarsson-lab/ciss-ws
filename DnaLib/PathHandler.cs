@@ -335,6 +335,11 @@ namespace Linnarsson.Dna
             return Path.Combine(Props.props.GenomesFolder, "SilverBulletCTRL.txt");
         }
 
+        public static string GetCTRLConcPath()
+        {
+            return Path.Combine(Props.props.GenomesFolder, "SilverBulletCTRLConc.txt");
+        }
+
         public static string MakeSafeFilename(string name)
         {
             string safeName = name;

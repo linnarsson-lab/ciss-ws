@@ -276,10 +276,10 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Return the total hit (read or molecule) count.
+        /// Return the total hit (read or molecule) count to the specified annotation type
         /// </summary>
         /// <param name="annotType">Selected annotation type</param>
-        /// <param name="excludeMasked">True to only count hits to regions without overlap with other genes</param>
+        /// <param name="excludeMasked">True => count only hits to regions without overlap with other genes</param>
         /// <returns></returns>
         public int GetTotalAnnotCounts(int annotType, bool excludeMasked)
         {
@@ -431,24 +431,41 @@ namespace Linnarsson.Strt
             return ChromosomeSequences[chr];
         }
 
-        public int GetNumExpressedGenes()
+        public int GetNumExpressedSpikes()
         {
-            return geneFeatures.Values.Count(g => g.IsExpressed());
+            return geneFeatures.Values.Count(g => (g.IsSpike() && g.IsExpressed()));
         }
-        public int GetNumExpressedGenes(int barcodeIdx)
+        /// <summary>
+        /// Exclude spikes
+        /// </summary>
+        /// <returns># of non-spike transcript models that have any exon/splice hit in any barcode</returns>
+        public int GetNumExpressedTranscripts()
         {
-            return geneFeatures.Values.Count(g => g.IsExpressed(barcodeIdx));
+            return geneFeatures.Values.Count(g => (!g.IsSpike() && g.IsExpressed()));
         }
-        public int GetNumExpressedMainGeneVariants()
+        /// <summary>
+        /// Exclude spikes
+        /// </summary>
+        /// <returns># of non-spike transcript models that have any exon/splice hit in specified barcode</returns>
+        public int GetNumExpressedTranscripts(int bcIdx)
         {
-            return geneFeatures.Values.Count(g => (g.IsMainVariant() && g.IsExpressed()));
+            return geneFeatures.Values.Count(g => (!g.IsSpike() && g.IsExpressed(bcIdx)));
+        }
+        /// <summary>
+        /// Exclude spikes
+        /// </summary>
+        /// <returns># of non-spike main transcript models that have any exon/splice hit in any barcode</returns>
+        public int GetNumExpressedMainTranscriptVariants()
+        {
+            return geneFeatures.Values.Count(g => (!g.IsSpike() && g.IsMainVariant() && g.IsExpressed()));
         }
         public int GetNumExpressedRepeats()
         {
             return repeatFeatures.Values.Count(r => r.GetTotalHits() > 0);
         }
+
         /// <summary>
-        /// Find largest number of exons for any gene
+        /// Find largest number of exons for any transcript model
         /// </summary>
         /// <returns></returns>
         public int MaxExonCount()
@@ -456,17 +473,28 @@ namespace Linnarsson.Strt
             return geneFeatures.Values.Max(gf => gf.ExonCount);
         }
 
-        public int[] SampleBarcodeExpressedGenes()
+        /// <summary>
+        /// Generate by-barcode array of # of expressed non-spike transcripts
+        /// </summary>
+        /// <returns></returns>
+        public int[] GetByBcNumExpressedTranscripts()
         {
             int[] nBarcodeExpressedGenes = new int[barcodes.Count];
             foreach (GeneFeature gf in geneFeatures.Values)
             {
-                for (int bCode = 0; bCode < nBarcodeExpressedGenes.Length; bCode++)
-                    if (gf.TranscriptHitsByBarcode[bCode] > 0) nBarcodeExpressedGenes[bCode]++;
+                if (gf.IsSpike())
+                    continue;
+                for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                    if (gf.IsExpressed(bcIdx)) nBarcodeExpressedGenes[bcIdx]++;
             }
             return nBarcodeExpressedGenes;
         }
 
+        /// <summary>
+        /// Iterate spikes or main transcript variants
+        /// </summary>
+        /// <param name="selectSpikes">true => iterate only spikes, false => iterate only non-spike main transcript models</param>
+        /// <returns></returns>
         public IEnumerable<GeneFeature> IterTranscripts(bool selectSpikes)
         {
             foreach (GeneFeature gf in geneFeatures.Values)
@@ -475,20 +503,12 @@ namespace Linnarsson.Strt
             yield break;
         }
 
-        public double GetEfficiencyFromSpikes(int bcIdx)
-        {
-            int nMols = 0;
-            foreach (GeneFeature gf in IterTranscripts(true))
-                nMols += gf.TranscriptHitsByBarcode[bcIdx];
-            return nMols / (double)Props.props.TotalNumberOfAddedSpikeMolecules;
-        }
-
         /// <summary>
-        /// Summarize the total count that stem from transcripts or spikes within each barcode.
+        /// Summarize the total exon/splice hit count that stem from transcripts or spikes within each barcode.
         /// Gene main variants contribute their Max count and secondary variants their Min count.
         /// </summary>
-        /// <param name="selectSpikes">false to count non-spikes, true for spikes</param>
-        /// <returns>Array of per-barcode total counts</returns>
+        /// <param name="selectSpikes">false to count only non-spikes, true for only spikes</param>
+        /// <returns>Array of per-barcode total hit counts</returns>
         public int[] GetTotalTranscriptCountsByBarcode(bool selectSpikes)
         {
             int[] UniqueGeneCountsByBarcode = new int[barcodes.Count];
@@ -496,8 +516,8 @@ namespace Linnarsson.Strt
                 if (gf.IsSpike() == selectSpikes)
                 {
                     int[] countsByBc = (gf.IsMainVariant())? gf.TranscriptHitsByBarcode : gf.NonConflictingTranscriptHitsByBarcode;
-                    for (int bcodeIdx = 0; bcodeIdx < UniqueGeneCountsByBarcode.Length; bcodeIdx++)
-                        UniqueGeneCountsByBarcode[bcodeIdx] += countsByBc[bcodeIdx];
+                    for (int bcIdx = 0; bcIdx < UniqueGeneCountsByBarcode.Length; bcIdx++)
+                        UniqueGeneCountsByBarcode[bcIdx] += countsByBc[bcIdx];
                 }
             return UniqueGeneCountsByBarcode;
         }
@@ -772,32 +792,32 @@ namespace Linnarsson.Strt
         }
         private string WriteExtendedDataTable(string fileName, string dataType, Func<GeneFeature, int[]> dataGetter)
         {
-            using (StreamWriter matrixFile = new StreamWriter(fileName))
+            using (StreamWriter writer = new StreamWriter(fileName))
             {
-                matrixFile.WriteLine("Length, total and per barcode {0} transcript hits for transcripts, and total length, total and per barcode (both sense & antisense) hits for repeat regions grouped by type.", dataType);
-                matrixFile.WriteLine("The totals under MinExonHits correspond to single reads, having a unique genome mapping.");
-                WriteExtraDataTableHeaders(matrixFile);
-                string matrixValType = barcodes.HasUMIs ? "(Values are molecule counts)" : "(Values are read counts)";
-                WriteBarcodeHeaders(matrixFile, 6, matrixValType);
-                matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\tExonHits");
+                writer.WriteLine("Length, total and per barcode {0} transcript hits for transcripts, and total length, total and per barcode (both sense & antisense) hits for repeat regions grouped by type.", dataType);
+                writer.WriteLine("The totals under MinExonHits correspond to single reads, having a unique genome mapping.");
+                WriteExtraDataTableHeaders(writer);
+                string valueType = barcodes.HasUMIs ? "(Values are molecule counts)" : "(Values are read counts)";
+                WriteBarcodeHeaders(writer, 6, valueType);
+                writer.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\tExonHits");
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     int ncHits = gf.NonConflictingTranscriptHitsByBarcode.Sum();
                     int maxHits = gf.TranscriptHitsByBarcode.Sum();
-                    matrixFile.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}",
+                    writer.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}",
                                      gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), ncHits, maxHits);
                     int[] data = dataGetter(gf);
                     foreach (int idx in speciesBcIndexes)
-                        matrixFile.Write("\t{0}", data[idx]);
-                    matrixFile.WriteLine();
+                        writer.Write("\t{0}", data[idx]);
+                    writer.WriteLine();
                 }
                 foreach (RepeatFeature rf in repeatFeatures.Values)
                 {
-                    matrixFile.Write("r_{0}\t\t\t\t{1}\t{2}\t{2}", rf.Name, rf.GetLocusLength(), rf.GetTotalHits());
+                    writer.Write("r_{0}\t\t\t\t{1}\t{2}\t{2}", rf.Name, rf.GetLocusLength(), rf.GetTotalHits());
                     foreach (int idx in speciesBcIndexes)
-                        matrixFile.Write("\t{0}", rf.TotalHitsByBarcode[idx]);
-                    matrixFile.WriteLine();
+                        writer.Write("\t{0}", rf.TotalHitsByBarcode[idx]);
+                    writer.WriteLine();
                 }
             }
             return fileName;
@@ -917,35 +937,35 @@ namespace Linnarsson.Strt
             bool molCounts = barcodes.HasUMIs;
             string ROrM = molCounts ? "Mols" : "Reads";
             string rpType = ROrM + (props.UseRPKM ? "PerKBases" : "") + (molCounts ? "Normalized" : "PerMillion");
-            string rpmPath = fileNameBase + "_" + rpType + ".tab";
-            using (StreamWriter matrixFile = new StreamWriter(rpmPath))
-            using (StreamWriter simpleTableFile = new StreamWriter(fileNameBase + "_" + rpType + "_simple.txt"))
+            string exprFile = fileNameBase + "_" + rpType + ".tab";
+            using (StreamWriter exprWriter = new StreamWriter(exprFile))
+            using (StreamWriter simpleWriter = new StreamWriter(fileNameBase + "_" + rpType + "_simple.txt"))
             {
                 string rpDescr = (molCounts ? "molecules " : "reads ") + (props.UseRPKM ? "per kilobase transcript and " : "") +
                                  (molCounts ? "normalized to the average across all samples" : "million");
-                matrixFile.WriteLine("Values in the table are " + rpDescr);
-                matrixFile.WriteLine("Note that added spikes and transcripts are normalized separately.");
+                exprWriter.WriteLine("Values in the table are " + rpDescr);
+                exprWriter.WriteLine("Note that added spikes and transcripts are normalized separately.");
                 if (props.DirectionalReads)
                 {
-                    matrixFile.WriteLine("The given estimated detection thresholds ('P') are calculated from 99% and 99.9% of the global distribution ");
-                    matrixFile.WriteLine("of AntiSense Exon hits, and the normalized values for main transcripts in each barcode.");
+                    exprWriter.WriteLine("The given estimated detection thresholds ('P') are calculated from 99% and 99.9% of the global distribution ");
+                    exprWriter.WriteLine("of AntiSense Exon hits, and the normalized values for main transcripts in each barcode.");
                 }
                 if (!props.UseRPKM)
-                    matrixFile.WriteLine("Single{0} is the value (in that barcode and spike or sample section) that corresponds to a single {1}.",
+                    exprWriter.WriteLine("Single{0} is the value (in that barcode and spike or sample section) that corresponds to a single {1}.",
                                          (molCounts ? "Mol" : "Read"), (molCounts ? "molecule" : "read"));
-                WriteBarcodeHeaders(matrixFile, (props.DirectionalReads ? 9 : 7), "");
-                matrixFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\t{0}Average\tCV", (props.DirectionalReads ? "P=0.01\tP=0.001\t" : ""));
-                WriteNormalizedExprSection(matrixFile, true, null);
-                matrixFile.WriteLine();
+                WriteBarcodeHeaders(exprWriter, (props.DirectionalReads ? 9 : 7), "");
+                exprWriter.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\t{0}Average\tCV", (props.DirectionalReads ? "P=0.01\tP=0.001\t" : ""));
+                WriteNormalizedExprSection(exprWriter, true, null);
+                exprWriter.WriteLine();
                 foreach (int idx in barcodes.GenomeAndEmptyBarcodeIndexes(genome))
-                    simpleTableFile.Write("\t{0}", barcodes.GetWellId(idx));
-                simpleTableFile.WriteLine();
-                WriteNormalizedExprSection(matrixFile, false, simpleTableFile);
+                    simpleWriter.Write("\t{0}", barcodes.GetWellId(idx));
+                simpleWriter.WriteLine();
+                WriteNormalizedExprSection(exprWriter, false, simpleWriter);
             }
-            return rpmPath;
+            return exprFile;
         }
 
-        private void WriteNormalizedExprSection(StreamWriter matrixFile, bool selectSpikes, StreamWriter simpleTableFile)
+        private void WriteNormalizedExprSection(StreamWriter exprWriter, bool selectSpikes, StreamWriter simpleWriter)
         {
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             int[] totalByBarcode = GetTotalTranscriptCountsByBarcode(selectSpikes);
@@ -960,21 +980,21 @@ namespace Linnarsson.Strt
             }
             double[] normFactors = CalcNormalizationFactors(totalByBarcode);
             string normName = (props.UseRPKM) ? "Normalizer" : (barcodes.HasUMIs) ? "SingleMol" : "SingleRead";
-            matrixFile.Write("{0}\t\t\t\t\t\t\t", normName);
-            if (props.DirectionalReads) matrixFile.Write("\t\t");
+            exprWriter.Write("{0}\t\t\t\t\t\t\t", normName);
+            if (props.DirectionalReads) exprWriter.Write("\t\t");
             foreach (int idx in speciesBcIndexes)
-                matrixFile.Write("\t{0:G6}", normFactors[idx]);
-            matrixFile.WriteLine();
+                exprWriter.Write("\t{0:G6}", normFactors[idx]);
+            exprWriter.WriteLine();
             foreach (GeneFeature gf in IterTranscripts(selectSpikes))
             {
                 double trLenFactor = (props.UseRPKM) ? gf.GetTranscriptLength() : 1000.0;
-                matrixFile.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
+                exprWriter.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
                                  gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), gf.GetTranscriptHits());
                 if (props.DirectionalReads)
                 {
                     string RPkbMThres01 = string.Format("{0:G6}", RPkbM99 * gf.GetNonMaskedTranscriptLength() / trLenFactor);
                     string RPkbMThres001 = string.Format("{0:G6}", RPkbM999 * gf.GetNonMaskedTranscriptLength() / trLenFactor);
-                    matrixFile.Write("\t{0}\t{1}", RPkbMThres01, RPkbMThres001);
+                    exprWriter.Write("\t{0}\t{1}", RPkbMThres01, RPkbMThres001);
                 }
                 StringBuilder sb = new StringBuilder();
                 DescriptiveStatistics ds = new DescriptiveStatistics();
@@ -987,9 +1007,9 @@ namespace Linnarsson.Strt
                 string CV = "N/A";
                 if (ds.Count > 2 && gf.GetTranscriptHits() > 0)
                     CV = string.Format("{0:G6}", (ds.StandardDeviation() / ds.Mean()));
-                matrixFile.WriteLine("\t{0:G6}\t{1}{2}", ds.Mean(), CV, sb.ToString());
-                if (simpleTableFile != null)
-                    simpleTableFile.WriteLine(gf.Name + sb.ToString());
+                exprWriter.WriteLine("\t{0:G6}\t{1}{2}", ds.Mean(), CV, sb.ToString());
+                if (simpleWriter != null)
+                    simpleWriter.WriteLine(gf.Name + sb.ToString());
             }
         }
 

@@ -22,6 +22,7 @@ namespace CmdSilverBullet
         public string annotation = "UCSC";
         public string resultFolder;
         public string projectFolder;
+        public int totalSpikeMols = Props.props.TotalNumberOfAddedSpikeMolecules;
 
         public QXMAOptions(string[] args)
         {
@@ -80,13 +81,15 @@ namespace CmdSilverBullet
                     default:
                         if (opt.StartsWith("-o"))
                             resultFolder = opt.Substring(2);
+                        else if (opt.StartsWith("-c"))
+                            totalSpikeMols = int.Parse(opt.Substring(2));
                         else if (Array.IndexOf(allBcSetNames, opt) >= 0)
                             barcodesName = opt;
                         else if (Array.IndexOf(new string[] { "hs", "hg", "mm", "gg", "ce", "cg" }, opt.ToLower()) >= 0)
                             speciesAbbrev = opt.ToLower();
                         else if ((opt[0] == 'a' || opt[0] == 's') && Array.IndexOf(new string[] { "UCSC", "VEGA", "ENSE" }, opt.Substring(1)) >= 0)
                         {
-                            geneVariantsChar = opt.Substring(0,1);
+                            geneVariantsChar = opt.Substring(0, 1);
                             annotation = opt.Substring(1);
                         }
                         else if (opt.Length >= 3 && Array.IndexOf(new string[] { "hs", "hg", "mm", "gg", "ce", "cg" }, opt.Substring(0, 2).ToLower()) >= 0

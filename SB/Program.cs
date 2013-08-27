@@ -41,6 +41,7 @@ namespace CmdSilverBullet
                             props.DirectionalReads = options.directionalReads;
                             props.UseRPKM = options.useRPKM;
                             props.BarcodesName = options.barcodesName;
+                            props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
                             projectFolder = options.projectFolder;
                             mapper = new StrtReadMapper(props);
                             List<LaneInfo> extrInfos = mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
@@ -80,6 +81,7 @@ namespace CmdSilverBullet
                             options = new QXMAOptions(args);
                             props.DirectionalReads = options.directionalReads;
                             props.UseRPKM = options.useRPKM;
+                            props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
                             mapper = new StrtReadMapper(props);
                             mapper.MapAndAnnotate(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
                                                             options.annotation, options.resultFolder);
@@ -234,11 +236,11 @@ namespace CmdSilverBullet
             }
             Console.WriteLine("\nUsage:\n\n" +
                 "SB.exe rf [rpkm] <Build> [<Annot>] <Outfile>       -    load transcripts and dump to refFlat-like file.\n" +
-                "SB.exe q [<RunLaneSpec>]+ [rpkm] <Bc> [<Build>|<Idx>] [all|single] <ProjectPath>\n" +
+                "SB.exe q [<RunLaneSpec>]+ [rpkm] <Bc> [-cN] [<Build>|<Idx>] [all|single] <ProjectPath>\n" +
                 "      extract data, run Bowtie, and annotate in one sweep using default parameters.\n" +
                 "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +
                 "SB.exe x [<RunLaneSpec>]+ <Bc> [-Lt n] <ProjectPath>  -   extract data from the reads folder.\n" +
-                "SB.exe ab [-oNAME] [rpkm|rpm|multimap|5primemap|all|single]* [<Build>|<Idx>] <ProjectPath>|<ExtractedPath>\n" +
+                "SB.exe ab [-oNAME] [rpkm|rpm|multimap|5primemap|all|single]* [-cN] [<Build>|<Idx>] <ProjectPath>|<ExtractedPath>\n" +
                 "      annotate data from .map files in latest/specified Extracted folder.\n" +
                 "      you can give a non-standard output folder name using -o\n" +
                 "      Use 'all'/'single' to force analysis of all/single transcript variants.\n" +
@@ -262,6 +264,7 @@ namespace CmdSilverBullet
                 "<Idx>   Specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_VEGA'.\n" +
                 "<Bc>    'v2' (96x6-mer), 'v4' (48x6-mer, random tags), 'v4r' (no random tags), or 'no' for no barcodes.\n" +
                 "-Lt n   Limit number of reads used to n. t is one of TotalReads, ValidReads, TotalReadsPerBc, ValidReadsPerBc\n" +
+                "-cN     Total # of spike molecules. Individual fractions are taken from 2nd column of " + PathHandler.GetCTRLConcPath() + "\n" + 
                 "Define other barcode sets in 'Bc.barcodes' files in the barcodes directory in the project folder\n" +
                 "<readLen> Sequence length after barcode and GGG. For idx it should be 0-5 below actual data length.\n" +
                 "Paths are per default rooted in the data directory, so that e.g. 'L006' is enough as a ProjectPath.\n"

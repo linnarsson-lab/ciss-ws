@@ -13,18 +13,31 @@ namespace Linnarsson.Dna
         double UMICount;
         double currentBcLabelingEfficiency = 1.0; // init to 1.0 to avoid initial math overflow on first spike set
 
+        /// <summary>
+        /// Average efficiency of spike detection (UMI-corrected observed / true added) in each barcode
+        /// </summary>
         private double[] m_LabelingEfficiencyByBc;
         public double[] LabelingEfficiencyByBc { get { return m_LabelingEfficiencyByBc; } private set { m_LabelingEfficiencyByBc = value; } }
 
+        /// <summary>
+        /// Efficiency of detection of each individual spike (UMI-corrected observed / true added) in each barcode
+        /// </summary>
         public Dictionary<string, double[]> efficiencyBySpike = new Dictionary<string, double[]>();
 
         private Dictionary<string, double> fractionOfSpikeMols = new Dictionary<string, double>();
+
+        /// <summary>
+        /// Maximum number of UMIs used anywhere in each barcode
+        /// </summary>
+        public int[] maxOccupiedUMIsByBc;
+        private int currentMaxOccupiedUMIs = 0;
 
         public LabelingEfficiencyEstimator(Barcodes barcodes, string spikeConcFile, int totalAddedSpikeMols)
         {
             this.totalAddedSpikeMols = totalAddedSpikeMols;
             UMICount = barcodes.UMICount;
             LabelingEfficiencyByBc = new double[barcodes.Count];
+            maxOccupiedUMIsByBc = new int[barcodes.Count];
             using (StreamReader reader = spikeConcFile.OpenRead())
             {
                 string line;
@@ -62,13 +75,22 @@ namespace Linnarsson.Dna
             LabelingEfficiencyByBc[bcIdx] = currentBcLabelingEfficiency;
         }
 
+        public void FinishBarcode(int bcIdx)
+        {
+            maxOccupiedUMIsByBc[bcIdx] = currentMaxOccupiedUMIs;
+            currentMaxOccupiedUMIs = 0;
+        }
+
         /// <summary>
         /// Calculate the estimated true number of molecule, taking efficiency and UMI collisions into account. Exhaustion of library assumed.
+        /// Also keep track of the maximal number of UMIS occupied.
         /// </summary>
         /// <param name="numMolecules">Number of observed UMIs</param>
         /// <returns></returns>
         public int EstimateTrueCount(int numMolecules)
         {
+            if (numMolecules > currentMaxOccupiedUMIs)
+                currentMaxOccupiedUMIs = numMolecules;
             return (int)Math.Round(Math.Log(1.0 - numMolecules / UMICount) / Math.Log(1.0 - currentBcLabelingEfficiency / UMICount));
         }
 

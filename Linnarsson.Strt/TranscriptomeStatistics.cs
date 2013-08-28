@@ -334,6 +334,7 @@ namespace Linnarsson.Strt
             if (Props.props.LogMode)
                 Console.WriteLine("Calling TranscriptomeStatistics.FinishBarcode() Bc={0} #TagItems={1}", currentBcIdx, randomTagFilter.TagItemCount());
             randomTagFilter.FinishBarcode();
+            labelingEfficiencyEstimator.FinishBarcode(currentBcIdx);
             //Console.WriteLine("#SPLC: {0} #ASPLC: {1}", TotalHitsByAnnotType[AnnotType.SPLC], TotalHitsByAnnotType[AnnotType.ASPLC]);
         }
 
@@ -378,14 +379,10 @@ namespace Linnarsson.Strt
             List<string> ctrlChrId = new List<string>();
             if (randomTagFilter.chrTagDatas.ContainsKey("CTRL"))
             { // First process CTRL chromosome to get the labeling efficiency
-                //TagItem.LabelingEfficiency = 1.0; // Needed to avoid overflow in real mol estimate calculator
                 ctrlChrId.Add("CTRL");
                 foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, true))
                     Annotate(mtitem);
                 labelingEfficiencyEstimator.CalcEfficiencyFromSpikes(Annotations.geneFeatures.Values, currentBcIdx);
-                //double labelingEfficiency = Annotations.GetEfficiencyFromSpikes(currentBcIdx);
-                //TagItem.LabelingEfficiency = labelingEfficiency;
-                //labelingEfficiencyByBc[currentBcIdx] = labelingEfficiency;
             }
             foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, false))
                 Annotate(mtitem);
@@ -1384,6 +1381,8 @@ namespace Linnarsson.Strt
                                     "NON_ANNOTATED_" + molT.ToUpper(), "Non-annotated " + molT + " by barcode", "non-annotated " + molT);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, TotalHitsByBarcode,
                                     "HITS", "Total annotated hits by barcode", "annotated hits");
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, labelingEfficiencyEstimator.maxOccupiedUMIsByBc,
+                                    "MAX_OCCUPIED_UMIS", "Maximum occupied UMIs by barcode", "occupied UMIs");
                 WriteFeaturesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, TotalTranscriptMolsByBarcode,
                                     "TRNSR_DETECTING_" + molT.ToUpper(), "Transcript detecting " + molT + " by barcode", "tr. detecting " + molT);

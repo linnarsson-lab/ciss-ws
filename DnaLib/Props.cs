@@ -121,6 +121,7 @@ namespace Linnarsson.Dna
         public ReadLimitType ExtractionReadLimitType;
         public int ExtractionReadLimit = 0;
         public string BackupDestinationFolder = "hiseq@130.237.142.75:/mnt/davidson/hiseq/data_reads/";
+        public int MappingsBySpikeReadsSampleDist = 0; // Set > 0 to sample per-barcode curves of # unique mappings as fn. of # processed spike reads
         public bool LogMode = false;
 
         private Barcodes m_Barcodes;

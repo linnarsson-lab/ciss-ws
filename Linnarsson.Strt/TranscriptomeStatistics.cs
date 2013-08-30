@@ -125,6 +125,9 @@ namespace Linnarsson.Strt
         Dictionary<int, List<int>> sampledUniqueMoleculesByBcIdx = new Dictionary<int, List<int>>();
         Dictionary<int, List<int>> sampledUniqueHitPositionsByBcIdx = new Dictionary<int, List<int>>();
 
+        bool analyzeMappingsBySpikeReads = false;
+        private List<int>[] mappingsBySpikeReadsSamples;
+
         private UpstreamAnalyzer upstreamAnalyzer;
         private PerLaneStats perLaneStats;
 
@@ -177,6 +180,16 @@ namespace Linnarsson.Strt
             SetupGfsForRndTagProfile();
             labelingEfficiencyEstimator = new LabelingEfficiencyEstimator(barcodes, PathHandler.GetCTRLConcPath(), props.TotalNumberOfAddedSpikeMolecules);
             MappedTagItem.labelingEfficiencyEstimator = labelingEfficiencyEstimator;
+            if (props.MappingsBySpikeReadsSampleDist > 0)
+                InitMappingsBySpikeReadsSampling();
+        }
+
+        private void InitMappingsBySpikeReadsSampling()
+        {
+            analyzeMappingsBySpikeReads = true;
+            mappingsBySpikeReadsSamples = new List<int>[barcodes.Count];
+            for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                mappingsBySpikeReadsSamples[bcIdx] = new List<int>();
         }
 
         private void SetupMotifs(Props props)
@@ -344,7 +357,7 @@ namespace Linnarsson.Strt
             MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, barcodes);
             if (mapFileReader == null)
                 throw new Exception("Unknown read map file type : " + mapFilePath);
-            int nMappedReadsByFile = 0;
+            int nMappedReadsByFile = 0, nCTRLMappedReads = 0;
             perLaneStats.BeforeFile(currentBcIdx, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx),
                                     randomTagFilter.GetNumDistinctMappings());
             foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
@@ -355,7 +368,12 @@ namespace Linnarsson.Strt
                     continue;
                 }
                 if (mappingAdder.Add(mrm))
+                {
                     nExonAnnotatedReads++;
+                    if (analyzeMappingsBySpikeReads && mrm[0].Chr == "CTRL")
+                        if (++nCTRLMappedReads % Props.props.MappingsBySpikeReadsSampleDist == 0)
+                            mappingsBySpikeReadsSamples[currentBcIdx].Add(randomTagFilter.GetNumDistinctMappings());
+                }
                 if (snpRndTagVerifier != null)
                     snpRndTagVerifier.Add(mrm);
                 if ((++nMappedReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
@@ -648,6 +666,7 @@ namespace Linnarsson.Strt
                 if (readsPerMoleculeHistogramGenes != null)
                     WriteGeneReadsPerMoleculeHistograms();
             }
+            WriteMappingsBySpikeReads();
             WriteSpikeEfficiencies();
             WriteHitProfilesByBarcode();
             WriteRedundantExonHits();
@@ -674,6 +693,28 @@ namespace Linnarsson.Strt
                 rndTagProfileByGeneWriter.Dispose();
             }
             //WriteLogStats(fileNameBase); // Only for debugging
+        }
+
+        private void WriteMappingsBySpikeReads()
+        {
+            if (Props.props.MappingsBySpikeReadsSampleDist == 0)
+                return;
+            using (StreamWriter mbsFile = new StreamWriter(OutputPathbase + "_mappings_by_processed_spike_reads.tab"))
+            {
+                mbsFile.WriteLine("Development of number of detected unique exon mappings as function of number of spike reads processed in each well.");
+                mbsFile.Write("Barcode\t");
+                int maxNSamples = mappingsBySpikeReadsSamples.Max(v => v.Count);
+                for (int i = 1; i <= maxNSamples; i++)
+                    mbsFile.Write("\t{0}", i * Props.props.MappingsBySpikeReadsSampleDist);
+                mbsFile.WriteLine();
+                for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                {
+                    mbsFile.Write(barcodes.Seqs[bcIdx]);
+                    foreach (int v in mappingsBySpikeReadsSamples[bcIdx])
+                        mbsFile.Write("\t{0}", v);
+                    mbsFile.WriteLine();
+                }
+            }
         }
 
         /// <summary>

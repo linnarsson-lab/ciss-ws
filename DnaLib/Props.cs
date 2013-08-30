@@ -73,6 +73,7 @@ namespace Linnarsson.Dna
         public string[] GenesToShowRndTagProfile = new string[] { "Sox2" ,"Actb", "Nanog" };
         public int[] SelectedBcWiggleAnnotations;
         public bool SnpRndTagVerification = false;
+        public string SnpRndTagVerificationChr = "19"; // Set to id of a specific chr to analyze, otherwise ""
         public int MinPhredScoreInRandomTag = 17;
         public int MinMoleculesToTestSnp = 4; // SNP analysis minimum coverage to test a potential SNP positions (when using random labels)
         public int MinReadsToTestSnp = 10; // SNP analysis minimum coverage to test a potential SNP positions (without random labeled barcodes)

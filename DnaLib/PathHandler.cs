@@ -260,12 +260,14 @@ namespace Linnarsson.Dna
             inputFolder = GetRooted(inputFolder);
             string latestExtracted = inputFolder;
             if (!inputFolder.Contains("_ExtractionVer"))
-            {
+            { // inputFolder was a project folder
+                string projectName = Path.GetFileName(inputFolder);
+                string pat = projectName + extractedFolderMatchPattern;
                 List<string> extractedDirs = new List<string>();
                 string[] allDirs = Directory.GetDirectories(inputFolder);
                 foreach (string dir in allDirs)
                 {
-                    Match m = Regex.Match(dir, extractedFolderMatchPattern);
+                    Match m = Regex.Match(dir, pat);
                     if (m.Success) extractedDirs.Add(dir);
                 }
                 if (extractedDirs.Count == 0)

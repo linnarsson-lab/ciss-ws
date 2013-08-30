@@ -242,9 +242,9 @@ namespace Linnarsson.Strt
         private Dictionary<string, SnpRndTagVerChrData> dataByChr = new Dictionary<string, SnpRndTagVerChrData>();
         private Barcodes barcodes;
         public static int minMismatchPhredAsciiVal = 15 + 33; // Minimum quality of the SNP Nt for useful reads
-        public static int minReads = 10; // Minumum number of reads in a position-barcode-strand to be worth analyzing
-        public static int nMaxUsedRndTags = 50; // Errors may occur at rnd label saturation if two different molecules end up in the same label
+        public static int minReads = 5; // Minumum number of reads in a position-barcode-strand to be worth analyzing
         public static int snpMargin = 4; // Alignments with mismatches close to end can really be a splice junction at end of read
+        public static int nMaxUsedRndTags; // Errors may occur at rnd label saturation if two different molecules end up in the same label
 
         /// <summary>
         /// </summary>
@@ -252,8 +252,12 @@ namespace Linnarsson.Strt
         /// <param name="genome">Used to find the GVF file that defines expressed SNP positions</param>
         public SnpRndTagVerifier(Props props, StrtGenome genome)
         {
+            string specificChrId = null;
+            if (props.SnpRndTagVerificationChr != "" && props.SnpRndTagVerificationChr != "all")
+                specificChrId = props.SnpRndTagVerificationChr.StartsWith("chr")? props.SnpRndTagVerificationChr.Substring(3) : props.SnpRndTagVerificationChr;            
             int n = 0;
             barcodes = props.Barcodes;
+            nMaxUsedRndTags = barcodes.UMICount / 5;
             string GVFPath = PathHandler.GetGVFFile(genome);
             if (GVFPath == "")
                 Console.WriteLine("Can not find a GVF file for {0}. Skipping SNP verification.", genome.Build);
@@ -261,7 +265,7 @@ namespace Linnarsson.Strt
             {
                 foreach (GVFRecord rec in GFF3CompatibleFile.Iterate(GVFPath, new GVFRecord()))
                 {
-                    if (rec.type == "SNV" && rec.AnyTranscriptEffect())
+                    if (rec.type == "SNV" && (specificChrId == null || specificChrId == rec.seqid) && rec.AnyTranscriptEffect())
                     {
                         n++;
                         SnpRndTagVerChrData chrData;

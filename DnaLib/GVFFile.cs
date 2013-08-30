@@ -17,7 +17,7 @@ namespace Linnarsson.Dna
 
     public class GFF3Record : IGFF3Record
     {
-        public string seqid;
+        public string seqid; // Chromosome id without initial "chr"
         public string source;
         public string type;
         public int start; // 1-based

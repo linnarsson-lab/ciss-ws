@@ -850,7 +850,7 @@ namespace Linnarsson.Strt
             if (!barcodes.HasUMIs) return;
             xmlFile.WriteLine("  <randomtagfrequence>");
             xmlFile.WriteLine("    <title>Number of reads detected in each random tag</title>");
-            xmlFile.WriteLine("    <xtitle>Random tag index (AAAA...TTTT)</xtitle>");
+            xmlFile.WriteLine("    <xtitle>Random tag index (AA...-TT...)</xtitle>");
             for (int i = 0; i < randomTagFilter.nReadsByRandomTag.Length; i++)
                 xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", barcodes.MakeUMISeq(i), randomTagFilter.nReadsByRandomTag[i]);
             xmlFile.WriteLine("  </randomtagfrequence>");
@@ -1382,7 +1382,7 @@ namespace Linnarsson.Strt
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, TotalHitsByBarcode,
                                     "HITS", "Total annotated hits by barcode", "annotated hits");
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, labelingEfficiencyEstimator.maxOccupiedUMIsByBc,
-                                    "MAX_OCCUPIED_UMIS", "Maximum occupied UMIs by barcode", "occupied UMIs");
+                                    "MAX_OCCUPIED_UMIS", "Maximum occupied UMIs by barcode", "maximum occupied UMIs");
                 WriteFeaturesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, TotalTranscriptMolsByBarcode,
                                     "TRNSR_DETECTING_" + molT.ToUpper(), "Transcript detecting " + molT + " by barcode", "tr. detecting " + molT);

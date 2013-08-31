@@ -38,7 +38,11 @@ namespace Linnarsson.Dna
             cachedReadCount = m_TagItem.GetNumReads();
 
             int observedMolCount = m_TagItem.GetNumMolecules(); // Possibly filter away mutated UMIs
-            if (observedMolCount < TagItem.nRndTags)
+            if (TagItem.nRndTags == 1)
+            {
+                cachedEstTrueMolCount = cachedMolCount = observedMolCount;
+            }
+            else if (observedMolCount < TagItem.nRndTags)
             {
                 cachedMolCount = labelingEfficiencyEstimator.UMICollisionCompensate(observedMolCount); // Compensate for UMI collision effect
                 cachedEstTrueMolCount = labelingEfficiencyEstimator.EstimateTrueCount(observedMolCount);

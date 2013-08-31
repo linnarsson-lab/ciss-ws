@@ -252,9 +252,12 @@ namespace Linnarsson.Strt
         /// <param name="genome">Used to find the GVF file that defines expressed SNP positions</param>
         public SnpRndTagVerifier(Props props, StrtGenome genome)
         {
-            string specificChrId = null;
+            string[] specificChrIds = null;
             if (props.SnpRndTagVerificationChr != "" && props.SnpRndTagVerificationChr != "all")
-                specificChrId = props.SnpRndTagVerificationChr.StartsWith("chr")? props.SnpRndTagVerificationChr.Substring(3) : props.SnpRndTagVerificationChr;            
+            {
+                specificChrIds = props.SnpRndTagVerificationChr.Split(',');
+                Array.ForEach(specificChrIds, id => { if (id.StartsWith("chr")) id = id.Substring(3); });
+            }
             int n = 0;
             barcodes = props.Barcodes;
             nMaxUsedRndTags = barcodes.UMICount / 5;
@@ -263,9 +266,10 @@ namespace Linnarsson.Strt
                 Console.WriteLine("Can not find a GVF file for {0}. Skipping SNP verification.", genome.Build);
             else
             {
+                Console.WriteLine("Reading SNPs for {0} chromosomes from {1}...", specificChrIds.Length, GVFPath);
                 foreach (GVFRecord rec in GFF3CompatibleFile.Iterate(GVFPath, new GVFRecord()))
                 {
-                    if (rec.type == "SNV" && (specificChrId == null || specificChrId == rec.seqid) && rec.AnyTranscriptEffect())
+                    if (rec.type == "SNV" && (specificChrIds == null || specificChrIds.Contains(rec.seqid)) && rec.AnyTranscriptEffect())
                     {
                         n++;
                         SnpRndTagVerChrData chrData;
@@ -277,7 +281,8 @@ namespace Linnarsson.Strt
                         chrData.AddSnpPos(rec.start - 1);
                     }
                 }
-                Console.WriteLine("Registered {0} SNPs to verify read from GVF file.", n);
+                string chrtxt = (specificChrIds != null) ? string.Format(" for chromosomes {0}", props.SnpRndTagVerificationChr) : "";
+                Console.WriteLine("Registered {0} SNPs{1} for verification of UMI-molecule specificity.", n, chrtxt);
             }
         }
 

@@ -305,10 +305,10 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="hits"></param>
         /// <param name="strand">'+', '-', or '.' for both strands</param>
-        /// <param name="binSize"></param>
+        /// <param name="binSize">size of bins</param>
         /// <param name="readLen">takes care of that hits are mid positions, not start positions of reads</param>
-        /// <param name="starts">starts of intervals</param>
-        /// <param name="ends">ends of intervals</param>
+        /// <param name="starts">starts of intervals from which data should be collected</param>
+        /// <param name="ends">ends of intervals from which data should be collected</param>
         /// <param name="offset">reference point for intervals. Has to be consistent with pos in MarkHit() calls</param>
         /// <param name="bcIdx">Specific barcodeIdx or -1 for summation over all</param>
         /// <returns>histogram of counts</returns>

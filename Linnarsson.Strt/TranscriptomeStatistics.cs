@@ -702,7 +702,7 @@ namespace Linnarsson.Strt
             using (StreamWriter mbsFile = new StreamWriter(OutputPathbase + "_mappings_by_processed_spike_reads.tab"))
             {
                 mbsFile.WriteLine("Development of number of detected unique exon mappings as function of number of spike reads processed in each well.");
-                mbsFile.Write("Barcode\t");
+                mbsFile.Write("Barcode\\#Spikes");
                 int maxNSamples = mappingsBySpikeReadsSamples.Max(v => v.Count);
                 for (int i = 1; i <= maxNSamples; i++)
                     mbsFile.Write("\t{0}", i * Props.props.MappingsBySpikeReadsSampleDist);
@@ -1339,6 +1339,8 @@ namespace Linnarsson.Strt
 
         private double[] CalcCVs(int[] genomeBcIndexes, int nPairs, List<double[]> validBcCountsByGene, List<int> totalCountsByGene, int[] totalsByBarcode)
         {
+            if (validBcCountsByGene.Count == 0 || totalCountsByGene.Count == 0)
+                return null;
             Linnarsson.Mathematics.Sort.HeapSort(totalCountsByGene, validBcCountsByGene);
             validBcCountsByGene.Reverse(); // Get indices of genes in order of most->least expressed
             int nGenes = Math.Min(validBcCountsByGene.Count - 1, nPairs);

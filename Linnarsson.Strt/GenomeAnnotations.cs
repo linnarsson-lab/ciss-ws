@@ -568,7 +568,7 @@ namespace Linnarsson.Strt
             WriteMinExpressionTable(fileNameBase);
             if (props.DirectionalReads)
             {
-                WriteCAPHitsTable(fileNameBase);
+                WriteCAPRegionHitsTable(fileNameBase);
                 WriteExpressedAntisenseGenes(fileNameBase);
                 WriteUniquehits(fileNameBase);
             }
@@ -838,7 +838,7 @@ namespace Linnarsson.Strt
                 tableOutFile.WriteLine("NOTE: This is a non-STRT analysis with non-directional reads.");
         }
 
-        private void WriteCAPHitsTable(string fileNameBase)
+        private void WriteCAPRegionHitsTable(string fileNameBase)
         {
             string exprPath = fileNameBase + "_CAPRegionHits.tab";
             using (StreamWriter matrixFile = new StreamWriter(exprPath))
@@ -1492,7 +1492,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Write the "cap_hits.tab" containing ratios of 5' to rest-of-transcript hits for spikes and transcripts
+        /// Write the distribution profiles of hits across genes and spikes from 5' to 3' end
         /// </summary>
         /// <param name="fileNameBase"></param>
         /// <param name="averageReadLen"></param>
@@ -1584,7 +1584,7 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void WriteElongationHitCurve(StreamWriter capHitsFile, int trLenBinSize, int nSectionsOverTranscipt, int averageReadLen)
+        private void WriteElongationHitCurve(StreamWriter hitProfileFile, int trLenBinSize, int nSectionsOverTranscipt, int averageReadLen)
         {
             int nTrSizeBins = 10000 / trLenBinSize;
             int minHitsPerGene = nSectionsOverTranscipt * 10;
@@ -1609,19 +1609,19 @@ namespace Linnarsson.Strt
                     binnedEfficiencies[trLenBin, section].Add(trBinCounts[section] / (double)trBinCounts.Sum());
                 nGenesPerSizeClass[trLenBin]++;
             }
-            capHitsFile.WriteLine("Hit distribution across gene transcripts, group averages by transcript length classes.");
-            capHitsFile.WriteLine("\nMidLength\tnGenes\t5' -> 3' hit distribution");
+            hitProfileFile.WriteLine("Hit distribution across gene transcripts, group averages by transcript length classes.");
+            hitProfileFile.WriteLine("\nMidLength\tnGenes\t5' -> 3' hit distribution");
             for (int di = 0; di < nTrSizeBins; di++)
             {
                 int binMid = averageReadLen + di * trLenBinSize + trLenBinSize / 2;
-                capHitsFile.Write("{0}\t{1}", binMid, nGenesPerSizeClass[di]);
+                hitProfileFile.Write("{0}\t{1}", binMid, nGenesPerSizeClass[di]);
                 for (int section = 0; section < nSectionsOverTranscipt; section++)
-                    capHitsFile.Write("\t{0:0.####}", binnedEfficiencies[di, section].Mean());
-                capHitsFile.WriteLine();
+                    hitProfileFile.Write("\t{0:0.####}", binnedEfficiencies[di, section].Mean());
+                hitProfileFile.WriteLine();
             }
         }
 
-        private void WriteSpikeElongationHitCurve(StreamWriter capHitsFile, int trLenBinSize, int nSections, int averageReadLen)
+        private void WriteSpikeElongationHitCurve(StreamWriter hitProfileFile, int trLenBinSize, int nSections, int averageReadLen)
         {
             int minHitsPerGene = nSections * 10;
             bool wroteHeader = false;
@@ -1637,19 +1637,19 @@ namespace Linnarsson.Strt
                 foreach (int c in trBinCounts) allCounts += c;
                 if (!wroteHeader)
                 {
-                    capHitsFile.WriteLine("Hit distribution across spike transcripts.");
-                    capHitsFile.WriteLine("\nSpike\tLength\t5' -> 3' hit distribution");
+                    hitProfileFile.WriteLine("Hit distribution across spike transcripts.");
+                    hitProfileFile.WriteLine("\nSpike\tLength\t5' -> 3' hit distribution");
                     wroteHeader = true;
                 }
-                capHitsFile.Write("{0}\t{1}", gf.Name, trLen);
+                hitProfileFile.Write("{0}\t{1}", gf.Name, trLen);
                 for (int section = 0; section < nSections; section++)
                 {
                     double eff = trBinCounts[section] / allCounts;
-                    capHitsFile.Write("\t{0:0.####}", eff);
+                    hitProfileFile.Write("\t{0:0.####}", eff);
                 }
-                capHitsFile.WriteLine();
+                hitProfileFile.WriteLine();
             }
-            capHitsFile.WriteLine();
+            hitProfileFile.WriteLine();
         }
         #endregion
     }

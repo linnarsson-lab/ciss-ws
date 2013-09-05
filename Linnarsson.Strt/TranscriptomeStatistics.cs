@@ -125,6 +125,7 @@ namespace Linnarsson.Strt
         Dictionary<int, List<int>> sampledUniqueMoleculesByBcIdx = new Dictionary<int, List<int>>();
         Dictionary<int, List<int>> sampledUniqueHitPositionsByBcIdx = new Dictionary<int, List<int>>();
 
+        // Samplings by barcode:
         bool analyzeMappingsBySpikeReads = false;
         private List<int>[] mappingsBySpikeReadsSamples;
 
@@ -702,14 +703,14 @@ namespace Linnarsson.Strt
             using (StreamWriter mbsFile = new StreamWriter(OutputPathbase + "_mappings_by_processed_spike_reads.tab"))
             {
                 mbsFile.WriteLine("Development of number of detected unique exon mappings as function of number of spike reads processed in each well.");
-                mbsFile.Write("Barcode\\#Spikes");
+                mbsFile.Write("Well\\#Spikes");
                 int maxNSamples = mappingsBySpikeReadsSamples.Max(v => v.Count);
                 for (int i = 1; i <= maxNSamples; i++)
                     mbsFile.Write("\t{0}", i * Props.props.MappingsBySpikeReadsSampleDist);
                 mbsFile.WriteLine();
                 for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                 {
-                    mbsFile.Write(barcodes.Seqs[bcIdx]);
+                    mbsFile.Write(barcodes.GetWellId(bcIdx));
                     foreach (int v in mappingsBySpikeReadsSamples[bcIdx])
                         mbsFile.Write("\t{0}", v);
                     mbsFile.WriteLine();

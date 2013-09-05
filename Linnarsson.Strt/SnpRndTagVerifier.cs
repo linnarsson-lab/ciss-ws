@@ -9,7 +9,7 @@ using Linnarsson.Mathematics;
 namespace Linnarsson.Strt
 {
     /// <summary>
-    /// Holds counts for one barcode of each Nt in every rnd label for one single known SNP position, of reads mapped at a specific position & strand 
+    /// Holds counts for one barcode of each Nt in every rnd label for one single known SNP position, of reads mapped at a specific position and strand 
     /// </summary>
     public class SnpRndTagVerChrPosBcData
     {
@@ -131,8 +131,8 @@ namespace Linnarsson.Strt
         /// Returns the valid alternative Nts at this position across all barcodes
         /// </summary>
         /// <param name="heterozygotBarcodes">Indexes of barcodes that are themselves heterozygot</param>
-        /// <returns>List of Nts that occur in this position</returns>
-        public List<char> GetValidNtsAtPos(out List<int> heterozygotBarcodes)
+        /// <param name="validNts">The Nts that occur in this position</param>
+        public void GetValidNtsAtPos(out List<int> heterozygotBarcodes, out string validNts)
         {
             heterozygotBarcodes = new List<int>();
             HashSet<char> allValidNts = new HashSet<char>();
@@ -143,7 +143,7 @@ namespace Linnarsson.Strt
                     heterozygotBarcodes.Add(bcIdx);
                 allValidNts.UnionWith(validNtsInBc);
             }
-            return allValidNts.ToList();
+            validNts = new string(allValidNts.ToArray());
         }
     }
 
@@ -242,9 +242,9 @@ namespace Linnarsson.Strt
         private Dictionary<string, SnpRndTagVerChrData> dataByChr = new Dictionary<string, SnpRndTagVerChrData>();
         private Barcodes barcodes;
         public static int minMismatchPhredAsciiVal = 15 + 33; // Minimum quality of the SNP Nt for useful reads
-        public static int minReads = 5; // Minumum number of reads in a position-barcode-strand to be worth analyzing
+        public static int minReads = 3; // Minumum number of reads in a position-barcode-strand to be worth analyzing
         public static int snpMargin = 4; // Alignments with mismatches close to end can really be a splice junction at end of read
-        public static int nMaxUsedRndTags; // Errors may occur at rnd label saturation if two different molecules end up in the same label
+        public static int nMaxUsedRndTags; // Limit no. of occupied UMIs to minimze random UMI collisions between molecules.
 
         /// <summary>
         /// </summary>
@@ -260,7 +260,7 @@ namespace Linnarsson.Strt
             }
             int n = 0;
             barcodes = props.Barcodes;
-            nMaxUsedRndTags = barcodes.UMICount / 5;
+            nMaxUsedRndTags = barcodes.UMICount / 30;
             string GVFPath = PathHandler.GetGVFFile(genome);
             if (GVFPath == "")
                 Console.WriteLine("Can not find a GVF file for {0}. Skipping SNP verification.", genome.Build);
@@ -300,9 +300,10 @@ namespace Linnarsson.Strt
         public void Verify(string fileNameBase)
         {
             StreamWriter heterozygotSNPWriter = new StreamWriter(fileNameBase + "_RndTag_verification_heterozygot_positions.tab");
-            InitOutfile(heterozygotSNPWriter, "Showing data for all heterozygot positions.");
+            InitOutfile(heterozygotSNPWriter, 
+                 string.Format("Data for all heterozygot positions in barcodes with >={0} total reads and <={1} occupied UMIs.", minReads, nMaxUsedRndTags));
             StreamWriter problemWriter = new StreamWriter(fileNameBase + "_RndTag_verification_problem_positions.tab");
-            InitOutfile(problemWriter, "Showing problematic positions. Summary at end.");
+            InitOutfile(problemWriter, "Problematic positions (with some different Nt:s in a UMI) from corresponding heterozygot_positions.tab file. Summary at end.");
             int nCorrectHetero = 0, nCorrect = 0, nTotal = 0, nSkipped = 0, nWrongHetero = 0;
             foreach (string chr in dataByChr.Keys)
             {
@@ -312,32 +313,33 @@ namespace Linnarsson.Strt
                     int posStrand = p.Key;
                     SnpRndTagVerChrPosData posDatas = p.Value;
                     List<int> heterzygotBcIndexes;
-                    string validNtsAtPos = new string(posDatas.GetValidNtsAtPos(out heterzygotBcIndexes).ToArray());
-                    bool heteroPosition = validNtsAtPos.Length > 1;
+                    string validNtsAtPos;
+                    posDatas.GetValidNtsAtPos(out heterzygotBcIndexes, out validNtsAtPos);
+                    bool isAHeterozygotPos = validNtsAtPos.Length > 1;
                     for (int bcIdx = 0; bcIdx < posDatas.dataByBc.Length; bcIdx++)
                     {
-                        SnpRndTagVerChrPosBcData sData = posDatas.dataByBc[bcIdx];
+                        SnpRndTagVerChrPosBcData posBcData = posDatas.dataByBc[bcIdx];
                         bool sameNtInEachRndTag;
                         int nUsedRndTags;
-                        int nTotalReads = sData.HasAllReadsInEachRndTagTheSameNt(out sameNtInEachRndTag, out nUsedRndTags);
+                        int nTotalReads = posBcData.HasAllReadsInEachRndTagTheSameNt(out sameNtInEachRndTag, out nUsedRndTags);
                         if (nTotalReads < minReads || nUsedRndTags > nMaxUsedRndTags)
                         { // Do not analyze too crowded barcodes
                             nSkipped++;
                             continue;
                         }
                         nTotal++;
-                        bool heteroInBc = heterzygotBcIndexes.Contains(bcIdx);
-                        if (heteroPosition)
-                            WriteOnePosData(heterozygotSNPWriter, chr, posStrand, posDatas, bcIdx, sameNtInEachRndTag, validNtsAtPos, heteroInBc);
+                        bool IsHeterozygotInThisBcIdx = heterzygotBcIndexes.Contains(bcIdx);
+                        if (isAHeterozygotPos)
+                            WriteOnePosData(heterozygotSNPWriter, chr, posStrand, posDatas, bcIdx, sameNtInEachRndTag, validNtsAtPos, IsHeterozygotInThisBcIdx);
                         if (sameNtInEachRndTag)
                         {
-                            if (heteroPosition) nCorrectHetero++;
+                            if (isAHeterozygotPos) nCorrectHetero++;
                             nCorrect++;
                         }
                         else
                         {
-                            if (heteroPosition) nWrongHetero++;
-                            WriteOnePosData(problemWriter, chr, posStrand, posDatas, bcIdx, sameNtInEachRndTag, validNtsAtPos, heteroInBc);
+                            if (isAHeterozygotPos) nWrongHetero++;
+                            WriteOnePosData(problemWriter, chr, posStrand, posDatas, bcIdx, sameNtInEachRndTag, validNtsAtPos, IsHeterozygotInThisBcIdx);
                         }
                     }
                 }

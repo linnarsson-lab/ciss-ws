@@ -691,7 +691,7 @@ namespace Linnarsson.Dna
         /// Makes a refFlat file like string
         /// </summary>
         /// <returns></returns>
-        public override string ToString()
+        public string ToRefFlatString()
         {
             StringBuilder s = new StringBuilder();
             s.AppendFormat("{0}\t\t", Name);
@@ -718,6 +718,11 @@ namespace Linnarsson.Dna
         /// 0-based psl-like string of exclusive end positions
         /// </summary>
         public string ExonEndsString { get { return string.Join(",", Array.ConvertAll(ExonEnds, v => (v+1).ToString())) +","; } }
+
+        public override string ToString()
+        {
+            return this.ToString();
+        }
 
         /// <summary>
         /// Extend 5' end according to GeneFeature5PrimeExtension or as far as the closest neighboring gene exon (in same orientation).

@@ -207,7 +207,7 @@ namespace Linnarsson.Strt
                     gf.JoinSpuriousSplices(minSpuriousSplicesToRemove);
                     gfEnds.Add(gf.End);
                     gfJPos.Add((int)jChrSeq.Count);
-                    annotWriter.WriteLine(gf.ToString()); // Write the real chr annotations to output
+                    annotWriter.WriteLine(gf.ToRefFlatString()); // Write the real chr annotations to output
                     if (gf.ExonCount < 2)
                         continue;
                     List<int> jStarts = new List<int>();

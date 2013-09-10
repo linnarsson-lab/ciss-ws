@@ -23,12 +23,16 @@ namespace C1
         public string PI { get; set; }
         public string Operator { get; set; }
         public string Comments { get; set; }
+        public Detection Red { get; set; }
+        public Detection Green { get; set; }
+        public Detection Blue { get; set; }
         public List<CellImage> cellImages { get; set; }
 
         public Cell(int? cellId, string plate, string well, 
                     string strtProtocol, DateTime dateCollected, string species, string strain,
                     string age, char sex, string tissue, string treatment,
-                    double diameter, double area, string PI, string op, string comments)
+                    double diameter, double area, string PI, string op, string comments,
+                    Detection red, Detection green, Detection blue)
         {
             this.CellID = cellId;
             this.Plate = plate;
@@ -46,6 +50,9 @@ namespace C1
             this.PI = PI;
             this.Operator = op;
             this.Comments = comments;
+            this.Red = red;
+            this.Green = green;
+            this.Blue = blue;
             this.cellImages = new List<CellImage>();
         }
     }

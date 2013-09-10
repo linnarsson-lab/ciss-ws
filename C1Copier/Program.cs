@@ -156,11 +156,14 @@ namespace C1
                     string well = string.Format("{0}{1:00}", fields[0], fields[1]);
                     double area = double.Parse(fields[3]);
                     double diameter = double.Parse(fields[4]);
+                    Detection red = (fields[5] == "1") ? Detection.Yes : Detection.No;
+                    Detection green = (fields[6] == "1") ? Detection.Yes : Detection.No;
+                    Detection blue = (fields[7] == "1") ? Detection.Yes : Detection.No;
                     Cell newCell = new Cell(null, metadata["Plate"], well, metadata["Protocol"],
                                     DateTime.Parse(metadata["Date of Run"]), metadata["Species"],
                                     metadata["Strain"], metadata["Age"], metadata["Sex"][0], metadata["Tissue/cell type/source"],
-                                    metadata["Treatment"], diameter, area, 
-                                    metadata["Principal Investigator"], metadata["Operator"], metadata["Comments"]);
+                                    metadata["Treatment"], diameter, area, metadata["Principal Investigator"], metadata["Operator"],
+                                    metadata["Comments"], red, green, blue);
                     List<CellImage> cellImages = new List<CellImage>();
                     foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)
                     {
@@ -191,6 +194,7 @@ namespace C1
             if (lastMetaFilePath == null) return null;
             Dictionary<string, string> data = new Dictionary<string, string>();
             data["Age"] = data["Strain"] = data["Treatment"] = data["Tissue"] = data["Sex"] = "?";
+            data["Spikes"] = C1Props.props.SpikeMoleculeCount.ToString();
             using (StreamReader r = new StreamReader(lastMetaFilePath))
             {
                 string line = r.ReadLine();
@@ -219,7 +223,7 @@ namespace C1
             if (sp == "human" || sp.StartsWith("homo")) sp = "Hs";
             ProjectDescription pd = new ProjectDescription(m["Scientist"], m["Operator"], m["Principal Investigator"],
                 chipId, DateTime.Parse(m["Date of Run"]), ("C1-"+chipId), m["Chipfolder"], sp, m["Tissue/cell type/source"],
-                "single cell", "C1", "", m["Protocol"], "Tn5", "", layoutFile, m["Comments"], 0);
+                "single cell", "C1", "", m["Protocol"], "Tn5", "", layoutFile, m["Comments"], int.Parse(m["Spikes"]));
             new ProjectDB().InsertNewProject(pd);
         }
 

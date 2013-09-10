@@ -142,13 +142,12 @@ namespace C1
 
         public void InsertCell(Cell c)
         {
-            CultureInfo cult = new CultureInfo("sv-SE"); 
-            string sql = "INSERT INTO Cell (Plate, Well, StrtProtocol, DateCollected, Species, " +
-                                            "Strain, Age, Sex, Tissue, Treatment, Diameter, Area, PI, Operator, Comments) " +
-                               "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}')";
-            sql = string.Format(sql, c.Plate, c.Well, c.StrtProtocol, c.DateCollected.ToString(cult), c.Species,
-                                     c.Strain, c.Age, c.Sex, c.Tissue,
-                                     c.Treatment, c.Diameter, c.Area, c.PI, c.Operator, c.Comments);
+            CultureInfo cult = new CultureInfo("sv-SE");
+            string sql = "INSERT INTO Cell (Plate, Well, StrtProtocol, DateCollected, Species, Strain, Age, Sex, Tissue, " +
+                                            "Treatment, Diameter, Area, PI, Operator, Comments, Red, Green, Blue) " +
+                         "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}')";
+            sql = string.Format(sql, c.Plate, c.Well, c.StrtProtocol, c.DateCollected.ToString(cult), c.Species, c.Strain, c.Age, c.Sex, c.Tissue,
+                                     c.Treatment, c.Diameter, c.Area, c.PI, c.Operator, c.Comments, c.Red, c.Green, c.Blue);
             int cellId = InsertAndGetLastId(sql, "Cell");
             foreach (CellImage ci in c.cellImages)
             {

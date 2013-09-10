@@ -15,7 +15,7 @@ namespace BkgBackuper
     {
         static int minutesWait = 10;
         static string backupDest = Props.props.BackupDestinationFolder;
-        static int startHour = 17;
+        static int startHour = 20;
         static int stopHour = 8;
         static int nExceptions = 0;
         static string readsFolder = Props.props.ReadsFolder;

@@ -92,10 +92,22 @@ namespace C1
     {
         public string CellID { get; set; }
         public int TranscriptID { get; set; }
+        /// <summary>
+        /// Uniquely mapped reads
+        /// </summary>
         public int UniqueReads { get; set; }
+        /// <summary>
+        /// Uniquely mapped molecules
+        /// </summary>
         public int UniqueMolecules { get; set; }
-        public int MaxReads { get; set; }
-        public int MaxMolecules { get; set; }
+        /// <summary>
+        /// Including multireads of transcript origin
+        /// </summary>
+        public int Reads { get; set; }
+        /// <summary>
+        /// Molecules including these from multireads of transcript origin
+        /// </summary>
+        public int Molecules { get; set; }
 
         public Expression()
         { }
@@ -105,8 +117,8 @@ namespace C1
             this.TranscriptID = transcriptId;
             this.UniqueReads = minReads;
             this.UniqueMolecules = minMols;
-            this.MaxReads = maxReads;
-            this.MaxMolecules = maxMols;
+            this.Reads = maxReads;
+            this.Molecules = maxMols;
         }
     }
 

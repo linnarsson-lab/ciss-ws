@@ -158,7 +158,8 @@ namespace C1
                     double diameter = double.Parse(fields[4]);
                     Cell newCell = new Cell(null, metadata["Plate"], well, metadata["Protocol"],
                                     DateTime.Parse(metadata["Date of Run"]), metadata["Species"],
-                                    "", "", '-', metadata["Tissue/cell type/source"], "", diameter, area, 
+                                    metadata["Strain"], metadata["Age"], metadata["Sex"][0], metadata["Tissue/cell type/source"],
+                                    metadata["Treatment"], diameter, area, 
                                     metadata["Principal Investigator"], metadata["Operator"], metadata["Comments"]);
                     List<CellImage> cellImages = new List<CellImage>();
                     foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)
@@ -189,6 +190,7 @@ namespace C1
             string lastMetaFilePath = GetLastMatchingFile(chipDir, C1Props.props.C1MetadataFilenamePattern);
             if (lastMetaFilePath == null) return null;
             Dictionary<string, string> data = new Dictionary<string, string>();
+            data["Age"] = data["Strain"] = data["Treatment"] = data["Tissue"] = data["Sex"] = "?";
             using (StreamReader r = new StreamReader(lastMetaFilePath))
             {
                 string line = r.ReadLine();

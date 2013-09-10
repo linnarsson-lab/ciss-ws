@@ -714,8 +714,8 @@ namespace Linnarsson.Strt
                     exprHolder.TranscriptID = gf.TranscriptID;
                     exprHolder.UniqueMolecules = gf.NonConflictingTranscriptHitsByBarcode[bcIdx];
                     exprHolder.UniqueReads = gf.NonConflictingTranscriptReadsByBarcode[bcIdx];
-                    exprHolder.MaxMolecules = gf.TranscriptHitsByBarcode[bcIdx];
-                    exprHolder.MaxReads = gf.TranscriptReadsByBarcode[bcIdx];
+                    exprHolder.Molecules = gf.TranscriptHitsByBarcode[bcIdx];
+                    exprHolder.Reads = gf.TranscriptReadsByBarcode[bcIdx];
                     yield return exprHolder;
                 }
             }

@@ -68,7 +68,8 @@ namespace Linnarsson.Strt
                 if (read1.PassedFilter && (read2 == null || read2.PassedFilter) && (read3 == null || read3.PassedFilter))
                 {
                     CheckReadIdAndInsertPrefix(read1FqPath, read2CopyLen, read1, read2, "_R2_");
-                    CheckReadIdAndInsertPrefix(read1FqPath, read3CopyLen, read1, read3, "_R3_");
+                    if (read3 != null)
+                        CheckReadIdAndInsertPrefix(read1FqPath, read3CopyLen, read1, read3, "_R3_");
                     yield return read1;
                 }
             }

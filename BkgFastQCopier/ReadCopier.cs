@@ -70,6 +70,8 @@ namespace BkgFastQCopier
                             throw (e);
                         }
                         projectDB.UpdateRunStatus(runId, status, runNo, runDate);
+                        if (status == "copied")
+                            projectDB.AutoStartC1Analyses(runId);
                     }
                 }
             }

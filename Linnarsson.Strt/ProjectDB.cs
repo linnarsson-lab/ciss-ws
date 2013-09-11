@@ -9,6 +9,7 @@ using Linnarsson.Utilities;
 using Linnarsson.Dna;
 using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
+using C1;
 
 namespace Linnarsson.Strt
 {
@@ -586,16 +587,56 @@ namespace Linnarsson.Strt
                  pd.sampleType, pd.collectionMethod, 0, 0, 0, pd.description, pd.protocol, pd.barcodeSet, pd.labBookPage,
                  pd.layoutFile, pd.status, pd.comment, "system", pd.SpikeMoleculeCount);
             IssueNonQuery(sql);
-            sql = "SELECT MAX(id) FROM jos_aaaproject";
+            return GetLastInsertId("jos_aaaproject");
+        }
+
+        private static int GetLastInsertId(string table)
+        {
+            string sql = "SELECT MAX(id) FROM " + table;
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             rdr.Read();
-            int projectId = rdr.GetInt32(0);
+            int lastInsertId = rdr.GetInt32(0);
             rdr.Close();
             conn.Close();
-            return projectId;
+            return lastInsertId;
+        }
+
+        public void AutoStartC1Analyses(string newlyCopiedRunId)
+        {
+            string sql = "SELECT p.plateid, b.jos_aaaprojectid AS projectid, l.laneno, l.id AS laneid, a.id AS analysisid," +
+                          " p.barcodeset, p.species FROM jos_aaalane l JOIN jos_aaailluminarun r ON l.jos_aaailluminarunid=r.id" +
+                          " JOIN jos_aaasequencingbatch b ON l.jos_aaasequencingbatchid=b.id " +
+                          " LEFT JOIN jos_aaaanalysis a ON a.jos_aaaprojectid=b.jos_aaaprojectid" +
+                          " JOIN jos_aaaproject p ON p.id=b.jos_aaaprojectid" +
+                          " WHERE r.illuminarunid='{0}' AND a.id IS NULL AND mid(p.plateid, 1, 3)='{1}';";
+            sql = string.Format(sql, newlyCopiedRunId, C1Props.C1ProjectPrefix);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                string projectId = rdr["projectid"].ToString();
+                string laneId = rdr["laneid"].ToString();
+                string species = rdr["species"].ToString();
+                string barcodes = rdr["barcodeset"].ToString();
+                string asql = "INSERT INTO jos_aaaanalysis " +
+                              "(projectid, transcript_db_version, transcript_variant, rpkm, emails, status, lanecount, comment, time, user)" +
+                              "VALUES ('{0}', '{1}', '{2}', 0, {4}, 'inqueue', 1, 'autoanalysis', {5}, 'server';";
+                asql = string.Format(asql, projectId, C1Props.props.autoAnalysisBuild, C1Props.props.autoAnalysisBuildVersion,
+                                     C1Props.props.autoAnalysisMailRecepients, DateTime.Now.ToShortDateString());
+                IssueNonQuery(asql);
+                int analysisId = GetLastInsertId("jos_aaaanalysis");
+                string lsql = "INSERT INTO jos_aaaanalysislane (jos_aaaanalysisid, jos_aaalaneid) VALUES ('{0}', '{1}');";
+                lsql = string.Format(lsql, analysisId, laneId);
+                IssueNonQuery(lsql);
+            }
+            rdr.Close();
+            conn.Close();
+
         }
     }
 }

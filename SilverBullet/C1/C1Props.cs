@@ -27,9 +27,9 @@ namespace C1
         public string[] C1AllImageSubfoldernamePatterns = new string[] { "BF_*" } ; //, "Filter1_*", "Filter2_*", "Filter3_*" };
         public string C1ImageFilenamePattern = "well_*.png";
         public int SpikeMoleculeCount = 27900;
-        public string autoAnalysisMailRecepients = "peter.lonnerberg@ki.se";
-        public string autoAnalysisBuild = "UCSC";
-        public string autoAnalysisBuildVersion = "single";
+        public string AutoAnalysisMailRecepients = "peter.lonnerberg@ki.se";
+        public string AutoAnalysisBuild = "UCSC";
+        public string AutoAnalysisBuildVersion = "single";
 
         private static C1Props Read()
         {

@@ -380,10 +380,10 @@ namespace Linnarsson.Strt
         public void UpdateRunStatus(string runId, string status, int runNo, string runDate)
         { // Below SQL will update with status and runno if user has defined the run, else add a new run as
           // well as defining 8 new lanes by side-effect of a MySQL trigger
-            string sql = string.Format("INSERT INTO jos_aaailluminarun (status, runno, illuminarunid, rundate) " +
-                                       "VALUES ('{0}', '{1}', '{2}', '{3}') " +
+            string sql = string.Format("INSERT INTO jos_aaailluminarun (status, runno, illuminarunid, rundate, time, user) " +
+                                       "VALUES ('{0}', '{1}', '{2}', '{3}', NOW(), '{4}') " +
                                        "ON DUPLICATE KEY UPDATE status='{0}', runno='{1}';",
-                                       status, runNo, runId, runDate);
+                                       status, runNo, runId, runDate, "system");
             IssueNonQuery(sql);
         }
 
@@ -626,8 +626,8 @@ namespace Linnarsson.Strt
                 string asql = "INSERT INTO jos_aaaanalysis " +
                               "(projectid, transcript_db_version, transcript_variant, rpkm, emails, status, lanecount, comment, time, user)" +
                               "VALUES ('{0}', '{1}', '{2}', 0, {4}, 'inqueue', 1, 'autoanalysis', {5}, 'server';";
-                asql = string.Format(asql, projectId, C1Props.props.autoAnalysisBuild, C1Props.props.autoAnalysisBuildVersion,
-                                     C1Props.props.autoAnalysisMailRecepients, DateTime.Now.ToShortDateString());
+                asql = string.Format(asql, projectId, C1Props.props.AutoAnalysisBuild, C1Props.props.AutoAnalysisBuildVersion,
+                                     C1Props.props.AutoAnalysisMailRecepients, DateTime.Now.ToShortDateString());
                 IssueNonQuery(asql);
                 int analysisId = GetLastInsertId("jos_aaaanalysis");
                 string lsql = "INSERT INTO jos_aaaanalysislane (jos_aaaanalysisid, jos_aaalaneid) VALUES ('{0}', '{1}');";

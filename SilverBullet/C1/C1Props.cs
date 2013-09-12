@@ -29,7 +29,7 @@ namespace C1
         public int SpikeMoleculeCount = 27900;
         public string AutoAnalysisMailRecepients = "peter.lonnerberg@ki.se";
         public string AutoAnalysisBuild = "UCSC";
-        public string AutoAnalysisBuildVersion = "single";
+        public string AutoAnalysisBuildVariants = "single";
 
         private static C1Props Read()
         {

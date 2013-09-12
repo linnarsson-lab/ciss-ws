@@ -624,10 +624,10 @@ namespace Linnarsson.Strt
                 string species = rdr["species"].ToString();
                 string barcodes = rdr["barcodeset"].ToString();
                 string asql = "INSERT INTO jos_aaaanalysis " +
-                              "(projectid, transcript_db_version, transcript_variant, rpkm, emails, status, lanecount, comment, time, user)" +
-                              "VALUES ('{0}', '{1}', '{2}', 0, {4}, 'inqueue', 1, 'autoanalysis', {5}, 'server';";
-                asql = string.Format(asql, projectId, C1Props.props.AutoAnalysisBuild, C1Props.props.AutoAnalysisBuildVersion,
-                                     C1Props.props.AutoAnalysisMailRecepients, DateTime.Now.ToShortDateString());
+                              "(projectid, transcript_db_version, transcript_variant, rpkm, emails, status, lanecount, comment, time, user) " +
+                              "VALUES ('{0}', '{1}', '{2}', 0, '{3}', 'inqueue', 1, 'autoanalysis', NOW(), 'server';";
+                asql = string.Format(asql, projectId, C1Props.props.AutoAnalysisBuild, C1Props.props.AutoAnalysisBuildVariants,
+                                     C1Props.props.AutoAnalysisMailRecepients);
                 IssueNonQuery(asql);
                 int analysisId = GetLastInsertId("jos_aaaanalysis");
                 string lsql = "INSERT INTO jos_aaaanalysislane (jos_aaaanalysisid, jos_aaalaneid) VALUES ('{0}', '{1}');";

@@ -625,7 +625,7 @@ namespace Linnarsson.Strt
                 string barcodes = rdr["barcodeset"].ToString();
                 string asql = "INSERT INTO jos_aaaanalysis " +
                               "(projectid, transcript_db_version, transcript_variant, rpkm, emails, status, lanecount, comment, time, user) " +
-                              "VALUES ('{0}', '{1}', '{2}', 0, '{3}', 'inqueue', 1, 'autoanalysis', NOW(), 'server';";
+                              "VALUES ('{0}', '{1}', '{2}', 0, '{3}', 'inqueue', 1, 'autoanalysis', NOW(), 'server');";
                 asql = string.Format(asql, projectId, C1Props.props.AutoAnalysisBuild, C1Props.props.AutoAnalysisBuildVariants,
                                      C1Props.props.AutoAnalysisMailRecepients);
                 IssueNonQuery(asql);

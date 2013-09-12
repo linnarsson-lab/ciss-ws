@@ -96,12 +96,14 @@ namespace BkgFastQMailer
                 destFilename += ".gz";
             }
             string destPath = Path.Combine(Props.props.ResultDownloadUrl, destFilename);
-            string scpArg = string.Format("-P {0} {1} {2}", Props.props.ResultDownloadScpPort, gzReadsPath, destPath);
-            Console.WriteLine(DateTime.Now.ToString() + ": scp " + scpArg);
-            CmdCaller scpCmd = new CmdCaller("scp", scpArg);
-            if (scpCmd.ExitCode != 0)
-                throw new IOException("Failed OS call, exit code " + scpCmd.ExitCode.ToString() + ":\nscp " + scpArg
-                                      + "\n" + scpCmd.StdError);
+            string cpCmd = "rsync"; // "scp";
+            //string cpCmdArg = string.Format("-P {0} {1} {2}", Props.props.ResultDownloadScpPort, gzReadsPath, destPath);
+            string cpCmdArg = string.Format("--ignore-existing -e 'ssh -p {0}' {1} {2}", Props.props.ResultDownloadScpPort, gzReadsPath, destPath);
+            Console.WriteLine(DateTime.Now.ToString() + ": " + cpCmd + " " + cpCmdArg);
+            CmdCaller cpCmdCaller = new CmdCaller(cpCmd, cpCmdArg);
+            if (cpCmdCaller.ExitCode != 0)
+                throw new IOException("Failed OS call, exit code " + cpCmdCaller.ExitCode.ToString() + ":\n" + cpCmd + " " + cpCmdArg
+                                      + "\n" + cpCmdCaller.StdError);
             readsFileLink = Props.props.ResultDownloadFolderHttp + destFilename;
             if (useTempGzReadsFile)
                 RemoveTempFile(gzReadsPath);

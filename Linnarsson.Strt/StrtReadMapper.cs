@@ -409,7 +409,7 @@ namespace Linnarsson.Strt
             if (barcodes.HasUMIs)
                 logWriter.WriteLine("{0} MinPhredScoreInRandomTag={1}", DateTime.Now, props.MinPhredScoreInRandomTag);
             Extract(projDescr);
-            string[] speciesArgs = GetSpeciesArgs(projDescr.SampleLayoutPath, projDescr.defaultSpecies);
+            string[] speciesArgs = GetSpeciesArgs(projDescr.plateId, projDescr.SampleLayoutPath, projDescr.defaultSpecies);
             projDescr.annotationVersion = ANNOTATION_VERSION;
             foreach (string speciesArg in speciesArgs)
             {
@@ -472,14 +472,14 @@ namespace Linnarsson.Strt
             return rc.AverageReadLen;
         }
 
-        private string[] GetSpeciesArgs(string sampleLayoutPath, string defaultSpeciesArg)
+        private string[] GetSpeciesArgs(string projectName, string sampleLayoutPath, string defaultSpeciesArg)
         {
             string[] speciesArgs = new string[] { defaultSpeciesArg };
-            if (File.Exists(sampleLayoutPath))
+            PlateLayout sampleLayout = PlateLayout.GetPlateLayout(projectName, sampleLayoutPath);
+            if (sampleLayout != null)
             {
-                PlateLayout sampleLayout = new PlateLayout(sampleLayoutPath);
                 barcodes.SetSampleLayout(sampleLayout);
-                speciesArgs = sampleLayout.GetSpeciesAbbrevs();
+                speciesArgs = sampleLayout.SpeciesIds;
             }
             return speciesArgs;
         }
@@ -652,7 +652,7 @@ namespace Linnarsson.Strt
             string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
             string[] speciesArgs = new string[] { defaultSpeciesArg };
             if (defaultSpeciesArg == "" && File.Exists(sampleLayoutPath))
-                speciesArgs = GetSpeciesArgs(sampleLayoutPath, defaultSpeciesArg);
+                speciesArgs = GetSpeciesArgs(projectName, sampleLayoutPath, defaultSpeciesArg);
             List<string> resultSubFolders = new List<string>();
             foreach (string speciesArg in speciesArgs)
             {

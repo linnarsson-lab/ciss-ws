@@ -228,5 +228,78 @@ namespace C1
             return cellIdByWell;
         }
 
+        private static List<string> GetCellAnnotationNames(string projectId)
+        {
+            string sql = "SELECT DISTINCT(Name) FROM CellAnnotation WHERE CellID IN (SELECT CellID FROM Cell WHERE Plate='{0}')";
+            sql = string.Format(sql, projectId);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            List<string> annotNames = new List<string>();
+            while (rdr.Read())
+                annotNames.Add(rdr.GetString(0));
+            rdr.Close();
+            conn.Close();
+            return annotNames;
+        }
+
+        /// <summary>
+        /// Read plate layout data from the database
+        /// </summary>
+        /// <param name="projectId"></param>
+        /// <param name="annotations"></param>
+        /// <param name="annotationIndexes"></param>
+        public static void GetCellAnnotations(string projectId, 
+            out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
+        {
+            List<string> annotNames = GetCellAnnotationNames(projectId);
+            annotationIndexes = new Dictionary<string, int>(7 + annotNames.Count);
+            annotationIndexes["CellID"] = 0;
+            annotationIndexes["Species"] = 1;
+            annotationIndexes["Diameter"] = 2;
+            annotationIndexes["Area"] = 3;
+            annotationIndexes["Red"] = 4;
+            annotationIndexes["Blue"] = 5;
+            annotationIndexes["Green"] = 6;
+            for (int i = 0; i < annotNames.Count; i++)
+                annotationIndexes[annotNames[i]] = annotationIndexes.Count;
+            annotations = new Dictionary<string, string[]>(96);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            string sql = "SELECT Well, CellID, Species, Diameter, Area, Red, Blue, Green FROM Cell WHERE Plate='{0}'";
+            sql = string.Format(sql, projectId);
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                string[] wellAnn = new string[annotationIndexes.Count];
+                wellAnn[0] = rdr.GetString(1);
+                wellAnn[1] = rdr.GetString(2);
+                wellAnn[2] = rdr.GetString(3);
+                wellAnn[3] = rdr.GetString(4);
+                wellAnn[4] = rdr.GetString(5);
+                wellAnn[5] = rdr.GetString(6);
+                wellAnn[6] = rdr.GetString(7);
+                string well = rdr.GetString(0);
+                annotations[well] = wellAnn;
+            }
+            rdr.Close();
+            sql = "SELECT Well, Name, Value FROM CellAnnotation a LEFT JOIN Cell c ON a.CellID=c.CellID" +
+                    "WHERE a.CellID IN (SELECT CellID FROM Cell WHERE Plate='{0}')";
+            sql = string.Format(sql, projectId);
+            cmd = new MySqlCommand(sql, conn);
+            rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                string well = rdr.GetString(0);
+                string name = rdr.GetString(1);
+                string value = rdr.GetString(2);
+                annotations[well][annotationIndexes[name]] = value;
+            }
+            rdr.Close();
+            conn.Close();
+        }
+
     }
 }

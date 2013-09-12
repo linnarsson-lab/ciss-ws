@@ -275,6 +275,8 @@ namespace Linnarsson.Strt
         private int minInsertNonAs;
         private int minQualityInUMI;
         private string[] diNtPatterns;
+        private string[] trailingPrimerSeqs;
+        private int minPrimerSeqLen = 5;
 
         public ReadExtractor(Props props)
         {
@@ -284,7 +286,8 @@ namespace Linnarsson.Strt
             UMIPos = barcodes.UMIPos;
             UMILen = barcodes.UMILen;
             minInsertNonAs = props.MinExtractionInsertNonAs;
-            minQualityInUMI = Props.props.MinPhredScoreInRandomTag;
+            minQualityInUMI = props.MinPhredScoreInRandomTag;
+            trailingPrimerSeqs = props.RemoveTrailingReadPrimerSeqs.Split(',').Where(s => s.Length >= minPrimerSeqLen).ToArray();
         }
 
         /// <summary>
@@ -306,7 +309,7 @@ namespace Linnarsson.Strt
                 bcIdx = -1;
                 return AnalyzeNonBarcodeRead(rSeq);
             }
-            int insertLength = TrimTrailingNAndCheckAs(rSeq);
+            int insertLength = TrimTrailingNOrPrimerAndCheckAs(rSeq);
             if (insertLength < minTotalReadLength)
                 return ReadStatus.LENGTH_ERROR;
             string headerUMISection = "";
@@ -333,11 +336,12 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Removes trailing N:s.
         /// If removing of trailing A:s leaves a sequence shorter than minReadLength, returns the truncated length,
-        /// otherwise includes the trailing A:s in the returned length
+        /// otherwise includes the trailing A:s in the returned length.
+        /// Also, if the read ends with the (start) sequence of a pre-defined primer, that sequence is removed
         /// </summary>
         /// <param name="rSeq"></param>
         /// <returns>Length of remaining sequence</returns>
-        private int TrimTrailingNAndCheckAs(string rSeq)
+        private int TrimTrailingNOrPrimerAndCheckAs(string rSeq)
         {
             int insertLength = rSeq.Length;
             while (insertLength >= minTotalReadLength && rSeq[insertLength - 1] == 'N')
@@ -346,6 +350,17 @@ namespace Linnarsson.Strt
             while (nonATailLen >= minTotalReadLength && rSeq[nonATailLen - 1] == 'A')
                 nonATailLen--;
             if (nonATailLen < minTotalReadLength) return nonATailLen;
+            foreach (string primerSeq in trailingPrimerSeqs)
+            {
+                int i = rSeq.LastIndexOf(primerSeq.Substring(0, minPrimerSeqLen));
+                if (i >= minTotalReadLength)
+                {
+                    int restLen = rSeq.Length - i - minPrimerSeqLen;
+                    if ((primerSeq.Length - minPrimerSeqLen) >= restLen 
+                        && rSeq.Substring(i + minPrimerSeqLen).Equals(primerSeq.Substring(minPrimerSeqLen, restLen)))
+                        return i;
+                }
+            }
             return insertLength;
         }
 

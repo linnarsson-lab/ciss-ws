@@ -91,12 +91,10 @@ namespace C1
             {
                 if (!loadedChipDirs.Contains(chipDir))
                 {
-                    logWriter.WriteLine(DateTime.Now.ToString() + " Copying data from " + chipDir + "...");
-                    logWriter.Flush();
                     Dictionary<string, string> metadata = ReadMetaData(chipDir);
                     if (metadata == null)
                     {
-                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping " + chipDir + " - no metadata file found.");
+                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping " + chipDir + " - no metadata.");
                         logWriter.Flush();
                         continue;
                     }
@@ -104,10 +102,12 @@ namespace C1
                     List<Cell> celldata = ReadCellData(chipDir, metadata);
                     if (celldata == null)
                     {
-                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping " + chipDir + " - no celldata found.");
+                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping " + chipDir + " - no celldata.");
                         logWriter.Flush();
                         continue;
                     }
+                    logWriter.WriteLine(DateTime.Now.ToString() + " Copying data from " + chipDir + "...");
+                    logWriter.Flush();
                     InsertNewProject(metadata);
                     InsertCells(celldata);
                     someCopyDone = true;

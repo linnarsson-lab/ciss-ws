@@ -71,12 +71,14 @@ namespace C1
                     catch (Exception e)
                     {
                         logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: " + e.ToString());
+                        logWriter.Flush();
                     }
                     if (runOnce)
                         break;
                     Thread.Sleep(1000 * 60 * minutesWait);
                 }
                 logWriter.WriteLine(DateTime.Now.ToString() + " C1Copier quit");
+                logWriter.Flush();
             }
         }
 
@@ -84,25 +86,29 @@ namespace C1
         {
             bool someCopyDone = false;
             string[] availableChipDirs = Directory.GetDirectories(C1Props.props.C1RunsFolder, "*-*-*");
-            List<string> loadedChipDirs = new ProjectDB().GetProjectColumn("plateid", "C1-%", "platereference");
+            List<string> loadedChipDirs = new ProjectDB().GetProjectColumn("plateid", C1Props.C1ProjectPrefix+"%", "platereference");
             foreach (string chipDir in availableChipDirs)
             {
                 if (!loadedChipDirs.Contains(chipDir))
                 {
+                    logWriter.WriteLine(DateTime.Now.ToString() + " Copying data from " + chipDir + "...");
+                    logWriter.Flush();
                     Dictionary<string, string> metadata = ReadMetaData(chipDir);
                     if (metadata == null)
                     {
                         logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping " + chipDir + " - no metadata file found.");
+                        logWriter.Flush();
                         continue;
                     }
                     metadata["Chipfolder"] = chipDir;
-                    InsertNewProject(metadata);
                     List<Cell> celldata = ReadCellData(chipDir, metadata);
                     if (celldata == null)
                     {
                         logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping " + chipDir + " - no celldata found.");
+                        logWriter.Flush();
                         continue;
                     }
+                    InsertNewProject(metadata);
                     InsertCells(celldata);
                     someCopyDone = true;
                 }
@@ -156,9 +162,9 @@ namespace C1
                     string well = string.Format("{0}{1:00}", fields[0], fields[1]);
                     double area = double.Parse(fields[3]);
                     double diameter = double.Parse(fields[4]);
-                    Detection red = (fields[5] == "1") ? Detection.Yes : Detection.No;
-                    Detection green = (fields[6] == "1") ? Detection.Yes : Detection.No;
-                    Detection blue = (fields[7] == "1") ? Detection.Yes : Detection.No;
+                    Detection red = (fields.Length < 6)? Detection.Unknown : (fields[5] == "1") ? Detection.Yes : Detection.No;
+                    Detection green = (fields.Length < 7) ? Detection.Unknown : (fields[6] == "1") ? Detection.Yes : Detection.No;
+                    Detection blue = (fields.Length < 8) ? Detection.Unknown : (fields[7] == "1") ? Detection.Yes : Detection.No;
                     Cell newCell = new Cell(null, metadata["Plate"], well, metadata["Protocol"],
                                     DateTime.Parse(metadata["Date of Run"]), metadata["Species"],
                                     metadata["Strain"], metadata["Age"], metadata["Sex"][0], metadata["Tissue/cell type/source"],
@@ -168,14 +174,13 @@ namespace C1
                     foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)
                     {
                         string imgFolder = GetLastMatchingFolder(chipFolder, imgSubfolderPat);
-                        Console.WriteLine(imgFolder);
                         if (imgFolder == null)
                             continue;
                         string imgPath = Path.Combine(imgFolder, C1Props.props.C1ImageFilenamePattern.Replace("*", well));
-                        Console.WriteLine(imgPath);
                         if (imgFolder == BFFolder && !File.Exists(imgPath))
                         {
                             logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Image file does not exist: " + imgPath);
+                            logWriter.Flush();
                             continue;
                         }
                         string imgFolderName = Path.GetFileName(imgFolder);
@@ -217,14 +222,38 @@ namespace C1
         private static void InsertNewProject(Dictionary<string, string> m)
         {
             string layoutFile = ""; // TODO: May be wanted to bring more specific metadata on each cell
-            string chipId = m["Chip serial number"];
-            string sp = m["Species"].ToLower();
-            if (sp == "mouse" || sp.StartsWith("mus")) sp = "Mm";
-            if (sp == "human" || sp.StartsWith("homo")) sp = "Hs";
+            string chipId = StandardizeChipId(m["Chip serial number"]);
+            chipId = VerifyChipfolder(m["Chipfolder"], chipId);
+            string species = m["Species"].ToLower();
+            if (species == "mouse" || species.StartsWith("mus")) species = "Mm";
+            if (species == "human" || species.StartsWith("homo")) species = "Hs";
             ProjectDescription pd = new ProjectDescription(m["Scientist"], m["Operator"], m["Principal Investigator"],
-                chipId, DateTime.Parse(m["Date of Run"]), ("C1-"+chipId), m["Chipfolder"], sp, m["Tissue/cell type/source"],
+                chipId, DateTime.Parse(m["Date of Run"]), (C1Props.C1ProjectPrefix+chipId), m["Chipfolder"], species, m["Tissue/cell type/source"],
                 "single cell", "C1", "", m["Protocol"], "Tn5", "", layoutFile, m["Comments"], int.Parse(m["Spikes"]));
             new ProjectDB().InsertNewProject(pd);
+        }
+
+        private static string VerifyChipfolder(string chipFolder, string chipId)
+        {
+            string folderId = Path.GetFileName(chipFolder);
+            folderId = StandardizeChipId(folderId);
+            if (chipId != folderId && new ProjectDB().GetProjectColumn("plateid", C1Props.C1ProjectPrefix + chipId, "platereference").Count > 0)
+            {
+                chipId = folderId;
+                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Mismatching folder and chipid in " + chipFolder + ". Changing id to " + chipId);
+                logWriter.Flush();
+            }
+            return chipId;
+        }
+
+        private static string StandardizeChipId(string chipId)
+        {
+            chipId = chipId.Replace("-", "");
+            int junk;
+            int last3Pos = chipId.Length - 3;
+            if (int.TryParse(chipId.Substring(last3Pos, 3), out junk))
+                chipId = chipId.Substring(0, last3Pos) + "-" + chipId.Substring(last3Pos);
+            return chipId;
         }
 
     }

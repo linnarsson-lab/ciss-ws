@@ -518,6 +518,13 @@ namespace Linnarsson.Strt
             return result;
         }
 
+        /// <summary>
+        /// Find selected column from project table where some (other) column matches an SQL "LIKE" pattern.
+        /// </summary>
+        /// <param name="likeCol">The column to match</param>
+        /// <param name="likeFilter">The LIKE-style filter</param>
+        /// <param name="resultCol">The column to return</param>
+        /// <returns></returns>
         public List<string> GetProjectColumn(string likeCol, string likeFilter, string resultCol)
         {
             string sql = string.Format("SELECT {0} FROM jos_aaaproject WHERE {1} LIKE '{2}'", resultCol, likeCol, likeFilter);
@@ -544,7 +551,7 @@ namespace Linnarsson.Strt
             List<int> idOfFirstMatch = new List<int>();
             List<int> idOfInitialsMatch = new List<int>();
             person = person.Trim().ToLower();
-            string last = "#.#", first = "#.#", initials = "#.#";
+            string last = person, first = person, initials = "#.#";
             string[] parts = person.Split(' ');
             if (parts.Length >= 2)
             {

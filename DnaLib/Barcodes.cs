@@ -130,26 +130,21 @@ namespace Linnarsson.Dna
         /// <param name="maxTrimExtraGs">max extra 'G':s to remove</param>
         /// <param name="bcIdx">the detected barcode index, or -1 on failure</param>
         /// <param name="actualInsertPos">the position of the actual insert, after any GGG...</param>
-        /// <returns>true on successful detection of barcodes (and GGG)</returns>
-        public bool VerifyBarcodeAndTS(string read, int maxTrimExtraGs, out int bcIdx, out int actualInsertPos)
+        /// <returns>ReadStatus.VALID on successful detection of barcodes (and GGG)</returns>
+        public int VerifyBarcodeAndTS(string read, int maxTrimExtraGs, out int bcIdx, out int actualInsertPos)
         {
             bcIdx = -1;
             actualInsertPos = InsertOrGGGPos + TSSeq.Length;
-            //Console.WriteLine("BcPos={0} BcLen={1} InsOrGGG={2} Actual={3} TSSeq={4} \n{5}",
-            //                  BarcodePos, BarcodeLen, InsertOrGGGPos, actualInsertPos, TSSeq, read);
-            if (bcSeqToBcIdxMap.TryGetValue(read.Substring(BarcodePos, BarcodeLen), out bcIdx))
+            if (!bcSeqToBcIdxMap.TryGetValue(read.Substring(BarcodePos, BarcodeLen), out bcIdx))
+                return ReadStatus.BARCODE_ERROR;
+            if (read.Substring(InsertOrGGGPos, TSSeq.Length) != TSSeq)
+                return ReadStatus.TSSEQ_MISSING;
+            while (maxTrimExtraGs > 0 && read.Length > actualInsertPos && read[actualInsertPos] == m_TSTrimNt)
             {
-                if (read.Substring(InsertOrGGGPos, TSSeq.Length) == TSSeq)
-                {
-                    while (maxTrimExtraGs > 0 && read.Length > actualInsertPos && read[actualInsertPos] == m_TSTrimNt)
-                    {
-                        actualInsertPos++;
-                        maxTrimExtraGs--;
-                    }
-                    return true;
-                }
+                actualInsertPos++;
+                maxTrimExtraGs--;
             }
-            return false;
+            return ReadStatus.VALID;
         }
 
         /// <summary>

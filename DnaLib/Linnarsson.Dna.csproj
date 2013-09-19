@@ -122,6 +122,7 @@
     <Compile Include="GeneFeature.cs" />
     <Compile Include="ExtractionInfo.cs" />
     <Compile Include="RandomTagFilterByBc.cs" />
+    <Compile Include="ReadStatus.cs" />
     <Compile Include="RepeatFeature.cs" />
     <Compile Include="RestrictionEnzyme.cs" />
     <Compile Include="ShortReadMapper.cs" />

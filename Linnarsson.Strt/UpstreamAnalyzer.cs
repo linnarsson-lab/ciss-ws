@@ -63,7 +63,7 @@ namespace Linnarsson.Strt
                 upSeq.RevComp();
             }
             int upstreamBcIdx, insertPos;
-            if (barcodes.VerifyBarcodeAndTS(upSeq.ToString(), 0, out upstreamBcIdx, out insertPos))
+            if (barcodes.VerifyBarcodeAndTS(upSeq.ToString(), 0, out upstreamBcIdx, out insertPos) == ReadStatus.VALID)
             {
                 upstreamEquals[currentBcIdx, upstreamBcIdx] += count;
                 if (currentBcIdx == upstreamBcIdx)

@@ -227,7 +227,7 @@ namespace Linnarsson.Strt
                     count++;
                     if (count > MAX_READS) break;
                     int bcIdx, insertStart;
-                    if (barcodes.VerifyBarcodeAndTS(rec.Sequence, 0, out bcIdx, out insertStart))
+                    if (barcodes.VerifyBarcodeAndTS(rec.Sequence, 0, out bcIdx, out insertStart) == ReadStatus.VALID)
                         barcodeCounts[bcIdx]++;
                     if ((DateTime.Now - start).TotalSeconds > 2)
                     {
@@ -869,7 +869,7 @@ namespace Linnarsson.Strt
                     nTot++;
                     string seq = rec.Sequence.ToString();
                     int bcIdx, insertPos;
-                    if (barcodes.VerifyBarcodeAndTS(seq, 6, out bcIdx, out insertPos))
+                    if (barcodes.VerifyBarcodeAndTS(seq, 6, out bcIdx, out insertPos) == ReadStatus.VALID)
                     {
                         if (seq.Length - insertPos >= minReadLength)
                         {

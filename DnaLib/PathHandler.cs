@@ -221,7 +221,7 @@ namespace Linnarsson.Dna
         public static string GetRootedProjectFolder(string projectFolderOrName)
         {
             projectFolderOrName = GetRooted(projectFolderOrName);
-            if (Path.GetFileName(projectFolderOrName).IndexOf("_ExtractionVer") >= 0)
+            if (Path.GetFileName(projectFolderOrName).IndexOf(extractedFolderCenter) >= 0)
                 projectFolderOrName = Path.GetDirectoryName(projectFolderOrName);
             return projectFolderOrName;
         }
@@ -239,8 +239,9 @@ namespace Linnarsson.Dna
             return mapFilePath.Substring(0, m.Length) + "_summary.txt";
         }
 
-        public static string extractedFolderMakePattern = "{0}_ExtractionVer{1}_{2}";
-        public static string extractedFolderMatchPattern = "_ExtractionVer([0-9]+)_.+$"; //"_ExtractionVer([0-9]+)_[^_]+$";
+        public static readonly string extractedFolderCenter = "_ExtractionVer";
+        public static string extractedFolderMakePattern = "{0}" + extractedFolderCenter + "{1}_{2}";
+        public static string extractedFolderMatchPattern = extractedFolderCenter + "([0-9]+)_(.+)$";
         public static string MakeExtractedFolder(string projectFolder, string barcodeSet, string extractionVersion)
         {
             string projectName = Path.GetFileName(projectFolder);
@@ -259,7 +260,7 @@ namespace Linnarsson.Dna
         {
             inputFolder = GetRooted(inputFolder);
             string latestExtracted = inputFolder;
-            if (!inputFolder.Contains("_ExtractionVer"))
+            if (!inputFolder.Contains(extractedFolderCenter))
             { // inputFolder was a project folder
                 string projectName = Path.GetFileName(inputFolder);
                 string pat = projectName + extractedFolderMatchPattern;
@@ -321,9 +322,9 @@ namespace Linnarsson.Dna
 
         public static string ParseBarcodeSet(string extractedFolder)
         {
-            Match m = Regex.Match(extractedFolder, ".*Extract[^_]+_([^_]+)");
+            Match m = Regex.Match(extractedFolder, extractedFolderMatchPattern);
             if (m != null)
-                return m.Groups[1].Value;
+                return m.Groups[2].Value;
             return Props.props.DefaultBarcodeSet;
         }
 

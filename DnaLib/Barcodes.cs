@@ -592,7 +592,7 @@ namespace Linnarsson.Dna
 
     public class CustomBarcodes : Barcodes
     {
-        public CustomBarcodes(string barcodeSetName) : base(barcodeSetName, new string[] {"NOBAR"})
+        public CustomBarcodes(string barcodeSetName) : base(barcodeSetName, new string[] { NOBARCODE })
         {
             m_TSSeq = "";
             m_TSTrimNt = ' ';

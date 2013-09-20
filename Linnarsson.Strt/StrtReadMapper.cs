@@ -162,7 +162,7 @@ namespace Linnarsson.Strt
 
 				Dictionary<string, StreamWriter> bcodeFiles = new Dictionary<string, StreamWriter>();
                 Dictionary<string, int> counts = new Dictionary<string,int>();
-                StreamWriter sw_slask = new StreamWriter(Path.Combine(outputFolder, fileName + "_NOBAR.fq"));
+                StreamWriter sw_slask = new StreamWriter(Path.Combine(outputFolder, fileName + "_" + Barcodes.NOBARCODE + ".fq"));
 				foreach (FastQRecord rec in FastQFile.Stream(file, props.QualityScoreBase))
 				{
 					count++;
@@ -195,7 +195,7 @@ namespace Linnarsson.Strt
                 StreamWriter sw_summary = new StreamWriter(Path.Combine(outputFolder, fileName + "_SUMMARY.fq"));
                 foreach (string bc in bcodeFiles.Keys)
                     sw_summary.WriteLine("{0}\t{1}\t{2}", Path.GetFileName(file), bc, counts[bc]);
-                sw_summary.WriteLine("{0}\tNOBAR\t{1}", Path.GetFileName(file), nobcCount);
+                sw_summary.WriteLine("{0}\t{1}\t{2}", Path.GetFileName(file), Barcodes.NOBARCODE, nobcCount);
                 sw_summary.Close();
                 foreach (StreamWriter sw in bcodeFiles.Values)
                     if (sw != null) sw.Close();

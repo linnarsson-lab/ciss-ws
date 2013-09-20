@@ -364,7 +364,7 @@ namespace Linnarsson.Strt
                 extractedFilePaths[i] = Path.Combine(extractedByBcFolder, i.ToString() + ".fq");
             laneInfo.extractedFilePaths = extractedFilePaths;
             laneInfo.slaskFilePath = Path.Combine(extractedByBcFolder, "slask.fq.gz");
-            laneInfo.summaryFilePath = Path.Combine(extractedByBcFolder, "summary.txt");
+            laneInfo.summaryFilePath = Path.Combine(extractedByBcFolder, PathHandler.extractionSummaryFilename);
         }
 
         private StreamWriter[] OpenStreamWriters(string[] extractedFilePaths)
@@ -466,7 +466,7 @@ namespace Linnarsson.Strt
             ReadCounter rc = new ReadCounter();
             foreach (string extractedByBcFolder in extractedByBcFolders)
             {
-                string summaryPath = Path.Combine(extractedByBcFolder, "summary.txt");
+                string summaryPath = Path.Combine(extractedByBcFolder, PathHandler.extractionSummaryFilename);
                 rc.AddExtractionSummary(summaryPath);
             }
             return rc.AverageReadLen;
@@ -737,7 +737,7 @@ namespace Linnarsson.Strt
                 string laneName = Path.GetFileName(laneMapFolder);
                 string extrFolder = Path.GetDirectoryName(Path.GetDirectoryName(laneMapFolder));
                 string summaryFolder = Path.Combine(Path.Combine(extrFolder, "fq"), laneName);
-                string summaryPath = Path.Combine(summaryFolder, "summary.txt");
+                string summaryPath = Path.Combine(summaryFolder, PathHandler.extractionSummaryFilename);
                 if (!summaryPaths.ContainsKey(summaryPath))
                     summaryPaths[summaryPath] = null;
             }

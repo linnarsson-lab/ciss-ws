@@ -14,10 +14,6 @@ namespace BkgFastQCopier
 {
     public class ReadCopier
     {
-        private static readonly string statsSubFolder = "statistics";
-        private static readonly string nonPFSubFolder = "nonPF";
-        private static readonly string fileIdCreatePattern = "Run{0:00000}_L{1}_{2}_{3}";
-
         string illuminaRunsFolder;
         string outputReadsFolder;
         StreamWriter logWriter;
@@ -36,8 +32,8 @@ namespace BkgFastQCopier
             if (!File.Exists(outputReadsFolder))
             {
                 Directory.CreateDirectory(outputReadsFolder);
-                Directory.CreateDirectory(Path.Combine(outputReadsFolder, nonPFSubFolder));
-                Directory.CreateDirectory(Path.Combine(outputReadsFolder, statsSubFolder));
+                Directory.CreateDirectory(Path.Combine(outputReadsFolder, PathHandler.nonPFSubFolder));
+                Directory.CreateDirectory(Path.Combine(outputReadsFolder, PathHandler.statsSubFolder));
             }
         }
 
@@ -242,7 +238,7 @@ namespace BkgFastQCopier
                 string fileId = GetFileId(runId, lane, read, runName);
                 PFFilename = GetPFFilePath(readsFolder, fileId) + ".gz";
                 PFFile = PFFilename.OpenWrite();
-                nonPFFile = Path.Combine(readsFolder, Path.Combine(nonPFSubFolder, fileId + "_nonPF.fq.gz")).OpenWrite();
+                nonPFFile = Path.Combine(readsFolder, Path.Combine(PathHandler.nonPFSubFolder, fileId + "_nonPF.fq.gz")).OpenWrite();
                 statsFilePath = GetStatsFilePath(readsFolder, fileId);
             }
 
@@ -256,11 +252,11 @@ namespace BkgFastQCopier
 
             private static string GetFileId(int runId, int lane, int read, string runName)
             {
-                return string.Format(fileIdCreatePattern, runId, lane, read, runName);
+                return string.Format(PathHandler.readFileIdCreatePattern, runId, lane, read, runName);
             }
             private static string GetStatsFilePath(string readsFolder, string fileId)
             {
-                return Path.Combine(readsFolder, Path.Combine(statsSubFolder, fileId + ".txt"));
+                return Path.Combine(readsFolder, Path.Combine(PathHandler.statsSubFolder, fileId + ".txt"));
             }
             private static string GetPFFilePath(string readsFolder, string fileId)
             {

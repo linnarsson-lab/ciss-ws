@@ -10,6 +10,11 @@ namespace Linnarsson.Dna
 {
     public class PathHandler
     {
+        public static readonly string extractionSummaryFilename = "summary.txt";
+        public static readonly string statsSubFolder = "statistics";
+        public static readonly string nonPFSubFolder = "nonPF";
+        public static readonly string readFileIdCreatePattern = "Run{0:00000}_L{1}_{2}_{3}";
+
         /// <summary>
         /// Locates the folder where bowtie stores its indexes
         /// </summary>
@@ -129,7 +134,7 @@ namespace Linnarsson.Dna
             if (runId.Contains('_'))
                 runId = Regex.Match(runId, "_([0-9]+)_").Groups[1].Value;
             string matchPat = GetReadFileMatchPattern(runId);
-            string readStatFolder = Path.Combine(Props.props.ReadsFolder, "statistics");
+            string readStatFolder = Path.Combine(Props.props.ReadsFolder, PathHandler.statsSubFolder);
             int runNo = -1;
             foreach (char laneNo in laneNumbers)
             {
@@ -231,12 +236,6 @@ namespace Linnarsson.Dna
             if (!Path.IsPathRooted(projectFolderOrName))
                 projectFolderOrName = Path.Combine(Props.props.ProjectsFolder, projectFolderOrName);
             return projectFolderOrName;
-        }
-
-        public static string MakeExtractionSummaryPath(string mapFilePath)
-        {
-            Match m = Regex.Match(mapFilePath, "^.*Run[0-9]+_L[0-9]+_[0-9]_[0-9]+");
-            return mapFilePath.Substring(0, m.Length) + "_summary.txt";
         }
 
         public static readonly string extractedFolderCenter = "_ExtractionVer";

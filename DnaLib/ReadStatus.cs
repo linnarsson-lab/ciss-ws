@@ -22,13 +22,16 @@ namespace Linnarsson.Dna
         public readonly static int NO_BC_INTERNAL_T20 = 12;
         public readonly static int BARCODE_ERROR = 13;
         public readonly static int TSSEQ_MISSING = 14;
-        public readonly static int Length = 15;
+        public readonly static int TOO_SHORT_INSERT = 15;
+        public readonly static int FORBIDDEN_INTERNAL_SEQ = 16;
+        public readonly static int Length = 17;
         public readonly static string[] categories = new string[] { "VALID", "TOO_LONG_pA_pN_TAIL", "SEQ_QUALITY_ERROR",
-                                                                   "COMPLEXITY_ERROR",  "SAL1-T25_IN_READ", "N_IN_RANDOM_TAG",
-                                                                   "LOW_QUALITY_IN_RANDOM_TAG","NEGATIVE_BARCODE_ERROR",
-                                                                   "NO_BARCODE-CGACT25", "NO_BARCODE-NNNA25", "NO_BARCODE-SAL1-T25",
-                                                                   "NO_BARCODE-SOLEXA-ADP2_CONTAINING", "NO_BARCODE-INTERNAL-T20",
-                                                                   "NO_VALID_BARCODE-UNCHARACTERIZED", "TSSEQ_MISSING" };
+                                                                    "COMPLEXITY_ERROR",  "SAL1-T25_IN_READ", "N_IN_RANDOM_TAG",
+                                                                    "LOW_QUALITY_IN_RANDOM_TAG","NEGATIVE_BARCODE_ERROR",
+                                                                    "NO_BARCODE-CGACT25", "NO_BARCODE-NNNA25", "NO_BARCODE-SAL1-T25",
+                                                                    "NO_BARCODE-SOLEXA-ADP2_CONTAINING", "NO_BARCODE-INTERNAL-T20",
+                                                                    "NO_VALID_BARCODE-UNCHARACTERIZED", "TSSEQ_MISSING", "TOO_SHORT_INSERT",
+                                                                    "FORBIDDEN_INTERNAL_SEQ" };
         public static int Parse(string category)
         {
             return Array.FindIndex(categories, (c) => category.Equals(c, StringComparison.CurrentCultureIgnoreCase));

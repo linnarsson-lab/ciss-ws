@@ -123,6 +123,7 @@ namespace Linnarsson.Dna
         public string BackupDestinationFolder = "hiseq@130.237.142.75:/mnt/davidson/hiseq/data_reads/";
         public int MappingsBySpikeReadsSampleDist = 0; // Set > 0 to sample per-barcode curves of # unique mappings as fn. of # processed spike reads
         public string RemoveTrailingReadPrimerSeqs = ""; // Comma-separated list of seqs to remove if during extraction reads end with (part of) them.
+        public string ForbiddenReadInternalSeqs = ""; // Comma-separated list of seqs that if found inside reads disqualify them during extraction.
         public bool LogMode = false;
 
         private Barcodes m_Barcodes;

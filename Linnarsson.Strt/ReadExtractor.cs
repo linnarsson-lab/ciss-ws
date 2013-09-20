@@ -246,6 +246,7 @@ namespace Linnarsson.Strt
         private int minQualityInUMI;
         private string[] diNtPatterns;
         private string[] trailingPrimerSeqs;
+        private string[] forbiddenReadInternalSeqs;
         private int minPrimerSeqLen = 5;
 
         public ReadExtractor(Props props)
@@ -258,6 +259,7 @@ namespace Linnarsson.Strt
             minInsertNonAs = props.MinExtractionInsertNonAs;
             minQualityInUMI = props.MinPhredScoreInRandomTag;
             trailingPrimerSeqs = props.RemoveTrailingReadPrimerSeqs.Split(',').Where(s => s.Length >= minPrimerSeqLen).ToArray();
+            forbiddenReadInternalSeqs = props.ForbiddenReadInternalSeqs.Split(',').ToArray();
         }
 
         /// <summary>
@@ -282,9 +284,10 @@ namespace Linnarsson.Strt
                 bcIdx = -1;
                 return AnalyzeNonBarcodeRead(rSeq);
             }
-            int insertLength = TrimTrailingNOrPrimerAndCheckAs(rSeq);
+            int lenStatus = ReadStatus.VALID;
+            int insertLength = TrimTrailingNOrPrimerAndCheckAs(rSeq, out lenStatus);
             if (insertLength < minTotalReadLength)
-                return ReadStatus.LENGTH_ERROR;
+                return lenStatus;
             string headerUMISection = "";
             if (UMILen > 0)
             {
@@ -315,25 +318,42 @@ namespace Linnarsson.Strt
         /// Also, if the read ends with the (start) sequence of a pre-defined primer, that sequence is removed
         /// </summary>
         /// <param name="rSeq"></param>
+        /// <param name="tailReadStatus">If returned length is doomed too short, this will is a ReadStatus value giving the reason</param>
         /// <returns>Length of remaining sequence</returns>
-        private int TrimTrailingNOrPrimerAndCheckAs(string rSeq)
+        private int TrimTrailingNOrPrimerAndCheckAs(string rSeq, out int tailReadStatus)
         {
+            tailReadStatus = ReadStatus.VALID;
             int insertLength = rSeq.Length;
             while (insertLength >= minTotalReadLength && rSeq[insertLength - 1] == 'N')
                 insertLength--;
-            int nonATailLen = insertLength;
-            while (nonATailLen >= minTotalReadLength && rSeq[nonATailLen - 1] == 'A')
-                nonATailLen--;
-            if (nonATailLen < minTotalReadLength) return nonATailLen;
+            int lenWOPolyXTail = insertLength;
+            while (lenWOPolyXTail >= minTotalReadLength && rSeq[lenWOPolyXTail - 1] == 'A')
+                lenWOPolyXTail--;
+            if (lenWOPolyXTail < minTotalReadLength)
+            {
+                tailReadStatus = ReadStatus.LENGTH_ERROR;
+                return lenWOPolyXTail;
+            }
             foreach (string primerSeq in trailingPrimerSeqs)
             {
                 int i = rSeq.LastIndexOf(primerSeq.Substring(0, minPrimerSeqLen));
                 if (i >= minTotalReadLength)
                 {
                     int restLen = rSeq.Length - i - minPrimerSeqLen;
-                    if ((primerSeq.Length - minPrimerSeqLen) >= restLen 
+                    if ((primerSeq.Length - minPrimerSeqLen) >= restLen
                         && rSeq.Substring(i + minPrimerSeqLen).Equals(primerSeq.Substring(minPrimerSeqLen, restLen)))
+                    {
+                        tailReadStatus = ReadStatus.TOO_SHORT_INSERT;
                         return i;
+                    }
+                }
+            }
+            foreach (string intSeq in forbiddenReadInternalSeqs)
+            {
+                if (rSeq.Contains(intSeq))
+                {
+                    tailReadStatus = ReadStatus.FORBIDDEN_INTERNAL_SEQ;
+                    return 0;
                 }
             }
             return insertLength;

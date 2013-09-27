@@ -6,6 +6,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Threading;
 using Linnarsson.Strt;
+using Linnarsson.Mathematics;
 
 namespace C1
 {
@@ -125,14 +126,27 @@ namespace C1
             }
         }
 
+        /// <summary>
+        /// Sort matching files in folder by last write time and return the most recent
+        /// </summary>
+        /// <param name="folder"></param>
+        /// <param name="filePattern"></param>
+        /// <returns></returns>
         private static string GetLastMatchingFile(string folder, string filePattern)
         {
             string[] matching = Directory.GetFiles(folder, filePattern);
+            DateTime[] timestamps = Array.ConvertAll(matching, f => new FileInfo(f).LastWriteTime);
             if (matching.Length == 0)
                 return null;
-            Array.Sort(matching);
+            Sort.QuickSort(timestamps, matching);
             return matching[matching.Length - 1];
         }
+        /// <summary>
+        /// Sort matching files in folder and return the last by string comparison
+        /// </summary>
+        /// <param name="folder"></param>
+        /// <param name="filePattern"></param>
+        /// <returns></returns>
         private static string GetLastMatchingFolder(string folder, string filePattern)
         {
             string[] matching = Directory.GetDirectories(folder, filePattern);

@@ -316,7 +316,7 @@ namespace Linnarsson.Strt
         /// </summary>
         public int[,] readDistributionByMolCount;
 
-        public static readonly int MaxValueInReadCountHistogram = 1000;
+        public static readonly int MaxValueInReadCountHistogram = 4100;
 
         public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds)
         {

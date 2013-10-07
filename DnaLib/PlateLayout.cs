@@ -43,6 +43,7 @@ namespace Linnarsson.Dna
             }
             catch (ArgumentException)
             {
+                Console.WriteLine(speciesId);
                 speciesId = "empty";
             }
             return speciesId;
@@ -74,7 +75,7 @@ namespace Linnarsson.Dna
                 SpeciesIdBySampleId[p.Key] = speciesId;
             }
             if (m_SpeciesIds.Count == 0)
-                throw new SampleLayoutFileException("No parseable species in database for" + plateId +
+                throw new SampleLayoutFileException("No parseable species in database for " + plateId +
                                                     ". Change to two-letter abbrevation or full latin name (e.g. 'Hs' or 'Homo sapiens')");
         }
     }

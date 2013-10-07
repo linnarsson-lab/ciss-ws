@@ -22,6 +22,16 @@ namespace C1
         {
         }
 
+        public static string StandardizeChipId(string chipId)
+        {
+            chipId = chipId.Replace("-", "");
+            int junk;
+            int last3Pos = chipId.Length - 3;
+            if (int.TryParse(chipId.Substring(last3Pos, 3), out junk))
+                chipId = chipId.Substring(0, last3Pos) + "-" + chipId.Substring(last3Pos);
+            return chipId;
+        }
+
         private bool IssueNonQuery(string sql)
         {
             bool success = true;
@@ -214,8 +224,14 @@ namespace C1
             conn.Close();
         }
 
+        private static string StripC1Indicator(string projectId)
+        {
+            return projectId.StartsWith(C1Props.C1ProjectPrefix) ? projectId.Substring(C1Props.C1ProjectPrefix.Length) : projectId;
+        }
+
         public Dictionary<string, int> GetCellIdByWell(string projectId)
         {
+            projectId = StripC1Indicator(projectId);
             Dictionary<string, int> cellIdByWell = new Dictionary<string, int>();
             string sql = string.Format("SELECT Well, CellID FROM Cell WHERE Plate='{0}' ORDER BY Well", projectId);
             MySqlConnection conn = new MySqlConnection(connectionString);
@@ -230,6 +246,7 @@ namespace C1
 
         private static List<string> GetCellAnnotationNames(string projectId)
         {
+            projectId = StripC1Indicator(projectId);
             string sql = "SELECT DISTINCT(Name) FROM CellAnnotation WHERE CellID IN (SELECT CellID FROM Cell WHERE Plate='{0}')";
             sql = string.Format(sql, projectId);
             MySqlConnection conn = new MySqlConnection(connectionString);
@@ -253,6 +270,7 @@ namespace C1
         public static void GetCellAnnotations(string projectId, 
             out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
+            projectId = StripC1Indicator(projectId);
             List<string> annotNames = GetCellAnnotationNames(projectId);
             annotationIndexes = new Dictionary<string, int>(7 + annotNames.Count);
             annotationIndexes["CellID"] = 0;
@@ -285,7 +303,7 @@ namespace C1
                 annotations[well] = wellAnn;
             }
             rdr.Close();
-            sql = "SELECT Well, Name, Value FROM CellAnnotation a LEFT JOIN Cell c ON a.CellID=c.CellID" +
+            sql = "SELECT Well, Name, Value FROM CellAnnotation a LEFT JOIN Cell c ON a.CellID=c.CellID " +
                     "WHERE a.CellID IN (SELECT CellID FROM Cell WHERE Plate='{0}')";
             sql = string.Format(sql, projectId);
             cmd = new MySqlCommand(sql, conn);

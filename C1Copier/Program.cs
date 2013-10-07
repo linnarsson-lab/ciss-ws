@@ -100,6 +100,7 @@ namespace C1
                         continue;
                     }
                     metadata["Chipfolder"] = chipDir;
+                    metadata["Chip serial number"] = C1DB.StandardizeChipId(metadata["Chip serial number"]);
                     List<Cell> celldata = ReadCellData(chipDir, metadata);
                     if (celldata == null)
                     {
@@ -236,7 +237,7 @@ namespace C1
         private static void InsertNewProject(Dictionary<string, string> m)
         {
             string layoutFile = ""; // TODO: May be wanted to bring more specific metadata on each cell
-            string chipId = StandardizeChipId(m["Chip serial number"]);
+            string chipId = m["Chip serial number"];
             chipId = VerifyChipfolder(m["Chipfolder"], chipId);
             string species = m["Species"].ToLower();
             if (species == "mouse" || species.StartsWith("mus")) species = "Mm";
@@ -250,23 +251,13 @@ namespace C1
         private static string VerifyChipfolder(string chipFolder, string chipId)
         {
             string folderId = Path.GetFileName(chipFolder);
-            folderId = StandardizeChipId(folderId);
+            folderId = C1DB.StandardizeChipId(folderId);
             if (chipId != folderId && new ProjectDB().GetProjectColumn("plateid", C1Props.C1ProjectPrefix + chipId, "platereference").Count > 0)
             {
                 chipId = folderId;
                 logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Mismatching folder and chipid in " + chipFolder + ". Changing id to " + chipId);
                 logWriter.Flush();
             }
-            return chipId;
-        }
-
-        private static string StandardizeChipId(string chipId)
-        {
-            chipId = chipId.Replace("-", "");
-            int junk;
-            int last3Pos = chipId.Length - 3;
-            if (int.TryParse(chipId.Substring(last3Pos, 3), out junk))
-                chipId = chipId.Substring(0, last3Pos) + "-" + chipId.Substring(last3Pos);
             return chipId;
         }
 

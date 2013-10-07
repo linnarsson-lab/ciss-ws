@@ -25,7 +25,7 @@ namespace C1
         public string GeneOntologySubPath = "gene_ontology/go-basic.obo";
         public string C1BFImageSubfoldernamePattern = "BF_*";
         public string[] C1AllImageSubfoldernamePatterns = new string[] { "BF_*" } ; //, "Filter1_*", "Filter2_*", "Filter3_*" };
-        public string C1ImageFilenamePattern = "well_*.png";
+        public string C1ImageFilenamePattern = "well_*_center.png";
         public int SpikeMoleculeCount = 27900;
         public string AutoAnalysisMailRecepients = "peter.lonnerberg@ki.se";
         public string AutoAnalysisBuild = "UCSC";

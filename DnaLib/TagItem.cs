@@ -340,6 +340,19 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
+        /// Get number of molecules observed by only one read
+        /// </summary>
+        /// <returns></returns>
+        public int GetNumSingletons()
+        {
+            if (nRndTags == 1)
+                return (totalReadCount == 1)? 1 : 0;
+            if (readCountsByRndTag == null)
+                return 0;
+            return readCountsByRndTag.Count(v => v == 1);
+        }
+
+        /// <summary>
         /// Get number of rndTags with read count > 0 at this position-strand,
         /// or total number of reads if rndTags are not used.
         /// </summary>

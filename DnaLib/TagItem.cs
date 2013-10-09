@@ -88,7 +88,7 @@ namespace Linnarsson.Dna
         /// Threshold parameter for removing molecules that are a result of mutated rnd tags.
         /// Actual meaning depends on the MutationThresholder selected.
         /// </summary>
-        private static int RndTagMutationFilterParameter = 50;
+        private static int RndTagMutationFilterParameter;
 
         public static void SetRndTagMutationFilter(Props props)
         {
@@ -96,6 +96,8 @@ namespace Linnarsson.Dna
                 mutationThresholder = FractionOfMaxThresholder;
             else if (props.RndTagMutationFilter == RndTagMutationFilterMethod.FractionOfMean)
                 mutationThresholder = FractionOfMeanThresholder;
+            else if (props.RndTagMutationFilter == RndTagMutationFilterMethod.Singleton)
+                mutationThresholder = SingletonThresholder;
             else
                 mutationThresholder = LowPassThresholder;
             RndTagMutationFilterParameter = props.RndTagMutationFilterParam;
@@ -109,6 +111,11 @@ namespace Linnarsson.Dna
         private delegate int MutationThresholder(TagItem tagItem);
         private static MutationThresholder mutationThresholder;
 
+        private static int SingletonThresholder(TagItem tagItem)
+        {
+            int maxNumReads = tagItem.GetReadCountsByRndTag().Max();
+            return (maxNumReads >= RndTagMutationFilterParameter)? 1 : 0;
+        }
         private static int LowPassThresholder(TagItem tagItem)
         {
             return RndTagMutationFilterParameter;
@@ -375,6 +382,11 @@ namespace Linnarsson.Dna
             if (nRndTags == 1)
                 return new ushort[1] { (ushort)totalReadCount };
             return readCountsByRndTag;
+        }
+
+        public int GetMutationThreshold()
+        {
+            return mutationThresholder(this);
         }
 
     }

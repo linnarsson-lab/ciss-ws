@@ -372,7 +372,8 @@ namespace Linnarsson.Strt
                 ushort[] readsByRndTag = tagItem.GetReadCountsByRndTag();
                 int nUsedRndTags = readsByRndTag.Count(c => c > 0);
                 nCasesPerRandomTagCount[nUsedRndTags]++;
-                foreach (ushort countInRndTag in readsByRndTag.Where(c => c > 0))
+                int threshold = tagItem.GetMutationThreshold();
+                foreach (ushort countInRndTag in readsByRndTag.Where(c => c > threshold))
                 {
                     int limitedCount = Math.Min(MaxValueInReadCountHistogram, countInRndTag);
                     moleculeReadCountsHistogram[limitedCount]++;

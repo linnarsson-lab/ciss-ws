@@ -20,7 +20,7 @@ namespace Linnarsson.Dna
     /// <summary>
     /// Used in the Props.RndTagMutationFilter to define how molecules due to mutated random labels should be eliminated
     /// </summary>
-    public enum RndTagMutationFilterMethod { FractionOfMax, FractionOfMean };
+    public enum RndTagMutationFilterMethod { FractionOfMax, FractionOfMean, Singleton };
 
     /// <summary>
     /// Defines various configurations used by many classes.

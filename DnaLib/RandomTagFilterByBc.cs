@@ -308,6 +308,14 @@ namespace Linnarsson.Strt
         public int[] nCasesPerRandomTagCount;
 
         /// <summary>
+        /// Total number of detected molecules before mutation filter
+        /// </summary>
+        public int totalMolecules = 0;
+        /// <summary>
+        /// Total number of detected molecules after mutation filter
+        /// </summary>
+        public int totalFilteredMolecules = 0;
+        /// <summary>
         /// Histogram of number of times (reads) every molecule has been seen
         /// </summary>
         public int[] moleculeReadCountsHistogram;
@@ -316,7 +324,7 @@ namespace Linnarsson.Strt
         /// </summary>
         public int[,] readDistributionByMolCount;
 
-        public static readonly int MaxValueInReadCountHistogram = 4100;
+        public static readonly int MaxValueInReadCountHistogram = 5000;
 
         public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds)
         {
@@ -371,13 +379,15 @@ namespace Linnarsson.Strt
             {
                 ushort[] readsByRndTag = tagItem.GetReadCountsByRndTag();
                 int nUsedRndTags = readsByRndTag.Count(c => c > 0);
+                totalMolecules += nUsedRndTags;
                 nCasesPerRandomTagCount[nUsedRndTags]++;
                 int threshold = tagItem.GetMutationThreshold();
-                foreach (ushort countInRndTag in readsByRndTag.Where(c => c > threshold))
+                foreach (ushort nReadsInRndTag in readsByRndTag.Where(c => c > threshold))
                 {
-                    int limitedCount = Math.Min(MaxValueInReadCountHistogram, countInRndTag);
-                    moleculeReadCountsHistogram[limitedCount]++;
-                    readDistributionByMolCount[nUsedRndTags, limitedCount]++;
+                    int limitedReadCount = Math.Min(MaxValueInReadCountHistogram, nReadsInRndTag);
+                    moleculeReadCountsHistogram[limitedReadCount]++;
+                    readDistributionByMolCount[nUsedRndTags, limitedReadCount]++;
+                    totalFilteredMolecules++;
                 }
             }
         }

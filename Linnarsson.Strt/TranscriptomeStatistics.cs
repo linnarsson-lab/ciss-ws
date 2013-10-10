@@ -905,7 +905,8 @@ namespace Linnarsson.Strt
             WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules per barcode vs. mapped reads processed",
                                    sampledUniqueMoleculesByBcIdx, 0, sampledUniqueMoleculesByBcIdx.Keys.Count);
             xmlFile.WriteLine("  <moleculereadscountshistogram>");
-            xmlFile.WriteLine("    <title>Distro of no. times every unique molecule has been observed (after mutation thresholding)</title>");
+            xmlFile.WriteLine("    <title>Distro of reads/molecule (after mutated UMI removal) TotMols={0}(before)/{1}(after removal)</title>",
+                              randomTagFilter.totalMolecules, randomTagFilter.totalFilteredMolecules);
             xmlFile.WriteLine("    <xtitle>Number of observations (reads)</xtitle>");
             for (int i = 1; i < randomTagFilter.moleculeReadCountsHistogram.Length; i++)
                 xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.moleculeReadCountsHistogram[i]);

@@ -211,6 +211,17 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
+        /// Iterate all TagItems that contain any data
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<TagItem> IterNonEmptyTagItems()
+        {
+            foreach (TagItem tagItem in tagItems.Values)
+                if (tagItem.HasReads)
+                    yield return tagItem;
+        }
+
+        /// <summary>
         /// Use to get the filtered molecule count and read count profile for a specific genomic position and strand.
         /// If no data exists, readProfile == null and moCount == 0.
         /// </summary>
@@ -232,17 +243,6 @@ namespace Linnarsson.Strt
                 readProfile = null;
                 molCount = 0;
             }
-        }
-
-        /// <summary>
-        /// Iterate all TagItems that contain any data
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerable<TagItem> IterNonEmptyTagItems()
-        {
-            foreach (TagItem tagItem in tagItems.Values)
-                if (tagItem.HasReads)
-                    yield return tagItem;
         }
 
         /// <summary>
@@ -308,17 +308,29 @@ namespace Linnarsson.Strt
         public int[] nCasesPerRandomTagCount;
 
         /// <summary>
-        /// Total number of detected molecules before mutation filter
+        /// Total number of detected molecules mapping to any feature type before mutation filter
         /// </summary>
         public int totalMolecules = 0;
         /// <summary>
-        /// Total number of detected molecules after mutation filter
+        /// Total number of detected EXON mapping molecules before mutation filter
+        /// </summary>
+        public int totalTrMolecules = 0;
+        /// <summary>
+        /// Total number of detected molecules mapping to any feature type after mutation filter
         /// </summary>
         public int totalFilteredMolecules = 0;
         /// <summary>
-        /// Histogram of number of times (reads) every molecule has been seen
+        /// Total number of detected EXON mapping molecules after mutation filter
         /// </summary>
-        public int[] moleculeReadCountsHistogram;
+        public int totalFilteredTrMolecules = 0;
+        /// <summary>
+        /// Histogram of #reads/molecule (mapping to any feature type) after mutation filter
+        /// </summary>
+        public int[] readsPerMolHistogram;
+        /// <summary>
+        /// Histogram of #reads/molecule for EXON mappings after mutation filter
+        /// </summary>
+        public int[] readsPerTrMolHistogram;
         /// <summary>
         /// Histogram showing distribution of #reads for each number of rndTags detected across all mapped positions in the experiment
         /// </summary>
@@ -336,7 +348,8 @@ namespace Linnarsson.Strt
             chrTagDatas = new Dictionary<string, ChrTagData>();
             foreach (string chrId in chrIds)
                 chrTagDatas[chrId] = new ChrTagData(chrId);
-            moleculeReadCountsHistogram = new int[MaxValueInReadCountHistogram + 1];
+            readsPerMolHistogram = new int[MaxValueInReadCountHistogram + 1];
+            readsPerTrMolHistogram = new int[MaxValueInReadCountHistogram + 1];
             readDistributionByMolCount = new int[nRndTags + 1, MaxValueInReadCountHistogram + 1];
         }
 
@@ -380,14 +393,21 @@ namespace Linnarsson.Strt
                 ushort[] readsByRndTag = tagItem.GetReadCountsByRndTag();
                 int nUsedRndTags = readsByRndTag.Count(c => c > 0);
                 totalMolecules += nUsedRndTags;
+                if (tagItem.typeOfAnnotation == AnnotType.EXON)
+                    totalTrMolecules += nUsedRndTags;
                 nCasesPerRandomTagCount[nUsedRndTags]++;
                 int threshold = tagItem.GetMutationThreshold();
                 foreach (ushort nReadsInRndTag in readsByRndTag.Where(c => c > threshold))
                 {
                     int limitedReadCount = Math.Min(MaxValueInReadCountHistogram, nReadsInRndTag);
-                    moleculeReadCountsHistogram[limitedReadCount]++;
+                    readsPerMolHistogram[limitedReadCount]++;
                     readDistributionByMolCount[nUsedRndTags, limitedReadCount]++;
                     totalFilteredMolecules++;
+                    if (tagItem.typeOfAnnotation == AnnotType.EXON)
+                    {
+                        totalFilteredTrMolecules++;
+                        readsPerTrMolHistogram[limitedReadCount]++;
+                    }
                 }
             }
         }

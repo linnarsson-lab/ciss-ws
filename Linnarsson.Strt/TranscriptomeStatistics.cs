@@ -904,13 +904,25 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </nuniqueateachrandomtagcoverage>");
             WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules per barcode vs. mapped reads processed",
                                    sampledUniqueMoleculesByBcIdx, 0, sampledUniqueMoleculesByBcIdx.Keys.Count);
+            WriteReadsPerMolDistros(xmlFile);
+        }
+
+        private void WriteReadsPerMolDistros(StreamWriter xmlFile)
+        {
             xmlFile.WriteLine("  <moleculereadscountshistogram>");
-            xmlFile.WriteLine("    <title>Distro of reads/molecule (after mutated UMI removal) TotMols={0}(before)/{1}(after removal)</title>",
+            xmlFile.WriteLine("    <title>Distro of reads/molecule (all features, after mutated UMI removal) TotMols={0}(before)/{1}(after removal)</title>",
                               randomTagFilter.totalMolecules, randomTagFilter.totalFilteredMolecules);
             xmlFile.WriteLine("    <xtitle>Number of observations (reads)</xtitle>");
-            for (int i = 1; i < randomTagFilter.moleculeReadCountsHistogram.Length; i++)
-                xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.moleculeReadCountsHistogram[i]);
+            for (int i = 1; i < randomTagFilter.readsPerMolHistogram.Length; i++)
+                xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.readsPerMolHistogram[i]);
             xmlFile.WriteLine("  </moleculereadscountshistogram>");
+            xmlFile.WriteLine("  <readspertrmolhistogram>");
+            xmlFile.WriteLine("    <title>Distro of reads/molecule (EXON, after mutated UMI removal) TotExonMols={0}(before)/{1}(after removal)</title>",
+                              randomTagFilter.totalTrMolecules, randomTagFilter.totalFilteredTrMolecules);
+            xmlFile.WriteLine("    <xtitle>Number of observations (reads)</xtitle>");
+            for (int i = 1; i < randomTagFilter.readsPerTrMolHistogram.Length; i++)
+                xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.readsPerTrMolHistogram[i]);
+            xmlFile.WriteLine("  </readspertrmolhistogram>");
         }
 
         private void WriteAccuMoleculesByBc(StreamWriter xmlFile, string tag, string title, Dictionary<int, List<int>> data, int start, int stop)

@@ -340,7 +340,7 @@ namespace Linnarsson.Dna
         {
             if (nRndTags == 1) 
                 return totalReadCount;
-            if (readCountsByRndTag == null)
+            if (readCountsByRndTag == null || totalReadCount == 0)
                 return 0;
             int threshold = mutationThresholder(this);
             return readCountsByRndTag.Count(v => v > threshold);
@@ -354,7 +354,7 @@ namespace Linnarsson.Dna
         {
             if (nRndTags == 1)
                 return (totalReadCount == 1)? 1 : 0;
-            if (readCountsByRndTag == null)
+            if (readCountsByRndTag == null || totalReadCount == 0)
                 return 0;
             return readCountsByRndTag.Count(v => v == 1);
         }
@@ -368,7 +368,7 @@ namespace Linnarsson.Dna
         {
             if (nRndTags == 1)
                 return totalReadCount;
-            if (readCountsByRndTag == null)
+            if (readCountsByRndTag == null || totalReadCount == 0)
                 return 0;
             return readCountsByRndTag.Count(v => v > 0);
         }

@@ -124,6 +124,7 @@ namespace Linnarsson.Strt
         // For non-rndTagged samples the following two will be identical:
         Dictionary<int, List<int>> sampledUniqueMoleculesByBcIdx = new Dictionary<int, List<int>>();
         Dictionary<int, List<int>> sampledUniqueHitPositionsByBcIdx = new Dictionary<int, List<int>>();
+        Dictionary<int, List<int>> sampledFilteredMolsByBcIdx = new Dictionary<int, List<int>>();
 
         // Samplings by barcode:
         bool analyzeMappingsBySpikeReads = false;
@@ -413,9 +414,11 @@ namespace Linnarsson.Strt
             {
                 sampledUniqueMoleculesByBcIdx[currentBcIdx] = new List<int>();
                 sampledUniqueHitPositionsByBcIdx[currentBcIdx] = new List<int>();
+                sampledFilteredMolsByBcIdx[currentBcIdx] = new List<int>();
             }
             sampledUniqueMoleculesByBcIdx[currentBcIdx].Add(mappingAdder.NUniqueReadSignatures(currentBcIdx));
             sampledUniqueHitPositionsByBcIdx[currentBcIdx].Add(randomTagFilter.GetNumDistinctMappings());
+            sampledFilteredMolsByBcIdx[currentBcIdx].Add(randomTagFilter.GetCurrentNumFilteredMolecules());
         }
 
         public void Annotate(MappedTagItem item)
@@ -904,6 +907,8 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </nuniqueateachrandomtagcoverage>");
             WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules per barcode vs. mapped reads processed",
                                    sampledUniqueMoleculesByBcIdx, 0, sampledUniqueMoleculesByBcIdx.Keys.Count);
+            WriteAccuMoleculesByBc(xmlFile, "filteredmoleculesbybc", "No. of molecules after mutation filtering vs. mapped reads processed",
+                                   sampledFilteredMolsByBcIdx, 0, sampledFilteredMolsByBcIdx.Keys.Count);
             WriteReadsPerMolDistros(xmlFile);
         }
 

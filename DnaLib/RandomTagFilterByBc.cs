@@ -483,6 +483,21 @@ namespace Linnarsson.Strt
             return nAllChr;
         }
 
+        /// <summary>
+        /// Snapshot of number of molecules, after mutated UMI filtering, detected so far in current barcode.
+        /// </summary>
+        /// <returns>Current estimate after filtering of mutations (note that some molecules may be filtered away later during processing)</returns>
+        public int GetCurrentNumFilteredMolecules()
+        {
+            int total = 0;
+            foreach (ChrTagData chrTagData in chrTagDatas.Values)
+            {
+                foreach (TagItem tagItem in chrTagData.IterNonEmptyTagItems())
+                    total += tagItem.GetNumMolecules();
+            }
+            return total;
+        }
+
         public int TagItemCount()
         {
             int n = 0;

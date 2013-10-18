@@ -907,7 +907,7 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </nuniqueateachrandomtagcoverage>");
             WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules per barcode vs. mapped reads processed",
                                    sampledUniqueMoleculesByBcIdx, 0, sampledUniqueMoleculesByBcIdx.Keys.Count);
-            WriteAccuMoleculesByBc(xmlFile, "filteredmoleculesbybc", "No. of molecules after mutation filtering vs. mapped reads processed",
+            WriteAccuMoleculesByBc(xmlFile, "filteredmoleculesbybc", "No. of EXON molecules after mutation filtering vs. mapped reads processed",
                                    sampledFilteredMolsByBcIdx, 0, sampledFilteredMolsByBcIdx.Keys.Count);
             WriteReadsPerMolDistros(xmlFile);
         }

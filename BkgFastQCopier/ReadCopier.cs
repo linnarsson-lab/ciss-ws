@@ -282,7 +282,7 @@ namespace BkgFastQCopier
             {
                 PFFile.Close();
                 PFFile.Dispose();
-                CmdCaller.Run("chmod", "go-w " + PFFilename);
+                CmdCaller.Run("chmod", "a+rw " + PFFilename);
                 nonPFFile.Close();
                 nonPFFile.Dispose();
                 double passedAvLen = (nPFReads > 0) ? (totalPFReadLength / (double)nPFReads) : 0.0;

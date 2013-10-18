@@ -128,7 +128,7 @@ namespace Linnarsson.Strt
                 if (Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
                 {
                     hasSomeTrMapping = true;
-                    hasSomeNewMapping |= randomTagFilter.Add(m);
+                    hasSomeNewMapping |= randomTagFilter.AddTrMapping(m);
                 }
             }
             return hasSomeTrMapping ? null : mrm[0];
@@ -165,7 +165,7 @@ namespace Linnarsson.Strt
             if (bestDist < int.MaxValue)
             {
                 hasSomeTrMapping = true;
-                hasSomeNewMapping = randomTagFilter.Add(bestMapping);
+                hasSomeNewMapping = randomTagFilter.AddTrMapping(bestMapping);
             }
             return hasSomeTrMapping ? null : mrm[0];
         }
@@ -202,7 +202,7 @@ namespace Linnarsson.Strt
             for (int mrmIdx = 0; mrmIdx < nMrms; mrmIdx++)
             {
                 hasSomeTrMapping = true;
-                hasSomeNewMapping |= randomTagFilter.Add(mappingChoices[mrmIdx], sharingRealFeatures);
+                hasSomeNewMapping |= randomTagFilter.AddTrMapping(mappingChoices[mrmIdx], sharingRealFeatures);
             }
             return hasSomeTrMapping ? null : mrm[0];
         }
@@ -240,7 +240,7 @@ namespace Linnarsson.Strt
             if (bestDist < int.MaxValue)
             {
                 hasSomeTrMapping = true;
-                hasSomeNewMapping = randomTagFilter.Add(bestMapping, sharingRealFeatures);
+                hasSomeNewMapping = randomTagFilter.AddTrMapping(bestMapping, sharingRealFeatures);
             }
             return hasSomeTrMapping ? null : mrm[0];
         }
@@ -271,7 +271,7 @@ namespace Linnarsson.Strt
             if (nMrms > 0)
             {
                 hasSomeTrMapping = true;
-                hasSomeNewMapping = randomTagFilter.Add(mappingChoices[rnd.Next(nMrms)]);
+                hasSomeNewMapping = randomTagFilter.AddTrMapping(mappingChoices[rnd.Next(nMrms)]);
             }
             return hasSomeTrMapping ? null : mrm[0];
         }
@@ -302,7 +302,7 @@ namespace Linnarsson.Strt
             if (nMrms > 0)
             {
                 hasSomeTrMapping = true;
-                hasSomeNewMapping = randomTagFilter.Add(mappingChoices[rnd.Next(nMrms)], sharingRealFeatures);
+                hasSomeNewMapping = randomTagFilter.AddTrMapping(mappingChoices[rnd.Next(nMrms)], sharingRealFeatures);
             }
             return hasSomeTrMapping ? null : mrm[0];
         }

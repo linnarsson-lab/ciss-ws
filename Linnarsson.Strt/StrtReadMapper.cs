@@ -780,10 +780,10 @@ namespace Linnarsson.Strt
             string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
             ResultDescription resultDescr = new ResultDescription(mapFilePaths, bowtieIndexVersion, outputFolder);
             ts.SaveResult(readCounter, resultDescr);
-            InsertCells10kData(projectId, annotations);
             System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(props.GetType());
             using (StreamWriter writer = new StreamWriter(Path.Combine(outputFolder, "SilverBulletConfig.xml")))
                 x.Serialize(writer, props);
+            InsertCells10kData(projectId, annotations);
             return resultDescr;
         }
 

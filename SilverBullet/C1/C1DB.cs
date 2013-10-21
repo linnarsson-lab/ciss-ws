@@ -210,7 +210,7 @@ namespace C1
             conn.Open();
             //string sqlPat = "INSERT INTO Expression (CellID, TranscriptID, UniqueMolecules, UniqueReads, MaxMolecules, MaxReads) " +
             //                "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')";
-            string sqlPat = "INSERT INTO Expression (CellID, TranscriptID, Molecules) VALUES ('{0}','{1}','{2}')";
+            string sqlPat = "REPLACE INTO Expression (CellID, TranscriptID, Molecules) VALUES ('{0}',{1}, {2})";
             foreach (Expression e in exprIterator)
             {
                 //string sql = string.Format(sqlPat, e.CellID, e.TranscriptID, e.UniqueMolecules, e.UniqueReads, e.MaxMolecules, e.MaxReads);

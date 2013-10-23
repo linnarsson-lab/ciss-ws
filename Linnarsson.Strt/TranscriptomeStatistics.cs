@@ -173,7 +173,7 @@ namespace Linnarsson.Strt
             randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
             TagItem.SetRndTagMutationFilter(props);
             mappingAdder = new MappingAdder(annotations, randomTagFilter, barcodes);
-            statsSampleDistPerBarcode = sampleDistForAccuStats / barcodes.Count;
+            statsSampleDistPerBarcode = Props.props.sampleDistPerBcForAccuStats;
             if (props.AnalyzeSeqUpstreamTSSite && barcodes.Count > 1)
                 upstreamAnalyzer = new UpstreamAnalyzer(Annotations, barcodes);
             perLaneStats = new PerLaneStats(barcodes);
@@ -414,11 +414,13 @@ namespace Linnarsson.Strt
             {
                 sampledUniqueMoleculesByBcIdx[currentBcIdx] = new List<int>();
                 sampledUniqueHitPositionsByBcIdx[currentBcIdx] = new List<int>();
-                sampledFilteredMolsByBcIdx[currentBcIdx] = new List<int>();
+                if (Props.props.sampleAccuFilteredExonMols)
+                    sampledFilteredMolsByBcIdx[currentBcIdx] = new List<int>();
             }
             sampledUniqueMoleculesByBcIdx[currentBcIdx].Add(mappingAdder.NUniqueReadSignatures(currentBcIdx));
             sampledUniqueHitPositionsByBcIdx[currentBcIdx].Add(randomTagFilter.GetNumDistinctMappings());
-            sampledFilteredMolsByBcIdx[currentBcIdx].Add(randomTagFilter.GetCurrentNumFilteredMolecules());
+            if (Props.props.sampleAccuFilteredExonMols)
+                sampledFilteredMolsByBcIdx[currentBcIdx].Add(randomTagFilter.GetCurrentNumFilteredMolecules());
         }
 
         public void Annotate(MappedTagItem item)
@@ -905,9 +907,10 @@ namespace Linnarsson.Strt
             for (int i = 1; i < randomTagFilter.nCasesPerRandomTagCount.Length; i++)
                 xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
             xmlFile.WriteLine("  </nuniqueateachrandomtagcoverage>");
-            WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules per barcode vs. mapped reads processed",
+            WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules (all feature types) vs. mapped reads processed",
                                    sampledUniqueMoleculesByBcIdx, 0, sampledUniqueMoleculesByBcIdx.Keys.Count);
-            WriteAccuMoleculesByBc(xmlFile, "filteredmoleculesbybc", "No. of EXON molecules after mutation filtering vs. mapped reads processed",
+            if (Props.props.sampleAccuFilteredExonMols)
+                WriteAccuMoleculesByBc(xmlFile, "filteredmoleculesbybc", "No. of EXON molecules after mutation filtering vs. mapped reads processed",
                                    sampledFilteredMolsByBcIdx, 0, sampledFilteredMolsByBcIdx.Keys.Count);
             WriteReadsPerMolDistros(xmlFile);
         }

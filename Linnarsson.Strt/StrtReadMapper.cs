@@ -76,7 +76,6 @@ namespace Linnarsson.Strt
 
         public void MakeMaskedStrtChromosomes(StrtGenome genome)
         {
-            //if (genome.GeneVariants == false) return;
             string strtDir = genome.GetStrtGenomesFolder();
             NonExonRepeatMasker nerm = new NonExonRepeatMasker();
             nerm.Mask(genome, strtDir);
@@ -91,11 +90,11 @@ namespace Linnarsson.Strt
             string btIdxFolder = PathHandler.GetBowtieIndicesFolder();
             if (!Directory.Exists(btIdxFolder))
                 throw new IOException("The Bowtie index folder cannot be found. Please set the BowtieIndexFolder property.");
-            genome.GeneVariants = true;
+            genome.GeneVariants = false;
             BuildJunctions(genome);
             MakeMaskedStrtChromosomes(genome);
             BuildIndex(genome);
-            genome.GeneVariants = false;
+            genome.GeneVariants = true;
             BuildJunctions(genome);
             BuildIndex(genome);
         }

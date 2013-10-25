@@ -177,9 +177,9 @@ namespace C1
                     string well = string.Format("{0}{1:00}", fields[0], fields[1]);
                     double area = double.Parse(fields[3]);
                     double diameter = double.Parse(fields[4]);
-                    Detection red = (fields.Length < 6)? Detection.Unknown : (fields[5] == "1") ? Detection.Yes : Detection.No;
-                    Detection green = (fields.Length < 7) ? Detection.Unknown : (fields[6] == "1") ? Detection.Yes : Detection.No;
-                    Detection blue = (fields.Length < 8) ? Detection.Unknown : (fields[7] == "1") ? Detection.Yes : Detection.No;
+                    int red = (fields.Length < 6)? Detection.Unknown : (fields[5] == "1") ? Detection.Yes : Detection.No;
+                    int green = (fields.Length < 7) ? Detection.Unknown : (fields[6] == "1") ? Detection.Yes : Detection.No;
+                    int blue = (fields.Length < 8) ? Detection.Unknown : (fields[7] == "1") ? Detection.Yes : Detection.No;
                     Cell newCell = new Cell(null, metadata["Plate"], well, metadata["Protocol"],
                                     DateTime.Parse(metadata["Date of Run"]), metadata["Species"],
                                     metadata["Strain"], metadata["Age"], metadata["Sex"][0], metadata["Tissue/cell type/source"],

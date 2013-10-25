@@ -23,16 +23,16 @@ namespace C1
         public string PI { get; set; }
         public string Operator { get; set; }
         public string Comments { get; set; }
-        public Detection Red { get; set; }
-        public Detection Green { get; set; }
-        public Detection Blue { get; set; }
+        public int Red { get; set; }
+        public int Green { get; set; }
+        public int Blue { get; set; }
         public List<CellImage> cellImages { get; set; }
 
         public Cell(int? cellId, string plate, string well, 
                     string strtProtocol, DateTime dateCollected, string species, string strain,
                     string age, char sex, string tissue, string treatment,
                     double diameter, double area, string PI, string op, string comments,
-                    Detection red, Detection green, Detection blue)
+                    int red, int green, int blue)
         {
             this.CellID = cellId;
             this.Plate = plate;
@@ -57,7 +57,12 @@ namespace C1
         }
     }
 
-    public enum Detection { Yes, No, Unknown };
+    public class Detection 
+    {
+        public static int Unknown = 0;
+        public static int Yes = 1;
+        public static int No = 2;
+    };
 
     public class CellImage
     {
@@ -65,10 +70,10 @@ namespace C1
         public int? CellID { get; set; }
         public string Reporter { get; set; }                 // channel used for imaging
         public string Marker { get; set; }                   // "TH-GFP"
-        public Detection Detection { get; set; }             // was this marker detected?
+        public int Detection { get; set; }             // was this marker detected?
         public string RelativePath { get; set; }             // Location of image file
 
-        public CellImage(int? cellImageId, int? cellId, string reporter, string marker, Detection detection, string relPath)
+        public CellImage(int? cellImageId, int? cellId, string reporter, string marker, int detection, string relPath)
         {
             this.CellImageID = cellImageId;
             this.CellID = cellId;

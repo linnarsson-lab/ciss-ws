@@ -37,7 +37,7 @@ namespace Linnarsson.Dna
             cachedSNPCounts = m_TagItem.GetTotalSNPCounts(m_HitStartPos);
             cachedReadCount = m_TagItem.GetNumReads();
 
-            int observedMolCount = m_TagItem.GetNumMolecules(); // Possibly filter away mutated UMIs
+            int observedMolCount = m_TagItem.GetFinalNumMolecules(); // Possibly filter away mutated UMIs
             if (TagItem.nRndTags == 1)
             {
                 cachedEstTrueMolCount = cachedMolCount = observedMolCount;
@@ -113,8 +113,10 @@ namespace Linnarsson.Dna
 
         private static int SingletonThresholder(TagItem tagItem)
         {
-            int maxNumReads = tagItem.GetReadCountsByRndTag().Max();
-            return (maxNumReads >= RndTagMutationFilterParameter)? 1 : 0;
+            foreach (int c in tagItem.GetReadCountsByRndTag())
+                if (c > RndTagMutationFilterParameter)
+                    return 1;
+            return 0;
         }
         private static int LowPassThresholder(TagItem tagItem)
         {
@@ -154,6 +156,10 @@ namespace Linnarsson.Dna
         /// Counts number of reads irrespective of rndTag
         /// </summary>
         private int totalReadCount;
+        /// <summary>
+        /// Number of non-empty UMIs, after mutation filtering, or read count if no UMIs are used. -1 indicates not calculated yet.
+        /// </summary>
+        private int finalFilteredCount = -1;
 
         /// <summary>
         /// List of the genes that share this TagItem's counts. (If some reads are SNPed, the sharing genes may be not belong to all reads.)
@@ -185,11 +191,10 @@ namespace Linnarsson.Dna
             this.hasAltMappings = hasAltMappings;
             this.typeOfAnnotation = (short)AnnotType.NOHIT;
         }
-
-        public override string ToString()
+        public TagItem(bool hasAltMappings, bool isTranscript)
         {
-            string res = string.Format("TagItem: #Mols={0} #Reads={1} HasAltMappings={2}\n  Locations:", GetNumNonZeroRndTags(), GetNumReads(), hasAltMappings);
-            return res;
+            this.hasAltMappings = hasAltMappings;
+            this.typeOfAnnotation = isTranscript? (short)AnnotType.EXON : (short)AnnotType.NOHIT;
         }
 
         /// <summary>
@@ -231,6 +236,7 @@ namespace Linnarsson.Dna
             typeOfAnnotation = (short)AnnotType.NOHIT;
             readCountsByRndTag = null;
             totalReadCount = 0;
+            finalFilteredCount = -1;
             if (sharingGenes != null)
                 sharingGenes.Clear();
             if (SNPCountsByOffset != null)
@@ -252,7 +258,7 @@ namespace Linnarsson.Dna
                 readCountsByRndTag = new ushort[nRndTags];
             currentCount = readCountsByRndTag[rndTagIdx];
             readCountsByRndTag[rndTagIdx] = (ushort)Math.Min(ushort.MaxValue, currentCount + 1);
-            return currentCount == 0;
+            return (currentCount == 0);
         }
 
         /// <summary>
@@ -295,8 +301,8 @@ namespace Linnarsson.Dna
             if (SNPCountsByOffset == null)
                 return null;
             List<SNPCounter> totalCounters = new List<SNPCounter>();
-            var validRndTags = GetValidRndTags();
-            ushort nTotal = (ushort)validRndTags.Count; //GetNumMolecules();
+            var validRndTags = GetIndicesOfUsedUMIsAfterFiltering();
+            ushort nTotal = (ushort)validRndTags.Count;
             foreach (KeyValuePair<byte, SNPCountsByRndTag> p in SNPCountsByOffset)
             {
                 if (p.Value != null)
@@ -310,33 +316,31 @@ namespace Linnarsson.Dna
             }
             return totalCounters;
         }
-
         /// <summary>
         /// Get indices of the rndTags that represent real molecules and not only mutations from other rndTags.
         /// If no random tags are used, get all indices that contain any reads.
         /// </summary>
         /// <returns>Indices of random tags containing real data (not stemming from mutations in other random tags)</returns>
-        public List<int> GetValidRndTags()
+        private List<int> GetIndicesOfUsedUMIsAfterFiltering()
         {
             if (nRndTags == 1)
-                return noRndTagsValidRndTags;
-            List<int> validRndTags = new List<int>();
+                return woUMIsUMIIndices;
+            List<int> filteredUsedUMIIndices = new List<int>();
             int threshold = mutationThresholder(this);
             for (int i = 0; i < readCountsByRndTag.Length; i++)
-                if (readCountsByRndTag[i] > threshold) validRndTags.Add(i);
-            return validRndTags;
+                if (readCountsByRndTag[i] > threshold) filteredUsedUMIIndices.Add(i);
+            return filteredUsedUMIIndices;
         }
         /// <summary>
-        /// Predefined for used by GetValidRdTags()
+        /// Predefined for used by above method when UMI counting is not applicable
         /// </summary>
-        private static List<int> noRndTagsValidRndTags = new List<int> { 0 };
+        private static List<int> woUMIsUMIIndices = new List<int> { 0 };
 
         /// <summary>
-        /// Get number of molecules (reads if rndTag not used) at this position-strand.
-        /// Filters away mutated rndTags according to properties defined rule.
+        /// Count number of molecules (reads if UMIs not used) at this position-strand. Filters away mutated UMIs according to thresholding filter.
         /// </summary>
-        /// <returns>Number of molecules (mutated rndTags excluded), or number of reads if no rndTags were used.</returns>
-        public int GetNumMolecules()
+        /// <returns>Number of molecules (mutated UMIs excluded), or number of reads if UMIs are not used.</returns>
+        public int CalcCurrentNumMolecules()
         {
             if (nRndTags == 1) 
                 return totalReadCount;
@@ -345,32 +349,25 @@ namespace Linnarsson.Dna
             int threshold = mutationThresholder(this);
             return readCountsByRndTag.Count(v => v > threshold);
         }
-
         /// <summary>
-        /// Get number of molecules observed by only one read
+        /// Final number of molecules (or reads if UMIS are not used) after mutation filtering. Call ONLY after all reads in barcode have been added!
+        /// Used for speed up of repeated calls.
         /// </summary>
-        /// <returns></returns>
-        public int GetNumSingletons()
+        /// <returns>Number of molecules (mutated UMIs excluded), or number of reads if UMIs are not used.</returns>
+        public int GetFinalNumMolecules()
         {
+            if (finalFilteredCount >= 0)
+                return finalFilteredCount;
             if (nRndTags == 1)
-                return (totalReadCount == 1)? 1 : 0;
-            if (readCountsByRndTag == null || totalReadCount == 0)
-                return 0;
-            return readCountsByRndTag.Count(v => v == 1);
-        }
-
-        /// <summary>
-        /// Get number of rndTags with read count > 0 at this position-strand,
-        /// or total number of reads if rndTags are not used.
-        /// </summary>
-        /// <returns>Number of rndTags with any read, or number of reads if no rndTags were used.</returns>
-        public int GetNumNonZeroRndTags()
-        {
-            if (nRndTags == 1)
-                return totalReadCount;
-            if (readCountsByRndTag == null || totalReadCount == 0)
-                return 0;
-            return readCountsByRndTag.Count(v => v > 0);
+                finalFilteredCount = totalReadCount;
+            else if (readCountsByRndTag == null || totalReadCount == 0)
+                finalFilteredCount = 0;
+            else
+            {
+                int threshold = mutationThresholder(this);
+                finalFilteredCount = readCountsByRndTag.Count(v => v > threshold);
+            }
+            return finalFilteredCount;
         }
 
         /// <summary>

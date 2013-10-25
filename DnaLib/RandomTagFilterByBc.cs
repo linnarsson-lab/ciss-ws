@@ -88,16 +88,6 @@ namespace Linnarsson.Strt
                 tagItem.Clear();
         }
 
-/*        private void AddToWiggleOld()
-        {
-            if (wiggleFw == null) return;
-            int[] positions, molCounts, readCounts;
-            GetDistinctPositionsAndCounts('+', null, out positions, out molCounts, out readCounts);
-            wiggleFw.AddCounts(positions, molCounts, readCounts);
-            GetDistinctPositionsAndCounts('-', null, out positions, out molCounts, out readCounts);
-            wiggleRev.AddCounts(positions, molCounts, readCounts);
-        }*/
-
         public void AddToWiggle()
         {
             if (wiggleFw == null) return;
@@ -107,7 +97,7 @@ namespace Linnarsson.Strt
                 if (numReads > 0)
                 {
                     int hitStartPos = codedPair.Key >> 1;
-                    int nMols = codedPair.Value.GetNumMolecules();
+                    int nMols = codedPair.Value.GetFinalNumMolecules();
                     if ((codedPair.Key & 1) == 0)
                         wiggleFw.AddCount(hitStartPos, numReads, nMols);
                     else
@@ -125,44 +115,20 @@ namespace Linnarsson.Strt
         /// Add a read and checks whether the specified rndTag has been seen before on the pos and strand.
         /// </summary>
         /// <param name="m">A multireadmapping to analyze</param>
+        /// <param name="isTranscript"></param>
         /// <returns>true if the rndTag is new at this position-strand</returns>
-        public bool Add(MultiReadMapping m)
+        public bool Add(MultiReadMapping m, bool isTranscript)
         {
             int posStrand = MakePosStrandIdx(m.Position, m.Strand);
             TagItem item;
             if (!tagItems.TryGetValue(posStrand, out item))
             {
-                item = new TagItem(m.HasAltMappings);
+                item = new TagItem(m.HasAltMappings, isTranscript);
                 tagItems[posStrand] = item;
             }
             else if (item.hasAltMappings && !m.HasAltMappings && !m.HasMismatches && item.GetNumReads() == 1)
             { // When the first mapped read contained mismatches and was a multiread, but the second is a perfect match singleread,
               // rethink the TagItem to consist of singlereads. Increases the chance of detecting true exon signals.
-                item.hasAltMappings = false;
-            }
-            if (!m.HasAltMappings && item.HasSNPs) // Should maybe move this code into new TagItem.Add(MultiReadMapping m)
-            {                                      // and do IterMismatches(minPhredScore).
-                foreach (Mismatch mm in m.IterMismatches(0))
-                {
-                    if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
-                    item.AddSNP(m.UMIIdx, mm);
-                }
-            }
-            return item.Add(m.UMIIdx);
-        }
-        public bool AddTrMapping(MultiReadMapping m)
-        {
-            int posStrand = MakePosStrandIdx(m.Position, m.Strand);
-            TagItem item;
-            if (!tagItems.TryGetValue(posStrand, out item))
-            {
-                item = new TagItem(m.HasAltMappings);
-                item.typeOfAnnotation = (short)AnnotType.EXON;
-                tagItems[posStrand] = item;
-            }
-            else if (item.hasAltMappings && !m.HasAltMappings && !m.HasMismatches && item.GetNumReads() == 1)
-            { // When the first mapped read contained mismatches and was a multiread, but the second is a perfect match singleread,
-                // rethink the TagItem to consist of singlereads. Increases the chance of detecting true exon signals.
                 item.hasAltMappings = false;
             }
             if (!m.HasAltMappings && item.HasSNPs) // Should maybe move this code into new TagItem.Add(MultiReadMapping m)
@@ -181,35 +147,15 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="m">A multireadmapping to analyze</param>
         /// <param name="sharingRealFeatures">List of other features that compete due to the read being a multiread</param>
+        /// <param name="isTranscript"></param>
         /// <returns>true if the rndTag is new at this position-strand</returns>
-        public bool Add(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures)
+        public bool Add(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures, bool isTranscript)
         {
             int posStrand = MakePosStrandIdx(m.Position, m.Strand);
             TagItem item;
             if (!tagItems.TryGetValue(posStrand, out item))
             {
-                item = new TagItem(m.HasAltMappings);
-                tagItems[posStrand] = item;
-            }
-            if (!m.HasAltMappings && item.HasSNPs) // Should maybe move this code into new TagItem.Add(MultiReadMapping m)
-            {                                      // and do IterMismatches(minPhredScore).
-                foreach (Mismatch mm in m.IterMismatches(0))
-                {
-                    if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
-                    item.AddSNP(m.UMIIdx, mm);
-                }
-            }
-            item.AddSharedGenes(sharingRealFeatures);
-            return item.Add(m.UMIIdx);
-        }
-        public bool AddTrMapping(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures)
-        {
-            int posStrand = MakePosStrandIdx(m.Position, m.Strand);
-            TagItem item;
-            if (!tagItems.TryGetValue(posStrand, out item))
-            {
-                item = new TagItem(m.HasAltMappings);
-                item.typeOfAnnotation = (short)AnnotType.EXON;
+                item = new TagItem(m.HasAltMappings, isTranscript);
                 tagItems[posStrand] = item;
             }
             if (!m.HasAltMappings && item.HasSNPs) // Should maybe move this code into new TagItem.Add(MultiReadMapping m)
@@ -282,7 +228,7 @@ namespace Linnarsson.Strt
             if (tagItems.TryGetValue(posStrand, out  t))
             {
                 readProfile = t.GetReadCountsByRndTag();
-                molCount = t.GetNumMolecules();
+                molCount = t.GetFinalNumMolecules();
             }
             else
             {
@@ -323,7 +269,7 @@ namespace Linnarsson.Strt
                     (selectedAnnotTypes == null || selectedAnnotTypes.Contains(codedPair.Value.typeOfAnnotation)))
                 {
                     readCountAtEachPosition[p] = numReads;
-                    molCountAtEachPosition[p] = codedPair.Value.GetNumMolecules();
+                    molCountAtEachPosition[p] = codedPair.Value.GetFinalNumMolecules();
                     positions[p++] = codedPair.Key >> 1;
                 }
             }
@@ -439,8 +385,13 @@ namespace Linnarsson.Strt
                 ushort[] readsByRndTag = tagItem.GetReadCountsByRndTag();
                 int nUsedRndTags = readsByRndTag.Count(c => c > 0);
                 totalMolecules += nUsedRndTags;
+                int nFilteredMols = tagItem.GetFinalNumMolecules();
+                totalFilteredMolecules += nFilteredMols;
                 if (tagItem.typeOfAnnotation == AnnotType.EXON)
+                {
                     totalTrMolecules += nUsedRndTags;
+                    totalFilteredTrMolecules += nFilteredMols;
+                }
                 nCasesPerRandomTagCount[nUsedRndTags]++;
                 int threshold = tagItem.GetMutationThreshold();
                 foreach (ushort nReadsInRndTag in readsByRndTag.Where(c => c > threshold))
@@ -448,10 +399,8 @@ namespace Linnarsson.Strt
                     int limitedReadCount = Math.Min(MaxValueInReadCountHistogram, nReadsInRndTag);
                     readsPerMolHistogram[limitedReadCount]++;
                     readDistributionByMolCount[nUsedRndTags, limitedReadCount]++;
-                    totalFilteredMolecules++;
                     if (tagItem.typeOfAnnotation == AnnotType.EXON)
                     {
-                        totalFilteredTrMolecules++;
                         readsPerTrMolHistogram[limitedReadCount]++;
                     }
                 }
@@ -462,17 +411,13 @@ namespace Linnarsson.Strt
         /// Add a mapped read and check if the read represents a new molecule.
         /// Reads have to be submitted in series containing all reads for each barcode.
         /// </summary>
+        /// <param name="m"></param>
+        /// <param name="isTranscript"></param>
         /// <returns>True if the chr-strand-pos-bc-rndTag combination is new</returns>
-        public bool Add(MultiReadMapping m)
+        public bool Add(MultiReadMapping m, bool isTranscript)
         {
             nReadsByRandomTag[m.UMIIdx]++;
-            bool isNew = chrTagDatas[m.Chr].Add(m);
-            return isNew | !hasRndTags;
-        }
-        public bool AddTrMapping(MultiReadMapping m)
-        {
-            nReadsByRandomTag[m.UMIIdx]++;
-            bool isNew = chrTagDatas[m.Chr].AddTrMapping(m);
+            bool isNew = chrTagDatas[m.Chr].Add(m, isTranscript);
             return isNew | !hasRndTags;
         }
 
@@ -483,17 +428,12 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="m">The mapping to add</param>
         /// <param name="sharingRealFeatures">List of other features compete due to the read being a multiread</param>
+        /// <param name="isTranscript"></param>
         /// <returns>True if the chr-strand-pos-bc-rndTag combination is new</returns>
-        public bool Add(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures)
+        public bool Add(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures, bool isTranscript)
         {
             nReadsByRandomTag[m.UMIIdx]++;
-            bool isNew = chrTagDatas[m.Chr].Add(m, sharingRealFeatures);
-            return isNew | !hasRndTags;
-        }
-        public bool AddTrMapping(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures)
-        {
-            nReadsByRandomTag[m.UMIIdx]++;
-            bool isNew = chrTagDatas[m.Chr].AddTrMapping(m, sharingRealFeatures);
+            bool isNew = chrTagDatas[m.Chr].Add(m, sharingRealFeatures, isTranscript);
             return isNew | !hasRndTags;
         }
 
@@ -552,7 +492,7 @@ namespace Linnarsson.Strt
             {
                 foreach (TagItem tagItem in chrTagData.IterNonEmptyTagItems())
                     if (tagItem.typeOfAnnotation == AnnotType.EXON)
-                        total += tagItem.GetNumMolecules();
+                        total += tagItem.CalcCurrentNumMolecules();
             }
             return total;
         }

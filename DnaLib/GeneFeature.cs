@@ -309,7 +309,7 @@ namespace Linnarsson.Dna
 
         public bool IsSpike()
         {
-            return Name.Contains("_SPIKE");
+            return Chr == StrtGenome.chrCTRLId;
         }
 
         public int GetAnnotLength(int annotType, bool excludeMasked)

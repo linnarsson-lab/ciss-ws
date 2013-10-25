@@ -9,11 +9,12 @@ using Linnarsson.Utilities;
 using Linnarsson.Mathematics;
 using Linnarsson.Dna;
 
+using System.Diagnostics;
+
 namespace Linnarsson.Strt
 {
 	public class TranscriptomeStatistics
 	{
-        private static readonly int sampleDistForAccuStats = 5000000;
         private static readonly int libraryDepthSampleReadCountPerBc = 200000;
         private static readonly int libraryDepthSampleMolsCountPerBc = 20000;
         private int trSampleDepth;
@@ -346,11 +347,8 @@ namespace Linnarsson.Strt
                 AddToGeneReadsPerMoleculeHistograms();
             MakeGeneRndTagProfiles();
             MakeBcWigglePlots();
-            if (Props.props.LogMode)
-                Console.WriteLine("Calling TranscriptomeStatistics.FinishBarcode() Bc={0} #TagItems={1}", currentBcIdx, randomTagFilter.TagItemCount());
             randomTagFilter.FinishBarcode();
             labelingEfficiencyEstimator.FinishBarcode(currentBcIdx);
-            //Console.WriteLine("#SPLC: {0} #ASPLC: {1}", TotalHitsByAnnotType[AnnotType.SPLC], TotalHitsByAnnotType[AnnotType.ASPLC]);
         }
 
         private void AddReadMappingsToTagItems(string mapFilePath)
@@ -359,7 +357,8 @@ namespace Linnarsson.Strt
             MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, barcodes);
             if (mapFileReader == null)
                 throw new Exception("Unknown read map file type : " + mapFilePath);
-            int nMappedReadsByFile = 0, nCTRLMappedReads = 0;
+            int sampleMappedReadsByFileCounter = PerLaneStats.nMappedReadsPerFileAtSample;
+            int sampleSpikeReadsPerMolCounter = Props.props.MappingsBySpikeReadsSampleDist;
             perLaneStats.BeforeFile(currentBcIdx, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx),
                                     randomTagFilter.GetNumDistinctMappings());
             foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
@@ -372,9 +371,12 @@ namespace Linnarsson.Strt
                 if (mappingAdder.Add(mrm))
                 {
                     nExonAnnotatedReads++;
-                    if (analyzeMappingsBySpikeReads && mrm[0].Chr == "CTRL")
-                        if (++nCTRLMappedReads % Props.props.MappingsBySpikeReadsSampleDist == 0)
+                    if (analyzeMappingsBySpikeReads && mrm[0].Chr == StrtGenome.chrCTRLId)
+                        if (--sampleSpikeReadsPerMolCounter == 0)
+                        {
                             mappingsBySpikeReadsSamples[currentBcIdx].Add(randomTagFilter.GetNumDistinctMappings());
+                            sampleSpikeReadsPerMolCounter = Props.props.MappingsBySpikeReadsSampleDist;
+                        }
                 }
                 if (snpRndTagVerifier != null)
                     snpRndTagVerifier.Add(mrm);
@@ -385,9 +387,12 @@ namespace Linnarsson.Strt
                     sampledLibraryDepths.Add(randomTagFilter.GetNumDistinctMappings());
                     sampledUniqueMolecules.Add(mappingAdder.NUniqueReadSignatures(currentBcIdx));
                 }
-                if (++nMappedReadsByFile == PerLaneStats.nMappedReadsPerFileAtSample)
+                if (--sampleMappedReadsByFileCounter == 0)
+                {
                     perLaneStats.AfterFile(mapFilePath, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx),
                                                         randomTagFilter.GetNumDistinctMappings());
+                    sampleMappedReadsByFileCounter = PerLaneStats.nMappedReadsPerFileAtSample;
+                }
                 if (mrm.HasAltMappings) nMultiReads++;
                 //else if (upstreamAnalyzer != null)
                 //    upstreamAnalyzer.CheckSeqUpstreamTSSite(mrm[0], currentBcIdx); // Analysis on raw read bases
@@ -397,9 +402,9 @@ namespace Linnarsson.Strt
         private void AnnotateFeaturesFromTagItems()
         {
             List<string> ctrlChrId = new List<string>();
-            if (randomTagFilter.chrTagDatas.ContainsKey("CTRL"))
+            if (randomTagFilter.chrTagDatas.ContainsKey(StrtGenome.chrCTRLId))
             { // First process CTRL chromosome to get the labeling efficiency
-                ctrlChrId.Add("CTRL");
+                ctrlChrId.Add(StrtGenome.chrCTRLId);
                 foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, true))
                     Annotate(mtitem);
                 labelingEfficiencyEstimator.CalcEfficiencyFromSpikes(Annotations.geneFeatures.Values, currentBcIdx);

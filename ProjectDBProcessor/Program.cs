@@ -246,7 +246,8 @@ namespace ProjectDBProcessor
                 else
                 {
                     resultLinks.Add(Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server - contact administrator!");
-                    logWriter.WriteLine(DateTime.Now.ToString() + Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server");
+                    logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: " + 
+                                         Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server");
                     logWriter.Flush();
                 }
             }

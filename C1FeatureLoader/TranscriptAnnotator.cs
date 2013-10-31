@@ -150,8 +150,10 @@ namespace C1
                     if (alias.EndsWith("_HUMAN")) alias = alias.Replace("_HUMAN", "");
                     alias = alias.Replace("'", "-prime");
                     if (UniProtAcc2GOAliases.ContainsKey(UniProtAcc))
+                    {
                         if (!UniProtAcc2GOAliases[UniProtAcc].Contains(alias))
                             UniProtAcc2GOAliases[UniProtAcc] += ";" + alias;
+                    }
                     else
                         UniProtAcc2GOAliases[UniProtAcc] = alias;
                 }

@@ -189,6 +189,7 @@ namespace C1
         public string ExonStarts { get; set; }              // 0-based comma-separated "refFlat.txt"/psl line
         public string ExonEnds { get; set; }                // 0-based exclusive comma-separated "refFlat.txt"/psl line
         public List<TranscriptAnnotation> TranscriptAnnotations { get; set; }
+        public string UniProtAccession { get; set; }        // Temporary for cross-correlation between annotation files
 
         public Transcript(int? transcriptId, int transcriptomeId, string name, string type, string geneName, string uniqueGeneName,
                           string entrezId, string description, string chromosome, int start, int end, int length,

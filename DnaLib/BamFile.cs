@@ -42,6 +42,13 @@ namespace Linnarsson.Dna
                 return (Flags & BamFlags.QueryStrand) == 0 ? DnaStrand.Forward : DnaStrand.Reverse;
             }
         }
+        public bool IsPrimary
+        {
+            get
+            {
+                return (Flags & BamFlags.NotPrimary) == 0 ? true : false;
+            }
+        }
         public DnaStrand MateStrand
         {
             get
@@ -106,6 +113,37 @@ namespace Linnarsson.Dna
         {
             return string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
                                  QueryName, Chromosome, Strand, Position, QuerySequence.Count, ExtraFields);
+        }
+
+        public static BamAlignedRead FromSamLine(string line)
+        {
+            BamAlignedRead a = null;
+            string[] fields = line.Split('\t');
+            try
+            {
+                a = new BamAlignedRead
+                {
+                    Chromosome = fields[2],
+                    Flags = (BamFlags)int.Parse(fields[1]),
+                    MappingQuality = byte.Parse(fields[4]),
+                    Position = int.Parse(fields[3]),
+                    MateChromosome = fields[6],
+                    MatePosition = int.Parse(fields[7]),
+                    MateDistance = int.Parse(fields[8]),
+                    QuerySequence = new ShortDnaSequence(fields[9]),
+                    QueryName = fields[0],
+                    QueryQuality = fields[10],
+                    Cigar = fields[5]
+                };
+                a.ExtraFields = new string[fields.Length - 11];
+                Array.ConstrainedCopy(fields, 11, a.ExtraFields, 0, fields.Length - 11);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e + " in parsing SamLine=" + line);
+                a = null;
+            }
+            return a;
         }
 
     }
@@ -241,34 +279,9 @@ namespace Linnarsson.Dna
             foreach (string line in lines)
             {
                 if (string.IsNullOrEmpty(line)) break;
-                //Console.WriteLine("2.2");
-                string[] fields = line.Split('\t');
-                //Console.WriteLine(line);
-                //Console.WriteLine("fields = " + fields.Length);
-                try
-                {
-                    BamAlignedRead a = new BamAlignedRead
-                    {
-                        Chromosome = fields[2],
-                        Flags = (BamFlags)int.Parse(fields[1]),
-                        MappingQuality = byte.Parse(fields[4]),
-                        Position = int.Parse(fields[3]),
-                        MateChromosome = fields[6],
-                        MatePosition = int.Parse(fields[7]),
-                        MateDistance = int.Parse(fields[8]),
-                        QuerySequence = new ShortDnaSequence(fields[9]),
-                        QueryName = fields[0],
-                        QueryQuality = fields[10],
-                        Cigar = fields[5]
-                    };
-                    a.ExtraFields = new string[fields.Length - 11];
-                    Array.ConstrainedCopy(fields, 11, a.ExtraFields, 0, fields.Length - 11);
-                    result.Add(a);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e + " BamLine=" + line);
-                }
+                BamAlignedRead r = BamAlignedRead.FromSamLine(line);
+                if (r != null)
+                    result.Add(r);
             }
             return result;
         }

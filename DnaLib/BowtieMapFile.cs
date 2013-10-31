@@ -16,7 +16,7 @@ namespace Linnarsson.Dna
         protected MultiReadMappings mrm;
 
         /// <summary>
-        /// Find the correct reader for the file of mapped reads. Will handle .map and .sam files
+        /// Find the correct reader for the file of mapped reads. Will handle .map, .bam, and .sam files
         /// </summary>
         /// <param name="file"></param>
         /// <param name="barcodes"></param>
@@ -28,6 +28,8 @@ namespace Linnarsson.Dna
                 return new BowtieMapFile(MaxNMappings, barcodes);
             if (file.EndsWith(".bam") || file.EndsWith(".sbam"))
                 return new BamMapFile(barcodes, SortedAnalysisWindowSize);
+            if (file.EndsWith(".sam"))
+                return new SamMapFile(MaxNMappings, barcodes);
             return null;
         }
 
@@ -214,6 +216,63 @@ namespace Linnarsson.Dna
                 if (x.StartsWith("XM:i:"))
                     return int.Parse(x.Substring(5));
             return 0;
+        }
+
+    }
+
+    public class SamMapFile : MapFile
+    {
+        public SamMapFile(int maxNMappings, Barcodes barcodes)
+            : base(maxNMappings, barcodes)
+        {
+        }
+
+        public override IEnumerable<MultiReadMappings> MultiMappings(string file)
+        {
+            using (StreamReader reader = new StreamReader(file))
+            {
+                string line;
+                while ((line = reader.ReadLine()).StartsWith("@"))
+                    line = reader.ReadLine();
+                string[] fields = line.Split('\t');
+                string combinedReadId = fields[0];
+                char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
+                mrm.Init(fields[0], fields[9].Length, fields[10], strand, 0);
+                while (line != null)
+                {
+                    fields = line.Split('\t');
+                    if (!line.StartsWith(combinedReadId))
+                    {
+                        mrm.AltMappings = mrm.NMappings + 1;
+                        yield return mrm;
+                        combinedReadId = fields[0];
+                        strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
+                        mrm.Init(fields[0], fields[9].Length, fields[10], strand, 0);
+                    }
+                    mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
+                    line = reader.ReadLine();
+                }
+                yield return mrm;
+            }
+        }
+
+        public override IEnumerable<MultiReadMappings> SingleMappings(string file)
+        {
+            using (StreamReader reader = new StreamReader(file))
+            {
+                string line;
+                while ((line = reader.ReadLine()).StartsWith("@"))
+                    line = reader.ReadLine();
+                while (line != null)
+                {
+                    string[] fields = line.Split('\t');
+                    char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
+                    mrm.Init(fields[0], fields[9].Length, fields[10], strand, 0);
+                    mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
+                    yield return mrm;
+                    line = reader.ReadLine();
+                }
+            }
         }
 
     }

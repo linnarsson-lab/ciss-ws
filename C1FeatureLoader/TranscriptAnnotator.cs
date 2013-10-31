@@ -23,6 +23,7 @@ namespace C1
         {
             Annotate += new kgXrefAnnotator(genome).Annotate;
             Annotate += new RefLinkAnnotator(genome).Annotate;
+            Annotate += new AliasAnnotator(genome).Annotate;  // Has to be preceeded by kgXrefAnnotator
             Annotate += new GeneAssociationAnnotator(genome).AnnotateFromGeneAssociation;
             Annotate += new BiosystemsAnnotator(genome).AnnotateFromBiosystems;
         }
@@ -65,7 +66,7 @@ namespace C1
         private static string annotationFilename = "kgXref.txt";
 
         public kgXrefAnnotator(StrtGenome genome)
-            : base(genome, annotationFilename, new int[] {1, 4}, new int[] {7}, "descriptions")
+            : base(genome, annotationFilename, new int[] {1, 4}, new int[] {7, 2}, "descriptions")
         { }
 
         public override void Annotate(ref Transcript t)
@@ -78,10 +79,14 @@ namespace C1
                     if (keyToValueMap.TryGetValue(name, out values))
                     {
                         t.Description = values[0];
+                        t.UniProtAccession = values[1];
                         break;
                     }
                 if (!hit && keyToValueMap.TryGetValue(t.GeneName, out values))
+                {
                     t.Description = values[0];
+                    t.UniProtAccession = values[1];
+                }
             }
         }
     }
@@ -121,6 +126,55 @@ namespace C1
         }
     }
 
+    class AliasAnnotator
+    {
+        private string annotationFilename = "kgSpAlias.txt";
+        private Dictionary<string, string> UniProtAcc2GOAliases = new Dictionary<string, string>();
+
+        public AliasAnnotator(StrtGenome genome)
+        {
+            string aliasPath = Path.Combine(genome.GetOriginalGenomeFolder(), annotationFilename);
+            if (!File.Exists(aliasPath))
+                Console.WriteLine("Please download {0} from UCSC/goldenPath and rerun to get gene/protein synonyms.", aliasPath);
+            using (StreamReader r = aliasPath.OpenRead())
+            {
+                string line;
+                while ((line = r.ReadLine()) != null)
+                {
+                    if (line == "" || line.StartsWith("!") || line.StartsWith("#"))
+                        continue;
+                    string[] fields = line.Split('\t');
+                    string UniProtAcc = fields[1].Trim();
+                    string alias = fields[2].Trim();
+                    if (alias.EndsWith("_MOUSE")) alias = alias.Replace("_MOUSE", "");
+                    if (alias.EndsWith("_HUMAN")) alias = alias.Replace("_HUMAN", "");
+                    alias = alias.Replace("'", "-prime");
+                    if (UniProtAcc2GOAliases.ContainsKey(UniProtAcc))
+                        if (!UniProtAcc2GOAliases[UniProtAcc].Contains(alias))
+                            UniProtAcc2GOAliases[UniProtAcc] += ";" + alias;
+                    else
+                        UniProtAcc2GOAliases[UniProtAcc] = alias;
+                }
+            }
+            Console.WriteLine("Initiated alias annotator with synonyms for {0} genes from {1}", UniProtAcc2GOAliases.Count, aliasPath);
+        }
+
+        public void Annotate(ref Transcript t)
+        {
+            string aliases;
+            if (t.UniProtAccession != null && UniProtAcc2GOAliases.TryGetValue(t.UniProtAccession, out aliases))
+            {
+                List<string> useful = new List<string>();
+                foreach (string alias in aliases.Split(';'))
+                {
+                    if (alias != t.Name && alias != t.GeneName && !alias.EndsWith("Rik"))
+                        useful.Add(alias);
+                }
+                t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, "synonyms", string.Join(";", useful.ToArray()), ""));
+            }
+        }
+    }
+
     class GeneAssociationAnnotator
     {
         private string goaFilepattern = "gene_association*";
@@ -133,7 +187,7 @@ namespace C1
             if (File.Exists(goOBOPath))
                 go = GeneOntology.FromFile(goOBOPath);
             else
-                Console.WriteLine("Please download [0} from GeneOntology and rerun to get GO annotations.", goOBOPath);
+                Console.WriteLine("Please download {0} from GeneOntology and rerun to get GO annotations.", goOBOPath);
             string[] annotationPaths = Directory.GetFiles(genome.GetOriginalGenomeFolder(), goaFilepattern);
             foreach (string path in annotationPaths)
             {

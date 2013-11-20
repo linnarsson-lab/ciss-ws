@@ -148,7 +148,7 @@ namespace Linnarsson.Dna
         }
 
         private IFeature CreateGeneFeature(string name, string chr, char strand,
-                                   List<Interval> exons, string trId, string trType)
+                                   List<Interval> exons, string trName, string trType)
         {
             exons.Sort((i1, i2) => (i1.Start == i2.Start) ? 0 : (i1.Start > i2.Start) ? 1 : -1);
             int i = 0;
@@ -170,7 +170,7 @@ namespace Linnarsson.Dna
                 exonStarts[i] = (int)exons[i].Start;
                 exonEnds[i] = (int)exons[i].End;
             }
-            ExtendedGeneFeature egf = new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, 0, trType, trId);
+            ExtendedGeneFeature egf = new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, trType, trName);
             return egf;
         }
 

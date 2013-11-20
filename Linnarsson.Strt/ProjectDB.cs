@@ -169,6 +169,17 @@ namespace Linnarsson.Strt
 
     }
 
+    public class Person
+    {
+        public int id { get; set; }
+        public string name { get; set; }
+        public Person(int id, string name)
+        {
+            this.id = id;
+            this.name = name;
+        }
+    }
+
     [Serializable()]
     public class MailTaskDescription
     {
@@ -530,26 +541,44 @@ namespace Linnarsson.Strt
             string sql = string.Format("SELECT {0} FROM jos_aaaproject WHERE {1} LIKE '{2}'", resultCol, likeCol, likeFilter);
             return GetStrings(sql);
         }
-       
-        /// <summary>
-        /// Try to get a unique primary key from table by matching a person's name with a column
-        /// </summary>
-        /// <param name="table"></param>
-        /// <param name="field"></param>
-        /// <param name="person">Full or partial person's name</param>
-        /// <param name="failId">The return value on no</param>
-        /// <returns></returns>
-        private int TryGetId(string table, string field, string person, int failId)
+
+        private static IEnumerable<Person> IterDBPersons(string table, string field)
         {
             string sql = string.Format("SELECT id, {0} FROM {1}", field, table);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
-            List<int> idOfExactMatch = new List<int>();
-            List<int> idOfLastMatch = new List<int>();
-            List<int> idOfFirstMatch = new List<int>();
-            List<int> idOfInitialsMatch = new List<int>();
+            while (rdr.Read())
+            {
+                int id = rdr.GetInt32(0);
+                string name = rdr.GetString(1).Trim().ToLower();
+                yield return new Person(id, name);
+            }
+            rdr.Close();
+            conn.Close();
+            yield break;
+        }
+
+        private static Person defaultPerson = new Person(1, "?");
+        public Person TryGetPerson(string table, string field, string person)
+        {
+            return TryGetPerson(table, field, person, defaultPerson);
+        }
+        /// <summary>
+        /// Try to get a unique person from table by matching a (partial) name/initials with a table column
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="field"></param>
+        /// <param name="person">Full or partial person's name</param>
+        /// <param name="failPerson">Return value if no unique match was found</param>
+        /// <returns></returns>
+        public Person TryGetPerson(string table, string field, string person, Person failPerson)
+        {
+            List<Person> exactMatch = new List<Person>();
+            List<Person> lastMatch = new List<Person>();
+            List<Person> firstMatch = new List<Person>();
+            List<Person> initialsMatch = new List<Person>();
             person = person.Trim().ToLower();
             string last = person, first = person, initials = "#.#";
             string[] parts = person.Split(' ');
@@ -559,35 +588,31 @@ namespace Linnarsson.Strt
                 last = parts[parts.Length - 1];
                 initials = string.Join("", Array.ConvertAll(parts, n => n[0].ToString()));
             }
-            while (rdr.Read())
+            foreach (Person p in IterDBPersons(table, field))
             {
-                int id = rdr.GetInt32(0);
-                string name = rdr.GetString(1).Trim().ToLower();
-                if (name == person) idOfExactMatch.Add(id);
-                if (name.StartsWith(first)) idOfFirstMatch.Add(id);
-                if (name.EndsWith(last)) idOfLastMatch.Add(id);
-                string nameInitials = string.Join("", Array.ConvertAll(name.Split(' '), n => n[0].ToString()));
-                if (person == nameInitials || initials == name) idOfInitialsMatch.Add(id);
+                if (p.name == person) exactMatch.Add(p);
+                if (p.name.StartsWith(first)) firstMatch.Add(p);
+                if (p.name.EndsWith(last)) lastMatch.Add(p);
+                string nameInitials = string.Join("", Array.ConvertAll(p.name.Split(' '), n => n[0].ToString()));
+                if (person == nameInitials || initials == p.name) initialsMatch.Add(p);
             }
-            rdr.Close();
-            conn.Close();
-            return (idOfExactMatch.Count == 1) ? idOfExactMatch[0] : (idOfLastMatch.Count == 1) ? idOfLastMatch[0] :
-                (idOfFirstMatch.Count == 1) ? idOfFirstMatch[0] : (idOfInitialsMatch.Count == 1) ? idOfInitialsMatch[0] : failId;
+            return (exactMatch.Count == 1) ? exactMatch[0] : (lastMatch.Count == 1) ? lastMatch[0] :
+                (firstMatch.Count == 1) ? firstMatch[0] : (initialsMatch.Count == 1) ? initialsMatch[0] : failPerson;
         }
 
         public int InsertNewProject(ProjectDescription pd)
         {
             if (pd.SpikeMoleculeCount == 0)
                 pd.SpikeMoleculeCount = Props.props.TotalNumberOfAddedSpikeMolecules;
-            int contactId = TryGetId("jos_aaacontact", "contactperson", pd.contact, 1);
-            int managerId = TryGetId("jos_aaamanager", "person", pd.manager, 1);
-            int clientId = TryGetId("jos_aaaclient", "principalinvestigator", pd.client, 1);
+            int contactId = TryGetPerson("jos_aaacontact", "contactperson", pd.contact).id;
+            int managerId = TryGetPerson("jos_aaamanager", "person", pd.manager).id;
+            int clientId = TryGetPerson("jos_aaaclient", "principalinvestigator", pd.client).id;
             string sql = "INSERT INTO jos_aaaproject (jos_aaacontactid, jos_aaamanagerid, jos_aaaclientid, " +
                 "title, productiondate, plateid, platereference, species, tissue, sampletype, " +
                 "collectionmethod, weightconcentration, fragmentlength, molarconcentration, description, " +
-                "protocol, barcodeset, labbookpage, layoutfile, status, comment, user, spikemolecules) " +
+                "protocol, barcodeset, labbookpage, layoutfile, status, comment, user, spikemolecules, time) " +
                 " VALUES('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}'," +
-                "'{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}','{19}','{20}','{21}','{22}')";
+                "'{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}','{19}','{20}','{21}','{22}', NOW())";
             CultureInfo cult = new CultureInfo("sv-SE");
             sql = string.Format(sql, contactId, managerId, clientId,
                  pd.title, pd.productionDate.ToString(cult), pd.plateId, pd.plateReference, pd.defaultSpecies, pd.tissue, 

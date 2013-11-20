@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Threading;
 using Linnarsson.Strt;
@@ -99,8 +100,6 @@ namespace C1
                         logWriter.Flush();
                         continue;
                     }
-                    metadata["Chipfolder"] = chipDir;
-                    metadata["Chip serial number"] = C1DB.StandardizeChipId(metadata["Chip serial number"]);
                     List<Cell> celldata = ReadCellData(chipDir, metadata);
                     if (celldata == null)
                     {
@@ -110,9 +109,9 @@ namespace C1
                     }
                     logWriter.WriteLine(DateTime.Now.ToString() + " Copying data from " + chipDir + "...");
                     logWriter.Flush();
-                    InsertNewProject(metadata);
                     InsertCells(celldata);
                     someCopyDone = true;
+                    loadedChipDirs.Add(chipDir);
                 }
             }
             return someCopyDone;
@@ -180,9 +179,10 @@ namespace C1
                     int red = (fields.Length < 6)? Detection.Unknown : (fields[5] == "1") ? Detection.Yes : Detection.No;
                     int green = (fields.Length < 7) ? Detection.Unknown : (fields[6] == "1") ? Detection.Yes : Detection.No;
                     int blue = (fields.Length < 8) ? Detection.Unknown : (fields[7] == "1") ? Detection.Yes : Detection.No;
-                    Cell newCell = new Cell(null, metadata["Plate"], well, metadata["Protocol"],
-                                    DateTime.Parse(metadata["Date of Run"]), metadata["Species"],
-                                    metadata["Strain"], metadata["Age"], metadata["Sex"][0], metadata["Tissue/cell type/source"],
+                    Cell newCell = new Cell(null, metadata["Chip serial number"], well, "", "", metadata["Protocol"],
+                                    DateTime.Parse(metadata["Date dissected"]), DateTime.Parse(metadata["Date of Run"]),
+                                    metadata["Species"], metadata["Strain"], metadata["DonorID"],
+                                    metadata["Age"], metadata["Sex"][0], metadata["Tissue/cell type/source"],
                                     metadata["Treatment"], diameter, area, metadata["Principal Investigator"], metadata["Operator"],
                                     metadata["Comments"], red, green, blue);
                     List<CellImage> cellImages = new List<CellImage>();
@@ -212,53 +212,46 @@ namespace C1
         {
             string lastMetaFilePath = GetLastMatchingFile(chipDir, C1Props.props.C1MetadataFilenamePattern);
             if (lastMetaFilePath == null) return null;
-            Dictionary<string, string> data = new Dictionary<string, string>();
-            data["Age"] = data["Strain"] = data["Treatment"] = data["Tissue"] = data["Sex"] = "?";
-            data["Spikes"] = C1Props.props.SpikeMoleculeCount.ToString();
+            Dictionary<string, string> metadata = new Dictionary<string, string>();
+            metadata["Age"] = metadata["Strain"] = metadata["Treatment"] = metadata["Tissue"] = metadata["Sex"] = "?";
+            metadata["Operator"] = metadata["Scientist"] = metadata["Principal Investigator"] = "?";
+            metadata["Spikes"] = C1Props.props.SpikeMoleculeCount.ToString();
             using (StreamReader r = new StreamReader(lastMetaFilePath))
             {
                 string line = r.ReadLine();
-                while (line != null)
+                while (line != null && !line.StartsWith("#"))
                 {
                     string[] fields = line.Split('\t');
-                    data[fields[0].Trim()] = fields[1].Trim();
+                    metadata[fields[0].Trim()] = fields[1].Trim();
                     line = r.ReadLine();
                 }
             }
-            string chipId = Path.GetFileName(chipDir);
-            data["Plate"] = chipId;
-            return data;
+            metadata["Chipfolder"] = chipDir;
+            string chipId = C1DB.StandardizeChipId(Path.GetFileName(chipDir));
+            metadata["Chip serial number"] = chipId;
+            ProjectDB pdb = new ProjectDB();
+            metadata["Principal Investigator"] = pdb.TryGetPerson("jos_aaaclient", "principalinvestigator", metadata["Principal Investigator"], new Person(0, metadata["Principal Investigator"])).name;
+            metadata["Scientist"] = pdb.TryGetPerson("jos_aaacontact", "contactperson", metadata["Scientist"], new Person(0, metadata["Scientist"])).name;
+            metadata["Operator"] = pdb.TryGetPerson("jos_aaamanager", "person", metadata["Operator"], new Person(0, metadata["Operator"])).name;
+            AddDonorInfo(chipDir, ref metadata);
+            return metadata;
         }
 
-        /// <summary>
-        /// Insert a new project into STRT pipeline
-        /// </summary>
-        /// <param name="m">metadata from the C1 folder</param>
-        private static void InsertNewProject(Dictionary<string, string> m)
+        private static void AddDonorInfo(string chipDir, ref Dictionary<string, string> metadata)
         {
-            string layoutFile = ""; // TODO: May be wanted to bring more specific metadata on each cell
-            string chipId = m["Chip serial number"];
-            chipId = VerifyChipfolder(m["Chipfolder"], chipId);
-            string species = m["Species"].ToLower();
-            if (species == "mouse" || species.StartsWith("mus")) species = "Mm";
-            if (species == "human" || species.StartsWith("homo")) species = "Hs";
-            ProjectDescription pd = new ProjectDescription(m["Scientist"], m["Operator"], m["Principal Investigator"],
-                chipId, DateTime.Parse(m["Date of Run"]), (C1Props.C1ProjectPrefix+chipId), m["Chipfolder"], species, m["Tissue/cell type/source"],
-                "single cell", "C1", "", m["Protocol"], "Tn5", "", layoutFile, m["Comments"], int.Parse(m["Spikes"]));
-            new ProjectDB().InsertNewProject(pd);
-        }
-
-        private static string VerifyChipfolder(string chipFolder, string chipId)
-        {
-            string folderId = Path.GetFileName(chipFolder);
-            folderId = C1DB.StandardizeChipId(folderId);
-            if (chipId != folderId && new ProjectDB().GetProjectColumn("plateid", C1Props.C1ProjectPrefix + chipId, "platereference").Count > 0)
+            metadata["Date dissected"] = metadata["DonorID"] = "";
+            string lastDonorFilePath = GetLastMatchingFile(chipDir, C1Props.props.C1DonorDataFilenamePattern);
+            if (lastDonorFilePath == null) return;
+            using (StreamReader r = new StreamReader(lastDonorFilePath))
             {
-                chipId = folderId;
-                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Mismatching folder and chipid in " + chipFolder + ". Changing id to " + chipId);
-                logWriter.Flush();
+                string line = r.ReadLine();
+                while (line != null && !line.StartsWith("#"))
+                {
+                    string[] fields = line.Split('\t');
+                    metadata[fields[0].Trim()] = fields[1].Trim();
+                    line = r.ReadLine();
+                }
             }
-            return chipId;
         }
 
     }

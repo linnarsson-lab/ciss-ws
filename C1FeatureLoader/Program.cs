@@ -39,9 +39,10 @@ namespace C1
             foreach (ExtendedGeneFeature gf in annotationReader.IterChrSortedGeneModels())
             {
                 string type = gf.TranscriptType == "" ? "gene" : gf.TranscriptType;
-                Transcript t = AnnotationReader.TranscriptFromExtendedGeneFeature(gf);
+                Transcript t = AnnotationReader.CreateNewTranscriptFromExtendedGeneFeature(gf);
                 ta.Annotate(ref t);
                 t.TranscriptomeID = tt.TranscriptomeID.Value;
+                t.ExprBlobIdx = n;
                 db.InsertTranscript(t);
                 n++;
             }

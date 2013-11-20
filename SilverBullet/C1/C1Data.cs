@@ -8,11 +8,15 @@ namespace C1
     public class Cell
     {
         public int? CellID { get; set; }
-        public string Plate { get; set; }                   // "1423934" or "L243"
-        public string Well { get; set; }                    // "A04"
+        public string Chip { get; set; }                    // "1234345-123"
+        public string ChipWell { get; set; }                // Well on C1 chip, e.g. "A02"
+        public string Plate { get; set; }                   // Sequencing plate, e.g. "C1-243"
+        public string PlateWell { get; set; }                // Well on sequencing plate, e.g. "B04"
         public string StrtProtocol { get; set; }            // "STRT c1 v1.11"
+        public DateTime DateDissected { get; set; }
         public DateTime DateCollected { get; set; }
         public string Species { get; set; }                 // "mouse" or "human"
+        public string DonorID { get; set; }                 // "129"
         public string Strain { get; set; }                  // "C57/Bl6"
         public string Age { get; set; }                     // "E14.5"
         public char Sex { get; set; }                       // 'M' or 'F'
@@ -28,19 +32,23 @@ namespace C1
         public int Blue { get; set; }
         public List<CellImage> cellImages { get; set; }
 
-        public Cell(int? cellId, string plate, string well, 
-                    string strtProtocol, DateTime dateCollected, string species, string strain,
-                    string age, char sex, string tissue, string treatment,
+        public Cell(int? cellId, string chip, string chipWell, string plate, string plateWell,
+                    string strtProtocol, DateTime dateDissected, DateTime dateCollected, string species, string strain,
+                    string donorID, string age, char sex, string tissue, string treatment,
                     double diameter, double area, string PI, string op, string comments,
                     int red, int green, int blue)
         {
             this.CellID = cellId;
+            this.Chip = chip;
+            this.ChipWell = chipWell;
             this.Plate = plate;
-            this.Well = well;
+            this.PlateWell = plateWell;
             this.StrtProtocol = strtProtocol;
+            this.DateDissected = DateDissected;
             this.DateCollected = dateCollected;
             this.Species = species;
             this.Strain = strain;
+            this.DonorID = donorID;
             this.Age = age;
             this.Sex = sex;
             this.Tissue = tissue;
@@ -59,9 +67,9 @@ namespace C1
 
     public class Detection 
     {
-        public static int Unknown = 0;
+        public static int No = 0;
         public static int Yes = 1;
-        public static int No = 2;
+        public static int Unknown = 2;
     };
 
     public class CellImage
@@ -97,6 +105,20 @@ namespace C1
             this.CellID = cellId;
             this.Name = name;
             this.Value = value;
+        }
+    }
+
+    public class ExprBlob
+    {
+        public int CellID { get; set; }
+        public int TranscriptomeID { get; set; }
+        public byte[] Blob { get; set; }
+
+        public ExprBlob(int cellId, int transcriptomeId, byte[] blob)
+        {
+            CellID = cellId;
+            TranscriptomeID = transcriptomeId;
+            Blob = blob;
         }
     }
 
@@ -188,15 +210,25 @@ namespace C1
         public int Extension5Prime { get; set; }            // 5' extension of first exon for detection of missed CAP sites.
         public string ExonStarts { get; set; }              // 0-based comma-separated "refFlat.txt"/psl line
         public string ExonEnds { get; set; }                // 0-based exclusive comma-separated "refFlat.txt"/psl line
+        public int ExprBlobIdx { get; set; }                // Used when storing expr data as blob
         public List<TranscriptAnnotation> TranscriptAnnotations { get; set; }
         public string UniProtAccession { get; set; }        // Temporary for cross-correlation between annotation files
 
-        public Transcript(int? transcriptId, int transcriptomeId, string name, string type, string geneName, string uniqueGeneName,
+        public Transcript(string name, string type, string geneName, string uniqueGeneName,
                           string entrezId, string description, string chromosome, int start, int end, int length,
-                         char strand, int extension5Prime, string exonStarts, string exonEnds)
+                          char strand, int extension5Prime, string exonStarts, string exonEnds)
+            : this(null, 0, 0, name, type, geneName, uniqueGeneName, entrezId, description, chromosome, start, end, length,
+                   strand, extension5Prime, exonStarts, exonEnds)
+        { }
+
+        public Transcript(int? transcriptId, int transcriptomeId, int exprBlobIdx, 
+                          string name, string type, string geneName, string uniqueGeneName,
+                          string entrezId, string description, string chromosome, int start, int end, int length,
+                          char strand, int extension5Prime, string exonStarts, string exonEnds)
         {
             this.TranscriptID = transcriptId;
             this.TranscriptomeID = transcriptomeId;
+            this.ExprBlobIdx = exprBlobIdx;
             this.Name = name;
             this.Type = type;
             this.GeneName = geneName;
@@ -215,12 +247,12 @@ namespace C1
         }
         public override string ToString()
         {
-            return string.Format("Transcript(ID={0}, TranscriptomeID={14}, Name={1}, Type={2}, GeneName={3}, EntrezID={4}, " +
-                                 "Description={5}, Chromosome={6}, " +
+            return string.Format("Transcript(ID={0}, TranscriptomeID={14}, ExprBlobIdx={15}, Name={1}, Type={2}, " +
+                                 "GeneName={3}, EntrezID={4}, Description={5}, Chromosome={6}, " +
                                  "Start={7}, End={8}, Length={9}, Strand={10}, Extension5Prime={11}\n" +
                                  "ExonStarts={12}\nExonEnds={13})",
                                  TranscriptID, Name, Type, GeneName, EntrezID, Description, Chromosome,
-                                 Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds, TranscriptomeID);
+                                 Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds, TranscriptomeID, ExprBlobIdx);
         }
     }
 

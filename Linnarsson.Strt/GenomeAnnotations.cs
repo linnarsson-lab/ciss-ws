@@ -45,6 +45,7 @@ namespace Linnarsson.Strt
         public Dictionary<string, GeneFeature> geneFeatures;
         public Dictionary<string, RepeatFeature> repeatFeatures;
 
+        public Transcriptome dbTranscriptome;
         protected StrtGenome genome;
         public StrtGenome Genome { get { return genome; } }
         protected Barcodes barcodes;
@@ -133,18 +134,18 @@ namespace Linnarsson.Strt
         {
             C1DB db = new C1DB();
             string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
-            Transcriptome tm = db.GetTranscriptome(genome.BuildVarAnnot);
+            dbTranscriptome = db.GetTranscriptome(genome.BuildVarAnnot);
             int nModels = 0, nSpliceModels = 0, nExons = 0;
-            if (tm != null)
+            if (dbTranscriptome != null)
             {
-                foreach (Transcript tt in db.IterTranscripts(tm.TranscriptomeID.Value))
+                foreach (Transcript tt in db.IterTranscriptsByBlobIdx(dbTranscriptome.TranscriptomeID.Value))
                 {
-                    LocusFeature gf = AnnotationReader.GeneFeatureFromTranscript(tt);
+                    LocusFeature gf = AnnotationReader.GeneFeatureFromDBTranscript(tt);
                     int nParts = RegisterGeneFeature(gf);
                     if (nParts > 0) { nModels++; nExons += nParts; }
                     else nSpliceModels -= nParts;
                 }
-                Console.WriteLine("Read {0} transcript models totalling {1} exons from database {2}.", nModels, nExons, tm.Name);
+                Console.WriteLine("Read {0} transcript models totalling {1} exons from database {2}.", nModels, nExons, dbTranscriptome.Name);
                 ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
                 foreach (LocusFeature spliceGf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
                     if (spliceGf.Chr == genome.Annotation)
@@ -220,7 +221,7 @@ namespace Linnarsson.Strt
                 while (line != null)
                 {
                     nLines++;
-                    record = line.Split('\t'); // Regex.Split(line.Trim(), " +|\t");
+                    record = line.Split('\t');
                     string chr = record[5 + fileTypeOffset].Substring(3);
                     if (NonExonAnnotations.TryGetValue(chr, out annotMap))
                     {
@@ -702,13 +703,33 @@ namespace Linnarsson.Strt
             return 0;
         }
 
+        public IEnumerable<ExprBlob> IterExprBlobs(string projectId)
+        {
+            Dictionary<string, int> cellIdByPlateWell = new C1DB().GetCellIdByPlateWell(projectId);
+            byte[] blob = new byte[4 * geneFeatures.Count];
+            for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+            {
+                int cellId = cellIdByPlateWell[barcodes.GetWellId(bcIdx)];
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    int blobPos = 4 * gf.ExprBlobIdx;
+                    Int32 molecules = gf.TranscriptHitsByBarcode[bcIdx];
+                    byte[] bytes = BitConverter.GetBytes(molecules);
+                    if (BitConverter.IsLittleEndian)
+                        Array.Reverse(bytes);
+                    Array.Copy(bytes, 0, blob, blobPos, 4);
+                }
+                yield return new ExprBlob(cellId, (int)dbTranscriptome.TranscriptomeID, blob);
+            }
+        }
+
         public IEnumerable<Expression> IterExpressions(string projectId)
         {
-            Dictionary<string, int> cellIdByBcIdx = new C1DB().GetCellIdByWell(projectId);
+            Dictionary<string, int> cellIdByPlateWell = new C1DB().GetCellIdByPlateWell(projectId);
             Expression exprHolder = new Expression();
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
             {
-                exprHolder.CellID = cellIdByBcIdx[barcodes.GetWellId(bcIdx)].ToString();
+                exprHolder.CellID = cellIdByPlateWell[barcodes.GetWellId(bcIdx)].ToString();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     exprHolder.TranscriptID = gf.TranscriptID;

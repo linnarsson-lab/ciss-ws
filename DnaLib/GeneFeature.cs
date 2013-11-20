@@ -217,8 +217,16 @@ namespace Linnarsson.Dna
         public bool MaskedDSTR;
 
         public int TranscriptID;
+        public int ExprBlobIdx;
 
-        public GeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds, int transcriptID)
+        public GeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds, int transcriptID, int exprBlobIdx)
+            : this(name, chr, strand, exonStarts, exonEnds)
+        {
+            this.TranscriptID = transcriptID;
+            this.ExprBlobIdx = exprBlobIdx;
+        }
+
+        public GeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds)
             : base(name, chr, strand, exonStarts[0], exonEnds[exonEnds.Length - 1])
         {
             ExonStarts = exonStarts;
@@ -242,7 +250,6 @@ namespace Linnarsson.Dna
             m_LocusHits = new int[1000];
             locusHitIdx = 0;
             SavedCAPPos = (strand == '+') ? exonStarts[0] : exonEnds[exonEnds.Length - 1];
-            this.TranscriptID = transcriptID;
         }
 
         public int GetExonLength(int i)
@@ -955,8 +962,8 @@ namespace Linnarsson.Dna
         public string TranscriptName;
 
         public ExtendedGeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds,
-                                  int transcriptId, string transcriptType, string transcriptName)
-            : base(name, chr, strand, exonStarts, exonEnds, transcriptId)
+                                   string transcriptType, string transcriptName)
+            : base(name, chr, strand, exonStarts, exonEnds)
         {
             this.TranscriptType = transcriptType;
             this.TranscriptName = transcriptName;

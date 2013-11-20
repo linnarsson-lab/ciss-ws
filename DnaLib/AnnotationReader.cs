@@ -177,7 +177,7 @@ namespace Linnarsson.Dna
             string combTrName = oldGf.TranscriptName.Contains(newGf.TranscriptName)? oldGf.TranscriptName : (oldGf.TranscriptName + ";" + newGf.TranscriptName);
             string combTrType = oldGf.TranscriptType.Contains(newGf.TranscriptType) ? oldGf.TranscriptType : (oldGf.TranscriptType + ";" + newGf.TranscriptType);
             ExtendedGeneFeature newFeature = new ExtendedGeneFeature(oldGf.Name, oldGf.Chr, oldGf.Strand, 
-                                                    newStarts.ToArray(), newEnds.ToArray(), 0, combTrType, combTrName);
+                                                    newStarts.ToArray(), newEnds.ToArray(), combTrType, combTrName);
             return newFeature;
         }
 
@@ -270,7 +270,7 @@ namespace Linnarsson.Dna
             int nExons = int.Parse(record[8]);
             int[] exonStarts = SplitField(record[9], 0);
             int[] exonEnds = SplitExonEndsField(record[10]); // Convert to inclusive ends
-            return new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, 0, "gene", trName);
+            return new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, "gene", trName);
         }
 
         /// <summary>
@@ -311,7 +311,7 @@ namespace Linnarsson.Dna
             int[] exonStarts = SplitField(record[9], 0);
             int[] exonEnds = SplitExonEndsField(record[10]); // Convert to inclusive ends
             if (record.Length == 11)
-                return new GeneFeature(name, chr, strand, exonStarts, exonEnds, 0);
+                return new GeneFeature(name, chr, strand, exonStarts, exonEnds);
             int[] offsets = SplitField(record[11], 0);
             int[] realExonIds = SplitField(record[12], 0);
             string[] exonsStrings = record[13].Split(',');
@@ -332,17 +332,18 @@ namespace Linnarsson.Dna
             return parts;
         }
 
-        public static GeneFeature GeneFeatureFromTranscript(Transcript tt)
+        public static GeneFeature GeneFeatureFromDBTranscript(Transcript tt)
         {
             int[] exonStarts = SplitField(tt.ExonStarts, 0); // 0-based
             int[] exonEnds = SplitExonEndsField(tt.ExonEnds); // Convert to 0-based inclusive ends
-            return new GeneFeature(tt.UniqueGeneName, tt.Chromosome, tt.Strand, exonStarts, exonEnds, tt.TranscriptID.Value);
+            return new GeneFeature(tt.UniqueGeneName, tt.Chromosome, tt.Strand, exonStarts, exonEnds, 
+                                   tt.TranscriptID.Value, tt.ExprBlobIdx);
         }
 
-        public static Transcript TranscriptFromExtendedGeneFeature(ExtendedGeneFeature gf)
+        public static Transcript CreateNewTranscriptFromExtendedGeneFeature(ExtendedGeneFeature gf)
         {
             string type = gf.TranscriptType == "" ? "gene" : gf.TranscriptType;
-            return new Transcript(null, 0, gf.TranscriptName, type, gf.NonVariantName, gf.Name, "",  "",
+            return new Transcript(gf.TranscriptName, type, gf.NonVariantName, gf.Name, "",  "",
                                   gf.Chr, gf.Start + 1, gf.End + 1, gf.GetTranscriptLength(), gf.Strand,
                                   gf.Extension5Prime, gf.ExonStartsString, gf.ExonEndsString);
         }

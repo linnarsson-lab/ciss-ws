@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
@@ -22,6 +23,11 @@ namespace C1
         {
         }
 
+        /// <summary>
+        /// Make sure a standard numerical ID has the form NNNNNNN-NNN, else all "-" are removed
+        /// </summary>
+        /// <param name="chipId"></param>
+        /// <returns></returns>
         public static string StandardizeChipId(string chipId)
         {
             chipId = chipId.Replace("-", "");
@@ -100,9 +106,10 @@ namespace C1
             return t;
         }
 
-        public IEnumerable<Transcript> IterTranscripts(int transcriptomeId)
+        public IEnumerable<Transcript> IterTranscriptsByBlobIdx(int transcriptomeId)
         {
-            string sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' ORDER BY TranscriptID", transcriptomeId);
+            //string sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' ORDER BY TranscriptID", transcriptomeId);
+            string sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' ORDER BY ExprBlobIdx", transcriptomeId);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -112,33 +119,15 @@ namespace C1
                 string uniqueName = rdr.GetString("GeneName");
                 Match m = Regex.Match(uniqueName, "_v[0-9]+$");
                 string geneName = (m.Success)? uniqueName.Substring(0, m.Index) : uniqueName;
-                Transcript t = new Transcript(rdr.GetInt32("TranscriptID"), rdr.GetInt32("TranscriptomeID"), rdr.GetString("Name"),
-                                              rdr.GetString("Type"), geneName, uniqueName, rdr.GetString("EntrezID"),
-                                              rdr.GetString("Description"),
+                Transcript t = new Transcript(rdr.GetInt32("TranscriptID"), rdr.GetInt32("TranscriptomeID"), rdr.GetInt32("ExprBlobIdx"),
+                                              rdr.GetString("Name"), rdr.GetString("Type"), geneName, uniqueName,
+                                              rdr.GetString("EntrezID"), rdr.GetString("Description"),
                                               rdr.GetString("Chromosome"), rdr.GetInt32("Start"), rdr.GetInt32("End"), 
                                               rdr.GetInt32("Length"), rdr.GetChar("Strand"), rdr.GetInt32("Extension5Prime"),
                                               rdr.GetString("ExonStarts"), rdr.GetString("ExonEnds"));
                 yield return t;
             }
             conn.Close();
-        }
-
-        public List<string> GetAllPlateIds()
-        {
-            List<string> plateIds = new List<string>();
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            string sql = "SELECT DISTINCT Plate FROM Cell";
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-            {
-                string file = rdr["Plate"].ToString();
-                plateIds.Add(file);
-            }
-            rdr.Close();
-            conn.Close();
-            return plateIds;
         }
 
         public void InsertCellImage(CellImage ci)
@@ -153,16 +142,29 @@ namespace C1
         public void InsertCell(Cell c)
         {
             CultureInfo cult = new CultureInfo("sv-SE");
-            string sql = "INSERT INTO Cell (Plate, Well, StrtProtocol, DateCollected, Species, Strain, Age, Sex, Tissue, " +
-                                            "Treatment, Diameter, Area, PI, Operator, Comments, Red, Green, Blue) " +
-                         "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}')";
-            sql = string.Format(sql, c.Plate, c.Well, c.StrtProtocol, c.DateCollected.ToString(cult), c.Species, c.Strain, c.Age, c.Sex, c.Tissue,
+            string sql = "INSERT INTO Cell (Chip, ChipWell, StrtProtocol, DateCollected, Species, " +
+                                           "DonorID, DateDissected, Strain, Age, Sex, Tissue, " +
+                                           "Treatment, Diameter, Area, PI, Operator, Comments, Red, Green, Blue) " +
+                         "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}'," +
+                                 "'{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}','{19}')";
+            sql = string.Format(sql, c.Chip, c.ChipWell, c.StrtProtocol, c.DateCollected.ToString(cult), c.Species,
+                                     c.DonorID, c.DateDissected.ToString(cult), c.Strain, c.Age, c.Sex, c.Tissue,
                                      c.Treatment, c.Diameter, c.Area, c.PI, c.Operator, c.Comments, c.Red, c.Green, c.Blue);
             int cellId = InsertAndGetLastId(sql, "Cell");
             foreach (CellImage ci in c.cellImages)
             {
                 ci.CellID = cellId;
                 InsertCellImage(ci);
+            }
+        }
+
+        public void AssignCellSeqPlateWell(List<Cell> cells)
+        {
+            string sqlPat = "UPDATE Cell SET Plate='{0}', PlateWell='{1}' WHERE CellID='{2}'";
+            foreach (Cell c in cells)
+            {
+                string sql = string.Format(sqlPat, c.Plate, c.PlateWell, c.CellID);
+                IssueNonQuery(sql);
             }
         }
 
@@ -181,13 +183,13 @@ namespace C1
         public void InsertTranscript(Transcript t)
         {
             string description = MySqlHelper.EscapeString(t.Description);
-            string sql = "REPLACE INTO Transcript (TranscriptomeID, Name, Type, GeneName, EntrezID, Description, Chromosome, " +
-                                                 "Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds) " +
-                                "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}')";
+            string sql = "INSERT INTO Transcript (TranscriptomeID, Name, Type, GeneName, EntrezID, Description, Chromosome, " +
+                                                 "Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds, ExprBlobIdx) " +
+                                "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}', '{14}')";
             sql = string.Format(sql, t.TranscriptomeID, t.Name, t.Type, t.UniqueGeneName, t.EntrezID, description, t.Chromosome,
-                                     t.Start, t.End, t.Length, t.Strand, t.Extension5Prime, t.ExonStarts, t.ExonEnds);
-            int transcriptomeId = InsertAndGetLastId(sql, "Transcript");
-            t.TranscriptID = transcriptomeId;
+                                     t.Start, t.End, t.Length, t.Strand, t.Extension5Prime, t.ExonStarts, t.ExonEnds, t.ExprBlobIdx);
+            int newTranscriptId = InsertAndGetLastId(sql, "Transcript");
+            t.TranscriptID = newTranscriptId;
             foreach (TranscriptAnnotation ta in t.TranscriptAnnotations)
             {
                 ta.TranscriptID = t.TranscriptID.Value;
@@ -208,14 +210,30 @@ namespace C1
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
-            //string sqlPat = "INSERT INTO Expression (CellID, TranscriptID, UniqueMolecules, UniqueReads, MaxMolecules, MaxReads) " +
-            //                "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}')";
             string sqlPat = "REPLACE INTO Expression (CellID, TranscriptID, Molecules) VALUES ('{0}',{1}, {2})";
             foreach (Expression e in exprIterator)
             {
-                //string sql = string.Format(sqlPat, e.CellID, e.TranscriptID, e.UniqueMolecules, e.UniqueReads, e.MaxMolecules, e.MaxReads);
                 string sql = string.Format(sqlPat, e.CellID, e.TranscriptID, e.Molecules);
                 MySqlCommand cmd = new MySqlCommand(sql, conn);
+                if (test)
+                    Console.WriteLine(sql);
+                else
+                    cmd.ExecuteNonQuery();
+            }
+            conn.Close();
+        }
+
+        public void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator)
+        {
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            string sqlPat = "REPLACE INTO ExprBlob (CellID, TranscriptomeID, Molecules) VALUES ('{0}',{1}, ?BLOBDATA)";
+            foreach (ExprBlob exprBlob in exprBlobIterator)
+            {
+                string sql = string.Format(sqlPat, exprBlob.CellID, exprBlob.TranscriptomeID);
+                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                cmd.CommandText = sql;
+                cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
                 if (test)
                     Console.WriteLine(sql);
                 else
@@ -229,19 +247,18 @@ namespace C1
             return projectId.StartsWith(C1Props.C1ProjectPrefix) ? projectId.Substring(C1Props.C1ProjectPrefix.Length) : projectId;
         }
 
-        public Dictionary<string, int> GetCellIdByWell(string projectId)
+        public Dictionary<string, int> GetCellIdByPlateWell(string projectId)
         {
-            projectId = StripC1Indicator(projectId);
-            Dictionary<string, int> cellIdByWell = new Dictionary<string, int>();
-            string sql = string.Format("SELECT Well, CellID FROM Cell WHERE Plate='{0}' ORDER BY Well", projectId);
+            Dictionary<string, int> cellIdByPlateWell = new Dictionary<string, int>();
+            string sql = string.Format("SELECT PlateWell, CellID FROM Cell WHERE Plate='{0}' ORDER BY PlateWell", projectId);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             while (rdr.Read())
-                cellIdByWell.Add(rdr.GetString(0), rdr.GetInt32(1));
+                cellIdByPlateWell.Add(rdr.GetString(0), rdr.GetInt32(1));
             conn.Close();
-            return cellIdByWell;
+            return cellIdByPlateWell;
         }
 
         private static List<string> GetCellAnnotationNames(string projectId)
@@ -261,59 +278,96 @@ namespace C1
             return annotNames;
         }
 
+        public Cell GetCellFromChipWell(string chip, string chipWell)
+        {
+            string whereClause = string.Format("WHERE Chip='{0}' AND ChipWell='{1}'", chip, chipWell);
+            return GetCells(whereClause)[0];
+        }
+        public List<Cell> GetCellsOfChip(string chip)
+        {
+            string whereClause = string.Format("WHERE Chip='{0}' ORDER BY ChipWell", chip);
+            return GetCells(whereClause);
+        }
+        public List<Cell> GetCells(string whereClause)
+        {
+            List<Cell> cells = new List<Cell>();
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            string sql = "SELECT CellID, Chip, ChipWell, Plate, PlateWell, StrtProtocol, DateDissected, DateCollected, Species, " +
+                         "Strain, DonorID, Age, Sex, Tissue, Treatment, Diameter, Area, PI, Operator, Comments, Red, Blue, Green " +
+                         "FROM Cell {0}";
+            sql = string.Format(sql, whereClause);
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                Cell cell = new Cell(rdr.GetInt32(0), rdr.GetString(1), rdr.GetString(2), rdr.GetString(3), rdr.GetString(4),
+                                     rdr.GetString(5), rdr.GetDateTime(6), rdr.GetDateTime(7), rdr.GetString(8),
+                                     rdr.GetString(9), rdr.GetString(10), rdr.GetString(11), rdr.GetChar(12),
+                                     rdr.GetString(13), rdr.GetString(14), rdr.GetDouble(15), rdr.GetDouble(16),
+                                     rdr.GetString(17), rdr.GetString(18), rdr.GetString(19),
+                                     rdr.GetInt32(20), rdr.GetInt32(21), rdr.GetInt32(22));
+                cells.Add(cell);
+            }
+            return cells;
+        }
+
         /// <summary>
         /// Read plate layout data from the database
         /// </summary>
         /// <param name="projectId"></param>
         /// <param name="annotations"></param>
         /// <param name="annotationIndexes"></param>
-        public static void GetCellAnnotations(string projectId, 
+        public void GetCellAnnotations(string projectId, 
             out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
             projectId = StripC1Indicator(projectId);
             List<string> annotNames = GetCellAnnotationNames(projectId);
-            annotationIndexes = new Dictionary<string, int>(7 + annotNames.Count);
-            annotationIndexes["CellID"] = 0;
-            annotationIndexes["Species"] = 1;
-            annotationIndexes["Diameter"] = 2;
-            annotationIndexes["Area"] = 3;
-            annotationIndexes["Red"] = 4;
-            annotationIndexes["Blue"] = 5;
-            annotationIndexes["Green"] = 6;
-            for (int i = 0; i < annotNames.Count; i++)
+            annotationIndexes = new Dictionary<string, int>();
+            int i = 0;
+            annotationIndexes["Chip"] = i++;
+            annotationIndexes["ChipWell"] = i++;
+            annotationIndexes["Age"] = i++;
+            annotationIndexes["Sex"] = i++;
+            annotationIndexes["DonorID"] = i++;
+            annotationIndexes["Diameter"] = i++;
+            annotationIndexes["Area"] = i++;
+            annotationIndexes["Red"] = i++;
+            annotationIndexes["Blue"] = i++;
+            annotationIndexes["Green"] = i++;
+            for (i = 0; i < annotNames.Count; i++)
                 annotationIndexes[annotNames[i]] = annotationIndexes.Count;
+            string sqlPat = "SELECT CellID, Name, Value FROM CellAnnotation a LEFT JOIN Cell c ON a.CellID=c.CellID " +
+                    "WHERE a.CellID IN (SELECT CellID FROM Cell WHERE Plate='{0}')";
             annotations = new Dictionary<string, string[]>(96);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
-            string sql = "SELECT Well, CellID, Species, Diameter, Area, Red, Blue, Green FROM Cell WHERE Plate='{0}'";
-            sql = string.Format(sql, projectId);
+            foreach (Cell cell in GetCells("WHERE Plate='{0}' ORDER BY PlateWell"))
+            {
+                string[] wellAnn = new string[annotationIndexes.Count];
+                string plateWell = cell.PlateWell;
+                i = 0;
+                wellAnn[i++] = cell.Chip;
+                wellAnn[i++] = cell.ChipWell;
+                wellAnn[i++] = cell.Age;
+                wellAnn[i++] = cell.Sex.ToString();
+                wellAnn[i++] = cell.DonorID;
+                wellAnn[i++] = cell.Diameter.ToString();
+                wellAnn[i++] = cell.Area.ToString();
+                wellAnn[i++] = cell.Red.ToString();
+                wellAnn[i++] = cell.Blue.ToString();
+                wellAnn[i++] = cell.Green.ToString();
+                annotations[plateWell] = wellAnn;
+            }
+            string sql = string.Format(sqlPat, projectId);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             while (rdr.Read())
             {
-                string[] wellAnn = new string[annotationIndexes.Count];
-                wellAnn[0] = rdr.GetString(1);
-                wellAnn[1] = rdr.GetString(2);
-                wellAnn[2] = rdr.GetString(3);
-                wellAnn[3] = rdr.GetString(4);
-                wellAnn[4] = rdr.GetString(5);
-                wellAnn[5] = rdr.GetString(6);
-                wellAnn[6] = rdr.GetString(7);
-                string well = rdr.GetString(0);
-                annotations[well] = wellAnn;
-            }
-            rdr.Close();
-            sql = "SELECT Well, Name, Value FROM CellAnnotation a LEFT JOIN Cell c ON a.CellID=c.CellID " +
-                    "WHERE a.CellID IN (SELECT CellID FROM Cell WHERE Plate='{0}')";
-            sql = string.Format(sql, projectId);
-            cmd = new MySqlCommand(sql, conn);
-            rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-            {
-                string well = rdr.GetString(0);
+                string plateWell = rdr.GetString(0);
                 string name = rdr.GetString(1);
                 string value = rdr.GetString(2);
-                annotations[well][annotationIndexes[name]] = value;
+                annotations[plateWell][annotationIndexes[name]] = value;
             }
             rdr.Close();
             conn.Close();

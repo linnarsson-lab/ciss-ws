@@ -26,6 +26,7 @@ namespace C1
         public double Area { get; set; }
         public string PI { get; set; }
         public string Operator { get; set; }
+        public string Scientist { get; set; }
         public string Comments { get; set; }
         public int Red { get; set; }
         public int Green { get; set; }
@@ -35,7 +36,7 @@ namespace C1
         public Cell(int? cellId, string chip, string chipWell, string plate, string plateWell,
                     string strtProtocol, DateTime dateDissected, DateTime dateCollected, string species, string strain,
                     string donorID, string age, char sex, string tissue, string treatment,
-                    double diameter, double area, string PI, string op, string comments,
+                    double diameter, double area, string PI, string op, string sci, string comments,
                     int red, int green, int blue)
         {
             this.CellID = cellId;
@@ -57,6 +58,7 @@ namespace C1
             this.Area = area;
             this.PI = PI;
             this.Operator = op;
+            this.Scientist = sci;
             this.Comments = comments;
             this.Red = red;
             this.Green = green;

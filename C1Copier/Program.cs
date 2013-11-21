@@ -88,7 +88,7 @@ namespace C1
         {
             bool someCopyDone = false;
             string[] availableChipDirs = Directory.GetDirectories(C1Props.props.C1RunsFolder, "*-*-*");
-            List<string> loadedChipDirs = new ProjectDB().GetProjectColumn("plateid", C1Props.C1ProjectPrefix+"%", "platereference");
+            List<string> loadedChipDirs = new C1DB().GetLoadedChips();
             foreach (string chipDir in availableChipDirs)
             {
                 if (!loadedChipDirs.Contains(chipDir))
@@ -184,7 +184,7 @@ namespace C1
                                     metadata["Species"], metadata["Strain"], metadata["DonorID"],
                                     metadata["Age"], metadata["Sex"][0], metadata["Tissue/cell type/source"],
                                     metadata["Treatment"], diameter, area, metadata["Principal Investigator"], metadata["Operator"],
-                                    metadata["Comments"], red, green, blue);
+                                    metadata["Scientist"], metadata["Comments"], red, green, blue);
                     List<CellImage> cellImages = new List<CellImage>();
                     foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)
                     {
@@ -218,12 +218,13 @@ namespace C1
             metadata["Spikes"] = C1Props.props.SpikeMoleculeCount.ToString();
             using (StreamReader r = new StreamReader(lastMetaFilePath))
             {
-                string line = r.ReadLine();
-                while (line != null && !line.StartsWith("#"))
+                string line;
+                while ((line = r.ReadLine()) != null)
                 {
+                    if (line == "" || line.StartsWith("#"))
+                        continue;
                     string[] fields = line.Split('\t');
                     metadata[fields[0].Trim()] = fields[1].Trim();
-                    line = r.ReadLine();
                 }
             }
             metadata["Chipfolder"] = chipDir;
@@ -244,12 +245,13 @@ namespace C1
             if (lastDonorFilePath == null) return;
             using (StreamReader r = new StreamReader(lastDonorFilePath))
             {
-                string line = r.ReadLine();
-                while (line != null && !line.StartsWith("#"))
+                string line;
+                while ((line = r.ReadLine()) != null)
                 {
+                    if (line.StartsWith("#"))
+                        continue;
                     string[] fields = line.Split('\t');
                     metadata[fields[0].Trim()] = fields[1].Trim();
-                    line = r.ReadLine();
                 }
             }
         }

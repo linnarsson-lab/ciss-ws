@@ -600,14 +600,14 @@ namespace Linnarsson.Strt
                 (firstMatch.Count == 1) ? firstMatch[0] : (initialsMatch.Count == 1) ? initialsMatch[0] : failPerson;
         }
 
-        public int InsertNewProject(ProjectDescription pd)
+        public int InsertOrUpdateProject(ProjectDescription pd)
         {
             if (pd.SpikeMoleculeCount == 0)
                 pd.SpikeMoleculeCount = Props.props.TotalNumberOfAddedSpikeMolecules;
             int contactId = TryGetPerson("jos_aaacontact", "contactperson", pd.contact).id;
             int managerId = TryGetPerson("jos_aaamanager", "person", pd.manager).id;
             int clientId = TryGetPerson("jos_aaaclient", "principalinvestigator", pd.client).id;
-            string sql = "INSERT INTO jos_aaaproject (jos_aaacontactid, jos_aaamanagerid, jos_aaaclientid, " +
+            string sql = "REPLACE INTO jos_aaaproject (jos_aaacontactid, jos_aaamanagerid, jos_aaaclientid, " +
                 "title, productiondate, plateid, platereference, species, tissue, sampletype, " +
                 "collectionmethod, weightconcentration, fragmentlength, molarconcentration, description, " +
                 "protocol, barcodeset, labbookpage, layoutfile, status, comment, user, spikemolecules, time) " +

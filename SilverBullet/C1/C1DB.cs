@@ -142,14 +142,15 @@ namespace C1
         public void InsertCell(Cell c)
         {
             CultureInfo cult = new CultureInfo("sv-SE");
-            string sql = "INSERT INTO Cell (Chip, ChipWell, StrtProtocol, DateCollected, Species, " +
-                                           "DonorID, DateDissected, Strain, Age, Sex, Tissue, " +
-                                           "Treatment, Diameter, Area, PI, Operator, Comments, Red, Green, Blue) " +
+            string sql = "INSERT INTO Cell (Chip, ChipWell, StrtProtocol, DateDissected, DateCollected, " +
+                                           "Species, Strain, DonorID, Age, Sex, Tissue, Treatment, " +
+                                           "Diameter, Area, PI, Operator, Scientist, Comments, Red, Green, Blue) " +
                          "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}'," +
-                                 "'{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}','{19}')";
-            sql = string.Format(sql, c.Chip, c.ChipWell, c.StrtProtocol, c.DateCollected.ToString(cult), c.Species,
-                                     c.DonorID, c.DateDissected.ToString(cult), c.Strain, c.Age, c.Sex, c.Tissue,
-                                     c.Treatment, c.Diameter, c.Area, c.PI, c.Operator, c.Comments, c.Red, c.Green, c.Blue);
+                                 "'{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}','{19}', '{20}')";
+            sql = string.Format(sql, c.Chip, c.ChipWell, c.StrtProtocol, c.DateDissected.ToString(cult), c.DateCollected.ToString(cult),
+                                     c.Species, c.Strain, c.DonorID, c.Age, c.Sex, c.Tissue, c.Treatment,
+                                     c.Diameter, c.Area, c.PI, c.Operator, c.Scientist, c.Comments, 
+                                     c.Red, c.Green, c.Blue);
             int cellId = InsertAndGetLastId(sql, "Cell");
             foreach (CellImage ci in c.cellImages)
             {
@@ -158,7 +159,7 @@ namespace C1
             }
         }
 
-        public void AssignCellSeqPlateWell(List<Cell> cells)
+        public void UpdateDBCellSeqPlateWell(List<Cell> cells)
         {
             string sqlPat = "UPDATE Cell SET Plate='{0}', PlateWell='{1}' WHERE CellID='{2}'";
             foreach (Cell c in cells)
@@ -242,11 +243,6 @@ namespace C1
             conn.Close();
         }
 
-        private static string StripC1Indicator(string projectId)
-        {
-            return projectId.StartsWith(C1Props.C1ProjectPrefix) ? projectId.Substring(C1Props.C1ProjectPrefix.Length) : projectId;
-        }
-
         public Dictionary<string, int> GetCellIdByPlateWell(string projectId)
         {
             Dictionary<string, int> cellIdByPlateWell = new Dictionary<string, int>();
@@ -263,7 +259,6 @@ namespace C1
 
         private static List<string> GetCellAnnotationNames(string projectId)
         {
-            projectId = StripC1Indicator(projectId);
             string sql = "SELECT DISTINCT(Name) FROM CellAnnotation WHERE CellID IN (SELECT CellID FROM Cell WHERE Plate='{0}')";
             sql = string.Format(sql, projectId);
             MySqlConnection conn = new MySqlConnection(connectionString);
@@ -294,7 +289,8 @@ namespace C1
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             string sql = "SELECT CellID, Chip, ChipWell, Plate, PlateWell, StrtProtocol, DateDissected, DateCollected, Species, " +
-                         "Strain, DonorID, Age, Sex, Tissue, Treatment, Diameter, Area, PI, Operator, Comments, Red, Blue, Green " +
+                         "Strain, DonorID, Age, Sex, Tissue, Treatment, Diameter, Area, PI, Operator, Scientist, Comments, " +
+                         "Red, Blue, Green " +
                          "FROM Cell {0}";
             sql = string.Format(sql, whereClause);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -305,10 +301,11 @@ namespace C1
                                      rdr.GetString(5), rdr.GetDateTime(6), rdr.GetDateTime(7), rdr.GetString(8),
                                      rdr.GetString(9), rdr.GetString(10), rdr.GetString(11), rdr.GetChar(12),
                                      rdr.GetString(13), rdr.GetString(14), rdr.GetDouble(15), rdr.GetDouble(16),
-                                     rdr.GetString(17), rdr.GetString(18), rdr.GetString(19),
-                                     rdr.GetInt32(20), rdr.GetInt32(21), rdr.GetInt32(22));
+                                     rdr.GetString(17), rdr.GetString(18), rdr.GetString(19), rdr.GetString(20),
+                                     rdr.GetInt32(21), rdr.GetInt32(22), rdr.GetInt32(23));
                 cells.Add(cell);
             }
+            conn.Close();
             return cells;
         }
 
@@ -321,7 +318,6 @@ namespace C1
         public void GetCellAnnotations(string projectId, 
             out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
-            projectId = StripC1Indicator(projectId);
             List<string> annotNames = GetCellAnnotationNames(projectId);
             annotationIndexes = new Dictionary<string, int>();
             int i = 0;
@@ -373,5 +369,19 @@ namespace C1
             conn.Close();
         }
 
+
+        public List<string> GetLoadedChips()
+        {
+            List<string> loadedChips = new List<string>();
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            string sql = "SELECT DISTINCT(Chip) FROM Cell";
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                loadedChips.Add(rdr.GetString(0));
+            conn.Close();
+            return loadedChips;
+        }
     }
 }

@@ -83,6 +83,10 @@
       <Project>{E8759D26-148C-43AF-9738-3B60AA5953FC}</Project>
       <Name>C1SeqPlateLoader</Name>
     </ProjectReference>
+    <ProjectReference Include="..\DnaLib\Linnarsson.Dna.csproj">
+      <Project>{70EA71CD-073B-4195-B04F-36A7F6B1D4E7}</Project>
+      <Name>Linnarsson.Dna</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Linnarsson.Strt\Linnarsson.Strt.csproj">
       <Project>{426B865C-ED32-4ACD-BB8F-8101899AB14B}</Project>
       <Name>Linnarsson.Strt</Name>
@@ -90,6 +94,10 @@
     <ProjectReference Include="..\SilverBullet\C1\Linnarsson.C1Model.csproj">
       <Project>{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}</Project>
       <Name>Linnarsson.C1Model</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\UtilitiesLib\Linnarsson.Utilities.csproj">
+      <Project>{EE3E20A0-525F-408B-96F7-44D586F8E0B9}</Project>
+      <Name>Linnarsson.Utilities</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

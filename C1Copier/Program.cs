@@ -179,12 +179,12 @@ namespace C1
                     int red = (fields.Length < 6)? Detection.Unknown : (fields[5] == "1") ? Detection.Yes : Detection.No;
                     int green = (fields.Length < 7) ? Detection.Unknown : (fields[6] == "1") ? Detection.Yes : Detection.No;
                     int blue = (fields.Length < 8) ? Detection.Unknown : (fields[7] == "1") ? Detection.Yes : Detection.No;
-                    Cell newCell = new Cell(null, metadata["Chip serial number"], well, "", "", metadata["Protocol"],
-                                    DateTime.Parse(metadata["Date dissected"]), DateTime.Parse(metadata["Date of Run"]),
-                                    metadata["Species"], metadata["Strain"], metadata["DonorID"],
-                                    metadata["Age"], metadata["Sex"][0], metadata["Tissue/cell type/source"],
-                                    metadata["Treatment"], diameter, area, metadata["Principal Investigator"], metadata["Operator"],
-                                    metadata["Scientist"], metadata["Comments"], red, green, blue);
+                    Cell newCell = new Cell(null, metadata["chip serial number"], well, "", "", metadata["protocol"],
+                                    DateTime.Parse(metadata["datedissected"]), DateTime.Parse(metadata["date of run"]),
+                                    metadata["species"], metadata["strain"], metadata["donorid"],
+                                    metadata["age"], metadata["sex"][0], metadata["tissue/cell type/source"],
+                                    metadata["treatment"], diameter, area, metadata["principal investigator"], metadata["operator"],
+                                    metadata["scientist"], metadata["comments"], red, green, blue);
                     List<CellImage> cellImages = new List<CellImage>();
                     foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)
                     {
@@ -213,9 +213,9 @@ namespace C1
             string lastMetaFilePath = GetLastMatchingFile(chipDir, C1Props.props.C1MetadataFilenamePattern);
             if (lastMetaFilePath == null) return null;
             Dictionary<string, string> metadata = new Dictionary<string, string>();
-            metadata["Age"] = metadata["Strain"] = metadata["Treatment"] = metadata["Tissue"] = metadata["Sex"] = "?";
-            metadata["Operator"] = metadata["Scientist"] = metadata["Principal Investigator"] = "?";
-            metadata["Spikes"] = C1Props.props.SpikeMoleculeCount.ToString();
+            metadata["age"] = metadata["strain"] = metadata["treatment"] = metadata["tissue"] = metadata["sex"] = "?";
+            metadata["operator"] = metadata["scientist"] = metadata["principal investigator"] = "?";
+            metadata["spikes"] = C1Props.props.SpikeMoleculeCount.ToString();
             using (StreamReader r = new StreamReader(lastMetaFilePath))
             {
                 string line;
@@ -224,23 +224,23 @@ namespace C1
                     if (line == "" || line.StartsWith("#"))
                         continue;
                     string[] fields = line.Split('\t');
-                    metadata[fields[0].Trim()] = fields[1].Trim();
+                    metadata[fields[0].Trim().ToLower()] = fields[1].Trim();
                 }
             }
-            metadata["Chipfolder"] = chipDir;
+            metadata["chipfolder"] = chipDir;
             string chipId = C1DB.StandardizeChipId(Path.GetFileName(chipDir));
-            metadata["Chip serial number"] = chipId;
+            metadata["chip serial number"] = chipId;
             ProjectDB pdb = new ProjectDB();
-            metadata["Principal Investigator"] = pdb.TryGetPerson("jos_aaaclient", "principalinvestigator", metadata["Principal Investigator"], new Person(0, metadata["Principal Investigator"])).name;
-            metadata["Scientist"] = pdb.TryGetPerson("jos_aaacontact", "contactperson", metadata["Scientist"], new Person(0, metadata["Scientist"])).name;
-            metadata["Operator"] = pdb.TryGetPerson("jos_aaamanager", "person", metadata["Operator"], new Person(0, metadata["Operator"])).name;
+            metadata["principal investigator"] = pdb.TryGetPerson("jos_aaaclient", "principalinvestigator", metadata["principal investigator"], new Person(0, metadata["principal investigator"])).name;
+            metadata["scientist"] = pdb.TryGetPerson("jos_aaacontact", "contactperson", metadata["scientist"], new Person(0, metadata["scientist"])).name;
+            metadata["operator"] = pdb.TryGetPerson("jos_aaamanager", "person", metadata["operator"], new Person(0, metadata["operator"])).name;
             AddDonorInfo(chipDir, ref metadata);
             return metadata;
         }
 
         private static void AddDonorInfo(string chipDir, ref Dictionary<string, string> metadata)
         {
-            metadata["Date dissected"] = metadata["DonorID"] = "";
+            metadata["datedissected"] = metadata["donorid"] = "";
             string lastDonorFilePath = GetLastMatchingFile(chipDir, C1Props.props.C1DonorDataFilenamePattern);
             if (lastDonorFilePath == null) return;
             using (StreamReader r = new StreamReader(lastDonorFilePath))
@@ -248,10 +248,14 @@ namespace C1
                 string line;
                 while ((line = r.ReadLine()) != null)
                 {
-                    if (line.StartsWith("#"))
+                    if (line == "" || line.StartsWith("#"))
                         continue;
                     string[] fields = line.Split('\t');
-                    metadata[fields[0].Trim()] = fields[1].Trim();
+                    string key = fields[0].Trim().ToLower();
+                    if (key == "mouse_number") key = "donorid";
+                    if (key == "date") key = "datedissected";
+                    if (key == "gender") key = "sex";
+                    metadata[key] = fields[1].Trim();
                 }
             }
         }

@@ -8,6 +8,7 @@ using System.Text;
 using System.IO;
 using System.Windows.Forms;
 using Linnarsson.Strt;
+using Linnarsson.Dna;
 using C1SeqPlateLoader;
 using C1;
 
@@ -27,7 +28,6 @@ namespace C1SeqPlateLoader
         private void LoadSelectOptions()
         {
             listBoxItems.Clear();
-            labelResultText.Text = "Select chip/plate above!";
             foreach (string availPlate in availableC1Plates)
             {
                 if (!loadedC1Plates.Contains(C1Props.C1ProjectPrefix + availPlate) || checkBox1.Checked)
@@ -44,13 +44,13 @@ namespace C1SeqPlateLoader
             availableC1Plates = new C1DB().GetLoadedChips();
             while (!Directory.Exists(C1Props.props.C1SeqPlatesFolder))
             {
-                FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
-                folderBrowserDialog1.Description = "Please locate the c1-runs folder!";
-                if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+                FolderBrowserDialog plateFolderBrowserDialog1 = new FolderBrowserDialog();
+                plateFolderBrowserDialog1.Description = "Please locate the c1-seqplates folder!";
+                if (plateFolderBrowserDialog1.ShowDialog() == DialogResult.OK)
                 {
-                    C1Props.props.C1SeqPlatesFolder = folderBrowserDialog1.SelectedPath;
+                    C1Props.props.C1SeqPlatesFolder = plateFolderBrowserDialog1.SelectedPath;
                 }
-                folderBrowserDialog1.Dispose();
+                plateFolderBrowserDialog1.Dispose();
             }
             foreach (string file in Directory.GetFiles(C1Props.props.C1SeqPlatesFolder, C1Props.props.C1SeqPlateFilenamePattern))
             {
@@ -58,6 +58,7 @@ namespace C1SeqPlateLoader
                 availableC1Plates.Add(chipName);
             }
             LoadSelectOptions();
+            Console.WriteLine("Select chip/plate above!");
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
@@ -67,10 +68,20 @@ namespace C1SeqPlateLoader
 
         private void button1_Click(object sender, EventArgs e)
         {
-            labelResultText.Text = "Loading...";
+            while (!Directory.Exists(Props.props.ProjectsFolder))
+            {
+                FolderBrowserDialog strtFolderBrowserDialog = new FolderBrowserDialog();
+                strtFolderBrowserDialog.Description = "Please locate the STRT projects folder!";
+                if (strtFolderBrowserDialog.ShowDialog() == DialogResult.OK)
+                {
+                    Props.props.ProjectsFolder = strtFolderBrowserDialog.SelectedPath;
+                }
+                strtFolderBrowserDialog.Dispose();
+            }
+            Console.WriteLine("Loading...");
             string selPlate = listBoxItems[listBoxSelect.SelectedIndex];
             string result = new C1SeqPlateLoader().LoadC1SeqPlate((selPlate));
-            labelResultText.Text = result;
+            Console.WriteLine(result);
         }
 
     }

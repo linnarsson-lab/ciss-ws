@@ -71,7 +71,16 @@ namespace C1SeqPlateLoader
                     writer.WriteLine("{0}\t{1}\t{2}\t{3}", cell.PlateWell, cell.Species, cell.Chip, cell.ChipWell);
                 }
             }
-            File.Copy(layoutFile, Path.Combine(Props.props.UploadsFolder, layoutFilename), true);
+            try
+            {
+                File.Copy(layoutFile, Path.Combine(Props.props.UploadsFolder, layoutFilename), true);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("NOTE: Could not load layout to DB!");
+                Console.WriteLine("Open Sanger DB and specify layout {0} for {1} under Samples/Edit!", layoutFile, seqPlateName);
+                layoutFilename = "";
+            }
             return layoutFilename;
         }
 
@@ -116,6 +125,7 @@ namespace C1SeqPlateLoader
                 speciess.Add(s);
                 chips.Add(c.Chip);
                 protocols.Add(c.StrtProtocol);
+                tissues.Add(c.Tissue);
             }
             string chip = string.Join(" / ", chips.ToArray());
             string tissue = string.Join("/", tissues.ToArray());
@@ -125,7 +135,7 @@ namespace C1SeqPlateLoader
             ProjectDescription pd = new ProjectDescription("", cells[0].Operator, cells[0].PI,
                 chip, DateTime.Now, plate, "", species, tissue,
                 "single cell", "C1", "", protocol, C1Props.props.C1StandardBarcodeSet, "", layoutFile,
-                "", C1Props.props.SpikeMoleculeCount);
+                cells[0].Comments, C1Props.props.SpikeMoleculeCount);
             new ProjectDB().InsertOrUpdateProject(pd);
         }
 

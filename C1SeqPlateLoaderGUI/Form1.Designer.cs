@@ -32,7 +32,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.listBoxSelect = new System.Windows.Forms.ListBox();
             this.button1 = new System.Windows.Forms.Button();
-            this.labelResultText = new System.Windows.Forms.Label();
+            this.consoleBox1 = new Linnarsson.Utilities.ConsoleBox();
             this.SuspendLayout();
             // 
             // checkBox1
@@ -76,21 +76,20 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
-            // labelResultText
+            // consoleBox1
             // 
-            this.labelResultText.AutoSize = true;
-            this.labelResultText.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelResultText.Location = new System.Drawing.Point(36, 360);
-            this.labelResultText.Name = "labelResultText";
-            this.labelResultText.Size = new System.Drawing.Size(0, 16);
-            this.labelResultText.TabIndex = 4;
+            this.consoleBox1.Location = new System.Drawing.Point(11, 347);
+            this.consoleBox1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.consoleBox1.Name = "consoleBox1";
+            this.consoleBox1.Size = new System.Drawing.Size(336, 170);
+            this.consoleBox1.TabIndex = 5;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(358, 405);
-            this.Controls.Add(this.labelResultText);
+            this.ClientSize = new System.Drawing.Size(358, 528);
+            this.Controls.Add(this.consoleBox1);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.listBoxSelect);
             this.Controls.Add(this.label1);
@@ -109,7 +108,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.ListBox listBoxSelect;
         private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Label labelResultText;
+        private Linnarsson.Utilities.ConsoleBox consoleBox1;
     }
 }
 

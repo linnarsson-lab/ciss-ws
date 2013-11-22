@@ -22,7 +22,7 @@ namespace C1
         public string C1StandardBarcodeSet = "Tn5UMI6";
         public string C1SeqPlatesFolder = "/data2/c1-seqplates";
         public string C1SeqPlateFilenamePattern = "*.txt";
-        public string C1DonorDataFilenamePattern = "donordata*.txt";
+        public string C1DonorDataFilenamePattern = "mice_metdata_*.txt";
         public string C1RunsFolder = "/data2/c1-runs";
         public string C1CaptureFilenamePattern = "capture_rep*.txt";
         public string C1MetadataFilenamePattern = "*metadata*.txt";

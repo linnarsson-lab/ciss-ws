@@ -39,11 +39,11 @@
             // 
             this.checkBox1.AutoSize = true;
             this.checkBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.checkBox1.Location = new System.Drawing.Point(36, 165);
+            this.checkBox1.Location = new System.Drawing.Point(36, 283);
             this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(246, 20);
+            this.checkBox1.Size = new System.Drawing.Size(255, 20);
             this.checkBox1.TabIndex = 0;
-            this.checkBox1.Text = "Force reload of already loaded plate";
+            this.checkBox1.Text = "Show already loaded plates for reload";
             this.checkBox1.UseVisualStyleBackColor = true;
             this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
             // 
@@ -51,7 +51,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(36, 34);
+            this.label1.Location = new System.Drawing.Point(36, 18);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(209, 18);
             this.label1.TabIndex = 1;
@@ -60,15 +60,15 @@
             // listBoxSelect
             // 
             this.listBoxSelect.FormattingEnabled = true;
-            this.listBoxSelect.Location = new System.Drawing.Point(36, 78);
+            this.listBoxSelect.Location = new System.Drawing.Point(39, 55);
             this.listBoxSelect.Name = "listBoxSelect";
-            this.listBoxSelect.Size = new System.Drawing.Size(246, 69);
+            this.listBoxSelect.Size = new System.Drawing.Size(243, 212);
             this.listBoxSelect.TabIndex = 2;
             // 
             // button1
             // 
             this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button1.Location = new System.Drawing.Point(327, 162);
+            this.button1.Location = new System.Drawing.Point(113, 315);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 3;
@@ -80,7 +80,7 @@
             // 
             this.labelResultText.AutoSize = true;
             this.labelResultText.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelResultText.Location = new System.Drawing.Point(36, 202);
+            this.labelResultText.Location = new System.Drawing.Point(36, 360);
             this.labelResultText.Name = "labelResultText";
             this.labelResultText.Size = new System.Drawing.Size(0, 16);
             this.labelResultText.TabIndex = 4;
@@ -89,7 +89,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(482, 240);
+            this.ClientSize = new System.Drawing.Size(358, 405);
             this.Controls.Add(this.labelResultText);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.listBoxSelect);

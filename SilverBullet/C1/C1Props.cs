@@ -20,8 +20,7 @@ namespace C1
         public static readonly string C1ProjectPrefix = "C1-"; // Prefix used for cells10k plates in ProjectDB.
 
         public string C1StandardBarcodeSet = "Tn5UMI6";
-        public string C1SeqPlatesFolder = "\\\\192.168.1.12\\data2\\c1-seqplates";
-        //public string C1SeqPlatesFolder = "/data2/c1-seqplates";
+        public string C1SeqPlatesFolder = "/data2/c1-seqplates";
         public string C1SeqPlateFilenamePattern = "*.txt";
         public string C1DonorDataFilenamePattern = "donordata*.txt";
         public string C1RunsFolder = "/data2/c1-runs";

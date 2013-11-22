@@ -27,7 +27,7 @@ namespace C1SeqPlateLoader
             cdb = new C1DB();
         }
 
-        public void LoadC1SeqPlate(string plateOrChip)
+        public string LoadC1SeqPlate(string plateOrChip)
         {
             List<Cell> cells;
             string seqPlateFile = C1Props.props.C1SeqPlateFilenamePattern.Replace("*", plateOrChip);
@@ -37,19 +37,13 @@ namespace C1SeqPlateLoader
             {
                 cells = ReadSeqPlateMixFile(seqPlateFile, seqPlateName);
                 if (cells.Count == 0)
-                {
-                    Console.WriteLine("ERROR: Could not find any C1 cells using plate mix file {0}.", seqPlateFile);
-                    return;
-                }
+                    return string.Format("ERROR: Could not find any C1 cells using plate mix file {0}.", seqPlateFile);
             }
             else
             {
                 cells = cdb.GetCellsOfChip(plateOrChip);
                 if (cells.Count == 0)
-                {
-                    Console.WriteLine("ERROR: Could not find any C1 cells in database for chip {0}.", plateOrChip);
-                    return;
-                }
+                    return string.Format("ERROR: Could not find any C1 cells in database for chip {0}.", plateOrChip);
                 foreach (Cell c in cells)
                 {
                     c.Plate = seqPlateName;
@@ -59,6 +53,7 @@ namespace C1SeqPlateLoader
             cdb.UpdateDBCellSeqPlateWell(cells);
             string layoutFilename = ConstructLayoutFile(seqPlateName, cells);
             InsertNewProject(cells, layoutFilename);
+            return "Ready";
         }
 
         private string ConstructLayoutFile(string seqPlateName, List<Cell> cells)

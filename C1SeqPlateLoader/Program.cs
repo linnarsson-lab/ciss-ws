@@ -46,7 +46,8 @@ namespace C1SeqPlateLoader
                     Console.WriteLine("Reloading plate {0}", plateOrChip);
                 }
             }
-            new C1SeqPlateLoader().LoadC1SeqPlate(plateOrChip);
+            string result = new C1SeqPlateLoader().LoadC1SeqPlate(plateOrChip);
+            Console.WriteLine(result);
         }
 
     }

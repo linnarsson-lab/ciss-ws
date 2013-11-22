@@ -369,7 +369,10 @@ namespace C1
             conn.Close();
         }
 
-
+        /// <summary>
+        /// Return Chip names of all chips in the C1 database
+        /// </summary>
+        /// <returns></returns>
         public List<string> GetLoadedChips()
         {
             List<string> loadedChips = new List<string>();

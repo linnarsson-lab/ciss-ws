@@ -45,7 +45,7 @@ namespace C1
             this.Plate = plate;
             this.PlateWell = plateWell;
             this.StrtProtocol = strtProtocol;
-            this.DateDissected = DateDissected;
+            this.DateDissected = dateDissected;
             this.DateCollected = dateCollected;
             this.Species = species;
             this.Strain = strain;

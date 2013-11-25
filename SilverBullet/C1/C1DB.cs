@@ -333,12 +333,12 @@ namespace C1
             annotationIndexes["Green"] = i++;
             for (i = 0; i < annotNames.Count; i++)
                 annotationIndexes[annotNames[i]] = annotationIndexes.Count;
-            string sqlPat = "SELECT CellID, Name, Value FROM CellAnnotation a LEFT JOIN Cell c ON a.CellID=c.CellID " +
+            string sqlPat = "SELECT a.CellID, Name, Value FROM CellAnnotation a LEFT JOIN Cell c ON a.CellID=c.CellID " +
                     "WHERE a.CellID IN (SELECT CellID FROM Cell WHERE Plate='{0}')";
             annotations = new Dictionary<string, string[]>(96);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
-            foreach (Cell cell in GetCells("WHERE Plate='{0}' ORDER BY PlateWell"))
+            foreach (Cell cell in GetCells(string.Format("WHERE Plate='{0}' ORDER BY PlateWell", projectId)))
             {
                 string[] wellAnn = new string[annotationIndexes.Count];
                 string plateWell = cell.PlateWell;

@@ -22,10 +22,10 @@ namespace C1
         public string C1StandardBarcodeSet = "Tn5UMI6";
         public string C1SeqPlatesFolder = "/data2/c1-seqplates";
         public string C1SeqPlateFilenamePattern = "*.txt";
-        public string C1DonorDataFilenamePattern = "mice_metdata_*.txt";
+        public string C1DonorDataFilenamePattern = "mice_metadata_*.txt";
+        public string C1MetadataFilenamePattern = "C1_metadata*.txt";
         public string C1RunsFolder = "/data2/c1-runs";
         public string C1CaptureFilenamePattern = "capture_rep*.txt";
-        public string C1MetadataFilenamePattern = "*metadata*.txt";
         public string GeneOntologySubPath = "gene_ontology/go-basic.obo";
         public string C1BFImageSubfoldernamePattern = "BF_*";
         public string[] C1AllImageSubfoldernamePatterns = new string[] { "BF_*" } ; //, "Filter1_*", "Filter2_*", "Filter3_*" };

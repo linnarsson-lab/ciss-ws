@@ -185,7 +185,7 @@ namespace C1
                     Cell newCell = new Cell(null, metadata["chip serial number"], well, "", "", metadata["protocol"],
                                     DateTime.Parse(metadata["datedissected"]), DateTime.Parse(metadata["date of run"]),
                                     metadata["species"], metadata["strain"], metadata["donorid"],
-                                    metadata["age"], metadata["sex"][0], metadata["tissue/cell type/source"],
+                                    metadata["age"], metadata["sex"][0], metadata["tissue"],
                                     metadata["treatment"], diameter, area, metadata["principal investigator"], metadata["operator"],
                                     metadata["scientist"], metadata["comments"], red, green, blue);
                     List<CellImage> cellImages = new List<CellImage>();
@@ -233,7 +233,9 @@ namespace C1
                     if (line == "" || line.StartsWith("#"))
                         continue;
                     string[] fields = line.Split('\t');
-                    metadata[fields[0].Trim().ToLower()] = fields[1].Trim();
+                    string key = fields[0].Trim().ToLower();
+                    if (key == "tissue/cell type/source") key = "tissue";
+                    metadata[key] = fields[1].Trim();
                 }
             }
             metadata["chipfolder"] = chipDir;

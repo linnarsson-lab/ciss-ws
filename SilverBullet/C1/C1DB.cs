@@ -228,7 +228,7 @@ namespace C1
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
-            string sqlPat = "REPLACE INTO ExprBlob (CellID, TranscriptomeID, Molecules) VALUES ('{0}',{1}, ?BLOBDATA)";
+            string sqlPat = "REPLACE INTO ExprBlob (CellID, TranscriptomeID, Data) VALUES ('{0}',{1}, ?BLOBDATA)";
             foreach (ExprBlob exprBlob in exprBlobIterator)
             {
                 string sql = string.Format(sqlPat, exprBlob.CellID, exprBlob.TranscriptomeID);
@@ -290,7 +290,7 @@ namespace C1
             conn.Open();
             string sql = "SELECT CellID, Chip, ChipWell, Plate, PlateWell, StrtProtocol, DateDissected, DateCollected, Species, " +
                          "Strain, DonorID, Age, Sex, Tissue, Treatment, Diameter, Area, PI, Operator, Scientist, Comments, " +
-                         "Red, Blue, Green " +
+                         "Red, Green, Blue " +
                          "FROM Cell {0}";
             sql = string.Format(sql, whereClause);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -323,6 +323,7 @@ namespace C1
             int i = 0;
             annotationIndexes["Chip"] = i++;
             annotationIndexes["ChipWell"] = i++;
+            annotationIndexes["Species"] = i++;
             annotationIndexes["Age"] = i++;
             annotationIndexes["Sex"] = i++;
             annotationIndexes["DonorID"] = i++;
@@ -345,6 +346,7 @@ namespace C1
                 i = 0;
                 wellAnn[i++] = cell.Chip;
                 wellAnn[i++] = cell.ChipWell;
+                wellAnn[i++] = cell.Species;
                 wellAnn[i++] = cell.Age;
                 wellAnn[i++] = cell.Sex.ToString();
                 wellAnn[i++] = cell.DonorID;

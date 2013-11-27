@@ -38,10 +38,11 @@ namespace Linnarsson.Dna
         public string IlluminaRunReadyFilename = "Basecalling_Netcopy_complete.txt"; // File in Illumina runs folders that indicate run completed
         public string GenomesFolder = "C:\\data\\genomes";
         public string RunsFolder = "C:\\data\\runs"; // Where Illumina raw data are stored
-        public string ReadsFolder = "\\\\192.168.1.12\\data\\reads"; // Where FastQ files of concatenated reads for each lane are gathered
+        public string MySqlServerIP = "130.237.117.141";
+        public string ReadsFolder = "\\\\130.237.117.141\\data\\reads"; // Where FastQ files of concatenated reads for each lane are gathered
         public string ProjectsFolder = "C:\\data\\strt";
         public string UploadsFolder = "C:\\data\\uploads";
-        public string ResultDownloadUrl = "strtserver@192.168.1.2:/var/www/html/strt/";
+        public string ResultDownloadUrl = "strtserver@130.237.117.141:/var/www/html/strt/";
         public string ResultDownloadFolderHttp = "http://linnarsson.mbb.ki.se/strt/";
         public string ResultDownloadScpPort = "9922";
         public string FailureReportEmail = "peter.lonnerberg@ki.se";
@@ -51,8 +52,8 @@ namespace Linnarsson.Dna
         public string OutgoingMailUser = "";
         public string OutgoingMailPassword = "";
         public int OutgoingMailPort = 587;
-        public string BowtieIndexFolder = "\\\\192.168.1.12\\sequtils\\bowtie-0.12.7\\indexes";
-        public string OutputDocFile = "\\\\192.168.1.12\\data\\strt\\STRTOutputManual.pdf";
+        public string BowtieIndexFolder = "\\\\130.237.117.141\\sequtils\\bowtie-0.12.7\\indexes";
+        public string OutputDocFile = "\\\\130.237.117.141\\data\\strt\\STRTOutputManual.pdf";
         public int BkgBackuperStartHour = 17;
         public int BkgBackuperStopHour = 8;
 

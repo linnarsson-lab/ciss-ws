@@ -42,9 +42,11 @@ Global
 		SccLocalPath1 = ..
 		SccProjectFilePathRelativizedFromConnection1 = DnaLib\\
 		SccProjectUniqueName2 = ..\\UtilitiesLib\\Linnarsson.Utilities.csproj
-		SccLocalPath2 = ..\\UtilitiesLib
+		SccLocalPath2 = ..
+		SccProjectFilePathRelativizedFromConnection2 = UtilitiesLib\\
 		SccProjectUniqueName3 = ..\\SB\\SB.csproj
-		SccLocalPath3 = ..\\SB
+		SccLocalPath3 = ..
+		SccProjectFilePathRelativizedFromConnection3 = SB\\
 		SccProjectUniqueName4 = SilverBullet.csproj
 		SccLocalPath4 = ..
 		SccProjectFilePathRelativizedFromConnection4 = SilverBullet\\

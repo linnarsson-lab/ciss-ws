@@ -208,10 +208,12 @@ namespace Linnarsson.Strt
     
     public class ProjectDB
     {
-        private readonly static string connectionString = "server=192.168.1.12;uid=cuser;pwd=3pmknHQyl;database=joomla;Connect Timeout=300;Charset=utf8;";
+        private static string connectionString;
 
         public ProjectDB()
         {
+            connectionString = string.Format("server={0};uid=cuser;pwd=3pmknHQyl;database=joomla;Connect Timeout=300;Charset=utf8;",
+                               Props.props.MySqlServerIP);
         }
 
         private bool IssueNonQuery(string sql)
@@ -600,26 +602,46 @@ namespace Linnarsson.Strt
                 (firstMatch.Count == 1) ? firstMatch[0] : (initialsMatch.Count == 1) ? initialsMatch[0] : failPerson;
         }
 
-        public int InsertOrUpdateProject(ProjectDescription pd)
+        public void InsertOrUpdateProject(ProjectDescription pd)
         {
             if (pd.SpikeMoleculeCount == 0)
                 pd.SpikeMoleculeCount = Props.props.TotalNumberOfAddedSpikeMolecules;
             int contactId = TryGetPerson("jos_aaacontact", "contactperson", pd.contact).id;
             int managerId = TryGetPerson("jos_aaamanager", "person", pd.manager).id;
             int clientId = TryGetPerson("jos_aaaclient", "principalinvestigator", pd.client).id;
-            string sql = "REPLACE INTO jos_aaaproject (jos_aaacontactid, jos_aaamanagerid, jos_aaaclientid, " +
+            CultureInfo cult = new CultureInfo("sv-SE");
+            string checkSql = "SELECT count(distinct(p.plateid)) AS nprojects, count(a.id) AS nresults FROM jos_aaaproject p " +
+                              "LEFT JOIN jos_aaaanalysis a ON a.jos_aaaprojectid=p.id WHERE p.plateid={0}";
+            string sql = string.Format(checkSql, pd.plateId);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            rdr.Read();
+            bool projectExists = rdr.GetInt32(0) > 0;
+            bool hasResults = rdr.GetInt32(1) > 0;
+            rdr.Close();
+            conn.Close();
+            if (hasResults)
+                throw new Exception("Can not completely reload a project that has results! Change fields manually using database GUI instead.");
+            if (projectExists)
+                sql = "UPDATE jos_aaaproject SET jos_aaacontactid='{0}', jos_aaamanagerid='{1}', jos_aaaclientid='{2}', " +
+                "title='{3}', productiondate='{4}', platereference='{6}', species='{7}', tissue='{8}', " +
+                "sampletype='{9}', collectionmethod='{10}', description='{14}', " +
+                "protocol='{15}', barcodeset='{16}', labbookpage='{17}', " +
+                "layoutfile='{18}', comment='{20}', user='{21}', spikemolecules='{22}', time=NOW()) WHERE plateid='{5}'";
+            else
+                sql = "INSERT INTO jos_aaaproject (jos_aaacontactid, jos_aaamanagerid, jos_aaaclientid, " +
                 "title, productiondate, plateid, platereference, species, tissue, sampletype, " +
                 "collectionmethod, weightconcentration, fragmentlength, molarconcentration, description, " +
                 "protocol, barcodeset, labbookpage, layoutfile, status, comment, user, spikemolecules, time) " +
                 " VALUES('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}'," +
                 "'{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}','{19}','{20}','{21}','{22}', NOW())";
-            CultureInfo cult = new CultureInfo("sv-SE");
             sql = string.Format(sql, contactId, managerId, clientId,
                  pd.title, pd.productionDate.ToString(cult), pd.plateId, pd.plateReference, pd.defaultSpecies, pd.tissue, 
                  pd.sampleType, pd.collectionMethod, 0, 0, 0, pd.description, pd.protocol, pd.barcodeSet, pd.labBookPage,
-                 pd.layoutFile, pd.status, pd.comment, "system", pd.SpikeMoleculeCount);
+                 pd.layoutFile, pd.status, pd.comment, Environment.UserName, pd.SpikeMoleculeCount);
             IssueNonQuery(sql);
-            return GetLastInsertId("jos_aaaproject");
         }
 
         private static int GetLastInsertId(string table)
@@ -657,7 +679,7 @@ namespace Linnarsson.Strt
                 string barcodes = rdr["barcodeset"].ToString();
                 string asql = "INSERT INTO jos_aaaanalysis " +
                               "(projectid, transcript_db_version, transcript_variant, rpkm, emails, status, lanecount, comment, time, user) " +
-                              "VALUES ('{0}', '{1}', '{2}', 0, '{3}', 'inqueue', 1, 'autoanalysis', NOW(), 'server');";
+                              "VALUES ('{0}', '{1}', '{2}', 0, '{3}', 'inqueue', 1, 'autoanalysis', NOW(), 'system');";
                 asql = string.Format(asql, projectId, C1Props.props.AutoAnalysisBuild, C1Props.props.AutoAnalysisBuildVariants,
                                      C1Props.props.AutoAnalysisMailRecepients);
                 IssueNonQuery(asql);

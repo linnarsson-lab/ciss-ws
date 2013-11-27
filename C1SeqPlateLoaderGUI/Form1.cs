@@ -80,8 +80,15 @@ namespace C1SeqPlateLoader
             }
             Console.WriteLine("Loading...");
             string selPlate = listBoxItems[listBoxSelect.SelectedIndex];
-            string result = new C1SeqPlateLoader().LoadC1SeqPlate((selPlate));
-            Console.WriteLine(result);
+            try
+            {
+                new C1SeqPlateLoader().LoadC1SeqPlate((selPlate));
+                Console.WriteLine("Ready.");
+            }
+            catch (Exception exc)
+            {
+                Console.WriteLine("ERROR: " + exc.Message);
+            }
         }
 
     }

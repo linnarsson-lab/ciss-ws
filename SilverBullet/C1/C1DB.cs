@@ -17,10 +17,12 @@ namespace C1
         /// </summary>
         private readonly bool test = false;
 
-        private readonly static string connectionString = "server=192.168.1.12;uid=cuser;pwd=3pmknHQyl;database=cells10k;Connect Timeout=300;Charset=utf8;";
+        private static string connectionString;
 
         public C1DB()
         {
+            connectionString = string.Format("server={0};uid=cuser;pwd=3pmknHQyl;database=cells10k;Connect Timeout=300;Charset=utf8;",
+                                             C1Props.props.MySqlServerIP);
         }
 
         /// <summary>

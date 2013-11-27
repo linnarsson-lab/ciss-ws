@@ -16,10 +16,10 @@ namespace C1SeqPlateLoader
             if (args.Length == 0 || args[0] == "-h" || args[0] == "--help")
             {
                 Console.WriteLine("Usage:\nmono C1SeqPlateLoader.exe [-f] CHIPID_OR_MIXPLATEID");
-                Console.WriteLine("The argument is either the Id of a C1 chip in the Cell database,\n" +
-                                  " or the name of a C1 plate mix file in the {0} directory.\n" +
-                                  "In the latter case, the new seq project will be named '{1}-name'.\n" +
-                                  "Use -f to force reloading of an already loaded plate.",
+                Console.WriteLine("The argument is either the Id of a C1 chip in the the 10kCell database,\n" +
+                                  "or the name of a C1 sequencing plate mix file in the {0} directory.\n" +
+                                  "In the latter case, the new sequencing project will be named '{1}name'.\n" +
+                                  "Use -f to force reloading of an already loaded plate (only possible for un-analyzed plates).",
                                   C1Props.props.C1SeqPlatesFolder, C1Props.C1ProjectPrefix);
                 return;
             }
@@ -33,21 +33,22 @@ namespace C1SeqPlateLoader
                 plateOrChip = plateOrChip.Substring(plateOrChip.Length - 4, 4);
             if (plateOrChip.StartsWith(C1Props.C1ProjectPrefix))
                 plateOrChip = plateOrChip.Substring(C1Props.C1ProjectPrefix.Length);
-            List<string> loadedC1Plates = new ProjectDB().GetProjectColumn("plateid", C1Props.C1ProjectPrefix + "%", "plateid");
-            if (loadedC1Plates.Contains(C1Props.C1ProjectPrefix + plateOrChip))
+            try
             {
-                if (!force)
+                List<string> loadedC1Plates = new ProjectDB().GetProjectColumn("plateid", C1Props.C1ProjectPrefix + "%", "plateid");
+                if (loadedC1Plates.Contains(C1Props.C1ProjectPrefix + plateOrChip))
                 {
-                    Console.WriteLine("ERROR: {0} is already loaded! Use '-f' to force reload.", plateOrChip);
-                    return;
-                }
-                else
-                {
+                    if (!force)
+                        throw new Exception(string.Format("ERROR: {0} is already loaded! Use '-f' to force reload.", plateOrChip));
                     Console.WriteLine("Reloading plate {0}", plateOrChip);
                 }
+                new C1SeqPlateLoader().LoadC1SeqPlate(plateOrChip);
+                Console.WriteLine("Ready");
             }
-            string result = new C1SeqPlateLoader().LoadC1SeqPlate(plateOrChip);
-            Console.WriteLine(result);
+            catch (Exception e)
+            {
+                Console.WriteLine("ERROR: e", e.Message);
+            }
         }
 
     }

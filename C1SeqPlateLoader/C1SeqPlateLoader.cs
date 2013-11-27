@@ -27,7 +27,7 @@ namespace C1SeqPlateLoader
             cdb = new C1DB();
         }
 
-        public string LoadC1SeqPlate(string plateOrChip)
+        public void LoadC1SeqPlate(string plateOrChip)
         {
             List<Cell> cells;
             string seqPlateFile = C1Props.props.C1SeqPlateFilenamePattern.Replace("*", plateOrChip);
@@ -37,13 +37,13 @@ namespace C1SeqPlateLoader
             {
                 cells = ReadSeqPlateMixFile(seqPlateFile, seqPlateName);
                 if (cells.Count == 0)
-                    return string.Format("ERROR: Could not find any C1 cells using plate mix file {0}.", seqPlateFile);
+                    throw new Exception(string.Format("ERROR: Could not find any 10kCells using plate mix file {0}.", seqPlateFile));
             }
             else
             {
                 cells = cdb.GetCellsOfChip(plateOrChip);
                 if (cells.Count == 0)
-                    return string.Format("ERROR: Could not find any C1 cells in database for chip {0}.", plateOrChip);
+                    throw new Exception(string.Format("ERROR: Could not find any 10kCells in database for chip {0}.", plateOrChip));
                 foreach (Cell c in cells)
                 {
                     c.Plate = seqPlateName;
@@ -53,7 +53,6 @@ namespace C1SeqPlateLoader
             cdb.UpdateDBCellSeqPlateWell(cells);
             string layoutFilename = ConstructLayoutFile(seqPlateName, cells);
             InsertNewProject(cells, layoutFilename);
-            return "Ready";
         }
 
         private string ConstructLayoutFile(string seqPlateName, List<Cell> cells)
@@ -75,7 +74,7 @@ namespace C1SeqPlateLoader
             {
                 File.Copy(layoutFile, Path.Combine(Props.props.UploadsFolder, layoutFilename), true);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Console.WriteLine("NOTE: Could not load layout to DB!");
                 Console.WriteLine("Open Sanger DB and specify layout {0} for {1} under Samples/Edit!", layoutFile, seqPlateName);

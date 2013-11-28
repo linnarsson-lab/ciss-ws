@@ -177,6 +177,7 @@ namespace C1
                         continue;
                     string[] fields = line.Split('\t');
                     string well = string.Format("{0}{1:00}", fields[0], int.Parse(fields[1]));
+                    string wellShort = fields[0] + fields[1];
                     double area = double.Parse(fields[3]);
                     double diameter = double.Parse(fields[4]);
                     int red = (fields.Length < 6) ? Detection.Unknown : (fields[5] == "1") ? Detection.Yes : Detection.No;
@@ -194,13 +195,13 @@ namespace C1
                         string imgFolder = GetLastMatchingFolder(chipFolder, imgSubfolderPat);
                         if (imgFolder == null)
                             continue;
-                        string imgPath = Path.Combine(imgFolder, C1Props.props.C1ImageFilenamePattern.Replace("*", well));
+                        string imgPath = Path.Combine(imgFolder, C1Props.props.C1ImageFilenamePattern.Replace("*", wellShort));
                         if (imgFolder == BFFolder && !File.Exists(imgPath))
                         {
                             if (!missing)
                             {
                                 missing = true;
-                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Image file(s) does not exist: " + imgPath + "...");
+                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Some image file(s) does not exist: " + imgPath + "...");
                                 logWriter.Flush();
                             }
                             continue;

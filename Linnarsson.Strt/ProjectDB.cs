@@ -611,7 +611,7 @@ namespace Linnarsson.Strt
             int clientId = TryGetPerson("jos_aaaclient", "principalinvestigator", pd.client).id;
             CultureInfo cult = new CultureInfo("sv-SE");
             string checkSql = "SELECT count(distinct(p.plateid)) AS nprojects, count(a.id) AS nresults FROM jos_aaaproject p " +
-                              "LEFT JOIN jos_aaaanalysis a ON a.jos_aaaprojectid=p.id WHERE p.plateid={0}";
+                              "LEFT JOIN jos_aaaanalysis a ON a.jos_aaaprojectid=p.id WHERE p.plateid='{0}'";
             string sql = string.Format(checkSql, pd.plateId);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();

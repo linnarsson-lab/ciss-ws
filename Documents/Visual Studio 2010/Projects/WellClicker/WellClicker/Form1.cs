@@ -22,7 +22,7 @@ namespace WellClicker
         private static double YDist = 27.0;
         private static int msClickDelay = 200;
 
-        public static string c1PlateFoldersLocation = "\\\\130.237.117.141\\data2\\c1-runs"; // "Z:\\c1-runs";
+        public static string c1PlateFoldersLocation = "Z:\\c1-runs";
         public static string wellFilePattern = "wells_to_exclude*.txt";
 
         public static string screenshotFileEnding = "_screenshot.png";

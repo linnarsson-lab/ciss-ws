@@ -69,9 +69,10 @@
             // linkSelectedWellFile
             // 
             this.linkSelectedWellFile.AutoSize = true;
+            this.linkSelectedWellFile.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.linkSelectedWellFile.Location = new System.Drawing.Point(29, 85);
             this.linkSelectedWellFile.Name = "linkSelectedWellFile";
-            this.linkSelectedWellFile.Size = new System.Drawing.Size(84, 13);
+            this.linkSelectedWellFile.Size = new System.Drawing.Size(106, 16);
             this.linkSelectedWellFile.TabIndex = 3;
             this.linkSelectedWellFile.TabStop = true;
             this.linkSelectedWellFile.Text = "(no file selected)";

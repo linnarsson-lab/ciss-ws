@@ -90,6 +90,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChipWellSelector.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ChipWellSelector.Designer.cs">
+      <DependentUpon>ChipWellSelector.cs</DependentUpon>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -104,6 +110,9 @@
     <Compile Include="WellFileDisplay.Designer.cs">
       <DependentUpon>WellFileDisplay.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="ChipWellSelector.resx">
+      <DependentUpon>ChipWellSelector.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>

@@ -1610,6 +1610,8 @@ namespace Linnarsson.Strt
                 effFile.WriteLine();
                 foreach (string spikeName in labelingEfficiencyEstimator.efficiencyBySpike.Keys)
                 {
+                    if (!Annotations.geneFeatures.ContainsKey(spikeName))
+                        continue;
                     double expected = labelingEfficiencyEstimator.AddedCount(spikeName);
                     effFile.Write("{0}\t{1}\t{2}", spikeName, Annotations.geneFeatures[spikeName].GetTranscriptLength(), expected);
                     for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)

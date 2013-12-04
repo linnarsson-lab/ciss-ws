@@ -138,7 +138,7 @@ namespace Linnarsson.Strt
             int nModels = 0, nSpliceModels = 0, nExons = 0;
             if (dbTranscriptome != null)
             {
-                foreach (Transcript tt in db.IterTranscriptsByBlobIdx(dbTranscriptome.TranscriptomeID.Value))
+                foreach (Transcript tt in db.IterTranscriptsFromDB(dbTranscriptome.TranscriptomeID.Value))
                 {
                     LocusFeature gf = AnnotationReader.GeneFeatureFromDBTranscript(tt);
                     int nParts = RegisterGeneFeature(gf);
@@ -703,6 +703,7 @@ namespace Linnarsson.Strt
             return 0;
         }
 
+/*
         public IEnumerable<ExprBlob> IterExprBlobs(string projectId)
         {
             Dictionary<string, int> cellIdByPlateWell = new C1DB().GetCellIdByPlateWell(projectId);
@@ -722,7 +723,7 @@ namespace Linnarsson.Strt
                 yield return new ExprBlob(cellId, (int)dbTranscriptome.TranscriptomeID, blob);
             }
         }
-
+*/
         public IEnumerable<Expression> IterExpressions(string projectId)
         {
             Dictionary<string, int> cellIdByPlateWell = new C1DB().GetCellIdByPlateWell(projectId);

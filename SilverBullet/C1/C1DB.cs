@@ -108,28 +108,35 @@ namespace C1
             return t;
         }
 
-        public IEnumerable<Transcript> IterTranscriptsByBlobIdx(int transcriptomeId)
+        public IEnumerable<Transcript> IterTranscriptsFromDB(int transcriptomeId)
         {
-            //string sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' ORDER BY TranscriptID", transcriptomeId);
-            string sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' ORDER BY ExprBlobIdx", transcriptomeId);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
+            string sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' AND Chromosome='CTRL' ORDER BY Start", transcriptomeId);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             while (rdr.Read())
-            {
-                string uniqueName = rdr.GetString("GeneName");
-                Match m = Regex.Match(uniqueName, "_v[0-9]+$");
-                string geneName = (m.Success)? uniqueName.Substring(0, m.Index) : uniqueName;
-                Transcript t = new Transcript(rdr.GetInt32("TranscriptID"), rdr.GetInt32("TranscriptomeID"), rdr.GetInt32("ExprBlobIdx"),
-                                              rdr.GetString("Name"), rdr.GetString("Type"), geneName, uniqueName,
-                                              rdr.GetString("EntrezID"), rdr.GetString("Description"),
-                                              rdr.GetString("Chromosome"), rdr.GetInt32("Start"), rdr.GetInt32("End"), 
-                                              rdr.GetInt32("Length"), rdr.GetChar("Strand"), rdr.GetInt32("Extension5Prime"),
-                                              rdr.GetString("ExonStarts"), rdr.GetString("ExonEnds"));
-                yield return t;
-            }
+                yield return MakeTranscriptFromDBReader(rdr);
+            sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' AND Chromosome!='CTRL' ORDER BY Chromosome, Start", transcriptomeId);
+            cmd = new MySqlCommand(sql, conn);
+            rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                yield return MakeTranscriptFromDBReader(rdr);
             conn.Close();
+        }
+
+        private static Transcript MakeTranscriptFromDBReader(MySqlDataReader rdr)
+        {
+            string uniqueName = rdr.GetString("GeneName");
+            Match m = Regex.Match(uniqueName, "_v[0-9]+$");
+            string geneName = (m.Success) ? uniqueName.Substring(0, m.Index) : uniqueName;
+            Transcript t = new Transcript(rdr.GetInt32("TranscriptID"), rdr.GetInt32("TranscriptomeID"), rdr.GetInt32("ExprBlobIdx"),
+                                          rdr.GetString("Name"), rdr.GetString("Type"), geneName, uniqueName,
+                                          rdr.GetString("EntrezID"), rdr.GetString("Description"),
+                                          rdr.GetString("Chromosome"), rdr.GetInt32("Start"), rdr.GetInt32("End"),
+                                          rdr.GetInt32("Length"), rdr.GetChar("Strand"), rdr.GetInt32("Extension5Prime"),
+                                          rdr.GetString("ExonStarts"), rdr.GetString("ExonEnds"));
+            return t;
         }
 
         public void InsertCellImage(CellImage ci)

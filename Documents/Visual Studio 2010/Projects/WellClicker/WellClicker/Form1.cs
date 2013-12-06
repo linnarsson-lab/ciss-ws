@@ -159,7 +159,7 @@ namespace WellClicker
                     "792 | 533 | 200 | Left Click",
                     "792 | 533 | 63 | Left Click",
                     "414 | 342 | 300 | Left Click",
-                    "414 | 342 | 63 | Left Click" });
+              });
             return prefixLines;
         }
 

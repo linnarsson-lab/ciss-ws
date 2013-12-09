@@ -15,6 +15,7 @@ namespace WellClicker
     {
         string currentWellFile;
         List<string> clickLines = new List<string>();
+        bool A1ShouldBeClicked;
 
         private static int XOffset = 416;
         private static double XDist = 27.0;
@@ -31,10 +32,13 @@ namespace WellClicker
         private static int screenshotY = 300;
         private static int screenshotH = 544 - screenshotY;
 
+        private static List<string> extraA1ClickLines = new List<string>();
+
         public Form1()
         {
             InitializeComponent();
             buttonClickWells.Enabled = false;
+            extraA1ClickLines.Add("414 | 342 | 300 | Left Click");
         }
 
         private void buttonSelectWellFile_Click(object sender, EventArgs e)
@@ -81,6 +85,7 @@ namespace WellClicker
             using (StreamReader reader = new StreamReader(filename))
             {
                 clickLines = new List<string>();
+                A1ShouldBeClicked = false;
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
@@ -92,6 +97,7 @@ namespace WellClicker
                     int clickY = (int)Math.Round(YOffset + YDist * "ABCDEFGH".IndexOf(row));
                     int clickX = (int)Math.Round(XOffset + XDist * col);
                     clickLines.Add(string.Format("{0} | {1} | {2} | Left Click", clickX, clickY, msClickDelay));
+                    if (row == 'A' && col == 0) A1ShouldBeClicked = true;
                 }
             }
             currentWellFile = filename;
@@ -107,10 +113,27 @@ namespace WellClicker
             }
             List<string> allLines = AddFirstClicks();
             allLines.AddRange(clickLines);
+            DoTheClicking(allLines);
+            Bitmap memImage = new Bitmap(2, 2);
+            Graphics memGraphics = Graphics.FromImage(memImage);
+            memGraphics.CopyFromScreen(XOffset, YOffset, 0, 0, new Size(1, 1));
+            Color c = memImage.GetPixel(0, 0);
+            bool A1NotClicked = (c.R == c.G && c.G == c.B);
+            if (A1NotClicked == A1ShouldBeClicked)
+                DoTheClicking(extraA1ClickLines);
+            SaveScreenShot();
+            linkSelectedWellFile.Text = string.Format("R={0} G={1} B={2}", c.R, c.G, c.B); // "Ready.";
+            buttonClickWells.Enabled = false;
+            clickLines.Clear();
+            this.Show();
+        }
+
+        private void DoTheClicking(List<string> allLines)
+        {
             string tempFile = Path.GetTempFileName();
             File.WriteAllLines(tempFile, allLines.ToArray());
             string cmd = "c:\\Program Files\\MiniMouseMacro.exe";
-            string args = "/m /e /d:2000 \"" + tempFile + "\"";
+            string args = "/m /e /d:1000 \"" + tempFile + "\"";
             System.Diagnostics.ProcessStartInfo procStartInfo = new System.Diagnostics.ProcessStartInfo(cmd, args);
             procStartInfo.CreateNoWindow = true;
             System.Diagnostics.Process proc = new System.Diagnostics.Process();
@@ -118,14 +141,9 @@ namespace WellClicker
             proc.StartInfo.UseShellExecute = false;
             proc.StartInfo.RedirectStandardError = true;
             this.Hide();
-            proc.Start(); 
+            proc.Start();
             string error = proc.StandardError.ReadToEnd();
             proc.WaitForExit();
-            SaveScreenShot();
-            linkSelectedWellFile.Text = "Ready.";
-            buttonClickWells.Enabled = false;
-            clickLines.Clear();
-            this.Show();
             File.Delete(tempFile);
         }
 

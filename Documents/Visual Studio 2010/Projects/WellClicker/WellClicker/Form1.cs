@@ -122,7 +122,7 @@ namespace WellClicker
             if (A1NotClicked == A1ShouldBeClicked)
                 DoTheClicking(extraA1ClickLines);
             SaveScreenShot();
-            linkSelectedWellFile.Text = string.Format("R={0} G={1} B={2}", c.R, c.G, c.B); // "Ready.";
+            linkSelectedWellFile.Text = "Ready.";
             buttonClickWells.Enabled = false;
             clickLines.Clear();
             this.Show();

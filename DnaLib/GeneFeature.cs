@@ -283,7 +283,7 @@ namespace Linnarsson.Dna
         public int GetJunctionHits()
         {
             int senseHits = HitsByAnnotType[AnnotType.SPLC];
-            return (AnnotType.DirectionalReads) ? senseHits : senseHits + HitsByAnnotType[AnnotType.ASPLC];
+            return (Props.props.DirectionalReads) ? senseHits : senseHits + HitsByAnnotType[AnnotType.ASPLC];
         }
         /// <summary>
         /// # of hits to EXON (+AEXON for non-directional data)
@@ -321,7 +321,7 @@ namespace Linnarsson.Dna
 
         public int GetAnnotLength(int annotType, bool excludeMasked)
         {
-            if (annotType == AnnotType.EXON || (!AnnotType.DirectionalReads && annotType == AnnotType.AEXON))
+            if (annotType == AnnotType.EXON || (!Props.props.DirectionalReads && annotType == AnnotType.AEXON))
                 return GetTranscriptLength();
             if (annotType == AnnotType.AEXON) return GetTranscriptLength(excludeMasked);
             if (annotType == AnnotType.INTR || annotType == AnnotType.AINTR)

@@ -43,7 +43,7 @@ namespace Linnarsson.Dna
             }
             catch (ArgumentException)
             {
-                Console.WriteLine(speciesId);
+                //Console.WriteLine(speciesId);
                 speciesId = "empty";
             }
             return speciesId;

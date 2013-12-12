@@ -33,6 +33,9 @@
             this.listBoxSelect = new System.Windows.Forms.ListBox();
             this.button1 = new System.Windows.Forms.Button();
             this.consoleBox1 = new Linnarsson.Utilities.ConsoleBox();
+            this.radioButtonBc1To96 = new System.Windows.Forms.RadioButton();
+            this.radioButtonBc97To192 = new System.Windows.Forms.RadioButton();
+            this.labelBarcodes = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // checkBox1
@@ -68,7 +71,7 @@
             // button1
             // 
             this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button1.Location = new System.Drawing.Point(113, 315);
+            this.button1.Location = new System.Drawing.Point(130, 344);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 3;
@@ -78,17 +81,55 @@
             // 
             // consoleBox1
             // 
-            this.consoleBox1.Location = new System.Drawing.Point(11, 347);
+            this.consoleBox1.Location = new System.Drawing.Point(11, 372);
             this.consoleBox1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.consoleBox1.Name = "consoleBox1";
-            this.consoleBox1.Size = new System.Drawing.Size(336, 170);
+            this.consoleBox1.Size = new System.Drawing.Size(336, 149);
             this.consoleBox1.TabIndex = 5;
+            // 
+            // radioButtonBc1To96
+            // 
+            this.radioButtonBc1To96.AutoSize = true;
+            this.radioButtonBc1To96.Checked = true;
+            this.radioButtonBc1To96.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.radioButtonBc1To96.Location = new System.Drawing.Point(118, 310);
+            this.radioButtonBc1To96.Name = "radioButtonBc1To96";
+            this.radioButtonBc1To96.Size = new System.Drawing.Size(96, 20);
+            this.radioButtonBc1To96.TabIndex = 6;
+            this.radioButtonBc1To96.TabStop = true;
+            this.radioButtonBc1To96.Text = "Tn5 Bc 1-96";
+            this.radioButtonBc1To96.UseVisualStyleBackColor = true;
+            this.radioButtonBc1To96.CheckedChanged += new System.EventHandler(this.radioButtonBc1To96_CheckedChanged);
+            // 
+            // radioButtonBc97To192
+            // 
+            this.radioButtonBc97To192.AutoSize = true;
+            this.radioButtonBc97To192.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.radioButtonBc97To192.Location = new System.Drawing.Point(220, 310);
+            this.radioButtonBc97To192.Name = "radioButtonBc97To192";
+            this.radioButtonBc97To192.Size = new System.Drawing.Size(110, 20);
+            this.radioButtonBc97To192.TabIndex = 7;
+            this.radioButtonBc97To192.Text = "Tn5 Bc 97-192";
+            this.radioButtonBc97To192.UseVisualStyleBackColor = true;
+            // 
+            // labelBarcodes
+            // 
+            this.labelBarcodes.AutoSize = true;
+            this.labelBarcodes.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelBarcodes.Location = new System.Drawing.Point(33, 312);
+            this.labelBarcodes.Name = "labelBarcodes";
+            this.labelBarcodes.Size = new System.Drawing.Size(70, 16);
+            this.labelBarcodes.TabIndex = 8;
+            this.labelBarcodes.Text = "Barcodes:";
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(358, 528);
+            this.Controls.Add(this.labelBarcodes);
+            this.Controls.Add(this.radioButtonBc97To192);
+            this.Controls.Add(this.radioButtonBc1To96);
             this.Controls.Add(this.consoleBox1);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.listBoxSelect);
@@ -109,6 +150,9 @@
         private System.Windows.Forms.ListBox listBoxSelect;
         private System.Windows.Forms.Button button1;
         private Linnarsson.Utilities.ConsoleBox consoleBox1;
+        private System.Windows.Forms.RadioButton radioButtonBc1To96;
+        private System.Windows.Forms.RadioButton radioButtonBc97To192;
+        private System.Windows.Forms.Label labelBarcodes;
     }
 }
 

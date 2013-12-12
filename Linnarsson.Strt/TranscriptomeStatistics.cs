@@ -153,7 +153,6 @@ namespace Linnarsson.Strt
                 Console.WriteLine("Selected annotation types for barcoded wiggle plots: "
                                   + string.Join(",", Array.ConvertAll(SelectedBcWiggleAnnotations, t => AnnotType.GetName(t))));
             this.OutputPathbase = outputPathbase;
-            AnnotType.DirectionalReads = props.DirectionalReads;
             barcodes = props.Barcodes;
             Annotations = annotations;
             AnalyzeAllGeneVariants = !Annotations.noGeneVariants;
@@ -1224,7 +1223,7 @@ namespace Linnarsson.Strt
                     foreach (int bcIdx in barcodes.GenomeAndEmptyBarcodeIndexes(Annotations.Genome))
                     {
                         int c = TotalHitsByAnnotTypeAndBarcode[AnnotType.EXON, bcIdx];
-                        if (!AnnotType.DirectionalReads) c += TotalHitsByAnnotTypeAndBarcode[AnnotType.AEXON, bcIdx];
+                        if (!Props.props.DirectionalReads) c += TotalHitsByAnnotTypeAndBarcode[AnnotType.AEXON, bcIdx];
                         if (c > 0)
                         {
                             double RPM = gf.NonConflictingTranscriptHitsByBarcode[bcIdx] * 1.0E+6 / (double)c;

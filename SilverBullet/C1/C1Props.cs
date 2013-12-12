@@ -35,6 +35,13 @@ namespace C1
         public string AutoAnalysisMailRecepients = "peter.lonnerberg@ki.se";
         public string AutoAnalysisBuild = "UCSC";
         public string AutoAnalysisBuildVariants = "single";
+        public string WellExcludeFilePattern = "wells_to_exclude*.txt";
+        public string C1BarcodeSet1 = "Tn5UMI6";
+        public string C1BarcodeSet2 = "Tn5UMI6Plate2";
+        public int C1RequiredSeqCycles = 50;
+        public int C1RequiredIdxCycles = 8;
+        public string C1SeqPrimer = "C1-P1-SEQ";
+        public string C1IdxPrimer = "Illumina index primer";
 
         private static C1Props Read()
         {

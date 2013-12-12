@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Net.Mail;
 using System.Diagnostics;
 using System.Threading;
 using Linnarsson.Utilities;
@@ -12,6 +13,7 @@ namespace BkgFastQCopier
 {
     public class Program
     {
+        private static string logFile;
         private static bool keepRunning = true;
 
         static void Main(string[] args)
@@ -19,7 +21,7 @@ namespace BkgFastQCopier
             int minutesWait = 15; // Time between scans.
             string illuminaRunsFolder = Props.props.RunsFolder;
             string outputReadsFolder = Props.props.ReadsFolder;
-            string logFile = new FileInfo("BFQC_" + Process.GetCurrentProcess().Id + ".log").FullName;
+            logFile = new FileInfo("BFQC_" + Process.GetCurrentProcess().Id + ".log").FullName;
             string specificRunFolder = null;
 
             try 
@@ -114,7 +116,24 @@ namespace BkgFastQCopier
                 }
                 Thread.Sleep(1000 * 60 * minutesWait);
             }
+            if (nExceptions > 0)
+                ReportExceptionTermination(logFile);
         }
+
+        private static void ReportExceptionTermination(string logFile)
+        {
+            string from = Props.props.ProjectDBProcessorNotifierEmailSender;
+            string to = Props.props.FailureReportEmail;
+            string smtp = "localhost";
+            string subject = "BkgFastQCopier PID=" + Process.GetCurrentProcess().Id + " quit with exceptions.";
+            string body = "Please consult logfile " + logFile + " for more info on the errors.";
+            MailMessage message = new MailMessage(from, to, subject, body);
+            message.IsBodyHtml = false;
+            SmtpClient mailClient = new SmtpClient(smtp, 25);
+            mailClient.Send(message);
+        }
+
+
 
     }
 }

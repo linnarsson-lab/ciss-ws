@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
+using System.Net.Mail;
 using Linnarsson.Strt;
 using Linnarsson.Dna;
 using Linnarsson.Utilities;
@@ -81,8 +82,24 @@ namespace BkgFastQMailer
                     Thread.Sleep(1000 * 60 * minutesWait);
                 }
                 logWriter.WriteLine(DateTime.Now.ToString() + " BkgFastQMailer quit");
+                if (nExceptions > 0)
+                    ReportExceptionTermination(logFile);
             }
         }
+
+        private static void ReportExceptionTermination(string logFile)
+        {
+            string from = Props.props.ProjectDBProcessorNotifierEmailSender;
+            string to = Props.props.FailureReportEmail;
+            string smtp = "localhost";
+            string subject = "BkgFastQMailer PID=" + Process.GetCurrentProcess().Id + " quit with exceptions.";
+            string body = "Please consult logfile " + logFile + " for more info on the errors.";
+            MailMessage message = new MailMessage(from, to, subject, body);
+            message.IsBodyHtml = false;
+            SmtpClient mailClient = new SmtpClient(smtp, 25);
+            mailClient.Send(message);
+        }
+
 
     }
 }

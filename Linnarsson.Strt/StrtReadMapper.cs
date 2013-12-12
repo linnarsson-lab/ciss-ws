@@ -895,7 +895,7 @@ namespace Linnarsson.Strt
         /// <param name="genome"></param>
         /// <param name="readLen">length of read seq without barcodes + GGG</param>
         public void DumpTranscripts(Barcodes barcodes, StrtGenome genome, int readLen, int step, int maxPerGene, string outFile,
-                                    bool outputFastq, bool makeSplices, int minOverhang, int maxSkip)
+                                    bool outputFastq, bool makeSplices, int minOverhang, int maxSkip, int flankLength)
         {
             if (readLen > 0) genome.ReadLen = readLen;
             bool variantGenes = genome.GeneVariants;
@@ -912,7 +912,11 @@ namespace Linnarsson.Strt
             Console.WriteLine("Annotations are taken from " + STRTAnnotationsPath);
             foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
                 if (chrIdToFeature.ContainsKey(gf.Chr))
+                {
+                    gf.Start -= flankLength;
+                    gf.End += flankLength;
                     chrIdToFeature[gf.Chr].Add(gf);
+                }
             using (StreamWriter outWriter = new StreamWriter(outFile))
             {
                 StreamWriter spliceWriter = null;
@@ -948,7 +952,7 @@ namespace Linnarsson.Strt
                                 gfTrFwSeq.Append(s);
                             if (gf.Strand == '-')
                                 gfTrFwSeq.RevComp();
-                            string header = string.Format("Gene={0}:Chr={1}{2}:Pos={3}:TrLen={4}", gf.Name, gf.Chr, gf.Strand, gf.Start, gfTrFwSeq.Count);
+                            string header = string.Format("Gene={0}:Chr={1}{2}:CAPPos={3}:TrLen={4}:Flanks={5}", gf.Name, gf.Chr, gf.Strand, gf.Start, gfTrFwSeq.Count, flankLength);
                             if (outputFastq)
                             {
                                 outWriter.WriteLine("@{0}", header);

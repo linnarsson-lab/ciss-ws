@@ -25,7 +25,6 @@ namespace Linnarsson.Dna
 
         public static readonly int Count = SenseCount * 2;
 
-        public static bool DirectionalReads = true;
         /// <summary>
         /// Check if the annotType is a transcript (exon or splice) under the setting for directional read
         /// </summary>
@@ -34,7 +33,7 @@ namespace Linnarsson.Dna
         public static bool IsTranscript(int annotType)
         {
             return annotType == EXON || annotType == SPLC
-                   || (!DirectionalReads && (annotType == AEXON || annotType == ASPLC));
+                   || (!Props.props.DirectionalReads && (annotType == AEXON || annotType == ASPLC));
         }
 
         public static int MakeAntisense(int senseAnnotType)

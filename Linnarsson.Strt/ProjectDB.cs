@@ -85,6 +85,19 @@ namespace Linnarsson.Strt
         public string manager { get; set; }
         public string client { get; set; }
 
+        [XmlIgnoreAttribute]
+        public int nSeqCycles { get; set; }
+        [XmlIgnoreAttribute]
+        public int nIdxCycles { get; set; }
+        [XmlIgnoreAttribute]
+        public int nPairedCycles { get; set; }
+        [XmlIgnoreAttribute]
+        public string seqPrimer { get; set; }
+        [XmlIgnoreAttribute]
+        public string idxPrimer { get; set; }
+        [XmlIgnoreAttribute]
+        public string pairedPrimer { get; set; }
+
         /// <summary>
         /// Default constructor needed only for serialization!!
         /// </summary>
@@ -411,6 +424,13 @@ namespace Linnarsson.Strt
         /// <param name="pairedCycles">Use -1 to indicate that this value should not be updated</param>
         public void UpdateRunCycles(string runId, int cycles, int indexCycles, int pairedCycles)
         {
+            //NEWDB: Replace all with:
+            //string sql = string.Format("UPDATE jos_aaailluminarun SET cycles=IFNULL(cycles, IF('{0}'>=0,'{0}',cycles)), " +
+            //                            "indexcycles=IFNULL(indexcycles, IF('{1}'>=0,'{1}',indexcycles)), " +
+            //                            "pairedcycles=IFNULL(pairedcycles, IF('{2}'>=0,'{2}',pairedcycles)) " +
+            //                           "WHERE illuminarunid='{3}';",
+            //                           cycles, indexCycles, pairedCycles, runId);
+            //IssueNonQuery(sql);
             string sql = string.Format("UPDATE jos_aaailluminarun SET cycles='{0}' WHERE illuminarunid='{1}' AND (cycles=0 OR cycles IS NULL);",
                                        cycles + pairedCycles, runId);
             if (cycles >= 0)
@@ -602,6 +622,26 @@ namespace Linnarsson.Strt
                 (firstMatch.Count == 1) ? firstMatch[0] : (initialsMatch.Count == 1) ? initialsMatch[0] : failPerson;
         }
 
+        public string TryGetPrimerId(string primername)
+        {
+            string result = "NULL";
+            if (primername == null || primername == "")
+                return result;
+            string sql = string.Format("SELECT id FROM jos_aaasequencingprimer WHERE primername='{0}'", primername);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            if (rdr.HasRows)
+            {
+                rdr.Read();
+                result = rdr.GetInt32(0).ToString();
+            }
+            rdr.Close();
+            conn.Close();
+            return result;
+        }
+
         public void InsertOrUpdateProject(ProjectDescription pd)
         {
             if (pd.SpikeMoleculeCount == 0)
@@ -624,23 +664,34 @@ namespace Linnarsson.Strt
             conn.Close();
             if (hasResults)
                 throw new Exception("Can not completely reload a project that has results! Change fields manually using database GUI instead.");
+            string seqPrimerId = TryGetPrimerId(pd.seqPrimer);
+            string idxPrimerId = TryGetPrimerId(pd.idxPrimer);
+            string pairedPrimerId = TryGetPrimerId(pd.pairedPrimer);
             if (projectExists)
                 sql = "UPDATE jos_aaaproject SET jos_aaacontactid='{0}', jos_aaamanagerid='{1}', jos_aaaclientid='{2}', " +
                 "title='{3}', productiondate='{4}', platereference='{6}', species='{7}', tissue='{8}', " +
                 "sampletype='{9}', collectionmethod='{10}', description='{14}', " +
                 "protocol='{15}', barcodeset='{16}', labbookpage='{17}', " +
-                "layoutfile='{18}', comment='{20}', user='{21}', spikemolecules='{22}', time=NOW()) WHERE plateid='{5}'";
+                "layoutfile='{18}', comment='{20}', user='{21}', spikemolecules='{22}', time=NOW(), " +
+                "plannedseqcycles='{23}', plannedidxcycles='{24}', plannedpairedcycles='{25}', " +
+                "seqprimerid={26}, idxprimerid={27}, pairedprimerid={28} " +
+                "WHERE plateid='{5}'";
             else
                 sql = "INSERT INTO jos_aaaproject (jos_aaacontactid, jos_aaamanagerid, jos_aaaclientid, " +
                 "title, productiondate, plateid, platereference, species, tissue, sampletype, " +
                 "collectionmethod, weightconcentration, fragmentlength, molarconcentration, description, " +
-                "protocol, barcodeset, labbookpage, layoutfile, status, comment, user, spikemolecules, time) " +
-                " VALUES('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}'," +
-                "'{10}','{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}','{19}','{20}','{21}','{22}', NOW())";
+                "protocol, barcodeset, labbookpage, layoutfile, status, comment, user, spikemolecules, time, " +
+                "plannedseqcycles, plannedidxcycles, plannedpairedcycles, seqprimerid, idxprimerid, pairedprimerid" +
+                ") VALUES('{0}','{1}','{2}', " +
+                         "'{3}','{4}','{5}','{6}','{7}','{8}','{9}'," +
+                         "'{10}','{11}','{12}','{13}','{14}', " +
+                         "'{15}','{16}','{17}','{18}','{19}','{20}','{21}','{22}', NOW(), " +
+                         "'{23}','{24}','{25}', {26}, {27}, {28})";
             sql = string.Format(sql, contactId, managerId, clientId,
-                 pd.title, pd.productionDate.ToString(cult), pd.plateId, pd.plateReference, pd.defaultSpecies, pd.tissue, 
-                 pd.sampleType, pd.collectionMethod, 0, 0, 0, pd.description, pd.protocol, pd.barcodeSet, pd.labBookPage,
-                 pd.layoutFile, pd.status, pd.comment, Environment.UserName, pd.SpikeMoleculeCount);
+                 pd.title, pd.productionDate.ToString(cult), pd.plateId, pd.plateReference, pd.defaultSpecies, pd.tissue, pd.sampleType,
+                 pd.collectionMethod, 0, 0, 0, pd.description,
+                 pd.protocol, pd.barcodeSet, pd.labBookPage, pd.layoutFile, pd.status, pd.comment, Environment.UserName, pd.SpikeMoleculeCount,
+                 pd.nSeqCycles, pd.nIdxCycles, pd.nPairedCycles, seqPrimerId, idxPrimerId, pairedPrimerId);
             IssueNonQuery(sql);
         }
 
@@ -658,7 +709,8 @@ namespace Linnarsson.Strt
             return lastInsertId;
         }
 
-        public void AutoStartC1Analyses(string newlyCopiedRunId)
+/*
+ * public void AutoStartC1Analyses(string newlyCopiedRunId)
         {
             string sql = "SELECT p.plateid, b.jos_aaaprojectid AS projectid, l.laneno, l.id AS laneid, a.id AS analysisid," +
                           " p.barcodeset, p.species FROM jos_aaalane l JOIN jos_aaailluminarun r ON l.jos_aaailluminarunid=r.id" +
@@ -692,5 +744,6 @@ namespace Linnarsson.Strt
             conn.Close();
 
         }
+*/
     }
 }

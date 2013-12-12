@@ -69,7 +69,7 @@ namespace Linnarsson.Strt
             List<FtInterval> matches = new List<FtInterval>();
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
-                if (ivl.Strand == strand || !AnnotType.DirectionalReads) matches.Add(ivl);
+                if (ivl.Strand == strand || !Props.props.DirectionalReads) matches.Add(ivl);
             }
             hasVariants = (matches.Count > 1);
             return matches;
@@ -146,7 +146,7 @@ namespace Linnarsson.Strt
             HasVariants = false;
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
-                if (ivl.Strand == strand || !AnnotType.DirectionalReads)
+                if (ivl.Strand == strand || !Props.props.DirectionalReads)
                 {
                     nMatches++;
                     if (nMatches == 1)

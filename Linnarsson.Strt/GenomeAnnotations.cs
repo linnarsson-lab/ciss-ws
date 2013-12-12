@@ -326,7 +326,7 @@ namespace Linnarsson.Strt
         /// <returns></returns>
         public IEnumerable<FtInterval> IterNonTrMatches(string chr, char strand, int hitMidPos)
         {
-            if (AnnotType.DirectionalReads)
+            if (Props.props.DirectionalReads)
             { // First check for antisense hits
                 foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
                     if (ivl.Strand != strand) yield return ivl;
@@ -348,7 +348,7 @@ namespace Linnarsson.Strt
         public bool HasTrOrRepeatMatches(string chr, char strand, int hitMidPos)
         {
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
-                if (ivl.Strand == strand || !AnnotType.DirectionalReads) return true;
+                if (ivl.Strand == strand || !Props.props.DirectionalReads) return true;
             if (NonExonAnnotations.ContainsKey(chr))
                 foreach (FtInterval ivl in NonExonAnnotations[chr].IterItems(hitMidPos))
                     if (ivl.annotType == AnnotType.REPT) return true;
@@ -379,7 +379,7 @@ namespace Linnarsson.Strt
         public bool IsTranscript(string chr, char strand, int hitMidPos)
         {
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
-                if (ivl.Strand == strand || !AnnotType.DirectionalReads) return true;
+                if (ivl.Strand == strand || !Props.props.DirectionalReads) return true;
             return false;
         }
 
@@ -387,7 +387,7 @@ namespace Linnarsson.Strt
         {
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
-                if (ivl.Strand == strand || !AnnotType.DirectionalReads) yield return ivl;
+                if (ivl.Strand == strand || !Props.props.DirectionalReads) yield return ivl;
             }
         }
 
@@ -396,7 +396,7 @@ namespace Linnarsson.Strt
             List<FtInterval> ftIvls = new List<FtInterval>();
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
-                if (ivl.Strand == strand || !AnnotType.DirectionalReads) ftIvls.Add(ivl);
+                if (ivl.Strand == strand || !Props.props.DirectionalReads) ftIvls.Add(ivl);
             }
             return ftIvls;
         }
@@ -724,11 +724,16 @@ namespace Linnarsson.Strt
             }
         }
 */
+        /// <summary>
+        /// Iterate expression values for the cells that belong to the genome. Skip wells marked "Empty" by layout file.
+        /// </summary>
+        /// <param name="projectId"></param>
+        /// <returns></returns>
         public IEnumerable<Expression> IterExpressions(string projectId)
         {
             Dictionary<string, int> cellIdByPlateWell = new C1DB().GetCellIdByPlateWell(projectId);
             Expression exprHolder = new Expression();
-            for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+            foreach (int bcIdx in barcodes.GenomeBarcodeIndexes(genome, true)) //  (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
             {
                 exprHolder.CellID = cellIdByPlateWell[barcodes.GetWellId(bcIdx)].ToString();
                 foreach (GeneFeature gf in geneFeatures.Values)

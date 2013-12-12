@@ -15,6 +15,7 @@ namespace ProjectDBProcessor
 {
     class Program
     {
+        private static string logFile;
         private static StreamWriter logWriter;
         private static ProjectDB projectDB;
 
@@ -22,7 +23,7 @@ namespace ProjectDBProcessor
         {
             int minutesWait = 5; // Time between scans to wait for new data to appear in queue.
             int maxExceptions = 20; // Max number of exceptions before giving up.
-            string logFile = new FileInfo("PDBP_" + Process.GetCurrentProcess().Id + ".log").FullName;
+            logFile = new FileInfo("PDBP_" + Process.GetCurrentProcess().Id + ".log").FullName;
             try
             {
                 int i = 0;
@@ -87,6 +88,21 @@ namespace ProjectDBProcessor
                 }
             }
             logWriter.WriteLine(DateTime.Now.ToString() + " ProjectDBProcessor quit.");
+            if (nExceptions > 0)
+                ReportExceptionTermination(logFile);
+        }
+
+        private static void ReportExceptionTermination(string logFile)
+        {
+            string from = Props.props.ProjectDBProcessorNotifierEmailSender;
+            string to = Props.props.FailureReportEmail;
+            string smtp = "localhost";
+            string subject = "BkgBackuper PID=" + Process.GetCurrentProcess().Id + " quit with exceptions.";
+            string body = "Please consult logfile " + logFile + " for more info on the errors.";
+            MailMessage message = new MailMessage(from, to, subject, body);
+            message.IsBodyHtml = false;
+            SmtpClient mailClient = new SmtpClient(smtp, 25);
+            mailClient.Send(message);
         }
 
         private static bool CheckAllReadsCollected(ref ProjectDescription projDescr)

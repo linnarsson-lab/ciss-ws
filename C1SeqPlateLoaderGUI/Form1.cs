@@ -31,7 +31,9 @@ namespace C1SeqPlateLoader
             foreach (string availPlate in availableC1Plates)
             {
                 if (!loadedC1Plates.Contains(C1Props.C1ProjectPrefix + availPlate) || checkBox1.Checked)
+                {
                     listBoxItems.Add(availPlate);
+                }
             }
             listBoxItems.Sort();
             listBoxSelect.DataSource = null;
@@ -82,13 +84,21 @@ namespace C1SeqPlateLoader
             string selPlate = listBoxItems[listBoxSelect.SelectedIndex];
             try
             {
-                new C1SeqPlateLoader().LoadC1SeqPlate((selPlate));
+                string barcodeSet = radioButtonBc1To96.Checked? C1Props.props.C1BarcodeSet1 : C1Props.props.C1BarcodeSet2;
+                new C1SeqPlateLoader(false).LoadC1SeqPlate(selPlate, barcodeSet);
                 Console.WriteLine("Ready.");
+                availableC1Plates.Remove(selPlate);
             }
             catch (Exception exc)
             {
                 Console.WriteLine("ERROR: " + exc.Message);
             }
+            LoadSelectOptions();
+        }
+
+        private void radioButtonBc1To96_CheckedChanged(object sender, EventArgs e)
+        {
+
         }
 
     }

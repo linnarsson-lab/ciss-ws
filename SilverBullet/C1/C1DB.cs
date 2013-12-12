@@ -118,6 +118,7 @@ namespace C1
             while (rdr.Read())
                 yield return MakeTranscriptFromDBReader(rdr);
             sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' AND Chromosome!='CTRL' ORDER BY Chromosome, Start", transcriptomeId);
+            rdr.Close();
             cmd = new MySqlCommand(sql, conn);
             rdr = cmd.ExecuteReader();
             while (rdr.Read())

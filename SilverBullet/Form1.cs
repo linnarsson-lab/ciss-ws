@@ -426,7 +426,7 @@ namespace SilverBullet
                 Background.RunAsync(() =>
                 {
                     Background.Message("Writing fastQ file...");
-                    mapper.DumpTranscripts(bc, gd.Genome, 44, 1, 0, fqFile, true, true, 3, 10);
+                    mapper.DumpTranscripts(bc, gd.Genome, 44, 1, 0, fqFile, true, true, 3, 10, 0);
                     Background.Message("Ready");
                 });
             }

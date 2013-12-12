@@ -127,8 +127,9 @@ namespace CmdSilverBullet
                         case "dumpfasta":
                             genome = StrtGenome.GetGenome(args[1]);
                             string fastaPath = args[2];
+                            int flankLength = (args.Length > 3)? int.Parse(args[3]) : 0;
                             mapper = new StrtReadMapper(props);
-                            mapper.DumpTranscripts(null, genome, 0, 0, 0, fastaPath, false, false, 0, 0);
+                            mapper.DumpTranscripts(null, genome, 0, 0, 0, fastaPath, false, false, 0, 0, flankLength);
                             break;
 
                         case "dump":
@@ -159,7 +160,7 @@ namespace CmdSilverBullet
                             mapper = new StrtReadMapper(props);
                             int maxSkip = props.MaxExonsSkip;
                             mapper.DumpTranscripts(barcodes, genome, readLength, step, maxPerGene, outputPath, true,
-                                                   makeSplices, minOverhang, maxSkip);
+                                                   makeSplices, minOverhang, maxSkip, 0);
                             break;
 
                         case "mapsnp":

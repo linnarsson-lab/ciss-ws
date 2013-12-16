@@ -45,7 +45,8 @@ namespace CmdSilverBullet
                             projectFolder = options.projectFolder;
                             mapper = new StrtReadMapper(props);
                             List<LaneInfo> extrInfos = mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
-                            mapper.MapAndAnnotate(projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants, options.annotation, "");
+                            string extractedFolder = extrInfos[0].extractionTopFolder;
+                            mapper.MapAndAnnotate(extractedFolder, options.speciesAbbrev, options.analyzeAllGeneVariants, options.annotation, "");
                             break;
 
                         case "downloadmart":

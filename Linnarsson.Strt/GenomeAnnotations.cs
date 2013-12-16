@@ -565,6 +565,7 @@ namespace Linnarsson.Strt
                 WriteTrueMolsTable(fileNameBase);
                 WriteReadsTable(fileNameBase);
             }
+            WriteWellMetadata(fileNameBase);
             string expressionFile = WriteExpressionTable(fileNameBase);
             WriteMinExpressionTable(fileNameBase);
             if (props.DirectionalReads)
@@ -912,6 +913,14 @@ namespace Linnarsson.Strt
                         tableFile.WriteLine(gf.TranscriptHitsByBarcode[idx]);
                     }
                 }
+            }
+        }
+
+        private void WriteWellMetadata(string fileNameBase)
+        {
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_expression_annotations_for_R.txt"))
+            {
+                WriteBarcodeHeaders(file, 0, "");
             }
         }
 

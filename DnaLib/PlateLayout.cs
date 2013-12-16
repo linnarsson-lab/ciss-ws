@@ -70,7 +70,7 @@ namespace Linnarsson.Dna
         {
             new C1DB().GetCellAnnotations(plateId, out AnnotationsBySampleId, out AnnotationIndexes);
             if (AnnotationsBySampleId.Count == 0)
-                throw new SampleLayoutFileException("Can not extract any well/cell annotations from C1 database.");
+                throw new SampleLayoutFileException("Can not extract any well/cell annotations for " + plateId + "  from C1 database.");
             foreach (KeyValuePair<string, string[]> p in AnnotationsBySampleId)
             {
                 string speciesId = ParseSpeciesId(p.Value[AnnotationIndexes["Species"]]);

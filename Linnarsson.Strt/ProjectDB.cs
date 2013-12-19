@@ -424,34 +424,12 @@ namespace Linnarsson.Strt
         /// <param name="pairedCycles">Use -1 to indicate that this value should not be updated</param>
         public void UpdateRunCycles(string runId, int cycles, int indexCycles, int pairedCycles)
         {
-            //NEWDB: Replace all with:
-            //string sql = string.Format("UPDATE jos_aaailluminarun SET cycles=IFNULL(cycles, IF('{0}'>=0,'{0}',cycles)), " +
-            //                            "indexcycles=IFNULL(indexcycles, IF('{1}'>=0,'{1}',indexcycles)), " +
-            //                            "pairedcycles=IFNULL(pairedcycles, IF('{2}'>=0,'{2}',pairedcycles)) " +
-            //                           "WHERE illuminarunid='{3}';",
-            //                           cycles, indexCycles, pairedCycles, runId);
-            //IssueNonQuery(sql);
-            string sql = string.Format("UPDATE jos_aaailluminarun SET cycles='{0}' WHERE illuminarunid='{1}' AND (cycles=0 OR cycles IS NULL);",
-                                       cycles + pairedCycles, runId);
-            if (cycles >= 0)
-            {
-                IssueNonQuery(sql);
-                IssueNonQuery("UPDATE jos_aaasequencingbatch b LEFT JOIN jos_aaalane l ON l.jos_aaasequencingbatchid = b.id " +
-                              "LEFT JOIN jos_aaailluminarun r ON l.jos_aaailluminarunid = r.id " +
-                              "SET b.plannednumberofcycles = r.cycles WHERE b.plannednumberofcycles IS NULL AND l.jos_aaailluminarunid='" + runId + "';");
-            }
-            sql = string.Format("UPDATE jos_aaailluminarun SET indexcycles='{0}' WHERE illuminarunid='{1}' AND (indexcycles=0 OR indexcycles IS NULL);",
-                                indexCycles, runId);
-            if (indexCycles >= 0)
-            {
-                IssueNonQuery(sql);
-                IssueNonQuery("UPDATE jos_aaasequencingbatch b LEFT JOIN jos_aaalane l ON l.jos_aaasequencingbatchid = b.id " +
-                              "LEFT JOIN jos_aaailluminarun r ON l.jos_aaailluminarunid = r.id " +
-                              "SET b.plannedindexcycles = r.cycles WHERE b.plannedindexcycles IS NULL AND l.jos_aaailluminarunid='" + runId + "';");
-            }
-            sql = string.Format("UPDATE jos_aaailluminarun SET pairedcycles='{0}' WHERE illuminarunid='{1}' AND (pairedcycles=0 OR pairedcycles IS NULL);",
-                                pairedCycles, runId);
-            if (pairedCycles >= 0) IssueNonQuery(sql);
+            string sql = string.Format("UPDATE jos_aaailluminarun SET cycles=IFNULL(cycles, IF('{0}'>=0,'{0}',cycles)), " +
+                                        "indexcycles=IFNULL(indexcycles, IF('{1}'>=0,'{1}',indexcycles)), " +
+                                        "pairedcycles=IFNULL(pairedcycles, IF('{2}'>=0,'{2}',pairedcycles)) " +
+                                       "WHERE illuminarunid='{3}';",
+                                       cycles, indexCycles, pairedCycles, runId);
+            IssueNonQuery(sql);
         }
 
         public Dictionary<string, List<MailTaskDescription>> GetQueuedMailTasksByEmail()
@@ -662,12 +640,10 @@ namespace Linnarsson.Strt
             bool hasResults = rdr.GetInt32(1) > 0;
             rdr.Close();
             conn.Close();
-            if (hasResults)
-                throw new Exception("Can not completely reload a project that has results! Change fields manually using database GUI instead.");
             string seqPrimerId = TryGetPrimerId(pd.seqPrimer);
             string idxPrimerId = TryGetPrimerId(pd.idxPrimer);
             string pairedPrimerId = TryGetPrimerId(pd.pairedPrimer);
-            if (projectExists)
+            if (hasResults || projectExists) // MAYBE HAS TO BE MORE CAREFUL IF THERE ARE RESULTS?
                 sql = "UPDATE jos_aaaproject SET jos_aaacontactid='{0}', jos_aaamanagerid='{1}', jos_aaaclientid='{2}', " +
                 "title='{3}', productiondate='{4}', platereference='{6}', species='{7}', tissue='{8}', " +
                 "sampletype='{9}', collectionmethod='{10}', description='{14}', " +
@@ -709,41 +685,40 @@ namespace Linnarsson.Strt
             return lastInsertId;
         }
 
-/*
- * public void AutoStartC1Analyses(string newlyCopiedRunId)
-        {
-            string sql = "SELECT p.plateid, b.jos_aaaprojectid AS projectid, l.laneno, l.id AS laneid, a.id AS analysisid," +
-                          " p.barcodeset, p.species FROM jos_aaalane l JOIN jos_aaailluminarun r ON l.jos_aaailluminarunid=r.id" +
-                          " JOIN jos_aaasequencingbatch b ON l.jos_aaasequencingbatchid=b.id " +
-                          " LEFT JOIN jos_aaaanalysis a ON a.jos_aaaprojectid=b.jos_aaaprojectid" +
-                          " JOIN jos_aaaproject p ON p.id=b.jos_aaaprojectid" +
-                          " WHERE r.illuminarunid='{0}' AND a.id IS NULL AND mid(p.plateid, 1, 3)='{1}';";
-            sql = string.Format(sql, newlyCopiedRunId, C1Props.C1ProjectPrefix);
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-            {
-                string projectId = rdr["projectid"].ToString();
-                string laneId = rdr["laneid"].ToString();
-                string species = rdr["species"].ToString();
-                string barcodes = rdr["barcodeset"].ToString();
-                string asql = "INSERT INTO jos_aaaanalysis " +
-                              "(projectid, transcript_db_version, transcript_variant, rpkm, emails, status, lanecount, comment, time, user) " +
-                              "VALUES ('{0}', '{1}', '{2}', 0, '{3}', 'inqueue', 1, 'autoanalysis', NOW(), 'system');";
-                asql = string.Format(asql, projectId, C1Props.props.AutoAnalysisBuild, C1Props.props.AutoAnalysisBuildVariants,
-                                     C1Props.props.AutoAnalysisMailRecepients);
-                IssueNonQuery(asql);
-                int analysisId = GetLastInsertId("jos_aaaanalysis");
-                string lsql = "INSERT INTO jos_aaaanalysislane (jos_aaaanalysisid, jos_aaalaneid) VALUES ('{0}', '{1}');";
-                lsql = string.Format(lsql, analysisId, laneId);
-                IssueNonQuery(lsql);
-            }
-            rdr.Close();
-            conn.Close();
+        /*
+         * public void AutoStartC1Analyses(string newlyCopiedRunId)
+                {
+                    string sql = "SELECT p.plateid, b.jos_aaaprojectid AS projectid, l.laneno, l.id AS laneid, a.id AS analysisid," +
+                                  " p.barcodeset, p.species FROM jos_aaalane l JOIN jos_aaailluminarun r ON l.jos_aaailluminarunid=r.id" +
+                                  " LEFT JOIN jos_aaaanalysis a ON a.jos_aaaprojectid=b.jos_aaaprojectid" +
+                                  " JOIN jos_aaaproject p ON p.id=l.jos_aaaprojectid1 OR p.id=l.jos_aaaprojectid2" +
+                                  " WHERE r.illuminarunid='{0}' AND a.id IS NULL AND mid(p.plateid, 1, 3)='{1}';";
+                    sql = string.Format(sql, newlyCopiedRunId, C1Props.C1ProjectPrefix);
+                    MySqlConnection conn = new MySqlConnection(connectionString);
+                    conn.Open();
+                    MySqlCommand cmd = new MySqlCommand(sql, conn);
+                    MySqlDataReader rdr = cmd.ExecuteReader();
+                    while (rdr.Read())
+                    {
+                        string projectId = rdr["projectid"].ToString();
+                        string laneId = rdr["laneid"].ToString();
+                        string species = rdr["species"].ToString();
+                        string barcodes = rdr["barcodeset"].ToString();
+                        string asql = "INSERT INTO jos_aaaanalysis " +
+                                      "(projectid, transcript_db_version, transcript_variant, rpkm, emails, status, lanecount, comment, time, user) " +
+                                      "VALUES ('{0}', '{1}', '{2}', 0, '{3}', 'inqueue', 1, 'autoanalysis', NOW(), 'system');";
+                        asql = string.Format(asql, projectId, C1Props.props.AutoAnalysisBuild, C1Props.props.AutoAnalysisBuildVariants,
+                                             C1Props.props.AutoAnalysisMailRecepients);
+                        IssueNonQuery(asql);
+                        int analysisId = GetLastInsertId("jos_aaaanalysis");
+                        string lsql = "INSERT INTO jos_aaaanalysislane (jos_aaaanalysisid, jos_aaalaneid) VALUES ('{0}', '{1}');";
+                        lsql = string.Format(lsql, analysisId, laneId);
+                        IssueNonQuery(lsql);
+                    }
+                    rdr.Close();
+                    conn.Close();
 
-        }
-*/
+                }
+        */
     }
 }

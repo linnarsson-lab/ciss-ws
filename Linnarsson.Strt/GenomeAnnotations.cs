@@ -704,27 +704,6 @@ namespace Linnarsson.Strt
             return 0;
         }
 
-/*
-        public IEnumerable<ExprBlob> IterExprBlobs(string projectId)
-        {
-            Dictionary<string, int> cellIdByPlateWell = new C1DB().GetCellIdByPlateWell(projectId);
-            byte[] blob = new byte[4 * geneFeatures.Count];
-            for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
-            {
-                int cellId = cellIdByPlateWell[barcodes.GetWellId(bcIdx)];
-                foreach (GeneFeature gf in geneFeatures.Values)
-                {
-                    int blobPos = 4 * gf.ExprBlobIdx;
-                    Int32 molecules = gf.TranscriptHitsByBarcode[bcIdx];
-                    byte[] bytes = BitConverter.GetBytes(molecules);
-                    if (BitConverter.IsLittleEndian)
-                        Array.Reverse(bytes);
-                    Array.Copy(bytes, 0, blob, blobPos, 4);
-                }
-                yield return new ExprBlob(cellId, (int)dbTranscriptome.TranscriptomeID, blob);
-            }
-        }
-*/
         /// <summary>
         /// Iterate expression values for the cells that belong to the genome. Skip wells marked "Empty" by layout file.
         /// </summary>
@@ -734,7 +713,7 @@ namespace Linnarsson.Strt
         {
             Dictionary<string, int> cellIdByPlateWell = new C1DB().GetCellIdByPlateWell(projectId);
             Expression exprHolder = new Expression();
-            foreach (int bcIdx in barcodes.GenomeBarcodeIndexes(genome, true)) //  (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+            foreach (int bcIdx in barcodes.GenomeBarcodeIndexes(genome, true))
             {
                 exprHolder.CellID = cellIdByPlateWell[barcodes.GetWellId(bcIdx)].ToString();
                 foreach (GeneFeature gf in geneFeatures.Values)

@@ -793,7 +793,6 @@ namespace Linnarsson.Strt
                 Console.WriteLine("Saving results to cells10k database...");
                 try
                 {
-                    //new C1DB().InsertExprBlobs(annotations.IterExprBlobs(projectId));
                     new C1DB().InsertExpressions(annotations.IterExpressions(projectId));
                 }
                 catch (Exception e)

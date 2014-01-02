@@ -140,32 +140,38 @@ namespace C1
             return t;
         }
 
-        public void InsertCellImage(CellImage ci)
+        public void InsertOrUpdateCellImage(CellImage ci)
         {
             int detectionValue = (ci.Detection == Detection.Yes) ? 1 : (ci.Detection == Detection.No) ? -1 : 0;
             string sql = "INSERT INTO CellImage (CellID, Reporter, Marker, Detection, RelativePath) " +
-                               "VALUES ({0},'{1}','{2}','{3}','{4}')";
+                               "VALUES ({0},'{1}','{2}','{3}','{4}') " +
+                         "ON DUPLICATE KEY UPDATE Marker='{2}',Detection='{3}',RelativePath='{4}';";
             sql = string.Format(sql, ci.CellID, ci.Reporter, ci.Marker, detectionValue, ci.RelativePath);
             IssueNonQuery(sql);
         }
 
-        public void InsertCell(Cell c)
+        public void InsertOrUpdateCell(Cell c)
         {
             CultureInfo cult = new CultureInfo("sv-SE");
             string sql = "INSERT INTO Cell (Chip, ChipWell, StrtProtocol, DateDissected, DateCollected, " +
                                            "Species, Strain, DonorID, Age, Sex, Tissue, Treatment, " +
-                                           "Diameter, Area, PI, Operator, Scientist, Comments, Red, Green, Blue) " +
-                         "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}'," +
-                                 "'{11}','{12}','{13}','{14}','{15}','{16}','{17}','{18}','{19}', '{20}')";
+                                           "Diameter, Area, PI, Operator, Scientist, Comments, " + 
+                                           "Red, Green, Blue, Weight) " +
+                         "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}'," +
+                                 "'{12}','{13}','{14}','{15}','{16}','{17}','{18}','{19}','{20}','{21}') " +
+                         "ON DUPLICATE KEY UPDATE StrtProtocol='{2}', DateDissected='{3}', DateCollected='{4}'," +
+                            "Species='{5}',Strain='{6}',DonorID='{7}',Age='{8}',Sex='{9}',Tissue='{10}',Treatment='{11}'," +
+                            "Diameter='{12}',Area='{13}',PI='{14}',Operator='{15}',Scientist='{16}',Comments='{17}'," +
+                            "Red='{18}',Green='{19}',Blue='{20}',Weight='{21}';";
             sql = string.Format(sql, c.Chip, c.ChipWell, c.StrtProtocol, c.DateDissected.ToString(cult), c.DateCollected.ToString(cult),
                                      c.Species, c.Strain, c.DonorID, c.Age, c.Sex, c.Tissue, c.Treatment,
                                      c.Diameter, c.Area, c.PI, c.Operator, c.Scientist, c.Comments, 
-                                     c.Red, c.Green, c.Blue);
+                                     c.Red, c.Green, c.Blue, c.Weight);
             int cellId = InsertAndGetLastId(sql, "Cell");
             foreach (CellImage ci in c.cellImages)
             {
                 ci.CellID = cellId;
-                InsertCellImage(ci);
+                InsertOrUpdateCellImage(ci);
             }
         }
 
@@ -300,7 +306,7 @@ namespace C1
             conn.Open();
             string sql = "SELECT CellID, Chip, ChipWell, Plate, PlateWell, StrtProtocol, DateDissected, DateCollected, Species, " +
                          "Strain, DonorID, Age, Sex, Tissue, Treatment, Diameter, Area, PI, Operator, Scientist, Comments, " +
-                         "Red, Green, Blue " +
+                         "Red, Green, Blue, Weight " +
                          "FROM Cell {0}";
             sql = string.Format(sql, whereClause);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -312,7 +318,7 @@ namespace C1
                                      rdr.GetString(9), rdr.GetString(10), rdr.GetString(11), rdr.GetChar(12),
                                      rdr.GetString(13), rdr.GetString(14), rdr.GetDouble(15), rdr.GetDouble(16),
                                      rdr.GetString(17), rdr.GetString(18), rdr.GetString(19), rdr.GetString(20),
-                                     rdr.GetInt32(21), rdr.GetInt32(22), rdr.GetInt32(23));
+                                     rdr.GetInt32(21), rdr.GetInt32(22), rdr.GetInt32(23), rdr.GetString(24));
                 cells.Add(cell);
             }
             conn.Close();
@@ -336,12 +342,16 @@ namespace C1
             annotationIndexes["Species"] = i++;
             annotationIndexes["Age"] = i++;
             annotationIndexes["Sex"] = i++;
+            annotationIndexes["Tissue"] = i++;
+            annotationIndexes["Treatment"] = i++;
             annotationIndexes["DonorID"] = i++;
+            annotationIndexes["Weight"] = i++;
             annotationIndexes["Diameter"] = i++;
             annotationIndexes["Area"] = i++;
             annotationIndexes["Red"] = i++;
             annotationIndexes["Blue"] = i++;
             annotationIndexes["Green"] = i++;
+            annotationIndexes["Comments"] = i++;
             for (i = 0; i < annotNames.Count; i++)
                 annotationIndexes[annotNames[i]] = annotationIndexes.Count;
             string sqlPat = "SELECT a.CellID, Name, Value FROM CellAnnotation a LEFT JOIN Cell c ON a.CellID=c.CellID " +
@@ -359,12 +369,16 @@ namespace C1
                 wellAnn[i++] = cell.Species;
                 wellAnn[i++] = cell.Age;
                 wellAnn[i++] = cell.Sex.ToString();
+                wellAnn[i++] = cell.Tissue;
+                wellAnn[i++] = cell.Treatment;
                 wellAnn[i++] = cell.DonorID;
+                wellAnn[i++] = cell.Weight;
                 wellAnn[i++] = cell.Diameter.ToString();
                 wellAnn[i++] = cell.Area.ToString();
                 wellAnn[i++] = cell.Red.ToString();
                 wellAnn[i++] = cell.Blue.ToString();
                 wellAnn[i++] = cell.Green.ToString();
+                wellAnn[i++] = cell.Comments;
                 annotations[plateWell] = wellAnn;
             }
             string sql = string.Format(sqlPat, projectId);

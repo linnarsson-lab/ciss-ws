@@ -17,6 +17,7 @@ namespace C1
         public DateTime DateCollected { get; set; }
         public string Species { get; set; }                 // "mouse" or "human"
         public string DonorID { get; set; }                 // "129"
+        public string Weight { get; set; }                 // "350g"
         public string Strain { get; set; }                  // "C57/Bl6"
         public string Age { get; set; }                     // "E14.5"
         public char Sex { get; set; }                       // 'M' or 'F'
@@ -37,7 +38,7 @@ namespace C1
                     string strtProtocol, DateTime dateDissected, DateTime dateCollected, string species, string strain,
                     string donorID, string age, char sex, string tissue, string treatment,
                     double diameter, double area, string PI, string op, string sci, string comments,
-                    int red, int green, int blue)
+                    int red, int green, int blue, string weight)
         {
             this.CellID = cellId;
             this.Chip = chip;
@@ -63,6 +64,7 @@ namespace C1
             this.Red = red;
             this.Green = green;
             this.Blue = blue;
+            this.Weight = weight;
             this.cellImages = new List<CellImage>();
         }
     }

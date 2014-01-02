@@ -732,7 +732,8 @@ namespace Linnarsson.Strt
         {
             string readFile = fileNameBase + "_reads.tab";
             Func<GeneFeature, int[]> getReads = x => x.TranscriptReadsByBarcode;
-            WriteBasicDataTable(readFile, "Total maximal read counts in barcodes for each gene and repeat.", getReads);
+            string header = MakeFirstHeader(true, "#{0} {1} read counts and sense+antisense reads counts for repeat types.{3}");
+            WriteBasicDataTable(readFile, header, getReads);
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             using (StreamWriter outFile = new StreamWriter(readFile, true))
             {
@@ -752,7 +753,8 @@ namespace Linnarsson.Strt
         private void WriteTrueMolsTable(string fileNameBase)
         {
             Func<GeneFeature, int[]> getTrueMols = x => x.EstimatedTrueMolsByBarcode;
-            WriteBasicDataTable(fileNameBase + "_true_counts.tab", "Estimated true molecule counts.", getTrueMols);
+            string header = MakeFirstHeader(true, "#{0} {1} estimated true molecule counts.{3}");
+            WriteBasicDataTable(fileNameBase + "_true_counts.tab", header, getTrueMols);
         }
 
         private void WriteBasicDataTable(string fileName, string header, Func<GeneFeature, int[]> dataGetter)
@@ -760,7 +762,6 @@ namespace Linnarsson.Strt
             using (StreamWriter outFile = new StreamWriter(fileName))
             {
                 outFile.WriteLine(header);
-                WriteExtraDataTableHeaders(outFile);
                 WriteBarcodeHeaders(outFile, 5, "");
                 outFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tExonHits");
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
@@ -781,6 +782,26 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
+        /// Construct a suitable header for an expression output file
+        /// </summary>
+        /// <param name="withMultireads">The count table will contain multireads, and not only counts from use of single reads</param>
+        /// <param name="pattern">formatting pattern, see below</param>
+        /// <returns></returns>
+        private string MakeFirstHeader(bool withMultireads, string pattern)
+        {
+            string dataType = withMultireads ? string.Format("Max (using also <={0}x mapping multireads)", props.MaxAlternativeMappings)
+                                             : "Min (using only uniquely mapping reads)";
+            string dirType = props.DirectionalReads ? "sense only" : "sense+antisense";
+            string valueType = barcodes.HasUMIs ? "molecule" : "read";
+            string multireadTxt = "";
+            if (!withMultireads)
+                multireadTxt = " Multireads have been assigned " +
+                    (props.UseMost5PrimeExonMapping ? "to their most 5' mapping." : "multiply to all their alternative mappings.");
+            string firstHeader = string.Format(pattern, dataType, dirType, valueType, multireadTxt);
+            return firstHeader;
+        }
+
+        /// <summary>
         /// For each feature, write the total (for genes, transcript) hit count for every barcode
         /// </summary>
         /// <param name="fileNameBase"></param>
@@ -789,23 +810,21 @@ namespace Linnarsson.Strt
         {
             string exprPath = fileNameBase + "_expression.tab";
             Func<GeneFeature, int[]> getMaxHits = x => x.TranscriptHitsByBarcode;
-            return WriteExtendedDataTable(exprPath, "maximum (including multireads)", getMaxHits);
+            return WriteExtendedDataTable(exprPath, true, getMaxHits);
         }
         private string WriteMinExpressionTable(string fileNameBase)
         {
             string exprPath = fileNameBase + "_expression_singlereads.tab";
             Func<GeneFeature, int[]> getMaxHits = x => x.NonConflictingTranscriptHitsByBarcode;
-            return WriteExtendedDataTable(exprPath, "minimum (uniquely mapped)", getMaxHits);
+            return WriteExtendedDataTable(exprPath, false, getMaxHits);
         }
-        private string WriteExtendedDataTable(string fileName, string dataType, Func<GeneFeature, int[]> dataGetter)
+        private string WriteExtendedDataTable(string fileName, bool withMultireads, Func<GeneFeature, int[]> dataGetter)
         {
             using (StreamWriter writer = new StreamWriter(fileName))
             {
-                writer.WriteLine("Length, total and per barcode {0} transcript hits for transcripts, and total length, total and per barcode (both sense & antisense) hits for repeat regions grouped by type.", dataType);
-                writer.WriteLine("The totals under MinExonHits correspond to single reads, having a unique genome mapping.");
-                WriteExtraDataTableHeaders(writer);
-                string valueType = barcodes.HasUMIs ? "(Values are molecule counts)" : "(Values are read counts)";
-                WriteBarcodeHeaders(writer, 6, valueType);
+                string firstHeader = MakeFirstHeader(withMultireads,"#{0} {1} {2} counts for transcripts, and sense+antisense {2} counts for repeat types.{3}");
+                writer.WriteLine(firstHeader);
+                WriteBarcodeHeaders(writer, 6, "");
                 writer.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\tExonHits");
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 foreach (GeneFeature gf in geneFeatures.Values)
@@ -830,19 +849,32 @@ namespace Linnarsson.Strt
             return fileName;
         }
 
-        private void WriteExtraDataTableHeaders(StreamWriter tableOutFile)
+        private string WriteMatlabTables(string fileNameBase, string dataType, Func<GeneFeature, int[]> dataGetter)
         {
-            if (props.UseMost5PrimeExonMapping && props.DirectionalReads)
+            string fileName = fileNameBase + "_expression_for_MATLAB.tab";
+            using (StreamWriter writer = new StreamWriter(fileName))
             {
-                tableOutFile.WriteLine("Multireads have been assigned to their most 5' exonic hit and included in totals under ExonHits.");
+                int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+                writer.Write("Feature\tChr\tPos\tStrand");
+                foreach (int idx in speciesBcIndexes)
+                    writer.Write("\t{0}", barcodes.GetWellId(idx));
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    writer.Write("{0}\t{1}\t{2}\t{3}", gf.Name, gf.Chr, gf.Start, gf.Strand);
+                    int[] data = dataGetter(gf);
+                    foreach (int idx in speciesBcIndexes)
+                        writer.Write("\t{0}", data[idx]);
+                    writer.WriteLine();
+                }
+                foreach (RepeatFeature rf in repeatFeatures.Values)
+                {
+                    writer.Write("r_{0}\t\t\t", rf.Name);
+                    foreach (int idx in speciesBcIndexes)
+                        writer.Write("\t{0}", rf.TotalHitsByBarcode[idx]);
+                    writer.WriteLine();
+                }
             }
-            else
-            {
-                tableOutFile.WriteLine("Multireads are multiply assigned to all their exonic hits and included in totals under ExonHits.");
-                tableOutFile.WriteLine("NOTE: Also gene variants occupying the same locus share ExonHits and table counts.");
-            }
-            if (!props.DirectionalReads)
-                tableOutFile.WriteLine("NOTE: This is a non-STRT analysis with non-directional reads.");
+            return fileName;
         }
 
         private void WriteCAPRegionHitsTable(string fileNameBase)
@@ -897,7 +929,7 @@ namespace Linnarsson.Strt
 
         private void WriteWellMetadata(string fileNameBase)
         {
-            using (StreamWriter file = new StreamWriter(fileNameBase + "_expression_annotations_for_R.txt"))
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_expression_annotations.txt"))
             {
                 WriteBarcodeHeaders(file, 0, "");
             }

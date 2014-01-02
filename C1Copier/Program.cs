@@ -18,6 +18,7 @@ namespace C1
         static int nExceptions = 0;
         static int maxNExceptions = 10;
         static bool runOnce = false;
+        static string specificChipDir = "";
 
         static void Main(string[] args)
         {
@@ -38,6 +39,8 @@ namespace C1
                         logFile = arg.Substring(2);
                     else if (arg == "-s")
                         runOnce = true;
+                    else if (arg == "-u")
+                        specificChipDir = args[++i];
                     else throw new ArgumentException("OptionError");
                     i++;
                 }
@@ -47,11 +50,17 @@ namespace C1
                 if (!e.Message.Equals("OptionError"))
                     Console.WriteLine(e);
                 Console.WriteLine("\nOptions:\n\n" +
-                                  "-i<file>     - specify a non-standard c1 input folder\n" +
-                                  "-l<file>     - specify a non-standard log file\n" +
-                                  "-s           - run only a single time, then quit\n" +
+                                  "-i <folder>   - specify a non-standard c1 input folder\n" +
+                                  "-l <file>     - specify a non-standard log file\n" +
+                                  "-s            - run only a single time, then quit\n" +
+                                  "-u <folder>   - load or update from a specific chip folder, then quit\n" +
                                   "Put in crontab for starting at every reboot.\n" +
                                   "\nLogfile defaults to a name with Pid included like: " + logFile);
+                return;
+            }
+            if (specificChipDir != "")
+            {
+                Console.WriteLine(Copy(specificChipDir));
                 return;
             }
             if (!File.Exists(logFile))
@@ -95,28 +104,30 @@ namespace C1
                 if (!loadedChips.Contains(dirChipName))
                 {
                     logWriter.WriteLine(DateTime.Now.ToString() + " Loading " + chipDir + "...");
-                    Dictionary<string, string> metadata = ReadMetaData(chipDir);
-                    if (metadata == null)
+                    string msg= Copy(chipDir);
+                    if (msg == "OK")
+                        someCopyDone = true;
+                    else
                     {
-                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping " + chipDir + " - no metadata.");
+                        logWriter.WriteLine(DateTime.Now.ToString() + msg);
                         logWriter.Flush();
-                        continue;
                     }
-                    List<Cell> celldata = ReadCellData(chipDir, metadata);
-                    if (celldata == null)
-                    {
-                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping " + chipDir + " - no celldata.");
-                        logWriter.Flush();
-                        continue;
-                    }
-                    logWriter.WriteLine(DateTime.Now.ToString() + " Copying data from " + chipDir + "...");
-                    logWriter.Flush();
-                    InsertCells(celldata);
-                    someCopyDone = true;
                     loadedChips.Add(chipDir);
                 }
             }
             return someCopyDone;
+        }
+
+        private static string Copy(string chipDir)
+        {
+            Dictionary<string, string> metadata = ReadMetaData(chipDir);
+            if (metadata == null)
+                return " WARNING: Skipping " + chipDir + " - no metadata.";
+            List<Cell> celldata = ReadCellData(chipDir, metadata);
+            if (celldata == null)
+                return " WARNING: Skipping " + chipDir + " - no celldata.";
+            InsertCells(celldata);
+            return "OK";
         }
 
         private static void InsertCells(List<Cell> celldata)
@@ -124,7 +135,7 @@ namespace C1
             C1DB db = new C1DB();
             foreach (Cell c in celldata)
             {
-                db.InsertCell(c);
+                db.InsertOrUpdateCell(c);
             }
         }
 
@@ -188,7 +199,7 @@ namespace C1
                                     metadata["species"], metadata["strain"], metadata["donorid"],
                                     metadata["age"], metadata["sex"][0], metadata["tissue"],
                                     metadata["treatment"], diameter, area, metadata["principal investigator"], metadata["operator"],
-                                    metadata["scientist"], metadata["comments"], red, green, blue);
+                                    metadata["scientist"], metadata["comments"], red, green, blue, metadata["weight"]);
                     List<CellImage> cellImages = new List<CellImage>();
                     foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)
                     {
@@ -207,7 +218,9 @@ namespace C1
                             continue;
                         }
                         string imgFolderName = Path.GetFileName(imgFolder);
-                        cellImages.Add(new CellImage(null, null, imgFolderName, imgFolderName, Detection.Unknown, imgPath));
+                        Match m = Regex.Match(imgFolderName, "^(.+)_ [0-9]+$");
+                        string reporter = m.Success ? m.Groups[1].Value : imgFolderName;
+                        cellImages.Add(new CellImage(null, null, reporter, imgFolderName, Detection.Unknown, imgPath));
                     }
                     newCell.cellImages = cellImages;
                     cells.Add(newCell);
@@ -222,7 +235,8 @@ namespace C1
             if (lastMetaFilePath == null) return null;
             Dictionary<string, string> metadata = new Dictionary<string, string>();
             metadata["date of run"] = "2001-01-01";
-            metadata["age"] = metadata["strain"] = metadata["treatment"] = metadata["tissue"] = metadata["sex"] = "?";
+            metadata["age"] = metadata["strain"] = metadata["treatment"] = metadata["tissue"] = "?";
+            metadata["sex"] = "?";
             metadata["operator"] = metadata["scientist"] = metadata["principal investigator"] = "?";
             metadata["comments"] = "";
             metadata["spikes"] = C1Props.props.SpikeMoleculeCount.ToString();
@@ -233,10 +247,11 @@ namespace C1
                 {
                     if (line == "" || line.StartsWith("#"))
                         continue;
-                    string[] fields = line.Split('\t');
+                    string[] fields = GetFields(line);
                     string key = fields[0].Trim().ToLower();
+                    string value = (fields.Length == 2) ? fields[1].Trim() : "";
                     if (key == "tissue/cell type/source") key = "tissue";
-                    metadata[key] = fields[1].Trim();
+                    metadata[key] = value;
                 }
             }
             metadata["chipfolder"] = chipDir;
@@ -250,10 +265,22 @@ namespace C1
             return metadata;
         }
 
+        private static string[] GetFields(string line)
+        {
+            string[] fields = line.Split(':');
+            if (fields.Length != 2)
+            {
+                fields = line.Split('\t');
+                if (fields.Length < 2)
+                    fields = line.Split(new char[] { ' ' }, 2);
+            }
+            return fields;
+        }
+
         private static void AddDonorInfo(string chipDir, Dictionary<string, string> metadata)
         {
             metadata["datedissected"] = metadata["date of run"];
-            metadata["donorid"] = "";
+            metadata["weight"] = metadata["donorid"] = "?";
             string lastDonorFilePath = GetLastMatchingFile(chipDir, C1Props.props.C1DonorDataFilenamePattern);
             if (lastDonorFilePath == null) return;
             using (StreamReader r = new StreamReader(lastDonorFilePath))
@@ -263,9 +290,7 @@ namespace C1
                 {
                     if (line == "" || line.StartsWith("#"))
                         continue;
-                    string[] fields = line.Split('\t');
-                    if (fields.Length == 1 && line.Split(' ').Length == 2)
-                        fields = line.Split(' ');
+                    string[] fields = GetFields(line);
                     string key = fields[0].Trim().ToLower();
                     if (key == "mouse_number") key = "donorid";
                     if (key == "date") key = "datedissected";
@@ -275,6 +300,7 @@ namespace C1
                         metadata["comments"] += ((metadata["comments"].Length>0)? " / " : "") + fields[1].Trim();
                         continue;
                     }
+                    Console.WriteLine("Key=" + key + " Value=" + fields[1].Trim());
                     metadata[key] = fields[1].Trim();
                 }
             }

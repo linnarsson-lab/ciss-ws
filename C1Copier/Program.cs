@@ -282,7 +282,13 @@ namespace C1
             metadata["datedissected"] = metadata["date of run"];
             metadata["weight"] = metadata["donorid"] = "?";
             string lastDonorFilePath = GetLastMatchingFile(chipDir, C1Props.props.C1DonorDataFilenamePattern);
-            if (lastDonorFilePath == null) return;
+            if (lastDonorFilePath == null)
+            {
+                if (logWriter != null)
+                    logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: No donor metadata file found. Loading anyway: "
+                                        + chipDir + "..."); logWriter.Flush();
+                return;
+            }
             using (StreamReader r = new StreamReader(lastDonorFilePath))
             {
                 string line;

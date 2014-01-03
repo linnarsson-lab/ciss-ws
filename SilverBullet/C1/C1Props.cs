@@ -19,7 +19,6 @@ namespace C1
         [NonSerialized]
         public static readonly string C1ProjectPrefix = "C1-"; // Prefix used for cells10k plates in ProjectDB.
 
-        public string C1StandardBarcodeSet = "Tn5UMI6";
         public string MySqlServerIP = "130.237.117.141";
         public string C1SeqPlatesFolder = "/data2/c1-seqplates";
         public string C1SeqPlateFilenamePattern = "*.txt";
@@ -29,12 +28,10 @@ namespace C1
         public string C1CaptureFilenamePattern = "capture_rep*.txt";
         public string GeneOntologySubPath = "gene_ontology/go-basic.obo";
         public string C1BFImageSubfoldernamePattern = "BF_*";
-        public string[] C1AllImageSubfoldernamePatterns = new string[] { "BF_*" } ; //, "Filter1_*", "Filter2_*", "Filter3_*" };
+        public string[] C1AllImageSubfoldernamePatterns = new string[] { "BF_*", "filter3_red_*", "green_filter1_*", "filter1_green_*",
+                                                                         "pcr_green_*", "green_*" };
         public string C1ImageFilenamePattern = "well_*_center.png";
         public int SpikeMoleculeCount = 27900;
-        public string AutoAnalysisMailRecepients = "peter.lonnerberg@ki.se";
-        public string AutoAnalysisBuild = "UCSC";
-        public string AutoAnalysisBuildVariants = "single";
         public string WellExcludeFilePattern = "wells_to_exclude*.txt";
         public string C1BarcodeSet1 = "Tn5UMI6";
         public string C1BarcodeSet2 = "Tn5UMI6Plate2";

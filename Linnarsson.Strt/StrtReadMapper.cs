@@ -893,6 +893,7 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="genome"></param>
         /// <param name="readLen">length of read seq without barcodes + GGG</param>
+        /// <param name="flankLength">sequences will be extended with this # of bases in both 5' and 3'</param>
         public void DumpTranscripts(Barcodes barcodes, StrtGenome genome, int readLen, int step, int maxPerGene, string outFile,
                                     bool outputFastq, bool makeSplices, int minOverhang, int maxSkip, int flankLength)
         {
@@ -900,102 +901,87 @@ namespace Linnarsson.Strt
             bool variantGenes = genome.GeneVariants;
             if (makeSplices)
                 Console.WriteLine("Making all splices that have >= {0} bases overhang and max {1} exons excised.", minOverhang, maxSkip);
-            Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
-            Dictionary<string, List<LocusFeature>> chrIdToFeature = new Dictionary<string, List<LocusFeature>>();
-            foreach (string chrId in chrIdToFileMap.Keys)
-            {
-                if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
-                chrIdToFeature[chrId] = new List<LocusFeature>();
-            }
-            string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
-            Console.WriteLine("Annotations are taken from " + STRTAnnotationsPath);
-            foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
-                if (chrIdToFeature.ContainsKey(gf.Chr))
-                {
-                    gf.Start -= flankLength;
-                    gf.End += flankLength;
-                    chrIdToFeature[gf.Chr].Add(gf);
-                }
+            props.AnalyzeSeqUpstreamTSSite = true; // To force chr sequence reading
+            GenomeAnnotations annotations = new GenomeAnnotations(props, genome);
+            annotations.SetupChromsomes();
+            annotations.SetupGenes();
             using (StreamWriter outWriter = new StreamWriter(outFile))
             {
                 StreamWriter spliceWriter = null;
-                string spliceOutput = outputFastq? outFile.Replace(".fq", "") + "_splices_only.fq" :
+                string spliceOutput = outputFastq ? outFile.Replace(".fq", "") + "_splices_only.fq" :
                                                    outFile.Replace(".fa", "") + "_splices_only.fa";
                 if (makeSplices)
                     spliceWriter = spliceOutput.OpenWrite();
                 int nSeqs = 0, nTrSeqs = 0, nSplSeq = 0, bcIdx = 0;
-                foreach (string chrId in chrIdToFeature.Keys)
+                foreach (GeneFeature gf in annotations.geneFeatures.Values)
                 {
-                    Console.Write(chrId + "."); Console.Out.Flush();
-                    DnaSequence chrSeq = GenomeAnnotations.ReadChromosomeFile(chrIdToFileMap[chrId]);
-                    foreach (LocusFeature f in chrIdToFeature[chrId])
+                    if (StrtGenome.IsASpliceAnnotationChr(gf.Chr)) continue;
+                    if (!variantGenes && gf.IsVariant())
+                        continue;
+                    int startBeforeFlank = gf.Start;
+                    int flank = 0;
+                    if (gf.Chr != StrtGenome.chrCTRLId)
                     {
-                        string readStart = "";
-                        if (barcodes != null)
-                            readStart = new string('A', barcodes.BarcodePos) + barcodes.Seqs[bcIdx++ % barcodes.Count] + "GGG";
-                        GeneFeature gf = (GeneFeature)f;
-                        if (!variantGenes && gf.IsVariant())
-                            continue;
-                        List<DnaSequence> exonSeqsInChrDir = new List<DnaSequence>(gf.ExonCount);
-                        int trLen = 0;
-                        for (int exonIdx = 0; exonIdx < gf.ExonCount; exonIdx++)
+                        gf.Start -= flankLength;
+                        gf.End += flankLength;
+                        flank = flankLength;
+                    }
+                    string readStart = "";
+                    if (barcodes != null)
+                        readStart = new string('A', barcodes.BarcodePos) + barcodes.Seqs[bcIdx++ % barcodes.Count] + "GGG";
+                    List<DnaSequence> exonSeqsInChrDir = annotations.GetExonSeqsInChrDir(gf);
+                    if (readLen == 0)
+                    {
+                        DnaSequence gfTrFwSeq = new ShortDnaSequence(gf.Length);
+                        foreach (DnaSequence s in exonSeqsInChrDir)
+                            gfTrFwSeq.Append(s);
+                        if (gf.Strand == '-')
+                            gfTrFwSeq.RevComp();
+                        string header = string.Format("Gene={0}:Chr={1}{2}:CAPPos={3}:TrLen={4}:Flanks={5}",
+                                                      gf.Name, gf.Chr, gf.Strand, startBeforeFlank, gfTrFwSeq.Count, flank);
+                        if (outputFastq)
                         {
-                            int exonLen = 1 + gf.ExonEnds[exonIdx] - gf.ExonStarts[exonIdx];
-                            trLen += exonLen;
-                            exonSeqsInChrDir.Add(chrSeq.SubSequence(gf.ExonStarts[exonIdx], exonLen));
-                        }
-                        if (readLen == 0)
-                        {
-                            DnaSequence gfTrFwSeq = new ShortDnaSequence(gf.Length);
-                            foreach (DnaSequence s in exonSeqsInChrDir)
-                                gfTrFwSeq.Append(s);
-                            if (gf.Strand == '-')
-                                gfTrFwSeq.RevComp();
-                            string header = string.Format("Gene={0}:Chr={1}{2}:CAPPos={3}:TrLen={4}:Flanks={5}", gf.Name, gf.Chr, gf.Strand, gf.Start, gfTrFwSeq.Count, flankLength);
-                            if (outputFastq)
-                            {
-                                outWriter.WriteLine("@{0}", header);
-                                outWriter.WriteLine(gfTrFwSeq);
-                                outWriter.WriteLine("+\n{0}", new String('b', (int)gfTrFwSeq.Count));
-                            }
-                            else
-                            {
-                                outWriter.WriteLine(">{0}", header);
-                                outWriter.WriteLine(gfTrFwSeq);
-                            }
-
+                            outWriter.WriteLine("@{0}", header);
+                            outWriter.WriteLine(gfTrFwSeq);
+                            outWriter.WriteLine("+\n{0}", new String('b', (int)gfTrFwSeq.Count));
                         }
                         else
                         {
-                            int n = 0;
-                            List<ReadFrag> readFrags = ReadFragGenerator.MakeAllReadFrags(readLen, step, makeSplices, maxSkip, minOverhang,
-                                                                                          exonSeqsInChrDir);
-                            foreach (ReadFrag frag in readFrags)
-                            {
-                                string exonNos = string.Join("-", frag.ExonIds.ConvertAll(i => (gf.Strand == '+') ? i.ToString() : (gf.ExonCount + 1 - i).ToString()).ToArray());
-                                int posInTrFw = (gf.Strand == '+') ? 1 + frag.TrPosInChrDir : (1 + trLen - frag.TrPosInChrDir - (int)frag.Length);
-                                int posInChr = gf.GetChrPosFromTrPosInChrDir(frag.TrPosInChrDir);
-                                if (gf.Strand == '-')
-                                    frag.Seq.RevComp();
-                                string seqString = readStart + frag.Seq.ToString();
-                                string header = string.Format("Gene={0}:Chr={1}{2}:Pos={3}:TrPos={4}:Exon={5}",
-                                                                     gf.Name, gf.Chr, gf.Strand, posInChr, posInTrFw, exonNos);
-                                string outBlock = outputFastq ?
-                                                      string.Format("@{0}\n{1}\n+\n{2}", header, seqString, new String('b', seqString.Length))
-                                                    : string.Format(">{0}\n{1}", header, seqString);
-                                nSeqs++;
-                                outWriter.WriteLine(outBlock);
-                                if (spliceWriter != null && frag.ExonIds.Count > 1)
-                                {
-                                    nSplSeq++;
-                                    spliceWriter.WriteLine(outBlock);
-                                }
-                                if (maxPerGene > 0 && n++ >= maxPerGene)
-                                    break;
-                            }
+                            outWriter.WriteLine(">{0}", header);
+                            outWriter.WriteLine(gfTrFwSeq);
                         }
-                        nTrSeqs++;
                     }
+                    else
+                    {
+                        int n = 0;
+                        int trLen = gf.GetTranscriptLength();
+                        List<ReadFrag> readFrags = ReadFragGenerator.MakeAllReadFrags(readLen, step, makeSplices, maxSkip, minOverhang,
+                                                                                        exonSeqsInChrDir);
+                        foreach (ReadFrag frag in readFrags)
+                        {
+                            string exonNos = string.Join("-", frag.ExonIds.ConvertAll(i => (gf.Strand == '+') ? i.ToString() : (gf.ExonCount + 1 - i).ToString()).ToArray());
+                            int posInTrFw = (gf.Strand == '+') ? 1 + frag.TrPosInChrDir : (1 + trLen - frag.TrPosInChrDir - (int)frag.Length);
+                            int posInChr = gf.GetChrPosFromTrPosInChrDir(frag.TrPosInChrDir);
+                            if (gf.Strand == '-')
+                                frag.Seq.RevComp();
+                            string seqString = readStart + frag.Seq.ToString();
+                            string header = string.Format("Gene={0}:Chr={1}{2}:Pos={3}:TrPos={4}:Exon={5}",
+                                                                    gf.Name, gf.Chr, gf.Strand, posInChr, posInTrFw, exonNos);
+                            string outBlock = outputFastq ?
+                                                    string.Format("@{0}\n{1}\n+\n{2}", header, seqString, new String('b', seqString.Length))
+                                                : string.Format(">{0}\n{1}", header, seqString);
+                            nSeqs++;
+                            outWriter.WriteLine(outBlock);
+                            if (spliceWriter != null && frag.ExonIds.Count > 1)
+                            {
+                                nSplSeq++;
+                                spliceWriter.WriteLine(outBlock);
+                            }
+                            if (maxPerGene > 0 && n++ >= maxPerGene)
+                                break;
+                        }
+                    }
+                    nTrSeqs++;
                 }
                 if (readLen == 0)
                     Console.WriteLine("\nWrote {0} transcripts to {1}", nTrSeqs, outFile);
@@ -1008,6 +994,5 @@ namespace Linnarsson.Strt
                 }
             }
         }
-
     }
 }

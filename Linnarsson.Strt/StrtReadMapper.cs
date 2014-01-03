@@ -920,7 +920,7 @@ namespace Linnarsson.Strt
                         continue;
                     int startBeforeFlank = gf.Start;
                     int flank = 0;
-                    if (gf.Chr != StrtGenome.chrCTRLId)
+                    if (!gf.IsSpike())
                     {
                         gf.Start -= flankLength;
                         gf.End += flankLength;

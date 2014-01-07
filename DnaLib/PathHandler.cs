@@ -115,10 +115,14 @@ namespace Linnarsson.Dna
 
         private static string GetReadFileMatchPattern(string runNoOrFlowcellId)
         {
-            string matchPat = "Run*_L{0}_1_*_?" + runNoOrFlowcellId + ".*"; // FlowcellId pattern
+            return GetReadFileMatchPattern(runNoOrFlowcellId, '*');
+        }
+        private static string GetReadFileMatchPattern(string runNoOrFlowcellId, char readNo)
+        {
+            string matchPat = "Run*_L{0}_" + readNo + "_*_?" + runNoOrFlowcellId + ".*.gz"; // FlowcellId pattern
             int runNo;
             if (int.TryParse(runNoOrFlowcellId, out runNo))
-                matchPat = "Run" + string.Format("{0:00000}", runNo) + "_L{0}_*.*"; // RunNo pattern
+                matchPat = "Run" + string.Format("{0:00000}", runNo) + "_L{0}_" + readNo + ".*.gz"; // RunNo pattern
             return matchPat;
         }
 
@@ -128,12 +132,13 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="runId">Either a run number, a run folder, or a flowcell id</param>
         /// <param name="laneNumbers">a string of lane numbers</param>
+        /// <param name="reqReadNo">Highest read number needed (1,2, or 3)</param>
         /// <returns>The run number if all are ready, else -1</returns>
-        public static int CheckReadsCollected(string runId, string laneNumbers)
+        public static int CheckReadsCollected(string runId, string laneNumbers, char reqReadNo)
         {
             if (runId.Contains('_'))
                 runId = Regex.Match(runId, "_([0-9]+)_").Groups[1].Value;
-            string matchPat = GetReadFileMatchPattern(runId);
+            string matchPat = GetReadFileMatchPattern(runId, reqReadNo);
             string readStatFolder = Path.Combine(Props.props.ReadsFolder, PathHandler.statsSubFolder);
             int runNo = -1;
             foreach (char laneNo in laneNumbers)

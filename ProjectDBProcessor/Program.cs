@@ -107,11 +107,12 @@ namespace ProjectDBProcessor
 
         private static bool CheckAllReadsCollected(ref ProjectDescription projDescr)
         {
+            char reqReadNo = Barcodes.GetBarcodes(projDescr.barcodeSet).HighestNeededReadNo;
             List<int> runNos = new List<int>();
             foreach (string laneArg in projDescr.runIdsLanes)
             {
                 string[] parts = laneArg.Split(':');
-                int runNo = PathHandler.CheckReadsCollected(parts[0], parts[1]);
+                int runNo = PathHandler.CheckReadsCollected(parts[0], parts[1], reqReadNo);
                 if (runNo == -1) return false;
                 runNos.Add(runNo);
             }

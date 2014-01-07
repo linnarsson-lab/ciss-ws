@@ -56,6 +56,7 @@ namespace Linnarsson.Dna
         protected int m_PrefixRead3 = 0;
         public int PrefixRead3 { get { return m_PrefixRead3; } }
         public bool NeedRead2Or3 { get { return m_PrefixRead2 > 0 || m_PrefixRead3 > 0; } }
+        public char HighestNeededReadNo { get { return (m_PrefixRead3 > 0)? '3' : (m_PrefixRead2 > 0)? '2': '1'; } }
 
         /// <summary>
         /// Do not read directly - use property InsertStart instead

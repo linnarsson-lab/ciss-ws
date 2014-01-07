@@ -132,8 +132,8 @@ namespace Linnarsson.Strt
 
         public void SetupGenes()
         {
-            C1DB db = new C1DB();
             string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
+            C1DB db = new C1DB();
             dbTranscriptome = db.GetTranscriptome(genome.BuildVarAnnot);
             int nModels = 0, nSpliceModels = 0, nExons = 0;
             if (dbTranscriptome != null)
@@ -193,17 +193,19 @@ namespace Linnarsson.Strt
 
         private void SetupRepeats()
         {
+            C1DB db = new C1DB();
+            Dictionary<string, int> repeatToTrIdMap = db.GetRepeatNamesToTranscriptIdsMap(genome.BuildVarAnnot);
             string[] rmskFiles = PathHandler.GetRepeatMaskFiles(genome);
             Console.Write("Reading {0} masking files..", rmskFiles.Length);
             foreach (string rmskFile in rmskFiles)
             {
                 Console.Write(".");
-                LoadRepeatMaskFile(rmskFile);
+                LoadRepeatMaskFile(rmskFile, repeatToTrIdMap);
             }
             Console.WriteLine("{0} annotated repeat types.", repeatFeatures.Count);
         }
 
-        private void LoadRepeatMaskFile(string rmskPath)
+        private void LoadRepeatMaskFile(string rmskPath, Dictionary<string, int> repeatToTrIdMap)
         {
             int nLines = 0;
             int nRepeatFeatures = 0;
@@ -232,6 +234,8 @@ namespace Linnarsson.Strt
                         if (!repeatFeatures.TryGetValue(name, out reptFeature))
                         {
                             repeatFeatures[name] = new RepeatFeature(name);
+                            if (repeatToTrIdMap.ContainsKey(name))
+                                repeatFeatures[name].C1DBTranscriptID = repeatToTrIdMap[name];
                             reptFeature = repeatFeatures[name];
                         }
                         reptFeature.AddRegion(start, end);
@@ -714,6 +718,7 @@ namespace Linnarsson.Strt
 
         /// <summary>
         /// Iterate expression values for the cells that belong to the genome. Skip wells marked "Empty" by layout file.
+        /// Also iterate repeats.
         /// </summary>
         /// <param name="projectId"></param>
         /// <returns></returns>
@@ -731,6 +736,16 @@ namespace Linnarsson.Strt
                     exprHolder.UniqueReads = gf.NonConflictingTranscriptReadsByBarcode[bcIdx];
                     exprHolder.Molecules = gf.TranscriptHitsByBarcode[bcIdx];
                     exprHolder.Reads = gf.TranscriptReadsByBarcode[bcIdx];
+                    yield return exprHolder;
+                }
+                foreach (RepeatFeature rf in repeatFeatures.Values)
+                {
+                    if (rf.C1DBTranscriptID == -1) continue;
+                    exprHolder.TranscriptID = rf.C1DBTranscriptID;
+                    exprHolder.UniqueMolecules = 0;
+                    exprHolder.UniqueReads = 0;
+                    exprHolder.Molecules = rf.TotalHitsByBarcode[bcIdx];
+                    exprHolder.Reads = rf.TotalReadsByBarcode[bcIdx];
                     yield return exprHolder;
                 }
             }

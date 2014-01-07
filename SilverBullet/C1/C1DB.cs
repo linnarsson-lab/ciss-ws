@@ -117,13 +117,33 @@ namespace C1
             MySqlDataReader rdr = cmd.ExecuteReader();
             while (rdr.Read())
                 yield return MakeTranscriptFromDBReader(rdr);
-            sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' AND Chromosome!='CTRL' ORDER BY Chromosome, Start", transcriptomeId);
+            sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' AND Chromosome!='CTRL' AND LEFT(GeneName,2)!='r_' ORDER BY Chromosome, Start", transcriptomeId);
             rdr.Close();
             cmd = new MySqlCommand(sql, conn);
             rdr = cmd.ExecuteReader();
             while (rdr.Read())
                 yield return MakeTranscriptFromDBReader(rdr);
             conn.Close();
+        }
+
+        public Dictionary<string, int> GetRepeatNamesToTranscriptIdsMap(string buildVarAnnot)
+        {
+            Dictionary<string, int> mapping = new Dictionary<string, int>();
+            Transcriptome c1Trome = GetTranscriptome(buildVarAnnot);
+            if (c1Trome == null)
+                return mapping;
+            string sql = string.Format("SELECT GeneName, TranscriptID FROM Transcript WHERE TranscriptomeID='{0}' AND LEFT(GeneName,2)='r_';", 
+                                       c1Trome.TranscriptomeID.Value);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            rdr.Close();
+            cmd = new MySqlCommand(sql, conn);
+            rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                mapping[rdr.GetString(0)] = rdr.GetInt32(1);
+            conn.Close();
+            return mapping;
         }
 
         private static Transcript MakeTranscriptFromDBReader(MySqlDataReader rdr)

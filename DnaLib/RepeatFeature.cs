@@ -12,6 +12,7 @@ namespace Linnarsson.Dna
         private string m_Name;
         public string Name { get { return m_Name; } set { m_Name = value; } }
         public string NonVariantName { get { return m_Name; } }
+        public int C1DBTranscriptID { get; set; }
         public int Length;
         public int GetLocusLength()
         {
@@ -53,6 +54,7 @@ namespace Linnarsson.Dna
             TotalHits = 0;
             TotalHitsByBarcode = new int[Barcodes.MaxCount];
             TotalReadsByBarcode = new int[Barcodes.MaxCount];
+            C1DBTranscriptID = -1;
         }
 
         public static RmskLine rmskLine = new RmskLine();

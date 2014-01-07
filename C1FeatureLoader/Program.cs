@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using Linnarsson.Dna;
 using Linnarsson.Strt;
+using Linnarsson.Utilities;
 
 namespace C1
 {
@@ -32,7 +33,10 @@ namespace C1
             }
             annotationReader.AddCtrlGeneModels();
             if (doInsert)
+            {
                 InsertIntoC1Db(genome, annotationReader);
+                InsertRepeatsIntoC1Db(genome);
+            }
         }
 
         private static void InsertIntoC1Db(StrtGenome genome, AnnotationReader annotationReader)
@@ -57,6 +61,49 @@ namespace C1
                 n++;
             }
             Console.WriteLine("...totally {0} transcript models inserted.", n);
+        }
+
+        private static void InsertRepeatsIntoC1Db(StrtGenome genome)
+        {
+            Console.WriteLine("Inserting repeat types into database...");
+            C1DB db = new C1DB();
+            Dictionary<string, int> repeatTypeLengths = new Dictionary<string, int>();
+            string[] rmskFiles = PathHandler.GetRepeatMaskFiles(genome);
+            foreach (string rmskPath in rmskFiles)
+            {
+                int nRepeatFeatures = 0;
+                string[] record;
+                int fileTypeOffset = 0;
+                if (rmskPath.EndsWith("out"))
+                    fileTypeOffset = -1;
+                using (StreamReader reader = rmskPath.OpenRead())
+                {
+                    string line = reader.ReadLine();
+                    while (line == "" || !char.IsDigit(line.Trim()[0]))
+                        line = reader.ReadLine();
+                    while (line != null)
+                    {
+                        record = line.Split('\t');
+                        int start = int.Parse(record[6 + fileTypeOffset]);
+                        int end = int.Parse(record[7 + fileTypeOffset]);
+                        int len = 1 + end - start;
+                        string name = record[10 + fileTypeOffset];
+                        if (!repeatTypeLengths.ContainsKey(name))
+                        {
+                            nRepeatFeatures++;
+                            repeatTypeLengths[name] = 0;
+                        }
+                        repeatTypeLengths[name] += len;
+                        line = reader.ReadLine();
+                    }
+                }
+                foreach (KeyValuePair<string, int> p in repeatTypeLengths)
+                {
+                    Transcript rt = new Transcript(p.Key, "repeat", p.Key, p.Key, "", "", "", 0, 0, p.Value, '0', 0, "0,", "0,");
+                    db.InsertTranscript(rt);
+                }
+                Console.WriteLine("... totally {0} repeat types inserted.", nRepeatFeatures);
+            }
         }
 
         private static void Extend5Primes(AnnotationReader annotationReader)

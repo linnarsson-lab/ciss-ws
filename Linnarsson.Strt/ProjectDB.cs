@@ -229,23 +229,22 @@ namespace Linnarsson.Strt
                                Props.props.MySqlServerIP);
         }
 
-        private bool IssueNonQuery(string sql)
+        private int IssueNonQuery(string sql)
         {
-            bool success = true;
+            int nRowsAffected = 0;
             MySqlConnection conn = new MySqlConnection(connectionString);
             try
             {
                 conn.Open();
                 MySqlCommand cmd = new MySqlCommand(sql, conn);
-                cmd.ExecuteNonQuery();
+                nRowsAffected = cmd.ExecuteNonQuery();
             }
             catch (Exception ex)
             {
                 Console.WriteLine("{0}: {1}", DateTime.Now, ex);
-                success = false;
             }
             conn.Close();
-            return success;
+            return nRowsAffected;
         }
 
         private int nextInQueue = 0;
@@ -316,11 +315,16 @@ namespace Linnarsson.Strt
             return pds;
         }
 
-        public void UpdateAnalysisStatus(ProjectDescription projDescr)
+        public int UpdateAnalysisStatus(ProjectDescription projDescr)
         {
-            string sql = string.Format("UPDATE jos_aaaanalysis SET status=\"{0}\", time=NOW() WHERE id=\"{1}\";",
-                                       projDescr.status, projDescr.analysisId);
-            IssueNonQuery(sql);
+            return UpdateAnalysisStatus(projDescr, "");
+        }
+        public int UpdateAnalysisStatus(ProjectDescription projDescr, string reqPreviousStatus)
+        {
+            string reqSql = (reqPreviousStatus == "")? "": string.Format(" AND status=\"{0}\"", reqPreviousStatus);
+            string sql = string.Format("UPDATE jos_aaaanalysis SET status=\"{0}\", time=NOW() WHERE id=\"{1}\" {2};",
+                                       projDescr.status, projDescr.analysisId, reqSql);
+            return IssueNonQuery(sql);
         }
 
         public void PublishResults(ProjectDescription projDescr)
@@ -467,22 +471,22 @@ namespace Linnarsson.Strt
             IssueNonQuery(sql);
         }
 
-        public bool AddToBackupQueue(string readFile, int priority)
+        public void AddToBackupQueue(string readFile, int priority)
         {
             string sql = string.Format("INSERT IGNORE INTO jos_aaabackupqueue (path, status, priority, time) VALUES ('{0}', 'inqueue', '{1}', NOW())", readFile, priority);
-            return IssueNonQuery(sql);
+            IssueNonQuery(sql);
         }
 
-        public bool SetBackupStatus(string readFile, string status)
+        public void SetBackupStatus(string readFile, string status)
         {
             string sql = string.Format("UPDATE jos_aaabackupqueue SET status='{0}', time=NOW() WHERE path='{1}'", status, readFile);
-            return IssueNonQuery(sql);
+            IssueNonQuery(sql);
         }
 
-        public bool RemoveFileToBackup(string readFile)
+        public void RemoveFileToBackup(string readFile)
         {
             string sql = string.Format("DELETE FROM jos_aaabackupqueue WHERE path='{0}'", readFile);
-            return IssueNonQuery(sql);
+            IssueNonQuery(sql);
         }
 
         public List<string> GetWaitingFilesToBackup()

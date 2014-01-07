@@ -128,17 +128,25 @@ namespace ProjectDBProcessor
             {
                 if (CheckAllReadsCollected(ref pd))
                 {
-                    HandleDBTask(pd);
-                    projectDB.ResetQueue();
+                    if (HandleDBTask(pd))
+                        projectDB.ResetQueue();
                 }
                 pd = projectDB.GetNextProjectInQueue();
             }
         }
 
-        private static void HandleDBTask(ProjectDescription projDescr)
+        /// <summary>
+        /// Will return false if an error occured that may be solved by trying again later, in which
+        /// case status is reset to 'inqueue'
+        /// </summary>
+        /// <param name="projDescr"></param>
+        /// <returns></returns>
+        private static bool HandleDBTask(ProjectDescription projDescr)
         {
+            bool result = false;
             projDescr.status = ProjectDescription.STATUS_PROCESSING;
-            projectDB.UpdateAnalysisStatus(projDescr);
+            int nRowsAffected = projectDB.UpdateAnalysisStatus(projDescr, ProjectDescription.STATUS_INQUEUE);
+            if (nRowsAffected == 0) return false;
             List<string> results = new List<string>();
             try
             {
@@ -146,19 +154,24 @@ namespace ProjectDBProcessor
                 results = PublishResultsForDownload(projDescr);
                 projDescr.status = ProjectDescription.STATUS_READY;
                 projectDB.PublishResults(projDescr);
+                result = true;
             }
             catch (Exception e)
             {
-                projDescr.status = ProjectDescription.STATUS_FAILED;
                 projDescr.managerEmails = Props.props.FailureReportEmail;
                 logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.plateId + " ***\n" + e);
                 logWriter.Flush();
                 results.Add(e.ToString());
+                if (e.Message.Contains("Sharing violation"))
+                    projDescr.status = ProjectDescription.STATUS_INQUEUE;
+                else
+                    projDescr.status = ProjectDescription.STATUS_FAILED;
             }
             NotifyManager(projDescr, results);
-            projectDB.UpdateAnalysisStatus(projDescr);
             logWriter.WriteLine(DateTime.Now.ToString() + " " + projDescr.plateId + "[analysisId=" + projDescr.analysisId + "] finished with status " + projDescr.status);
             logWriter.Flush();
+            projectDB.UpdateAnalysisStatus(projDescr);
+            return result;
         }
 
         private static void ProcessItem(ProjectDescription projDescr)

@@ -293,10 +293,10 @@ namespace C1
             return cellIdByPlateWell;
         }
 
-        private static List<string> GetCellAnnotationNames(string projectId)
+        private static List<string> GetCellAnnotationNames(string chipOrProjectWhereSql)
         {
-            string sql = "SELECT DISTINCT(Name) FROM CellAnnotation WHERE CellID IN (SELECT CellID FROM Cell WHERE Plate='{0}')";
-            sql = string.Format(sql, projectId);
+            string sql = "SELECT DISTINCT(Name) FROM CellAnnotation WHERE CellID IN (SELECT CellID FROM Cell {0})";
+            sql = string.Format(sql, chipOrProjectWhereSql);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -345,16 +345,29 @@ namespace C1
             return cells;
         }
 
+
+        public void GetCellAnnotationsByPlate(string projectId,
+            out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
+        {
+            GetCellAnnotations(string.Format("WHERE Plate='{0}' ORDER BY PlateWell", projectId),
+                out annotations, out annotationIndexes);
+        }
+        public void GetCellAnnotationsByChip(string chipId,
+            out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
+        {
+            GetCellAnnotations(string.Format("WHERE Chip='{0}' ORDER BY ChipWell", chipId),
+                out annotations, out annotationIndexes);
+        }
+
         /// <summary>
         /// Read plate layout data from the database
         /// </summary>
-        /// <param name="projectId"></param>
+        /// <param name="chipOrProjectWhereSql"></param>
         /// <param name="annotations"></param>
         /// <param name="annotationIndexes"></param>
-        public void GetCellAnnotations(string projectId, 
+        public void GetCellAnnotations(string chipOrProjectWhereSql, 
             out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
-            List<string> annotNames = GetCellAnnotationNames(projectId);
             annotationIndexes = new Dictionary<string, int>();
             int i = 0;
             annotationIndexes["Chip"] = i++;
@@ -372,14 +385,11 @@ namespace C1
             annotationIndexes["Blue"] = i++;
             annotationIndexes["Green"] = i++;
             annotationIndexes["Comments"] = i++;
-            for (i = 0; i < annotNames.Count; i++)
-                annotationIndexes[annotNames[i]] = annotationIndexes.Count;
-            string sqlPat = "SELECT a.CellID, Name, Value FROM CellAnnotation a LEFT JOIN Cell c ON a.CellID=c.CellID " +
-                    "WHERE a.CellID IN (SELECT CellID FROM Cell WHERE Plate='{0}')";
+            List<string> extraAnnotNames = GetCellAnnotationNames(chipOrProjectWhereSql);
+            for (i = 0; i < extraAnnotNames.Count; i++)
+                annotationIndexes[extraAnnotNames[i]] = annotationIndexes.Count;
             annotations = new Dictionary<string, string[]>(96);
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            foreach (Cell cell in GetCells(string.Format("WHERE Plate='{0}' ORDER BY PlateWell", projectId)))
+            foreach (Cell cell in GetCells(chipOrProjectWhereSql))
             {
                 string[] wellAnn = new string[annotationIndexes.Count];
                 string plateWell = cell.PlateWell;
@@ -401,7 +411,11 @@ namespace C1
                 wellAnn[i++] = cell.Comments;
                 annotations[plateWell] = wellAnn;
             }
-            string sql = string.Format(sqlPat, projectId);
+            string sqlPat = "SELECT a.CellID, Name, Value FROM CellAnnotation a LEFT JOIN Cell c ON a.CellID=c.CellID " +
+                    string.Format("WHERE a.CellID IN (SELECT CellID FROM Cell {0})", chipOrProjectWhereSql);
+            string sql = string.Format(sqlPat, chipOrProjectWhereSql);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             while (rdr.Read())

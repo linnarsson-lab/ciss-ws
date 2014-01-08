@@ -68,9 +68,15 @@ namespace Linnarsson.Dna
         /// <param name="plateId"></param>
         public C1PlateLayout(string plateId)
         {
-            new C1DB().GetCellAnnotations(plateId, out AnnotationsBySampleId, out AnnotationIndexes);
+            new C1DB().GetCellAnnotationsByPlate(plateId, out AnnotationsBySampleId, out AnnotationIndexes);
             if (AnnotationsBySampleId.Count == 0)
-                throw new SampleLayoutFileException("Can not extract any well/cell annotations for " + plateId + "  from C1 database.");
+            {
+                string chipId = plateId.Replace(C1Props.C1ProjectPrefix, "");
+                new C1DB().GetCellAnnotationsByChip(chipId, out AnnotationsBySampleId, out AnnotationIndexes);
+                if (AnnotationsBySampleId.Count == 0)
+                    throw new SampleLayoutFileException("Can not extract any well/cell annotations for " + plateId + "  from C1 database.");
+                Console.WriteLine("WARNING: Plate " + plateId + " has not been properly loaded. Assuming matching chip->plate wellIds.");
+            }
             foreach (KeyValuePair<string, string[]> p in AnnotationsBySampleId)
             {
                 string speciesId = ParseSpeciesId(p.Value[AnnotationIndexes["Species"]]);

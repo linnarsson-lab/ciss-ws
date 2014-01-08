@@ -877,6 +877,7 @@ namespace Linnarsson.Strt
             Func<GeneFeature, int[]> getMaxHits = x => x.TranscriptHitsByBarcode;
             WriteMatlabTables(fileNameBase, getMaxHits);
             WriteRTable(fileNameBase, getMaxHits);
+            WriteQlucoreTable(fileNameBase);
         }
 
         private void WriteRTable(string fileNameBase, Func<GeneFeature, int[]> dataGetter)
@@ -887,6 +888,7 @@ namespace Linnarsson.Strt
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 foreach (int idx in speciesBcIndexes)
                     writer.Write("\t{0}", barcodes.GetWellId(idx));
+                writer.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     int[] data = dataGetter(gf);
@@ -909,6 +911,7 @@ namespace Linnarsson.Strt
                 writer.Write("Feature\tChr\tPos\tStrand");
                 foreach (int idx in speciesBcIndexes)
                     writer.Write("\t{0}", barcodes.GetWellId(idx));
+                writer.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     writer.Write("{0}\t{1}\t{2}\t{3}", gf.Name, gf.Chr, gf.Start, gf.Strand);

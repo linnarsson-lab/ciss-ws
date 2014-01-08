@@ -221,10 +221,14 @@ namespace C1
         {
             string description = MySqlHelper.EscapeString(t.Description);
             string sql = "INSERT INTO Transcript (TranscriptomeID, Name, Type, GeneName, EntrezID, Description, Chromosome, " +
-                                                 "Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds, ExprBlobIdx) " +
-                                "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}','{11}','{12}','{13}', '{14}')";
+                                    "Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds, " + 
+                                    "ExprBlobIdx, StartToCloseSiteSite) " +
+                                    "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}'," +
+                                    "'{7}','{8}','{9}','{10}','{11}','{12}','{13}'," +
+                                    "'{14}','{15}')";
             sql = string.Format(sql, t.TranscriptomeID, t.Name, t.Type, t.UniqueGeneName, t.EntrezID, description, t.Chromosome,
-                                     t.Start, t.End, t.Length, t.Strand, t.Extension5Prime, t.ExonStarts, t.ExonEnds, t.ExprBlobIdx);
+                                     t.Start, t.End, t.Length, t.Strand, t.Extension5Prime, t.ExonStarts, t.ExonEnds,
+                                     t.ExprBlobIdx, t.StartToCloseCutSite);
             int newTranscriptId = InsertAndGetLastId(sql, "Transcript");
             t.TranscriptID = newTranscriptId;
             foreach (TranscriptAnnotation ta in t.TranscriptAnnotations)

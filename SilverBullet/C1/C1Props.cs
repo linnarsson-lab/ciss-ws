@@ -39,6 +39,7 @@ namespace C1
         public int C1RequiredIdxCycles = 8;
         public string C1SeqPrimer = "C1-P1-SEQ";
         public string C1IdxPrimer = "Illumina index primer";
+        public string[] CAPCloseSiteSearchCutters = new string[] { "PvuII" };
 
         private static C1Props Read()
         {

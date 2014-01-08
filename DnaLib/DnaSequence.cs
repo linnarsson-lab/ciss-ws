@@ -694,7 +694,26 @@ namespace Linnarsson.Dna
             return result;
         }
 
-	
+        /// <summary>
+        /// Read and return the first sequence from a genbank or fasta formatted sequence file
+        /// </summary>
+        /// <param name="seqFile"></param>
+        /// <returns></returns>
+        public static DnaSequence FromFile(string seqFile)
+        {
+            DnaSequence seq = null;
+            if (seqFile.IndexOf(".gbk") > 0)
+            {
+                GenbankFile records = GenbankFile.Load(seqFile);
+                seq = records.Records[0].Sequence;
+            }
+            else
+            {
+                FastaFile records = FastaFile.Load(seqFile);
+                seq = records.Records[0].Sequence;
+            }
+            return seq;
+        }	
 
 		/// <summary>
 		/// Create a zero-length sequence capable of hold a desired max length. This will return

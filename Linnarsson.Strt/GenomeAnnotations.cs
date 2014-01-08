@@ -110,7 +110,7 @@ namespace Linnarsson.Strt
                     int chrLen;
                     if (needChromosomeSequences && Array.IndexOf(selectedChrIds, chrId) >= 0)
                     {
-                        DnaSequence chrSeq = ReadChromosomeFile(chrIdToFileMap[chrId]);
+                        DnaSequence chrSeq = DnaSequence.FromFile(chrIdToFileMap[chrId]);
                         chrLen = (int)chrSeq.Count;
                         ChromosomeSequences.Add(chrId, chrSeq);
                     }
@@ -540,21 +540,6 @@ namespace Linnarsson.Strt
             return UniqueGeneCountsByBarcode;
         }
 
-        public static DnaSequence ReadChromosomeFile(string seqFile)
-        {
-            DnaSequence chrSeq = null;
-            if (seqFile.IndexOf(".gbk") > 0)
-            {
-                GenbankFile records = GenbankFile.Load(seqFile);
-                chrSeq = records.Records[0].Sequence;
-            }
-            else
-            {
-                FastaFile records = FastaFile.Load(seqFile);
-                chrSeq = records.Records[0].Sequence;
-            }
-            return chrSeq;
-        }
         #endregion
 
         #region SaveResults

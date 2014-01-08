@@ -26,6 +26,7 @@ namespace C1
             Annotate += new AliasAnnotator(genome).Annotate;  // Has to be preceeded by kgXrefAnnotator
             Annotate += new GeneAssociationAnnotator(genome).AnnotateFromGeneAssociation;
             Annotate += new BiosystemsAnnotator(genome).AnnotateFromBiosystems;
+            Annotate += new CleavageSiteAnnotator(genome).Annotate;
         }
     }
 

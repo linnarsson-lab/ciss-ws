@@ -217,6 +217,7 @@ namespace C1
         public int ExprBlobIdx { get; set; }                // Used when storing expr data as blob
         public List<TranscriptAnnotation> TranscriptAnnotations { get; set; }
         public string UniProtAccession { get; set; }        // Temporary for cross-correlation between annotation files
+        public string StartToCloseCutSite { get; set; }
 
         public Transcript(string name, string type, string geneName, string uniqueGeneName,
                           string entrezId, string description, string chromosome, int start, int end, int length,
@@ -253,11 +254,13 @@ namespace C1
         {
             return string.Format("Transcript(ID={0}, TranscriptomeID={14}, ExprBlobIdx={15}, Name={1}, Type={2}, " +
                                  "GeneName={3}, EntrezID={4}, Description={5}, Chromosome={6}, " +
-                                 "Start={7}, End={8}, Length={9}, Strand={10}, Extension5Prime={11}\n" +
+                                 "Start={7}, End={8}, Length={9}, Strand={10}, Extension5Prime={11}, StartToCloseCutSite=({16})\n" +
                                  "ExonStarts={12}\nExonEnds={13})",
                                  TranscriptID, Name, Type, GeneName, EntrezID, Description, Chromosome,
-                                 Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds, TranscriptomeID, ExprBlobIdx);
+                                 Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds, TranscriptomeID,
+                                 ExprBlobIdx, StartToCloseCutSite);
         }
+
     }
 
     public class TranscriptAnnotation

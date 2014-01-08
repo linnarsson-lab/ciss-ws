@@ -94,7 +94,7 @@ namespace Linnarsson.Strt
             {
                 Console.Write(chrId + ".");
                 Console.Out.Flush();
-                DnaSequence chrSeq = GenomeAnnotations.ReadChromosomeFile(chrIdToFileMap[chrId]);
+                DnaSequence chrSeq = DnaSequence.FromFile(chrIdToFileMap[chrId]);
                 int nChrBkgSeqs = rnd.Next((int)(chrSeq.Count * Props.props.SyntheticReadsBackgroundFreq));
                 nBkgSeqs += nChrBkgSeqs;
                 for (; nChrBkgSeqs > 0; nChrBkgSeqs--)

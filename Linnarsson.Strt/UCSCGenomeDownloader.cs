@@ -13,6 +13,13 @@ namespace Linnarsson.Strt
 {
     public class UCSCGenomeDownloader
     {
+        private static int CompareGenomeIds(string a, string b)
+        {
+            if (a.Length > b.Length) return 1;
+            if (a.Length < b.Length) return -1;
+            return a.CompareTo(b);
+        }
+
         string goldenPathGenomes = "ftp://hgdownload.cse.ucsc.edu/goldenPath";
         string loginName = "anonymous";
         string password = Props.props.FailureReportEmail;
@@ -26,21 +33,21 @@ namespace Linnarsson.Strt
         {
             string abbrev, threeName;
             ParseSpecies(latinSpeciesName, out threeName, out abbrev);
-            List<string> matches = new List<string>();
+            List<string> goldenPathMatches = new List<string>();
             List<string> allSpecies = ListFiles(goldenPathGenomes);
             if (threeName != "")
                 foreach (string speciesSubdir in allSpecies)
                     if (speciesSubdir.StartsWith(threeName))
-                        matches.Add(speciesSubdir);
-            if (matches.Count == 0)
+                        goldenPathMatches.Add(speciesSubdir);
+            if (goldenPathMatches.Count == 0)
                 foreach (string speciesSubdir in allSpecies)
                     if (speciesSubdir.Length <= 5 & speciesSubdir.StartsWith(abbrev))
-                        matches.Add(speciesSubdir);
-            if (matches.Count == 0)
+                        goldenPathMatches.Add(speciesSubdir);
+            if (goldenPathMatches.Count == 0)
                 throw new FileNotFoundException("Could not find a genome for " + abbrev + "/" + threeName + " at UCSC.");
-            matches.Sort();
-            matches.Reverse();
-            foreach (string buildName in matches)
+            goldenPathMatches.Sort(new Comparison<string> (CompareGenomeIds));
+            goldenPathMatches.Reverse();
+            foreach (string buildName in goldenPathMatches)
             {
                 string subDir = buildName;
                 if (buildName.Length > 5)
@@ -51,9 +58,9 @@ namespace Linnarsson.Strt
                     Directory.CreateDirectory(destDir);
                 try
                 {
+                    DownloadMartAnnotations(abbrev, destDir);
                     DownloadSpeciesGenome(speciesURL, buildName, destDir);
                     Console.WriteLine("Downloaded build " + buildName + " from UCSC to " + destDir);
-                    DownloadMartAnnotations(abbrev, destDir);
                     return;
                 }
                 catch (Exception e) {
@@ -84,7 +91,8 @@ namespace Linnarsson.Strt
             string databaseURL = speciesURL + "/database";
             List<string> downloadFilenames = new List<string>();
             foreach (string file in ListFiles(databaseURL))
-                if (file.Contains("refFlat.txt") || file.Contains("rmsk.txt") || file.Contains("README"))
+                if (file.Contains("refFlat.txt") || file.Contains("refLink.txt") || file.Contains("kgXref.txt")
+                    || file.Contains("kgSpAlias.txt") || file.Contains("rmsk.txt") || file.Contains("README"))
                     downloadFilenames.Add(file);
             if (downloadFilenames.Count == 0)
                 throw new FileNotFoundException("Can not find required database files at UCSC: " + speciesURL);

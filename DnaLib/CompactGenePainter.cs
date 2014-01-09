@@ -233,13 +233,14 @@ namespace Linnarsson.Dna
                 if ((hit & 1) == s)
                 {
                     int pos = hit >> 8;
-                    int bin = inChrDir? (pos / binSize) : (locusLen - pos) / binSize;
+                    int bin = inChrDir ? (pos / binSize) : (locusLen - pos) / binSize;
                     histo[bin]++;
                 }
             }
             int maxBin = histo.Length - 1;
             while (maxBin > 0 && histo[maxBin] == 0) maxBin--;
             return maxBin;
+        }
 
         /// <summary>
         /// This method requires that gf.LocusHits come out sorted by position

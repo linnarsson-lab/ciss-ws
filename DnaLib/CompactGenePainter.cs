@@ -6,14 +6,45 @@ using Linnarsson.Mathematics;
 
 namespace Linnarsson.Dna
 {
+    /// <summary>
+    /// Methods to make various histograms of read/molecule distributions along a locus or transcript
+    /// </summary>
     public class CompactGenePainter
     {
-        private static ushort[] locusProfile;
-
-        public static void SetMaxLocusLen(int maxLocusLen)
+        /// <summary>
+        /// Array overload that expands in case of indexing past end.
+        /// </summary>
+        private class LocusProfile
         {
-            locusProfile = new ushort[maxLocusLen];
+            private ushort[] data;
+
+            public LocusProfile(int initLen)
+            {
+                data = new ushort[initLen];
+            }
+            public ushort this[int i]
+            {
+                get { return (i >= data.Length) ? (ushort)0 : data[i]; }
+                set
+                {
+                    if (i >= data.Length)
+                    {
+                        Array.Resize(ref data, Math.Max(i + 1000, data.Length * 2));
+                    }
+                    data[i] = value;
+                }
+            }
+            public void Clear()
+            {
+                Array.Clear(data, 0, data.Length);
+            }
+            public int Length
+            {
+                get { return data.Length; }
+            }
         }
+
+        private static LocusProfile locusProfile = new LocusProfile(Props.props.MaxFeatureLength + 1);
 
         /// <summary>
         /// The constructed matrix is always in 'strand' (5' to 3') orientation relative to chromosome,
@@ -68,6 +99,11 @@ namespace Linnarsson.Dna
             return trImgData;
         }
 
+        /// <summary>
+        /// Make a histogram of hits across the whole gene locus, using 1000 bins.
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <returns></returns>
         public static ushort[,] GetLocusImageData(GeneFeature gf)
         {
             return GetLocusProfilesByBarcode(gf.LocusHits, 1000, gf.GetLocusLength(), gf.Strand, 1);
@@ -165,7 +201,7 @@ namespace Linnarsson.Dna
 
         private static void MakeLocusProfile(char chrStrand, int[] hits)
         {
-            Array.Clear(locusProfile, 0, locusProfile.Length);
+            locusProfile.Clear();
             int s = GeneFeature.GetStrandAsInt(chrStrand);
             foreach (int hit in hits)
             {
@@ -205,23 +241,6 @@ namespace Linnarsson.Dna
             while (maxBin > 0 && histo[maxBin] == 0) maxBin--;
             return maxBin;
 
-            /* Old slower code:
-            Array.Clear(histo, 0, histo.Length);
-            int locusLen = gf.GetLocusLength();
-            MakeLocusProfile(chrStrand, gf.LocusHits);
-            int locusPos = (gf.Strand == '+') ? 0 : locusLen - 1;
-            int locusDir = (gf.Strand == '+') ? 1 : -1;
-            int bin = -1;
-            int c = 0;
-            while (locusPos >= 0 && locusPos < locusLen)
-            {
-                if (c++ % binSize == 0) bin++;
-                histo[bin] += locusProfile[locusPos];
-                locusPos += locusDir;
-            }
-            return bin;*/
-        }
-
         /// <summary>
         /// This method requires that gf.LocusHits come out sorted by position
         /// </summary>
@@ -248,6 +267,14 @@ namespace Linnarsson.Dna
             return hitPositions;
         }
 
+        /// <summary>
+        /// Make an per-barcode array of counts of hits to the transcript
+        /// in the region defined by trFrom - trTo.
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <param name="trFrom">Inclusive start position in transcript coordinates</param>
+        /// <param name="trTo">Inclusive end position in transcript coordinates</param>
+        /// <returns></returns>
         public static int[] GetBarcodedTranscriptCounts(GeneFeature gf, int trFrom, int trTo)
         {
             int chrFrom = gf.GetChrPos(trFrom);
@@ -366,6 +393,12 @@ namespace Linnarsson.Dna
             return result;
         }
 
+        /// <summary>
+        /// Make an array of hit counts to each of the exons in the transcript
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <param name="senseOnly"></param>
+        /// <returns></returns>
         public static int[] GetCountsPerExon(GeneFeature gf, bool senseOnly)
         {
             char strand = (senseOnly) ? gf.Strand : '.';

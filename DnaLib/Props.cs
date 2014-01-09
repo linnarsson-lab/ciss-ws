@@ -36,12 +36,12 @@ namespace Linnarsson.Dna
 
         // Default values for configuration follows.
         public string IlluminaRunReadyFilename = "Basecalling_Netcopy_complete.txt"; // File in Illumina runs folders that indicate run completed
-        public string GenomesFolder = "C:\\data\\genomes";
-        public string RunsFolder = "C:\\data\\runs"; // Where Illumina raw data are stored
+        public string GenomesFolder = "\\\\130.237.117.141\\data\\genomes";
+        public string RunsFolder = "\\\\130.237.117.141\\data2\\runs"; // Where Illumina raw data are stored
         public string MySqlServerIP = "130.237.117.141";
         public string ReadsFolder = "\\\\130.237.117.141\\data\\reads"; // Where FastQ files of concatenated reads for each lane are gathered
-        public string ProjectsFolder = "C:\\data\\strt";
-        public string UploadsFolder = "C:\\data\\uploads";
+        public string ProjectsFolder = "\\\\130.237.117.141\\data\\strt";
+        public string UploadsFolder = "\\\\130.237.117.141\\uploads";
         public string ResultDownloadUrl = "strtserver@130.237.117.141:/var/www/html/strt/";
         public string ResultDownloadFolderHttp = "http://linnarsson.mbb.ki.se/strt/";
         public string ResultDownloadScpPort = "9922";

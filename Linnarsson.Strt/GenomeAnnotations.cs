@@ -64,7 +64,6 @@ namespace Linnarsson.Strt
             needChromosomeLengths = props.GenerateWiggle || props.GenerateBarcodedWiggle || props.GeneFeature5PrimeExtension > 0;
             noGeneVariants = !genome.GeneVariants;
             GeneFeature.LocusFlankLength = props.LocusFlankLength;
-            CompactGenePainter.SetMaxLocusLen(props.MaxFeatureLength);
             ChromosomeSequences = new Dictionary<string, DnaSequence>();
             ChromosomeLengths = new Dictionary<string, int>();
             ExonAnnotations = new Dictionary<string, QuickAnnotationMap>();

@@ -201,7 +201,9 @@ namespace Linnarsson.Strt
             foreach (string db in new string[] { "vega", "ensembl" })
             {
                 string source = string.Format(queryPattern, speciesId, db);
-                string dest = Path.Combine(downloadFolder, db.ToUpper() + "_mart_export.txt");
+                string strtName = (db == "ensembl") ? "ENSE" : db.ToUpper();
+                string dest = Path.Combine(downloadFolder, strtName + "_mart_export.txt");
+                Console.WriteLine("Reading " + dest + "...");
                 for (int tryNo = 1; tryNo <= 5; tryNo++)
                 {
                     try
@@ -219,7 +221,7 @@ namespace Linnarsson.Strt
                 }
                 else
                 {
-                    Console.WriteLine("Downloaded " + abbrev + " BioMart annotations for " + db + " to " + downloadFolder);
+                    Console.WriteLine("Downloaded " + abbrev + " BioMart annotations for " + db + " to " + dest);
                 }
             }
         }

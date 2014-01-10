@@ -57,6 +57,23 @@ namespace CmdSilverBullet
                             gdm.DownloadMartAnnotations(abbrev, destDir);
                             break;
 
+                        case "mart2refflat":
+                            genome = StrtGenome.GetGenome(args[1]);
+                            if (!args[1].Contains("_s"))
+                                genome.GeneVariants = true;
+                            string outfile = Path.Combine(genome.GetOriginalGenomeFolder(), genome.BuildVarAnnot + "_refFlat.txt");
+                            if (args.Length > 2)
+                                outfile = args[2];
+                            AnnotationReader ar = AnnotationReader.GetAnnotationReader(genome);
+                            int nModels = ar.BuildGeneModelsByChr();
+                            using (StreamWriter mw = outfile.OpenWrite())
+                            {
+                                foreach (ExtendedGeneFeature egf in ar.IterChrSortedGeneModels())
+                                    mw.WriteLine(egf.ToRefFlatString());
+                            }
+                            Console.WriteLine("Wrote {0} gene models to {1}", nModels, outfile);
+                            break;
+
                         case "download":
                             UCSCGenomeDownloader gd = new UCSCGenomeDownloader();
                             gd.DownloadGenome(args[argOffset]);
@@ -252,6 +269,7 @@ namespace CmdSilverBullet
                 "      If Build/Idx is left out, these are taken from the <ProjectName>_SampleLayout.txt file in the project folder.\n" +
                 "      Will start by running Bowtie if .map files are missing.\n" +
                 "SB.exe download <Genus_species>                      -   download latest genome build and annotations.\n" +
+                "SB.exe mart2refflat <Idx> [<outfile>]                -   make a refFlat file from mart-style annotations.\n" +
                 "SB.exe idx <readLen> <Build> [<Annot>]               -   build annotations and Bowtie index.\n" +
                 "SB.exe bt <Build>|<Idx> all|single <ProjectPath>|<ExtractedPath>\n" +
                 "      run Bowtie on latest/specified extracted data folder.\n" +

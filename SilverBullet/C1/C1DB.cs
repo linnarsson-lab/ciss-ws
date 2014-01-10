@@ -135,13 +135,12 @@ namespace C1
             string sql = string.Format("SELECT GeneName, TranscriptID FROM Transcript WHERE TranscriptomeID='{0}' AND LEFT(GeneName,2)='r_';", 
                                        c1Trome.TranscriptomeID.Value);
             MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
-            rdr.Close();
-            cmd = new MySqlCommand(sql, conn);
-            rdr = cmd.ExecuteReader();
             while (rdr.Read())
                 mapping[rdr.GetString(0)] = rdr.GetInt32(1);
+            rdr.Close();
             conn.Close();
             return mapping;
         }

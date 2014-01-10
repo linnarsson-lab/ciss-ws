@@ -925,14 +925,16 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("    <title>Distro of reads/molecule (all features, after mutated UMI removal) TotMols={0}(before)/{1}(after removal)</title>",
                               randomTagFilter.totalMolecules, randomTagFilter.totalFilteredMolecules);
             xmlFile.WriteLine("    <xtitle>Number of observations (reads)</xtitle>");
-            for (int i = 1; i <= randomTagFilter.readsPerMolHistogram.Last(v => v > 0); i++)
+            int lastNonZeroIdx = Array.FindLastIndex(randomTagFilter.readsPerMolHistogram, v => v > 0);
+            for (int i = 1; i <= lastNonZeroIdx; i++)
                 xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.readsPerMolHistogram[i]);
             xmlFile.WriteLine("  </moleculereadscountshistogram>");
             xmlFile.WriteLine("  <readspertrmolhistogram>");
             xmlFile.WriteLine("    <title>Distro of reads/molecule (EXON, after mutated UMI removal) TotExonMols={0}(before)/{1}(after removal)</title>",
                               randomTagFilter.totalTrMolecules, randomTagFilter.totalFilteredTrMolecules);
             xmlFile.WriteLine("    <xtitle>Number of observations (reads)</xtitle>");
-            for (int i = 1; i <= randomTagFilter.readsPerTrMolHistogram.Last(v => v > 0); i++)
+            lastNonZeroIdx = Array.FindLastIndex(randomTagFilter.readsPerTrMolHistogram, v => v > 0);
+            for (int i = 1; i <= lastNonZeroIdx; i++)
                 xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.readsPerTrMolHistogram[i]);
             xmlFile.WriteLine("  </readspertrmolhistogram>");
         }

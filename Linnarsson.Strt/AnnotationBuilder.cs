@@ -202,8 +202,8 @@ namespace Linnarsson.Strt
                 List<long> gfEnds = new List<long>();
                 List<long> gfJPos = new List<long>();
                 int lastOverlappingGfIdx = 0;
-                foreach (GeneFeature gf in annotationReader.IterChrSortedGeneModels(chrId)) // GeneFeatures now sorted by position on chromosome
-                {
+                foreach (ExtendedGeneFeature gf in annotationReader.IterChrSortedGeneModels(chrId))
+                { // GeneFeatures now sorted by position on chromosome
                     gf.JoinSpuriousSplices(minSpuriousSplicesToRemove);
                     gfEnds.Add(gf.End);
                     gfJPos.Add((int)jChrSeq.Count);

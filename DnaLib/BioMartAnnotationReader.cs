@@ -30,58 +30,69 @@ namespace Linnarsson.Dna
         {
             string martPath = MakeFullAnnotationPath(sourceName + "_mart_export.txt", true);
             VisitedAnnotationPaths = martPath;
-            int nRead = 0, nCreated = 0;
+            int nRead = 0, nCreated = 0, nRandom = 0;
             foreach (ExtendedGeneFeature gf in IterMartFile(martPath))
             {
-                if (!gf.Chr.Contains("random"))
+                if (gf.Chr.Contains("random"))
+                    nRandom++;
+                else
                 {
                     if (AddGeneModel(gf)) nCreated++;
                     nRead++;
                 }
             }
             Console.WriteLine("Read {0} genes and variants from {1}", nRead, martPath);
+            Console.WriteLine("...skipped {0} that are not properly mapped ('random' chromosomes)", nRandom);
+            Console.WriteLine("...constructed {0} {1} gene models.", nCreated, (genome.GeneVariants ? "variant" : "main"));
             return nCreated;
         }
 
         private int ReadRefFlatGenes()
         {
-            int refN = 0, nCreated = 0;
+            int nTotal = 0, nMerged = 0, nCreated = 0, nRandom = 0, nUpdated = 0;
             string refFlatPath = MakeFullAnnotationPath("refFlat.txt", false);
             if (File.Exists(refFlatPath))
             {
                 VisitedAnnotationPaths += ";" + refFlatPath;
                 foreach (ExtendedGeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
                 {
-                    if (ShouldAdd(gf))
+                    nTotal++;
+                    if (gf.Chr.Contains("random"))
+                        nRandom++;
+                    else if (FusedWithOverlapping(gf))
+                        nMerged++;
+                    else
                     {
                         if (AddGeneModel(gf)) nCreated++;
-                        refN++;
+                        else nUpdated++;
                     }
                 }
-                Console.WriteLine("Added {0} genes and their variants from {1}", refN, refFlatPath);
+                Console.WriteLine("Read {0} genes and variants from {1}", nTotal, refFlatPath);
+                Console.WriteLine("...skipped {0} that are not properly mapped ('random' chromosomes)", nRandom);
+                Console.WriteLine("...added {0} new genes, merged {1} and silently updated exons of {2}.", nCreated, nMerged, nUpdated);
             }
             return nCreated;
         }
 
-        private bool ShouldAdd(ExtendedGeneFeature gf)
+        private bool FusedWithOverlapping(ExtendedGeneFeature gf)
         {
-            if (gf.Chr.Contains("random")) return false;
             try
             {
-                if (genesByChr[gf.Chr].FindIndex(
-                        (g) => g.NonVariantName == gf.Name) >= 0)
-                    return false;
+                //if (genesByChr[gf.Chr].FindIndex(
+                //        (g) => g.NonVariantName == gf.Name) >= 0)
+                //    return true;
                 foreach (ExtendedGeneFeature oldGf in genesByChr[gf.Chr])
-                    if (oldGf.IsSameTranscript(gf, 5))
+                    if (oldGf.IsSameTranscript(gf, 5, 100))
                     {
-                        oldGf.Name = gf.Name + "/" + oldGf.Name;
+                        if (!oldGf.Name.Contains(gf.Name) && !oldGf.TranscriptName.Contains(gf.Name))
+                            oldGf.TranscriptName = oldGf.TranscriptName + "/" + gf.Name;
                         oldGf.Start = Math.Min(oldGf.Start, gf.Start);
                         oldGf.End = Math.Max(oldGf.End, gf.End);
-                        return false;
+                        return true;
                     }
             }
             catch (KeyNotFoundException) { }
-            return true;
+            return false;
         }
 
         private IEnumerable<IFeature> IterMartFile(string martPath)

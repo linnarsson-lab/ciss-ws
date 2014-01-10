@@ -457,17 +457,23 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Checks if the exons are exactly the same as another GeneFeature
+        /// Checks if the exons and strand are the same as another GeneFeature
         /// </summary>
         /// <param name="otherGf"></param>
-        /// <param name="exonMargin">Allow for some bases wobble at exon margins</param>
+        /// <param name="internalMargin">Allow for some bases wobble at exon margins</param>
+        /// <param name="endMargin">Max allowed base wobble at 5' and 3' end</param>
         /// <returns>true if they represent the same transcript</returns>
-        public bool IsSameTranscript(GeneFeature otherGf, int exonMargin)
+        public bool IsSameTranscript(GeneFeature otherGf, int internalMargin, int endMargin)
         {
-            if (ExonCount != otherGf.ExonCount) return false;
+            if (Strand != otherGf.Strand || ExonCount != otherGf.ExonCount) return false;
             for (int i = 0; i < ExonCount; i++)
-                if (Math.Abs(ExonStarts[i] - otherGf.ExonStarts[i]) > exonMargin || Math.Abs(ExonEnds[i] - otherGf.ExonEnds[i]) > exonMargin)
+            {
+                int leftMargin = (i == 0) ? endMargin : internalMargin;
+                int rightMargin = (i == ExonCount - 1) ? endMargin : internalMargin;
+                if (Math.Abs(ExonStarts[i] - otherGf.ExonStarts[i]) > leftMargin
+                    || Math.Abs(ExonEnds[i] - otherGf.ExonEnds[i]) > rightMargin)
                     return false;
+            }
             return true;
         }
 
@@ -698,7 +704,7 @@ namespace Linnarsson.Dna
         /// Makes a refFlat file like string
         /// </summary>
         /// <returns></returns>
-        public string ToRefFlatString()
+        public virtual string ToRefFlatString()
         {
             StringBuilder s = new StringBuilder();
             s.AppendFormat("{0}\t\t", Name);
@@ -968,6 +974,27 @@ namespace Linnarsson.Dna
             this.TranscriptType = transcriptType;
             this.TranscriptName = transcriptName;
         }
+
+        public override string ToRefFlatString()
+        {
+            StringBuilder s = new StringBuilder();
+            s.AppendFormat("{0}\t{1};{2}\t", Name, TranscriptType, TranscriptName);
+            string chrName = (Chr == StrtGenome.chrCTRLId) ? StrtGenome.chrCTRLId : "chr" + Chr;
+            s.AppendFormat("{0}\t", chrName);
+            s.AppendFormat("{0}\t", Strand);
+            s.AppendFormat("{0}\t", Start);
+            s.AppendFormat("{0}\t", End + 1);
+            s.Append("\t\t");
+            s.Append(ExonStarts.Length);
+            s.Append("\t");
+            foreach (int start in ExonStarts)
+                s.AppendFormat("{0},", start);
+            s.Append("\t");
+            foreach (int end in ExonEnds)
+                s.AppendFormat("{0},", end + 1);
+            return s.ToString();
+        }
+
         public override string ToString()
         {
             StringBuilder s = new StringBuilder();

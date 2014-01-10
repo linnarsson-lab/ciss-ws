@@ -102,6 +102,11 @@ namespace Linnarsson.Dna
             return annotationPath;
         }
 
+        /// <summary>
+        /// Add a new or fuse (may happen for 'main' variant setup) with an existing gene model
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <returns>True if a new model was added</returns>
         protected bool AddGeneModel(ExtendedGeneFeature gf)
         {
             if (!genesByChr.ContainsKey(gf.Chr))
@@ -112,6 +117,11 @@ namespace Linnarsson.Dna
                 return AddToSingleGeneModels(gf);
         }
 
+        /// <summary>
+        /// Fuse gene model gf with an overlapping existing, else register a new model
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <returns>True if a new gene was constructed</returns>
         private bool AddToSingleGeneModels(ExtendedGeneFeature gf)
         {
             List<ExtendedGeneFeature> chrGfs = genesByChr[gf.Chr];
@@ -264,13 +274,21 @@ namespace Linnarsson.Dna
             string[] record = line.Split('\t');
             string name = record[0].Trim();
             string trName = record[1].Trim();
-            if (trName == "") trName = name;
+            string trType = "gene";
+            int i = trName.IndexOf(';');
+            if (trName == "")
+                trName = name;
+            else if (i > 0)
+            {
+                trType = trName.Substring(0, i);
+                trName = trName.Substring(i + 1);
+            }
             string chr = record[2].Trim();
             char strand = record[3].Trim()[0];
             int nExons = int.Parse(record[8]);
             int[] exonStarts = SplitField(record[9], 0);
             int[] exonEnds = SplitExonEndsField(record[10]); // Convert to inclusive ends
-            return new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, "gene", trName);
+            return new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, trType, trName);
         }
 
         /// <summary>

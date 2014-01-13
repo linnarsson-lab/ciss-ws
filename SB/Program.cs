@@ -31,6 +31,7 @@ namespace CmdSilverBullet
                 QXMAOptions options;
                 int readLen = props.StandardReadLen;
                 int argOffset = 1;
+                string annotationFile = "";
                 string cmd = args[0];
                 try
                 {
@@ -123,11 +124,13 @@ namespace CmdSilverBullet
                             if (int.TryParse(args[argOffset], out readLen))
                                 argOffset++;
                             genome = StrtGenome.GetBaseGenome(args[argOffset++]);
+                            if (args.Length > argOffset && StrtGenome.IsASpliceAnnotation(args[argOffset]))
+                                genome.Annotation = args[argOffset++];
                             if (args.Length > argOffset)
-                                genome.Annotation = args[argOffset];
+                                annotationFile = args[argOffset++];
                             genome.ReadLen = readLen;
                             mapper = new StrtReadMapper(props);
-                            mapper.BuildJunctions(genome);
+                            mapper.BuildJunctions(genome, annotationFile);
                             break;
 
                         case "idx":
@@ -135,11 +138,13 @@ namespace CmdSilverBullet
                             if (int.TryParse(args[argOffset], out readLen))
                                 argOffset++;
                             genome = StrtGenome.GetBaseGenome(args[argOffset++]);
+                            if (args.Length > argOffset && StrtGenome.IsASpliceAnnotation(args[argOffset]))
+                                genome.Annotation = args[argOffset++];
                             if (args.Length > argOffset)
-                                genome.Annotation = args[argOffset];
+                                annotationFile = args[argOffset++];
                             genome.ReadLen = readLen;
                             mapper = new StrtReadMapper(props);
-                            mapper.BuildJunctionsAndIndex(genome);
+                            mapper.BuildJunctionsAndIndex(genome, annotationFile);
                             break;
 
                         case "dumpfasta":
@@ -219,13 +224,17 @@ namespace CmdSilverBullet
                             break;
 
                         case "upd":
-                            CheckArgs(args, 3, 4);
+                            CheckArgs(args, 3, 5);
                             if (int.TryParse(args[argOffset], out readLen))
                                 argOffset++;
                             genome = StrtGenome.GetGenome(args[argOffset++]);
                             genome.ReadLen = readLen;
+                            annotationFile = "";
+                            if (args.Length > argOffset + 1)
+                                annotationFile = args[argOffset++];
+                            string errorsPath = args[argOffset];
                             mapper = new StrtReadMapper(props);
-                            mapper.UpdateSilverBulletGenes(genome, args[args.Length - 1]);
+                            mapper.UpdateSilverBulletGenes(genome, errorsPath, annotationFile);
                             break;
 
                         case "synt":
@@ -270,7 +279,8 @@ namespace CmdSilverBullet
                 "      Will start by running Bowtie if .map files are missing.\n" +
                 "SB.exe download <Genus_species>                      -   download latest genome build and annotations.\n" +
                 "SB.exe mart2refflat <Idx> [<outfile>]                -   make a refFlat file from mart-style annotations.\n" +
-                "SB.exe idx <readLen> <Build> [<Annot>]               -   build annotations and Bowtie index.\n" +
+                "SB.exe upd [ReadLen] <Idx> [<annotfile>] <errorfile> -   update 5' end annotations from an 'annot_errors.tab' file. Specify 'annotfile' to overide default.\n" +
+                "SB.exe idx <readLen> <Build> [<Annot>]  [<annotfile>] -  build annotations and Bowtie index. Specify 'annotfile' to overide default.\n" +
                 "SB.exe bt <Build>|<Idx> all|single <ProjectPath>|<ExtractedPath>\n" +
                 "      run Bowtie on latest/specified extracted data folder.\n" +
                 "SB.exe synt <Bc> <Idx> all|single <OutputFolder>     -   generate synthetic reads from a genome.\n" +

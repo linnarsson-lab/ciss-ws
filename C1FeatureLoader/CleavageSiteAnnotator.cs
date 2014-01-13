@@ -19,7 +19,7 @@ namespace C1
             chrIdToFileMap[StrtGenome.chrCTRLId] = PathHandler.GetChrCTRLPath();
             foreach (string chrId in chrIdToFileMap.Keys)
             {
-                if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
+                if (StrtGenome.IsASpliceAnnotation(chrId)) continue;
                 DnaSequence chrSeq = DnaSequence.FromFile(chrIdToFileMap[chrId]);
                 ChrSeqs.Add(chrId, chrSeq);
             }

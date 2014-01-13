@@ -169,7 +169,7 @@ namespace Linnarsson.Strt
             Dictionary<string, ChrIntervals> chrIntervals = new Dictionary<string, ChrIntervals>();
             foreach (string chrId in chrIdToFileMap.Keys)
             {
-                if (!StrtGenome.IsASpliceAnnotationChr(chrId))
+                if (!StrtGenome.IsASpliceAnnotation(chrId))
                     chrIntervals[chrId] = new ChrIntervals(minFlank, minIntronFlank, maxIntronToKeep);
             }
             if (maskingType == RepeatMaskingType.Exon)

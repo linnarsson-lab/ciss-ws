@@ -103,7 +103,7 @@ namespace Linnarsson.Strt
             foreach (string chrId in chrIdToFileMap.Keys)
             {
                 Console.Write(".{0}", chrId);
-                if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
+                if (StrtGenome.IsASpliceAnnotation(chrId)) continue;
                 try
                 {
                     int chrLen;

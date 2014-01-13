@@ -1181,7 +1181,7 @@ namespace Linnarsson.Strt
             double nTotalHits = TotalHits;
             foreach (string chr in sortedkeys)
             {
-                if (StrtGenome.IsASpliceAnnotationChr(chr))
+                if (StrtGenome.IsASpliceAnnotation(chr))
                     continue;
                 string c = chr; // (chr.Length > 5) ? chr.Substring(0, 2) + ".." + chr.Substring(chr.Length - 2) : chr;
                 double nSenseHits = TotalHitsByAnnotTypeAndChr[chr][AnnotType.EXON];

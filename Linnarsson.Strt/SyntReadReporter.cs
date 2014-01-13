@@ -215,7 +215,7 @@ namespace Linnarsson.Strt
             Dictionary<string, List<GeneFeature>> chrIdToFeature = new Dictionary<string, List<GeneFeature>>();
             foreach (string chrId in chrIds)
             {
-                if (StrtGenome.IsASpliceAnnotationChr(chrId)) continue;
+                if (StrtGenome.IsASpliceAnnotation(chrId)) continue;
                 chrIdToFeature[chrId] = new List<GeneFeature>();
             }
             string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();

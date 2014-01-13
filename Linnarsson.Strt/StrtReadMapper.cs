@@ -41,12 +41,13 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="genome"></param>
         /// <param name="errorsPath">Path to an annotation error correction file</param>
-        public void UpdateSilverBulletGenes(StrtGenome genome, string errorsPath)
+        /// <param name="annotationFile">name of annotation refFlat/mart file or leave as "" to use the default annotation file</param>
+        public void UpdateSilverBulletGenes(StrtGenome genome, string errorsPath, string annotationFile)
         {
-            Console.WriteLine("*** Updating annotation file for {0} using {1} ***",
-                              genome.GetBowtieMainIndexName(), Path.GetFileName(errorsPath));
+            Console.WriteLine("*** Updating annotation file {0} for {1} using {2} ***",
+                              annotationFile, genome.GetBowtieMainIndexName(), Path.GetFileName(errorsPath));
             Background.Message("Updating annotations...");
-            AnnotationBuilder builder = new AnnotationBuilder(props, AnnotationReader.GetAnnotationReader(genome));
+            AnnotationBuilder builder = new AnnotationBuilder(props, AnnotationReader.GetAnnotationReader(genome, annotationFile));
             builder.UpdateSilverBulletGenes(genome, errorsPath);
             Console.WriteLine("Done.");
             Background.Progress(100);
@@ -57,12 +58,14 @@ namespace Linnarsson.Strt
         /// Construct the repeat-masked genome, artificial splice junction chromosome and transcript annotation file.
         /// </summary>
         /// <param name="genome"></param>
-        public void BuildJunctions(StrtGenome genome)
+        public void BuildJunctions(StrtGenome genome, string annotationFile)
         {
             AssertStrtGenomeFolder(genome);
             DateTime startTime = DateTime.Now;
-            Console.WriteLine("*** Build of spliced exon junctions for {0} started at {1} ***", genome.GetBowtieMainIndexName(), DateTime.Now);
-            AnnotationBuilder builder = new AnnotationBuilder(props, AnnotationReader.GetAnnotationReader(genome));
+            annotationFile = AnnotationReader.GetAnnotationFile(genome, annotationFile);
+            Console.WriteLine("*** Build of spliced exon junctions for {0} from {1} started at {2} ***",
+                genome.GetBowtieMainIndexName(), annotationFile, DateTime.Now);
+            AnnotationBuilder builder = new AnnotationBuilder(props, AnnotationReader.GetAnnotationReader(genome, annotationFile));
             builder.BuildExonSplices(genome);
         }
 
@@ -85,17 +88,21 @@ namespace Linnarsson.Strt
         /// Construct the artificial splice chromosome, the transcript annotation file, and build the Bowtie index.
         /// </summary>
         /// <param name="genome"></param>
-		public void BuildJunctionsAndIndex(StrtGenome genome)
+        public void BuildJunctionsAndIndex(StrtGenome genome)
+        {
+            BuildJunctionsAndIndex(genome, "");
+        }
+		public void BuildJunctionsAndIndex(StrtGenome genome, string annotationFile)
 		{
             string btIdxFolder = PathHandler.GetBowtieIndicesFolder();
             if (!Directory.Exists(btIdxFolder))
                 throw new IOException("The Bowtie index folder cannot be found. Please set the BowtieIndexFolder property.");
             genome.GeneVariants = false;
-            BuildJunctions(genome);
+            BuildJunctions(genome, annotationFile);
             MakeMaskedStrtChromosomes(genome);
             BuildIndex(genome);
             genome.GeneVariants = true;
-            BuildJunctions(genome);
+            BuildJunctions(genome, annotationFile);
             BuildIndex(genome);
         }
 
@@ -915,7 +922,7 @@ namespace Linnarsson.Strt
                 int nSeqs = 0, nTrSeqs = 0, nSplSeq = 0, bcIdx = 0;
                 foreach (GeneFeature gf in annotations.geneFeatures.Values)
                 {
-                    if (StrtGenome.IsASpliceAnnotationChr(gf.Chr)) continue;
+                    if (StrtGenome.IsASpliceAnnotation(gf.Chr)) continue;
                     if (!variantGenes && gf.IsVariant())
                         continue;
                     int startBeforeFlank = gf.Start;

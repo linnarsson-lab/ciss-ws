@@ -195,10 +195,10 @@ namespace Linnarsson.Dna
 
         public bool IsChrInBuild(string filename)
         {
-            return filename.Equals(GetJunctionChrFileName()) || !IsASpliceAnnotationChr(filename);
+            return filename.Equals(GetJunctionChrFileName()) || !IsASpliceAnnotation(filename);
         }
 
-        public static bool IsASpliceAnnotationChr(string chrIdOrFilename)
+        public static bool IsASpliceAnnotation(string chrIdOrFilename)
         {
             foreach (string a in AnnotationSources)
                 if (chrIdOrFilename.IndexOf(a) >= 0) return true;
@@ -211,7 +211,7 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static bool IsSyntheticChr(string chrId)
         {
-            return chrId.EndsWith(chrCTRLId) || IsASpliceAnnotationChr(chrId);
+            return chrId.EndsWith(chrCTRLId) || IsASpliceAnnotation(chrId);
         }
 
         private StrtGenome() 

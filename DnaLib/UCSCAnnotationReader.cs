@@ -7,16 +7,16 @@ using Linnarsson.Utilities;
 
 namespace Linnarsson.Dna
 {
-    public class UCSCAnnotationReader : AnnotationReader
+    public class RefFlatAnnotationReader : AnnotationReader
     {
-        public UCSCAnnotationReader(StrtGenome genome)
-            : base(genome)
+        public RefFlatAnnotationReader(StrtGenome genome, string annotationFile)
+            : base(genome, annotationFile)
         {}
 
         public override int BuildGeneModelsByChr()
         {
             ClearGenes();
-            string refFlatPath = MakeFullAnnotationPath("refFlat.txt", true);
+            string refFlatPath = MakeFullAnnotationPath(annotationFile, true);
             VisitedAnnotationPaths = refFlatPath;
             int n = 0, nCreated = 0;
             foreach (ExtendedGeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))

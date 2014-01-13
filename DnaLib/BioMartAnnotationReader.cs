@@ -10,13 +10,9 @@ namespace Linnarsson.Dna
 {
     public class BioMartAnnotationReader : AnnotationReader
     {
-        private string sourceName;
-
-        public BioMartAnnotationReader(StrtGenome genome, string sourceName)
-            : base(genome)
-        {
-            this.sourceName = sourceName;
-        }
+        public BioMartAnnotationReader(StrtGenome genome, string annotationFile)
+            : base(genome, annotationFile)
+        { }
 
         public override int BuildGeneModelsByChr()
         {
@@ -28,7 +24,7 @@ namespace Linnarsson.Dna
 
         private int ReadMartGenes()
         {
-            string martPath = MakeFullAnnotationPath(sourceName + "_mart_export.txt", true);
+            string martPath = MakeFullAnnotationPath(annotationFile, true);
             VisitedAnnotationPaths = martPath;
             int nRead = 0, nCreated = 0, nRandom = 0;
             foreach (ExtendedGeneFeature gf in IterMartFile(martPath))

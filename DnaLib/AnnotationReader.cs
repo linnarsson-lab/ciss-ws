@@ -19,16 +19,38 @@ namespace Linnarsson.Dna
     {
         public static AnnotationReader GetAnnotationReader(StrtGenome genome)
         {
-            if (genome.Annotation == "VEGA")
-                return new BioMartAnnotationReader(genome, "VEGA");
-            if (genome.Annotation.StartsWith("ENSE"))
-                return new BioMartAnnotationReader(genome, genome.Annotation);
-            return new UCSCAnnotationReader(genome);
+            return GetAnnotationReader(genome, "");
+        }
+        /// <summary>
+        /// If annotationFile is empty, replace with default filename
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <param name="annotationFile"></param>
+        /// <returns></returns>
+        public static string GetAnnotationFile(StrtGenome genome, string annotationFile)
+        {
+            if (annotationFile == null || annotationFile == "")
+            {
+                if (genome.Annotation == "UCSC")
+                    annotationFile = "refFlat.txt";
+                else
+                    annotationFile = genome.Annotation + "_mart_export.txt";
+            }
+            return annotationFile;
         }
 
-        public AnnotationReader(StrtGenome genome)
+        public static AnnotationReader GetAnnotationReader(StrtGenome genome, string annotationFile)
+        {
+            annotationFile = GetAnnotationFile(genome, annotationFile);
+            if (annotationFile.Contains("refFlat"))
+                return new RefFlatAnnotationReader(genome, annotationFile);
+            return new BioMartAnnotationReader(genome, annotationFile);
+        }
+
+        public AnnotationReader(StrtGenome genome, string annotationFile)
         {
             this.genome = genome;
+            this.annotationFile = annotationFile;
         }
 
         /// <summary>
@@ -39,6 +61,8 @@ namespace Linnarsson.Dna
         public abstract int BuildGeneModelsByChr();
 
         protected StrtGenome genome;
+        public string annotationFile { get; private set; }
+
         protected Dictionary<string, ExtendedGeneFeature> nameToGene;
         protected Dictionary<string, List<ExtendedGeneFeature>> genesByChr;
         protected int pseudogeneCount = 0;

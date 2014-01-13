@@ -15,15 +15,26 @@ namespace C1
         {
             if (args.Length == 0 || args[0] == "--help")
             {
-                Console.WriteLine("Usage:\nmono C1FeatureLoader.exe GENOME [-i]\nwhere genome is e.g. 'mm10_aUCSC' or 'hg19_sENSE'");
+                Console.WriteLine("Usage:\nmono C1FeatureLoader.exe GENOME [-f ANNOTATIONFILE] [-i]\nwhere genome is e.g. 'mm10_aUCSC' or 'hg19_sENSE'");
                 Console.WriteLine("Without -i, 5'-extensions are made and an update refFlat file is written, but no DB inserts made.");
+                Console.WriteLine("Use -f to specify a non-standard (mart or refFlat style) annotation file.");
                 return;
             }
             StrtGenome genome = StrtGenome.GetGenome(args[0]);
-            bool doInsert = (args.Length >= 2 && args[1] == "-i");
+            bool doInsert = false;
+            string annotationFile = "";
+            int i = 1;
+            while (i < args.Length)
+            {
+                if (args[i] == "-i")
+                    doInsert = true;
+                if (args[i] == "-f")
+                    annotationFile = args[++i];
+                i++;
+            }
             Props.props.DirectionalReads = true;
-            AnnotationReader annotationReader = AnnotationReader.GetAnnotationReader(genome);
-            Console.WriteLine("Building transcript models...");
+            AnnotationReader annotationReader = AnnotationReader.GetAnnotationReader(genome, annotationFile);
+            Console.WriteLine("Building transcript models from...", annotationFile);
             int nModels = annotationReader.BuildGeneModelsByChr();
             Console.WriteLine("...{0} models constructed.", nModels);
             if (Props.props.GeneFeature5PrimeExtension > 0)

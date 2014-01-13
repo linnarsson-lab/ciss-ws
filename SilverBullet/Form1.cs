@@ -268,7 +268,7 @@ namespace SilverBullet
                 Background.Message("Building junctions...");
                 try
                 {
-                    mapper.BuildJunctions(gd.Genome);
+                    mapper.BuildJunctions(gd.Genome, "");
                 }
                 catch (Exception exp)
                 {
@@ -324,7 +324,7 @@ namespace SilverBullet
                     SetupMapper(null);
                     try
                     {
-                        mapper.UpdateSilverBulletGenes(gd.Genome, ofd.FileName);
+                        mapper.UpdateSilverBulletGenes(gd.Genome, ofd.FileName, "");
                     }
                     catch (ArgumentException exc)
                     {

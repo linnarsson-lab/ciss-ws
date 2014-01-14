@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.IO;
 using Linnarsson.Mathematics;
 using Linnarsson.Dna;
@@ -59,11 +60,13 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <returns>Number of transcript models constructed</returns>
         public abstract int BuildGeneModelsByChr();
+        public abstract int BuildGeneModelsByChr(bool addUCSC);
 
         protected StrtGenome genome;
         public string annotationFile { get; private set; }
 
-        protected Dictionary<string, ExtendedGeneFeature> nameToGene;
+        protected Dictionary<string, List<GeneFeature>> locNameToGenes; // "name_p" / "name_loc" => genes. Used for all variant building
+        protected Dictionary<string, ExtendedGeneFeature> nameToGene; // "name_pN" / "name_locN" => gene. Used for main variant building
         protected Dictionary<string, List<ExtendedGeneFeature>> genesByChr;
         protected int pseudogeneCount = 0;
 
@@ -92,6 +95,52 @@ namespace Linnarsson.Dna
             }
         }
 
+        protected int AddRefFlatGenes()
+        {
+            int nTotal = 0, nMerged = 0, nCreated = 0, nRandom = 0, nUpdated = 0;
+            string refFlatPath = MakeFullAnnotationPath("refFlat.txt", false);
+            if (File.Exists(refFlatPath))
+            {
+                VisitedAnnotationPaths += ";" + refFlatPath;
+                foreach (ExtendedGeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
+                {
+                    nTotal++;
+                    //if (gf.Chr.Contains("random"))
+                    //    nRandom++;
+                    //else
+                    if (FusedWithOverlapping(gf))
+                        nMerged++;
+                    else
+                    {
+                        if (AddGeneModel(gf)) nCreated++;
+                        else nUpdated++;
+                    }
+                }
+                Console.WriteLine("Read {0} genes and variants from {1}", nTotal, refFlatPath);
+                Console.WriteLine("...skipped {0} that are not properly mapped ('random' chromosomes)", nRandom);
+                Console.WriteLine("...added {0} new genes, merged {1} and silently updated exons of {2}.", nCreated, nMerged, nUpdated);
+            }
+            return nCreated;
+        }
+
+        protected bool FusedWithOverlapping(ExtendedGeneFeature gf)
+        {
+            try
+            {
+                foreach (ExtendedGeneFeature oldGf in genesByChr[gf.Chr])
+                    if (oldGf.IsSameTranscript(gf, 5, 100))
+                    {
+                        if (!oldGf.Name.Contains(gf.Name) && !oldGf.TranscriptName.Contains(gf.Name))
+                            oldGf.TranscriptName = oldGf.TranscriptName + "/" + gf.Name;
+                        oldGf.Start = Math.Min(oldGf.Start, gf.Start);
+                        oldGf.End = Math.Max(oldGf.End, gf.End);
+                        return true;
+                    }
+            }
+            catch (KeyNotFoundException) { }
+            return false;
+        }
+
         /// <summary>
         /// Iterate the genes features on specified chromosome, order by increasing start position
         /// </summary>
@@ -111,6 +160,7 @@ namespace Linnarsson.Dna
         /// </summary>
         protected void ClearGenes()
         {
+            locNameToGenes = new Dictionary<string, List<GeneFeature>>();
             nameToGene = new Dictionary<string, ExtendedGeneFeature>();
             genesByChr = new Dictionary<string, List<ExtendedGeneFeature>>();
             pseudogeneCount = 0;
@@ -135,10 +185,78 @@ namespace Linnarsson.Dna
         {
             if (!genesByChr.ContainsKey(gf.Chr))
                 genesByChr[gf.Chr] = new List<ExtendedGeneFeature>();
+            bool createdNew;
             if (genome.GeneVariants)
-                return AddToVariantGeneModels(gf);
+                createdNew = AddToVariantGeneModels(gf);
             else
-                return AddToSingleGeneModels(gf);
+                createdNew = AddToSingleGeneModels(gf);
+            if (createdNew && gf.IsPseudogeneType()) pseudogeneCount++;
+            return createdNew;
+        }
+
+        private bool AddToVariantGeneModels(ExtendedGeneFeature gf)
+        {
+            //Console.Write("{0}: chr{1}{2}: {3}-{4}", gf.Name, gf.Chr, gf.Strand, gf.Start, gf.End);
+            string locIndicator = gf.IsPseudogeneType() ? ExtendedGeneFeature.pseudoGeneIndicator : ExtendedGeneFeature.altLocusIndicator;
+            string lociPrefix = gf.Name + locIndicator;
+            int maxLocNo = 0, maxVarNo = 1;
+            List<GeneFeature> locNameGenes = null;
+            if (locNameToGenes.TryGetValue(lociPrefix, out locNameGenes))
+            {
+                foreach (ExtendedGeneFeature oldGf in locNameGenes)
+                {
+                    Match m = Regex.Match(oldGf.Name, locIndicator + "([0-9]+)");
+                    int locNo = m.Success ? int.Parse(m.Groups[1].Value) : 1;
+                    maxLocNo = Math.Max(maxLocNo, locNo);
+                    if (oldGf.Chr == gf.Chr && oldGf.Strand == gf.Strand && oldGf.Overlaps(gf.Start, gf.End, 1))
+                    { // We have a new variant of an already defined locus
+                        string thisLocusPat = m.Success? lociPrefix + locNo.ToString() : gf.Name;
+                        //Console.WriteLine("thisLocusPat=" + thisLocusPat);
+                        foreach (ExtendedGeneFeature locGf in locNameGenes)
+                        {
+                            //Console.WriteLine("  testing " + locGf.Name + " starting" + thisLocusPat);
+                            if (locGf.Name == thisLocusPat || locGf.Name.StartsWith(thisLocusPat + "_"))
+                            {
+                                int varIdx = locGf.Name.LastIndexOf(ExtendedGeneFeature.variantIndicator);
+                                //Console.WriteLine("    success and varIdx=" + varIdx.ToString());
+                                if (varIdx == -1)
+                                { // There is only one previous variant of this locus - add the variant 1 indicator to it
+                                    //Console.WriteLine("Adding '_v1' to " + locGf.Name);
+                                    locGf.Name += ExtendedGeneFeature.variantIndicator + "1";
+                                    break;
+                                }
+                                maxVarNo = Math.Max(maxVarNo, int.Parse(locGf.Name.Substring(varIdx + ExtendedGeneFeature.variantIndicator.Length)));
+                            }
+                        }
+                        int newVarNo = maxVarNo + 1;
+                        gf.Name = (!m.Success)? string.Format("{0}{1}{2}", gf.Name, ExtendedGeneFeature.variantIndicator, newVarNo) :
+                                                          string.Format("{0}{1}{2}{3}", lociPrefix, locNo, ExtendedGeneFeature.variantIndicator, newVarNo);
+                        genesByChr[gf.Chr].Add(gf);
+                        locNameToGenes[lociPrefix].Add(gf);
+                        //Console.WriteLine(" Created {0}", gf.Name);
+                        return true;
+                    }
+                }
+            } // Now we create a new gene or a new locus for the gene
+            bool creatingNewMainGene = (locNameGenes == null);
+            int newLocNo = maxLocNo + 1;
+            if (newLocNo == 2 && !gf.IsPseudogeneType())
+            { // We will add the second locus for this gene - add "_loc1" extension to all variants of the first
+                foreach (ExtendedGeneFeature oldGf in locNameGenes)
+                {
+                    int vi = oldGf.Name.IndexOf(ExtendedGeneFeature.variantIndicator);
+                    oldGf.Name = (vi > 0) ? oldGf.Name.Insert(vi, locIndicator + "1") : oldGf.Name + locIndicator + "1";
+                }
+            }
+            string newLocName = string.Format("{0}{1}", lociPrefix, newLocNo);
+            if (newLocNo > 1 || gf.IsPseudogeneType())
+                gf.Name = newLocName;
+            if (creatingNewMainGene)
+                locNameToGenes[lociPrefix] = new List<GeneFeature>();
+            genesByChr[gf.Chr].Add(gf);
+            locNameToGenes[lociPrefix].Add(gf);
+            //Console.WriteLine(" Created {0}{1}", gf.Name, (creatingNewMainGene)? " and new locNameToGenes key " + lociPrefix : "");
+            return true;
         }
 
         /// <summary>
@@ -148,40 +266,36 @@ namespace Linnarsson.Dna
         /// <returns>True if a new gene was constructed</returns>
         private bool AddToSingleGeneModels(ExtendedGeneFeature gf)
         {
-            List<ExtendedGeneFeature> chrGfs = genesByChr[gf.Chr];
-            try
-            {
-                ExtendedGeneFeature prevGf = nameToGene[gf.Name]; // Pick up the first created locus of this name
-                int v = 1;
-                string locName = gf.Name; // First try the plain gene name, then with alternative locus indicators.
-                while (nameToGene.ContainsKey(locName))
+            //Console.Write("{0}: chr{1}{2}: ", gf.Name, gf.Chr, gf.Strand);
+            string locIndicator = gf.IsPseudogeneType() ? ExtendedGeneFeature.pseudoGeneIndicator : ExtendedGeneFeature.altLocusIndicator;
+            int altLocNo = 1;
+            string locName = string.Format("{0}{1}{2}", gf.Name, locIndicator, altLocNo);
+            ExtendedGeneFeature oldGf, saveGf = null;
+            while (nameToGene.TryGetValue(locName, out oldGf))
+            { // Pick up the first gene of this name (the plain name Key for the first is kept)
+                if (oldGf.Chr == gf.Chr && oldGf.Strand == gf.Strand && oldGf.Overlaps(gf.Start, gf.End, 1))
                 {
-                    ExtendedGeneFeature oldGf = nameToGene[locName];
-                    if (oldGf.Chr == gf.Chr && oldGf.Strand == gf.Strand && oldGf.Overlaps(gf.Start, gf.End, 1))
-                    {
-                        ExtendedGeneFeature combinedGf = CreateExonUnion(oldGf, gf);
-                        combinedGf.Name = oldGf.Name;
-                        int idx = chrGfs.IndexOf(oldGf);
-                        chrGfs[idx] = combinedGf;
-                        nameToGene[oldGf.Name] = combinedGf;
-                        nameToGene[locName] = combinedGf;
-                        return false;
-                    }
-                    v++;
-                    locName = string.Format("{0}{1}{2}", gf.Name, ExtendedGeneFeature.altLocusIndicator, +v);
-                } // Now we need to add a new second locus for this gene name
-                gf.Name = locName;
-                if (!prevGf.Name.Contains(ExtendedGeneFeature.altLocusIndicator))
-                { // We are adding the second locus with same name: Add locus indicator to the first gene name.
-                    string firstNameWithLocus = string.Format("{0}{1}1", prevGf.Name, ExtendedGeneFeature.altLocusIndicator);
-                    prevGf.Name = firstNameWithLocus;
-                    nameToGene[firstNameWithLocus] = prevGf;
+                    ExtendedGeneFeature combinedGf = CreateExonUnion(oldGf, gf);
+                    combinedGf.Name = oldGf.Name;
+                    int idx = genesByChr[gf.Chr].IndexOf(oldGf);
+                    genesByChr[gf.Chr][idx] = combinedGf;
+                    nameToGene[oldGf.Name] = combinedGf;
+                    nameToGene[locName] = combinedGf;
+                    //Console.WriteLine("{0}-{1} Merged into {2}", gf.Start, gf.End, oldGf.Name);
+                    return false;
                 }
+                locName = string.Format("{0}{1}{2}", gf.Name, locIndicator, ++altLocNo);
+                saveGf = oldGf;
             }
-            catch (KeyNotFoundException) { }
-            // Add a new (could be first or secondary with same name) locus
-            chrGfs.Add(gf);
-            nameToGene[gf.Name] = gf;
+            if (altLocNo == 2 && !gf.IsPseudogeneType())
+            { // We will add the second locus for this gene - add "_loc1" extension of the first
+                saveGf.Name += locIndicator + "1";
+            }
+            if (altLocNo > 1 || gf.IsPseudogeneType())
+                gf.Name = locName;
+            genesByChr[gf.Chr].Add(gf);
+            nameToGene[locName] = gf;
+            //Console.WriteLine("{0}-{1} Created {2}", gf.Start, gf.End, gf.Name);
             return true;
         }
 
@@ -213,32 +327,6 @@ namespace Linnarsson.Dna
             ExtendedGeneFeature newFeature = new ExtendedGeneFeature(oldGf.Name, oldGf.Chr, oldGf.Strand, 
                                                     newStarts.ToArray(), newEnds.ToArray(), combTrType, combTrName);
             return newFeature;
-        }
-
-        private bool AddToVariantGeneModels(ExtendedGeneFeature gf)
-        {
-            try
-            {
-                ExtendedGeneFeature prevGf = nameToGene[gf.Name];
-                if (!prevGf.IsVariant())
-                {
-                    string firstNameWithVariant = string.Format("{0}{1}1", prevGf.Name, LocusFeature.variantIndicator);
-                    prevGf.Name = firstNameWithVariant;
-                    nameToGene[firstNameWithVariant] = prevGf;
-                }
-                int ver = 2;
-                string versionName = string.Format("{0}{1}{2}", gf.Name, LocusFeature.variantIndicator, ver);
-                while (nameToGene.ContainsKey(versionName))
-                {
-                    ver++;
-                    versionName = string.Format("{0}{1}{2}", gf.Name, LocusFeature.variantIndicator, ver);
-                }
-                gf.Name = versionName;
-            }
-            catch (KeyNotFoundException) { }
-            genesByChr[gf.Chr].Add(gf);
-            nameToGene[gf.Name] = gf;
-            return true;
         }
 
         /// <summary>

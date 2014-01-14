@@ -181,7 +181,7 @@ namespace Linnarsson.Strt
             string junctionsChrId = "chr" + genome.Annotation;
             Console.WriteLine("Reading genes for genome {0} and annotations {1}...", genome.Annotation, genome.Build);
             int nModels = annotationReader.BuildGeneModelsByChr();
-            Console.WriteLine("...read data for {0} gene models on {1} chromosomes from annotation files:", nModels, annotationReader.ChrCount);
+            Console.WriteLine("Totally {0} gene models on {1} chromosomes:", nModels, annotationReader.ChrCount);
             Console.WriteLine(string.Join(",", annotationReader.ChrNames.ToArray()));
             Console.WriteLine("{0} genes are annotated as pseudogenes.", annotationReader.PseudogeneCount);
             Console.WriteLine("ReadLen={0} MaxMismatches={1} MaxExonsSkip={2}", ReadLen, MaxAlignmentMismatches, MaxExonsSkip);

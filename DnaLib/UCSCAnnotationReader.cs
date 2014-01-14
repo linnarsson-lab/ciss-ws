@@ -15,7 +15,20 @@ namespace Linnarsson.Dna
 
         public override int BuildGeneModelsByChr()
         {
+            bool addUCSC = (genome.Annotation != "UCSC");
+            return BuildGeneModelsByChr(addUCSC);
+        }
+        public override int BuildGeneModelsByChr(bool addUCSC)
+        {
             ClearGenes();
+            int nCreated = ReadRefFlatGenes();
+            if (addUCSC)
+                nCreated += AddRefFlatGenes();
+            return nCreated;
+        }
+
+        private int ReadRefFlatGenes()
+        {
             string refFlatPath = MakeFullAnnotationPath(annotationFile, true);
             VisitedAnnotationPaths = refFlatPath;
             int n = 0, nCreated = 0;
@@ -28,6 +41,7 @@ namespace Linnarsson.Dna
             }
             string varTxt = (genome.GeneVariants) ? " genes and" : " main gene";
             Console.WriteLine("Read {0}{1} variants from {2}", n, varTxt, refFlatPath);
+            Console.WriteLine("...constructed {0} {1} gene models.", nCreated, (genome.GeneVariants ? "variant" : "main"));
             return nCreated;
         }
 

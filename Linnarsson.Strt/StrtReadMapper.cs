@@ -97,10 +97,13 @@ namespace Linnarsson.Strt
             string btIdxFolder = PathHandler.GetBowtieIndicesFolder();
             if (!Directory.Exists(btIdxFolder))
                 throw new IOException("The Bowtie index folder cannot be found. Please set the BowtieIndexFolder property.");
-            genome.GeneVariants = false;
-            BuildJunctions(genome, annotationFile);
-            MakeMaskedStrtChromosomes(genome);
-            BuildIndex(genome);
+            if (genome.GeneVariants == false)
+            {
+                genome.GeneVariants = false;
+                BuildJunctions(genome, annotationFile);
+                MakeMaskedStrtChromosomes(genome);
+                BuildIndex(genome);
+            }
             genome.GeneVariants = true;
             BuildJunctions(genome, annotationFile);
             BuildIndex(genome);

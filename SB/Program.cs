@@ -66,11 +66,14 @@ namespace CmdSilverBullet
                             if (args.Length > 2)
                                 outfile = args[2];
                             AnnotationReader ar = AnnotationReader.GetAnnotationReader(genome);
-                            int nModels = ar.BuildGeneModelsByChr();
+                            int nModels = ar.BuildGeneModelsByChr(false);
                             using (StreamWriter mw = outfile.OpenWrite())
                             {
                                 foreach (ExtendedGeneFeature egf in ar.IterChrSortedGeneModels())
+                                {
+                                    egf.Name = egf.Name.Split('_')[0];
                                     mw.WriteLine(egf.ToRefFlatString());
+                                }
                             }
                             Console.WriteLine("Wrote {0} gene models to {1}", nModels, outfile);
                             break;

@@ -975,6 +975,11 @@ namespace Linnarsson.Dna
             this.TranscriptName = transcriptName;
         }
 
+        public bool IsPseudogeneType()
+        {
+            return TranscriptType.Contains("pseudogene");
+        }
+
         public override string ToRefFlatString()
         {
             StringBuilder s = new StringBuilder();

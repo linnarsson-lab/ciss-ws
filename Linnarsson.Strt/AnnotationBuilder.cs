@@ -181,6 +181,8 @@ namespace Linnarsson.Strt
             string junctionsChrId = "chr" + genome.Annotation;
             Console.WriteLine("Reading genes for genome {0} and annotations {1}...", genome.Annotation, genome.Build);
             int nModels = annotationReader.BuildGeneModelsByChr();
+            Console.WriteLine("Preparing CAP-close cleavage site annotator...");
+            CleavageSiteAnnotator csa = new CleavageSiteAnnotator(genome);
             Console.WriteLine("Totally {0} gene models on {1} chromosomes:", nModels, annotationReader.ChrCount);
             Console.WriteLine(string.Join(",", annotationReader.ChrNames.ToArray()));
             Console.WriteLine("{0} genes are annotated as pseudogenes.", annotationReader.PseudogeneCount);
@@ -207,6 +209,7 @@ namespace Linnarsson.Strt
                     gf.JoinSpuriousSplices(minSpuriousSplicesToRemove);
                     gfEnds.Add(gf.End);
                     gfJPos.Add((int)jChrSeq.Count);
+                    csa.AnnotateCleaveSites(gf);
                     annotWriter.WriteLine(gf.ToRefFlatString()); // Write the real chr annotations to output
                     if (gf.ExonCount < 2)
                         continue;
@@ -310,7 +313,7 @@ namespace Linnarsson.Strt
             annotWriter.WriteLine("@ReadLen={0}", ReadLen);
             annotWriter.WriteLine("@MaxAlignmentMismatches={0}", MaxAlignmentMismatches);
             annotWriter.WriteLine("@MaxExonsSkip={0}", MaxExonsSkip);
-            annotWriter.WriteLine("@InputAnnotationFile={0}", annotationReader.annotationFile);
+            annotWriter.WriteLine("@InputAnnotationFile={0}", annotationReader.VisitedAnnotationPaths);
             CopyCTRLData(genome, annotWriter);
             return annotWriter;
         }

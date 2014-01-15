@@ -296,7 +296,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Checks if either 'filePath', or 'filePath.gz' exists.
+        /// Checks if either 'filePath', or 'filePath.gz' exists. Returns the existing path, or null if not.
         /// </summary>
         /// <param name="path"></param>
         /// <returns>The path that existed, or null if neither did.</returns>

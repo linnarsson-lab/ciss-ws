@@ -6,6 +6,7 @@ using System.IO;
 using Linnarsson.Dna;
 using Linnarsson.Dna.GeneOntology;
 using Linnarsson.Utilities;
+using Linnarsson.Strt;
 using C1;
 
 namespace C1

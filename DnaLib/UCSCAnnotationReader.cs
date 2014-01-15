@@ -11,7 +11,8 @@ namespace Linnarsson.Dna
     {
         public RefFlatAnnotationReader(StrtGenome genome, string annotationFile)
             : base(genome, annotationFile)
-        {}
+        {
+        }
 
         public override int BuildGeneModelsByChr()
         {
@@ -34,13 +35,12 @@ namespace Linnarsson.Dna
             int n = 0, nCreated = 0;
             foreach (ExtendedGeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
             {
-                if (gf.TranscriptType == "") gf.TranscriptType = "transcript";
+                SetTranscriptType(gf);
                 bool newModel = AddGeneModel(gf);
                 if (newModel) nCreated++;
                 n++;
             }
-            string varTxt = (genome.GeneVariants) ? " genes and" : " main gene";
-            Console.WriteLine("Read {0}{1} variants from {2}", n, varTxt, refFlatPath);
+            Console.WriteLine("Read {0} genes and variants from {1}", n, refFlatPath);
             Console.WriteLine("...constructed {0} {1} gene models.", nCreated, (genome.GeneVariants ? "variant" : "main"));
             return nCreated;
         }

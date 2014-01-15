@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.IO;
 using Linnarsson.Mathematics;
 using Linnarsson.Dna;
+using Linnarsson.Utilities;
 using C1;
 
 namespace Linnarsson.Dna
@@ -52,6 +53,7 @@ namespace Linnarsson.Dna
         {
             this.genome = genome;
             this.annotationFile = annotationFile;
+            ReadBackupTypeAnnontations(genome);
         }
 
         /// <summary>
@@ -62,8 +64,10 @@ namespace Linnarsson.Dna
         public abstract int BuildGeneModelsByChr();
         public abstract int BuildGeneModelsByChr(bool addUCSC);
 
+        private Dictionary<string, string> kgXRefTrIdToType = new Dictionary<string, string>();
+
         protected StrtGenome genome;
-        public string annotationFile { get; private set; }
+        protected string annotationFile { get; private set; }
 
         protected Dictionary<string, List<GeneFeature>> locNameToGenes; // "name_p" / "name_loc" => genes. Used for all variant building
         protected Dictionary<string, ExtendedGeneFeature> nameToGene; // "name_pN" / "name_locN" => gene. Used for main variant building
@@ -95,6 +99,46 @@ namespace Linnarsson.Dna
             }
         }
 
+        private void ReadBackupTypeAnnontations(StrtGenome genome)
+        {
+            string xrefPath = PathHandler.ExistsOrGz(Path.Combine(genome.GetOriginalGenomeFolder(), "kgXref.txt"));
+            if (xrefPath == null)
+                return;
+            string[] validTypes = new string[] {"pseudogene", "antisense RNA", "RNase MRP RNA", "microRNA",
+                                                "RNase P RNA", "small cytoplasmic RNA", "small nuclear RNA",
+                                                "small nucleolar RNA", "telomerase RNA", "transfer RNA", "non-coding RNA", "mRNA"};
+            string line;
+            int n = 0;
+            using (StreamReader reader = xrefPath.OpenRead())
+            {
+                while ((line = reader.ReadLine()) != null)
+                {
+                    string[] fields = line.Split('\t');
+                    string trId = fields[1].Trim();
+                    foreach (string type in validTypes)
+                    {
+                        if (fields[7].Contains(type))
+                        {
+                            kgXRefTrIdToType[trId] = type;
+                            n++;
+                            break;
+                        }
+                    }
+                }
+            }
+            Console.WriteLine("Read {0} gene type annotations from {1}.", n, xrefPath);
+        }
+
+        protected void SetTranscriptType(ExtendedGeneFeature gf)
+        {
+            if (gf.TranscriptType == "")
+            {
+                if (!kgXRefTrIdToType.TryGetValue(gf.TranscriptName, out gf.TranscriptType))
+                    gf.TranscriptType = "gene";
+
+            }
+        }
+
         protected int AddRefFlatGenes()
         {
             int nTotal = 0, nMerged = 0, nCreated = 0, nRandom = 0, nUpdated = 0;
@@ -104,10 +148,8 @@ namespace Linnarsson.Dna
                 VisitedAnnotationPaths += ";" + refFlatPath;
                 foreach (ExtendedGeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
                 {
+                    SetTranscriptType(gf);
                     nTotal++;
-                    //if (gf.Chr.Contains("random"))
-                    //    nRandom++;
-                    //else
                     if (FusedWithOverlapping(gf))
                         nMerged++;
                     else
@@ -322,8 +364,13 @@ namespace Linnarsson.Dna
                     i--;
                 }
             }
-            string combTrName = oldGf.TranscriptName.Contains(newGf.TranscriptName)? oldGf.TranscriptName : (oldGf.TranscriptName + ";" + newGf.TranscriptName);
-            string combTrType = oldGf.TranscriptType.Contains(newGf.TranscriptType) ? oldGf.TranscriptType : (oldGf.TranscriptType + ";" + newGf.TranscriptType);
+            bool newCoding = newGf.TranscriptType == "mRNA" || newGf.TranscriptType == "protein_coding";
+            bool oldCoding = oldGf.TranscriptType == "mRNA" || oldGf.TranscriptType == "protein_coding";
+            string combTrType = oldGf.TranscriptType;
+            if (oldGf.TranscriptType == "gene" && newCoding) combTrType = newGf.TranscriptType;
+            else if (!(oldCoding && newGf.TranscriptType == "gene") && !oldGf.TranscriptType.Contains(newGf.TranscriptType))
+                combTrType += ";" + newGf.TranscriptType;
+            string combTrName = oldGf.TranscriptName.Contains(newGf.TranscriptName) ? oldGf.TranscriptName : (oldGf.TranscriptName + ";" + newGf.TranscriptName);
             ExtendedGeneFeature newFeature = new ExtendedGeneFeature(oldGf.Name, oldGf.Chr, oldGf.Strand, 
                                                     newStarts.ToArray(), newEnds.ToArray(), combTrType, combTrName);
             return newFeature;
@@ -386,7 +433,7 @@ namespace Linnarsson.Dna
             string[] record = line.Split('\t');
             string name = record[0].Trim();
             string trName = record[1].Trim();
-            string trType = "gene";
+            string trType = "";
             int i = trName.IndexOf(';');
             if (trName == "")
                 trName = name;

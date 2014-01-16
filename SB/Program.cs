@@ -58,6 +58,7 @@ namespace CmdSilverBullet
                             gdm.DownloadMartAnnotations(abbrev, destDir);
                             break;
 
+                        case "knowngene2refflat":
                         case "mart2refflat":
                             genome = StrtGenome.GetGenome(args[1]);
                             if (!args[1].Contains("_s"))
@@ -69,10 +70,10 @@ namespace CmdSilverBullet
                             int nModels = ar.BuildGeneModelsByChr(false);
                             using (StreamWriter mw = outfile.OpenWrite())
                             {
-                                foreach (ExtendedGeneFeature egf in ar.IterChrSortedGeneModels())
+                                foreach (GeneFeature gf in ar.IterChrSortedGeneModels())
                                 {
-                                    egf.Name = egf.Name.Split('_')[0];
-                                    mw.WriteLine(egf.ToRefFlatString());
+                                    gf.Name = gf.Name.Split('_')[0];
+                                    mw.WriteLine(gf.ToRefFlatString());
                                 }
                             }
                             Console.WriteLine("Wrote {0} gene models to {1}", nModels, outfile);
@@ -282,6 +283,7 @@ namespace CmdSilverBullet
                 "      Will start by running Bowtie if .map files are missing.\n" +
                 "SB.exe download <Genus_species>                      -   download latest genome build and annotations.\n" +
                 "SB.exe mart2refflat <Idx> [<outfile>]                -   make a refFlat file from mart-style annotations.\n" +
+                "SB.exe knowngene2refflat <Idx> [<outfile>]           -   make a refFlat file from UCSC knownGene.txt annotations.\n" +
                 "SB.exe upd [ReadLen] <Idx> [<annotfile>] <errorfile> -   update 5' end annotations from an 'annot_errors.tab' file. Specify 'annotfile' to overide default.\n" +
                 "SB.exe idx <readLen> <Build> [<Annot>]  [<annotfile>] -  build annotations and Bowtie index. Specify 'annotfile' to overide default.\n" +
                 "SB.exe bt <Build>|<Idx> all|single <ProjectPath>|<ExtractedPath>\n" +
@@ -294,7 +296,7 @@ namespace CmdSilverBullet
                 "      make fq file of transcript fragments. Makes all if MaxPerGene=0. Adds barcodes+GGG if bcSet given.\n\n" + 
                 "<RunLaneSpec> E.g. '17:235[:,,AGCTTG]', i.e. lanes 2,3,5 of run 17 [and only idx read AGCTTG of lane 5].\n" +
                 "              Regexps are allowed for idx read matching, e.g. AG?TTG.\n" +
-                "<Build> E.g. 'mm9', 'hg19', or 'gg3', <Annot> is 'UCSC', 'VEGA', or 'ENSEMBL' (Default: 'UCSC')\n" +
+                "<Build> E.g. 'mm9', 'hg19', or 'gg3', <Annot> is 'UCSC', 'UALL', 'VEGA', 'ENSE', or 'RFSQ' (Default: 'UCSC' which == 'RFSQ')\n" +
                 "<Idx>   Specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_VEGA'.\n" +
                 "<Bc>    'v2' (96x6-mer), 'v4' (48x6-mer, random tags), 'v4r' (no random tags), or 'no' for no barcodes.\n" +
                 "-Lt n   Limit number of reads used to n. t is one of TotalReads, ValidReads, TotalReadsPerBc, ValidReadsPerBc\n" +

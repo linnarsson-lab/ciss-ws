@@ -19,26 +19,29 @@ namespace Linnarsson.Dna
 
     public abstract class AnnotationReader
     {
+        protected static string[] validXrefGeneTypes = new string[] {"pseudogene", "antisense RNA", "RNase MRP RNA", "microRNA",
+                                                            "RNase P RNA", "small cytoplasmic RNA", "small nuclear RNA",
+                                                            "small nucleolar RNA", "telomerase RNA", "transfer RNA", "non-coding RNA", "mRNA"};
+
         public static AnnotationReader GetAnnotationReader(StrtGenome genome)
         {
             return GetAnnotationReader(genome, "");
         }
         /// <summary>
-        /// If annotationFile is empty, replace with default filename
+        /// If annotationFile is empty, replace with default filename for genome
         /// </summary>
         /// <param name="genome"></param>
         /// <param name="annotationFile"></param>
         /// <returns></returns>
         public static string GetAnnotationFile(StrtGenome genome, string annotationFile)
         {
-            if (annotationFile == null || annotationFile == "")
-            {
-                if (genome.Annotation == "UCSC")
-                    annotationFile = "refFlat.txt";
-                else
-                    annotationFile = genome.Annotation + "_mart_export.txt";
-            }
-            return annotationFile;
+            if (annotationFile != null && annotationFile != "")
+                return annotationFile;
+            if (genome.Annotation == "UCSC" || genome.Annotation == "RFSQ")
+                return "refFlat.txt";
+            if (genome.Annotation == "UALL")
+                return "knownGene.txt";
+            return genome.Annotation + "_mart_export.txt";
         }
 
         public static AnnotationReader GetAnnotationReader(StrtGenome genome, string annotationFile)
@@ -46,6 +49,8 @@ namespace Linnarsson.Dna
             annotationFile = GetAnnotationFile(genome, annotationFile);
             if (annotationFile.Contains("refFlat"))
                 return new RefFlatAnnotationReader(genome, annotationFile);
+            if (annotationFile.Contains("knownGene"))
+                return new KnownGeneAnnotationReader(genome, annotationFile);
             return new BioMartAnnotationReader(genome, annotationFile);
         }
 
@@ -53,25 +58,40 @@ namespace Linnarsson.Dna
         {
             this.genome = genome;
             this.annotationFile = annotationFile;
-            ReadBackupTypeAnnontations(genome);
         }
 
         /// <summary>
         /// Read external gene definition files (UCSC refFlat.txt, VEGA mart files...)
-        /// and construct transcript models for single or variant annotations
+        /// and construct gene models for single or variant annotations
         /// </summary>
-        /// <returns>Number of transcript models constructed</returns>
-        public abstract int BuildGeneModelsByChr();
-        public abstract int BuildGeneModelsByChr(bool addUCSC);
+        /// <returns>Number of gene models constructed</returns>
+        public virtual int BuildGeneModelsByChr()
+        {
+            bool addRefFlat = (genome.Annotation != "UCSC" && genome.Annotation != "RFSQ");
+            return BuildGeneModelsByChr(addRefFlat);
+        }
+        public virtual int BuildGeneModelsByChr(bool addRefFlat)
+        {
+            ClearGenes();
+            int nCreated = ReadGenes();
+            if (addRefFlat)
+                nCreated += AddRefFlatGenes();
+            return nCreated;
+        }
+        /// <summary>
+        /// Read and setup gene models from the file defined by the particular subclass. Do not add extra genes from e.g. refFlat.
+        /// </summary>
+        /// <returns></returns>
+        protected abstract int ReadGenes();
 
-        private Dictionary<string, string> kgXRefTrIdToType = new Dictionary<string, string>();
+        private Dictionary<string, string> kgXRefTrIdToType;
 
         protected StrtGenome genome;
         protected string annotationFile { get; private set; }
 
         protected Dictionary<string, List<GeneFeature>> locNameToGenes; // "name_p" / "name_loc" => genes. Used for all variant building
-        protected Dictionary<string, ExtendedGeneFeature> nameToGene; // "name_pN" / "name_locN" => gene. Used for main variant building
-        protected Dictionary<string, List<ExtendedGeneFeature>> genesByChr;
+        protected Dictionary<string, GeneFeature> nameToGene; // "name_pN" / "name_locN" => gene. Used for main variant building
+        protected Dictionary<string, List<GeneFeature>> genesByChr;
         protected int pseudogeneCount = 0;
 
         public string VisitedAnnotationPaths = "";
@@ -88,53 +108,56 @@ namespace Linnarsson.Dna
         /// Iterate all gene models, order by increasing start position
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<ExtendedGeneFeature> IterChrSortedGeneModels()
+        public IEnumerable<GeneFeature> IterChrSortedGeneModels()
         {
             foreach (string chrId in genesByChr.Keys)
             {
-                List<ExtendedGeneFeature> chrGfs = genesByChr[chrId];
+                List<GeneFeature> chrGfs = genesByChr[chrId];
                 chrGfs.Sort((gf1, gf2) => gf1.Start - gf2.Start);
-                foreach (ExtendedGeneFeature gf in chrGfs)
+                foreach (GeneFeature gf in chrGfs)
                     yield return gf;
             }
         }
 
+        protected string ValidateKgXrefType(string typeField)
+        {
+            foreach (string type in validXrefGeneTypes)
+            {
+                if (typeField.Contains(type))
+                    return type;
+            }
+            return "";
+        }
+
         private void ReadBackupTypeAnnontations(StrtGenome genome)
         {
+            kgXRefTrIdToType = new Dictionary<string, string>();
             string xrefPath = PathHandler.ExistsOrGz(Path.Combine(genome.GetOriginalGenomeFolder(), "kgXref.txt"));
             if (xrefPath == null)
                 return;
-            string[] validTypes = new string[] {"pseudogene", "antisense RNA", "RNase MRP RNA", "microRNA",
-                                                "RNase P RNA", "small cytoplasmic RNA", "small nuclear RNA",
-                                                "small nucleolar RNA", "telomerase RNA", "transfer RNA", "non-coding RNA", "mRNA"};
             string line;
-            int n = 0;
             using (StreamReader reader = xrefPath.OpenRead())
             {
                 while ((line = reader.ReadLine()) != null)
                 {
                     string[] fields = line.Split('\t');
                     string trId = fields[1].Trim();
-                    foreach (string type in validTypes)
-                    {
-                        if (fields[7].Contains(type))
-                        {
-                            kgXRefTrIdToType[trId] = type;
-                            n++;
-                            break;
-                        }
-                    }
+                    string type = ValidateKgXrefType(fields[7]);
+                    if (type != "")
+                        kgXRefTrIdToType[trId] = type;
                 }
             }
-            Console.WriteLine("Read {0} gene type annotations from {1}.", n, xrefPath);
+            Console.WriteLine("Read {0} gene type annotations from {1}.", kgXRefTrIdToType.Count, xrefPath);
         }
 
-        protected void SetTranscriptType(ExtendedGeneFeature gf)
+        protected void SetTranscriptType(GeneFeature gf)
         {
-            if (gf.TranscriptType == "")
+            if (kgXRefTrIdToType == null)
+                ReadBackupTypeAnnontations(genome);
+            if (gf.GeneType == "")
             {
-                if (!kgXRefTrIdToType.TryGetValue(gf.TranscriptName, out gf.TranscriptType))
-                    gf.TranscriptType = "gene";
+                if (!kgXRefTrIdToType.TryGetValue(gf.GeneMetadata, out gf.GeneType))
+                    gf.GeneType = "gene";
 
             }
         }
@@ -146,7 +169,7 @@ namespace Linnarsson.Dna
             if (File.Exists(refFlatPath))
             {
                 VisitedAnnotationPaths += ";" + refFlatPath;
-                foreach (ExtendedGeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
+                foreach (GeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
                 {
                     SetTranscriptType(gf);
                     nTotal++;
@@ -165,15 +188,15 @@ namespace Linnarsson.Dna
             return nCreated;
         }
 
-        protected bool FusedWithOverlapping(ExtendedGeneFeature gf)
+        protected bool FusedWithOverlapping(GeneFeature gf)
         {
             try
             {
-                foreach (ExtendedGeneFeature oldGf in genesByChr[gf.Chr])
+                foreach (GeneFeature oldGf in genesByChr[gf.Chr])
                     if (oldGf.IsSameTranscript(gf, 5, 100))
                     {
-                        if (!oldGf.Name.Contains(gf.Name) && !oldGf.TranscriptName.Contains(gf.Name))
-                            oldGf.TranscriptName = oldGf.TranscriptName + "/" + gf.Name;
+                        if (!oldGf.Name.Contains(gf.Name) && !oldGf.GeneMetadata.Contains(gf.Name))
+                            oldGf.GeneMetadata = oldGf.GeneMetadata + "/" + gf.Name;
                         oldGf.Start = Math.Min(oldGf.Start, gf.Start);
                         oldGf.End = Math.Max(oldGf.End, gf.End);
                         return true;
@@ -188,12 +211,12 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="chrId">Specified chromosome</param>
         /// <returns></returns>
-        public IEnumerable<ExtendedGeneFeature> IterChrSortedGeneModels(string chrId)
+        public IEnumerable<GeneFeature> IterChrSortedGeneModels(string chrId)
         {
             if (!genesByChr.ContainsKey(chrId)) yield break;
-            List<ExtendedGeneFeature> chrGfs = genesByChr[chrId];
+            List<GeneFeature> chrGfs = genesByChr[chrId];
             chrGfs.Sort((gf1, gf2) => gf1.Start - gf2.Start);
-            foreach (ExtendedGeneFeature gf in chrGfs)
+            foreach (GeneFeature gf in chrGfs)
                 yield return gf;
         }
 
@@ -203,8 +226,8 @@ namespace Linnarsson.Dna
         protected void ClearGenes()
         {
             locNameToGenes = new Dictionary<string, List<GeneFeature>>();
-            nameToGene = new Dictionary<string, ExtendedGeneFeature>();
-            genesByChr = new Dictionary<string, List<ExtendedGeneFeature>>();
+            nameToGene = new Dictionary<string, GeneFeature>();
+            genesByChr = new Dictionary<string, List<GeneFeature>>();
             pseudogeneCount = 0;
         }
  
@@ -223,10 +246,10 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="gf"></param>
         /// <returns>True if a new model was added</returns>
-        protected bool AddGeneModel(ExtendedGeneFeature gf)
+        protected bool AddGeneModel(GeneFeature gf)
         {
             if (!genesByChr.ContainsKey(gf.Chr))
-                genesByChr[gf.Chr] = new List<ExtendedGeneFeature>();
+                genesByChr[gf.Chr] = new List<GeneFeature>();
             bool createdNew;
             if (genome.GeneVariants)
                 createdNew = AddToVariantGeneModels(gf);
@@ -236,16 +259,16 @@ namespace Linnarsson.Dna
             return createdNew;
         }
 
-        private bool AddToVariantGeneModels(ExtendedGeneFeature gf)
+        private bool AddToVariantGeneModels(GeneFeature gf)
         {
             //Console.Write("{0}: chr{1}{2}: {3}-{4}", gf.Name, gf.Chr, gf.Strand, gf.Start, gf.End);
-            string locIndicator = gf.IsPseudogeneType() ? ExtendedGeneFeature.pseudoGeneIndicator : ExtendedGeneFeature.altLocusIndicator;
+            string locIndicator = gf.IsPseudogeneType() ? GeneFeature.pseudoGeneIndicator : GeneFeature.altLocusIndicator;
             string lociPrefix = gf.Name + locIndicator;
             int maxLocNo = 0, maxVarNo = 1;
             List<GeneFeature> locNameGenes = null;
             if (locNameToGenes.TryGetValue(lociPrefix, out locNameGenes))
             {
-                foreach (ExtendedGeneFeature oldGf in locNameGenes)
+                foreach (GeneFeature oldGf in locNameGenes)
                 {
                     Match m = Regex.Match(oldGf.Name, locIndicator + "([0-9]+)");
                     int locNo = m.Success ? int.Parse(m.Groups[1].Value) : 1;
@@ -253,26 +276,23 @@ namespace Linnarsson.Dna
                     if (oldGf.Chr == gf.Chr && oldGf.Strand == gf.Strand && oldGf.Overlaps(gf.Start, gf.End, 1))
                     { // We have a new variant of an already defined locus
                         string thisLocusPat = m.Success? lociPrefix + locNo.ToString() : gf.Name;
-                        //Console.WriteLine("thisLocusPat=" + thisLocusPat);
-                        foreach (ExtendedGeneFeature locGf in locNameGenes)
+                        foreach (GeneFeature locGf in locNameGenes)
                         {
-                            //Console.WriteLine("  testing " + locGf.Name + " starting" + thisLocusPat);
                             if (locGf.Name == thisLocusPat || locGf.Name.StartsWith(thisLocusPat + "_"))
                             {
-                                int varIdx = locGf.Name.LastIndexOf(ExtendedGeneFeature.variantIndicator);
-                                //Console.WriteLine("    success and varIdx=" + varIdx.ToString());
+                                int varIdx = locGf.Name.LastIndexOf(GeneFeature.variantIndicator);
                                 if (varIdx == -1)
                                 { // There is only one previous variant of this locus - add the variant 1 indicator to it
                                     //Console.WriteLine("Adding '_v1' to " + locGf.Name);
-                                    locGf.Name += ExtendedGeneFeature.variantIndicator + "1";
+                                    locGf.Name += GeneFeature.variantIndicator + "1";
                                     break;
                                 }
-                                maxVarNo = Math.Max(maxVarNo, int.Parse(locGf.Name.Substring(varIdx + ExtendedGeneFeature.variantIndicator.Length)));
+                                maxVarNo = Math.Max(maxVarNo, int.Parse(locGf.Name.Substring(varIdx + GeneFeature.variantIndicator.Length)));
                             }
                         }
                         int newVarNo = maxVarNo + 1;
-                        gf.Name = (!m.Success)? string.Format("{0}{1}{2}", gf.Name, ExtendedGeneFeature.variantIndicator, newVarNo) :
-                                                          string.Format("{0}{1}{2}{3}", lociPrefix, locNo, ExtendedGeneFeature.variantIndicator, newVarNo);
+                        gf.Name = (!m.Success)? string.Format("{0}{1}{2}", gf.Name, GeneFeature.variantIndicator, newVarNo) :
+                                                          string.Format("{0}{1}{2}{3}", lociPrefix, locNo, GeneFeature.variantIndicator, newVarNo);
                         genesByChr[gf.Chr].Add(gf);
                         locNameToGenes[lociPrefix].Add(gf);
                         //Console.WriteLine(" Created {0}", gf.Name);
@@ -284,9 +304,9 @@ namespace Linnarsson.Dna
             int newLocNo = maxLocNo + 1;
             if (newLocNo == 2 && !gf.IsPseudogeneType())
             { // We will add the second locus for this gene - add "_loc1" extension to all variants of the first
-                foreach (ExtendedGeneFeature oldGf in locNameGenes)
+                foreach (GeneFeature oldGf in locNameGenes)
                 {
-                    int vi = oldGf.Name.IndexOf(ExtendedGeneFeature.variantIndicator);
+                    int vi = oldGf.Name.IndexOf(GeneFeature.variantIndicator);
                     oldGf.Name = (vi > 0) ? oldGf.Name.Insert(vi, locIndicator + "1") : oldGf.Name + locIndicator + "1";
                 }
             }
@@ -306,18 +326,18 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="gf"></param>
         /// <returns>True if a new gene was constructed</returns>
-        private bool AddToSingleGeneModels(ExtendedGeneFeature gf)
+        private bool AddToSingleGeneModels(GeneFeature gf)
         {
             //Console.Write("{0}: chr{1}{2}: ", gf.Name, gf.Chr, gf.Strand);
-            string locIndicator = gf.IsPseudogeneType() ? ExtendedGeneFeature.pseudoGeneIndicator : ExtendedGeneFeature.altLocusIndicator;
+            string locIndicator = gf.IsPseudogeneType() ? GeneFeature.pseudoGeneIndicator : GeneFeature.altLocusIndicator;
             int altLocNo = 1;
             string locName = string.Format("{0}{1}{2}", gf.Name, locIndicator, altLocNo);
-            ExtendedGeneFeature oldGf, saveGf = null;
+            GeneFeature oldGf, saveGf = null;
             while (nameToGene.TryGetValue(locName, out oldGf))
             { // Pick up the first gene of this name (the plain name Key for the first is kept)
                 if (oldGf.Chr == gf.Chr && oldGf.Strand == gf.Strand && oldGf.Overlaps(gf.Start, gf.End, 1))
                 {
-                    ExtendedGeneFeature combinedGf = CreateExonUnion(oldGf, gf);
+                    GeneFeature combinedGf = CreateExonUnion(oldGf, gf);
                     combinedGf.Name = oldGf.Name;
                     int idx = genesByChr[gf.Chr].IndexOf(oldGf);
                     genesByChr[gf.Chr][idx] = combinedGf;
@@ -341,7 +361,7 @@ namespace Linnarsson.Dna
             return true;
         }
 
-        private ExtendedGeneFeature CreateExonUnion(ExtendedGeneFeature oldGf, ExtendedGeneFeature newGf)
+        private GeneFeature CreateExonUnion(GeneFeature oldGf, GeneFeature newGf)
         {
             List<int> newStarts = oldGf.ExonStarts.ToList();
             List<int> newEnds = oldGf.ExonEnds.ToList();
@@ -364,14 +384,14 @@ namespace Linnarsson.Dna
                     i--;
                 }
             }
-            bool newCoding = newGf.TranscriptType == "mRNA" || newGf.TranscriptType == "protein_coding";
-            bool oldCoding = oldGf.TranscriptType == "mRNA" || oldGf.TranscriptType == "protein_coding";
-            string combTrType = oldGf.TranscriptType;
-            if (oldGf.TranscriptType == "gene" && newCoding) combTrType = newGf.TranscriptType;
-            else if (!(oldCoding && newGf.TranscriptType == "gene") && !oldGf.TranscriptType.Contains(newGf.TranscriptType))
-                combTrType += ";" + newGf.TranscriptType;
-            string combTrName = oldGf.TranscriptName.Contains(newGf.TranscriptName) ? oldGf.TranscriptName : (oldGf.TranscriptName + ";" + newGf.TranscriptName);
-            ExtendedGeneFeature newFeature = new ExtendedGeneFeature(oldGf.Name, oldGf.Chr, oldGf.Strand, 
+            bool newCoding = newGf.GeneType == "mRNA" || newGf.GeneType == "protein_coding";
+            bool oldCoding = oldGf.GeneType == "mRNA" || oldGf.GeneType == "protein_coding";
+            string combTrType = oldGf.GeneType;
+            if (oldGf.GeneType == "gene" && newCoding) combTrType = newGf.GeneType;
+            else if (!(oldCoding && newGf.GeneType == "gene") && !oldGf.GeneType.Contains(newGf.GeneType))
+                combTrType += ";" + newGf.GeneType;
+            string combTrName = oldGf.GeneMetadata.Contains(newGf.GeneMetadata) ? oldGf.GeneMetadata : (oldGf.GeneMetadata + "/" + newGf.GeneMetadata);
+            GeneFeature newFeature = new GeneFeature(oldGf.Name, oldGf.Chr, oldGf.Strand, 
                                                     newStarts.ToArray(), newEnds.ToArray(), combTrType, combTrName);
             return newFeature;
         }
@@ -383,10 +403,10 @@ namespace Linnarsson.Dna
         /// <param name="m"></param>
         public void AdjustGeneFeatures(GeneFeatureModifiers m)
         {
-            foreach (List<ExtendedGeneFeature> chrGenes in genesByChr.Values)
+            foreach (List<GeneFeature> chrGenes in genesByChr.Values)
             {
                 List<GeneFeature> gfs = new List<GeneFeature>(chrGenes.Count);
-                foreach (ExtendedGeneFeature e in chrGenes)
+                foreach (GeneFeature e in chrGenes)
                     gfs.Add((GeneFeature)e);
                 m.Process(gfs);
             }
@@ -402,7 +422,7 @@ namespace Linnarsson.Dna
             {
                 int nCTRLs = 0;
                 VisitedAnnotationPaths += ";" + CTRLGenesPath;
-                foreach (ExtendedGeneFeature gf in AnnotationReader.IterRefFlatFile(CTRLGenesPath))
+                foreach (GeneFeature gf in AnnotationReader.IterRefFlatFile(CTRLGenesPath))
                     if (AddGeneModel(gf)) nCTRLs++;
                 Console.WriteLine("Added {0} CTRL genes from {1}.", nCTRLs, CTRLGenesPath);
             }
@@ -422,32 +442,10 @@ namespace Linnarsson.Dna
                     string[] f = line.Split('\t');
                     if (f.Length < 11)
                         throw new AnnotationFileException("Wrong format of file " + refFlatPath + " Should be 11 TAB-delimited columns.");
-                    ExtendedGeneFeature ft = ExtendedGeneFeatureFromRefFlatLine(line);
+                    GeneFeature ft = GeneFeatureFromRefFlatLine(line);
                     yield return ft;
                 }
             }
-        }
-
-        private static ExtendedGeneFeature ExtendedGeneFeatureFromRefFlatLine(string line)
-        {
-            string[] record = line.Split('\t');
-            string name = record[0].Trim();
-            string trName = record[1].Trim();
-            string trType = "";
-            int i = trName.IndexOf(';');
-            if (trName == "")
-                trName = name;
-            else if (i > 0)
-            {
-                trType = trName.Substring(0, i);
-                trName = trName.Substring(i + 1);
-            }
-            string chr = record[2].Trim();
-            char strand = record[3].Trim()[0];
-            int nExons = int.Parse(record[8]);
-            int[] exonStarts = SplitField(record[9], 0);
-            int[] exonEnds = SplitExonEndsField(record[10]); // Convert to inclusive ends
-            return new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, trType, trName);
         }
 
         /// <summary>
@@ -477,18 +475,49 @@ namespace Linnarsson.Dna
             }
         }
 
-        private static IFeature FromSTRTAnnotationsLine(string line)
+        private static GeneFeature GeneFeatureFromRefFlatLine(string line)
         {
             string[] record = line.Split('\t');
             string name = record[0].Trim();
             string trName = record[1].Trim();
+            string geneType = "";
+            int i = trName.IndexOf(';');
+            if (trName == "")
+                trName = name;
+            else if (i > 0)
+            {
+                geneType = trName.Substring(0, i);
+                trName = trName.Substring(i + 1);
+            }
+            string chr = record[2].Trim();
+            char strand = record[3].Trim()[0];
+            int nExons = int.Parse(record[8]);
+            int[] exonStarts = SplitField(record[9], 0);
+            int[] exonEnds = SplitExonEndsField(record[10]); // Convert to inclusive ends
+            return new GeneFeature(name, chr, strand, exonStarts, exonEnds, geneType, trName);
+        }
+
+        private static IFeature FromSTRTAnnotationsLine(string line)
+        {
+            string[] record = line.Split('\t');
+            string name = record[0].Trim();
+            string geneMetadata = record[1].Trim();
+            string geneType = "";
+            int i = geneMetadata.IndexOf(';');
+            if (geneMetadata == "")
+                geneMetadata = name;
+            else if (i > 0)
+            {
+                geneType = geneMetadata.Substring(0, i);
+                geneMetadata = geneMetadata.Substring(i + 1);
+            }
             string chr = record[2].Trim();
             char strand = record[3].Trim()[0];
             int nExons = int.Parse(record[8]);
             int[] exonStarts = SplitField(record[9], 0);
             int[] exonEnds = SplitExonEndsField(record[10]); // Convert to inclusive ends
             if (record.Length == 11)
-                return new GeneFeature(name, chr, strand, exonStarts, exonEnds);
+                return new GeneFeature(name, chr, strand, exonStarts, exonEnds, geneType, geneMetadata);
             int[] offsets = SplitField(record[11], 0);
             int[] realExonIds = SplitField(record[12], 0);
             string[] exonsStrings = record[13].Split(',');
@@ -513,14 +542,15 @@ namespace Linnarsson.Dna
         {
             int[] exonStarts = SplitField(tt.ExonStarts, 0); // 0-based
             int[] exonEnds = SplitExonEndsField(tt.ExonEnds); // Convert to 0-based inclusive ends
-            return new GeneFeature(tt.UniqueGeneName, tt.Chromosome, tt.Strand, exonStarts, exonEnds, 
-                                   tt.TranscriptID.Value, tt.ExprBlobIdx);
+            return new GeneFeature(tt.UniqueGeneName, tt.Chromosome, tt.Strand, exonStarts, exonEnds,
+                                   tt.Type, tt.Name, tt.TranscriptID.Value, tt.ExprBlobIdx);
         }
 
-        public static Transcript CreateNewTranscriptFromExtendedGeneFeature(ExtendedGeneFeature gf)
+        public static Transcript CreateNewTranscriptFromGeneFeature(GeneFeature gf)
         {
-            string type = gf.TranscriptType == "" ? "gene" : gf.TranscriptType;
-            return new Transcript(gf.TranscriptName, type, gf.NonVariantName, gf.Name, "",  "",
+            string type = gf.GeneType == "" ? "gene" : gf.GeneType;
+            string trName = gf.GeneMetadata.Split(';')[0];
+            return new Transcript(trName, type, gf.NonVariantName, gf.Name, "",  "",
                                   gf.Chr, gf.Start + 1, gf.End + 1, gf.GetTranscriptLength(), gf.Strand,
                                   gf.Extension5Prime, gf.ExonStartsString, gf.ExonEndsString);
         }

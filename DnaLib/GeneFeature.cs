@@ -17,6 +17,7 @@ namespace Linnarsson.Dna
     {
         public readonly static string pseudoGeneIndicator = "_p";
         public readonly static string altLocusIndicator = "_loc";
+        public readonly static string capCutSitesPrefix = "Cuts=";
         public readonly static string nonUTRExtendedIndicator = variantIndicator + "Original";
         public static int LocusFlankLength = Props.props.LocusFlankLength;
 
@@ -216,21 +217,39 @@ namespace Linnarsson.Dna
         public bool MaskedUSTR;
         public bool MaskedDSTR;
 
+        /// <summary>
+        /// C1 database ID of transcript
+        /// </summary>
         public int TranscriptID;
+        /// <summary>
+        /// C1 database expression BLOB ID - not in use
+        /// </summary>
         public int ExprBlobIdx;
 
-        public GeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds, int transcriptID, int exprBlobIdx)
-            : this(name, chr, strand, exonStarts, exonEnds)
+        /// <summary>
+        /// Type of gene, e.g. "mRNA", "microRNA", "pseudogene"
+        /// </summary>
+        public string GeneType;
+        /// <summary>
+        /// Transcript id1/id2... ; CAP close cut sites
+        /// </summary>
+        public string GeneMetadata;
+
+        public GeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds, string geneType, string geneMetadata,
+                           int transcriptID, int exprBlobIdx)
+            : this(name, chr, strand, exonStarts, exonEnds, geneType, geneMetadata)
         {
             this.TranscriptID = transcriptID;
             this.ExprBlobIdx = exprBlobIdx;
         }
 
-        public GeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds)
+        public GeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds, string geneType, string geneMetadata)
             : base(name, chr, strand, exonStarts[0], exonEnds[exonEnds.Length - 1])
         {
             ExonStarts = exonStarts;
             ExonEnds = exonEnds;
+            GeneType = geneType;
+            GeneMetadata = geneMetadata;
             LeftFlankLength = RightFlankLength = LocusFlankLength; // Init with default length
             MaskedAEXON = new bool[exonEnds.Length];
             MaskedINTR = new bool[exonEnds.Length - 1];
@@ -250,6 +269,11 @@ namespace Linnarsson.Dna
             m_LocusHits = new int[1000];
             locusHitIdx = 0;
             SavedCAPPos = (strand == '+') ? exonStarts[0] : exonEnds[exonEnds.Length - 1];
+        }
+
+        public bool IsPseudogeneType()
+        {
+            return GeneType.Contains("pseudogene");
         }
 
         public int GetExonLength(int i)
@@ -582,7 +606,6 @@ namespace Linnarsson.Dna
 
         public int MarkSpliceHit(MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
         {
-            //Console.WriteLine("GeneFeature.MarkSpliceHit on {0}, type {1} using {2}", Name, markType, item);
             int exonIdx = (Strand == '+') ? exonId - 1 : ExonCount - exonId;
             int annotType = (item.strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
             if (markType == MarkStatus.NONEXONIC_MAPPING)
@@ -704,15 +727,15 @@ namespace Linnarsson.Dna
         /// Makes a refFlat file like string
         /// </summary>
         /// <returns></returns>
-        public virtual string ToRefFlatString()
+        public string ToRefFlatString()
         {
             StringBuilder s = new StringBuilder();
-            s.AppendFormat("{0}\t\t", Name);
-            string chrName = (Chr == StrtGenome.chrCTRLId)? StrtGenome.chrCTRLId : "chr" + Chr;
+            s.AppendFormat("{0}\t{1};{2}\t", Name, GeneType, GeneMetadata);
+            string chrName = (Chr == StrtGenome.chrCTRLId) ? StrtGenome.chrCTRLId : "chr" + Chr;
             s.AppendFormat("{0}\t", chrName);
             s.AppendFormat("{0}\t", Strand);
             s.AppendFormat("{0}\t", Start);
-            s.AppendFormat("{0}\t", End+1);
+            s.AppendFormat("{0}\t", End + 1);
             s.Append("\t\t");
             s.Append(ExonStarts.Length);
             s.Append("\t");
@@ -720,9 +743,25 @@ namespace Linnarsson.Dna
                 s.AppendFormat("{0},", start);
             s.Append("\t");
             foreach (int end in ExonEnds)
-                s.AppendFormat("{0},", end+1);
+                s.AppendFormat("{0},", end + 1);
             return s.ToString();
         }
+
+        public override string ToString()
+        {
+            StringBuilder s = new StringBuilder();
+            s.Append("\nExonStarts=");
+            foreach (int start in ExonStarts)
+                s.AppendFormat("{0},", start);
+            s.Append("\nExonEnds=");
+            foreach (int end in ExonEnds)
+                s.AppendFormat("{0},", end + 1);
+            return string.Format("GeneFeature(Name={0}, TrName={1}, Chr={2}, Strand={3}, Start={4} End={5}, " +
+                                 "TrType={6}, TrId={7} Extension5Prime={8}{9})",
+                                 Name, GeneMetadata, Chr, Strand, Start, End,
+                                 GeneType, TranscriptID, Extension5Prime, s);
+        }
+
         /// <summary>
         /// 0-based psl-like string of start positions
         /// </summary>
@@ -731,11 +770,6 @@ namespace Linnarsson.Dna
         /// 0-based psl-like string of exclusive end positions
         /// </summary>
         public string ExonEndsString { get { return string.Join(",", Array.ConvertAll(ExonEnds, v => (v+1).ToString())) +","; } }
-
-        public override string ToString()
-        {
-            return this.ToString();
-        }
 
         /// <summary>
         /// Extend 5' end according to GeneFeature5PrimeExtension or as far as the closest neighboring gene exon (in same orientation).
@@ -757,8 +791,6 @@ namespace Linnarsson.Dna
                 idx -= 1;
                 while (idx >= 0 && strandMatters && endSortedMaskStrands[idx] != strand)
                     idx--;
-                //if (NonVariantName == "Snord1b" || NonVariantName == "1810032O08Rik" || NonVariantName == "RP23-313J14.6")
-                //    Console.WriteLine("Before Extend5Prime:strandMatters: {0}, idx={1} ends[idx]={2}", strandMatters, idx, endSortedMaskEnds[idx]);
                 if (idx >= 0)
                 {
                     int newStart = Math.Max(Start - Props.props.GeneFeature5PrimeExtension, endSortedMaskEnds[idx] + 1);
@@ -779,8 +811,6 @@ namespace Linnarsson.Dna
                     End = newEnd;
                 }
             }
-            //if (NonVariantName == "Snord1b" || NonVariantName == "1810032O08Rik" || NonVariantName == "RP23-313J14.6")
-            //    Console.WriteLine(extension + "bp, after: " + this);
             return extension;
         }
 
@@ -862,14 +892,11 @@ namespace Linnarsson.Dna
         /// <returns>Indices of mask intervals that overlapped</returns>
         public List<int> MaskOverlappingAntisenseExons(int[] sortedMaskStarts, int[] sortedMaskEnds, bool[] sortedMaskStrands)
         {
-            //Console.WriteLine("1:GeneFeature.MaskOverlappingAntisenseExons({0})", Name);
             List<int> idxOfMasked = new List<int>();
             if (!Props.props.DirectionalReads) return idxOfMasked;
             bool antisenseStrand = (Strand == '+')? false: true;
             int maskRegionIdx = Array.BinarySearch(sortedMaskEnds, Start);
             if (maskRegionIdx < 0) maskRegionIdx = ~maskRegionIdx;
-            //Console.WriteLine("2:maskRegionIdx={0} sortedMaskStart={1} sortedMaskEnd={2}",
-            //                  maskRegionIdx, sortedMaskStarts[maskRegionIdx], sortedMaskEnds[maskRegionIdx]);
             while (maskRegionIdx < sortedMaskStarts.Length && sortedMaskStarts[maskRegionIdx] <= End)
             {
                 if (sortedMaskStrands[maskRegionIdx] == antisenseStrand)
@@ -882,8 +909,6 @@ namespace Linnarsson.Dna
                         {
                             MaskedAEXON[gfExonsIdx] = true;
                             idxOfMasked.Add(maskRegionIdx);
-                            //Console.WriteLine("Masked antisense exon on {0}. exon={1}-{2}. Competing exon={3}-{4}",
-                            //                 Name, ExonStarts[gfExonsIdx], ExonEnds[gfExonsIdx], maskStart, maskEnd);
                         }
                     }
                 }
@@ -959,61 +984,4 @@ namespace Linnarsson.Dna
         }
     }
 
-    /// <summary>
-    /// Includes extra annotation needed when constructing a STRT genome
-    /// </summary>
-    public class ExtendedGeneFeature : GeneFeature
-    {
-        public string TranscriptType;
-        public string TranscriptName;
-
-        public ExtendedGeneFeature(string name, string chr, char strand, int[] exonStarts, int[] exonEnds,
-                                   string transcriptType, string transcriptName)
-            : base(name, chr, strand, exonStarts, exonEnds)
-        {
-            this.TranscriptType = transcriptType;
-            this.TranscriptName = transcriptName;
-        }
-
-        public bool IsPseudogeneType()
-        {
-            return TranscriptType.Contains("pseudogene");
-        }
-
-        public override string ToRefFlatString()
-        {
-            StringBuilder s = new StringBuilder();
-            s.AppendFormat("{0}\t{1};{2}\t", Name, TranscriptType, TranscriptName);
-            string chrName = (Chr == StrtGenome.chrCTRLId) ? StrtGenome.chrCTRLId : "chr" + Chr;
-            s.AppendFormat("{0}\t", chrName);
-            s.AppendFormat("{0}\t", Strand);
-            s.AppendFormat("{0}\t", Start);
-            s.AppendFormat("{0}\t", End + 1);
-            s.Append("\t\t");
-            s.Append(ExonStarts.Length);
-            s.Append("\t");
-            foreach (int start in ExonStarts)
-                s.AppendFormat("{0},", start);
-            s.Append("\t");
-            foreach (int end in ExonEnds)
-                s.AppendFormat("{0},", end + 1);
-            return s.ToString();
-        }
-
-        public override string ToString()
-        {
-            StringBuilder s = new StringBuilder();
-            s.Append("\nExonStarts=");
-            foreach (int start in ExonStarts)
-                s.AppendFormat("{0},", start);
-            s.Append("\nExonEnds=");
-            foreach (int end in ExonEnds)
-                s.AppendFormat("{0},", end + 1);
-            return string.Format("ExtendedGeneFeature(Name={0}, TrName={1}, Chr={2}, Strand={3}, Start={4} End={5}, " +
-                                 "TrType={6}, TrId={7} Extension5Prime={8}{9}",
-                                 Name, TranscriptName, Chr, Strand, Start, End, 
-                                 TranscriptType, TranscriptID, Extension5Prime, s);
-        }
-
-    }
 }

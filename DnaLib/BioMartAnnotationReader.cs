@@ -14,36 +14,19 @@ namespace Linnarsson.Dna
             : base(genome, annotationFile)
         { }
 
-        public override int BuildGeneModelsByChr()
-        {
-            return BuildGeneModelsByChr(true);
-        }
-        public override int BuildGeneModelsByChr(bool addUCSC)
-        {
-            ClearGenes();
-            int nCreated = ReadMartGenes();
-            if (addUCSC)
-                nCreated += AddRefFlatGenes();
-            return nCreated;
-        }
-
-        private int ReadMartGenes()
+        protected override int ReadGenes()
         {
             string martPath = MakeFullAnnotationPath(annotationFile, true);
             VisitedAnnotationPaths = martPath;
-            int nRead = 0, nCreated = 0; //, nRandom = 0;
-            foreach (ExtendedGeneFeature gf in IterMartFile(martPath))
+            int nRead = 0, nCreated = 0;
+            foreach (GeneFeature gf in IterMartFile(martPath))
             {
-                //if (gf.Chr.Contains("random"))
-                //    nRandom++;
-                //else
                 {
                     if (AddGeneModel(gf)) nCreated++;
                     nRead++;
                 }
             }
             Console.WriteLine("Read {0} genes and variants from {1}", nRead, martPath);
-           // Console.WriteLine("...skipped {0} that are not properly mapped ('random' chromosomes)", nRandom);
             Console.WriteLine("...constructed {0} {1} gene models.", nCreated, (genome.GeneVariants ? "variant" : "main"));
             return nCreated;
         }
@@ -124,7 +107,7 @@ namespace Linnarsson.Dna
                 exonStarts[i] = (int)exons[i].Start;
                 exonEnds[i] = (int)exons[i].End;
             }
-            ExtendedGeneFeature egf = new ExtendedGeneFeature(name, chr, strand, exonStarts, exonEnds, trType, trName);
+            GeneFeature egf = new GeneFeature(name, chr, strand, exonStarts, exonEnds, trType, trName);
             return egf;
         }
 

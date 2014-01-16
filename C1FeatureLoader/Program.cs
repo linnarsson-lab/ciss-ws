@@ -61,10 +61,10 @@ namespace C1
             db.InsertTranscriptome(tt);
             Console.WriteLine("Inserting transcripts into database...");
             int n = 0;
-            foreach (ExtendedGeneFeature gf in annotationReader.IterChrSortedGeneModels())
+            foreach (GeneFeature gf in annotationReader.IterChrSortedGeneModels())
             {
-                string type = gf.TranscriptType == "" ? "gene" : gf.TranscriptType;
-                Transcript t = AnnotationReader.CreateNewTranscriptFromExtendedGeneFeature(gf);
+                string type = gf.GeneType == "" ? "gene" : gf.GeneType;
+                Transcript t = AnnotationReader.CreateNewTranscriptFromGeneFeature(gf);
                 ta.Annotate(ref t);
                 t.TranscriptomeID = tt.TranscriptomeID.Value;
                 t.ExprBlobIdx = n;
@@ -130,8 +130,8 @@ namespace C1
         {
             string refFilename = Path.Combine(genome.GetOriginalGenomeFolder(), genome.BuildVarAnnot + "_C1DB5PrimeExtended_refFlat.txt");
             StreamWriter writer = new StreamWriter(refFilename);
-            foreach (ExtendedGeneFeature gf in annotationReader.IterChrSortedGeneModels())
-                writer.WriteLine(gf.ToRefFlatString());
+            foreach (GeneFeature egf in annotationReader.IterChrSortedGeneModels())
+                writer.WriteLine(egf.ToRefFlatString());
             writer.Close();
             Console.WriteLine("...wrote updated gene models without CTRLs to {0}.", refFilename);
         }

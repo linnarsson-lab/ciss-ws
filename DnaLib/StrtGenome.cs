@@ -10,7 +10,8 @@ namespace Linnarsson.Dna
 {
 	public class StrtGenome
 	{
-        public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE" };
+        public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE", "RFSQ", "UALL" };
+        public static string DefaultAnnotationSource = "UCSC";
         public static string chrCTRLId = "CTRL";
 
         public override string ToString()
@@ -233,15 +234,15 @@ namespace Linnarsson.Dna
         private static StrtGenome m_Human = 
                       new StrtGenome { Description = "reference genome", Abbrev = "hs",
                                        Name = "Human", LatinName = "Homo Sapiens", Build = "hg19",
-                                       Annotation = "UCSC" };
+                                       Annotation = DefaultAnnotationSource };
 		private static StrtGenome m_Mouse =
                       new StrtGenome { Description = "C57BL/6J", Abbrev = "mm",
                                        Name = "Mouse", LatinName = "Mus Musculus", Build = "mm10",
-                                       Annotation = "UCSC" };
+                                       Annotation = DefaultAnnotationSource };
         private static StrtGenome m_Chicken =
                       new StrtGenome { Description = "galGal4", Abbrev = "gg",
                                        Name = "Chicken", LatinName = "Gallus gallus", Build = "gg4",
-                                       Annotation = "UCSC" };
+                                       Annotation = DefaultAnnotationSource };
 
         public static StrtGenome Human { get { return m_Human; } }
 		public static StrtGenome Mouse	{ get { return m_Mouse; } }
@@ -267,7 +268,7 @@ namespace Linnarsson.Dna
                 abbrevs[abbrev] = null; // Used to only get latest version of each genome
                 string strtFolder = GetStrtGenomesFolder(build);
                 if (!requireStrtFolder)
-                    existingGenomes.Add(new StrtGenome(build, abbrev, "UCSC"));
+                    existingGenomes.Add(new StrtGenome(build, abbrev, DefaultAnnotationSource));
                 if (Directory.Exists(strtFolder))
                 {
                     string[] annFiles = Directory.GetFiles(strtFolder, AnnotationsBuildPattern);

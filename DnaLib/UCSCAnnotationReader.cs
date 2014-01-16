@@ -14,26 +14,12 @@ namespace Linnarsson.Dna
         {
         }
 
-        public override int BuildGeneModelsByChr()
-        {
-            bool addUCSC = (genome.Annotation != "UCSC");
-            return BuildGeneModelsByChr(addUCSC);
-        }
-        public override int BuildGeneModelsByChr(bool addUCSC)
-        {
-            ClearGenes();
-            int nCreated = ReadRefFlatGenes();
-            if (addUCSC)
-                nCreated += AddRefFlatGenes();
-            return nCreated;
-        }
-
-        private int ReadRefFlatGenes()
+        protected override int ReadGenes()
         {
             string refFlatPath = MakeFullAnnotationPath(annotationFile, true);
             VisitedAnnotationPaths = refFlatPath;
             int n = 0, nCreated = 0;
-            foreach (ExtendedGeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
+            foreach (GeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
             {
                 SetTranscriptType(gf);
                 bool newModel = AddGeneModel(gf);

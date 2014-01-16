@@ -107,6 +107,7 @@
     <Compile Include="HotspotFinder.cs" />
     <Compile Include="AnnotationReader.cs" />
     <Compile Include="IFeature.cs" />
+    <Compile Include="KnownGeneAnnotationReader.cs" />
     <Compile Include="LabelingEfficiencyEstimator.cs" />
     <Compile Include="MapzFile.cs" />
     <Compile Include="MarkResult.cs" />

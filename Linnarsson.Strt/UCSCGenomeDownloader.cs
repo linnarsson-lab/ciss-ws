@@ -92,7 +92,7 @@ namespace Linnarsson.Strt
             List<string> downloadFilenames = new List<string>();
             foreach (string file in ListFiles(databaseURL))
                 if (file.Contains("refFlat.txt") || file.Contains("refLink.txt") || file.Contains("kgXref.txt")
-                    || file.Contains("kgSpAlias.txt") || file.Contains("rmsk.txt") || file.Contains("README"))
+                    || file.Contains("kgSpAlias.txt") || file.Contains("rmsk.txt") || file.Contains("README") || file.Contains("knownGene.txt"))
                     downloadFilenames.Add(file);
             if (downloadFilenames.Count == 0)
                 throw new FileNotFoundException("Can not find required database files at UCSC: " + speciesURL);

@@ -204,23 +204,23 @@ namespace Linnarsson.Strt
                 List<long> gfEnds = new List<long>();
                 List<long> gfJPos = new List<long>();
                 int lastOverlappingGfIdx = 0;
-                foreach (ExtendedGeneFeature gf in annotationReader.IterChrSortedGeneModels(chrId))
+                foreach (GeneFeature egf in annotationReader.IterChrSortedGeneModels(chrId))
                 { // GeneFeatures now sorted by position on chromosome
-                    gf.JoinSpuriousSplices(minSpuriousSplicesToRemove);
-                    gfEnds.Add(gf.End);
+                    egf.JoinSpuriousSplices(minSpuriousSplicesToRemove);
+                    gfEnds.Add(egf.End);
                     gfJPos.Add((int)jChrSeq.Count);
-                    csa.AnnotateCleaveSites(gf);
-                    annotWriter.WriteLine(gf.ToRefFlatString()); // Write the real chr annotations to output
-                    if (gf.ExonCount < 2)
+                    csa.AnnotateCleaveSites(egf);
+                    annotWriter.WriteLine(egf.ToRefFlatString()); // Write the real chr annotations to output
+                    if (egf.ExonCount < 2)
                         continue;
                     List<int> jStarts = new List<int>();
                     List<int> jEnds = new List<int>();
                     List<string> exonIdStrings = new List<string>();
                     List<int> realExonIds = new List<int>();
                     List<int> offsets = new List<int>();
-                    foreach (ExonCombination ec in GenerateSplices(gf, chrSeq))
+                    foreach (ExonCombination ec in GenerateSplices(egf, chrSeq))
                     {
-                        while (gf.Start > gfEnds[lastOverlappingGfIdx])
+                        while (egf.Start > gfEnds[lastOverlappingGfIdx])
                             lastOverlappingGfIdx++;
                         int jStartInSpliceChr = (int)jChrSeq.Match(ec.Seq, gfJPos[lastOverlappingGfIdx]);
                         if (jStartInSpliceChr == -1)
@@ -240,13 +240,13 @@ namespace Linnarsson.Strt
                             jStarts.Add(startInJChr);
                             jEnds.Add(jStartInSpliceChr + endInJunction);
                             exonIdStrings.Add(ec.ExonsString);
-                            realExonIds.Add(gf.GetRealExonId(ec.ExonIndexes[i]));
+                            realExonIds.Add(egf.GetRealExonId(ec.ExonIndexes[i]));
                             int seqStartInJChr = jStartInSpliceChr + ec.StartsInJunction[i];
                             offsets.Add(ec.StartsInRealChr[i] - seqStartInJChr);
                         }
                     }
                     if (jStarts.Count > 0)
-                        annotWriter.WriteLine(MakeGenesFileLine(gf, junctionsChrId,
+                        annotWriter.WriteLine(MakeGenesFileLine(egf, junctionsChrId,
                                               jStarts, jEnds, offsets, realExonIds, exonIdStrings));
                 }
                 if (Background.CancellationPending) return;

@@ -28,14 +28,14 @@ namespace Linnarsson.Strt
             }
         }
 
-        public void AnnotateCleaveSites(ExtendedGeneFeature gf)
+        public void AnnotateCleaveSites(GeneFeature gf)
         {
             List<int> sites = GetCleaveSites(gf);
-            string siteList = (sites.Count == 0)? "" : "Sites=" + string.Join(",", sites.ConvertAll(v => v.ToString()).ToArray());
-            gf.TranscriptName += ";" + siteList;
+            string siteList = (sites.Count == 0)? "" : GeneFeature.capCutSitesPrefix + string.Join(",", sites.ConvertAll(v => v.ToString()).ToArray());
+            gf.GeneMetadata += ";" + siteList;
         }
 
-        public List<int> GetCleaveSites(ExtendedGeneFeature gf)
+        public List<int> GetCleaveSites(GeneFeature gf)
         {
             DnaSequence trSeq;
             int requestedExtension = (gf.Chr != StrtGenome.chrCTRLId) ? -CAPCloseSiteSearchStart : 0;

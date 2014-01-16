@@ -101,7 +101,7 @@ namespace SilverBullet
                 Background.RunAsync(() =>
                 {
                     Background.Message("Mapping...");
-                    mapper.Map(projectFolder, gd.Genome.GetBowtieMainIndexName(), gvd.AnalyzeAllGeneVariants, "UCSC");
+                    mapper.Map(projectFolder, gd.Genome.GetBowtieMainIndexName(), gvd.AnalyzeAllGeneVariants, StrtGenome.DefaultAnnotationSource);
                     Background.Message("Ready");
                     Console.WriteLine("Done.");
                 });
@@ -133,7 +133,8 @@ namespace SilverBullet
                     try
                     {
                         gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
-                        mapper.MapAndAnnotate(projectFolder, gd.Genome.GetBowtieMainIndexName(), gvd.AnalyzeAllGeneVariants, "UCSC", "");
+                        mapper.MapAndAnnotate(projectFolder, gd.Genome.GetBowtieMainIndexName(), gvd.AnalyzeAllGeneVariants, 
+                                              StrtGenome.DefaultAnnotationSource, "");
                     }
                     catch (Exception exp)
                     {

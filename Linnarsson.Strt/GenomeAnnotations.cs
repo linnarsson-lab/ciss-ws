@@ -833,13 +833,17 @@ namespace Linnarsson.Strt
                 writer.WriteLine(firstHeader);
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 WriteSampleAnnotationLines(writer, 6, true, speciesBcIndexes);
-                writer.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tMinExonHits\tExonHits");
+                writer.WriteLine("Feature\tType\tTrNames\tChr\tPos\tStrand\tTrLen\tClose{0}\tMinExonHits\tExonHits",
+                                 string.Join("/", props.CAPCloseSiteSearchCutters));
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
+                    string[] fs = (gf.GeneMetadata + ";").Split(';');
+                    string trName = fs[0];
+                    string cutSites = fs[1].Replace(GeneFeature.capCutSitesPrefix, "");
                     int ncHits = gf.NonConflictingTranscriptHitsByBarcode.Sum();
                     int maxHits = gf.TranscriptHitsByBarcode.Sum();
-                    writer.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}",
-                                     gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), ncHits, maxHits);
+                    writer.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}",
+                                     gf.Name, gf.GeneType, trName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), cutSites, ncHits, maxHits);
                     int[] data = dataGetter(gf);
                     foreach (int idx in speciesBcIndexes)
                         writer.Write("\t{0}", data[idx]);
@@ -847,7 +851,7 @@ namespace Linnarsson.Strt
                 }
                 foreach (RepeatFeature rf in repeatFeatures.Values)
                 {
-                    writer.Write("r_{0}\t\t\t\t{1}\t{2}\t{2}", rf.Name, rf.GetLocusLength(), rf.GetTotalHits());
+                    writer.Write("r_{0}\trepeats\t\t\t\t\t{1}\t\t{2}\t{2}", rf.Name, rf.GetLocusLength(), rf.GetTotalHits());
                     foreach (int idx in speciesBcIndexes)
                         writer.Write("\t{0}", rf.TotalHitsByBarcode[idx]);
                     writer.WriteLine();

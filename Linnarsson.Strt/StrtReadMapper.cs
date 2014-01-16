@@ -451,11 +451,11 @@ namespace Linnarsson.Strt
         private static void SetAvailableBowtieIndexVersion(ProjectDescription projDescr, StrtGenome genome)
         {
             string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
-            if (bowtieIndexVersion == "" && genome.Annotation != "UCSC")
+            if (bowtieIndexVersion == "" && genome.Annotation != StrtGenome.DefaultAnnotationSource)
             {
-                Console.WriteLine("Could not find a Bowtie index for {0} - trying UCSC instead for {1}",
-                                  genome.Annotation, projDescr.plateId);
-                genome.Annotation = "UCSC";
+                Console.WriteLine("Could not find a Bowtie index for {0} - trying {2} instead for {1}",
+                                  genome.Annotation, projDescr.plateId, StrtGenome.DefaultAnnotationSource);
+                genome.Annotation = StrtGenome.DefaultAnnotationSource;
             }
         }
 

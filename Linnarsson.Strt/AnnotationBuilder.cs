@@ -102,12 +102,14 @@ namespace Linnarsson.Strt
         private int MaxAlignmentMismatches { get; set; }
         private int MatchableLen { get { return ReadLen - MaxAlignmentMismatches; } }
         private int MaxExonsSkip { get; set; }
+        private int MaxExonsSkipAtOver100Exons { get; set; }
 
         public AnnotationBuilder(Props props, AnnotationReader annotationReader)
         {
             ReadLen = props.StandardReadLen;
             MaxAlignmentMismatches = props.MaxAlignmentMismatches;
             MaxExonsSkip = props.MaxExonsSkip;
+            MaxExonsSkipAtOver100Exons = Math.Min(4, MaxExonsSkip);
             this.annotationReader = annotationReader;
             this.props = props;
         }
@@ -115,7 +117,8 @@ namespace Linnarsson.Strt
         private IEnumerable<ExonCombination> GenerateSplices(GeneFeature gf, DnaSequence chrSeq)
         {
             List<DnaSequence> exonSeqsInChrDir = GetExonSequences(gf, chrSeq);
-            foreach (ExonCombination ec in ExonCombinationGenerator.MakeAllExonCombinations(MatchableLen, MaxExonsSkip, exonSeqsInChrDir))
+            int maxSkip = (gf.ExonCount > 100) ? MaxExonsSkipAtOver100Exons : MaxExonsSkip;
+            foreach (ExonCombination ec in ExonCombinationGenerator.MakeAllExonCombinations(MatchableLen, maxSkip, exonSeqsInChrDir))
             {
                 DnaSequence junction = new ShortDnaSequence();
                 List<int> startsInJunction = new List<int>();

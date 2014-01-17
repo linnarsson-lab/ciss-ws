@@ -82,7 +82,8 @@ namespace Linnarsson.Dna
                         trName = xrefItem[1];
                         geneType = xrefItem[2];
                     }
-                    yield return new GeneFeature(geneName, chr, strand, exonStarts, exonEnds, geneType, trName);
+                    if (!geneName.StartsWith("abParts"))
+                        yield return new GeneFeature(geneName, chr, strand, exonStarts, exonEnds, geneType, trName);
                 }
             }
         }

@@ -842,8 +842,9 @@ namespace Linnarsson.Strt
                     string cutSites = fs[1].Replace(GeneFeature.capCutSitesPrefix, "");
                     int ncHits = gf.NonConflictingTranscriptHitsByBarcode.Sum();
                     int maxHits = gf.TranscriptHitsByBarcode.Sum();
+                    string safeName = ExcelRescueGeneName(gf.Name);
                     writer.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}",
-                                     gf.Name, gf.GeneType, trName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), cutSites, ncHits, maxHits);
+                                     safeName, gf.GeneType, trName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), cutSites, ncHits, maxHits);
                     int[] data = dataGetter(gf);
                     foreach (int idx in speciesBcIndexes)
                         writer.Write("\t{0}", data[idx]);
@@ -858,6 +859,23 @@ namespace Linnarsson.Strt
                 }
             }
             return fileName;
+        }
+
+        /// <summary>
+        /// Changes names of genes that horrible Excel would otherwise change to dates
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        private string ExcelRescueGeneName(string name)
+        {
+            if (name.Length < 4) return name;
+            if (Regex.IsMatch(name.ToLower(), "^(jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)[0-9]+$"))
+                return "'" + name + "'";
+            if (Regex.IsMatch(name.ToLower(), "^(janu|febr|marc|apri|juni|july|augu|sept|octo|nove|dece)[0-9]+$"))
+                return "'" + name + "'";
+            if (Regex.IsMatch(name.ToLower(), "^(janua|febru|march|april|augus|septe|octob|novem|decem)[0-9]+$"))
+                return "'" + name + "'";
+            return name;
         }
 
         private void WriteExportTables(string fileNameBase)

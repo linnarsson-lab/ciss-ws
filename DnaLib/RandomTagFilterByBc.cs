@@ -497,12 +497,5 @@ namespace Linnarsson.Strt
             return total;
         }
 
-        public int TagItemCount()
-        {
-            int n = 0;
-            foreach (ChrTagData chrTagData in chrTagDatas.Values)
-                n += chrTagData.TagItemCount();
-            return n;
-        }
     }
 }

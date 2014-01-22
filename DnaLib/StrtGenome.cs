@@ -261,7 +261,7 @@ namespace Linnarsson.Dna
             foreach (string buildFolder in buildFolders)
             {
                 string build = Path.GetFileName(buildFolder);
-                Match m = Regex.Match(build, "^([A-Za-z][A-Za-z])[0-9]+$");
+                Match m = Regex.Match(build, "^([A-Za-z]+)[0-9]+$");
                 string abbrev = build.ToLower();
                 if (m.Success && !abbrevs.ContainsKey(m.Groups[1].Value))
                     abbrev = m.Groups[1].Value.ToLower();
@@ -335,6 +335,7 @@ namespace Linnarsson.Dna
                 spOrBuild = spOrBuild.Split('_')[0];
             }
             foreach (StrtGenome g in GetGenomes(requireStrtFolder))
+            {
                 if (spOrBuild.ToLower() == g.Abbrev || spOrBuild.ToLower() == g.Name.ToLower() ||
                     spOrBuild == g.LatinName || spOrBuild == g.Build)
                 {
@@ -347,6 +348,7 @@ namespace Linnarsson.Dna
                     if (annotation.Length > 0) g.Annotation = annotation;
                     return g;
                 }
+            }
             throw new ArgumentException("Genome data is not defined for " + speciesArg);
         }
 	}

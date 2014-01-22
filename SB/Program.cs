@@ -60,7 +60,7 @@ namespace CmdSilverBullet
 
                         case "knowngene2refflat":
                         case "mart2refflat":
-                            genome = StrtGenome.GetGenome(args[1]);
+                            genome = StrtGenome.GetGenome(args[1], Props.props.AnalyzeAllGeneVariants, "", false);
                             if (!args[1].Contains("_s"))
                                 genome.GeneVariants = true;
                             string outfile = Path.Combine(genome.GetOriginalGenomeFolder(), genome.BuildVarAnnot + "_refFlat.txt");

@@ -394,7 +394,7 @@ namespace Linnarsson.Strt
                 }
                 if (mrm.HasAltMappings) nMultiReads++;
                 //else if (upstreamAnalyzer != null)
-                //    upstreamAnalyzer.CheckSeqUpstreamTSSite(mrm[0], currentBcIdx); // Analysis on raw read bases
+                //    upstreamAnalyzer.CheckSeqUpstreamTSSite(mrm[0], currentBcIdx); // Analysis on raw read basis
             }
         }
 

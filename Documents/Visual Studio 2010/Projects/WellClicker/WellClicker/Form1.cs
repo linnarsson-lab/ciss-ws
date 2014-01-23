@@ -162,14 +162,17 @@ namespace WellClicker
 
         private List<string> AddFirstClicks()
         {
+            int plateY = 501;
+            if (radioButtonPlateB.Checked) plateY = 513;
+            else if (radioButtonSinglePlate.Checked) plateY = 524;
             List<string> prefixLines = new List<string>();
             prefixLines.AddRange(new string[]
               {
-                    "766 | 1012 | 200 | Left Click",
-                    "68 | 37 | 300 | Left Click",
-                    "85 | 176 | 200 | Left Click",
+                    "766 | 1012 | 200 | Left Click",            // BioWorks 
+                    "68 | 37 | 300 | Left Click",               // Edit
+                    "85 | 176 | 200 | Left Click",              // Pattern
                     "85 | 176 | 60 | Left Click",
-                    "428 | 501 | 300 | Left Click",
+                    string.Format("428 | {0} | 300 | Left Click", plateY),
                     "835 | 457 | 300 | Left Click",
                     "835 | 457 | 63 | Left Click",
                     "756 | 345 | 200 | Left Click",

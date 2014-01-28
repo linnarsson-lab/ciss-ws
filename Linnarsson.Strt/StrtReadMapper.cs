@@ -423,10 +423,11 @@ namespace Linnarsson.Strt
             foreach (string speciesArg in speciesArgs)
             {
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, projDescr.analyzeVariants, projDescr.defaultBuild, true);
+                int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 genome.ReadLen = GetReadLen(projDescr);
                 SetAvailableBowtieIndexVersion(projDescr, genome);
                 logWriter.WriteLine("{0} Mapping to {1}...", DateTime.Now, genome.GetBowtieSplcIndexName()); logWriter.Flush();
-                CreateBowtieMaps(genome, projDescr.laneInfos);
+                CreateBowtieMaps(genome, projDescr.laneInfos, genomeBcIndexes);
                 List<string> mapFilePaths = LaneInfo.RetrieveAllMapFilePaths(projDescr.laneInfos);
                 props.UseRPKM = projDescr.rpkm;
                 props.DirectionalReads = !projDescr.rpkm;
@@ -493,7 +494,7 @@ namespace Linnarsson.Strt
             return speciesArgs;
         }
 
-        private void CreateBowtieMaps(StrtGenome genome, List<LaneInfo> extrInfos)
+        private void CreateBowtieMaps(StrtGenome genome, List<LaneInfo> extrInfos, int[] genomeBcIndexes)
         {
             string splcIndexVersion = GetSplcIndexVersion(genome, true);
             string splcIndexName = genome.GetBowtieSplcIndexName();
@@ -503,7 +504,7 @@ namespace Linnarsson.Strt
                                string.Format(" and limiting alternative mappings to max {0}.", props.MaxAlternativeMappings) : "";
             tempBowtieStartMsg = string.Format("Using bowtie index {0}{1}", splcIndexVersion, maxAlt);
             foreach (LaneInfo extrInfo in extrInfos)
-                CreateBowtieMaps(genome, extrInfo, splcIndexVersion, splcIndexName);
+                CreateBowtieMaps(genome, extrInfo, splcIndexVersion, splcIndexName, genomeBcIndexes);
         }
 
         /// <summary>
@@ -513,7 +514,8 @@ namespace Linnarsson.Strt
         /// <param name="laneInfo">Paths to all needed map files will be stored in laneInfo.mappedFilePaths</param>
         /// <param name="splcIndexVersion"></param>
         /// <param name="splcIndexName"></param>
-        private void CreateBowtieMaps(StrtGenome genome, LaneInfo laneInfo, string splcIndexVersion, string splcIndexName)
+        /// <param name="genomeBcIndexes">only these barcodes will be processed</param>
+        private void CreateBowtieMaps(StrtGenome genome, LaneInfo laneInfo, string splcIndexVersion, string splcIndexName, int[] genomeBcIndexes)
         {
             laneInfo.SetMappedFileFolder(splcIndexVersion);
             string mapFolder = laneInfo.mappedFileFolder;
@@ -521,7 +523,6 @@ namespace Linnarsson.Strt
                 Directory.CreateDirectory(mapFolder);
             laneInfo.bowtieLogFilePath = Path.Combine(mapFolder, "bowtie_output.txt");
             List<string> mapFiles = new List<string>();
-            int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             foreach (string fqPath in laneInfo.extractedFilePaths)
             {
                 int bcIdx = int.Parse(Path.GetFileNameWithoutExtension(fqPath));
@@ -630,7 +631,8 @@ namespace Linnarsson.Strt
             Console.WriteLine("Processing data from {0}", extractedFolder);
             List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
             genome.ReadLen = GetReadLen(extractedFolder);
-            CreateBowtieMaps(genome, laneInfos);
+            int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            CreateBowtieMaps(genome, laneInfos, genomeBcIndexes);
         }
 
         public static readonly string ANNOTATION_VERSION = "45";
@@ -649,7 +651,7 @@ namespace Linnarsson.Strt
         /// <returns>The subpaths to result folder (one per species) under project folder</returns>
         /// <summary>
         public List<string> MapAndAnnotate(string projectOrExtractedFolderOrName, string defaultSpeciesArg, 
-                                     bool defaultGeneVariants, string defaultAnnotation, string resultFolderName)
+                                     bool defaultGeneVariants, string defaultAnnotation, string resultFolderName, int[] selectedBcIdxs)
         {
             string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
             string projectName = Path.GetFileName(projectFolder);
@@ -666,6 +668,8 @@ namespace Linnarsson.Strt
             foreach (string speciesArg in speciesArgs)
             {
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, true);
+                int[] genomeSelectedBcIdxs = barcodes.GenomeAndEmptyBarcodeIndexes(genome).Where(i =>
+                                                        (selectedBcIdxs == null || selectedBcIdxs.Contains(i))).ToArray();
                 genome.ReadLen = GetReadLen(extractedFolder);
                 string spResultFolderName = resultFolderName;
                 if (resultFolderName == "" || resultFolderName == null)
@@ -673,7 +677,7 @@ namespace Linnarsson.Strt
                 Console.WriteLine("Annotating {0} lanes of {1} against {2}.\nDirectionalReads={3} RPKM={4} SelectedMappingType={5}...", 
                               laneInfos.Count, projectName, genome.GetBowtieSplcIndexName(),
                               props.DirectionalReads, props.UseRPKM, props.SelectedMappingType);
-                CreateBowtieMaps(genome, laneInfos);
+                CreateBowtieMaps(genome, laneInfos, genomeSelectedBcIdxs);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(laneInfos);
                 ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, spResultFolderName, mapFiles);
                 Console.WriteLine("...annotated {0} map files from {1} to {2} with output in {3}", mapFiles.Count, projectName,

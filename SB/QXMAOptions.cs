@@ -22,6 +22,7 @@ namespace CmdSilverBullet
         public string annotation = StrtGenome.DefaultAnnotationSource;
         public string resultFolder;
         public string projectFolder;
+        public int[] specificBcIdxs = null;
         public int totalSpikeMols = Props.props.TotalNumberOfAddedSpikeMolecules;
 
         public QXMAOptions(string[] args)
@@ -72,6 +73,9 @@ namespace CmdSilverBullet
                         case "-LValidReadsPerBc":
                             extractionReadLimitType = ReadLimitType.TotalValidReadsPerBarcode;
                             extractionReadLimit = int.Parse(args[++argOffset]);
+                            break;
+                        case "-BcIndexes":
+                            specificBcIdxs = Array.ConvertAll(args[++argOffset].Split(','), v => int.Parse(v));
                             break;
                         default:
                             if (opt.StartsWith("-o"))

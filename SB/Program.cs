@@ -47,7 +47,8 @@ namespace CmdSilverBullet
                             mapper = new StrtReadMapper(props);
                             List<LaneInfo> extrInfos = mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
                             string extractedFolder = extrInfos[0].extractionTopFolder;
-                            mapper.MapAndAnnotate(extractedFolder, options.speciesAbbrev, options.analyzeAllGeneVariants, options.annotation, "");
+                            mapper.MapAndAnnotate(extractedFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
+                                                  options.annotation, "", options.specificBcIdxs);
                             break;
 
                         case "downloadmart":
@@ -107,7 +108,7 @@ namespace CmdSilverBullet
                             props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
                             mapper = new StrtReadMapper(props);
                             mapper.MapAndAnnotate(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
-                                                            options.annotation, options.resultFolder);
+                                                            options.annotation, options.resultFolder, options.specificBcIdxs);
                             break;
 
                         case "rf":
@@ -300,6 +301,7 @@ namespace CmdSilverBullet
                 "<Idx>   Specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_VEGA'.\n" +
                 "<Bc>    'v2' (96x6-mer), 'v4' (48x6-mer, random tags), 'v4r' (no random tags), or 'no' for no barcodes.\n" +
                 "-Lt n   Limit number of reads used to n. t is one of TotalReads, ValidReads, TotalReadsPerBc, ValidReadsPerBc\n" +
+                "-BcIndexes M,N[,...] Only process the specified barcodes indexes, even if barcode set contains more indexes.\n" +
                 "-cN     Total # of spike molecules. Individual fractions are taken from 2nd column of " + PathHandler.GetCTRLConcPath() + "\n" + 
                 "Define other barcode sets in 'Bc.barcodes' files in the barcodes directory in the project folder\n" +
                 "<readLen> Sequence length after barcode and GGG. For idx it should be 0-5 below actual data length.\n" +

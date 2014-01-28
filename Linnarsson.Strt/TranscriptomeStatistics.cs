@@ -1257,78 +1257,74 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  <hitprofile>");
             xmlFile.WriteLine("  <title>5'->3' read distr. Red=Transcripts/Blue=Spikes</title>");
             xmlFile.WriteLine("	 <xtitle>Relative pos within transcript</xtitle>");
-            int trLenBinSize = 500;
-            int trLenBinHalfWidth = trLenBinSize / 2;
-            int trLenBinStep = 1500;
-            int trLen1stBinMid = 500;
-            int trLen1stBinStart = trLen1stBinMid - trLenBinHalfWidth;
-            int trLenBinCount = 4;
+            int trLenBinSize = 400;
+            int trLenBinCount = 8;
             int nSections = 20;
-            int minHitsPerGene = (barcodes.HasUMIs) ? 50 : nSections * 10;
-            int maxHitsPerGene = (barcodes.HasUMIs) ? (int)(0.7 * barcodes.UMICount * barcodes.Count) : int.MaxValue;
-            DescriptiveStatistics[,] binnedEfficiencies = new DescriptiveStatistics[trLenBinCount, nSections];
-            for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
-            {
-                for (int section = 0; section < nSections; section++)
-                    binnedEfficiencies[trLenBinIdx, section] = new DescriptiveStatistics();
-            }
-            int[] geneCounts = new int[trLenBinCount];
-            int nMaxShownSpikes = 12;
+            DescriptiveStatistics[,] binnedEfficiencies;
+            int[] geneCounts;
+            int colorStep = -(0xFF00 / trLenBinCount);
             int spikeColor = 0x00FFFF;
-            int spikeColorStep = -(0xFF00 / nMaxShownSpikes);
-            foreach (GeneFeature gf in Annotations.geneFeatures.Values)
+            GetBinnedHitProfiles(trLenBinSize, trLenBinCount, nSections, true, out binnedEfficiencies, out geneCounts);
+            WriteBinnedHitProfile(xmlFile, trLenBinSize, spikeColor, colorStep, binnedEfficiencies);
+            int transcriptColor = 0xFFFF00;
+            GetBinnedHitProfiles(trLenBinSize, trLenBinCount, nSections, false, out binnedEfficiencies, out geneCounts);
+            WriteBinnedHitProfile(xmlFile, trLenBinSize, transcriptColor, colorStep, binnedEfficiencies);
+            xmlFile.WriteLine("  </hitprofile>");
+        }
+
+        private static void WriteBinnedHitProfile(StreamWriter xmlFile, int trLenBinSize,
+                                                 int geneColor, int geneColorStep, DescriptiveStatistics[,] binnedEfficiencies)
+        {
+            int trLenBinCount = binnedEfficiencies.GetLength(0);
+            int nSections = binnedEfficiencies.GetLength(1);
+            for (int trLenBin = 0; trLenBin < trLenBinCount; trLenBin++)
             {
-                if (gf.GetTranscriptHits() < minHitsPerGene || gf.GetTranscriptHits() > maxHitsPerGene)
-                    continue;
-                int trLen = gf.GetTranscriptLength();
-                double sectionSize = (trLen - averageReadLen) / (double)nSections;
-                int[] trSectionCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, sectionSize, Props.props.DirectionalReads, averageReadLen);
-                if (trSectionCounts.Length == 0) continue;
-                double trTotalCounts = trSectionCounts.Sum();
-                if (trTotalCounts == 0.0) continue;
-                if (!gf.IsSpike())
-                {
-                    if (trLen < trLen1stBinStart || (trLen - trLen1stBinStart) % trLenBinStep > trLenBinSize)
-                        continue;
-                    int trLenBin = (trLen - trLen1stBinStart) / trLenBinStep;
-                    if (trLenBin >= trLenBinCount) continue;
-                    for (int section = 0; section < nSections; section++)
-                        binnedEfficiencies[trLenBin, section].Add(trSectionCounts[section] / trTotalCounts);
-                    geneCounts[trLenBin]++;
-                }
-                else
-                {
-                    if (--nMaxShownSpikes <= 0) continue;
-                    string spikeId = gf.Name.Replace("RNA_SPIKE_", "");
-                    xmlFile.WriteLine("    <curve legend=\"#{0} {1}bp\" color=\"#{2:X6}\">", spikeId, trLen, spikeColor);
-                    spikeColor += spikeColorStep;
-                    for (int section = 0; section < nSections; section++)
-                    {
-                        double eff = trSectionCounts[section] / trTotalCounts;
-                        double fracPos = (section + 0.5D) / (double)nSections;
-                        xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", fracPos, eff);
-                    }
-                    xmlFile.WriteLine("    </curve>");
-                }
-            }
-            int geneColor = 0xFFFF00;
-            int geneColorStep = -(0xFF00 / trLenBinCount);
-            for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
-            {
-                if (geneCounts[trLenBinIdx] < 10) continue;
-                int midLen = (trLenBinIdx * trLenBinStep) + trLen1stBinMid;
-                xmlFile.WriteLine("    <curve legend=\"{0}-{1}bp\" color=\"#{2:X6}\">",
-                                  midLen - trLenBinHalfWidth, midLen + trLenBinHalfWidth, geneColor);
+                int lenBinStart = trLenBin * trLenBinSize;
+                xmlFile.WriteLine("    <curve legend=\"{0}-{1}bp\" color=\"#{2:X6}\">", lenBinStart, lenBinStart + trLenBinSize - 1);
                 geneColor += geneColorStep;
                 for (int section = 0; section < nSections; section++)
                 {
-                    double eff = binnedEfficiencies[trLenBinIdx, section].Mean();
+                    if (binnedEfficiencies[trLenBin, section].Count == 0)
+                        continue;
+                    double eff = binnedEfficiencies[trLenBin, section].Mean();
                     double fracPos = (section + 0.5D) / (double)nSections;
                     xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", fracPos, eff);
                 }
                 xmlFile.WriteLine("    </curve>");
             }
-            xmlFile.WriteLine("  </hitprofile>");
+        }
+
+        private void GetBinnedHitProfiles(int trLenBinSize, int trLenBinCount, int nSections, bool selectSpikes,
+                                          out DescriptiveStatistics[,] binnedEfficiencies, out int[] trLenBinGeneCount)
+        {
+            binnedEfficiencies = new DescriptiveStatistics[trLenBinCount, nSections];
+            for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
+            {
+                for (int section = 0; section < nSections; section++)
+                    binnedEfficiencies[trLenBinIdx, section] = new DescriptiveStatistics();
+            }
+            trLenBinGeneCount = new int[trLenBinCount];
+            int maxTrLen = trLenBinCount * trLenBinSize;
+            foreach (GeneFeature gf in Annotations.geneFeatures.Values)
+            {
+                if (gf.IsSpike() != selectSpikes || gf.IsPseudogeneType()) continue;
+                int trLen = gf.GetTranscriptLength();
+                if (trLen > maxTrLen) continue;
+                ushort[] trHits = CompactGenePainter.GetTranscriptProfile(gf);
+                double trHitSum = trHits.Sum(v => (int)v);
+                if (trHitSum == 0.0) continue;
+                int firstHitIdx = selectSpikes? 0 : Array.FindIndex(trHits, v => v > 0);
+                int effectiveTrLen = trLen - firstHitIdx;
+                int trLenBin = effectiveTrLen / trLenBinSize;
+                if (trLenBin >= trLenBinCount) continue;
+                double sectionDist = effectiveTrLen / (double)nSections;
+                for (int hitIdx = firstHitIdx; hitIdx < trLen; hitIdx++)
+                {
+                    int section = (int)Math.Floor((hitIdx - firstHitIdx) / sectionDist);
+                    binnedEfficiencies[trLenBin, section].Add(trHits[hitIdx] / trHitSum);
+                }
+                trLenBinGeneCount[trLenBin]++;
+            }
         }
 
         private void AddCVHistogram(StreamWriter xmlFile)
@@ -1973,18 +1969,14 @@ namespace Linnarsson.Strt
 
         private void WriteHitProfilesByBarcode()
         {
-            int trLenBinSize = 500;
-            int trLenBinHalfWidth = trLenBinSize / 2;
-            int trLenBinStep = 1500;
-            int trLen1stBinMid = 500;
-            int trLen1stBinStart = trLen1stBinMid - trLenBinHalfWidth;
-            int trLenBinCount = 4;
+            int trLenBinSize = 400;
+            int trLenBinCount = 10;
+            int maxTrLen = trLenBinSize * trLenBinCount;
             int nSections = 20;
-            int averageReadLen = MappedTagItem.AverageReadLen;
             using (StreamWriter profileFile = new StreamWriter(OutputPathbase + "_5to3_profiles_by_barcode.tab"))
             {
                 profileFile.WriteLine("5'->3' read distributions by barcode.");
-                profileFile.WriteLine("\t\t\tRelative position within transcript.");
+                profileFile.WriteLine("\t\t\tRelative position within transcript, counting from first position with a hit.");
                 profileFile.Write("\t\t");
                 for (int section = 0; section < nSections; section++)
                     profileFile.Write("\t{0}", (section + 0.5D) / (double)nSections);
@@ -2002,29 +1994,33 @@ namespace Linnarsson.Strt
                     int[] geneCounts = new int[trLenBinCount];
                     foreach (GeneFeature gf in Annotations.geneFeatures.Values)
                     {
-                        if (gf.IsSpike() || gf.TranscriptHitsByBarcode[bcIdx] < minHitsPerGene || gf.TranscriptHitsByBarcode[bcIdx] > maxHitsPerGene)
+                        if (gf.IsSpike() || gf.IsPseudogeneType() ||
+                            gf.TranscriptHitsByBarcode[bcIdx] < minHitsPerGene || gf.TranscriptHitsByBarcode[bcIdx] > maxHitsPerGene)
                             continue;
                         int trLen = gf.GetTranscriptLength();
-                        double sectionSize = (trLen - averageReadLen) / (double)nSections;
-                        int[] trSectionCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, sectionSize, Props.props.DirectionalReads, averageReadLen);
-                        if (trSectionCounts.Length == 0) continue;
-                        double trTotalCounts = trSectionCounts.Sum();
-                        if (trTotalCounts == 0.0) continue;
-                        if (trLen < trLen1stBinStart || (trLen - trLen1stBinStart) % trLenBinStep > trLenBinSize)
-                            continue;
-                        int trLenBin = (trLen - trLen1stBinStart) / trLenBinStep;
+                        if (trLen > maxTrLen) continue;
+                        ushort[] trHits = CompactGenePainter.GetTranscriptProfile(gf, bcIdx);
+                        double trHitSum = trHits.Sum(v => (int)v);
+                        if (trHitSum == 0.0) continue;
+                        int firstHitIdx = Array.FindIndex(trHits, v => v > 0);
+                        int effectiveTrLen = trLen - firstHitIdx;
+                        int trLenBin = effectiveTrLen / trLenBinSize;
                         if (trLenBin >= trLenBinCount) continue;
-                        for (int section = 0; section < nSections; section++)
-                            binnedEfficiencies[trLenBin, section].Add(trSectionCounts[section] / trTotalCounts);
+                        double sectionDist = effectiveTrLen / (double)nSections;
+                        for (int hitIdx = firstHitIdx; hitIdx < trLen; hitIdx++)
+                        {
+                            int section = (int)Math.Floor((hitIdx - firstHitIdx) / sectionDist);
+                            binnedEfficiencies[trLenBin, section].Add(trHits[hitIdx] / trHitSum);
+                        }
                         geneCounts[trLenBin]++;
                     }
-                    for (int trLenBinIdx = 0; trLenBinIdx < trLenBinCount; trLenBinIdx++)
+                    for (int trLenBin = 0; trLenBin < trLenBinCount; trLenBin++)
                     {
-                        int midLen = (trLenBinIdx * trLenBinStep) + trLen1stBinMid;
-                        profileFile.Write("{0}\t{1}\t{2}", bcIdx, midLen - trLenBinHalfWidth, midLen + trLenBinHalfWidth);
+                        int binStart = trLenBinSize * trLenBin;
+                        profileFile.Write("{0}\t{1}\t{2}", bcIdx, binStart, binStart + trLenBinSize - 1);
                         for (int section = 0; section < nSections; section++)
                         {
-                            double eff = (geneCounts[trLenBinIdx] < 10) ? 0.0 : binnedEfficiencies[trLenBinIdx, section].Mean();
+                            double eff = (binnedEfficiencies[trLenBin, section].Count == 0) ? 0.0 : binnedEfficiencies[trLenBin, section].Mean();
                             profileFile.Write("\t{0}", eff);
                         }
                         profileFile.WriteLine();

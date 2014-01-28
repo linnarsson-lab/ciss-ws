@@ -144,7 +144,11 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static ushort[] GetTranscriptProfile(GeneFeature gf)
         {
-            MakeLocusProfile(gf.Strand, gf.LocusHits);
+            return GetTranscriptProfile(gf, -1);
+        }
+        public static ushort[] GetTranscriptProfile(GeneFeature gf, int bcIdx)
+        {
+            MakeLocusProfile(gf.Strand, gf.LocusHits, bcIdx);
             int trLen = gf.GetTranscriptLength();
             ushort[] trImgData = new ushort[trLen];
             int trPos = (gf.Strand == '+') ? 0 : trLen - 1;
@@ -199,13 +203,13 @@ namespace Linnarsson.Dna
             return profile;
         }
 
-        private static void MakeLocusProfile(char chrStrand, int[] hits)
+        private static void MakeLocusProfile(char chrStrand, int[] hits, int bcIdx)
         {
             locusProfile.Clear();
             int s = GeneFeature.GetStrandAsInt(chrStrand);
             foreach (int hit in hits)
             {
-                if ((hit & 1) == s)
+                if ((hit & 1) == s && (bcIdx == -1 || ((hit >> 1) & 127) == bcIdx))
                 {
                     int pos = hit >> 8;
                     if (locusProfile[pos] < ushort.MaxValue)
@@ -543,7 +547,7 @@ namespace Linnarsson.Dna
             int clearWindowSize = 10;
             if (Math.Abs(searchEndLocusPos - searchStartLocusPos) < (peakWindowSize + clearWindowSize))
                 return -1;
-            MakeLocusProfile(strand, hits);
+            MakeLocusProfile(strand, hits, -1);
             int pWCount = 0;
             int cWCount = 0;
             int pWLastPos = searchStartLocusPos;

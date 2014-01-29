@@ -1280,7 +1280,7 @@ namespace Linnarsson.Strt
             for (int trLenBin = 0; trLenBin < trLenBinCount; trLenBin++)
             {
                 int lenBinStart = trLenBin * trLenBinSize;
-                xmlFile.WriteLine("    <curve legend=\"{0}-{1}bp\" color=\"#{2:X6}\">", lenBinStart, lenBinStart + trLenBinSize - 1);
+                xmlFile.WriteLine("    <curve legend=\"{0}-{1}bp\" color=\"#{2:X6}\">", lenBinStart, lenBinStart + trLenBinSize - 1, geneColor);
                 geneColor += geneColorStep;
                 for (int section = 0; section < nSections; section++)
                 {

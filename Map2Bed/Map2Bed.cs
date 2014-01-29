@@ -16,13 +16,11 @@ namespace Map2Bed
 
         public PositionCounter(int nUMIs)
         {
-            //Console.WriteLine("new: nUMIs={0}", nUMIs);
             if (nUMIs > 0)
                 detectedUMIs = new BitArray(nUMIs);
         }
         public void Add(int UMIIdx)
         {
-            //Console.WriteLine("Add: UMIIdx={0}", UMIIdx);
             detectedReads++;
             if (detectedUMIs != null)
                 detectedUMIs[UMIIdx] = true;
@@ -93,6 +91,7 @@ namespace Map2Bed
                 int selectedMapping = rnd.Next(mrm.NMappings);
                 MultiReadMapping m = mrm[selectedMapping];
                 string chr = settings.AllAsPlusStrand ? m.Chr : m.Chr + m.Strand;
+                int pos = (settings.AllAsPlusStrand || m.Strand == '+') ? m.Position : m.Position + mrm.SeqLen - 1;
                 Dictionary<int, PositionCounter> chrCounters;
                 try
                 {
@@ -104,10 +103,10 @@ namespace Map2Bed
                     counters[chr] = chrCounters;
                 }
                 PositionCounter counter;
-                if (!counters[chr].TryGetValue(m.Position, out counter))
+                if (!counters[chr].TryGetValue(pos, out counter))
                 {
                     counter = new PositionCounter(settings.nUMIs);
-                    counters[chr][m.Position] = counter;
+                    counters[chr][pos] = counter;
                     nMappedPositions++;
                 }
                 counter.Add(mrm.UMIIdx);

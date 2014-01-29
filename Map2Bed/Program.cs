@@ -23,7 +23,6 @@ namespace Map2Bed
             int argIdx = 0;
             for (; argIdx < args.Length; argIdx++)
             {
-                Console.WriteLine(args[argIdx]);
                 if (args[argIdx] == "--reads") countReads = true;
                 else if (args[argIdx].StartsWith("--UMIs=")) nUMIs = int.Parse(args[argIdx].Substring(7));
                 else if (args[argIdx].StartsWith("--multireads=")) maxMultiReadMappings = int.Parse(args[argIdx].Substring(13));
@@ -41,8 +40,10 @@ namespace Map2Bed
             if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
             {
                 Console.WriteLine("Usage:\nmono Map2Bed.exe [OPTIONS] -o OUTPUTFOLDER MAPFILE [MAPFILE2...]\n\n" +
+                                  "N.B.: Output is not a true bed files, it is: chr TAB strand TAB pos TAB count\n" +
+                                  "      pos is where the read 5' end maps, i.e. if strand='-', pos is max of the aligned positions\n" +
                                   "Options:\n" +
-                                  "--reads          Output bed files with read counts.\n" +
+                                  "--reads          Output files with read counts.\n" +
                                   "--multireads=N   Count also multireads with up to N mappings. A random mapping will be selected.\n" +
                                   "--UMIs=N         Analyze N different UMIs. Set N=0 to skip molecule counting.\n" +
                                   "--mergestrands   Reads are non-directional, all reads will be put on the '+' strand.");

@@ -155,7 +155,7 @@ namespace Linnarsson.Dna
         /// <param name="bcIdx">barcode as an index</param>
         /// <param name="UMIIdx">UMI as an index</param>
         /// <returns>ReadId stripped from barcode/UMI parts</returns>
-        public string StripBarcodesFromReadId(string readId, out int bcIdx, out int UMIIdx)
+        public virtual string StripBarcodesFromReadId(string readId, out int bcIdx, out int UMIIdx)
         {
             bcIdx = bcSeqToBcIdxMap[readId.Substring(readId.Length - m_BarcodeLen)];
             UMIIdx = 0;
@@ -578,6 +578,9 @@ namespace Linnarsson.Dna
 
     public class NoBarcodes : Barcodes
     {
+        public int BackOffsetToAfterReadId = 0;
+        public int BackOffsetToUMIEndPos = 0;
+
         public NoBarcodes() : base("No", NO_BARCODES)
         {
             this.m_TSSeq = "";
@@ -588,6 +591,34 @@ namespace Linnarsson.Dna
         {
             bcSeqToBcIdxMap = new Dictionary<string, int>();
             bcSeqToBcIdxMap[""] = 0;
+        }
+
+        public override string StripBarcodesFromReadId(string readId, out int bcIdx0, out int UMIIdx)
+        {
+            bcIdx0 = 0;
+            UMIIdx = 0;
+            if (BackOffsetToAfterReadId == 0)
+            {
+                BackOffsetToAfterReadId = readId.Length - readId.LastIndexOf('_');
+                BackOffsetToUMIEndPos = readId.Length - readId.LastIndexOf('.');
+            }
+            for (int i = readId.Length - BackOffsetToAfterReadId + 1; i < readId.Length - BackOffsetToUMIEndPos; i++)
+            {
+                UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(readId[i]));
+            }
+            return readId.Substring(0, readId.Length - BackOffsetToAfterReadId);
+        }
+    }
+
+    public class NoUMIsNoBarcodes : NoBarcodes
+    {
+        public override string StripBarcodesFromReadId(string readId, out int bcIdx0, out int UMIIdx0)
+        {
+            bcIdx0 = 0;
+            UMIIdx0 = 0;
+            if (BackOffsetToAfterReadId == 0)
+                BackOffsetToAfterReadId = readId.LastIndexOf('_');
+            return readId.Substring(0, BackOffsetToAfterReadId);
         }
     }
 

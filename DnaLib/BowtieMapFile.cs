@@ -12,7 +12,6 @@ namespace Linnarsson.Dna
         public static readonly int SortedAnalysisWindowSize = 10000000;
         public static int MaxNMappings = 500;
 
-        protected Barcodes barcodes;
         protected MultiReadMappings mrm;
 
         /// <summary>
@@ -35,7 +34,6 @@ namespace Linnarsson.Dna
 
         public MapFile(int maxNMappings, Barcodes barcodes)
         {
-            this.barcodes = barcodes;
             mrm = new MultiReadMappings(maxNMappings, barcodes);
         }
 

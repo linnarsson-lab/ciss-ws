@@ -31,9 +31,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "C1SeqPlateLoader", "..\C1Se
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "C1SeqPlateLoaderGUI", "..\C1SeqPlateLoaderGUI\C1SeqPlateLoaderGUI.csproj", "{DD65C719-6342-4C52-8953-0459DC71E0BA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Map2Bed", "..\Map2Bed\Map2Bed.csproj", "{80A2570C-B629-4E4E-BE13-2CAE130305B8}"
+EndProject
 Global
 	GlobalSection(SourceCodeControl) = preSolution
-		SccNumberOfProjects = 16
+		SccNumberOfProjects = 17
 		SccProjectName0 = Perforce\u0020Project
 		SccLocalPath0 = ..
 		SccProvider0 = MSSCCI:Perforce\u0020SCM
@@ -83,6 +85,9 @@ Global
 		SccProjectUniqueName15 = ..\\C1SeqPlateLoaderGUI\\C1SeqPlateLoaderGUI.csproj
 		SccLocalPath15 = ..
 		SccProjectFilePathRelativizedFromConnection15 = C1SeqPlateLoaderGUI\\
+		SccProjectUniqueName16 = ..\\Map2Bed\\Map2Bed.csproj
+		SccLocalPath16 = ..
+		SccProjectFilePathRelativizedFromConnection16 = Map2Bed\\
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -321,6 +326,21 @@ Global
 		{DD65C719-6342-4C52-8953-0459DC71E0BA}.TestRelease|Mixed Platforms.Build.0 = Release|x86
 		{DD65C719-6342-4C52-8953-0459DC71E0BA}.TestRelease|x86.ActiveCfg = Release|x86
 		{DD65C719-6342-4C52-8953-0459DC71E0BA}.TestRelease|x86.Build.0 = Release|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.Debug|x86.ActiveCfg = Debug|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.Debug|x86.Build.0 = Debug|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.Release|Any CPU.ActiveCfg = Release|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.Release|Mixed Platforms.Build.0 = Release|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.Release|x86.ActiveCfg = Release|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.Release|x86.Build.0 = Release|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.TestRelease|Any CPU.ActiveCfg = Release|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.TestRelease|Mixed Platforms.ActiveCfg = Release|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.TestRelease|Mixed Platforms.Build.0 = Release|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.TestRelease|x86.ActiveCfg = Release|x86
+		{80A2570C-B629-4E4E-BE13-2CAE130305B8}.TestRelease|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

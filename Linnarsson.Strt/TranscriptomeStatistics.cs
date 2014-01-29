@@ -1257,8 +1257,8 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  <hitprofile>");
             xmlFile.WriteLine("  <title>5'->3' read distr. Red=Transcripts/Blue=Spikes</title>");
             xmlFile.WriteLine("	 <xtitle>Relative pos within transcript</xtitle>");
-            int trLenBinSize = 400;
-            int trLenBinCount = 8;
+            int trLenBinSize = 800;
+            int trLenBinCount = 5;
             int nSections = 20;
             DescriptiveStatistics[,] binnedEfficiencies;
             int[] geneCounts;
@@ -1313,7 +1313,7 @@ namespace Linnarsson.Strt
                 ushort[] trHits = CompactGenePainter.GetTranscriptProfile(gf);
                 double trHitSum = trHits.Sum(v => (int)v);
                 if (trHitSum == 0.0) continue;
-                int firstHitIdx = selectSpikes? 0 : Array.FindIndex(trHits, v => v > 0);
+                int firstHitIdx = selectSpikes? 0 : Array.FindIndex(trHits, v => v > 0); // If not spike, count from first nonzero position
                 int effectiveTrLen = trLen - firstHitIdx;
                 int trLenBin = effectiveTrLen / trLenBinSize;
                 if (trLenBin >= trLenBinCount) continue;

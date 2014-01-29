@@ -542,8 +542,16 @@ namespace Linnarsson.Strt
         #endregion
 
         #region SaveResults
+        private string projectName;
+
+        /// <summary>
+        /// Saves all gene centers tables as tab-delimited files
+        /// </summary>
+        /// <param name="fileNameBase">full path and projectName prefix where file should be saved ( /X/Y/PROJNAME )</param>
+        /// <param name="averageReadLen"></param>
         public void SaveResult(string fileNameBase, int averageReadLen)
         {
+            projectName = Path.GetDirectoryName(fileNameBase);
             WriteIntronCounts(fileNameBase);
             if (props.GenerateGeneProfilesByBarcode)
             {
@@ -832,7 +840,7 @@ namespace Linnarsson.Strt
                 string firstHeader = MakeFirstHeader(withMultireads,"#{0} {1} {2} counts for transcripts, and sense+antisense {2} counts for repeat types.{3}");
                 writer.WriteLine(firstHeader);
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-                WriteSampleAnnotationLines(writer, 6, true, speciesBcIndexes);
+                WriteSampleAnnotationLines(writer, 9, true, speciesBcIndexes);
                 writer.WriteLine("Feature\tType\tTrNames\tChr\tPos\tStrand\tTrLen\tClose{0}\tMinExonHits\tExonHits",
                                  string.Join("/", props.CAPCloseSiteSearchCutters));
                 foreach (GeneFeature gf in geneFeatures.Values)
@@ -1155,7 +1163,7 @@ namespace Linnarsson.Strt
             String tabs = new String('\t', nTabs);
             matrixFile.Write("{0}Sample{1}", tabs, colon);
             foreach (int idx in selectedBcIndexes)
-                matrixFile.Write("\t{0}", "PROJ" + "_" +  barcodes.GetWellId(idx));
+                matrixFile.Write("\t{0}_{1}", projectName, barcodes.GetWellId(idx));
             matrixFile.WriteLine();
             matrixFile.Write("{0}Well{1}", tabs, colon);
             foreach (int idx in selectedBcIndexes)

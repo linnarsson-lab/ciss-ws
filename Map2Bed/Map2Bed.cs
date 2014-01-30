@@ -44,7 +44,7 @@ namespace Map2Bed
 
     class Map2Bed
     {
-        private Dictionary<string, Dictionary<int, PositionCounter>> counters = new Dictionary<string, Dictionary<int, PositionCounter>>();
+        private Dictionary<string, Dictionary<int, PositionCounter>> counters;
         private Map2BedSettings settings;
 
         private int nTooMultiMappingReads;
@@ -64,15 +64,31 @@ namespace Map2Bed
         {
             if (!Directory.Exists(settings.outputFolder))
                 Directory.CreateDirectory(settings.outputFolder);
-            foreach (string mapFile in settings.inputFiles)
+            int maxBcIdx = settings.iterateBarcodes ? settings.maxBarcodeIdx : 0;
+            for (int bcIdx = 0; bcIdx <= maxBcIdx; bcIdx++)
             {
-                Console.WriteLine("Processing {0}...", mapFile);
-                ReadMapFile(mapFile);
+                counters = new Dictionary<string, Dictionary<int, PositionCounter>>(); 
+                foreach (string mapFile in settings.inputFiles)
+                {
+                    string file = mapFile;
+                    if (settings.iterateBarcodes)
+                    {
+                        string dir = Path.GetDirectoryName(mapFile);
+                        file = settings.ReplaceBarcode(Path.GetFileName(mapFile), bcIdx);
+                        file = Path.Combine(dir, file);
+                        if (file == null || !File.Exists(file)) continue;
+                    }
+                    Console.WriteLine("Processing {0}...", file);
+                    ReadMapFile(file);
+                }
+                if (counters.Count == 0)
+                    continue;
+                string bcPrefix = settings.iterateBarcodes ? bcIdx + "_" : "";
+                if (settings.CountMols)
+                    nMols = WriteOutput(bcPrefix + "mols.bed.gz", true);
+                if (settings.countReads)
+                    nReads = WriteOutput(bcPrefix + "reads.bed.gz", false);
             }
-            if (settings.CountMols)
-                nMols = WriteOutput("mols.bed.gz", true);
-            if (settings.countReads)
-                nReads = WriteOutput("reads.bed.gz", false);
             string molTxt = settings.CountMols ? string.Format(" and {0} molecules", nMols) : "";
             Console.WriteLine("Totally {0} reads{1} at {2} mapped positions. {3} multireads were skipped.",
                               nReads, molTxt, nMappedPositions, nTooMultiMappingReads);

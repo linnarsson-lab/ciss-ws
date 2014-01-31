@@ -115,14 +115,14 @@ namespace Linnarsson.Dna
 
         private static string GetReadFileMatchPattern(string runNoOrFlowcellId)
         {
-            return GetReadFileMatchPattern(runNoOrFlowcellId, '*');
+            return GetReadFileMatchPattern(runNoOrFlowcellId, '*', ".gz");
         }
-        private static string GetReadFileMatchPattern(string runNoOrFlowcellId, char readNo)
+        private static string GetReadFileMatchPattern(string runNoOrFlowcellId, char readNo, string extension)
         {
-            string matchPat = "Run*_L{0}_" + readNo + "_*_?" + runNoOrFlowcellId + ".*.gz"; // FlowcellId pattern
+            string matchPat = "Run*_L{0}_" + readNo + "_*_?" + runNoOrFlowcellId + extension; // FlowcellId pattern
             int runNo;
             if (int.TryParse(runNoOrFlowcellId, out runNo))
-                matchPat = "Run" + string.Format("{0:00000}", runNo) + "_L{0}_" + readNo + ".*.gz"; // RunNo pattern
+                matchPat = "Run" + string.Format("{0:00000}", runNo) + "_L{0}_" + readNo + "*" + extension; // RunNo pattern
             return matchPat;
         }
 
@@ -138,13 +138,13 @@ namespace Linnarsson.Dna
         {
             if (runId.Contains('_'))
                 runId = Regex.Match(runId, "_([0-9]+)_").Groups[1].Value;
-            string matchPat = GetReadFileMatchPattern(runId, reqReadNo);
+            string statFileMatchPat = GetReadFileMatchPattern(runId, reqReadNo, ".txt");
             string readStatFolder = Path.Combine(Props.props.ReadsFolder, PathHandler.statsSubFolder);
             int runNo = -1;
             foreach (char laneNo in laneNumbers)
             {
-                string readStatFilePat = string.Format(matchPat, laneNo);
-                string[] statsFiles = Directory.GetFiles(readStatFolder, readStatFilePat);
+                string laneStatFileMatchPat = string.Format(statFileMatchPat, laneNo);
+                string[] statsFiles = Directory.GetFiles(readStatFolder, laneStatFileMatchPat);
                 if (statsFiles.Length == 0) return -1;
                 runNo = int.Parse(Path.GetFileName(statsFiles[0]).Substring(3, 5));
             }
@@ -165,7 +165,7 @@ namespace Linnarsson.Dna
             {
                 string[] parts = laneArg.Split(':');
                 string runId = parts[0];
-                string matchPat = GetReadFileMatchPattern(runId);
+                string matchPat = GetReadFileMatchPattern(runId, '1', ".fq.gz");
                 string idxSeqFilterString = new string(',', parts[1].Length - 1);
                 if (parts.Length >= 3)
                 {

@@ -969,26 +969,14 @@ namespace Linnarsson.Strt
 
         private void WritePerLaneStats(StreamWriter xmlFile)
         {
-            double meanFrac0 = perLaneStats.GetMeanOfLaneFracMeans();
-            if (!double.IsNaN(meanFrac0))
-            {
-                WritePerLaneStatsSection(xmlFile, "low", 0.0, meanFrac0);
-                WritePerLaneStatsSection(xmlFile, "high", meanFrac0, 1.0);
-            }
-        }
-
-        private void WritePerLaneStatsSection(StreamWriter xmlFile, string sectionTitle, double minF, double maxF)
-        {
             xmlFile.WriteLine("  <fracuniqueperlane>");
             string type = barcodes.HasUMIs ? "molecules" : "mappings";
-            xmlFile.WriteLine("    <title>Fraction ({0}) distinct {2} among first {1} mapped reads in each lane</title>",
-                              sectionTitle, PerLaneStats.nMappedReadsPerFileAtSample, type);
+            xmlFile.WriteLine("    <title>Fraction distinct {0} among first {1} mapped reads in each lane</title>",
+                              type, PerLaneStats.nMappedReadsPerFileAtSample);
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
             {
                 List<Pair<string, double>> data = perLaneStats.GetComplexityIndex(bcIdx);
-                if (data == null || data[0].Second < minF || data[0].Second >= maxF)
-                    continue;
-                string legend = string.Format("{0} [{1}]", barcodes.Seqs[bcIdx], barcodes.GetWellId(bcIdx));
+                string legend = barcodes.GetWellId(bcIdx);
                 xmlFile.WriteLine("    <curve legend=\"{0}\" color=\"#{1:x2}{2:x2}{3:x2}\">",
                                   legend, (bcIdx * 47) % 255, (bcIdx * 21) % 255, (255 - (60 * bcIdx % 255)));
                 foreach (Pair<string, double> laneAndFrac in data)
@@ -1235,7 +1223,7 @@ namespace Linnarsson.Strt
                     if (ds.Count == 0)
                         continue;
                     double mean = Math.Max(0.001, ds.Mean());
-                    string spikeId = gf.Name.Replace("RNA_SPIKE_", "");
+                    string spikeId = gf.Name.Replace("RNA_SPIKE_", "Old").Replace("ERCC-00", "");
                     if (ds.Count > 0)
                         sb.Append(string.Format("    <point x=\"#{0}\" y=\"{1:0.###}\" error=\"{2:0.###}\" />\n", spikeId, mean, ds.StandardDeviation()));
                     else
@@ -1280,17 +1268,22 @@ namespace Linnarsson.Strt
             for (int trLenBin = 0; trLenBin < trLenBinCount; trLenBin++)
             {
                 int lenBinStart = trLenBin * trLenBinSize;
-                xmlFile.WriteLine("    <curve legend=\"{0}-{1}bp\" color=\"#{2:X6}\">", lenBinStart, lenBinStart + trLenBinSize - 1, geneColor);
+                string curve = "";
+                curve += string.Format("    <curve legend=\"{0}-{1}bp\" color=\"#{2:X6}\">\n", lenBinStart, lenBinStart + trLenBinSize - 1, geneColor);
                 geneColor += geneColorStep;
+                bool anyPoints = false;
                 for (int section = 0; section < nSections; section++)
                 {
                     if (binnedEfficiencies[trLenBin, section].Count == 0)
                         continue;
+                    anyPoints = true;
                     double eff = binnedEfficiencies[trLenBin, section].Mean();
                     double fracPos = (section + 0.5D) / (double)nSections;
-                    xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", fracPos, eff);
+                    curve += string.Format("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />\n", fracPos, eff);
                 }
-                xmlFile.WriteLine("    </curve>");
+                curve += string.Format("    </curve>\n");
+                if (anyPoints)
+                    xmlFile.Write(curve);
             }
         }
 

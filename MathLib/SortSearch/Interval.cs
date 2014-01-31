@@ -55,4 +55,52 @@ namespace Linnarsson.Mathematics
 			Item = item;
 		}
 	}
+
+    public interface ISmallInterval
+    {
+        int Start { get; }
+        int End { get; }
+        bool Intersects(ISmallInterval other);
+        bool Contains(long pt);
+    }
+
+    [Serializable]
+    public class SmallInterval : ISmallInterval
+    {
+        public int Start { get; set; }
+        public int End { get; set; }
+
+        public SmallInterval(int start, int end)
+        {
+            Start = start;
+            End = end;
+        }
+
+        public bool Intersects(ISmallInterval other)
+        {
+            if (Start > other.End || End < other.Start) return false;
+            return true;
+        }
+
+        public bool Contains(long pt)
+        {
+            if (Start <= pt && End >= pt) return true;
+            return false;
+        }
+
+        public long Length { get { return End - Start + 1; } }
+    }
+
+    [Serializable]
+    public class SmallInterval<T> : SmallInterval
+    {
+        public T Item { get; set; }
+
+        public SmallInterval(int start, int end, T item)
+            : base(start, end)
+        {
+            Item = item;
+        }
+    }
+
 }

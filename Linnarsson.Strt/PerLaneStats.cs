@@ -57,29 +57,22 @@ namespace Linnarsson.Strt
             return runLane;
         }
 
+        /// <summary>
+        /// Fraction unique mols (or read if no UMIs) per total # mapped reads in each lane analyzed
+        /// </summary>
+        /// <param name="bcIdx"></param>
+        /// <returns>one pair of (runLane, fractionUnique) for each lane of given barcode</returns>
         public List<Pair<string, double>> GetComplexityIndex(int bcIdx)
         {
-            if (barcodes.HasUMIs)
-                return GetBcFractions(bcIdx, nUniqueMolsPerLaneAndBc);
-            else
-                return GetBcFractions(bcIdx, nDistinctMappingsPerLaneAndBc);
-        }
-
-        private List<Pair<string, double>> GetBcFractions(int bcIdx, Dictionary<string, int[]> dataSet)
-        {
-            bool anyNonzero = false;
+            Dictionary<string, int[]> dataSet = barcodes.HasUMIs ? nUniqueMolsPerLaneAndBc : nDistinctMappingsPerLaneAndBc;
             List<Pair<string, double>> result = new List<Pair<string, double>>();
             foreach (string runLane in dataSet.Keys)
             {
                 double f = dataSet[runLane][bcIdx] / (double)nMappedReadsPerLaneAndBc[runLane][bcIdx];
-                //Console.WriteLine("Bc={0} runLane={1} {2}/{3}={4}", bcIdx, runLane, 
-                //                  dataSet[runLane][bcIdx], nMappedReadsPerLaneAndBc[runLane][bcIdx], f);
                 if (double.IsNaN(f)) f = 0.0;
                 result.Add(new Pair<string, double>(runLane, f));
-                if (f > 0.0) anyNonzero = true;
             }
-            if (anyNonzero) return result;
-            return null;
+            return result;
         }
 
         public double GetMeanOfLaneFracMeans()

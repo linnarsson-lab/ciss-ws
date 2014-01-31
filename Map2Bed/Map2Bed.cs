@@ -47,8 +47,8 @@ namespace Map2Bed
         private Dictionary<string, Dictionary<int, PositionCounter>> counters;
         private Map2BedSettings settings;
 
-        private int nTooMultiMappingReads;
-        private int nReads, nMols, nMappedPositions;
+        private int nTotReads = 0, nTotMols = 0;
+        private int nTooMultiMappingReads, nMappedPositions;
 
         private int nMaxMappings;
         private Random rnd;
@@ -67,7 +67,9 @@ namespace Map2Bed
             int maxBcIdx = settings.iterateBarcodes ? settings.maxBarcodeIdx : 0;
             for (int bcIdx = 0; bcIdx <= maxBcIdx; bcIdx++)
             {
-                counters = new Dictionary<string, Dictionary<int, PositionCounter>>(); 
+                counters = new Dictionary<string, Dictionary<int, PositionCounter>>();
+                int nReads = 0, nMols = 0;
+                nTooMultiMappingReads = nMappedPositions = 0;
                 foreach (string mapFile in settings.inputFiles)
                 {
                     string file = mapFile;
@@ -78,7 +80,7 @@ namespace Map2Bed
                         file = Path.Combine(dir, file);
                         if (file == null || !File.Exists(file)) continue;
                     }
-                    Console.WriteLine("Processing {0}...", file);
+                    Console.Write("{0}...", file);
                     ReadMapFile(file);
                 }
                 if (counters.Count == 0)
@@ -88,10 +90,14 @@ namespace Map2Bed
                     nMols = WriteOutput(bcPrefix + "mols.bed.gz", true);
                 if (settings.countReads)
                     nReads = WriteOutput(bcPrefix + "reads.bed.gz", false);
+                string molTxt = settings.CountMols ? string.Format(" and {0} molecules", nMols) : "";
+                Console.WriteLine("{0} reads{1} at {2} mapped positions. {3} multireads were skipped.",
+                                  nReads, molTxt, nMappedPositions, nTooMultiMappingReads);
+                nTotMols += nMols;
+                nTotReads += nReads;
             }
-            string molTxt = settings.CountMols ? string.Format(" and {0} molecules", nMols) : "";
-            Console.WriteLine("Totally {0} reads{1} at {2} mapped positions. {3} multireads were skipped.",
-                              nReads, molTxt, nMappedPositions, nTooMultiMappingReads);
+            string totMolTxt = settings.CountMols ? string.Format(" and {0} molecules", nTotMols) : "";
+            Console.WriteLine("All in all were {0} reads{1} processed.", nTotReads, totMolTxt);
         }
 
         private void ReadMapFile(string mapFile)

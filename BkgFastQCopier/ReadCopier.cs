@@ -66,7 +66,6 @@ namespace BkgFastQCopier
                             throw (e);
                         }
                         projectDB.UpdateRunStatus(runId, status, runNo, runDate);
-                        //if (status == "copied") projectDB.AutoStartC1Analyses(runId);
                     }
                 }
             }
@@ -153,6 +152,23 @@ namespace BkgFastQCopier
 
         private ReadFileResult CopyBclLaneRead(int runNo, string readsFolder, string runFolder, string runName, int lane, int read)
         {
+            Outputter outputter = new Outputter(readsFolder, runNo, lane, read, runName);
+            int readLen, nPFReads, nNonPFReads;
+            bool success = BclFile.ConvertToFastq(runFolder, lane, read, outputter.PFFile, outputter.nonPFFile, Props.props.QualityScoreBase,
+                                                  out readLen, out nPFReads, out nNonPFReads);
+            if (!success)
+            {
+                outputter.CleanFiles();
+                return null;
+            }
+            ReadFileResult r = outputter.Close();
+            logWriter.WriteLine("Copied " + r.readFile + ". (" + r.nPFReads + " PFReads, " + r.readLen + " cycles)");
+            logWriter.Flush();
+            return r;
+        }
+
+        private ReadFileResult OldCopyBclLaneRead(int runNo, string readsFolder, string runFolder, string runName, int lane, int read)
+        {
             Outputter outputter = null;
             foreach (FastQRecord rec in BclFile.Stream(runFolder, lane, read))
             {
@@ -217,17 +233,18 @@ namespace BkgFastQCopier
 
         class Outputter
         {
-            StreamWriter PFFile;
             string readsFolder;
-            string PFFilename;
-            StreamWriter nonPFFile;
+            int lane;
+            int read;
+            string PFFilePath;
+            public StreamWriter PFFile { get; private set; }
+            string nonPFFilePath;
+            public StreamWriter nonPFFile { get; private set; }
             string statsFilePath;
             uint nReads = 0;
             uint nPFReads = 0;
             ulong totalPFReadLength = 0;
             ulong totalNonPFReadLength = 0;
-            int lane;
-            int read;
 
             public Outputter(string readsFolder, int runId, int lane, int read, string runName)
             {
@@ -235,9 +252,10 @@ namespace BkgFastQCopier
                 this.lane = lane;
                 this.read = read;
                 string fileId = GetFileId(runId, lane, read, runName);
-                PFFilename = GetPFFilePath(readsFolder, fileId) + ".gz";
-                PFFile = PFFilename.OpenWrite();
-                nonPFFile = Path.Combine(readsFolder, Path.Combine(PathHandler.nonPFSubFolder, fileId + "_nonPF.fq.gz")).OpenWrite();
+                PFFilePath = GetPFFilePath(readsFolder, fileId) + ".gz";
+                PFFile = PFFilePath.OpenWrite();
+                nonPFFilePath = Path.Combine(readsFolder, Path.Combine(PathHandler.nonPFSubFolder, fileId + "_nonPF.fq.gz"));
+                nonPFFile = nonPFFilePath.OpenWrite();
                 statsFilePath = GetStatsFilePath(readsFolder, fileId);
             }
 
@@ -277,11 +295,19 @@ namespace BkgFastQCopier
                     nonPFFile.WriteLine(rec.ToString(Props.props.QualityScoreBase));
                 }
             }
+            public ReadFileResult Close(int readLen, int nPFReads, int nNonPFReads)
+            {
+                nReads = (uint)nPFReads + (uint)nNonPFReads;
+                this.nPFReads = (uint)nPFReads;
+                totalPFReadLength = (ulong)nPFReads * (ulong)readLen;
+                totalNonPFReadLength = (ulong)nNonPFReads * (ulong)readLen;
+                return Close();
+            }
             public ReadFileResult Close()
             {
                 PFFile.Close();
                 PFFile.Dispose();
-                CmdCaller.Run("chmod", "a+rw " + PFFilename);
+                CmdCaller.Run("chmod", "a+rw " + PFFilePath);
                 nonPFFile.Close();
                 nonPFFile.Dispose();
                 double passedAvLen = (nPFReads > 0) ? (totalPFReadLength / (double)nPFReads) : 0.0;
@@ -293,9 +319,15 @@ namespace BkgFastQCopier
                     statsFile.WriteLine("PassedFilterReadsAverageLength\t{0:0.##}", passedAvLen);
                     statsFile.WriteLine("NonPassedFilterReadsAverageLength\t{0:0.##}", nonPassedAvLen);
                 }
-                return new ReadFileResult(PFFilename, lane, read, nPFReads, nReads - nPFReads, (uint)passedAvLen);
+                return new ReadFileResult(PFFilePath, lane, read, nPFReads, nReads - nPFReads, (uint)passedAvLen);
             }
-
+            public void CleanFiles()
+            {
+                PFFile.Close();
+                File.Delete(PFFilePath);
+                nonPFFile.Close();
+                File.Delete(nonPFFilePath);
+            }
         }
 
     }

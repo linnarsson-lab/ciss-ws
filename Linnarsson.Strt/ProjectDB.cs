@@ -263,6 +263,39 @@ namespace Linnarsson.Strt
             return pd;
         }
 
+        /// <summary>
+        /// Get all projects for every barcode set that have been queued for analysis in given lane.
+        /// </summary>
+        /// <param name="runNo"></param>
+        /// <param name="laneNo"></param>
+        /// <returns>dictonary from each barcodeset to the its projects</returns>
+        public Dictionary<string, List<string>> GetProjectsByBarcodeSets(string runNo, string laneNo)
+        {
+            string sql = "SELECT p.plateid, barcodeset FROM jos_aaaproject p " +
+                         "LEFT JOIN jos_aaaanalysis a ON a.jos_aaaprojectid = p.id" +
+                         "LEFT JOIN jos_aaaanalysislane al ON al.jos_aaaanalysisid = a.id " +
+                         "LEFT JOIN jos_aaalane l ON l.id = al.jos_aaalaneid " +
+                         "LEFT JOIN jos_aaailluminarun r ON r.id = l.jos_aaailluminarunid " +
+                         "WHERE r.runno = {0} AND laneno = {1}";
+            sql = string.Format(sql, runNo, laneNo);
+            Dictionary<string, List<string>> projectsByBc = new Dictionary<string, List<string>>();
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                string projectId = rdr["plateid"].ToString();
+                string barcodeSetName = rdr["barcodeset"].ToString();
+                if (!projectsByBc.ContainsKey(barcodeSetName))
+                    projectsByBc[barcodeSetName] = new List<string>();
+                projectsByBc[barcodeSetName].Add(projectId);
+            }
+            rdr.Close();
+            conn.Close();
+            return projectsByBc;
+        }
+
         private List<ProjectDescription> GetProjectDescriptions(string whereClause)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);

@@ -127,6 +127,7 @@
     <Compile Include="SortSearch\Cases.cs" />
     <Compile Include="SortSearch\Interval.cs" />
     <Compile Include="SortSearch\IntervalCollection.cs" />
+    <Compile Include="SortSearch\IntervalMap.cs" />
     <Compile Include="SortSearch\PartitionCollection.cs" />
     <Compile Include="SortSearch\Pair.cs" />
     <Compile Include="SortSearch\PriorityQueue.cs" />

@@ -57,12 +57,15 @@ namespace Linnarsson.Mathematics
             intervalStarts.Insert(idx, start);
             intervalEnds.Insert(idx, end);
             elements.Insert(idx, element);
+            //Console.WriteLine("Insert interval {0}-{1} {3} at idx {2}", start, end, idx, element);
         }
 
         public U Find(T position)
         {
             int idx = intervalStarts.BinarySearch(position);
+            if (idx == -1) return default(U);
             if (idx < 0) idx = (~idx) - 1;
+            //Console.WriteLine("Find {0} at idx {1}", position, idx);
             if (intervalEnds[idx].CompareTo(position) < 0) return default(U);
             return elements[idx];
         }

@@ -215,7 +215,7 @@ namespace Linnarsson.Dna
 		/// Return the phred scores for a given quality string
 		/// See http://en.wikipedia.org/wiki/FASTQ_format
 		/// This method will throw an exception if qualities outside the 0 - 40 interval are encountered.
-        /// CHANGE TO 0 - 62 due to factual higher values. /Peter
+        /// CHANGE TO 0 - 63 due to factual higher values. /Peter
 		/// </summary>
 		/// <param name="seq"></param>
 		/// <param name="qualityScoreBase"></param>
@@ -227,7 +227,7 @@ namespace Linnarsson.Dna
 			{
 				var temp = qs[i] - qualityScoreBase;
                 quals[i] = (byte)temp;
-                if (temp < 0 || temp > 62) throw new InvalidDataException("Phred quality score outside expected range (0 - 62): " + temp);
+                if (temp < 0 || temp > 63) throw new InvalidDataException("Phred quality score outside expected range (0 - 63): " + temp + " in " + qs);
 			}
 			return quals;
 		}

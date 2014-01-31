@@ -272,7 +272,11 @@ namespace Linnarsson.Strt
             string outputProject = (resultName != null) ? PathHandler.GetRooted(resultName) : project;
             List<LaneInfo> laneInfos = new List<LaneInfo>();
             if (laneArgs.Count > 0)
+            {
                 laneInfos = PathHandler.ListReadsFiles(laneArgs);
+                if (laneInfos.Count == 0)
+                    Console.WriteLine("Warning: No read files found corresponding to {0}", string.Join("/", laneArgs.ToArray()));
+            }
             else
                 foreach (string extractedFile in PathHandler.CollectReadsFilesNames(project))
                     laneInfos.Add(new LaneInfo(extractedFile, "X", 'x'));
@@ -297,7 +301,7 @@ namespace Linnarsson.Strt
             foreach (LaneInfo laneInfo in laneInfos)
 			{
                 laneInfo.extractionTopFolder = outputFolder;
-                GetExtractedFilePaths(outputFolder, laneInfo);
+                SetExtractedFilePaths(outputFolder, laneInfo);
                 bool someExtractionMissing = !AllFilePathsExist(laneInfo.extractedFilePaths) || !File.Exists(laneInfo.summaryFilePath);
                 bool readFileIsNewer = (File.Exists(laneInfo.summaryFilePath) && File.Exists(laneInfo.readFilePath)) &&
                                        DateTime.Compare(new FileInfo(laneInfo.readFilePath).LastWriteTime, new FileInfo(laneInfo.summaryFilePath).LastWriteTime) > 0;
@@ -356,7 +360,7 @@ namespace Linnarsson.Strt
             }
 		}
 
-        private void GetExtractedFilePaths(string extractedFolder, LaneInfo laneInfo)
+        private void SetExtractedFilePaths(string extractedFolder, LaneInfo laneInfo)
         {
             Match m = Regex.Match(laneInfo.readFilePath, "(Run[0-9]+_L[0-9]_[0-9]_[0-9]+)_");
             string extractedByBcFolder = Path.Combine(Path.Combine(extractedFolder, "fq"), m.Groups[1].Value);

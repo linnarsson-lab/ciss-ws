@@ -13,7 +13,7 @@ namespace PeakAnnotator
     {
         private PeakAnnotatorSettings settings;
 
-        private Dictionary<string, IntervalCollection<int, int>> RepeatIntervals;
+        private Dictionary<string, IntervalMap<int>> RepeatIntervals;
         private Dictionary<string, int> RepeatNameToIdx = new Dictionary<string, int>();
         private Dictionary<string, int[]> RepeatExpressionPerFile;
 
@@ -25,19 +25,22 @@ namespace PeakAnnotator
 
         private void SetupRepeats()
         {
-            RepeatIntervals = new Dictionary<string, IntervalCollection<int, int>>();
+            RepeatIntervals = new Dictionary<string, IntervalMap<int>>();
             string[] rmskFiles = PathHandler.GetRepeatMaskFiles(settings.genome);
-            Console.WriteLine("Reading {0} masking files..", rmskFiles.Length);
+            Console.Write("Reading {0} masking files..", rmskFiles.Length);
+            int n = 0;
             foreach (string rmskFile in rmskFiles)
-                LoadRepeatMaskFile(rmskFile);
+                n += LoadRepeatMaskFile(rmskFile);
+            Console.WriteLine("{0} repeat regions.", n);
         }
 
-        private void LoadRepeatMaskFile(string rmskPath)
+        private int LoadRepeatMaskFile(string rmskPath)
         {
             string[] record;
             int fileTypeOffset = 0;
             if (rmskPath.EndsWith("out"))
                 fileTypeOffset = -1;
+            int n = 0;
             using (StreamReader reader = rmskPath.OpenRead())
             {
                 string line = reader.ReadLine();
@@ -51,17 +54,19 @@ namespace PeakAnnotator
                     int end = int.Parse(record[7 + fileTypeOffset]);
                     string name = record[10 + fileTypeOffset];
                     if (!RepeatIntervals.ContainsKey(chr))
-                        RepeatIntervals[chr] = new IntervalCollection<int,int>();
+                        RepeatIntervals[chr] = new IntervalMap<int>(30000);
                     int idx;
                     if (!RepeatNameToIdx.TryGetValue(name, out idx))
                     {
-                        idx = RepeatNameToIdx.Count;
+                        idx = RepeatNameToIdx.Count + 1;
                         RepeatNameToIdx[name] = idx;
                     }
-                    RepeatIntervals[chr].AddWithAdjustment(start, end, idx, false);
+                    RepeatIntervals[chr].Add(start, end, idx);
+                    n++;
                     line = reader.ReadLine();
                 }
             }
+            return n;
         }
 
         public void Process()
@@ -104,7 +109,7 @@ namespace PeakAnnotator
 
         public void Process(string infile)
         {
-            int[] repeatExpression = new int[RepeatNameToIdx.Count];
+            int[] repeatExpression = new int[RepeatNameToIdx.Count + 1];
             using (StreamReader reader = infile.OpenRead())
             {
                 string line;
@@ -117,8 +122,8 @@ namespace PeakAnnotator
                     int count = int.Parse(fields[3]);
                     try
                     {
-                        int repTypeIdx = RepeatIntervals[chr].Find(pos);
-                        repeatExpression[repTypeIdx] += count;
+                        foreach (SmallInterval<int> repIvl in RepeatIntervals[chr].IterItems(pos))
+                            repeatExpression[repIvl.Item] += count;
                     }
                     catch (Exception)
                     { }

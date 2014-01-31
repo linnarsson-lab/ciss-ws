@@ -39,10 +39,10 @@ namespace Map2Bed
         public string ReplaceBarcode(string filename, int bcIdx)
         {
             string replacement = barcodePattern.Replace("0", bcIdx.ToString());
-            if (!filename.Contains(barcodePattern))
-                Console.WriteLine("Warning: The barcode replacement pattern {0} is not in filename {1}!",
+            if (!filename.StartsWith(barcodePattern))
+                Console.WriteLine("Warning: Filename {1} does not start with barcode replacement pattern {0}!",
                                   barcodePattern, filename);
-            return filename.Replace(barcodePattern, replacement);
+            return replacement + filename.Substring(barcodePattern.Length);
         }
     }
 

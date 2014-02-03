@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 namespace Linnarsson.Mathematics
 {
+    /// <summary>
+    /// Use to put objects defined by integer ranges (genomic coordinates) for quick access and iteration
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class IntervalMap<T>
     {
         public int BinSize { get; set; }

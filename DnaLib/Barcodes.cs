@@ -277,6 +277,27 @@ namespace Linnarsson.Dna
             return m_WellIds[wellIdx];
         }
 
+        /// <summary>
+        /// Get the bcIdx on which a map file should be analyzed. This is not same as
+        /// the input BcIdx if remappings are defined in the 'Merge' column of the PlateLayout
+        /// </summary>
+        /// <param name="bcIdx">bcIdx taken from (.map) filename</param>
+        /// <returns>bcIdx that the data should be merged into</returns>
+        public int GetWellIdxFromBcIdx(int bcIdx)
+        {
+            int mergeBcIdx = bcIdx;
+            if (AnnotationsByWell.ContainsKey("Merge"))
+            {
+                string mergeSampleId = AnnotationsByWell["Merge"][bcIdx];
+                if (mergeSampleId != "")
+                    mergeBcIdx = Array.FindIndex(m_WellIds, (id) => id == mergeSampleId);
+                if (mergeBcIdx == -1)
+                    throw new ArgumentException(string.Format("PlateLayout 'Merge' field sample '{0}' does not exist, pointed to from SampleId {1}",
+                                                               mergeSampleId, m_WellIds[bcIdx]));
+            }
+            return mergeBcIdx;
+        }
+
         public List<string> GetAnnotationTitles()
         {
             return AnnotationsByWell.Keys.ToList();

@@ -280,7 +280,7 @@ namespace Linnarsson.Strt
                 nonExonWriter = new StreamWriter(OutputPathbase + "_NONEXON.tab");
             }
 
-            foreach (Pair<int, List<string>> bcIdxAndMapFilePaths in IterMapFilesGroupedByBarcode(mapFilePaths))
+            foreach (Pair<int, List<string>> bcIdxAndMapFilePaths in IterMapFilesGroupedByBcIdx(mapFilePaths))
             {
                 ProcessBarcodeMapFiles(bcIdxAndMapFilePaths);
             }
@@ -293,30 +293,28 @@ namespace Linnarsson.Strt
             }
         }
 
-        private IEnumerable<Pair<int, List<string>>> IterMapFilesGroupedByBarcode(List<string> mapFilePaths)
+        /// <summary>
+        /// Iterate the mapFiles ordered by the barcode index. Take into account remappings of samples
+        /// defined in the "Merge" column of the plate layout file.
+        /// </summary>
+        /// <param name="mapFilePaths"></param>
+        /// <returns></returns>
+        private IEnumerable<Pair<int, List<string>>> IterMapFilesGroupedByBcIdx(List<string> mapFilePaths)
         {
-            mapFilePaths.Sort(CompareMapFiles); // Important to have them sorted by barcode
-            HashSet<int> usedBcIdxs = new HashSet<int>();
-            List<string> bcMapFilePaths = new List<string>();
-            string mapFileName = Path.GetFileName(mapFilePaths[0]);
-            int currentBcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
+            Dictionary<int, List<string>> filesByBcIdx = new Dictionary<int, List<string>>();
             foreach (string mapFilePath in mapFilePaths)
             {
-                mapFileName = Path.GetFileName(mapFilePath);
+                string mapFileName = Path.GetFileName(mapFilePath);
                 int bcIdx = int.Parse(mapFileName.Substring(0, mapFileName.IndexOf('_')));
-                if (bcIdx != currentBcIdx)
-                {
-                    yield return new Pair<int, List<string>>(currentBcIdx, bcMapFilePaths);
-                    bcMapFilePaths.Clear();
-                    if (usedBcIdxs.Contains(bcIdx))
-                        throw new Exception("Program or map file naming error: Revisiting an already analyzed barcode (" + bcIdx + ") is not allowed.");
-                    usedBcIdxs.Add(bcIdx);
-                    currentBcIdx = bcIdx;
-                }
-                bcMapFilePaths.Add(mapFilePath);
+                bcIdx = barcodes.GetWellIdxFromBcIdx(bcIdx);
+                if (!filesByBcIdx.ContainsKey(bcIdx))
+                    filesByBcIdx[bcIdx] = new List<string>();
+                filesByBcIdx[bcIdx].Add(mapFilePath);
             }
-            if (bcMapFilePaths.Count > 0)
-                yield return new Pair<int, List<string>>(currentBcIdx, bcMapFilePaths);
+            int[] bcIndexes = filesByBcIdx.Keys.ToArray();
+            Array.Sort(bcIndexes);
+            foreach (int bcIdx in bcIndexes)
+                yield return new Pair<int, List<string>>(bcIdx, filesByBcIdx[bcIdx]);
         }
 
         private void RegisterPotentialSNPs(List<string> mapFilePaths, int averageReadLen)

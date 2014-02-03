@@ -164,10 +164,6 @@ namespace Linnarsson.Dna
                              };
             var readDescriptor = readConfig.FirstOrDefault((v) => v.Index == read);
             if (readDescriptor == null) return false;
-            var tileConfig = from c in config.Descendants("Lane")
-                             where c.Attribute("Index").Value == lane.ToString()
-                             from v in c.Descendants("Tile")
-                             select int.Parse(v.Value);
             Dictionary<string, byte[]> filters = new Dictionary<string, byte[]>();
             var filterFiles = Directory.GetFiles(laneFolder, "s_" + lane + "_*.filter");
             foreach (var f in filterFiles)

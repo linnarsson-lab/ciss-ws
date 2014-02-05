@@ -111,6 +111,12 @@ namespace Linnarsson.Dna
         private delegate int MutationThresholder(TagItem tagItem);
         private static MutationThresholder mutationThresholder;
 
+        /// <summary>
+        /// If RndTagMutationFilterParameter==0, all singletons will be removed.
+        /// Otherwise, singletons will only be removed when some UMI has #reads > RndTagMutationFilterParameter.
+        /// </summary>
+        /// <param name="tagItem"></param>
+        /// <returns></returns>
         private static int SingletonThresholder(TagItem tagItem)
         {
             foreach (int c in tagItem.GetReadCountsByRndTag())
@@ -118,6 +124,11 @@ namespace Linnarsson.Dna
                     return 1;
             return 0;
         }
+        /// <summary>
+        /// Will only count UMIs with > RndTagMutationFilterParameter reads.
+        /// </summary>
+        /// <param name="tagItem"></param>
+        /// <returns></returns>
         private static int LowPassThresholder(TagItem tagItem)
         {
             return RndTagMutationFilterParameter;

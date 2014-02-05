@@ -33,8 +33,8 @@ namespace C1
         public string C1ImageFilenamePattern = "well_*_center.png";
         public int SpikeMoleculeCount = 27900;
         public string WellExcludeFilePattern = "wells_to_exclude*.txt";
-        public string C1BarcodeSet1 = "Tn5UMI6";
-        public string C1BarcodeSet2 = "Tn5UMI6Plate2";
+        public string C1BarcodeSet1 = "C1Plate1";
+        public string C1BarcodeSet2 = "C2Plate2";
         public int C1RequiredSeqCycles = 50;
         public int C1RequiredIdxCycles = 8;
         public string C1SeqPrimer = "C1-P1-SEQ";

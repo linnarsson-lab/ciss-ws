@@ -19,7 +19,7 @@ namespace Linnarsson.Utilities
 		{
 			if(Path.GetExtension(path) == ".gz")
 			{
-				FileStream fs = new FileStream(path, FileMode.Open);
+				FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
 				GZipStream gzip = new GZipStream(fs, CompressionMode.Decompress);
 				return new StreamReader(gzip);
 			}

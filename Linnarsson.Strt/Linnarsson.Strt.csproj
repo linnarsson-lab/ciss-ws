@@ -50,11 +50,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BclReadExtractor.cs" />
     <Compile Include="CleavageSiteAnnotator.cs" />
     <Compile Include="GenomeAnnotations.cs" />
     <Compile Include="AnnotationBuilder.cs" />
     <Compile Include="BarcodedReadStream.cs" />
     <Compile Include="BowtieMapFileSorter.cs" />
+    <Compile Include="LaneReadWriter.cs" />
     <Compile Include="MapFileSnpFinder.cs" />
     <Compile Include="MappingAdder.cs" />
     <Compile Include="NonExonRepeatMasker.cs" />
@@ -62,8 +64,10 @@
     <Compile Include="PerLaneStats.cs" />
     <Compile Include="ProjectDB.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReadCounter.cs" />
     <Compile Include="ReadExtractor.cs" />
     <Compile Include="ReadFragGenerator.cs" />
+    <Compile Include="SampleReadWriter.cs" />
     <Compile Include="SilverBulletSummary.cs" />
     <Compile Include="SnpRndTagVerifier.cs" />
     <Compile Include="StrtExceptions.cs" />

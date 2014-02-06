@@ -40,6 +40,9 @@ namespace CmdSilverBullet
                 {
                     switch (opt)
                     {
+                        case "insertc1data":
+                            Props.props.InsertCells10Data = true;
+                            break;
                         case "rpkm":
                             useRPKM = true;
                             break;

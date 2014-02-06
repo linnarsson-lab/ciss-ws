@@ -281,121 +281,36 @@ namespace Linnarsson.Strt
                 foreach (string extractedFile in PathHandler.CollectReadsFilesNames(project))
                     laneInfos.Add(new LaneInfo(extractedFile, "X", 'x'));
             string outputFolder = PathHandler.MakeExtractedFolder(outputProject, barcodes.Name, EXTRACTION_VERSION);
-            Extract(laneInfos, outputFolder);
+            ExtractMissingAndOld(laneInfos, outputFolder);
             return laneInfos;
         }
 
-        public void Extract(ProjectDescription pd)
+        private void Extract(ProjectDescription pd)
         {
             pd.laneInfos = PathHandler.ListReadsFiles(pd.runIdsLanes.ToList());
             pd.extractionVersion = EXTRACTION_VERSION;
             string outputFolder = PathHandler.MakeExtractedFolder(pd.ProjectFolder, barcodes.Name, EXTRACTION_VERSION);
-            Extract(pd.laneInfos, outputFolder);
+            ExtractMissingAndOld(pd.laneInfos, outputFolder);
         }
 
         public static readonly string EXTRACTION_VERSION = "34";
-        private void Extract(List<LaneInfo> laneInfos, string outputFolder)
+        private void ExtractMissingAndOld(List<LaneInfo> laneInfos, string outputFolder)
         {
-            DateTime start = DateTime.Now;
-            ReadExtractor readExtractor = new ReadExtractor(props);
             foreach (LaneInfo laneInfo in laneInfos)
 			{
                 laneInfo.extractionTopFolder = outputFolder;
-                SetExtractedFilePaths(outputFolder, laneInfo);
+                laneInfo.SetExtractedFilePaths(outputFolder, barcodes.Count);
                 bool someExtractionMissing = !AllFilePathsExist(laneInfo.extractedFilePaths) || !File.Exists(laneInfo.summaryFilePath);
                 bool readFileIsNewer = (File.Exists(laneInfo.summaryFilePath) && File.Exists(laneInfo.readFilePath)) &&
                                        DateTime.Compare(new FileInfo(laneInfo.readFilePath).LastWriteTime, new FileInfo(laneInfo.summaryFilePath).LastWriteTime) > 0;
                 if (someExtractionMissing || readFileIsNewer)
                 {
-                    ReadCounter readCounter = new ReadCounter(props);
-                    ExtractionWordCounter wordCounter = new ExtractionWordCounter(props.ExtractionCounterWordLength);
-                    StreamWriter[] sws_barcoded = OpenStreamWriters(laneInfo.extractedFilePaths);
-                    StreamWriter sw_slask = laneInfo.slaskFilePath.OpenWrite();
-                    int bcIdx;
-                    ExtractionQuality extrQ = (props.AnalyzeExtractionQualities) ? new ExtractionQuality(props.LargestPossibleReadLength) : null;
-                    double totLen = 0.0;
-                    long nRecords = 0;
-                    foreach (FastQRecord fastQRecord in 
-                             BarcodedReadStream.Stream(barcodes, laneInfo.readFilePath, props.QualityScoreBase, laneInfo.idxSeqFilter))
-                    {
-                        FastQRecord rec = fastQRecord;
-                        int readStatus = readExtractor.Extract(ref rec, out bcIdx);
-                        LimitTest testResult = readCounter.IsLimitReached(readStatus, bcIdx);
-                        if (testResult == LimitTest.Break)
-                            break;
-                        if (testResult == LimitTest.UseThisRead)
-                        {
-                            if (extrQ != null) extrQ.Add(rec);
-                            wordCounter.AddRead(rec.Sequence);
-                            readCounter.AddARead(readStatus, bcIdx);
-                            if (readStatus == ReadStatus.VALID)
-                            {
-                                totLen += rec.Sequence.Length;
-                                nRecords++;
-                                sws_barcoded[bcIdx].WriteLine(rec.ToString(props.QualityScoreBase));
-                            }
-                            else sw_slask.WriteLine(rec.ToString(props.QualityScoreBase));
-                        }
-                    }
-                    CloseStreamWriters(sws_barcoded);
-                    sw_slask.Close();
-                    using (StreamWriter sw_summary = new StreamWriter(laneInfo.summaryFilePath))
-                    {
-                        int averageReadLen = (int)Math.Round(totLen / nRecords);
-                        readCounter.AddReadFile(laneInfo.readFilePath, averageReadLen);
-                        sw_summary.WriteLine(readCounter.TotalsToTabString(barcodes.HasUMIs));
-                        sw_summary.WriteLine("#\tBarcode\tValidSTRTReads\tTotalBarcodedReads");
-                        for (bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
-                            sw_summary.WriteLine("BARCODEREADS\t{0}\t{1}\t{2}",
-                                                 barcodes.Seqs[bcIdx], readCounter.ValidReadsByBarcode[bcIdx], readCounter.TotalReadsByBarcode[bcIdx]);
-                        sw_summary.WriteLine("\nBelow are the most common words among all reads.\n");
-                        sw_summary.WriteLine(wordCounter.GroupsToString(200));
-                    }
-                    if (extrQ != null)
-                        extrQ.Write(laneInfo);
-                    laneInfo.nReads = readCounter.PartialTotal;
-                    laneInfo.nValidReads = readCounter.PartialCount(ReadStatus.VALID);
+                    SampleReadWriter srw = new SampleReadWriter(barcodes, laneInfo);
+                    srw.ProcessLane();
                 }
                 if (Background.CancellationPending) break;
             }
 		}
-
-        private void SetExtractedFilePaths(string extractedFolder, LaneInfo laneInfo)
-        {
-            Match m = Regex.Match(laneInfo.readFilePath, "(Run[0-9]+_L[0-9]_[0-9]_[0-9]+)_");
-            string extractedByBcFolder = Path.Combine(Path.Combine(extractedFolder, "fq"), m.Groups[1].Value);
-            if (!Directory.Exists(extractedByBcFolder))
-                Directory.CreateDirectory(extractedByBcFolder);
-            SetExtractedFilesInfo(laneInfo, extractedByBcFolder);
-        }
-
-        private void SetExtractedFilesInfo(LaneInfo laneInfo, string extractedByBcFolder)
-        {
-            laneInfo.extractedFileFolder = extractedByBcFolder;
-            string[] extractedFilePaths = new string[Math.Max(1, barcodes.Count)];
-            for (int i = 0; i < extractedFilePaths.Length; i++)
-                extractedFilePaths[i] = Path.Combine(extractedByBcFolder, i.ToString() + ".fq");
-            laneInfo.extractedFilePaths = extractedFilePaths;
-            laneInfo.slaskFilePath = Path.Combine(extractedByBcFolder, "slask.fq.gz");
-            laneInfo.summaryFilePath = Path.Combine(extractedByBcFolder, PathHandler.extractionSummaryFilename);
-        }
-
-        private StreamWriter[] OpenStreamWriters(string[] extractedFilePaths)
-        {
-            StreamWriter[] sws_barcoded = new StreamWriter[extractedFilePaths.Length];
-            for (int i = 0; i < extractedFilePaths.Length; i++)
-                sws_barcoded[i] = new StreamWriter(extractedFilePaths[i]);
-            return sws_barcoded;
-        }
-
-        private static void CloseStreamWriters(StreamWriter[] sws_barcoded)
-        {
-            for (int i = 0; i < sws_barcoded.Length; i++)
-            {
-                sws_barcoded[i].Close();
-                sws_barcoded[i].Dispose();
-            }
-        }
 
         private bool AllFilePathsExist(string[] filePaths)
         {
@@ -729,8 +644,9 @@ namespace Linnarsson.Strt
                 Match m = Regex.Match(Path.GetFileName(extractedByBcFolder), "^Run([0-9]+)_L([0-9])_[0-9]_[0-9]+$");
                 if (!m.Success) continue;
                 LaneInfo laneInfo = new LaneInfo(m.Groups[0].Value, m.Groups[1].Value, m.Groups[2].Value[0]);
-                SetExtractedFilesInfo(laneInfo, extractedByBcFolder);
                 laneInfo.extractionTopFolder = extractedFolder;
+                laneInfo.extractedFileFolder = extractedByBcFolder;
+                laneInfo.SetExtractedFilesInfo(barcodes.Count);
                 laneInfos.Add(laneInfo);
             }
             return laneInfos;
@@ -806,7 +722,7 @@ namespace Linnarsson.Strt
 
         private static void InsertCells10kData(string projectId, GenomeAnnotations annotations)
         {
-            if (projectId.StartsWith(C1Props.C1ProjectPrefix))
+            if (Props.props.InsertCells10Data && projectId.StartsWith(C1Props.C1ProjectPrefix))
             {
                 Console.WriteLine("Saving results to cells10k database...");
                 try
@@ -815,7 +731,7 @@ namespace Linnarsson.Strt
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Error inserting data to cells2k: {0}", e);
+                    Console.WriteLine("Error inserting data to cells10k: {0}", e);
                 }
             }
         }

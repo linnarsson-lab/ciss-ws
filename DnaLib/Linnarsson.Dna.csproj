@@ -121,7 +121,7 @@
     <Compile Include="QueueRecord.cs" />
     <Compile Include="QuickAnnotationMap.cs" />
     <Compile Include="GeneFeature.cs" />
-    <Compile Include="ExtractionInfo.cs" />
+    <Compile Include="LaneInfo.cs" />
     <Compile Include="RandomTagFilterByBc.cs" />
     <Compile Include="ReadStatus.cs" />
     <Compile Include="RepeatFeature.cs" />

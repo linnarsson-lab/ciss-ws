@@ -621,7 +621,7 @@ namespace Linnarsson.Strt
             string bcWiggleSubfolder = AssertOutputPathbase() + "_wiggle_by_bc" + selAnnots;
             if (!Directory.Exists(bcWiggleSubfolder))
                 Directory.CreateDirectory(bcWiggleSubfolder);
-            string fileNameHead = string.Format("{0}_{1}", currentBcIdx, ((strand == '+') ? "fw" : "rev"));
+            string fileNameHead = string.Format("{0}_{1}", barcodes.GetWellId(currentBcIdx), ((strand == '+') ? "fw" : "rev"));
             string filePathHead = Path.Combine(bcWiggleSubfolder, fileNameHead);
             string fileByRead = filePathHead + "_byread.wig.gz";
             string fileByMol = filePathHead + "_bymolecule.wig.gz";

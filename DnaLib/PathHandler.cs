@@ -15,6 +15,23 @@ namespace Linnarsson.Dna
         public static readonly string nonPFSubFolder = "nonPF";
         public static readonly string readFileIdCreatePattern = "Run{0:00000}_L{1}_{2}_{3}";
 
+        public static string GetReadFileId(string runFolderName, int runNo, int lane, int read)
+        {
+            return string.Format(readFileIdCreatePattern, runNo, lane, read, runFolderName);
+        }
+        public static string GetPFFilePath(string readsFolder, string runFolderName, int runNo, int lane, int read)
+        {
+            return Path.Combine(readsFolder, GetReadFileId(runFolderName, runNo, lane, read) + ".fq.gz");
+        }
+        public static string GetNonPFFilePath(string readsFolder, string runFolderName, int runNo, int lane, int read)
+        {
+            return Path.Combine(readsFolder, Path.Combine(nonPFSubFolder, GetReadFileId(runFolderName, runNo, lane, read) + "_nonPF.fq.gz"));
+        }
+        public static string GetReadStatsFilePath(string readsFolder, string runFolderName, int runNo, int lane, int read)
+        {
+            return Path.Combine(readsFolder, Path.Combine(statsSubFolder, GetReadFileId(runFolderName, runNo, lane, read) + ".txt"));
+        }
+
         /// <summary>
         /// Locates the folder where bowtie stores its indexes
         /// </summary>
@@ -160,7 +177,7 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static List<LaneInfo> ListReadsFiles(List<string> laneArgs)
         {
-            List<LaneInfo> extrInfos = new List<LaneInfo>();
+            List<LaneInfo> laneInfos = new List<LaneInfo>();
             foreach (string laneArg in laneArgs)
             {
                 string[] parts = laneArg.Split(':');
@@ -180,10 +197,10 @@ namespace Linnarsson.Dna
                     string readFilePat = string.Format(matchPat, laneNo);
                     string[] laneFiles = Directory.GetFiles(Props.props.ReadsFolder, readFilePat);
                     if (laneFiles.Length > 0)
-                        extrInfos.Add(new LaneInfo(laneFiles[0], runId, laneNo, idxSeqFilter[n++]));
+                        laneInfos.Add(new LaneInfo(laneFiles[0], runId, laneNo, idxSeqFilter[n++]));
                 }
             }
-            return extrInfos;
+            return laneInfos;
         }
 
         /// <summary>
@@ -307,6 +324,10 @@ namespace Linnarsson.Dna
             return null;
         }
 
+        /// <summary>
+        /// Return "Data/Intensities/BaseCalls" with proper path delimiter
+        /// </summary>
+        /// <returns></returns>
         public static string MakeRunDataSubPath()
         {
             return Path.Combine("Data", Path.Combine("Intensities", "BaseCalls"));

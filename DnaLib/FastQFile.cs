@@ -231,7 +231,18 @@ namespace Linnarsson.Dna
 			}
 			return quals;
 		}
-		/// <summary>
+        public static byte[] QualitiesFromCharArray(char[] qs, byte qualityScoreBase)
+        {
+            byte[] quals = new byte[qs.Length];
+            for (int i = 0; i < qs.Length; i++)
+            {
+                var temp = qs[i] - qualityScoreBase;
+                quals[i] = (byte)temp;
+                if (temp < 0 || temp > 63) throw new InvalidDataException("Phred quality score outside expected range (0 - 63): " + temp + " in " + qs);
+            }
+            return quals;
+        }
+        /// <summary>
 		/// Make a quality string from an array of phred scores
 		/// </summary>
 		/// <param name="qualities"></param>
@@ -298,20 +309,6 @@ namespace Linnarsson.Dna
             Array.Copy(insertQualities, 0, newQualities, pos, insertSeq.Length);
             Array.Copy(Qualities, pos, newQualities, pos + insertSeq.Length, Qualities.Length - pos);
             Qualities = newQualities;
-        }
-
-        /// <summary>
-        /// Remove non-valid tail of sequence based on the Illumina fastq quality indicator
-        /// </summary>
-        public void TrimBBB()
-        {
-            int ReadSegmentQualityControlIndicator = 2;
-            if (Qualities != null)
-            {
-                int l = Qualities.Length;
-				while (l > 0 && Qualities[l - 1] == ReadSegmentQualityControlIndicator) l--;
-				Trim(0, l);
-            }
         }
 
         public bool IsValid()

@@ -273,7 +273,7 @@ namespace CmdSilverBullet
                 "      extract data, run Bowtie, and annotate in one sweep using default parameters.\n" +
                 "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +
                 "SB.exe x [<RunLaneSpec>]+ <Bc> [-Lt n] <ProjectPath>  -   extract data from the reads folder.\n" +
-                "SB.exe ab [-oNAME] [rpkm|rpm|multimap|5primemap|all|single]* [-cN] [<Build>|<Idx>] <ProjectPath>|<ExtractedPath>\n" +
+                "SB.exe ab [-oNAME] [insertc1data|rpkm|rpm|multimap|5primemap|all|single]* [-cN] [<Build>|<Idx>] <ProjectPath>|<ExtractedPath>\n" +
                 "      annotate data from .map files in latest/specified Extracted folder.\n" +
                 "      you can give a non-standard output folder name using -o\n" +
                 "      Use 'all'/'single' to force analysis of all/single transcript variants.\n" +

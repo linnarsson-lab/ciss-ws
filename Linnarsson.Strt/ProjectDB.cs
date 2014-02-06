@@ -6,6 +6,7 @@ using System.IO;
 using System.Xml.Serialization;
 using System.Globalization;
 using Linnarsson.Utilities;
+using Linnarsson.Mathematics;
 using Linnarsson.Dna;
 using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
@@ -267,9 +268,9 @@ namespace Linnarsson.Strt
         /// Get all projects for every barcode set that have been queued for analysis in given lane.
         /// </summary>
         /// <param name="runNo"></param>
-        /// <param name="laneNo"></param>
+        /// <param name="lane"></param>
         /// <returns>dictonary from each barcodeset to the its projects</returns>
-        public Dictionary<string, List<string>> GetProjectsByBarcodeSets(string runNo, string laneNo)
+        public List<Pair<string, string>> GetBarcodeSetsAndProjects(int runNo, int lane)
         {
             string sql = "SELECT p.plateid, barcodeset FROM jos_aaaproject p " +
                          "LEFT JOIN jos_aaaanalysis a ON a.jos_aaaprojectid = p.id" +
@@ -277,8 +278,8 @@ namespace Linnarsson.Strt
                          "LEFT JOIN jos_aaalane l ON l.id = al.jos_aaalaneid " +
                          "LEFT JOIN jos_aaailluminarun r ON r.id = l.jos_aaailluminarunid " +
                          "WHERE r.runno = {0} AND laneno = {1}";
-            sql = string.Format(sql, runNo, laneNo);
-            Dictionary<string, List<string>> projectsByBc = new Dictionary<string, List<string>>();
+            sql = string.Format(sql, runNo, lane);
+            List<Pair<string, string>> projectsByBc = new List<Pair<string,string>>();
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -287,9 +288,7 @@ namespace Linnarsson.Strt
             {
                 string projectId = rdr["plateid"].ToString();
                 string barcodeSetName = rdr["barcodeset"].ToString();
-                if (!projectsByBc.ContainsKey(barcodeSetName))
-                    projectsByBc[barcodeSetName] = new List<string>();
-                projectsByBc[barcodeSetName].Add(projectId);
+                projectsByBc.Add(new Pair<string, string>(barcodeSetName, projectId));
             }
             rdr.Close();
             conn.Close();

@@ -129,6 +129,7 @@ namespace Linnarsson.Dna
         public bool sampleAccuFilteredExonMols = false; // Sample #EXON Mols after mutation filter as fn. of processed reads (slow)
         public bool WriteReadsAsGVFFiles = false;
         public string[] CAPCloseSiteSearchCutters = new string[] { "PvuI" };
+        public bool InsertCells10Data = false; // Set to true to insert results into cells10k database for "C1-" prefixed projects
         public bool LogMode = false;
 
         private Barcodes m_Barcodes;

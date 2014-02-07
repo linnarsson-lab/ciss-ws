@@ -32,6 +32,8 @@ namespace Linnarsson.Dna
         private int m_BarcodeLen;
         public int BarcodeLen { get { return m_BarcodeLen; } }
         public int BarcodeEndPos { get { return m_BarcodePos + m_BarcodeLen; } }
+        public bool UseNoBarcodes;
+        public static readonly string NOBARCODE = "NOBAR";
 
         protected string[] m_WellIds = null;
         protected string[] m_SpeciesByWell = null;
@@ -75,6 +77,9 @@ namespace Linnarsson.Dna
             }
         }
 
+        /// <summary>
+        /// Length of the part of the ReadID that contains the barcode [and UMI]
+        /// </summary>
         public int BarcodeFieldLen { get { return (m_UMILen > 0)? (1 + m_UMILen + m_BarcodeLen) : m_BarcodeLen; } }
 
         /// <summary>
@@ -84,9 +89,6 @@ namespace Linnarsson.Dna
 
         protected Dictionary<string, int> bcSeqToBcIdxMap;
 
-        public int NOBARIdx = 0;
-        public static readonly string NOBARCODE = "NOBAR";
-
         protected string m_TSSeq = "GGG";
         public string TSSeq { get { return m_TSSeq; } }
         protected char m_TSTrimNt = 'G';
@@ -94,6 +96,7 @@ namespace Linnarsson.Dna
 
         public Barcodes(string bcSetName, string[] seqs)
         {
+            UseNoBarcodes = false;
             m_Name = bcSetName;
             Seqs = seqs;
         }
@@ -105,7 +108,7 @@ namespace Linnarsson.Dna
             {
                 string bcSeq = m_Seqs[bcIdx];
                 bcSeqToBcIdxMap[bcSeq] = bcIdx;
-                if (AllowSingleMutations)
+                if (AllowSingleMutations && bcSeq != NOBARCODE)
                 {
                     for (int p = 0; p < BarcodeLen; p++)
                     {
@@ -134,10 +137,15 @@ namespace Linnarsson.Dna
         /// <returns>ReadStatus.VALID on successful detection of barcodes (and GGG)</returns>
         public int VerifyBarcodeAndTS(string read, int maxTrimExtraGs, out int bcIdx, out int actualInsertPos)
         {
-            bcIdx = -1;
             actualInsertPos = InsertOrGGGPos + TSSeq.Length;
-            if (!bcSeqToBcIdxMap.TryGetValue(read.Substring(BarcodePos, BarcodeLen), out bcIdx))
-                return ReadStatus.BARCODE_ERROR;
+            if (UseNoBarcodes)
+                bcIdx = 0;
+            else
+            {
+                bcIdx = -1;
+                if (!bcSeqToBcIdxMap.TryGetValue(read.Substring(BarcodePos, BarcodeLen), out bcIdx))
+                    return ReadStatus.BARCODE_ERROR;
+            }
             if (read.Substring(InsertOrGGGPos, TSSeq.Length) != TSSeq)
                 return ReadStatus.TSSEQ_MISSING;
             while (maxTrimExtraGs > 0 && read.Length > actualInsertPos && read[actualInsertPos] == m_TSTrimNt)
@@ -155,7 +163,7 @@ namespace Linnarsson.Dna
         /// <param name="bcIdx">barcode as an index</param>
         /// <param name="UMIIdx">UMI as an index</param>
         /// <returns>ReadId stripped from barcode/UMI parts</returns>
-        public virtual string StripBarcodesFromReadId(string readId, out int bcIdx, out int UMIIdx)
+        public virtual string StripBcAndUMIFromReadId(string readId, out int bcIdx, out int UMIIdx)
         {
             bcIdx = bcSeqToBcIdxMap[readId.Substring(readId.Length - m_BarcodeLen)];
             UMIIdx = 0;
@@ -179,7 +187,7 @@ namespace Linnarsson.Dna
             return new string(UMISeq);
         }
 
-        public static string[] GetAllBarcodeSetNames()
+        public static string[] GetAllPredefinedBarcodeSetNames()
         {
             string[] allBarcodeSetNames = PathHandler.GetAllCustomBarcodeSetNames();
             Array.Resize(ref allBarcodeSetNames, allBarcodeSetNames.Length + 6);
@@ -292,7 +300,7 @@ namespace Linnarsson.Dna
                 if (mergeSampleId != "")
                     mergeBcIdx = Array.FindIndex(m_WellIds, (id) => id == mergeSampleId);
                 if (mergeBcIdx == -1)
-                    throw new ArgumentException(string.Format("PlateLayout 'Merge' field sample '{0}' does not exist, pointed to from SampleId {1}",
+                    throw new SampleLayoutFileException(string.Format("PlateLayout error: 'Merge' sample '{0}' does not exist, pointed to from Sample {1}",
                                                                mergeSampleId, m_WellIds[bcIdx]));
             }
             return mergeBcIdx;
@@ -606,7 +614,8 @@ namespace Linnarsson.Dna
         {
             this.m_TSSeq = "";
             this.m_TSTrimNt = ' ';
-            this.m_WellIds = new string[] { "Sample1" };
+            this.m_WellIds = new string[] { "Sample" };
+            UseNoBarcodes = true;
         }
         public override void MakeBcSeqToBcIdxMap()
         {
@@ -614,7 +623,7 @@ namespace Linnarsson.Dna
             bcSeqToBcIdxMap[""] = 0;
         }
 
-        public override string StripBarcodesFromReadId(string readId, out int bcIdx0, out int UMIIdx)
+        public override string StripBcAndUMIFromReadId(string readId, out int bcIdx0, out int UMIIdx)
         {
             bcIdx0 = 0;
             UMIIdx = 0;
@@ -633,7 +642,7 @@ namespace Linnarsson.Dna
 
     public class NoUMIsNoBarcodes : NoBarcodes
     {
-        public override string StripBarcodesFromReadId(string readId, out int bcIdx0, out int UMIIdx0)
+        public override string StripBcAndUMIFromReadId(string readId, out int bcIdx0, out int UMIIdx0)
         {
             bcIdx0 = 0;
             UMIIdx0 = 0;
@@ -651,15 +660,14 @@ namespace Linnarsson.Dna
             m_TSTrimNt = ' ';
             string path = PathHandler.MakeBarcodeFilePath(barcodeSetName);
             if (!File.Exists(path))
-                throw new FileNotFoundException("ERROR: Can not find barcode file " + path);
-            List<string> sampleIds = new List<string>();
-            List<string> barcodes = new List<string>();
-            int bcSeqLen = 0;
+                throw new BarcodeFileException("ERROR: Can not find barcode file " + path + " Please correct in Sanger DB or make this file.");
             using (StreamReader reader = new StreamReader(path))
             {
                 string line;
-                while ((line = reader.ReadLine().Trim()).StartsWith("#"))
+                while ((line = reader.ReadLine()) != null)
                 {
+                    line = line.Trim();
+                    if (!line.StartsWith("#")) break;
                     line = line.Replace(" ", "");
                     if (line.StartsWith("#remove=") && line.Length > 8)
                         m_TSSeq = line.Substring(8);
@@ -679,33 +687,49 @@ namespace Linnarsson.Dna
                         m_InsertOrGGGPos = int.Parse(line.Substring(11));
                     else if (line.StartsWith("#allowsinglemutations"))
                         AllowSingleMutations = true;
+                    else if (line.StartsWith("#nobarcode"))
+                        UseNoBarcodes = true;
                     else if (line.StartsWith("#prefixread2="))
                         m_PrefixRead2 = int.Parse(line.Substring(13));
                     else if (line.StartsWith("#prefixread3="))
                         m_PrefixRead3 = int.Parse(line.Substring(13));
                 }
-                while (line != null)
+                if (UseNoBarcodes)
+                    m_WellIds = new string[] { "Sample" };
+                else
+                    ReadWellsAndBarcodes(path, reader, line);
+            }
+        }
+
+        private void ReadWellsAndBarcodes(string path, StreamReader reader, string nextLine)
+        {
+            if (nextLine == null)
+                throw new BarcodeFileException("ERROR: Barcode file must define at least one well/barcode: " + path);
+            int bcSeqLen = 0;
+            List<string> sampleIds = new List<string>();
+            List<string> barcodes = new List<string>();
+            while (nextLine != null)
+            {
+                nextLine = nextLine.Trim();
+                if (nextLine.Length > 0 && !nextLine.StartsWith("#"))
                 {
-                    line = line.Trim();
-                    if (line.Length > 0 && !line.StartsWith("#"))
-                    {
-                        string[] fields = line.Split('\t');
-                        if (fields.Length == 1)
-                            fields = line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        if (fields.Length != 2)
-                            throw new BarcodeFileException("ERROR: Barcode file definition lines should be SampleId TAB Barcode:" + line);
-                        string sampleId = fields[0];
-                        string bc = fields[1];
-                        if (bcSeqLen == 0) bcSeqLen = bc.Length;
-                        else if (bcSeqLen != bc.Length)
-                            throw new BarcodeFileException("ERROR: Barcodes have different lengths: " + path);
-                        if (sampleIds.Contains(sampleId))
-                            throw new BarcodeFileException("ERROR: SampledIds in barcode file must be unique: " + sampleId);
-                        sampleIds.Add(sampleId);
-                        barcodes.Add(bc);
-                    }
-                    line = reader.ReadLine();
+                    string[] fields = nextLine.Split('\t');
+                    if (fields.Length == 1)
+                        fields = nextLine.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (fields.Length != 2)
+                        throw new BarcodeFileException("ERROR: Barcode file definition lines should be SampleId TAB Barcode:" + nextLine +
+                                                       " Please correct: " + path);
+                    string sampleId = fields[0];
+                    string bc = fields[1];
+                    if (bcSeqLen == 0) bcSeqLen = bc.Length;
+                    else if (bcSeqLen != bc.Length)
+                        throw new BarcodeFileException("ERROR: Barcodes have different lengths. Please correct: " + path);
+                    if (sampleIds.Contains(sampleId))
+                        throw new BarcodeFileException("ERROR: Duplicated SampleId in barcode file: " + sampleId + " Please correct: " + path);
+                    sampleIds.Add(sampleId);
+                    barcodes.Add(bc);
                 }
+                nextLine = reader.ReadLine();
             }
             m_WellIds = sampleIds.ToArray();
             Seqs = barcodes.ToArray();

@@ -30,7 +30,7 @@ namespace CmdSilverBullet
             int argOffset = 1;
             int tempVer;
             Match m;
-            string[] allBcSetNames = Barcodes.GetAllBarcodeSetNames();
+            string[] allBcSetNames = Barcodes.GetAllPredefinedBarcodeSetNames();
             while (argOffset < args.Length - 1)
             {
                 string opt = args[argOffset];

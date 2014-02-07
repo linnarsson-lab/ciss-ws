@@ -82,6 +82,9 @@ namespace Linnarsson.Strt
             {
                 if (read1.Header != readN.Header.Replace(idReplacer, "_R1_"))
                     throw new FormatException("Read file and index file headers do not match at " + read1.Header + " in " + read1FqPath + "!");
+                if (readN.Sequence.Length < readNCopyLen)
+                    throw new BarcodeFileException("Index/PE read is shorter (" + readN.Sequence.Length + "bp) than #prefix spec. in barcode (" + readNCopyLen + 
+                                                   "bp). file! You need to change barcode file or sequence more cycles!");
                 read1.Insert(0, readN.Sequence.Substring(0, readNCopyLen), readN.Qualities);
             }
         }

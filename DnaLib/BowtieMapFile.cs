@@ -449,7 +449,7 @@ namespace Linnarsson.Dna
 
         public void Init(string combinedReadId, int seqLen, string qualityString, char qualityDirection, int altMappings)
         {
-            ReadId = Barcodes.StripBarcodesFromReadId(combinedReadId, out BcIdx, out UMIIdx);
+            ReadId = Barcodes.StripBcAndUMIFromReadId(combinedReadId, out BcIdx, out UMIIdx);
             SeqLen = seqLen;
             AltMappings = altMappings;
             NMappings = 0;

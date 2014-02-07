@@ -129,8 +129,9 @@ namespace BkgFastQCopier
             return readFileResults;
         }
 
-        private List<ReadFileResult> NewCopyRunFqData(int runNo, string readsFolder, string runFolder, string runFolderName, int laneFrom, int laneTo)
+        private List<ReadFileResult> NewCopyRunFqData(int runNo, string runId, string runFolder, string readsFolder, int laneFrom, int laneTo)
         {
+            string runFolderName = Path.GetFileName(runFolder);
             List<ReadFileResult> readFileResults = new List<ReadFileResult>();
             for (int lane = laneFrom; lane <= laneTo; lane++)
             {
@@ -138,6 +139,7 @@ namespace BkgFastQCopier
                 string statsFilePath = PathHandler.GetReadStatsFilePath(readsFolder, runFolderName, runNo, lane, 1);
                 if (File.Exists(readyFilePath) && !File.Exists(statsFilePath))
                 {
+                    Console.WriteLine("Processing " + statsFilePath);
                     List<LaneReadWriter> lrws = new List<LaneReadWriter>();
                     lrws.Add(new LaneReadWriter(readsFolder, runFolderName, runNo, lane, 1));
                     if (File.Exists(Path.Combine(runFolder, "Basecalling_Netcopy_complete_Read2.txt")))
@@ -160,7 +162,7 @@ namespace BkgFastQCopier
                         readFileResults.Add(lrws[readIdx].CloseAndSummarize());
                     readFileResults.Add(rfr1);
                     projectDB.AddToBackupQueue(rfr1.readFile, 10);
-                    projectDB.SetIlluminaYield(runFolderName, rfr1.nReads, rfr1.nPFReads, rfr1.lane);
+                    projectDB.SetIlluminaYield(runId, rfr1.nReads, rfr1.nPFReads, rfr1.lane);
                     int[] cycles = bre.GetNCyclesByReadIdx();
                     projectDB.UpdateRunCycles(runFolderName, cycles[0], cycles[1], cycles[2]);
                     foreach (SampleReadWriter srw in srws)

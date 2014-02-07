@@ -273,11 +273,11 @@ namespace Linnarsson.Strt
         public List<Pair<string, string>> GetBarcodeSetsAndProjects(int runNo, int lane)
         {
             string sql = "SELECT p.plateid, barcodeset FROM jos_aaaproject p " +
-                         "LEFT JOIN jos_aaaanalysis a ON a.jos_aaaprojectid = p.id" +
-                         "LEFT JOIN jos_aaaanalysislane al ON al.jos_aaaanalysisid = a.id " +
-                         "LEFT JOIN jos_aaalane l ON l.id = al.jos_aaalaneid " +
-                         "LEFT JOIN jos_aaailluminarun r ON r.id = l.jos_aaailluminarunid " +
-                         "WHERE r.runno = {0} AND laneno = {1}";
+                         " LEFT JOIN jos_aaaanalysis a ON a.jos_aaaprojectid = p.id " +
+                         " LEFT JOIN jos_aaaanalysislane al ON al.jos_aaaanalysisid = a.id " +
+                         " LEFT JOIN jos_aaalane l ON l.id = al.jos_aaalaneid " +
+                         " LEFT JOIN jos_aaailluminarun r ON r.id = l.jos_aaailluminarunid " +
+                         " WHERE r.runno = {0} AND laneno = {1}";
             sql = string.Format(sql, runNo, lane);
             List<Pair<string, string>> projectsByBc = new List<Pair<string,string>>();
             MySqlConnection conn = new MySqlConnection(connectionString);

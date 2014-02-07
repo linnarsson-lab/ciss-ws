@@ -21,8 +21,8 @@ namespace ProjectDBProcessor
 
         static void Main(string[] args)
         {
-            int minutesWait = 5; // Time between scans to wait for new data to appear in queue.
-            int maxExceptions = 20; // Max number of exceptions before giving up.
+            int minutesWait = 10; // Time between scans to wait for new data to appear in queue.
+            int maxExceptions = 50; // Max number of exceptions before giving up.
             logFile = new FileInfo("PDBP_" + Process.GetCurrentProcess().Id + ".log").FullName;
             try
             {
@@ -98,7 +98,8 @@ namespace ProjectDBProcessor
             string to = Props.props.FailureReportEmail;
             string smtp = "localhost";
             string subject = "BkgBackuper PID=" + Process.GetCurrentProcess().Id + " quit with exceptions.";
-            string body = "Please consult logfile " + logFile + " for more info on the errors.";
+            string body = "Please consult logfile " + logFile + " for more info on the errors.\n" +
+                          "After fixing the error, restart with 'nohup ProjectDBProcessor.exe > PDBP.out &'";
             MailMessage message = new MailMessage(from, to, subject, body);
             message.IsBodyHtml = false;
             SmtpClient mailClient = new SmtpClient(smtp, 25);
@@ -155,6 +156,20 @@ namespace ProjectDBProcessor
                 projDescr.status = ProjectDescription.STATUS_READY;
                 projectDB.PublishResults(projDescr);
                 result = true;
+            }
+            catch (BarcodeFileException e)
+            {
+                logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.plateId + " ***\n" + e);
+                logWriter.Flush();
+                results.Add(e.ToString());
+                projDescr.status = ProjectDescription.STATUS_INQUEUE;
+            }
+            catch (SampleLayoutFileException e)
+            {
+                logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.plateId + " ***\n" + e);
+                logWriter.Flush();
+                results.Add(e.ToString());
+                projDescr.status = ProjectDescription.STATUS_INQUEUE;
             }
             catch (Exception e)
             {

@@ -43,12 +43,18 @@ namespace Linnarsson.Dna
             }
             catch (ArgumentException)
             {
-                //Console.WriteLine(speciesId);
                 speciesId = "empty";
             }
             return speciesId;
         }
 
+        /// <summary>
+        /// Reads a plate layout from specified file, or from database if project has the C1-prefix.
+        /// Return null if no layout could be found.
+        /// </summary>
+        /// <param name="projectName"></param>
+        /// <param name="sampleLayoutPath"></param>
+        /// <returns></returns>
         public static PlateLayout GetPlateLayout(string projectName, string sampleLayoutPath)
         {
             PlateLayout sampleLayout = null;

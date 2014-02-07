@@ -23,6 +23,7 @@ namespace ProjectDBProcessor
         {
             int minutesWait = 10; // Time between scans to wait for new data to appear in queue.
             int maxExceptions = 50; // Max number of exceptions before giving up.
+            Props.props.InsertCells10Data = true; // Update cells10k data by default
             logFile = new FileInfo("PDBP_" + Process.GetCurrentProcess().Id + ".log").FullName;
             try
             {
@@ -34,10 +35,14 @@ namespace ProjectDBProcessor
                         minutesWait = int.Parse(args[++i]);
                     else if (arg.StartsWith("-t"))
                         minutesWait = int.Parse(arg.Substring(2));
-                    if (arg == "-e")
+                    else if (arg == "-e")
                         maxExceptions = int.Parse(args[++i]);
                     else if (arg.StartsWith("-e"))
                         maxExceptions = int.Parse(arg.Substring(2));
+                    else if (arg.StartsWith("-i=T"))
+                        Props.props.InsertCells10Data = true;
+                    else if (arg.StartsWith("-i=F"))
+                        Props.props.InsertCells10Data = false;
                     else if (arg == "-l")
                         logFile = args[++i];
                     else if (arg.StartsWith("-l"))
@@ -47,9 +52,11 @@ namespace ProjectDBProcessor
             }
             catch (Exception)
             {
-                Console.WriteLine("Typical usage:  nohup mono ProjectDBProcessor.exe [options] > PDBP.out &");
-                Console.WriteLine("Options: -t N   scan for new data every N  minutes.");
-                Console.WriteLine("         -e N   exit if more than N exceptions occured.");
+                Console.WriteLine("Typical usage:\nnohup mono ProjectDBProcessor.exe [options] > PDBP.out &");
+                Console.WriteLine("Options: -t N   scan for new data every N  minutes. [default={0}]", minutesWait);
+                Console.WriteLine("         -e N   exit if more than N exceptions occured. [default={0}]", maxExceptions);
+                Console.WriteLine("         -i=[True|False] switch on/off data insertion into cells10k DB for C1-samples. [default={0}]",
+                                  Props.props.InsertCells10Data);
                 Console.WriteLine("         -l F   log to file F instead of default logfile.");
                 return;
             }
@@ -71,7 +78,7 @@ namespace ProjectDBProcessor
         }
 
         private static void Run(int minutesWait, int maxExceptions)
-        { 
+        {
             int nExceptions = 0;
             while (nExceptions < maxExceptions)
             {

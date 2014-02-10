@@ -365,6 +365,7 @@ namespace Linnarsson.Strt
                     nTooMultiMappingReads++;
                     continue;
                 }
+                mrm.BcIdx = currentBcIdx; // Needed because we may use 'Merge' to combine wells into one well
                 if (mappingAdder.Add(mrm))
                 {
                     nExonAnnotatedReads++;

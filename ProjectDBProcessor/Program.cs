@@ -18,6 +18,7 @@ namespace ProjectDBProcessor
         private static string logFile;
         private static StreamWriter logWriter;
         private static ProjectDB projectDB;
+        private static Dictionary<string, string> lastMsgByProject = new Dictionary<string, string>();
 
         static void Main(string[] args)
         {
@@ -151,49 +152,54 @@ namespace ProjectDBProcessor
         /// <returns></returns>
         private static bool HandleDBTask(ProjectDescription projDescr)
         {
-            bool result = false;
+            bool success = false;
+            bool notifyManager = true;
             projDescr.status = ProjectDescription.STATUS_PROCESSING;
             int nRowsAffected = projectDB.UpdateAnalysisStatus(projDescr, ProjectDescription.STATUS_INQUEUE);
             if (nRowsAffected == 0) return false;
-            List<string> results = new List<string>();
+            List<string> messages = new List<string>();
             try
             {
                 ProcessItem(projDescr);
-                results = PublishResultsForDownload(projDescr);
+                messages = PublishResultsForDownload(projDescr);
                 projDescr.status = ProjectDescription.STATUS_READY;
                 projectDB.PublishResults(projDescr);
-                result = true;
+                success = true;
+                logWriter.WriteLine(DateTime.Now.ToString() + " " + projDescr.plateId + "[analysisId=" + projDescr.analysisId +
+                                    "] finished with status " + projDescr.status);
+                logWriter.Flush();
+                lastMsgByProject.Remove(projDescr.plateId);
             }
             catch (BarcodeFileException e)
             {
-                logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.plateId + " ***\n" + e);
-                logWriter.Flush();
-                results.Add(e.ToString());
-                projDescr.status = ProjectDescription.STATUS_INQUEUE;
+                notifyManager = HandleError(projDescr, messages, e, true);
             }
             catch (SampleLayoutFileException e)
             {
-                logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.plateId + " ***\n" + e);
-                logWriter.Flush();
-                results.Add(e.ToString());
-                projDescr.status = ProjectDescription.STATUS_INQUEUE;
+                notifyManager = HandleError(projDescr, messages, e, true);
             }
             catch (Exception e)
             {
-                projDescr.managerEmails = Props.props.FailureReportEmail;
-                logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.plateId + " ***\n" + e);
-                logWriter.Flush();
-                results.Add(e.ToString());
-                if (e.Message.Contains("Sharing violation"))
-                    projDescr.status = ProjectDescription.STATUS_INQUEUE;
-                else
-                    projDescr.status = ProjectDescription.STATUS_FAILED;
+                bool recoverable = e.Message.Contains("Sharing violation");
+                notifyManager = HandleError(projDescr, messages, e, recoverable);
             }
-            NotifyManager(projDescr, results);
-            logWriter.WriteLine(DateTime.Now.ToString() + " " + projDescr.plateId + "[analysisId=" + projDescr.analysisId + "] finished with status " + projDescr.status);
-            logWriter.Flush();
+            if (notifyManager)
+                NotifyManager(projDescr, messages);
             projectDB.UpdateAnalysisStatus(projDescr);
-            return result;
+            return success;
+        }
+
+        private static bool HandleError(ProjectDescription projDescr, List<string> messages, Exception e, bool recoverable)
+        {
+            projDescr.managerEmails += ";" + Props.props.FailureReportEmail;
+            logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.plateId + " ***\n" + e);
+            logWriter.Flush();
+            projDescr.status = recoverable ? ProjectDescription.STATUS_INQUEUE : ProjectDescription.STATUS_FAILED;
+            if (lastMsgByProject.ContainsKey(projDescr.plateId) && lastMsgByProject[projDescr.plateId] == e.ToString()) 
+                return false;
+            messages.Add(e.ToString());
+            lastMsgByProject[projDescr.plateId] = e.ToString();
+            return true;
         }
 
         private static void ProcessItem(ProjectDescription projDescr)

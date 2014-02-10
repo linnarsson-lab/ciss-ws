@@ -263,6 +263,20 @@ namespace C1
             conn.Close();
         }
 
+        public void InsertAnalysisSetup(string plate, string bowtieIndex, string resultFolder, string parameters)
+        {
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            string sql = string.Format("REPLACE INTO AnalysisSetup (Plate, Path, Genome, Parameters) VALUES ('{0}','{1}','{2}','{3}')",
+                                       plate, resultFolder, bowtieIndex, parameters);
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            if (test)
+                Console.WriteLine(sql);
+            else
+                cmd.ExecuteNonQuery();
+            conn.Close();
+        }
+
         public void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);

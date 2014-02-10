@@ -717,11 +717,11 @@ namespace Linnarsson.Strt
             System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(props.GetType());
             using (StreamWriter writer = new StreamWriter(Path.Combine(outputFolder, "SilverBulletConfig.xml")))
                 x.Serialize(writer, props);
-            InsertCells10kData(projectId, annotations);
+            InsertCells10kData(projectId, annotations, resultDescr);
             return resultDescr;
         }
 
-        private static void InsertCells10kData(string projectId, GenomeAnnotations annotations)
+        private static void InsertCells10kData(string projectId, GenomeAnnotations annotations, ResultDescription resultDescr)
         {
             if (Props.props.InsertCells10Data && projectId.StartsWith(C1Props.C1ProjectPrefix))
             {
@@ -729,12 +729,25 @@ namespace Linnarsson.Strt
                 try
                 {
                     new C1DB().InsertExpressions(annotations.IterExpressions(projectId));
+                    string parString = MakeParameterString();
+                    new C1DB().InsertAnalysisSetup(projectId, resultDescr.bowtieIndexVersion, resultDescr.resultFolder, parString);
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine("Error inserting data to cells10k: {0}", e);
                 }
             }
+        }
+
+        private static string MakeParameterString()
+        {
+            List<string> parameters = new List<string>();
+            parameters.Add(string.Format("UMIFilter={0}/{1}", Props.props.RndTagMutationFilter, Props.props.RndTagMutationFilterParam));
+            parameters.Add("UseMost5PrimeExonMapping=" + Props.props.UseMost5PrimeExonMapping);
+            parameters.Add("MaxAlignmentMismatches=" + Props.props.MaxAlignmentMismatches);
+            parameters.Add("MaxAlternativeMappings=" + Props.props.MaxAlternativeMappings);
+            string parString = string.Join(",", parameters.ToArray());
+            return parString;
         }
 
         private int DetermineAverageReadLen(List<string> mapFilePaths, ReadCounter readCounter)

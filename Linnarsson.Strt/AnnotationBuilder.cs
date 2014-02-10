@@ -255,6 +255,8 @@ namespace Linnarsson.Strt
                 if (Background.CancellationPending) return;
             }
             annotWriter.Close();
+            if (jChrSeq.Count == 0)
+                chrWriter.WriteLine("CCCCCCCCCCCCCCCCCCCC"); // bowtie-build needs some bases to not break
             chrWriter.Close();
             Console.WriteLine("Length of artificial splice chromosome:" + jChrSeq.Count);
         }

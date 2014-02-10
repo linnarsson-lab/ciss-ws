@@ -827,7 +827,7 @@ namespace Linnarsson.Strt
                     if (bcHits > 0) detected++;
                 }
                 double fraction = (detected / (double)barcodes.Count);
-                string spikeId = gf.Name.Replace("RNA_SPIKE_", "");
+                string spikeId = gf.Name.Replace("RNA_SPIKE_", "Old").Replace("ERCC-00", "");
                 sbt.Append(string.Format("      <point x=\"#{0}\" y=\"{1:0}\" />\n", spikeId, total));
                 sbf.Append(string.Format("      <point x=\"#{0}\" y=\"{1:0.###}\" />\n", spikeId, fraction));
             }

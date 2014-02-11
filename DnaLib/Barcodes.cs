@@ -320,7 +320,11 @@ namespace Linnarsson.Dna
             AnnotationsByWell.Clear();
             m_SpeciesByWell = new string[m_WellIds.Length];
             if (m_WellIds.Length != sampleLayout.Length)
-                throw new SampleLayoutFileException("Number of lines does not match barcode set " + this.Name + " in file " + sampleLayout.Filename);
+            {
+                string xtra = (sampleLayout.Filename == "C1 database") ? "It may help to reload plate with C1SeqPlateLoader.exe" : "";
+                throw new SampleLayoutFileException("Line count of layout in " + sampleLayout.Filename + " (" + sampleLayout.Length +
+                                                    ") differs from barcode set " + this.Name + "(" + this.Count + ") " + xtra);
+            }
             foreach (string annotation in sampleLayout.GetAnnotations())
                 AnnotationsByWell[annotation] = new string[m_WellIds.Length];
             foreach (KeyValuePair<string, string> pair in sampleLayout.SpeciesIdBySampleId)

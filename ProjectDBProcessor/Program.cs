@@ -22,7 +22,7 @@ namespace ProjectDBProcessor
 
         static void Main(string[] args)
         {
-            int minutesWait = 10; // Time between scans to wait for new data to appear in queue.
+            int minutesWait = 1; // Time between scans to wait for new data to appear in queue.
             int maxExceptions = 50; // Max number of exceptions before giving up.
             Props.props.InsertCells10Data = true; // Update cells10k data by default
             logFile = new FileInfo("PDBP_" + Process.GetCurrentProcess().Id + ".log").FullName;
@@ -105,7 +105,7 @@ namespace ProjectDBProcessor
             string from = Props.props.ProjectDBProcessorNotifierEmailSender;
             string to = Props.props.FailureReportEmail;
             string smtp = "localhost";
-            string subject = "BkgBackuper PID=" + Process.GetCurrentProcess().Id + " quit with exceptions.";
+            string subject = "ProjectDBProcessor PID=" + Process.GetCurrentProcess().Id + " quit with exceptions.";
             string body = "Please consult logfile " + logFile + " for more info on the errors.\n" +
                           "After fixing the error, restart with 'nohup ProjectDBProcessor.exe > PDBP.out &'";
             MailMessage message = new MailMessage(from, to, subject, body);
@@ -116,16 +116,26 @@ namespace ProjectDBProcessor
 
         private static bool CheckAllReadsCollected(ref ProjectDescription projDescr)
         {
-            char reqReadNo = Barcodes.GetBarcodes(projDescr.barcodeSet).HighestNeededReadNo;
-            List<int> runNos = new List<int>();
-            foreach (string laneArg in projDescr.runIdsLanes)
+            try
             {
-                string[] parts = laneArg.Split(':');
-                int runNo = PathHandler.CheckReadsCollected(parts[0], parts[1], reqReadNo);
-                if (runNo == -1) return false;
-                runNos.Add(runNo);
+                char reqReadNo = Barcodes.GetBarcodes(projDescr.barcodeSet).HighestNeededReadNo;
+                List<int> runNos = new List<int>();
+                foreach (string laneArg in projDescr.runIdsLanes)
+                {
+                    string[] parts = laneArg.Split(':');
+                    int runNo = PathHandler.CheckReadsCollected(parts[0], parts[1], reqReadNo);
+                    if (runNo == -1) return false;
+                    runNos.Add(runNo);
+                }
+                projDescr.runNumbers = runNos.ToArray();
             }
-            projDescr.runNumbers = runNos.ToArray();
+            catch (Exception e)
+            {
+                List<string> messages = new List<string>();
+                if (HandleError(projDescr, messages , e, true))
+                    NotifyManager(projDescr, messages);
+                return false;
+            }
             return true;
         }
 
@@ -172,11 +182,11 @@ namespace ProjectDBProcessor
             }
             catch (BarcodeFileException e)
             {
-                notifyManager = HandleError(projDescr, messages, e, true);
+                notifyManager = HandleError(projDescr, messages, e, false);
             }
             catch (SampleLayoutFileException e)
             {
-                notifyManager = HandleError(projDescr, messages, e, true);
+                notifyManager = HandleError(projDescr, messages, e, false);
             }
             catch (Exception e)
             {
@@ -194,11 +204,12 @@ namespace ProjectDBProcessor
             projDescr.managerEmails += ";" + Props.props.FailureReportEmail;
             logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.plateId + " ***\n" + e);
             logWriter.Flush();
+            string errorMsg = e.Message;
             projDescr.status = recoverable ? ProjectDescription.STATUS_INQUEUE : ProjectDescription.STATUS_FAILED;
-            if (lastMsgByProject.ContainsKey(projDescr.plateId) && lastMsgByProject[projDescr.plateId] == e.ToString()) 
+            if (lastMsgByProject.ContainsKey(projDescr.plateId) && lastMsgByProject[projDescr.plateId].Equals(errorMsg))
                 return false;
-            messages.Add(e.ToString());
-            lastMsgByProject[projDescr.plateId] = e.ToString();
+            messages.Add(errorMsg);
+            lastMsgByProject[projDescr.plateId] = errorMsg;
             return true;
         }
 
@@ -262,6 +273,8 @@ namespace ProjectDBProcessor
                 sb.Append("<p>The data analysis failed!</p>");
                 foreach (string msg in results)
                     sb.Append(msg);
+                sb.Append("Please consult logfile " + logFile + " for technical info on the error.");
+                sb.Append("<p>After fixing the error, you may need to re-activate the analysis in the Sanger DB (View the sample: Analysis results/Retry).</p>");
             }
             sb.Append("<p>Run parameters follow:</p>\n<code>");
             sb.Append("<br />\nBarcodeSet: " + projDescr.barcodeSet);

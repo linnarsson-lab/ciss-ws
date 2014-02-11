@@ -91,6 +91,7 @@ namespace Linnarsson.Dna
             if (m_SpeciesIds.Count == 0)
                 throw new SampleLayoutFileException("No parseable species in database for " + plateId +
                                                     ". Change to two-letter abbrevation or full latin name (e.g. 'Hs' or 'Homo sapiens')");
+            Filename = "C1 database";
         }
     }
 

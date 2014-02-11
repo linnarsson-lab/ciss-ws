@@ -1416,7 +1416,7 @@ namespace Linnarsson.Strt
                 for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                 {
                     if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
-                    xmlFile.Write("    <d>{0}</d>", barcodes.GetWellId(bcIdx));
+                    xmlFile.Write("    <d>{0}</d>", barcodes.GetWellSymbolFromBcIdx(bcIdx));
                 }
                 xmlFile.WriteLine("\n    </barcodestat>");
                 WriteBarcodes(xmlFile, barcodeStats, bCodeLines);

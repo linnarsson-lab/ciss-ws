@@ -305,6 +305,12 @@ namespace Linnarsson.Dna
             }
             return mergeBcIdx;
         }
+        public string GetWellSymbolFromBcIdx(int bcIdx)
+        {
+            int wellIdx = GetWellIdxFromBcIdx(bcIdx);
+            string wellId = GetWellId(wellIdx);
+            return (wellIdx != bcIdx) ? "(" + wellId + ")" : wellId;
+        }
 
         public List<string> GetAnnotationTitles()
         {

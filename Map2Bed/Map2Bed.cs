@@ -67,6 +67,7 @@ namespace Map2Bed
             int maxBcIdx = settings.iterateBarcodes ? settings.maxBarcodeIdx : 0;
             for (int bcIdx = 0; bcIdx <= maxBcIdx; bcIdx++)
             {
+                List<int> readLens = new List<int>();
                 counters = new Dictionary<string, Dictionary<int, PositionCounter>>();
                 int nReads = 0, nMols = 0;
                 nTooMultiMappingReads = nMappedPositions = 0;
@@ -81,15 +82,17 @@ namespace Map2Bed
                         if (file == null || !File.Exists(file)) continue;
                     }
                     Console.Write("{0}...", file);
-                    ReadMapFile(file);
+                    int readLen = ReadMapFile(file);
+                    readLens.Add(readLen);
                 }
                 if (counters.Count == 0)
                     continue;
+                int averageLen = (int)Math.Round(readLens.Sum() / (double)readLens.Count);
                 string bcPrefix = settings.iterateBarcodes ? bcIdx + "_" : "";
                 if (settings.CountMols)
-                    nMols = WriteOutput(bcPrefix + "mols.bed.gz", true);
+                    nMols = WriteOutput(bcPrefix + "mols.bed.gz", true, averageLen);
                 if (settings.countReads)
-                    nReads = WriteOutput(bcPrefix + "reads.bed.gz", false);
+                    nReads = WriteOutput(bcPrefix + "reads.bed.gz", false, averageLen);
                 string molTxt = settings.CountMols ? string.Format(" and {0} molecules", nMols) : "";
                 Console.WriteLine("{0} reads{1} at {2} mapped positions. {3} multireads were skipped.",
                                   nReads, molTxt, nMappedPositions, nTooMultiMappingReads);
@@ -98,10 +101,12 @@ namespace Map2Bed
             }
             string totMolTxt = settings.CountMols ? string.Format(" and {0} molecules", nTotMols) : "";
             Console.WriteLine("All in all were {0} reads{1} processed.", nTotReads, totMolTxt);
+            Console.WriteLine("Output is found in " + settings.outputFolder);
         }
 
-        private void ReadMapFile(string mapFile)
+        private int ReadMapFile(string mapFile)
         {
+            int readLen = 0;
             NoBarcodes bcs = settings.CountMols ? new NoBarcodes() : new NoUMIsNoBarcodes();
             foreach (MultiReadMappings mrm in new BowtieMapFile(100, bcs).MultiMappings(mapFile))
             {
@@ -114,6 +119,7 @@ namespace Map2Bed
                 MultiReadMapping m = mrm[selectedMapping];
                 string chr = settings.AllAsPlusStrand ? m.Chr : m.Chr + m.Strand;
                 int pos = (settings.AllAsPlusStrand || m.Strand == '+') ? m.Position : m.Position + mrm.SeqLen - 1;
+                readLen = mrm.SeqLen;
                 Dictionary<int, PositionCounter> chrCounters;
                 try
                 {
@@ -133,14 +139,16 @@ namespace Map2Bed
                 }
                 counter.Add(mrm.UMIIdx);
             }
+            return readLen;
         }
 
-        int WriteOutput(string filename, bool mols)
+        int WriteOutput(string filename, bool mols, int readLen)
         {
             int nTotal = 0;
             string outfilePath = Path.Combine(settings.outputFolder, filename);
             using (StreamWriter writer = outfilePath.OpenWrite())
             {
+                writer.WriteLine("#ReadLen=" + readLen);
                 string[] chrStrands = counters.Keys.ToArray();
                 Array.Sort(chrStrands);
                 foreach (string chrStrand in chrStrands)

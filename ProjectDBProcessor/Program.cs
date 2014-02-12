@@ -22,8 +22,8 @@ namespace ProjectDBProcessor
 
         static void Main(string[] args)
         {
-            int minutesWait = 1; // Time between scans to wait for new data to appear in queue.
-            int maxExceptions = 50; // Max number of exceptions before giving up.
+            int minutesWait = 10; // Time between scans to wait for new data to appear in queue.
+            int maxExceptions = 200; // Max number of exceptions before giving up.
             Props.props.InsertCells10Data = true; // Update cells10k data by default
             logFile = new FileInfo("PDBP_" + Process.GetCurrentProcess().Id + ".log").FullName;
             try

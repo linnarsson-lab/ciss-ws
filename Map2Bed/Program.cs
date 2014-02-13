@@ -18,6 +18,8 @@ namespace Map2Pclu
         public bool AllAsPlusStrand = false;
         public string outputFolder = ".";
         public List<string> inputFiles = new List<string>();
+        public bool estimateTrueMolCounts = false;
+        public bool IsCountingMols { get { return countType == CountType.AllMolecules || countType == CountType.NonSingeltonMolecules; } }
 
         public Map2PcluSettings()
         { }
@@ -30,6 +32,7 @@ namespace Map2Pclu
                 else if (args[argIdx] == "--nosingletons") countType = CountType.NonSingeltonMolecules;
                 else if (args[argIdx].StartsWith("--UMIs=")) nUMIs = int.Parse(args[argIdx].Substring(7));
                 else if (args[argIdx].StartsWith("--multireads=")) maxMultiReadMappings = int.Parse(args[argIdx].Substring(13));
+                else if (args[argIdx] == "--estimatetrue") estimateTrueMolCounts = true;
                 else if (args[argIdx] == "--mergestrands") AllAsPlusStrand = true;
                 else if (args[argIdx] == "--bybarcode") iterateBarcodes = true;
                 else if (args[argIdx] == "-o") outputFolder = args[++argIdx];
@@ -60,6 +63,7 @@ namespace Map2Pclu
                                   "--bybarcode      Process all barcodes (0...95) - requires that all MAPFILE names start with '0_'\n" +
                                   "--reads          Output read counts.\n" +
                                   "--nosingletons   Output molecule counts after removal of singeltons.\n" +
+                                  "--estimatetrue   Compensate molecular counts for UMI collisions.\n" +
                                   "--multireads=N   Count also multireads with up to N mappings. A random mapping will be selected.\n" +
                                   "--UMIs=N         Analyze N different UMIs. Set N=0 to skip molecule counting.\n" +
                                   "--mergestrands   Reads are non-directional, all reads will be put on the '+' strand.");
@@ -68,10 +72,14 @@ namespace Map2Pclu
             else
             {
                 Map2PcluSettings settings = new Map2PcluSettings(args);
-                if (!settings.HasUMIs && (settings.countType == CountType.NonSingeltonMolecules || settings.countType == CountType.AllMolecules))
+                if (!settings.HasUMIs && settings.IsCountingMols)
                 {
                     Console.WriteLine("ERROR: You can not count molecules with no UMIs! Counting reads instead...");
                     settings.countType = CountType.Reads;
+                }
+                if (settings.estimateTrueMolCounts && !settings.IsCountingMols)
+                {
+                    Console.WriteLine("WARNING: --estimatetrue will have no effect on read counts.");
                 }
                 Map2Pclu m2b = new Map2Pclu(settings);
                 m2b.Convert();

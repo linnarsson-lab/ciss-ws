@@ -179,6 +179,7 @@ namespace Map2Pclu
                     foreach (int pos in positions)
                     {
                         int n = chrCounters[pos].count(ct);
+                        if (settings.IsCountingMols && settings.estimateTrueMolCounts) n = EstimateTrueCount(n);
                         nTotal += n;
                         writer.WriteLine("{0}\t{1}\t{2}\t{3}", chr, strand, pos, n);
                     }
@@ -186,5 +187,13 @@ namespace Map2Pclu
             }
             return nTotal;
         }
+
+        public int EstimateTrueCount(int nMols)
+        {
+            if (nMols > settings.nUMIs)
+                return nMols;
+            return (int)Math.Round(Math.Log(1.0 - (double)nMols / settings.nUMIs) / Math.Log(1.0 - 1.0 / settings.nUMIs));
+        }
+
     }
 }

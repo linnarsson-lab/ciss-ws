@@ -7,7 +7,7 @@ using System.IO;
 using Linnarsson.Utilities;
 using Linnarsson.Dna;
 
-namespace Map2Bed
+namespace Map2Pclu
 {
     class PositionCounter
     {
@@ -42,10 +42,10 @@ namespace Map2Bed
         }
     }
 
-    class Map2Bed
+    class Map2Pclu
     {
         private Dictionary<string, Dictionary<int, PositionCounter>> counters;
-        private Map2BedSettings settings;
+        private Map2PcluSettings settings;
 
         private int nTotReads = 0, nTotMols = 0;
         private int nTooMultiMappingReads, nMappedPositions;
@@ -53,7 +53,7 @@ namespace Map2Bed
         private int nMaxMappings;
         private Random rnd;
 
-        public Map2Bed(Map2BedSettings settings)
+        public Map2Pclu(Map2PcluSettings settings)
         {
             this.settings = settings;
             nMaxMappings = settings.maxMultiReadMappings;
@@ -90,9 +90,9 @@ namespace Map2Bed
                 int averageLen = (int)Math.Round(readLens.Sum() / (double)readLens.Count);
                 string bcPrefix = settings.iterateBarcodes ? bcIdx + "_" : "";
                 if (settings.CountMols)
-                    nMols = WriteOutput(bcPrefix + "mols.bed.gz", true, averageLen);
+                    nMols = WriteOutput(bcPrefix + "mols.pclu.gz", true, averageLen);
                 if (settings.countReads)
-                    nReads = WriteOutput(bcPrefix + "reads.bed.gz", false, averageLen);
+                    nReads = WriteOutput(bcPrefix + "reads.pclu.gz", false, averageLen);
                 string molTxt = settings.CountMols ? string.Format(" and {0} molecules", nMols) : "";
                 Console.WriteLine("{0} reads{1} at {2} mapped positions. {3} multireads were skipped.",
                                   nReads, molTxt, nMappedPositions, nTooMultiMappingReads);

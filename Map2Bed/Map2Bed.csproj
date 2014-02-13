@@ -8,7 +8,7 @@
     <ProjectGuid>{80A2570C-B629-4E4E-BE13-2CAE130305B8}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Map2Bed</RootNamespace>
+    <RootNamespace>Map2Pclu</RootNamespace>
     <AssemblyName>Map2Bed</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>

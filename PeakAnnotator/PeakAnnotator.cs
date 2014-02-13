@@ -10,17 +10,55 @@ using Linnarsson.Utilities;
 
 namespace PeakAnnotator
 {
+    class TSSData
+    {
+        public string chr;
+        public char trStrand;
+        public int start, end;
+        public int Length { get { return end - start; } }
+
+        public override string ToString()
+        {
+            return chr + "\t" + trStrand + "\t" + start + "\t" + end + "\t" + Length;
+        }
+
+        public TSSData(string chr, char trStrand, int start, int end)
+        {
+            this.chr = chr;
+            this.trStrand = trStrand;
+            this.start = start;
+            this.end = end;
+        }
+    }
+
+    class RepeatData
+    {
+        public int Length = 0;
+
+        public override string ToString()
+        {
+            return "\t\t\t\t" + Length;
+        }
+
+        public void AddLength(int len)
+        {
+            Length += len;
+        }
+    }
+
     class PeakAnnotator
     {
         private PeakAnnotatorSettings settings;
 
         private Dictionary<string, IntervalMap<int>> TSSFwIntervals;
         private Dictionary<string, IntervalMap<int>> TSSRevIntervals;
-        private Dictionary<string, int> TSSNameToIdx = new Dictionary<string, int>();
+        private Dictionary<string, int> TSSNameToTSSIdx = new Dictionary<string, int>();
+        private List<TSSData> tssDatas = new List<TSSData>();
         private Dictionary<string, int[]> TSSExpressionPerFile;
 
         private Dictionary<string, IntervalMap<int>> RepeatIntervals;
-        private Dictionary<string, int> RepeatNameToIdx = new Dictionary<string, int>();
+        private Dictionary<string, int> RepeatNameToRepeatIdx = new Dictionary<string, int>();
+        private List<RepeatData> repeatDatas = new List<RepeatData>();
         private Dictionary<string, int[]> RepeatExpressionPerFile;
 
         public PeakAnnotator(PeakAnnotatorSettings settings)
@@ -56,22 +94,26 @@ namespace PeakAnnotator
                         string chr = m.Groups[1].Value;
                         int start = int.Parse(m.Groups[2].Value);
                         int end = int.Parse(m.Groups[3].Value);
-                        int direction  = (m.Groups[4].Value == "+")? 1: -1;
+                        char trStrand = m.Groups[4].Value[0];
                         string name = m.Groups[5].Value;
                         if (name.Contains('@'))
                         {
                             int p = name.IndexOf('@');
                             name = name.Substring(p + 1) + ":" + name.Substring(0, p);
                         }
-                        Dictionary<string, IntervalMap<int>> ivls = (direction == 1) ? TSSFwIntervals : TSSRevIntervals;
+                        Dictionary<string, IntervalMap<int>> ivls = (trStrand == '+') ? TSSFwIntervals : TSSRevIntervals;
                         if (!ivls.ContainsKey(chr))
                             ivls[chr] = new IntervalMap<int>(30000);
-                        int idx;
-                        if (!TSSNameToIdx.TryGetValue(name, out idx))
+                        if (TSSNameToTSSIdx.ContainsKey(name))
                         {
-                            idx = TSSNameToIdx.Count + 1;
-                            TSSNameToIdx[name] = idx;
+                            name += "_AltTSS";
+                            int altTSS = 1;
+                            while (TSSNameToTSSIdx.ContainsKey(name + (++altTSS)));
+                            name = name + altTSS;
                         }
+                        int idx = TSSNameToTSSIdx.Count + 1;
+                        TSSNameToTSSIdx[name] = idx;
+                        tssDatas.Add(new TSSData(chr, trStrand, start, end));
                         ivls[chr].Add(start, end, idx);
                         n++;
                     }
@@ -113,12 +155,14 @@ namespace PeakAnnotator
                     if (!RepeatIntervals.ContainsKey(chr))
                         RepeatIntervals[chr] = new IntervalMap<int>(30000);
                     int idx;
-                    if (!RepeatNameToIdx.TryGetValue(name, out idx))
+                    if (!RepeatNameToRepeatIdx.TryGetValue(name, out idx))
                     {
-                        idx = RepeatNameToIdx.Count + 1;
-                        RepeatNameToIdx[name] = idx;
+                        idx = RepeatNameToRepeatIdx.Count + 1;
+                        RepeatNameToRepeatIdx[name] = idx;
+                        repeatDatas.Add(new RepeatData());
                     }
                     RepeatIntervals[chr].Add(start, end, idx);
+                    repeatDatas[idx - 1].AddLength(end - start);
                     n++;
                     line = reader.ReadLine();
                 }
@@ -137,19 +181,21 @@ namespace PeakAnnotator
             string[] infileNames = TSSExpressionPerFile.Keys.ToArray();
             using (StreamWriter writer = settings.outfile.OpenWrite())
             {
-                writer.WriteLine("\t" + string.Join("\t", infileNames));
-                foreach (string name in TSSNameToIdx.Keys)
+                writer.WriteLine("TSS/Repeat\tChr\tStrand\tStart\tEnd\tTSSLen\t" + string.Join("\t", infileNames));
+                foreach (string name in TSSNameToTSSIdx.Keys)
                 {
-                    writer.Write(name);
-                    int valueIdx = TSSNameToIdx[name];
+                    writer.Write(name + "\t");
+                    int valueIdx = TSSNameToTSSIdx[name];
+                    writer.Write(tssDatas[valueIdx - 1].ToString());
                     foreach (string infileName in infileNames)
                         writer.Write("\t" + TSSExpressionPerFile[infileName][valueIdx]);
                     writer.WriteLine();
                 }
-                foreach (string name in RepeatNameToIdx.Keys)
+                foreach (string name in RepeatNameToRepeatIdx.Keys)
                 {
-                    writer.Write(name);
-                    int repTypeIdx = RepeatNameToIdx[name];
+                    writer.Write(name + "\t");
+                    int repTypeIdx = RepeatNameToRepeatIdx[name];
+                    writer.Write(repeatDatas[repTypeIdx - 1].ToString());
                     foreach (string infileName in infileNames)
                         writer.Write("\t" + RepeatExpressionPerFile[infileName][repTypeIdx]);
                     writer.WriteLine();
@@ -176,8 +222,8 @@ namespace PeakAnnotator
         public void Process(string infile)
         {
             int readLen = 38;
-            int[] geneExpression = new int[TSSNameToIdx.Count + 1];
-            int[] repeatExpression = new int[RepeatNameToIdx.Count + 1];
+            int[] geneExpression = new int[TSSNameToTSSIdx.Count + 1];
+            int[] repeatExpression = new int[RepeatNameToRepeatIdx.Count + 1];
             using (StreamReader reader = infile.OpenRead())
             {
                 string line;
@@ -186,14 +232,14 @@ namespace PeakAnnotator
                     if (line.StartsWith("#ReadLen=")) readLen = int.Parse(line.Substring(9));
                     string[] fields = line.Split('\t');
                     string chr = fields[0];
-                    int direction = (fields[1][0] == '+') ? 1 : -1;
+                    bool fw = (fields[1][0] == '+');
                     int pos = int.Parse(fields[2]);
-                    int posOf5Prime = (direction == 1)? pos : pos + readLen - 1;
+                    int posOf5Prime = fw? pos : pos + readLen - 1;
                     int count = int.Parse(fields[3]);
                     bool anyTSSHit = false;
                     try
                     {
-                        Dictionary<string, IntervalMap<int>> ivls = (direction == 1) ? TSSFwIntervals : TSSRevIntervals;
+                        Dictionary<string, IntervalMap<int>> ivls = fw? TSSFwIntervals : TSSRevIntervals;
                         foreach (SmallInterval<int> tssIvl in ivls[chr].IterItems(posOf5Prime))
                         {
                             geneExpression[tssIvl.Item] += count;

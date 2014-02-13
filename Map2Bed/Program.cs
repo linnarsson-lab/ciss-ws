@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using Linnarsson.Dna;
 
-namespace Map2Bed
+namespace Map2Pclu
 {
-    class Map2BedSettings
+    class Map2PcluSettings
     {
         public bool iterateBarcodes = false;
         public int maxBarcodeIdx = 95;
@@ -19,9 +19,9 @@ namespace Map2Bed
         public string outputFolder = ".";
         public List<string> inputFiles = new List<string>();
 
-        public Map2BedSettings()
+        public Map2PcluSettings()
         { }
-        public Map2BedSettings(string[] args)
+        public Map2PcluSettings(string[] args)
         {
             int argIdx = 0;
             for (; argIdx < args.Length; argIdx++)
@@ -46,14 +46,14 @@ namespace Map2Bed
         }
     }
 
-    class Map2BedProgram
+    class Map2PcluProgram
     {
         static void Main(string[] args)
         {
             if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
             {
-                Console.WriteLine("Usage:\nmono Map2Bed.exe [OPTIONS] -o OUTPUTFOLDER MAPFILE [MAPFILE2...]\n\n" +
-                                  "N.B.: Output is not a true bed files, it is: chr TAB strand TAB pos TAB count\n" +
+                Console.WriteLine("Usage:\nmono Map2Pclu.exe [OPTIONS] -o OUTPUTFOLDER MAPFILE [MAPFILE2...]\n\n" +
+                                  "N.B.: Output is in paraclu peak format: chr TAB strand TAB pos TAB count\n" +
                                   "      pos is where the read 5' end maps, i.e. if strand='-', pos is max of the aligned positions\n" +
                                   "Options:\n" +
                                   "--bybarcode      Process all barcodes (0...95) - requires that all MAPFILE names start with '0_'\n" +
@@ -65,8 +65,8 @@ namespace Map2Bed
             }
             else
             {
-                Map2BedSettings settings = new Map2BedSettings(args);
-                Map2Bed m2b = new Map2Bed(settings);
+                Map2PcluSettings settings = new Map2PcluSettings(args);
+                Map2Pclu m2b = new Map2Pclu(settings);
                 m2b.Convert();
             }
         }

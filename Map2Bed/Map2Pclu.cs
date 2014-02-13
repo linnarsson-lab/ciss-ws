@@ -81,7 +81,7 @@ namespace Map2Pclu
                         file = Path.Combine(dir, file);
                         if (file == null || !File.Exists(file)) continue;
                     }
-                    Console.Write("{0}...", file);
+                    Console.WriteLine("{0}...", file);
                     int readLen = ReadMapFile(file);
                     readLens.Add(readLen);
                 }

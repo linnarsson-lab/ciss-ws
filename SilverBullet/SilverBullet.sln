@@ -31,7 +31,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "C1SeqPlateLoader", "..\C1Se
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "C1SeqPlateLoaderGUI", "..\C1SeqPlateLoaderGUI\C1SeqPlateLoaderGUI.csproj", "{DD65C719-6342-4C52-8953-0459DC71E0BA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Map2Bed", "..\Map2Bed\Map2Bed.csproj", "{80A2570C-B629-4E4E-BE13-2CAE130305B8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Map2Pclu", "..\Map2Bed\Map2Pclu.csproj", "{80A2570C-B629-4E4E-BE13-2CAE130305B8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeakAnnotator", "..\PeakAnnotator\PeakAnnotator.csproj", "{57F708C2-B7A8-4BD5-9130-966FA0C752D0}"
 EndProject
@@ -87,12 +87,12 @@ Global
 		SccProjectUniqueName15 = ..\\C1SeqPlateLoaderGUI\\C1SeqPlateLoaderGUI.csproj
 		SccLocalPath15 = ..
 		SccProjectFilePathRelativizedFromConnection15 = C1SeqPlateLoaderGUI\\
-		SccProjectUniqueName16 = ..\\Map2Bed\\Map2Bed.csproj
+		SccProjectUniqueName16 = ..\\PeakAnnotator\\PeakAnnotator.csproj
 		SccLocalPath16 = ..
-		SccProjectFilePathRelativizedFromConnection16 = Map2Bed\\
-		SccProjectUniqueName17 = ..\\PeakAnnotator\\PeakAnnotator.csproj
+		SccProjectFilePathRelativizedFromConnection16 = PeakAnnotator\\
+		SccProjectUniqueName17 = ..\\Map2Bed\\Map2Pclu.csproj
 		SccLocalPath17 = ..
-		SccProjectFilePathRelativizedFromConnection17 = PeakAnnotator\\
+		SccProjectFilePathRelativizedFromConnection17 = Map2Bed\\
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

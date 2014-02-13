@@ -11,9 +11,9 @@ namespace Map2Pclu
         public bool iterateBarcodes = false;
         public int maxBarcodeIdx = 95;
         public string barcodePattern = "0_";
-        public bool countReads = true;
+        public CountType countType = CountType.AllMolecules;
         public int nUMIs = 4096;
-        public bool CountMols { get { return nUMIs > 0; }}
+        public bool HasUMIs { get { return nUMIs > 0; }}
         public int maxMultiReadMappings = 1;
         public bool AllAsPlusStrand = false;
         public string outputFolder = ".";
@@ -26,7 +26,8 @@ namespace Map2Pclu
             int argIdx = 0;
             for (; argIdx < args.Length; argIdx++)
             {
-                if (args[argIdx] == "--reads") countReads = true;
+                if (args[argIdx] == "--reads") countType = CountType.Reads;
+                else if (args[argIdx] == "--nosingletons") countType = CountType.NonSingeltonMolecules;
                 else if (args[argIdx].StartsWith("--UMIs=")) nUMIs = int.Parse(args[argIdx].Substring(7));
                 else if (args[argIdx].StartsWith("--multireads=")) maxMultiReadMappings = int.Parse(args[argIdx].Substring(13));
                 else if (args[argIdx] == "--mergestrands") AllAsPlusStrand = true;
@@ -57,7 +58,8 @@ namespace Map2Pclu
                                   "      pos is where the read 5' end maps, i.e. if strand='-', pos is max of the aligned positions\n" +
                                   "Options:\n" +
                                   "--bybarcode      Process all barcodes (0...95) - requires that all MAPFILE names start with '0_'\n" +
-                                  "--reads          Output files with read counts.\n" +
+                                  "--reads          Output read counts.\n" +
+                                  "--nosingletons   Output molecule counts after removal of singeltons.\n" +
                                   "--multireads=N   Count also multireads with up to N mappings. A random mapping will be selected.\n" +
                                   "--UMIs=N         Analyze N different UMIs. Set N=0 to skip molecule counting.\n" +
                                   "--mergestrands   Reads are non-directional, all reads will be put on the '+' strand.");
@@ -66,6 +68,11 @@ namespace Map2Pclu
             else
             {
                 Map2PcluSettings settings = new Map2PcluSettings(args);
+                if (!settings.HasUMIs && (settings.countType == CountType.NonSingeltonMolecules || settings.countType == CountType.AllMolecules))
+                {
+                    Console.WriteLine("ERROR: You can not count molecules with no UMIs! Counting reads instead...");
+                    settings.countType = CountType.Reads;
+                }
                 Map2Pclu m2b = new Map2Pclu(settings);
                 m2b.Convert();
             }

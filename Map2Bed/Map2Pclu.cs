@@ -9,21 +9,31 @@ using Linnarsson.Dna;
 
 namespace Map2Pclu
 {
+    enum CountType { Reads, AllMolecules, NonSingeltonMolecules };
+
     class PositionCounter
     {
         private int detectedReads;
         private BitArray detectedUMIs;
+        private BitArray multitonUMIs;
 
         public PositionCounter(int nUMIs)
         {
             if (nUMIs > 0)
+            {
                 detectedUMIs = new BitArray(nUMIs);
+                multitonUMIs = new BitArray(nUMIs);
+            }
         }
         public void Add(int UMIIdx)
         {
             detectedReads++;
             if (detectedUMIs != null)
+            {
+                if (detectedUMIs[UMIIdx])
+                    multitonUMIs[UMIIdx] = true;
                 detectedUMIs[UMIIdx] = true;
+            }
         }
         public int nMols()
         {
@@ -32,13 +42,20 @@ namespace Map2Pclu
                 if (detectedUMIs[i]) n++;
             return n;
         }
+        public int nNonSingeltonMols()
+        {
+            int n = 0;
+            for (int i = 0; i < detectedUMIs.Length; i++)
+                if (multitonUMIs[i]) n++;
+            return n;
+        }
         public int nReads()
         {
             return detectedReads;
         }
-        public int count(bool mols)
+        public int count(CountType ct)
         {
-            return mols ? nMols() : detectedReads;
+            return (ct == CountType.Reads) ? detectedReads : (ct == CountType.AllMolecules) ? nMols() : nNonSingeltonMols();
         }
     }
 
@@ -69,7 +86,7 @@ namespace Map2Pclu
             {
                 List<int> readLens = new List<int>();
                 counters = new Dictionary<string, Dictionary<int, PositionCounter>>();
-                int nReads = 0, nMols = 0;
+                int nReads = 0, nHits = 0;
                 nTooMultiMappingReads = nMappedPositions = 0;
                 foreach (string mapFile in settings.inputFiles)
                 {
@@ -82,34 +99,31 @@ namespace Map2Pclu
                         if (file == null || !File.Exists(file)) continue;
                     }
                     Console.WriteLine("{0}...", file);
-                    int readLen = ReadMapFile(file);
-                    readLens.Add(readLen);
+                    nReads += ReadMapFile(file);
                 }
                 if (counters.Count == 0)
                     continue;
-                int averageLen = (int)Math.Round(readLens.Sum() / (double)readLens.Count);
                 string bcPrefix = settings.iterateBarcodes ? bcIdx + "_" : "";
-                if (settings.CountMols)
-                    nMols = WriteOutput(bcPrefix + "mols.pclu.gz", true, averageLen);
-                if (settings.countReads)
-                    nReads = WriteOutput(bcPrefix + "reads.pclu.gz", false, averageLen);
-                string molTxt = settings.CountMols ? string.Format(" and {0} molecules", nMols) : "";
-                Console.WriteLine("{0} reads{1} at {2} mapped positions. {3} multireads were skipped.",
-                                  nReads, molTxt, nMappedPositions, nTooMultiMappingReads);
-                nTotMols += nMols;
+                string fType = (settings.countType == CountType.Reads)? "reads" : (settings.countType == CountType.AllMolecules)? "mols" : "nonSingletonMols";
+                string filename = bcPrefix + fType + ".pclu.gz";
+                nHits = WriteOutput(filename, settings.countType);
+                Console.WriteLine("{0} hits from {1} reads at {2} mapped positions. {3} multireads were skipped.",
+                                  nHits, nReads, nMappedPositions, nTooMultiMappingReads);
+                nTotMols += nHits;
                 nTotReads += nReads;
             }
-            string totMolTxt = settings.CountMols ? string.Format(" and {0} molecules", nTotMols) : "";
+            string totMolTxt = settings.HasUMIs ? string.Format(" and {0} molecules", nTotMols) : "";
             Console.WriteLine("All in all were {0} reads{1} processed.", nTotReads, totMolTxt);
             Console.WriteLine("Output is found in " + settings.outputFolder);
         }
 
         private int ReadMapFile(string mapFile)
         {
-            int readLen = 0;
-            NoBarcodes bcs = settings.CountMols ? new NoBarcodes() : new NoUMIsNoBarcodes();
+            int nReads = 0;
+            NoBarcodes bcs = settings.HasUMIs ? new NoBarcodes() : new NoUMIsNoBarcodes();
             foreach (MultiReadMappings mrm in new BowtieMapFile(100, bcs).MultiMappings(mapFile))
             {
+                nReads++;
                 if (mrm.NMappings > nMaxMappings)
                 {
                     nTooMultiMappingReads++;
@@ -118,8 +132,7 @@ namespace Map2Pclu
                 int selectedMapping = rnd.Next(mrm.NMappings);
                 MultiReadMapping m = mrm[selectedMapping];
                 string chr = settings.AllAsPlusStrand ? m.Chr : m.Chr + m.Strand;
-                int pos = (settings.AllAsPlusStrand || m.Strand == '+') ? m.Position : m.Position + mrm.SeqLen - 1;
-                readLen = mrm.SeqLen;
+                int posOf5Prime = (settings.AllAsPlusStrand || m.Strand == '+') ? m.Position : m.Position + mrm.SeqLen - 1;
                 Dictionary<int, PositionCounter> chrCounters;
                 try
                 {
@@ -131,24 +144,24 @@ namespace Map2Pclu
                     counters[chr] = chrCounters;
                 }
                 PositionCounter counter;
-                if (!counters[chr].TryGetValue(pos, out counter))
+                if (!counters[chr].TryGetValue(posOf5Prime, out counter))
                 {
                     counter = new PositionCounter(settings.nUMIs);
-                    counters[chr][pos] = counter;
+                    counters[chr][posOf5Prime] = counter;
                     nMappedPositions++;
                 }
                 counter.Add(mrm.UMIIdx);
             }
-            return readLen;
+            return nReads;
         }
 
-        int WriteOutput(string filename, bool mols, int readLen)
+        int WriteOutput(string filename, CountType ct)
         {
             int nTotal = 0;
             string outfilePath = Path.Combine(settings.outputFolder, filename);
             using (StreamWriter writer = outfilePath.OpenWrite())
             {
-                writer.WriteLine("#ReadLen=" + readLen);
+                writer.WriteLine("#Chr\tStrand\tPosOf5Prime\tCount");
                 string[] chrStrands = counters.Keys.ToArray();
                 Array.Sort(chrStrands);
                 foreach (string chrStrand in chrStrands)
@@ -165,7 +178,7 @@ namespace Map2Pclu
                     Array.Sort(positions);
                     foreach (int pos in positions)
                     {
-                        int n = chrCounters[pos].count(mols);
+                        int n = chrCounters[pos].count(ct);
                         nTotal += n;
                         writer.WriteLine("{0}\t{1}\t{2}\t{3}", chr, strand, pos, n);
                     }

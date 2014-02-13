@@ -96,21 +96,11 @@ namespace PeakAnnotator
                         int end = int.Parse(m.Groups[3].Value);
                         char trStrand = m.Groups[4].Value[0];
                         string name = m.Groups[5].Value;
-                        if (name.Contains('@'))
-                        {
-                            int p = name.IndexOf('@');
-                            name = name.Substring(p + 1) + ":" + name.Substring(0, p);
-                        }
+                        name = MakeTSSNameSortableOnGeneName(name);
+                        name = MakeTSSNameUnique(name);
                         Dictionary<string, IntervalMap<int>> ivls = (trStrand == '+') ? TSSFwIntervals : TSSRevIntervals;
                         if (!ivls.ContainsKey(chr))
                             ivls[chr] = new IntervalMap<int>(30000);
-                        if (TSSNameToTSSIdx.ContainsKey(name))
-                        {
-                            name += "_AltTSS";
-                            int altTSS = 1;
-                            while (TSSNameToTSSIdx.ContainsKey(name + (++altTSS)));
-                            name = name + altTSS;
-                        }
                         int idx = TSSNameToTSSIdx.Count + 1;
                         TSSNameToTSSIdx[name] = idx;
                         tssDatas.Add(new TSSData(chr, trStrand, start, end));
@@ -120,6 +110,40 @@ namespace PeakAnnotator
                 }
             }
             return n;
+        }
+
+        private string MakeTSSNameUnique(string name)
+        {
+            if (TSSNameToTSSIdx.ContainsKey(name))
+            {
+                name += "-AltTSS";
+                int altTSS = 1;
+                while (TSSNameToTSSIdx.ContainsKey(name + (++altTSS))) ;
+                name = name + altTSS;
+            }
+            return name;
+        }
+
+        private static string MakeTSSNameSortableOnGeneName(string name)
+        {
+            if (name.StartsWith("p@chr"))
+                name = name.Substring(2);
+            else
+            {
+                List<string> parts = new List<string>();
+                foreach (string part in name.Split(','))
+                {
+                    if (!part.Contains('@'))
+                        parts.Add(part);
+                    else
+                    {
+                        int p = part.IndexOf('@');
+                        parts.Add(part.Substring(p + 1) + ":" + part.Substring(0, p));
+                    }
+                }
+                name = string.Join(",", parts.ToArray());
+            }
+            return name;
         }
 
         private void SetupRepeats()
@@ -181,7 +205,7 @@ namespace PeakAnnotator
             string[] infileNames = TSSExpressionPerFile.Keys.ToArray();
             using (StreamWriter writer = settings.outfile.OpenWrite())
             {
-                writer.WriteLine("TSS/Repeat\tChr\tStrand\tStart\tEnd\tTSSLen\t" + string.Join("\t", infileNames));
+                writer.WriteLine("TSS/Repeat\tChr\tStrand\tStart\tEnd\tPromoterLen\t" + string.Join("\t", infileNames));
                 foreach (string name in TSSNameToTSSIdx.Keys)
                 {
                     writer.Write(name + "\t");
@@ -221,7 +245,6 @@ namespace PeakAnnotator
 
         public void Process(string infile)
         {
-            int readLen = 38;
             int[] geneExpression = new int[TSSNameToTSSIdx.Count + 1];
             int[] repeatExpression = new int[RepeatNameToRepeatIdx.Count + 1];
             using (StreamReader reader = infile.OpenRead())
@@ -229,12 +252,12 @@ namespace PeakAnnotator
                 string line;
                 while ((line = reader.ReadLine()) != null)
                 {
-                    if (line.StartsWith("#ReadLen=")) readLen = int.Parse(line.Substring(9));
+                    if (line.StartsWith("#"))
+                        continue;
                     string[] fields = line.Split('\t');
                     string chr = fields[0];
                     bool fw = (fields[1][0] == '+');
-                    int pos = int.Parse(fields[2]);
-                    int posOf5Prime = fw? pos : pos + readLen - 1;
+                    int posOf5Prime = int.Parse(fields[2]);
                     int count = int.Parse(fields[3]);
                     bool anyTSSHit = false;
                     try

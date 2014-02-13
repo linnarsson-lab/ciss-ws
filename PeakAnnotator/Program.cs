@@ -33,7 +33,7 @@ namespace PeakAnnotator
             if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
             {
                 Console.WriteLine("Usage:\nmono PeakAnnotator.exe -g GENOME -o OUTPUTFILE INFILE [INFILE2...]\n\n" +
-                                  "N.B.: INFILEs are output files from Map2Bed, e.g.: chr TAB strand TAB pos TAB count\n" +
+                                  "N.B.: INFILEs are output files from Map2Pclu, e.g.: chr TAB strand TAB pos TAB count\n" +
                                   "      pos is where the read 5' end maps, i.e. if strand='-', pos is max of the aligned positions\n" +
                                   "Options:\n" +
                                   "-g GENOME        Genome to analyze, e.g. 'Mm' \n");

@@ -239,14 +239,16 @@ namespace PeakAnnotator
                     Console.WriteLine("Error: File does not exist: " + infile);
                 else
                 {
-                    Console.WriteLine("Processing {0}...", infile);
-                    Process(infile);
+                    Console.Write("Processing {0}...", infile);
+                    int totCount = Process(infile);
+                    Console.WriteLine("{0} counts.", totCount);
                 }
             }
         }
 
-        public void Process(string infile)
+        public int Process(string infile)
         {
+            int totCount = 0;
             int[] geneExpression = new int[TSSNameToTSSIdx.Count + 1];
             int[] repeatExpression = new int[RepeatNameToRepeatIdx.Count + 1];
             using (StreamReader reader = infile.OpenRead())
@@ -261,6 +263,7 @@ namespace PeakAnnotator
                     bool fw = (fields[1][0] == '+');
                     int posOf5Prime = int.Parse(fields[2]);
                     int count = int.Parse(fields[3]);
+                    totCount += count;
                     bool anyTSSHit = false;
                     try
                     {
@@ -288,6 +291,7 @@ namespace PeakAnnotator
             string infileName = Path.GetFileName(infile);
             TSSExpressionPerFile[infileName] = geneExpression;
             RepeatExpressionPerFile[infileName] = repeatExpression;
+            return totCount;
         }
     }
 }

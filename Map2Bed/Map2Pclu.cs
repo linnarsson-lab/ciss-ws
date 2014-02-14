@@ -81,6 +81,9 @@ namespace Map2Pclu
         {
             if (!Directory.Exists(settings.outputFolder))
                 Directory.CreateDirectory(settings.outputFolder);
+            string bcPrefix = settings.iterateBarcodes ? "*_" : "";
+            string fType = (settings.countType == CountType.Reads) ? "reads" : (settings.countType == CountType.AllMolecules) ? "mols" : "nonSingletonMols";
+            string filenamePat = bcPrefix + fType + ".pclu.gz";
             int maxBcIdx = settings.iterateBarcodes ? settings.maxBarcodeIdx : 0;
             for (int bcIdx = 0; bcIdx <= maxBcIdx; bcIdx++)
             {
@@ -103,9 +106,7 @@ namespace Map2Pclu
                 }
                 if (counters.Count == 0)
                     continue;
-                string bcPrefix = settings.iterateBarcodes ? bcIdx + "_" : "";
-                string fType = (settings.countType == CountType.Reads)? "reads" : (settings.countType == CountType.AllMolecules)? "mols" : "nonSingletonMols";
-                string filename = bcPrefix + fType + ".pclu.gz";
+                string filename = filenamePat.Replace("*", bcIdx.ToString());
                 nHits = WriteOutput(filename, settings.countType);
                 Console.WriteLine("...{0} hits from {1} reads at {2} mapped positions. {3} multireads were skipped.",
                                   nHits, nReads, nMappedPositions, nTooMultiMappingReads);
@@ -114,7 +115,7 @@ namespace Map2Pclu
             }
             string totMolTxt = settings.HasUMIs ? string.Format(" and {0} molecules", nTotMols) : "";
             Console.WriteLine("All in all were {0} reads{1} processed.", nTotReads, totMolTxt);
-            Console.WriteLine("Output is found in " + settings.outputFolder);
+            Console.WriteLine("Output is found in " + settings.outputFolder + "/" + filenamePat);
         }
 
         private int ReadMapFile(string mapFile)

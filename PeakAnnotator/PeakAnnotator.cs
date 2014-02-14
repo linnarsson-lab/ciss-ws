@@ -177,7 +177,7 @@ namespace PeakAnnotator
                     string chr = record[5 + fileTypeOffset].Substring(3);
                     int start = int.Parse(record[6 + fileTypeOffset]);
                     int end = int.Parse(record[7 + fileTypeOffset]);
-                    string name = record[10 + fileTypeOffset];
+                    string name = "r_" + record[10 + fileTypeOffset];
                     if (!RepeatIntervals.ContainsKey(chr))
                         RepeatIntervals[chr] = new IntervalMap<int>(30000);
                     int idx;

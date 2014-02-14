@@ -95,6 +95,8 @@ namespace PeakAnnotator
                         int start = int.Parse(m.Groups[2].Value) - 1; // Allow margin of one to handle 0/1 offset question
                         int end = int.Parse(m.Groups[3].Value) + 1;
                         char trStrand = m.Groups[4].Value[0];
+                        start -= (trStrand == '+') ? settings.ext5Prime : settings.ext3Prime;
+                        end += (trStrand == '+') ? settings.ext3Prime : settings.ext5Prime;
                         string name = m.Groups[5].Value;
                         name = MakeTSSNameSortableOnGeneName(name);
                         name = MakeTSSNameUnique(name);

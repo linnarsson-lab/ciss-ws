@@ -79,12 +79,15 @@ namespace Map2Pclu
 
         public void Convert()
         {
-            if (!Directory.Exists(settings.outputFolderOrFilename))
-                Directory.CreateDirectory(settings.outputFolderOrFilename);
             string bcPrefix = settings.iterateBarcodes ? "*_" : "";
             string fType = (settings.countType == CountType.Reads) ? "reads" : (settings.countType == CountType.AllMolecules) ? "mols" : "nonSingletonMols";
-            string outfilePat = settings.outputFolderOrFilename.EndsWith(".gz")? settings.outputFolderOrFilename :
-                Path.Combine(settings.outputFolderOrFilename, settings.filenamePrefix + bcPrefix + fType + ".pclu.gz");
+            string outfilePat = settings.outputFolderOrFilename;
+            if (!outfilePat.EndsWith(".gz"))
+            {
+                if (!Directory.Exists(settings.outputFolderOrFilename))
+                    Directory.CreateDirectory(settings.outputFolderOrFilename);
+                outfilePat = Path.Combine(settings.outputFolderOrFilename, settings.filenamePrefix + bcPrefix + fType + ".pclu.gz");
+            }
             int maxBcIdx = settings.iterateBarcodes ? settings.maxBarcodeIdx : 0;
             for (int bcIdx = 0; bcIdx <= maxBcIdx; bcIdx++)
             {

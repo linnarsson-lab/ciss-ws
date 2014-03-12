@@ -10,6 +10,7 @@ namespace PeakAnnotator
     {
         public List<string> infiles = new List<string>();
         public string outfile = "repeat_expression.tab";
+        public string nonAnnotatedFolder = null;
         public string genomeName = "Mm";
         public int ext3Prime = 0;
         public int ext5Prime = 0;
@@ -24,6 +25,7 @@ namespace PeakAnnotator
                 else if (args[argIdx] == "-3") ext3Prime = int.Parse(args[++argIdx]);
                 else if (args[argIdx] == "-5") ext5Prime = int.Parse(args[++argIdx]);
                 else if (args[argIdx] == "-o") outfile = args[++argIdx];
+                else if (args[argIdx] == "-n") nonAnnotatedFolder = args[++argIdx];
                 else infiles.Add(args[argIdx]);
             }
             genome = StrtGenome.GetGenome(genomeName);
@@ -40,8 +42,9 @@ namespace PeakAnnotator
                                   "N.B.: INFILEs are output files from Map2Pclu, e.g.: chr TAB strand TAB pos TAB count\n" +
                                   "      pos is where the read 5' end maps, i.e. if strand='-', pos is max of the aligned positions\n" +
                                   "Options:\n" +
-                                  "-3 N             Extend TSS region by N bases in the 3' end" +
-                                  "-5 N             Extend TSS region by N bases in the 5' end" +
+                                  "-3 N             Extend TSS region by N bases in the 3' end\n" +
+                                  "-5 N             Extend TSS region by N bases in the 5' end\n" +
+                                  "-n FOLDER        Write non-annotated data to files in FOLDER.\n" +
                                   "-g GENOME        Genome to analyze, e.g. 'Mm' \n");
 
             }

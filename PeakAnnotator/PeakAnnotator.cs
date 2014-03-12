@@ -74,8 +74,10 @@ namespace PeakAnnotator
             TSSFwIntervals = new Dictionary<string, IntervalMap<int>>();
             TSSRevIntervals = new Dictionary<string, IntervalMap<int>>();
             Console.Write("Reading TSS peaks...");
-            int n = LoadTSSPeakFile(TSSPeakFile);
-            Console.WriteLine("{0} peaks.", n);
+            int n = LoadTSSPeakFile("/data/seq/F5_data/CTRL_peaks.tab");
+            Console.WriteLine("{0} CTRL peaks.", n);
+            n = LoadTSSPeakFile(TSSPeakFile);
+            Console.WriteLine("{0} {1} peaks.", n, build);
         }
 
         private int LoadTSSPeakFile(string peakPath)
@@ -251,6 +253,9 @@ namespace PeakAnnotator
             int totCount = 0;
             int[] geneExpression = new int[TSSNameToTSSIdx.Count + 1];
             int[] repeatExpression = new int[RepeatNameToRepeatIdx.Count + 1];
+            StreamWriter remainWriter = null;
+            if (settings.nonAnnotatedFolder != null)
+                remainWriter = Path.Combine(settings.nonAnnotatedFolder, Path.GetFileName(infile)).OpenWrite();
             using (StreamReader reader = infile.OpenRead())
             {
                 string line;
@@ -264,30 +269,37 @@ namespace PeakAnnotator
                     int posOf5Prime = int.Parse(fields[2]);
                     int count = int.Parse(fields[3]);
                     totCount += count;
-                    bool anyTSSHit = false;
+                    bool anyHit = false;
                     try
                     {
                         Dictionary<string, IntervalMap<int>> ivls = fw? TSSFwIntervals : TSSRevIntervals;
                         foreach (SmallInterval<int> tssIvl in ivls[chr].IterItems(posOf5Prime))
                         {
                             geneExpression[tssIvl.Item] += count;
-                            anyTSSHit = true;
+                            anyHit = true;
                         }
                     }
                     catch (KeyNotFoundException)
                     {}
-                    if (!anyTSSHit)
+                    if (!anyHit)
                     {
                         try
                         {
                             foreach (SmallInterval<int> repIvl in RepeatIntervals[chr].IterItems(posOf5Prime))
+                            {
                                 repeatExpression[repIvl.Item] += count;
+                                anyHit = true;
+                            }
                         }
                         catch (KeyNotFoundException)
                         { }
                     }
+                    if (!anyHit && remainWriter != null)
+                        remainWriter.WriteLine(line);
                 }
             }
+            if (remainWriter != null)
+                remainWriter.Close();
             string infileName = Path.GetFileName(infile);
             TSSExpressionPerFile[infileName] = geneExpression;
             RepeatExpressionPerFile[infileName] = repeatExpression;

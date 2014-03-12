@@ -79,11 +79,12 @@ namespace Map2Pclu
 
         public void Convert()
         {
-            if (!Directory.Exists(settings.outputFolder))
-                Directory.CreateDirectory(settings.outputFolder);
+            if (!Directory.Exists(settings.outputFolderOrFilename))
+                Directory.CreateDirectory(settings.outputFolderOrFilename);
             string bcPrefix = settings.iterateBarcodes ? "*_" : "";
             string fType = (settings.countType == CountType.Reads) ? "reads" : (settings.countType == CountType.AllMolecules) ? "mols" : "nonSingletonMols";
-            string filenamePat = bcPrefix + fType + ".pclu.gz";
+            string outfilePat = settings.outputFolderOrFilename.EndsWith(".gz")? settings.outputFolderOrFilename :
+                Path.Combine(settings.outputFolderOrFilename, settings.filenamePrefix + bcPrefix + fType + ".pclu.gz");
             int maxBcIdx = settings.iterateBarcodes ? settings.maxBarcodeIdx : 0;
             for (int bcIdx = 0; bcIdx <= maxBcIdx; bcIdx++)
             {
@@ -106,8 +107,8 @@ namespace Map2Pclu
                 }
                 if (counters.Count == 0)
                     continue;
-                string filename = filenamePat.Replace("*", bcIdx.ToString());
-                nHits = WriteOutput(filename, settings.countType);
+                string outfilePath = outfilePat.Replace("*", bcIdx.ToString());
+                nHits = WriteOutput(outfilePath, settings.countType);
                 Console.WriteLine("...{0} hits from {1} reads at {2} mapped positions. {3} multireads were skipped.",
                                   nHits, nReads, nMappedPositions, nTooMultiMappingReads);
                 nTotMols += nHits;
@@ -115,7 +116,7 @@ namespace Map2Pclu
             }
             string totMolTxt = settings.HasUMIs ? string.Format(" and {0} molecules", nTotMols) : "";
             Console.WriteLine("All in all were {0} reads{1} processed.", nTotReads, totMolTxt);
-            Console.WriteLine("Output is found in " + settings.outputFolder + "/" + filenamePat);
+            Console.WriteLine("Output is found in " + settings.outputFolderOrFilename + "/" + outfilePat);
         }
 
         private int ReadMapFile(string mapFile)
@@ -156,10 +157,9 @@ namespace Map2Pclu
             return nReads;
         }
 
-        int WriteOutput(string filename, CountType ct)
+        int WriteOutput(string outfilePath, CountType ct)
         {
             int nTotal = 0;
-            string outfilePath = Path.Combine(settings.outputFolder, filename);
             using (StreamWriter writer = outfilePath.OpenWrite())
             {
                 writer.WriteLine("#Chr\tStrand\tPosOf5Prime\tCount");

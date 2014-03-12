@@ -11,12 +11,13 @@ namespace Map2Pclu
         public bool iterateBarcodes = false;
         public int maxBarcodeIdx = 95;
         public string barcodePattern = "0_";
+        public string filenamePrefix = "";
         public CountType countType = CountType.AllMolecules;
         public int nUMIs = 4096;
         public bool HasUMIs { get { return nUMIs > 0; }}
         public int maxMultiReadMappings = 1;
         public bool AllAsPlusStrand = false;
-        public string outputFolder = ".";
+        public string outputFolderOrFilename = ".";
         public List<string> inputFiles = new List<string>();
         public bool estimateTrueMolCounts = false;
         public bool IsCountingMols { get { return countType == CountType.AllMolecules || countType == CountType.NonSingeltonMolecules; } }
@@ -35,7 +36,8 @@ namespace Map2Pclu
                 else if (args[argIdx] == "--estimatetrue") estimateTrueMolCounts = true;
                 else if (args[argIdx] == "--mergestrands") AllAsPlusStrand = true;
                 else if (args[argIdx] == "--bybarcode") iterateBarcodes = true;
-                else if (args[argIdx] == "-o") outputFolder = args[++argIdx];
+                else if (args[argIdx] == "--prefix=") filenamePrefix = args[argIdx].Substring(9);
+                else if (args[argIdx] == "-o") outputFolderOrFilename = args[++argIdx];
                 else inputFiles.Add(args[argIdx]);
             }
         }
@@ -56,16 +58,19 @@ namespace Map2Pclu
         {
             if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
             {
-                Console.WriteLine("Usage:\nmono Map2Pclu.exe [OPTIONS] -o OUTPUTFOLDER MAPFILE [MAPFILE2...]\n\n" +
+                Console.WriteLine("Usage:\nmono Map2Pclu.exe [OPTIONS] -o OUTPUT MAPFILE [MAPFILE2...]\n\n" +
                                   "N.B.: Output is in paraclu peak format: chr TAB strand TAB pos TAB count\n" +
                                   "      pos is where the read 5' end maps, i.e. if strand='-', pos is max of the aligned positions\n" +
+                                  "If OUTPUT ends with '.gz' it is taken as a filename pattern. Any '*' is replaced by the barcode index.\n" +
+                                  "Otherwise it is taken as an output folder, and filenames are constructed automatically.\n" +
                                   "Options:\n" +
-                                  "--bybarcode      Process all barcodes (0...95) - requires that all MAPFILE names start with '0_'\n" +
+                                  "--bybarcode      Process all barcodes (0...95) - all MAPFILE names have to start with 'N_' where N is a barcode index\n" +
                                   "--reads          Output read counts.\n" +
                                   "--nosingletons   Output molecule counts after removal of singeltons.\n" +
                                   "--estimatetrue   Compensate molecular counts for UMI collisions.\n" +
                                   "--multireads=N   Count also multireads with up to N mappings. A random mapping will be selected.\n" +
                                   "--UMIs=N         Analyze N different UMIs. Set N=0 to skip molecule counting.\n" +
+                                  "--prefix=TXT     Prefix output filenames with some text (only valid with OUTPUT not ending '.gz').\n" +
                                   "--mergestrands   Reads are non-directional, all reads will be put on the '+' strand.");
 
             }

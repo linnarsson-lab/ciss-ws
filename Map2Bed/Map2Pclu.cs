@@ -184,6 +184,7 @@ namespace Map2Pclu
                     {
                         int n = chrCounters[pos].count(ct);
                         if (settings.IsCountingMols && settings.estimateTrueMolCounts) n = EstimateTrueCount(n);
+                        if (n == 0) continue;
                         nTotal += n;
                         writer.WriteLine("{0}\t{1}\t{2}\t{3}", chr, strand, pos, n);
                     }

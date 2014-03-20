@@ -362,7 +362,6 @@ namespace C1
             return cells;
         }
 
-
         public void GetCellAnnotationsByPlate(string projectId,
             out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
@@ -462,6 +461,20 @@ namespace C1
                 loadedChips.Add(rdr.GetString(0));
             conn.Close();
             return loadedChips;
+        }
+
+        public void InsertOrUpdateCellAnnotation(int cellID, string key, string value)
+        {
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            string sql = "REPLACE INTO CellAnnotation (CellID, Name, Value) VALUES ('{0}','{1}','{2}')";
+            sql = string.Format(sql, cellID, key, value);
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            if (test)
+                Console.WriteLine(sql);
+            else
+                cmd.ExecuteNonQuery();
+            conn.Close();
         }
     }
 }

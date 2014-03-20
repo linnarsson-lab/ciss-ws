@@ -255,7 +255,11 @@ namespace PeakAnnotator
             int[] repeatExpression = new int[RepeatNameToRepeatIdx.Count + 1];
             StreamWriter remainWriter = null;
             if (settings.nonAnnotatedFolder != null)
+            {
+                if (!Directory.Exists(settings.nonAnnotatedFolder))
+                    Directory.CreateDirectory(settings.nonAnnotatedFolder);
                 remainWriter = Path.Combine(settings.nonAnnotatedFolder, Path.GetFileName(infile)).OpenWrite();
+            }
             using (StreamReader reader = infile.OpenRead())
             {
                 string line;

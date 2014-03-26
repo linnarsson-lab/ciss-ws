@@ -56,13 +56,14 @@ namespace C1
                                   "-l <file>     - specify a non-standard log file\n" +
                                   "-s            - run only a single time, then quit\n" +
                                   "-u <folder>   - load or update from a specific chip folder, then quit\n" +
+                                  "                Will succeed even if donor/mouse file is missing.\n" +
                                   "Put in crontab for starting at every reboot.\n" +
                                   "\nLogfile defaults to a name with Pid included like: " + logFile);
                 return;
             }
             if (specificChipDir != "")
             {
-                Console.WriteLine(Copy(specificChipDir));
+                Console.WriteLine(Copy(specificChipDir, true));
                 return;
             }
             if (!File.Exists(logFile))
@@ -105,7 +106,7 @@ namespace C1
                 string dirChipName = Path.GetFileName(chipDir).Replace("-", "");
                 if (!loadedChips.Contains(dirChipName))
                 {
-                    string msg = Copy(chipDir);
+                    string msg = Copy(chipDir, false);
                     if (msg.StartsWith("Loaded"))
                     {
                         loadedChips.Add(dirChipName);
@@ -123,14 +124,14 @@ namespace C1
             return someCopyDone;
         }
 
-        private static string Copy(string chipDir)
+        private static string Copy(string chipDir, bool loadWithoutDonorFile)
         {
-            Dictionary<string, string> metadata = ReadMetaData(chipDir);
+            Dictionary<string, string> metadata = ReadMetaData(chipDir, loadWithoutDonorFile);
             if (metadata == null)
-                return " WARNING: Skipped " + chipDir + " - missing metadata/donordata. Will continue trying.";
+                return " WARNING: Skipped " + chipDir + " - missing metadata/donordata.";
             List<Cell> celldata = ReadCellData(chipDir, metadata);
             if (celldata == null)
-                return " WARNING: Skipped " + chipDir + " - no celldata. Will continue trying.";
+                return " WARNING: Skipped " + chipDir + " - no celldata.";
             InsertCells(celldata);
             return "Loaded.";
         }
@@ -255,15 +256,15 @@ namespace C1
             return cells;
         }
 
-        private static Dictionary<string, string> ReadMetaData(string chipDir)
+        private static Dictionary<string, string> ReadMetaData(string chipDir, bool loadWithoutDonorFile)
         {
             string lastMetaFilePath = GetMetaDataPath(chipDir);
-            string lastDonorFilePath = GetDonorFilePath(chipDir);
-            if (lastMetaFilePath == null || lastDonorFilePath == null) return null;
+            if (lastMetaFilePath == null) return null;
             Dictionary<string, string> metadata = new Dictionary<string, string>();
             metadata["date of run"] = "2001-01-01";
             metadata["age"] = metadata["strain"] = metadata["treatment"] = metadata["tissue"] = "?";
             metadata["sex"] = "?";
+            metadata["weight"] = metadata["donorid"] = "?";
             metadata["operator"] = metadata["scientist"] = metadata["principal investigator"] = "?";
             metadata["comments"] = "";
             metadata["spikes"] = C1Props.props.SpikeMoleculeCount.ToString();
@@ -290,6 +291,9 @@ namespace C1
             metadata["operator"] = pdb.TryGetPerson("jos_aaamanager", "person", metadata["operator"], new Person(0, metadata["operator"])).name;
             while (metadata["date of run"].StartsWith("0"))
                 metadata["date of run"] = metadata["date of run"].Substring(1);
+            metadata["datedissected"] = metadata["date of run"];
+            string lastDonorFilePath = GetDonorFilePath(chipDir);
+            if (lastDonorFilePath == null) return (loadWithoutDonorFile? metadata : null);
             AddDonorInfo(lastDonorFilePath, metadata);
             return metadata;
         }
@@ -314,8 +318,6 @@ namespace C1
         /// <returns>true if the data could be read</returns>
         private static bool AddDonorInfo(string donorFilePath, Dictionary<string, string> metadata)
         {
-            metadata["datedissected"] = metadata["date of run"];
-            metadata["weight"] = metadata["donorid"] = "?";
             using (StreamReader r = new StreamReader(donorFilePath))
             {
                 string line;

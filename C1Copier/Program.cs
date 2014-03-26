@@ -127,10 +127,10 @@ namespace C1
         {
             Dictionary<string, string> metadata = ReadMetaData(chipDir);
             if (metadata == null)
-                return " WARNING: Skipped - missing metadata/donordata. Will continue trying.";
+                return " WARNING: Skipped " + chipDir + " - missing metadata/donordata. Will continue trying.";
             List<Cell> celldata = ReadCellData(chipDir, metadata);
             if (celldata == null)
-                return " WARNING: Skipped - no celldata. Will continue trying.";
+                return " WARNING: Skipped " + chipDir + " - no celldata. Will continue trying.";
             InsertCells(celldata);
             return "Loaded.";
         }

@@ -815,7 +815,7 @@ namespace Linnarsson.Strt
         {
             StringBuilder sbt = new StringBuilder();
             StringBuilder sbf = new StringBuilder();
-            foreach (GeneFeature gf in Annotations.IterTranscripts(true))
+            foreach (GeneFeature gf in Annotations.IterMainTranscriptVariants(true))
             {
                 if (!gf.IsExpressed())
                     continue;

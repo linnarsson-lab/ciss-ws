@@ -19,7 +19,7 @@ namespace Linnarsson.Dna
         }
         public bool IsMainVariant()
         {
-            return !Name.Contains(variantIndicator);
+            return !Name.Contains(variantIndicator) || Name.EndsWith(variantIndicator + "1");
         }
 
         private string m_Name;

@@ -512,7 +512,7 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="selectSpikes">true => iterate only spikes, false => iterate only non-spike main transcript models</param>
         /// <returns></returns>
-        public IEnumerable<GeneFeature> IterTranscripts(bool selectSpikes)
+        public IEnumerable<GeneFeature> IterMainTranscriptVariants(bool selectSpikes)
         {
             foreach (GeneFeature gf in geneFeatures.Values)
                 if (gf.IsSpike() == selectSpikes && gf.IsMainVariant())
@@ -980,7 +980,7 @@ namespace Linnarsson.Strt
             double[] normFactors = CalcNormalizationFactors(totalByBarcode);
             double trLenFactor = 1.0;
             Dictionary<GeneFeature, double[]> normalizedData = new Dictionary<GeneFeature, double[]>();
-            foreach (GeneFeature gf in IterTranscripts(selectSpikes))
+            foreach (GeneFeature gf in IterMainTranscriptVariants(selectSpikes))
             {
                 double[] expr = new double[selectedBcIndexes.Length];
                 if (props.UseRPKM)
@@ -1049,7 +1049,7 @@ namespace Linnarsson.Strt
                 exprWriter.Write("\t{0:G6}", normFactors[idx]);
             exprWriter.WriteLine();
 
-            foreach (GeneFeature gf in IterTranscripts(selectSpikes))
+            foreach (GeneFeature gf in IterMainTranscriptVariants(selectSpikes))
             {
                 double trLenFactor = (props.UseRPKM) ? gf.GetTranscriptLength() : 1000.0;
                 exprWriter.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
@@ -1080,7 +1080,7 @@ namespace Linnarsson.Strt
         private void GetDetectionThresholds(bool selectSpikes, int totCount, out double RPkbM99, out double RPkbM999)
         {
             List<double> allASReadsPerBase = new List<double>();
-            foreach (GeneFeature gf in IterTranscripts(selectSpikes))
+            foreach (GeneFeature gf in IterMainTranscriptVariants(selectSpikes))
             {
                 int antiHits = gf.NonMaskedHitsByAnnotType[AnnotType.AEXON];
                 double ASReadsPerBase = antiHits / (double)gf.GetNonMaskedTranscriptLength();

@@ -341,11 +341,11 @@ namespace C1
         private static string[] GetFields(string line)
         {
             string[] fields = line.Split(':');
-            if (line.StartsWith("strain"))
+            if (line.ToLower().StartsWith("strain"))
                 fields = new string[] { "strain", line.Substring(7).Trim() };
-            else if (line.StartsWith("mouse_number"))
+            else if (line.ToLower().StartsWith("mouse_number"))
                 fields = new string[] { "mouse_number", line.Substring(12).Trim() };
-            else if (line.StartsWith("comments"))
+            else if (line.ToLower().StartsWith("comments"))
                 fields = new string[] { "comments", line.Substring(8).Trim() };
             else if (fields.Length != 2)
             {

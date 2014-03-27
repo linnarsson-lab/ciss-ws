@@ -17,6 +17,7 @@ namespace C1
         static int minutesWait = 10;
         static int nExceptions = 0;
         static int maxNExceptions = 10;
+        static DateTime lastCopyTime = new DateTime(2012, 1, 1);
         static bool runOnce = false;
         static string specificChipDir = "";
         static List<string> testedChips = new List<string>();
@@ -63,7 +64,7 @@ namespace C1
             }
             if (specificChipDir != "")
             {
-                Console.WriteLine(Copy(specificChipDir, true));
+                Console.WriteLine(Copy(specificChipDir));
                 return;
             }
             if (!File.Exists(logFile))
@@ -82,6 +83,7 @@ namespace C1
                     try
                     {
                         TryCopy(logWriter);
+                        lastCopyTime = DateTime.Now;
                     }
                     catch (Exception e)
                     {
@@ -103,11 +105,13 @@ namespace C1
             string[] availableChipDirs = Directory.GetDirectories(C1Props.props.C1RunsFolder, "*-*-*");
             foreach (string chipDir in availableChipDirs)
             {
-                string dirChipName = Path.GetFileName(chipDir).Replace("-", "");
-                if (!loadedChips.Contains(dirChipName))
+                DateTime lastWrite = new FileInfo(chipDir).LastAccessTime;
+                //if (!loadedChips.Contains(dirChipName))
+                if (lastWrite > lastCopyTime)
                 {
-                    string msg = Copy(chipDir, false);
-                    if (msg.StartsWith("Loaded"))
+                    string dirChipName = GetDirChipName(chipDir);
+                    string msg = Copy(chipDir);
+                    if (msg.StartsWith("OK"))
                     {
                         loadedChips.Add(dirChipName);
                         someCopyDone = true;
@@ -115,7 +119,7 @@ namespace C1
                     }
                     else if (!testedChips.Contains(dirChipName))
                     {
-                        logWriter.WriteLine(DateTime.Now.ToString() + msg);
+                        logWriter.WriteLine(DateTime.Now.ToString() + " " + msg);
                         logWriter.Flush();
                     }
                     testedChips.Add(dirChipName);
@@ -124,16 +128,23 @@ namespace C1
             return someCopyDone;
         }
 
-        private static string Copy(string chipDir, bool loadWithoutDonorFile)
+        private static string Copy(string chipDir)
         {
-            Dictionary<string, string> metadata = ReadMetaData(chipDir, loadWithoutDonorFile);
-            if (metadata == null)
-                return " WARNING: Skipped " + chipDir + " - missing metadata/donordata.";
-            List<Cell> celldata = ReadCellData(chipDir, metadata);
-            if (celldata == null)
-                return " WARNING: Skipped " + chipDir + " - no celldata.";
-            InsertCells(celldata);
-            return "Loaded.";
+            try
+            {
+                Dictionary<string, string> metadata = ReadMetaData(chipDir);
+                if (metadata == null)
+                    return "WARNING: Skipped " + chipDir + " - missing metadata file.";
+                List<Cell> celldata = ReadCellData(chipDir, metadata);
+                if (celldata == null)
+                    return "WARNING: Skipped " + chipDir + " - no celldata.";
+                InsertCells(celldata);
+                return loadedChips.Contains(GetDirChipName(chipDir)) ? "OK: Loaded." : "OK: Updated.";
+            }
+            catch (Exception e)
+            {
+                return "ERROR: Loading " + chipDir + " - " + e.ToString();
+            }
         }
 
         private static void InsertCells(List<Cell> celldata)
@@ -143,6 +154,11 @@ namespace C1
             {
                 db.InsertOrUpdateCell(c);
             }
+        }
+
+        private static string GetDirChipName(string chipDir)
+        {
+            return Path.GetFileName(chipDir).Replace("-", "");
         }
 
         /// <summary>
@@ -256,7 +272,7 @@ namespace C1
             return cells;
         }
 
-        private static Dictionary<string, string> ReadMetaData(string chipDir, bool loadWithoutDonorFile)
+        private static Dictionary<string, string> ReadMetaData(string chipDir)
         {
             string lastMetaFilePath = GetMetaDataPath(chipDir);
             if (lastMetaFilePath == null) return null;
@@ -293,8 +309,8 @@ namespace C1
                 metadata["date of run"] = metadata["date of run"].Substring(1);
             metadata["datedissected"] = metadata["date of run"];
             string lastDonorFilePath = GetDonorFilePath(chipDir);
-            if (lastDonorFilePath == null) return (loadWithoutDonorFile? metadata : null);
-            AddDonorInfo(lastDonorFilePath, metadata);
+            if (lastDonorFilePath != null)
+                AddDonorInfo(lastDonorFilePath, metadata);
             return metadata;
         }
 

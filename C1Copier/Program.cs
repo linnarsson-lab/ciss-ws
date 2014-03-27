@@ -6,6 +6,8 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Threading;
+using System.Net.Mail;
+using Linnarsson.Dna;
 using Linnarsson.Strt;
 using Linnarsson.Mathematics;
 
@@ -13,6 +15,7 @@ namespace C1
 {
     class C1Copier
     {
+        static string logFile;
         static StreamWriter logWriter;
         static int minutesWait = 10;
         static int nExceptions = 0;
@@ -25,7 +28,7 @@ namespace C1
 
         static void Main(string[] args)
         {
-            string logFile = new FileInfo("C1C_" + Process.GetCurrentProcess().Id + ".log").FullName;
+            logFile = new FileInfo("C1C_" + Process.GetCurrentProcess().Id + ".log").FullName;
             try
             {
                 int i = 0;
@@ -105,9 +108,7 @@ namespace C1
             string[] availableChipDirs = Directory.GetDirectories(C1Props.props.C1RunsFolder, "*-*-*");
             foreach (string chipDir in availableChipDirs)
             {
-                DateTime lastWrite = new FileInfo(chipDir).LastAccessTime;
-                //if (!loadedChips.Contains(dirChipName))
-                if (lastWrite > lastCopyTime)
+                if (HasChanged(chipDir))
                 {
                     string dirChipName = GetDirChipName(chipDir);
                     string msg = Copy(chipDir);
@@ -121,11 +122,25 @@ namespace C1
                     {
                         logWriter.WriteLine(DateTime.Now.ToString() + " " + msg);
                         logWriter.Flush();
+                        if (msg.StartsWith("ERROR"))
+                            NotifyManager(chipDir, msg);
                     }
                     testedChips.Add(dirChipName);
                 }
             }
             return someCopyDone;
+        }
+
+        private static void NotifyManager(string chipDir, string errormsg)
+        {
+            string from = Props.props.ProjectDBProcessorNotifierEmailSender;
+            string subject = "C1Copier.exe error on loading " + chipDir;
+            string body = "<html><p>" + errormsg + "</p><p>Please consult logfile " + logFile + ".</p></html>\n";
+            string toEmails = Props.props.FailureReportEmail;
+            MailMessage message = new MailMessage(from, toEmails, subject, body);
+            message.IsBodyHtml = true;
+            SmtpClient mailClient = new SmtpClient("localhost", 25);
+            mailClient.Send(message);
         }
 
         private static string Copy(string chipDir)
@@ -139,7 +154,7 @@ namespace C1
                 if (celldata == null)
                     return "WARNING: Skipped " + chipDir + " - no celldata.";
                 InsertCells(celldata);
-                return loadedChips.Contains(GetDirChipName(chipDir)) ? "OK: Loaded." : "OK: Updated.";
+                return loadedChips.Contains(GetDirChipName(chipDir)) ? "OK: Updated." : "OK: Loaded.";
             }
             catch (Exception e)
             {
@@ -189,6 +204,18 @@ namespace C1
                 return null;
             Array.Sort(matching);
             return matching[matching.Length - 1];
+        }
+
+        private static bool HasChanged(string chipDir)
+        {
+            string mp = GetMetaDataPath(chipDir);
+            if (mp != null && (new FileInfo(mp).LastWriteTime > lastCopyTime || new FileInfo(mp).CreationTime > lastCopyTime)) return true;
+            string dp = GetDonorFilePath(chipDir);
+            if (dp != null && (new FileInfo(dp).LastWriteTime > lastCopyTime || new FileInfo(dp).CreationTime > lastCopyTime)) return true;
+            string bf = GetLastMatchingFolder(chipDir, C1Props.props.C1BFImageSubfoldernamePattern);
+            if (bf == null) return false;
+            string lcp = GetLastMatchingFile(bf, C1Props.props.C1CaptureFilenamePattern);
+            return (lcp != null && (new FileInfo(lcp).LastWriteTime > lastCopyTime || new FileInfo(lcp).CreationTime > lastCopyTime));
         }
 
         private static bool GetCellPaths(string chipId, out string chipFolder, out string BFFolder, out string lastCapPath)

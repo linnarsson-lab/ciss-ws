@@ -85,8 +85,9 @@ namespace C1
                 {
                     try
                     {
+                        DateTime startTime = DateTime.Now;
                         TryCopy(logWriter);
-                        lastCopyTime = DateTime.Now;
+                        lastCopyTime = startTime;
                     }
                     catch (Exception e)
                     {
@@ -117,6 +118,7 @@ namespace C1
                         loadedChips.Add(dirChipName);
                         someCopyDone = true;
                         logWriter.WriteLine("{0} {1}: {2}", DateTime.Now.ToString(), chipDir, msg);
+                        logWriter.Flush();
                     }
                     else if (!testedChips.Contains(dirChipName))
                     {
@@ -254,7 +256,7 @@ namespace C1
                     if ((line = line.Trim()).Length == 0)
                         continue;
                     string[] fields = line.Split('\t');
-                    string well = string.Format("{0}{1:00}", fields[0], int.Parse(fields[1]));
+                    string chipWell = string.Format("{0}{1:00}", fields[0], int.Parse(fields[1]));
                     string wellShort = fields[0] + fields[1];
                     double area = double.Parse(fields[3]);
                     double diameter = double.Parse(fields[4]);
@@ -264,12 +266,7 @@ namespace C1
                     int red = (fields.Length < 6) ? Detection.Unknown : (fields[5] == "1") ? Detection.Yes : Detection.No;
                     int green = (fields.Length < 7) ? Detection.Unknown : (fields[6] == "1") ? Detection.Yes : Detection.No;
                     int blue = (fields.Length < 8) ? Detection.Unknown : (fields[7] == "1") ? Detection.Yes : Detection.No;
-                    Cell newCell = new Cell(null, metadata["chip serial number"], well, "", "", metadata["protocol"],
-                                    dateDissected, dateOfRun,
-                                    metadata["species"], metadata["strain"], metadata["donorid"],
-                                    metadata["age"], metadata["sex"][0], metadata["tissue"],
-                                    metadata["treatment"], diameter, area, metadata["principal investigator"], metadata["operator"],
-                                    metadata["scientist"], metadata["comments"], red, green, blue, metadata["weight"]);
+                    Cell newCell = new Cell(chipWell, dateDissected, dateOfRun, diameter, area, red, green, blue, metadata);
                     List<CellImage> cellImages = new List<CellImage>();
                     foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)
                     {
@@ -344,7 +341,13 @@ namespace C1
         private static string[] GetFields(string line)
         {
             string[] fields = line.Split(':');
-            if (fields.Length != 2)
+            if (line.StartsWith("strain"))
+                fields = new string[] { "strain", line.Substring(7).Trim() };
+            else if (line.StartsWith("mouse_number"))
+                fields = new string[] { "mouse_number", line.Substring(12).Trim() };
+            else if (line.StartsWith("comments"))
+                fields = new string[] { "comments", line.Substring(8).Trim() };
+            else if (fields.Length != 2)
             {
                 fields = line.Split('\t');
                 if (fields.Length < 2)
@@ -370,7 +373,7 @@ namespace C1
                         continue;
                     string[] fields = GetFields(line);
                     string key = fields[0].Trim().ToLower();
-                    if (key == "mouse_number") key = "donorid";
+                    if (key == "mouse_number" || key == "mouse number") key = "donorid";
                     if (key == "date") key = "datedissected";
                     if (key == "gender") key = "sex";
                     if (key == "comments" && fields[1].Trim().Length > 0)

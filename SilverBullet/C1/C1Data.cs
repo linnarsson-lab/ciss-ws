@@ -33,6 +33,7 @@ namespace C1
         public int Green { get; set; }
         public int Blue { get; set; }
         public List<CellImage> cellImages { get; set; }
+        public List<CellAnnotation> cellAnnotations = new List<CellAnnotation>();
 
         public Cell(int? cellId, string chip, string chipWell, string plate, string plateWell,
                     string strtProtocol, DateTime dateDissected, DateTime dateCollected, string species, string strain,
@@ -66,6 +67,49 @@ namespace C1
             this.Blue = blue;
             this.Weight = weight;
             this.cellImages = new List<CellImage>();
+        }
+
+        public Cell(string chipWell, DateTime dateDissected, DateTime dateOfRun, double diameter, double area,
+                                    int red, int green, int blue, Dictionary<string, string> metadata)
+        {
+            ChipWell = chipWell;
+            Plate = PlateWell = "";
+            DateDissected = dateDissected;
+            DateCollected = dateOfRun;
+            Diameter = diameter;
+            Area = area;
+            Red = red;
+            Green = green;
+            Blue = blue;
+            foreach (KeyValuePair<string, string> p in metadata)
+            {
+                switch (p.Key)
+                {
+                    case "chip serial number": Chip = p.Value; break;
+                    case "protocol": StrtProtocol = p.Value; break;
+                    case "species": Species = p.Value; break;
+                    case "strain": Strain = p.Value; break;
+                    case "donorid": DonorID = p.Value; break;
+                    case "age": Age = p.Value; break;
+                    case "sex": Sex = p.Value[0]; break;
+                    case "tissue": Tissue = p.Value; break;
+                    case "treatment": Treatment = p.Value; break;
+                    case "principal investigator": PI = p.Value; break;
+                    case "operator": Operator = p.Value; break;
+                    case "scientist": Scientist = p.Value; break;
+                    case "comments": Comments = p.Value; break;
+                    case "weight": Weight = p.Value; break;
+                    case "datedissected": break;
+                    case "date of run": break;
+                    case "chipfolder": break;
+                    case "attached_chip_number": break;
+                    case "chip type": break;
+                    default:
+                        CellAnnotation ca = new CellAnnotation(null, 0, p.Key, p.Value);
+                        cellAnnotations.Add(ca);
+                        break;
+                }
+            }
         }
     }
 

@@ -186,12 +186,38 @@ namespace C1
                                      c.Species, c.Strain, c.DonorID, c.Age, c.Sex, c.Tissue, c.Treatment,
                                      c.Diameter, c.Area, c.PI, c.Operator, c.Scientist, c.Comments, 
                                      c.Red, c.Green, c.Blue, c.Weight);
-            int cellId = InsertAndGetLastId(sql, "Cell");
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            if (test)
+                Console.WriteLine(sql);
+            else
+                cmd.ExecuteNonQuery();
+            string lastIdSql = string.Format("SELECT CellID FROM Cell WHERE Chip='{0}' AND ChipWell='{1}';", c.Chip, c.ChipWell);
+            cmd = new MySqlCommand(lastIdSql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            rdr.Read();
+            int cellId = int.Parse(rdr["CellID"].ToString());
+            conn.Close();
             foreach (CellImage ci in c.cellImages)
             {
                 ci.CellID = cellId;
                 InsertOrUpdateCellImage(ci);
             }
+            foreach (CellAnnotation ca in c.cellAnnotations)
+            {
+                ca.CellID = cellId;
+                InsertOrUpdateCellAnnotation(ca);
+            }
+        }
+
+        public void InsertOrUpdateCellAnnotation(CellAnnotation ca)
+        {
+            string sql = "INSERT INTO CellAnnotation (CellID, Name, Value) " +
+                               "VALUES ({0},'{1}','{2}') " +
+                         "ON DUPLICATE KEY UPDATE Value='{2}';";
+            sql = string.Format(sql, ca.CellID, ca.Name, ca.Value);
+            IssueNonQuery(sql);
         }
 
         public void UpdateDBCellSeqPlateWell(List<Cell> cells)

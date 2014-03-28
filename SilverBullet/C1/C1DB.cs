@@ -453,7 +453,7 @@ namespace C1
                 wellAnn[i++] = cell.Comments;
                 annotations[plateWell] = wellAnn;
             }
-            string sqlPat = "SELECT a.CellID, Name, Value FROM CellAnnotation a LEFT JOIN Cell c ON a.CellID=c.CellID " +
+            string sqlPat = "SELECT c.PlateWell, Name, Value FROM CellAnnotation a LEFT JOIN Cell c ON a.CellID=c.CellID " +
                     string.Format("WHERE a.CellID IN (SELECT CellID FROM Cell {0})", chipOrProjectWhereSql);
             string sql = string.Format(sqlPat, chipOrProjectWhereSql);
             MySqlConnection conn = new MySqlConnection(connectionString);

@@ -130,6 +130,7 @@ namespace Linnarsson.Dna
         public bool WriteReadsAsGVFFiles = false;
         public string[] CAPCloseSiteSearchCutters = new string[] { "PvuI" };
         public bool InsertCells10Data = false; // Set to true to insert results into cells10k database for "C1-" prefixed projects
+        public bool AnalyzeGCContent = false; // Analyze the GC content of transcript mapping reads
         public bool LogMode = false;
 
         private Barcodes m_Barcodes;

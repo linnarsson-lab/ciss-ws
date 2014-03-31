@@ -132,6 +132,7 @@ namespace Linnarsson.Strt
         private List<int>[] mappingsBySpikeReadsSamples;
 
         private UpstreamAnalyzer upstreamAnalyzer;
+        private GCAnalyzer gcAnalyzer;
         private PerLaneStats perLaneStats;
 
         private StreamWriter rndTagProfileByGeneWriter;
@@ -176,6 +177,8 @@ namespace Linnarsson.Strt
             statsSampleDistPerBarcode = Props.props.sampleDistPerBcForAccuStats;
             if (props.AnalyzeSeqUpstreamTSSite && barcodes.Count > 1)
                 upstreamAnalyzer = new UpstreamAnalyzer(Annotations, barcodes);
+            if (props.AnalyzeGCContent)
+                gcAnalyzer = new GCAnalyzer(barcodes.Count);
             perLaneStats = new PerLaneStats(barcodes);
             minMismatchReadCountForSNPDetection = props.MinAltNtsReadCountForSNPDetection;
             nMaxMappings = props.MaxAlternativeMappings - 1;
@@ -369,12 +372,16 @@ namespace Linnarsson.Strt
                 if (mappingAdder.Add(mrm))
                 {
                     nExonAnnotatedReads++;
+                    if (Props.props.AnalyzeGCContent && Annotations.HasChromosome(mrm[0].Chr))
+                        gcAnalyzer.Add(currentBcIdx, Annotations.GetChromosome(mrm[0].Chr).SubSequence(mrm[0].Position, mrm[0].SeqLen));
                     if (analyzeMappingsBySpikeReads && mrm[0].Chr == StrtGenome.chrCTRLId)
+                    {
                         if (--sampleSpikeReadsPerMolCounter == 0)
                         {
                             mappingsBySpikeReadsSamples[currentBcIdx].Add(randomTagFilter.GetNumDistinctMappings());
                             sampleSpikeReadsPerMolCounter = Props.props.MappingsBySpikeReadsSampleDist;
                         }
+                    }
                 }
                 if (snpRndTagVerifier != null)
                     snpRndTagVerifier.Add(mrm);
@@ -392,8 +399,6 @@ namespace Linnarsson.Strt
                     sampleMappedReadsByFileCounter = PerLaneStats.nMappedReadsPerFileAtSample;
                 }
                 if (mrm.HasAltMappings) nMultiReads++;
-                //else if (upstreamAnalyzer != null)
-                //    upstreamAnalyzer.CheckSeqUpstreamTSSite(mrm[0], currentBcIdx); // Analysis on raw read basis
             }
         }
 
@@ -1442,6 +1447,9 @@ namespace Linnarsson.Strt
                                     "HITS", "Total annotated hits by barcode", "annotated hits");
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, labelingEfficiencyEstimator.maxOccupiedUMIsByBc,
                                     "MAX_OCCUPIED_UMIS", "Maximum occupied UMIs by barcode", "maximum occupied UMIs");
+                if (Props.props.AnalyzeGCContent)
+                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, gcAnalyzer.GetPercentGCByBarcode(),
+                                        "PERCENT_READ_GC_CONTENT", "Percent GC in transcript mapping reads", "transcript reads percent GC");
                 WriteFeaturesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, TotalTranscriptMolsByBarcode,
                                     "TRNSR_DETECTING_" + molT.ToUpper(), "Transcript detecting " + molT + " by barcode", "tr. detecting " + molT);

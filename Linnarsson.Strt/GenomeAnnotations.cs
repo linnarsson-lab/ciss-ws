@@ -60,7 +60,7 @@ namespace Linnarsson.Strt
             this.props = props;
             this.genome = genome;
             this.barcodes = props.Barcodes;
-            needChromosomeSequences = props.DetermineMotifs || props.AnalyzeSeqUpstreamTSSite;
+            needChromosomeSequences = props.DetermineMotifs || props.AnalyzeSeqUpstreamTSSite || props.AnalyzeGCContent;
             needChromosomeLengths = props.GenerateWiggle || props.GenerateBarcodedWiggle || props.GeneFeature5PrimeExtension > 0;
             noGeneVariants = !genome.GeneVariants;
             GeneFeature.LocusFlankLength = props.LocusFlankLength;
@@ -132,43 +132,50 @@ namespace Linnarsson.Strt
         public void SetupGenes()
         {
             string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
-            C1DB db = new C1DB();
-            dbTranscriptome = db.GetTranscriptome(genome.BuildVarAnnot);
-            int nModels = 0, nSpliceModels = 0, nExons = 0;
-            if (dbTranscriptome != null)
-            {
-                foreach (Transcript tt in db.IterTranscriptsFromDB(dbTranscriptome.TranscriptomeID.Value))
-                {
-                    LocusFeature gf = AnnotationReader.GeneFeatureFromDBTranscript(tt);
-                    int nParts = RegisterGeneFeature(gf);
-                    if (nParts > 0) { nModels++; nExons += nParts; }
-                    else nSpliceModels -= nParts;
-                }
-                Console.WriteLine("Read {0} transcript models totalling {1} exons from database {2}.", nModels, nExons, dbTranscriptome.Name);
-                ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
-                foreach (LocusFeature spliceGf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
-                    if (spliceGf.Chr == genome.Annotation)
-                    {
-                        int nParts = RegisterGeneFeature(spliceGf);
-                        if (nParts > 0) { nModels++; nExons += nParts; }
-                        else nSpliceModels -= nParts;
-                    }
-                Console.WriteLine("Added splice junctions for {0} transcript models from {1}.", nSpliceModels, STRTAnnotationsPath);
-            }
-            else
-            {
-                foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
-                {
-                    int nParts = RegisterGeneFeature(gf);
-                    if (nParts > 0) { nModels++; nExons += nParts; }
-                    else nSpliceModels -= nParts;
-                }
-                Console.WriteLine("Read {0}:\n{1} transcript models totalling {2} exons, {3} with splices.",
-                                   STRTAnnotationsPath, nModels, nExons, nSpliceModels);
-                ModifyGeneFeatures(new GeneFeature5PrimeAndOverlapMarkUpModifier());
-            }
+            if (!props.InsertCells10Data || !SetupGenesFromC1DB(STRTAnnotationsPath))
+                SetupGenesFromSTRTAnnotationFile(STRTAnnotationsPath);
             int trLen = geneFeatures.Sum(gf => gf.Value.GetTranscriptLength());
             Console.WriteLine("Total length of all transcript models (including overlaps): {0} bp.", trLen);
+        }
+
+        private bool SetupGenesFromC1DB(string STRTAnnotationsPath)
+        {
+            C1DB db = new C1DB();
+            dbTranscriptome = db.GetTranscriptome(genome.BuildVarAnnot);
+            if (dbTranscriptome == null) return false;
+            int nModels = 0, nSpliceModels = 0, nExons = 0;
+            foreach (Transcript tt in db.IterTranscriptsFromDB(dbTranscriptome.TranscriptomeID.Value))
+            {
+                LocusFeature gf = AnnotationReader.GeneFeatureFromDBTranscript(tt);
+                int nParts = RegisterGeneFeature(gf);
+                if (nParts > 0) { nModels++; nExons += nParts; }
+                else nSpliceModels -= nParts;
+            }
+            Console.WriteLine("Read {0} transcript models totalling {1} exons from database {2}.", nModels, nExons, dbTranscriptome.Name);
+            ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
+            foreach (LocusFeature spliceGf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
+                if (spliceGf.Chr == genome.Annotation)
+                {
+                    int nParts = RegisterGeneFeature(spliceGf);
+                    if (nParts > 0) { nModels++; nExons += nParts; }
+                    else nSpliceModels -= nParts;
+                }
+            Console.WriteLine("Added splice junctions for {0} transcript models from {1}.", nSpliceModels, STRTAnnotationsPath);
+            return true;
+        }
+
+        private void SetupGenesFromSTRTAnnotationFile(string STRTAnnotationsPath)
+        {
+            int nModels = 0, nSpliceModels = 0, nExons = 0;
+            foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
+            {
+                int nParts = RegisterGeneFeature(gf);
+                if (nParts > 0) { nModels++; nExons += nParts; }
+                else nSpliceModels -= nParts;
+            }
+            Console.WriteLine("Read {0}:\n{1} transcript models totalling {2} exons, {3} with splices.",
+                               STRTAnnotationsPath, nModels, nExons, nSpliceModels);
+            ModifyGeneFeatures(new GeneFeature5PrimeAndOverlapMarkUpModifier());
         }
 
         private void ModifyGeneFeatures(GeneFeatureModifiers m)
@@ -177,7 +184,6 @@ namespace Linnarsson.Strt
             {
                 if (!StrtGenome.IsSyntheticChr(chrId))
                 {
-                    //Console.WriteLine("ModifyGeneFeatures() on chromsome {0}", chrId);
                     m.Process(geneFeatures.Values.Where(gf => gf.Chr == chrId).ToList());
                 }
             }
@@ -192,8 +198,9 @@ namespace Linnarsson.Strt
 
         private void SetupRepeats()
         {
-            C1DB db = new C1DB();
-            Dictionary<string, int> repeatToTrIdMap = db.GetRepeatNamesToTranscriptIdsMap(genome.BuildVarAnnot);
+            Dictionary<string, int> repeatToTrIdMap = new Dictionary<string, int>();
+            if (props.InsertCells10Data)
+                repeatToTrIdMap = new C1DB().GetRepeatNamesToTranscriptIdsMap(genome.BuildVarAnnot);
             string[] rmskFiles = PathHandler.GetRepeatMaskFiles(genome);
             Console.Write("Reading {0} masking files..", rmskFiles.Length);
             foreach (string rmskFile in rmskFiles)
@@ -233,8 +240,9 @@ namespace Linnarsson.Strt
                         if (!repeatFeatures.TryGetValue(name, out reptFeature))
                         {
                             repeatFeatures[name] = new RepeatFeature(name);
-                            if (repeatToTrIdMap.ContainsKey(name))
-                                repeatFeatures[name].C1DBTranscriptID = repeatToTrIdMap[name];
+                            int trID;
+                            if (!repeatToTrIdMap.TryGetValue(name, out trID)) trID = -1;
+                            repeatFeatures[name].C1DBTranscriptID = trID;
                             reptFeature = repeatFeatures[name];
                         }
                         reptFeature.AddRegion(start, end);
@@ -714,9 +722,8 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="projectId"></param>
         /// <returns></returns>
-        public IEnumerable<Expression> IterExpressions(string projectId)
+        public IEnumerable<Expression> IterC1DBExpressions(Dictionary<string, int> cellIdByPlateWell)
         {
-            Dictionary<string, int> cellIdByPlateWell = new C1DB().GetCellIdByPlateWell(projectId);
             Expression exprHolder = new Expression();
             foreach (int bcIdx in barcodes.GenomeBarcodeIndexes(genome, true))
             {

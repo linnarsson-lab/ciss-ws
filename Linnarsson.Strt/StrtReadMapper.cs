@@ -717,20 +717,23 @@ namespace Linnarsson.Strt
             System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(props.GetType());
             using (StreamWriter writer = new StreamWriter(Path.Combine(outputFolder, "SilverBulletConfig.xml")))
                 x.Serialize(writer, props);
-            InsertCells10kData(projectId, annotations, resultDescr);
+            if (Props.props.InsertCells10Data)
+                InsertCells10kData(projectId, annotations, resultDescr);
             return resultDescr;
         }
 
         private static void InsertCells10kData(string projectId, GenomeAnnotations annotations, ResultDescription resultDescr)
         {
-            if (Props.props.InsertCells10Data && projectId.StartsWith(C1Props.C1ProjectPrefix))
+            if (projectId.StartsWith(C1Props.C1ProjectPrefix))
             {
                 Console.WriteLine("Saving results to cells10k database...");
                 try
                 {
-                    new C1DB().InsertExpressions(annotations.IterExpressions(projectId));
+                    C1DB c1db = new C1DB();
+                    Dictionary<string, int> cellIdByPlateWell = c1db.GetCellIdByPlateWell(projectId);
+                    c1db.InsertExpressions(annotations.IterC1DBExpressions(cellIdByPlateWell));
                     string parString = MakeParameterString();
-                    new C1DB().InsertAnalysisSetup(projectId, resultDescr.bowtieIndexVersion, resultDescr.resultFolder, parString);
+                    c1db.InsertAnalysisSetup(projectId, resultDescr.bowtieIndexVersion, resultDescr.resultFolder, parString);
                 }
                 catch (Exception e)
                 {

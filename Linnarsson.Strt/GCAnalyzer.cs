@@ -28,7 +28,7 @@ namespace Linnarsson.Strt
         {
             int[] percents = new int[GCCounts.Length];
             for (int bcIdx = 0; bcIdx < GCCounts.Length; bcIdx++)
-                percents[bcIdx] = (int)Math.Round(GCCounts[bcIdx] / (double)totalCounts[bcIdx]);
+                percents[bcIdx] = (int)Math.Round(100.0 *GCCounts[bcIdx] / (double)totalCounts[bcIdx]);
             return percents;
         }
     }

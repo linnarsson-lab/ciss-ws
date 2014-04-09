@@ -76,6 +76,7 @@ namespace Linnarsson.Dna
             int nCreated = ReadGenes();
             if (addRefFlat)
                 nCreated += AddRefFlatGenes();
+            FuseNearIdenticalMainGenes();
             return nCreated;
         }
         /// <summary>
@@ -334,7 +335,7 @@ namespace Linnarsson.Dna
             string locName = string.Format("{0}{1}{2}", gf.Name, locIndicator, altLocNo);
             GeneFeature oldGf, saveGf = null;
             while (nameToGene.TryGetValue(locName, out oldGf))
-            { // Pick up the first gene of this name (the plain name Key for the first is kept)
+            { // Pick up the first gene of this name (the plain name Key in nameToGene for the first is kept)
                 if (oldGf.Chr == gf.Chr && oldGf.Strand == gf.Strand && oldGf.Overlaps(gf.Start, gf.End, 1))
                 {
                     GeneFeature combinedGf = CreateExonUnion(oldGf, gf);
@@ -359,6 +360,68 @@ namespace Linnarsson.Dna
             nameToGene[locName] = gf;
             //Console.WriteLine("{0}-{1} Created {2}", gf.Start, gf.End, gf.Name);
             return true;
+        }
+
+        private void FuseNearIdenticalMainGenes()
+        {
+            Console.WriteLine("Fusing overlapping...");
+            int maxStartDiff = 10; // Max bases between TSS:s for fusion
+            double minOverlapFrac = 0.90; // Min 90% of bases of the longer gene should also be present in the shorter
+            GeneFeature[] mainGenes = nameToGene.Values.ToArray();
+            for (int i = 0; i < mainGenes.Length - 1; i++)
+            {
+                GeneFeature gfA = mainGenes[i];
+                if (gfA == null)
+                    continue;
+                int trLenA = gfA.GetTranscriptLength();
+                for (int j = i + 1; j < mainGenes.Length; j++)
+                {
+                    GeneFeature gfB = mainGenes[j];
+                    if (gfB == null || gfA == gfB)
+                        continue;
+                    int trLenB = gfB.GetTranscriptLength();
+                    if (gfA.Chr == gfB.Chr && gfA.Strand == gfB.Strand && Math.Abs(gfA.Start - gfB.Start) <= maxStartDiff)
+                    {
+                        int nCommonBases = CalcCommonBases(gfA, gfB);
+                        if (nCommonBases / (double)Math.Max(trLenA, trLenB) > minOverlapFrac)
+                        { // They overlap in their entire length
+                            string combinedName = gfA.Name + "/" + gfB.Name;
+                            Console.WriteLine("Merging {0} & {1} into {2}", gfA.Name, gfB.Name, combinedName);
+                            GeneFeature combinedGf = CreateExonUnion(gfA, gfB);
+                            combinedGf.Name = combinedName;
+                            int idxB = genesByChr[gfB.Chr].IndexOf(gfB);
+                            genesByChr[gfB.Chr][idxB] = combinedGf;
+                            nameToGene[gfA.Name] = combinedGf;
+                            nameToGene[gfB.Name] = combinedGf;
+                            nameToGene[combinedGf.Name] = combinedGf;
+                            mainGenes[j] = null;
+                            genesByChr[gfA.Chr].Remove(gfA);
+                            break;
+                        }
+                        else if (nCommonBases / (double)Math.Min(trLenA, trLenB) > minOverlapFrac)
+                        { // One is contained inside the exons of the other
+                            Console.WriteLine("{0} is contained inside {1}", gfA.Name, gfB.Name);
+                        }
+                    }
+                }
+            }
+
+        }
+
+        private int CalcCommonBases(GeneFeature gfA, GeneFeature gfB)
+        {
+            int nCommonBases = 0;
+            for (int exIdxA = 0; exIdxA < gfA.ExonCount; exIdxA++)
+            {
+                int startExA = gfA.ExonStarts[exIdxA];
+                int endExA = gfA.ExonEnds[exIdxA];
+                for (int exIdxB = 0; exIdxB < gfB.ExonCount; exIdxB++)
+                {
+                    int n = Math.Min(endExA, gfB.ExonEnds[exIdxB]) - Math.Max(startExA, gfB.ExonStarts[exIdxB]);
+                    if (n > 0) nCommonBases += n;
+                }
+            }
+            return nCommonBases;
         }
 
         private GeneFeature CreateExonUnion(GeneFeature oldGf, GeneFeature newGf)

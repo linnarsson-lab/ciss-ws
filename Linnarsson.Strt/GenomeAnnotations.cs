@@ -881,7 +881,7 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        private string ExcelRescueGeneName(string name)
+        private static string ExcelRescueGeneName(string name)
         {
             if (name.Length < 4) return name;
             if (Regex.IsMatch(name.ToLower(), "^(jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)[0-9]+$"))
@@ -1059,8 +1059,9 @@ namespace Linnarsson.Strt
             foreach (GeneFeature gf in IterMainTranscriptVariants(selectSpikes))
             {
                 double trLenFactor = (props.UseRPKM) ? gf.GetTranscriptLength() : 1000.0;
+                string safeName = ExcelRescueGeneName(gf.Name);
                 exprWriter.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
-                                 gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), gf.GetTranscriptHits());
+                                 safeName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), gf.GetTranscriptHits());
                 if (props.DirectionalReads)
                 {
                     string RPkbMThres01 = string.Format("{0:G6}", RPkbM99 * gf.GetNonMaskedTranscriptLength() / trLenFactor);
@@ -1126,8 +1127,9 @@ namespace Linnarsson.Strt
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     int totalHits = gf.CAPRegionHitsByBarcode.Sum();
+                    string safeName = ExcelRescueGeneName(gf.Name);
                     matrixFile.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
-                                     gf.Name, gf.Chr, gf.SavedCAPPos, gf.Strand, gf.GetTranscriptHits(), totalHits);
+                                     safeName, gf.Chr, gf.SavedCAPPos, gf.Strand, gf.GetTranscriptHits(), totalHits);
                     foreach (int idx in speciesBcIndexes)
                         matrixFile.Write("\t{0}", gf.CAPRegionHitsByBarcode[idx]);
                     matrixFile.WriteLine();
@@ -1245,8 +1247,9 @@ namespace Linnarsson.Strt
                     string mixedASGene = "";
                     if (gf.HitsByAnnotType[AnnotType.AINTR] >= 5 || gf.HitsByAnnotType[AnnotType.AEXON] >= 5)
                         mixedASGene = OverlappingExpressedGene(gf, 10, false);
+                    string safeName = ExcelRescueGeneName(gf.Name);
                     file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}",
-                                     gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), gf.USTRLength,
+                                     safeName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), gf.USTRLength,
                                      gf.GetLocusLength(), gf.DSTRLength, gf.GetTotalHits(true), gf.GetTotalHits(false),
                                      gf.GetIntronicLength(), gf.ExonCount, mixedSenseGene, mixedASGene);
                     foreach (int i in AnnotType.GetGeneTypes())
@@ -1282,7 +1285,8 @@ namespace Linnarsson.Strt
                 file.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", gf.Name, gf.Chr, gf.Strand, gf.LocusStart, gf.GetLocusLength(), gf.LocusEnd);
+                    string safeName = ExcelRescueGeneName(gf.Name);
+                    file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", safeName, gf.Chr, gf.Strand, gf.LocusStart, gf.GetLocusLength(), gf.LocusEnd);
                     int[] counts = CompactGenePainter.GetCountsPerIntron(gf, props.DirectionalReads);
                     if (gf.Strand == '-')
                     {
@@ -1316,8 +1320,9 @@ namespace Linnarsson.Strt
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     int n = CompactGenePainter.GetCountsPerIntronAndBarcode(gf, props.DirectionalReads, barcodes.Count, ref counts);
+                    string safeName = ExcelRescueGeneName(gf.Name);
                     string firstCols = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
-                                                     gf.Name, gf.Chr, gf.Strand, gf.LocusStart, gf.GetLocusLength(), gf.LocusEnd);
+                                                     safeName, gf.Chr, gf.Strand, gf.LocusStart, gf.GetLocusLength(), gf.LocusEnd);
                     string nextFirstCols = string.Format("{0}\t\t\t\t\t", gf.Name);
                     WriteCountsByBarcodeDirected(file, counts, gf, firstCols, nextFirstCols, 2, n - 1);
                 }
@@ -1368,8 +1373,9 @@ namespace Linnarsson.Strt
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     int n = CompactGenePainter.GetCountsPerExonAndBarcode(gf, props.DirectionalReads, barcodes.Count, ref counts);
+                    string safeName = ExcelRescueGeneName(gf.Name);
                     string firstCols = string.Format("{0}\t{1}\t{2}\t{3}\t{4}",
-                                                     gf.Name, gf.Chr, gf.Strand, gf.Start, gf.GetTranscriptLength());
+                                                     safeName, gf.Chr, gf.Strand, gf.Start, gf.GetTranscriptLength());
                     string followingFirstCols = string.Format("{0}\t\t\t\t", gf.Name);
                     WriteCountsByBarcodeDirected(file, counts, gf, firstCols, followingFirstCols, 0, n - 1);
                 }
@@ -1462,7 +1468,8 @@ namespace Linnarsson.Strt
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     if (!gf.IsExpressed()) continue;
-                    file.Write("{0}\t{1}\t{2}\t{3}\t", gf.Name, gf.GetTranscriptLength(), gf.GetTotalHits(), gf.GetTranscriptHits());
+                    string safeName = ExcelRescueGeneName(gf.Name);
+                    file.Write("{0}\t{1}\t{2}\t{3}\t", safeName, gf.GetTranscriptLength(), gf.GetTotalHits(), gf.GetTranscriptHits());
                     int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, props.LocusProfileBinSize,
                                                                                          props.DirectionalReads, averageReadLen);
                     foreach (int c in trBinCounts)
@@ -1501,7 +1508,8 @@ namespace Linnarsson.Strt
         private static void WriteLocusHistogramLine(StreamWriter file, ref int[] histo, GeneFeature gf, bool sense)
         {
             char chrStrand = ((gf.Strand == '+') ^ sense) ? '-' : '+';
-            file.Write("{0}\t{1}\t{2}\t{3}\t{4}", gf.Name, gf.Strand, gf.Length, chrStrand, gf.GetTotalHits(sense));
+            string safeName = ExcelRescueGeneName(gf.Name);
+            file.Write("{0}\t{1}\t{2}\t{3}\t{4}", safeName, gf.Strand, gf.Length, chrStrand, gf.GetTotalHits(sense));
             int maxBin = CompactGenePainter.MakeLocusHistogram(gf, chrStrand, Props.props.LocusProfileBinSize, ref histo);
             for (int c = 0; c < maxBin; c++)
                 file.Write("\t{0}", histo[c]);
@@ -1519,14 +1527,15 @@ namespace Linnarsson.Strt
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     List<int> hisPoss = CompactGenePainter.GetLocusHitPositions(gf, '+');
+                    string safeName = ExcelRescueGeneName(gf.Name);
                     file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}",
-                               gf.Name, gf.Strand, gf.Chr, gf.LocusStart, gf.LocusEnd, "+", hisPoss.Count);
+                               safeName, gf.Strand, gf.Chr, gf.LocusStart, gf.LocusEnd, "+", hisPoss.Count);
                     foreach (int p in hisPoss)
                         file.Write("\t{0}", p);
                     file.WriteLine();
                     hisPoss = CompactGenePainter.GetLocusHitPositions(gf, '-');
                     file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}",
-                               gf.Name, gf.Strand, gf.Chr, gf.LocusStart, gf.LocusEnd, "-", hisPoss.Count);
+                               safeName, gf.Strand, gf.Chr, gf.LocusStart, gf.LocusEnd, "-", hisPoss.Count);
                     foreach (int p in hisPoss)
                         file.Write("\t{0}", p);
                     file.WriteLine();
@@ -1652,8 +1661,9 @@ namespace Linnarsson.Strt
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     if (gf.GetTranscriptHits() == 0) continue;
+                    string safeName = ExcelRescueGeneName(gf.Name);
                     file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
-                               gf.Name, gf.Chr, gf.Strand, gf.Start, gf.End, gf.GetTranscriptLength());
+                               safeName, gf.Chr, gf.Strand, gf.Start, gf.End, gf.GetTranscriptLength());
                     ushort[] trProfile = CompactGenePainter.GetTranscriptProfile(gf);
                     int i = trProfile.Length - 1;
                     while (i > 0 && trProfile[i] == 0) i--;

@@ -35,6 +35,14 @@ namespace Linnarsson.Dna
         public bool UseNoBarcodes;
         public static readonly string NOBARCODE = "NOBAR";
 
+        protected int m_MaxTotalLen = 0;
+        public int VerifyTotalLen(int len)
+        {
+            if (m_MaxTotalLen > 0)
+                return Math.Min(m_MaxTotalLen, len);
+            return len;
+        }
+
         protected string[] m_WellIds = null;
         protected string[] m_SpeciesByWell = null;
         public string[] SpeciesByWell { get { return m_SpeciesByWell; } }
@@ -703,6 +711,8 @@ namespace Linnarsson.Dna
                         m_PrefixRead2 = int.Parse(line.Substring(13));
                     else if (line.StartsWith("#prefixread3="))
                         m_PrefixRead3 = int.Parse(line.Substring(13));
+                    else if (line.StartsWith("#truncateat="))
+                        m_MaxTotalLen = int.Parse(line.Substring(12));
                 }
                 if (UseNoBarcodes)
                     m_WellIds = new string[] { "Sample" };

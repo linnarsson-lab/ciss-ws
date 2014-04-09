@@ -48,7 +48,7 @@ namespace Linnarsson.Strt
         {
             bcIdx = -1;
             string rSeq = rec.Sequence;
-            int trimmedLength = rSeq.Length;
+            int trimmedLength = barcodes.VerifyTotalLen(rSeq.Length);
             if (rec.Qualities != null)
             {
                 while (trimmedLength > 0 && rec.Qualities[trimmedLength - 1] == ReadSegmentQualityControlIndicator) trimmedLength--;

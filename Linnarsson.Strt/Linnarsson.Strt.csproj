@@ -68,6 +68,7 @@
     <Compile Include="ReadCounter.cs" />
     <Compile Include="ReadExtractor.cs" />
     <Compile Include="ReadFragGenerator.cs" />
+    <Compile Include="SampleAnnotationWriter.cs" />
     <Compile Include="SampleReadWriter.cs" />
     <Compile Include="SilverBulletSummary.cs" />
     <Compile Include="SnpRndTagVerifier.cs" />

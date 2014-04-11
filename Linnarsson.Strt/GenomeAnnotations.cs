@@ -1412,7 +1412,8 @@ namespace Linnarsson.Strt
                 matrixFile.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    matrixFile.Write("{0}\t{1}\t{2}\t{3}", gf.Name, gf.ExonCount, gf.GetTranscriptHits(), gf.GetJunctionHits());
+                    string safeName = ExcelRescueGeneName(gf.Name);
+                    matrixFile.Write("{0}\t{1}\t{2}\t{3}", safeName, gf.ExonCount, gf.GetTranscriptHits(), gf.GetJunctionHits());
                     List<Pair<string, int>> spliceCounts = gf.GetSpliceCounts();
                     foreach (Pair<string, int> spliceAndCount in spliceCounts)
                         matrixFile.Write("\t{0}", spliceAndCount.First);
@@ -1436,7 +1437,8 @@ namespace Linnarsson.Strt
                 matrixFile.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    matrixFile.Write("{0}\t{1}\t{2}\t{3}\t", gf.Name, gf.ExonCount, gf.GetTranscriptHits(), gf.GetJunctionHits());
+                    string safeName = ExcelRescueGeneName(gf.Name);
+                    matrixFile.Write("{0}\t{1}\t{2}\t{3}\t", safeName, gf.ExonCount, gf.GetTranscriptHits(), gf.GetJunctionHits());
                     List<Pair<string, int[]>> splicesAndBcCounts = gf.GetSpliceCountsPerBarcode();
                     foreach (Pair<string, int[]> spliceAndBcCounts in splicesAndBcCounts)
                         matrixFile.Write("\t{0}", spliceAndBcCounts.First);

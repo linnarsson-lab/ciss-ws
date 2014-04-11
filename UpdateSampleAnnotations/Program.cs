@@ -76,7 +76,7 @@ namespace UpdateSampleAnnotations
             {
                 if (line.StartsWith("Well"))
                 {
-                    selectedWells = line.Substring(5).Split('\t');
+                    selectedWells = line.Substring(5).Trim().Split('\t');
                     break;
                 }
             }

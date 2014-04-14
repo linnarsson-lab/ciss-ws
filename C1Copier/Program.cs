@@ -382,6 +382,8 @@ namespace C1
                     if (line == "" || line.StartsWith("#"))
                         continue;
                     string[] fields = GetFields(line);
+                    if (fields.Length == 1)
+                        continue;
                     string key = fields[0].Trim().ToLower();
                     if (key == "mouse_number" || key == "mouse number") key = "donorid";
                     if (key == "date") key = "datedissected";

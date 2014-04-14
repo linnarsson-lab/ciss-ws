@@ -48,7 +48,7 @@ namespace Linnarsson.Strt
         {
             bcIdx = -1;
             string rSeq = rec.Sequence;
-            int trimmedLength = barcodes.VerifyTotalLen(rSeq.Length);
+            int trimmedLength = rSeq.Length; // barcodes.VerifyTotalLen(rSeq.Length);
             if (rec.Qualities != null)
             {
                 while (trimmedLength > 0 && rec.Qualities[trimmedLength - 1] == ReadSegmentQualityControlIndicator) trimmedLength--;
@@ -80,6 +80,7 @@ namespace Linnarsson.Strt
                 }
                 headerUMISection = rSeq.Substring(UMIPos, UMILen) + '.';
             }
+            trimmedLength = barcodes.VerifyTotalLen(trimmedLength);
             int insertLength = trimmedLength - insertStart;
             int status = TestComplexity(rSeq, insertStart, insertLength);
             if (status != ReadStatus.VALID) return status;

@@ -378,7 +378,7 @@ namespace C1
             {
                 Cell cell = new Cell(rdr.GetInt32(0), rdr.GetString(1), rdr.GetString(2), rdr.GetString(3), rdr.GetString(4),
                                      rdr.GetString(5), rdr.GetDateTime(6), rdr.GetDateTime(7), rdr.GetString(8),
-                                     rdr.GetString(9), rdr.GetString(10), rdr.GetString(11), rdr.GetChar(12),
+                                     rdr.GetString(9), rdr.GetString(10), rdr.GetString(11), rdr.GetString(12),
                                      rdr.GetString(13), rdr.GetString(14), rdr.GetDouble(15), rdr.GetDouble(16),
                                      rdr.GetString(17), rdr.GetString(18), rdr.GetString(19), rdr.GetString(20),
                                      rdr.GetInt32(21), rdr.GetInt32(22), rdr.GetInt32(23), rdr.GetString(24));
@@ -440,7 +440,7 @@ namespace C1
                 wellAnn[i++] = cell.ChipWell;
                 wellAnn[i++] = cell.Species;
                 wellAnn[i++] = cell.Age;
-                wellAnn[i++] = cell.Sex.ToString();
+                wellAnn[i++] = cell.Sex;
                 wellAnn[i++] = cell.Tissue;
                 wellAnn[i++] = cell.Treatment;
                 wellAnn[i++] = cell.DonorID;

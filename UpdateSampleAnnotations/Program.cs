@@ -35,7 +35,6 @@ namespace UpdateSampleAnnotations
             string projectName = Path.GetFileName(projectFolder);
             string annotFile = isFolder ? GetOldAnnotationFile(resultFolderOrAnnotFile, projectName) : resultFolderOrAnnotFile;
             string[] selectedWells = GetSelectedWells(annotFile);
-            File.Move(annotFile, annotFile + ".old");
             Match m = Regex.Match(resultFolder, resultFolderMatch);
             string barcodesName = m.Groups[1].Value;
             string speciesArg = m.Groups[2].Value;
@@ -44,16 +43,20 @@ namespace UpdateSampleAnnotations
             int[] selectedBcIndexes = new int[selectedWells.Length];
             for (int idx = 0; idx < selectedWells.Length; idx++)
             {
-                int selIdx = Array.IndexOf(barcodes.Seqs, selectedWells[idx]);
+                int selIdx = barcodes.GetBcIdxFromWellId(selectedWells[idx]);
                 if (selIdx == -1)
                     throw new Exception("ERROR: Could not match a Well in old annotation file to a barcode: " + selectedWells[idx] +
                                         "\n  Has the barcode file (" + barcodesName + ") changed, or is the old annotation file erronous?");
                 selectedBcIndexes[idx] = selIdx;
             }
             PlateLayout sampleLayout = PlateLayout.GetPlateLayout(projectName, sampleLayoutPath);
+            Console.WriteLine("SampleLAyout filename:" + sampleLayout.Filename);
             barcodes.SetSampleLayout(sampleLayout);
+            Console.WriteLine("#Annotations:" + barcodes.GetAnnotationTitles().Count);
+            File.Move(annotFile, annotFile + ".old");
             StreamWriter annotWriter = new StreamWriter(annotFile);
             SampleAnnotationWriter.WriteSampleAnnotationLines(annotWriter, barcodes, projectName, 0, false, selectedBcIndexes);
+            annotWriter.Close();
         }
 
         private static string GetOldAnnotationFile(string resultFolder, string projectName)

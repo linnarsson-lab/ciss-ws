@@ -20,7 +20,7 @@ namespace C1
         public string Weight { get; set; }                 // "350g"
         public string Strain { get; set; }                  // "C57/Bl6"
         public string Age { get; set; }                     // "E14.5"
-        public char Sex { get; set; }                       // 'M' or 'F'
+        public string Sex { get; set; }                       // 'M' or 'F' or 'M+F'
         public string Tissue { get; set; }
         public string Treatment { get; set; }
         public double Diameter { get; set; }
@@ -37,7 +37,7 @@ namespace C1
 
         public Cell(int? cellId, string chip, string chipWell, string plate, string plateWell,
                     string strtProtocol, DateTime dateDissected, DateTime dateCollected, string species, string strain,
-                    string donorID, string age, char sex, string tissue, string treatment,
+                    string donorID, string age, string sex, string tissue, string treatment,
                     double diameter, double area, string PI, string op, string sci, string comments,
                     int red, int green, int blue, string weight)
         {
@@ -53,7 +53,7 @@ namespace C1
             this.Strain = strain;
             this.DonorID = donorID;
             this.Age = age;
-            this.Sex = sex;
+            this.Sex = sex.ToUpper();
             this.Tissue = tissue;
             this.Treatment = treatment;
             this.Diameter = diameter;
@@ -91,7 +91,7 @@ namespace C1
                     case "strain": Strain = p.Value; break;
                     case "donorid": DonorID = p.Value; break;
                     case "age": Age = p.Value; break;
-                    case "sex": Sex = p.Value[0]; break;
+                    case "sex": Sex = p.Value.ToUpper(); break;
                     case "tissue": Tissue = p.Value; break;
                     case "treatment": Treatment = p.Value; break;
                     case "principal investigator": PI = p.Value; break;

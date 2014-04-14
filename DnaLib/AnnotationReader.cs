@@ -76,7 +76,7 @@ namespace Linnarsson.Dna
             int nCreated = ReadGenes();
             if (addRefFlat)
                 nCreated += AddRefFlatGenes();
-            FuseNearIdenticalMainGenes();
+            //FuseNearIdenticalMainGenes();
             return nCreated;
         }
         /// <summary>

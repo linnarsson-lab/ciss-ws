@@ -335,12 +335,22 @@ namespace C1
             string lastDonorFilePath = GetDonorFilePath(chipDir);
             if (lastDonorFilePath != null)
                 AddDonorInfo(lastDonorFilePath, metadata);
+            if (metadata["age"].Replace(" ", "").ToLower().EndsWith("weeks"))
+            {
+                try
+                {
+                    metadata["age"] = string.Format("p{0}", 7 * int.Parse(metadata["age"].Replace(" ", "").Replace("weeks", "")));
+                }
+                catch (Exception)
+                {
+                }
+            }
             return metadata;
         }
 
         private static string[] GetFields(string line)
         {
-            string[] fields = line.Split(':');
+            string[] fields = line.Split('\t');
             if (line.ToLower().StartsWith("strain"))
                 fields = new string[] { "strain", line.Substring(7).Trim() };
             else if (line.ToLower().StartsWith("mouse_number"))
@@ -349,7 +359,7 @@ namespace C1
                 fields = new string[] { "comments", line.Substring(8).Trim() };
             else if (fields.Length != 2)
             {
-                fields = line.Split('\t');
+                fields = line.Split(':');
                 if (fields.Length < 2)
                     fields = line.Split(new char[] { ' ' }, 2);
             }

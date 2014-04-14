@@ -293,6 +293,11 @@ namespace Linnarsson.Dna
             return m_WellIds[wellIdx];
         }
 
+        public int GetBcIdxFromWellId(string wellId)
+        {
+            return Array.IndexOf(m_WellIds, wellId);
+        }
+
         /// <summary>
         /// Get the bcIdx on which a map file should be analyzed. This is not same as
         /// the input BcIdx if remappings are defined in the 'Merge' column of the PlateLayout
@@ -712,7 +717,10 @@ namespace Linnarsson.Dna
                     else if (line.StartsWith("#prefixread3="))
                         m_PrefixRead3 = int.Parse(line.Substring(13));
                     else if (line.StartsWith("#truncateat="))
+                    {
                         m_MaxTotalLen = int.Parse(line.Substring(12));
+                        Console.WriteLine("MaxTotalReadLen=" + m_MaxTotalLen);
+                    }
                 }
                 if (UseNoBarcodes)
                     m_WellIds = new string[] { "Sample" };

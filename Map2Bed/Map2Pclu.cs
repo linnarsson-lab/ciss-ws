@@ -119,7 +119,7 @@ namespace Map2Pclu
             }
             string totMolTxt = settings.HasUMIs ? string.Format(" and {0} molecules", nTotMols) : "";
             Console.WriteLine("All in all were {0} reads{1} processed.", nTotReads, totMolTxt);
-            Console.WriteLine("Output is found in " + settings.outputFolderOrFilename + "/" + outfilePat);
+            Console.WriteLine("Output is found in " + outfilePat);
         }
 
         private int ReadMapFile(string mapFile)

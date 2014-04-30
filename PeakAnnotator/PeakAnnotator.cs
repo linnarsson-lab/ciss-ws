@@ -206,28 +206,43 @@ namespace PeakAnnotator
 
         private void WriteOutput()
         {
-            string[] infileNames = TSSExpressionPerFile.Keys.ToArray();
+            string[] infileNames = settings.infiles.Where(n => TSSExpressionPerFile.Keys.Contains(n)).ToArray();
             using (StreamWriter writer = settings.outfile.OpenWrite())
             {
                 writer.WriteLine("TSS/Repeat\tChr\tStrand\tStart\tEnd\tPromoterLen\t" + string.Join("\t", infileNames));
-                foreach (string name in TSSNameToTSSIdx.Keys)
+                WriteAnnotationsToOutput(infileNames, writer);
+                foreach (string tssName in TSSNameToTSSIdx.Keys)
                 {
-                    writer.Write(name + "\t");
-                    int valueIdx = TSSNameToTSSIdx[name];
+                    writer.Write(tssName + "\t");
+                    int valueIdx = TSSNameToTSSIdx[tssName];
                     writer.Write(tssDatas[valueIdx - 1].ToString());
                     foreach (string infileName in infileNames)
                         writer.Write("\t" + TSSExpressionPerFile[infileName][valueIdx]);
                     writer.WriteLine();
                 }
-                foreach (string name in RepeatNameToRepeatIdx.Keys)
+                foreach (string repeatName in RepeatNameToRepeatIdx.Keys)
                 {
-                    writer.Write(name + "\t");
-                    int repTypeIdx = RepeatNameToRepeatIdx[name];
+                    writer.Write(repeatName + "\t");
+                    int repTypeIdx = RepeatNameToRepeatIdx[repeatName];
                     writer.Write(repeatDatas[repTypeIdx - 1].ToString());
                     foreach (string infileName in infileNames)
                         writer.Write("\t" + RepeatExpressionPerFile[infileName][repTypeIdx]);
                     writer.WriteLine();
                 }
+            }
+        }
+
+        private void WriteAnnotationsToOutput(string[] orderedInfileNames, StreamWriter writer)
+        {
+            for (int i = 0; i < settings.nAnnotations; i++)
+            {
+                writer.Write("\t\t\t\t\t");
+                foreach (string infileName in orderedInfileNames)
+                {
+                    string annot = (settings.infileAnnotations[infileName].Length > i) ? settings.infileAnnotations[infileName][i] : "";
+                    writer.Write("\t" + annot);
+                }
+                writer.WriteLine();
             }
         }
 
@@ -238,7 +253,7 @@ namespace PeakAnnotator
             foreach (string infile in settings.infiles)
             {
                 if (!File.Exists(infile))
-                    Console.WriteLine("Error: File does not exist: " + infile);
+                    Console.WriteLine("ERROR: Skipping " + infile + " - File does not exist.");
                 else
                 {
                     Console.Write("Processing {0}...", infile);

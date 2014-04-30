@@ -440,6 +440,8 @@ namespace Linnarsson.Strt
             exonHitFeatures.Clear();
             foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.strand, item.HitMidPos))
             {
+                if (trMatch.Feature.Name.StartsWith("TTLL10") || trMatch.Feature.Name.StartsWith("SDF4") || trMatch.Feature.Name.StartsWith("ACAP3"))
+                    Console.WriteLine("Annotate " + trMatch.Feature.Name + " Tr. Chr=" + item.chr + " Strand=" + item.strand + " MidPos=" + item.HitMidPos + " #=" + item.ReadCount);
                 someExonHit = someAnnotationHit = true;
                 MarkStatus markStatus = (IterTranscriptMatchers.HasVariants || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
                 if (!exonHitFeatures.Contains(trMatch.Feature))

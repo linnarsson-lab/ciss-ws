@@ -225,6 +225,8 @@ namespace Linnarsson.Strt
                     return m;
                 foreach (FtInterval ivl in Annotations.IterExonAnnotations(m.Chr, m.Strand, m.HitMidPos))
                 {
+                    if (ivl.Feature.Name.StartsWith("TTLL10") || ivl.Feature.Name.StartsWith("SDF4") || ivl.Feature.Name.StartsWith("ACAP3"))
+                        Console.WriteLine("Test AddToMost5Prime of " + ivl.Feature.Name + ": Chr=" + m.Chr + " Strand=" + m.Strand + " MidPos=" + m.HitMidPos + " Id=" + m.ReadId);
                     sharingRealFeatures[ivl.Feature.RealFeature] = null;
                     int dist = ivl.GetTranscriptPos(m.HitMidPos);
                     if (dist < bestDist)

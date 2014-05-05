@@ -18,7 +18,7 @@ namespace Linnarsson.Dna
             this.feature = feature;
         }
     }
-    //public delegate MarkResult NewMarkHit(MappedTagItem mappedTagItem, int otherIdx, MarkStatus markType);
+
     public delegate int NewMarkHit(MappedTagItem mappedTagItem, int otherIdx, MarkStatus markType);
 
 }

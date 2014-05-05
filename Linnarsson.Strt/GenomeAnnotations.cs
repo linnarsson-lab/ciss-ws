@@ -353,7 +353,7 @@ namespace Linnarsson.Strt
             if (Props.props.DirectionalReads)
             { // First check for antisense hits
                 foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
-                    if (ivl.Strand != strand) yield return ivl;
+                    if (!ivl.IsTrDetectingStrand(strand)) yield return ivl; // (ivl.Strand != strand) yield return ivl;
             }
             if (!NonExonAnnotations.ContainsKey(chr))
                 yield break;
@@ -372,7 +372,7 @@ namespace Linnarsson.Strt
         public bool HasTrOrRepeatMatches(string chr, char strand, int hitMidPos)
         {
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
-                if (ivl.Strand == strand || !Props.props.DirectionalReads) return true;
+                if (ivl.IsTrDetectingStrand(strand)) return true; // (ivl.Strand == strand || !Props.props.DirectionalReads) return true;
             if (NonExonAnnotations.ContainsKey(chr))
                 foreach (FtInterval ivl in NonExonAnnotations[chr].IterItems(hitMidPos))
                     if (ivl.annotType == AnnotType.REPT) return true;
@@ -403,7 +403,7 @@ namespace Linnarsson.Strt
         public bool IsTranscript(string chr, char strand, int hitMidPos)
         {
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
-                if (ivl.Strand == strand || !Props.props.DirectionalReads) return true;
+                if (ivl.IsTrDetectingStrand(strand)) return true; // (ivl.Strand == strand || !Props.props.DirectionalReads) return true;
             return false;
         }
 
@@ -411,7 +411,7 @@ namespace Linnarsson.Strt
         {
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
-                if (ivl.Strand == strand || !Props.props.DirectionalReads) yield return ivl;
+                if (ivl.IsTrDetectingStrand(strand)) yield return ivl; // (ivl.Strand == strand || !Props.props.DirectionalReads) yield return ivl;
             }
         }
 
@@ -420,7 +420,7 @@ namespace Linnarsson.Strt
             List<FtInterval> ftIvls = new List<FtInterval>();
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
-                if (ivl.Strand == strand || !Props.props.DirectionalReads) ftIvls.Add(ivl);
+                if (ivl.IsTrDetectingStrand(strand)) ftIvls.Add(ivl); // (ivl.Strand == strand || !Props.props.DirectionalReads) ftIvls.Add(ivl);
             }
             return ftIvls;
         }
@@ -1225,7 +1225,8 @@ namespace Linnarsson.Strt
             int nExonsToShow = MaxExonCount();
             using (StreamWriter file = new StreamWriter(fileNameBase + "_exons.tab"))
             {
-                file.WriteLine("Shows hits to all gene loci divided by type of annotation, direction, and exon.");
+                string hitType = barcodes.HasUMIs ? "molecules" : "reads";
+                file.WriteLine("Hits counts as " + hitType + " sorted by detected type of annotation, direction, and exon number.");
                 file.WriteLine("MixGene shows overlapping genes in the same, ASGene in the opposite orientation.");
                 file.Write("Gene\tChr\tPos\tStrand\tTrLen\tUSTRLen\tLocusLen\tDSTRLen\t#SenseHits\t#AntiHits\tIntronLen\t#Exons\tMixGene\tASGene");
                 foreach (int i in AnnotType.GetGeneTypes())

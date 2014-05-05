@@ -34,7 +34,7 @@ namespace Linnarsson.Strt
         public void CheckSeqUpstreamTSSite(MappedTagItem item, int currentBcIdx)
         {
             if (item.hasAltMappings) return;
-            CheckSeqUpstreamTSSite(item.chr, item.strand, item.hitStartPos, item.HitLen, currentBcIdx, item.MolCount);
+            CheckSeqUpstreamTSSite(item.chr, item.DetectedStrand, item.hitStartPos, item.HitLen, currentBcIdx, item.MolCount);
         }
         /// <summary>
         /// Use to analyze raw reads

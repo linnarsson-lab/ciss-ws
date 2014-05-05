@@ -132,6 +132,7 @@ namespace Linnarsson.Dna
         public bool InsertCells10Data = false; // Set to true to insert results into cells10k database for "C1-" prefixed projects
         public bool AnalyzeGCContent = false; // Analyze the GC content of transcript mapping reads
         public bool LogMode = false;
+        public bool SenseStrandIsSequenced = true; // Exon/splice reads come from the sense strand (meaningful for DirectionalReads)
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {
@@ -139,6 +140,7 @@ namespace Linnarsson.Dna
         }
         [NonSerialized]
         private string m_BarcodesName;
+
         public string BarcodesName
         {
             get { if (m_BarcodesName == null) m_BarcodesName = DefaultBarcodeSet; return m_BarcodesName; }

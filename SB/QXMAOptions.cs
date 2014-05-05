@@ -12,7 +12,8 @@ namespace CmdSilverBullet
         public List<string> laneArgs = new List<string>();
         public string barcodesName = "Unknown";
         public bool useRPKM = false;
-        public bool directionalReads { get { return !useRPKM; } }
+        public bool directionalReads = true;
+        public bool readSequenceIsSense = true;
         public ReadLimitType extractionReadLimitType = ReadLimitType.None;
         public int extractionReadLimit = 0;
         public bool useMost5PrimeExonMapping = true;
@@ -49,6 +50,17 @@ namespace CmdSilverBullet
                         case "rpm":
                             useRPKM = false;
                             break;
+                        case "sense":
+                            directionalReads = true;
+                            readSequenceIsSense = true;
+                            break;
+                        case "antisense":
+                            directionalReads = true;
+                            readSequenceIsSense = false;
+                            break;
+                        case "nondir":
+                            directionalReads = false;
+                            break;                             
                         case "all":
                             geneVariantsChar = "a";
                             break;

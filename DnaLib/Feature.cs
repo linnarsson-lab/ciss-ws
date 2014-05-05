@@ -73,7 +73,7 @@ namespace Linnarsson.Dna
         }
         public void AddToTotalHits(MappedTagItem item)
         {
-            if (item.strand == Strand) TotalSenseHits += item.MolCount;
+            if (item.DetectedStrand == Strand) TotalSenseHits += item.MolCount;
             else TotalAntiSenseHits += item.MolCount;
         }
         public virtual bool IsExpressed()
@@ -94,18 +94,17 @@ namespace Linnarsson.Dna
             m_End = end;
         }
 
-        //public virtual MarkResult MarkHit(MappedTagItem item, int junk, MarkStatus markType)
         public virtual int MarkHit(MappedTagItem item, int junk, MarkStatus markType)
         {
             int annotType = AnnotType.USTR;
-            if (item.strand == Strand)
+            if (item.DetectedStrand == Strand)
                 TotalSenseHits += item.MolCount;
             else
             {
                 TotalAntiSenseHits += item.MolCount;
                 annotType = AnnotType.AUSTR;
             }
-            return annotType; // new MarkResult(annotType, this);
+            return annotType;
         }
 
         public virtual bool Contains(int pos)

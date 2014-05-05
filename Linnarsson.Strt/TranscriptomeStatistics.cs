@@ -438,10 +438,8 @@ namespace Linnarsson.Strt
             bool someAnnotationHit = false;
             bool someExonHit = false;
             exonHitFeatures.Clear();
-            foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.strand, item.HitMidPos))
+            foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.SequencedStrand, item.HitMidPos))
             {
-                if (trMatch.Feature.Name.StartsWith("TTLL10") || trMatch.Feature.Name.StartsWith("SDF4") || trMatch.Feature.Name.StartsWith("ACAP3"))
-                    Console.WriteLine("Annotate " + trMatch.Feature.Name + " Tr. Chr=" + item.chr + " Strand=" + item.strand + " MidPos=" + item.HitMidPos + " #=" + item.ReadCount);
                 someExonHit = someAnnotationHit = true;
                 MarkStatus markStatus = (IterTranscriptMatchers.HasVariants || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
                 if (!exonHitFeatures.Contains(trMatch.Feature))
@@ -460,7 +458,7 @@ namespace Linnarsson.Strt
                 RegisterOverlappingGeneFeatures(molCount);
             if (!someExonHit && item.chr != spliceChrId)
             { // Annotate all features of molecules that do not map to any transcript
-                foreach (FtInterval nonTrMatch in Annotations.IterNonTrMatches(item.chr, item.strand, item.HitMidPos))
+                foreach (FtInterval nonTrMatch in Annotations.IterNonTrMatches(item.chr, item.SequencedStrand, item.HitMidPos))
                 {
                     someAnnotationHit = true;
                     int annotType = nonTrMatch.Mark(item, nonTrMatch.ExtraData, MarkStatus.NONEXONIC_MAPPING);
@@ -476,7 +474,7 @@ namespace Linnarsson.Strt
                 // Add to the motif (base 21 in the motif will be the first base of the read)
                 // Subtract one to make it zero-based
                 if (DetermineMotifs && someAnnotationHit && Annotations.HasChromosome(item.chr))
-                    motifs[currentBcIdx].Add(Annotations.GetChromosome(item.chr), item.hitStartPos - 20 - 1, item.strand);
+                    motifs[currentBcIdx].Add(Annotations.GetChromosome(item.chr), item.hitStartPos - 20 - 1, item.DetectedStrand);
             }
             if (someAnnotationHit)
             {

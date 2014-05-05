@@ -21,9 +21,15 @@ namespace Linnarsson.Dna
         public int annotType;
         public char Strand;
 
+        public bool IsTrDetectingStrand(char strand)
+        {
+            return !Props.props.DirectionalReads || ((strand == Strand) == Props.props.SenseStrandIsSequenced);
+        }
+
         public override string ToString()
         {
-            return "FtInterval: Start=" + Start + " End=" + End + " Strand=" + Strand + " Name=" + Feature.Name + " AnnotType=" + AnnotType.GetName(annotType);
+            return "FtInterval: Start=" + Start + " End=" + End + " Strand=" + Strand + " Name=" + Feature.Name +
+                   " AnnotType=" + AnnotType.GetName(annotType);
         }
 
         public FtInterval(int start, int end, NewMarkHit item, int extraData, IFeature feature, int annotType, char strand)

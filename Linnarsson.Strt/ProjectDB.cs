@@ -49,6 +49,7 @@ namespace Linnarsson.Strt
         public string extractionVersion { get; set; }
         public string annotationVersion { get; set; }
         public bool rpkm { get; set; }
+        public int readDirection { get; set; }
         public string layoutFile { get; set; }
         public string build { get; set; }
         public string annotation { get; set; }
@@ -57,6 +58,11 @@ namespace Linnarsson.Strt
         public List<LaneInfo> laneInfos { get; set; }
         public string analysisId { get; set; }
         public List<ResultDescription> resultDescriptions { get; set; }
+
+        [XmlIgnoreAttribute]
+        public bool DirectionalReads { get { return readDirection != 0; } }
+        [XmlIgnoreAttribute]
+        public bool SenseStrandIsSequenced { get { return readDirection == 1; } }
 
         [XmlIgnoreAttribute]
         public string SampleLayoutPath { get { return Path.Combine(ProjectFolder, layoutFile); } }
@@ -110,7 +116,7 @@ namespace Linnarsson.Strt
         /// </summary>
         public ProjectDescription(string plateId, string barcodesName, string defaultSpecies, List<string> laneInfos,
                           string layoutFile, string status, string emails, string defaultBuild, string variants, string analysisId,
-                          bool rpkm, int spikeMoleculeCount)
+                          bool rpkm, int spikeMoleculeCount, int readdir)
         {
             this.plateId = plateId;
             this.barcodeSet = barcodesName;
@@ -123,6 +129,7 @@ namespace Linnarsson.Strt
             this.defaultBuild = defaultBuild;
             this.analyzeVariants = (variants == "all");
             this.rpkm = rpkm;
+            this.readDirection = readdir;
             this.SpikeMoleculeCount = spikeMoleculeCount;
             this.analysisId = analysisId;
             this.resultDescriptions = new List<ResultDescription>();
@@ -299,7 +306,7 @@ namespace Linnarsson.Strt
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             List<ProjectDescription> pds = new List<ProjectDescription>();
-            string sql = "SELECT a.id, a.genome, a.transcript_db_version, a.transcript_variant, a.rpkm, a.emails, " +
+            string sql = "SELECT a.id, a.genome, a.transcript_db_version, a.transcript_variant, a.rpkm, a.readdir, a.emails, " +
                          " p.plateid, p.barcodeset, p.spikemolecules, p.species, p.layoutfile, a.status, " +
                          " r.illuminarunid AS runid, GROUP_CONCAT(l.laneno ORDER BY l.laneno) AS lanenos " +
                          "FROM jos_aaaanalysis a " + 
@@ -316,6 +323,7 @@ namespace Linnarsson.Strt
             string currAnalysisId = "", plateId = "", bcSet = "", defaultSpecies = "", layoutFile = "", plateStatus = "",
                     emails = "", defaultBuild = "", variant = "";
             bool rpkm = false;
+            int readdir = 1;
             int spikeMolecules = Props.props.TotalNumberOfAddedSpikeMolecules;
             while (rdr.Read())
             {
@@ -323,7 +331,7 @@ namespace Linnarsson.Strt
                 if (currAnalysisId != "" && analysisId != currAnalysisId)
                 {
                     pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
-                                                    emails, defaultBuild, variant, currAnalysisId, rpkm, spikeMolecules));
+                                                    emails, defaultBuild, variant, currAnalysisId, rpkm, spikeMolecules, readdir));
                     laneInfos = new List<string>();
                 }
                 currAnalysisId = analysisId;
@@ -339,9 +347,10 @@ namespace Linnarsson.Strt
                 variant = rdr["transcript_variant"].ToString();
                 spikeMolecules = int.Parse(rdr["spikemolecules"].ToString());
                 rpkm = (rdr["rpkm"].ToString() == "True");
+                readdir = rdr.GetInt32("readdir");
             }
             if (currAnalysisId != "") pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
-                                                                        emails, defaultBuild, variant, currAnalysisId, rpkm, spikeMolecules));
+                                                             emails, defaultBuild, variant, currAnalysisId, rpkm, spikeMolecules, readdir));
             rdr.Close();
             conn.Close();
             return pds;
@@ -741,8 +750,8 @@ namespace Linnarsson.Strt
                         string species = rdr["species"].ToString();
                         string barcodes = rdr["barcodeset"].ToString();
                         string asql = "INSERT INTO jos_aaaanalysis " +
-                                      "(projectid, transcript_db_version, transcript_variant, rpkm, emails, status, lanecount, comment, time, user) " +
-                                      "VALUES ('{0}', '{1}', '{2}', 0, '{3}', 'inqueue', 1, 'autoanalysis', NOW(), 'system');";
+                                      "(projectid, transcript_db_version, transcript_variant, rpkm, readdir, emails, status, lanecount, comment, time, user) " +
+                                      "VALUES ('{0}', '{1}', '{2}', 0, 1, '{3}', 'inqueue', 1, 'autoanalysis', NOW(), 'system');";
                         asql = string.Format(asql, projectId, C1Props.props.AutoAnalysisBuild, C1Props.props.AutoAnalysisBuildVariants,
                                              C1Props.props.AutoAnalysisMailRecepients);
                         IssueNonQuery(asql);

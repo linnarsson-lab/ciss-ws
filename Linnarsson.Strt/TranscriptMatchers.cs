@@ -39,7 +39,7 @@ namespace Linnarsson.Strt
             int nMatches = 0;
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
-                if (ivl.Strand == strand)
+                if (ivl.IsTrDetectingStrand(strand)) //(ivl.Strand == strand)
                 {
                     nMatches++;
                     int dist = ivl.GetTranscriptPos(hitMidPos);
@@ -69,14 +69,14 @@ namespace Linnarsson.Strt
             List<FtInterval> matches = new List<FtInterval>();
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
-                if (ivl.Strand == strand || !Props.props.DirectionalReads) matches.Add(ivl);
+                if (ivl.IsTrDetectingStrand(strand)) matches.Add(ivl); // (ivl.Strand == strand || !Props.props.DirectionalReads) matches.Add(ivl);
             }
             hasVariants = (matches.Count > 1);
             return matches;
         }
     }
 
-    public delegate IEnumerable<FtInterval> IterTranscriptMatcher(string chr, char strand, int hitMidPos);
+    public delegate IEnumerable<FtInterval> IterTranscriptMatcher(string chr, char sequencedStrand, int hitMidPos);
     public class IterTranscriptMatchers
     {
         private Dictionary<string, QuickAnnotationMap> ExonAnnotations;
@@ -106,17 +106,17 @@ namespace Linnarsson.Strt
         /// Will set HasVariants to indicate if there are several alternative matches
         /// </summary>
         /// <param name="chr">Chromosome of hit</param>
-        /// <param name="strand">Strand of hit</param>
+        /// <param name="sequencedStrand">Strand of hit</param>
         /// <param name="hitMidPos">Middle position of hit on chromosome</param>
         /// <returns></returns>
-        public IEnumerable<FtInterval> IterMost5PrimeTranscriptMatch(string chr, char strand, int hitMidPos)
+        public IEnumerable<FtInterval> IterMost5PrimeTranscriptMatch(string chr, char sequencedStrand, int hitMidPos)
         {
             int bestDist = int.MaxValue;
             firstMatch = nullIvl;
             int nMatches = 0;
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
-                if (ivl.Strand == strand)
+                if (ivl.IsTrDetectingStrand(sequencedStrand)) //(ivl.Strand == strand)
                 {
                     nMatches++;
                     int dist = ivl.GetTranscriptPos(hitMidPos);
@@ -137,16 +137,16 @@ namespace Linnarsson.Strt
         /// Will set HasVariants to indicate if there are several alternative matches.
         /// </summary>
         /// <param name="chr">Chromosome of hit</param>
-        /// <param name="strand">Strand of hit (for directional reads)</param>
+        /// <param name="sequencedStrand">Strand of hit (for directional reads)</param>
         /// <param name="hitMidPos">Middle position of hit on chromosome</param>
         /// <returns></returns>
-        public IEnumerable<FtInterval> IterAllTranscriptMatches(string chr, char strand, int hitMidPos)
+        public IEnumerable<FtInterval> IterAllTranscriptMatches(string chr, char sequencedStrand, int hitMidPos)
         {
             int nMatches = 0;
             HasVariants = false;
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
-                if (ivl.Strand == strand || !Props.props.DirectionalReads)
+                if (ivl.IsTrDetectingStrand(sequencedStrand)) //(ivl.Strand == strand || !Props.props.DirectionalReads)
                 {
                     nMatches++;
                     if (nMatches == 1)

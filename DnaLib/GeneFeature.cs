@@ -537,7 +537,7 @@ namespace Linnarsson.Dna
         private int MarkFlankHit(int annotType, MappedTagItem item, MarkStatus markType)
         {
             int undirAnnotType = annotType;
-            if (item.strand != Strand) annotType = AnnotType.MakeAntisense(annotType);
+            if (item.DetectedStrand != Strand) annotType = AnnotType.MakeAntisense(annotType);
             MarkLocusHitPos(item);
             AddToTotalHits(item);
             HitsByAnnotType[annotType] += item.MolCount;
@@ -549,7 +549,7 @@ namespace Linnarsson.Dna
 
         private int MarkIntronHit(MappedTagItem item, int intronIdx, MarkStatus markType)
         {
-            int annotType = (item.strand == Strand) ? AnnotType.INTR : AnnotType.AINTR;
+            int annotType = (item.DetectedStrand == Strand) ? AnnotType.INTR : AnnotType.AINTR;
             MarkLocusHitPos(item);
             AddToTotalHits(item);
             HitsByAnnotType[annotType] += item.MolCount;
@@ -560,7 +560,7 @@ namespace Linnarsson.Dna
         public int MarkExonHit(MappedTagItem item, int exonIdx, MarkStatus markType)
         {
             MarkSNPs(item);
-            int annotType = (item.strand == Strand) ? AnnotType.EXON : AnnotType.AEXON;
+            int annotType = (item.DetectedStrand == Strand) ? AnnotType.EXON : AnnotType.AEXON;
             if (markType == MarkStatus.NONEXONIC_MAPPING)
             { // Only happens for directional AEXON reads
                 MarkLocusHitPos(item);
@@ -607,7 +607,7 @@ namespace Linnarsson.Dna
         public int MarkSpliceHit(MappedTagItem item, int exonId, string junctionId, MarkStatus markType)
         {
             int exonIdx = (Strand == '+') ? exonId - 1 : ExonCount - exonId;
-            int annotType = (item.strand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
+            int annotType = (item.DetectedStrand == Strand) ? AnnotType.SPLC : AnnotType.ASPLC;
             if (markType == MarkStatus.NONEXONIC_MAPPING)
             { // Now we have a directional ASPLC hit
                 if (!MaskedAEXON[exonIdx]) NonMaskedHitsByAnnotType[annotType] += item.MolCount;
@@ -936,7 +936,7 @@ namespace Linnarsson.Dna
             {
                 Array.Resize(ref m_LocusHits, m_LocusHits.Length * 2);
             }
-            int s = GetStrandAsInt(item.strand);
+            int s = GetStrandAsInt(item.DetectedStrand);
             int locusPos = item.HitMidPos - LocusStart;
             int hit = (locusPos << 8) | (item.bcIdx << 1) | s;
             for (int n = 0; n < item.MolCount; n++)

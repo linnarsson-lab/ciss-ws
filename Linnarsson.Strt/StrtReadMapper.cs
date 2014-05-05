@@ -349,7 +349,8 @@ namespace Linnarsson.Strt
                 CreateBowtieMaps(genome, projDescr.laneInfos, genomeBcIndexes);
                 List<string> mapFilePaths = LaneInfo.RetrieveAllMapFilePaths(projDescr.laneInfos);
                 props.UseRPKM = projDescr.rpkm;
-                props.DirectionalReads = !projDescr.rpkm;
+                props.DirectionalReads = projDescr.DirectionalReads;
+                props.SenseStrandIsSequenced = projDescr.SenseStrandIsSequenced;
                 projDescr.SetGenomeData(genome);
                 logWriter.WriteLine("{0} Annotating {1} map files...", DateTime.Now, mapFilePaths.Count);
                 logWriter.WriteLine("{0} setting: AllTrVariants={1} Gene5'Extensions={4} #SpikeMols={5} DirectionalReads={2} RPKM={3}",
@@ -594,9 +595,10 @@ namespace Linnarsson.Strt
                 string spResultFolderName = resultFolderName;
                 if (resultFolderName == "" || resultFolderName == null)
                     spResultFolderName = MakeDefaultResultFolderName(genome, projectFolder, projectName);
+                string readDir = !props.DirectionalReads ? "No" : props.SenseStrandIsSequenced ? "Sense" : "Antisense";
                 Console.WriteLine("Annotating {0} lanes of {1} against {2}.\nDirectionalReads={3} RPKM={4} SelectedMappingType={5}...", 
                               laneInfos.Count, projectName, genome.GetBowtieSplcIndexName(),
-                              props.DirectionalReads, props.UseRPKM, props.SelectedMappingType);
+                              readDir, props.UseRPKM, props.SelectedMappingType);
                 CreateBowtieMaps(genome, laneInfos, genomeSelectedBcIdxs);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(laneInfos);
                 ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, spResultFolderName, mapFiles);

@@ -41,6 +41,7 @@ namespace CmdSilverBullet
                             options = new QXMAOptions(args);
                             props.DirectionalReads = options.directionalReads;
                             props.UseRPKM = options.useRPKM;
+                            props.SenseStrandIsSequenced = options.readSequenceIsSense;
                             props.BarcodesName = options.barcodesName;
                             props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
                             projectFolder = options.projectFolder;
@@ -105,6 +106,7 @@ namespace CmdSilverBullet
                             options = new QXMAOptions(args);
                             props.DirectionalReads = options.directionalReads;
                             props.UseRPKM = options.useRPKM;
+                            props.SenseStrandIsSequenced = options.readSequenceIsSense;
                             props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
                             mapper = new StrtReadMapper(props);
                             mapper.MapAndAnnotate(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
@@ -269,15 +271,16 @@ namespace CmdSilverBullet
             }
             Console.WriteLine("\nUsage:\n\n" +
                 "SB.exe rf [rpkm] <Build> [<Annot>] <Outfile>       -    load transcripts and dump to refFlat-like file.\n" +
-                "SB.exe q [<RunLaneSpec>]+ [rpkm] <Bc> [-cN] [<Build>|<Idx>] [all|single] <ProjectPath>\n" +
+                "SB.exe q [<RunLaneSpec>]+ [rpkm] [sense|antisense|nondir] <Bc> [-cN] [<Build>|<Idx>] [all|single] <ProjectPath>\n" +
                 "      extract data, run Bowtie, and annotate in one sweep using default parameters.\n" +
                 "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +
                 "SB.exe x [<RunLaneSpec>]+ <Bc> [-Lt n] <ProjectPath>  -   extract data from the reads folder.\n" +
-                "SB.exe ab [-oNAME] [insertc1data|rpkm|rpm|multimap|5primemap|all|single]* [-cN] [<Build>|<Idx>] <ProjectPath>|<ExtractedPath>\n" +
+                "SB.exe ab [-oNAME] [insertc1data|rpkm|rpm|sense|antisense|nondir|multimap|5primemap|all|single]* [-cN] [<Build>|<Idx>] <ProjectPath>|<ExtractedPath>\n" +
                 "      annotate data from .map files in latest/specified Extracted folder.\n" +
                 "      you can give a non-standard output folder name using -o\n" +
                 "      Use 'all'/'single' to force analysis of all/single transcript variants.\n" +
-                "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +
+                "      Use 'rpkm' to analyze standard using rpkm instead of rpm.\n" +
+                "      Use 'sense'/'antisense'/'nondir' to specify sequence direction of reads.\n" +
                 "      Use '5primemap' to annotate reads/molecules to (one of) the transcript(s) they match closest to 5' end.\n" +
                 "      Use 'multimap' to annotate reads/molecules to every alternative transcript they match.\n" +
                 "      If Build/Idx is left out, these are taken from the <ProjectName>_SampleLayout.txt file in the project folder.\n" +

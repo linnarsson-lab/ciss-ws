@@ -65,7 +65,15 @@ namespace Linnarsson.Dna
         private int m_HitStartPos;
         public int hitStartPos { get { return m_HitStartPos; } }
         private char m_Strand;
-        public char strand { get { return m_Strand; } }
+        /// <summary>
+        /// The strand the read sequence equals
+        /// </summary>
+        public char SequencedStrand { get { return m_Strand; } }
+        /// <summary>
+        /// The strand that is actually detected
+        /// </summary>
+        public char DetectedStrand { get { return Props.props.SenseStrandIsSequenced ? m_Strand : (m_Strand == '+') ? '-' : '+'; } }
+
         public int splcToRealChrOffset = 0;
         public bool hasAltMappings { get { return m_TagItem.hasAltMappings; } }
         public int HitLen { get { return AverageReadLen; } }
@@ -73,8 +81,10 @@ namespace Linnarsson.Dna
 
         public override string ToString()
         {
-            return string.Format("MappedTagItem(chr={0} strand={1} hitStartPos={2} [Average]HitLen={3} bcIdx={4} HitMidPos={5} MolCount={6} ReadCount={7} HasAltMappings={8})",
-                                 chr, strand, hitStartPos, HitLen, bcIdx, HitMidPos, MolCount, ReadCount, m_TagItem.hasAltMappings);
+            return string.Format("MappedTagItem(chr={0} strand={1} hitStartPos={2} [Average]HitLen={3}" + 
+                                 " bcIdx={4} HitMidPos={5} MolCount={6} ReadCount={7} HasAltMappings={8} DetectedStrand={9})",
+                                 chr, SequencedStrand, hitStartPos, HitLen, bcIdx, HitMidPos, MolCount, ReadCount, m_TagItem.hasAltMappings,
+                                 DetectedStrand);
         }
 
     }

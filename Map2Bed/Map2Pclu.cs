@@ -112,14 +112,15 @@ namespace Map2Pclu
                     continue;
                 string outfilePath = outfilePat.Replace("*", bcIdx.ToString());
                 nHits = WriteOutput(outfilePath, settings.countType);
-                Console.WriteLine("...{0} hits from {1} reads at {2} mapped positions. {3} multireads were skipped.",
+                Console.WriteLine("...wrote {0} hits from {1} reads at {2} mapped positions. {3} multireads were skipped.",
                                   nHits, nReads, nMappedPositions, nTooMultiMappingReads);
                 nTotMols += nHits;
                 nTotReads += nReads;
             }
             string totMolTxt = settings.HasUMIs ? string.Format(" and {0} molecules", nTotMols) : "";
-            Console.WriteLine("All in all were {0} reads{1} processed.", nTotReads, totMolTxt);
-            Console.WriteLine("Output is found in " + outfilePat);
+            if (settings.iterateBarcodes)
+                Console.WriteLine("Totally in {0} barcodes were {1} reads{2} processed.", maxBcIdx + 1, nTotReads, totMolTxt);
+            Console.WriteLine("...output is found in " + outfilePat);
         }
 
         private int ReadMapFile(string mapFile)

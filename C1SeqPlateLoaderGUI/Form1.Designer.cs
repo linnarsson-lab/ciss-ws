@@ -36,13 +36,15 @@
             this.radioButtonBc1To96 = new System.Windows.Forms.RadioButton();
             this.radioButtonBc97To192 = new System.Windows.Forms.RadioButton();
             this.labelBarcodes = new System.Windows.Forms.Label();
+            this.radioButtonBc193to288 = new System.Windows.Forms.RadioButton();
+            this.radioButtonBc289to384 = new System.Windows.Forms.RadioButton();
             this.SuspendLayout();
             // 
             // checkBox1
             // 
             this.checkBox1.AutoSize = true;
             this.checkBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.checkBox1.Location = new System.Drawing.Point(36, 283);
+            this.checkBox1.Location = new System.Drawing.Point(39, 273);
             this.checkBox1.Name = "checkBox1";
             this.checkBox1.Size = new System.Drawing.Size(255, 20);
             this.checkBox1.TabIndex = 0;
@@ -71,7 +73,7 @@
             // button1
             // 
             this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button1.Location = new System.Drawing.Point(130, 344);
+            this.button1.Location = new System.Drawing.Point(130, 367);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 3;
@@ -81,10 +83,10 @@
             // 
             // consoleBox1
             // 
-            this.consoleBox1.Location = new System.Drawing.Point(11, 372);
+            this.consoleBox1.Location = new System.Drawing.Point(11, 395);
             this.consoleBox1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.consoleBox1.Name = "consoleBox1";
-            this.consoleBox1.Size = new System.Drawing.Size(336, 149);
+            this.consoleBox1.Size = new System.Drawing.Size(336, 126);
             this.consoleBox1.TabIndex = 5;
             // 
             // radioButtonBc1To96
@@ -96,7 +98,6 @@
             this.radioButtonBc1To96.Name = "radioButtonBc1To96";
             this.radioButtonBc1To96.Size = new System.Drawing.Size(96, 20);
             this.radioButtonBc1To96.TabIndex = 6;
-            this.radioButtonBc1To96.TabStop = true;
             this.radioButtonBc1To96.Text = "Tn5 Bc 1-96";
             this.radioButtonBc1To96.UseVisualStyleBackColor = true;
             this.radioButtonBc1To96.CheckedChanged += new System.EventHandler(this.radioButtonBc1To96_CheckedChanged);
@@ -122,11 +123,35 @@
             this.labelBarcodes.TabIndex = 8;
             this.labelBarcodes.Text = "Barcodes:";
             // 
+            // radioButtonBc193to288
+            // 
+            this.radioButtonBc193to288.AutoSize = true;
+            this.radioButtonBc193to288.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.radioButtonBc193to288.Location = new System.Drawing.Point(96, 336);
+            this.radioButtonBc193to288.Name = "radioButtonBc193to288";
+            this.radioButtonBc193to288.Size = new System.Drawing.Size(117, 20);
+            this.radioButtonBc193to288.TabIndex = 9;
+            this.radioButtonBc193to288.Text = "Tn5 Bc 193-288";
+            this.radioButtonBc193to288.UseVisualStyleBackColor = true;
+            // 
+            // radioButtonBc289to384
+            // 
+            this.radioButtonBc289to384.AutoSize = true;
+            this.radioButtonBc289to384.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.radioButtonBc289to384.Location = new System.Drawing.Point(213, 336);
+            this.radioButtonBc289to384.Name = "radioButtonBc289to384";
+            this.radioButtonBc289to384.Size = new System.Drawing.Size(117, 20);
+            this.radioButtonBc289to384.TabIndex = 10;
+            this.radioButtonBc289to384.Text = "Tn5 Bc 289-384";
+            this.radioButtonBc289to384.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(358, 528);
+            this.Controls.Add(this.radioButtonBc289to384);
+            this.Controls.Add(this.radioButtonBc193to288);
             this.Controls.Add(this.labelBarcodes);
             this.Controls.Add(this.radioButtonBc97To192);
             this.Controls.Add(this.radioButtonBc1To96);
@@ -153,6 +178,8 @@
         private System.Windows.Forms.RadioButton radioButtonBc1To96;
         private System.Windows.Forms.RadioButton radioButtonBc97To192;
         private System.Windows.Forms.Label labelBarcodes;
+        private System.Windows.Forms.RadioButton radioButtonBc193to288;
+        private System.Windows.Forms.RadioButton radioButtonBc289to384;
     }
 }
 

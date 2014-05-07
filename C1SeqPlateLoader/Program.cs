@@ -17,11 +17,12 @@ namespace C1SeqPlateLoader
             string barcodeSet = C1Props.props.C1BarcodeSet1;
             if (args.Length == 0 || args[0] == "-h" || args[0] == "--help")
             {
-                Console.WriteLine("Usage:\nmono C1SeqPlateLoader.exe [-f] [--all] CHIPID_OR_MIXPLATEID");
+                Console.WriteLine("Usage:\nmono C1SeqPlateLoader.exe [-f] [--all] [-2|-3|-4|-bBCSET] CHIPID_OR_MIXPLATEID");
                 Console.WriteLine("The argument is either the Id of a C1 chip in the the 10kCell database,\n" +
                                   "or the name of a C1 sequencing plate mix file in the {0} directory.\n" +
                                   "In the latter case, the new sequencing project will be named '{1}name'.\n" +
-                                  "Use -2 if the barcode set corresponds to 97-192 in a 2plate-combo.\n" +
+                                  "Use -2/-3/-4 if the barcode set corresponds to 97-192/193-288/289-384 in a plate-combo.\n" +
+                                  "Use -bBCSET to specify the barcode set name.\n" +
                                   "Without --all, cells that have been excluded will be counted as empty in global statistics.\n" +
                                   "Use -f to force reloading of an already loaded plate (only possible for un-analyzed plates).",
                                   C1Props.props.C1SeqPlatesFolder, C1Props.C1ProjectPrefix);
@@ -35,7 +36,13 @@ namespace C1SeqPlateLoader
                     useExcluded = true;
                 else if (args[argIdx] == "-2")
                     barcodeSet = C1Props.props.C1BarcodeSet2;
-                    argIdx++;
+                else if (args[argIdx] == "-3")
+                    barcodeSet = C1Props.props.C1BarcodeSet3;
+                else if (args[argIdx] == "-4")
+                    barcodeSet = C1Props.props.C1BarcodeSet4;
+                else if (args[argIdx].StartsWith("-b"))
+                    barcodeSet = args[argIdx].Substring(2);
+                argIdx++;
             }
             string plateOrChip = args[argIdx];
             if (plateOrChip.EndsWith(".txt") || plateOrChip.EndsWith(".tab"))

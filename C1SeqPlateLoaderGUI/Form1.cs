@@ -84,7 +84,10 @@ namespace C1SeqPlateLoader
             string selPlate = listBoxItems[listBoxSelect.SelectedIndex];
             try
             {
-                string barcodeSet = radioButtonBc1To96.Checked? C1Props.props.C1BarcodeSet1 : C1Props.props.C1BarcodeSet2;
+                string barcodeSet = C1Props.props.C1BarcodeSet1;
+                if (radioButtonBc97To192.Checked) barcodeSet = C1Props.props.C1BarcodeSet2;
+                else if (radioButtonBc193to288.Checked) barcodeSet = C1Props.props.C1BarcodeSet3;
+                else if (radioButtonBc289to384.Checked) barcodeSet = C1Props.props.C1BarcodeSet4;
                 new C1SeqPlateLoader(false).LoadC1SeqPlate(selPlate, barcodeSet);
                 Console.WriteLine("Ready.");
                 availableC1Plates.Remove(selPlate);

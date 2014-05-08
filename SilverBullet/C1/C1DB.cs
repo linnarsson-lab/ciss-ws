@@ -337,15 +337,16 @@ namespace C1
             conn.Close();
         }
 
-        public void InsertExprBlob(ExprBlob exprBlob)
+        public void InsertExprBlob(ExprBlob exprBlob, bool blobIsZeroStoreNULL)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
-            string sqlPat = "REPLACE INTO ExprBlob (CellID, TranscriptomeID, Data) VALUES ('{0}',{1}, ?BLOBDATA)";
-            string sql = string.Format(sqlPat, exprBlob.CellID, exprBlob.TranscriptomeID);
+            string sqlPat = "REPLACE INTO ExprBlob (CellID, TranscriptomeID, Data) VALUES ('{0}',{1}, {2})";
+            string sql = string.Format(sqlPat, exprBlob.CellID, exprBlob.TranscriptomeID, blobIsZeroStoreNULL? "NULL" : "?BLOBDATA");
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             cmd.CommandText = sql;
-            cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
+            if (!blobIsZeroStoreNULL)
+                cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
             if (test)
                 Console.WriteLine(sql);
             else

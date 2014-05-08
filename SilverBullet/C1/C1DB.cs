@@ -346,7 +346,7 @@ namespace C1
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             cmd.CommandText = sql;
             cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
-            if (true)
+            if (test)
                 Console.WriteLine(sql);
             else
                 cmd.ExecuteNonQuery();

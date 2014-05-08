@@ -84,7 +84,7 @@ namespace Linnarsson.Dna
                 if (fields.Length < 8)
                     throw new FormatException("Too few columns in input bowtie map file");
                 string combinedReadId = fields[0];
-                mrm.Init(combinedReadId, fields[4].Length, fields[5], fields[1][0], int.Parse(fields[6]));
+                mrm.Init(combinedReadId, fields[4], fields[5], fields[1][0], int.Parse(fields[6]));
                 while (line != null)
                 {
                     fields = line.Split('\t');
@@ -95,7 +95,7 @@ namespace Linnarsson.Dna
                     {
                         yield return mrm;
                         combinedReadId = fields[0];
-                        mrm.Init(combinedReadId, fields[4].Length, fields[5], strand, int.Parse(fields[6]));
+                        mrm.Init(combinedReadId, fields[4], fields[5], strand, int.Parse(fields[6]));
                     }
                     mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);
                     try
@@ -127,7 +127,7 @@ namespace Linnarsson.Dna
                     if (fields.Length < 8)
                         throw new FormatException("Too few columns in bowtie map file " + file + ". Is the file truncated?");
                     char strand = fields[1][0];
-                    mrm.Init(fields[0], fields[4].Length, fields[5], strand, int.Parse(fields[6]));
+                    mrm.Init(fields[0], fields[4], fields[5], strand, int.Parse(fields[6]));
                     mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);
                     yield return mrm;
                     try
@@ -191,7 +191,7 @@ namespace Linnarsson.Dna
                             }
                         }
                         char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
-                        mrm.Init(fields[0], fields[9].Length, fields[10], strand, altMappings);
+                        mrm.Init(fields[0], fields[9], fields[10], strand, altMappings);
                         mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
                         yield return mrm;
                     }
@@ -204,7 +204,7 @@ namespace Linnarsson.Dna
         {
             string chr = (a.Chromosome.StartsWith("chr")) ? a.Chromosome.Substring(3) : a.Chromosome;
             char strand = (a.Strand == DnaStrand.Forward) ? '+' : '-';
-            mrm.Init(a.QueryName, (int)a.QuerySequence.Count, a.QueryQuality, strand, 0);
+            mrm.Init(a.QueryName, a.QuerySequence.ToString(), a.QueryQuality, strand, 0);
             mrm.AddMapping(chr, strand, a.Position - 1, "");
         }
 
@@ -235,7 +235,7 @@ namespace Linnarsson.Dna
                 string[] fields = line.Split('\t');
                 string combinedReadId = fields[0];
                 char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
-                mrm.Init(fields[0], fields[9].Length, fields[10], strand, 0);
+                mrm.Init(fields[0], fields[9], fields[10], strand, 0);
                 while (line != null)
                 {
                     fields = line.Split('\t');
@@ -245,7 +245,7 @@ namespace Linnarsson.Dna
                         yield return mrm;
                         combinedReadId = fields[0];
                         strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
-                        mrm.Init(fields[0], fields[9].Length, fields[10], strand, 0);
+                        mrm.Init(fields[0], fields[9], fields[10], strand, 0);
                     }
                     mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
                     line = reader.ReadLine();
@@ -265,7 +265,7 @@ namespace Linnarsson.Dna
                 {
                     string[] fields = line.Split('\t');
                     char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
-                    mrm.Init(fields[0], fields[9].Length, fields[10], strand, 0);
+                    mrm.Init(fields[0], fields[9], fields[10], strand, 0);
                     mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
                     yield return mrm;
                     line = reader.ReadLine();
@@ -404,10 +404,12 @@ namespace Linnarsson.Dna
     {
         private Barcodes Barcodes;
 
+        public string CombinedReadId; // Includes Barcode and UMI
         public string ReadId;
         public int BcIdx;
         public int UMIIdx = 0;
         public int SeqLen;
+        public string Sequence { get; private set; }
         public string QualityString { get; private set; }
         public char QualityDir { get; private set; }
         public char GetQuality(int relPosInRead)
@@ -447,8 +449,37 @@ namespace Linnarsson.Dna
             return sb.ToString();
         }
 
+        public string ToMapfileLines()
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (MultiReadMapping m in IterMappings())
+            {
+                sb.Append(CombinedReadId + "\t");
+                sb.Append(m.Strand + "\t");
+                sb.Append("chr" + m.Chr + "\t");
+                sb.Append(m.Position + "\t");
+                sb.Append(Sequence + "\t");
+                sb.Append(QualityString + "\t");
+                sb.Append(AltMappings + "\t");
+                sb.Append(m.Mismatches + "\n");
+            }
+            return sb.ToString();
+        }
+
+        public void Init(string combinedReadId, string seq, string qualityString, char qualityDirection, int altMappings)
+        {
+            CombinedReadId = combinedReadId;
+            ReadId = Barcodes.StripBcAndUMIFromReadId(combinedReadId, out BcIdx, out UMIIdx);
+            Sequence = seq;
+            SeqLen = seq.Length;
+            AltMappings = altMappings;
+            NMappings = 0;
+            this.QualityDir = qualityDirection;
+            this.QualityString = qualityString;
+        }
         public void Init(string combinedReadId, int seqLen, string qualityString, char qualityDirection, int altMappings)
         {
+            CombinedReadId = combinedReadId;
             ReadId = Barcodes.StripBcAndUMIFromReadId(combinedReadId, out BcIdx, out UMIIdx);
             SeqLen = seqLen;
             AltMappings = altMappings;

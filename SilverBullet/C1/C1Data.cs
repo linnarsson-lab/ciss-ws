@@ -158,15 +158,31 @@ namespace C1
 
     public class ExprBlob
     {
-        public int CellID { get; set; }
+        public string CellID { get; set; }
         public int TranscriptomeID { get; set; }
         public byte[] Blob { get; set; }
 
-        public ExprBlob(int cellId, int transcriptomeId, byte[] blob)
+        public ExprBlob(int nValues)
+        {
+            Blob = new byte[4 * nValues];
+        }
+        public ExprBlob(string cellId, int transcriptomeId, byte[] blob)
         {
             CellID = cellId;
             TranscriptomeID = transcriptomeId;
             Blob = blob;
+        }
+
+        public void SetBlobValue(int blobIdx, int value)
+        {
+            byte[] recBytes = BitConverter.GetBytes(value);
+            if (BitConverter.IsLittleEndian) // Keep data big-endian
+                Array.Reverse(recBytes, 0, 4);
+            Array.Copy(recBytes, 0, Blob, 4 * blobIdx, 4);
+        }
+        public void ClearBlob()
+        {
+            Array.Clear(Blob, 0, Blob.Length);
         }
     }
 

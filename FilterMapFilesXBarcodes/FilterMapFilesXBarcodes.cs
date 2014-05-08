@@ -62,13 +62,14 @@ namespace FilterMapFilesXBarcodes
                 int UMIIdx = p.Key >> 9;
                 precalcBuffer[UMIIdx] = Math.Max(precalcBuffer[UMIIdx], p.Value);
             }
-            foreach (KeyValuePair<int, short> p in detectedUMIsByBc)
+            foreach (int codedKey in detectedUMIsByBc.Keys)
             {
-                int bcIdx = p.Key & 511;
-                int UMIIdx = p.Key >> 9;
+                int bcIdx = codedKey & 511;
+                int UMIIdx = codedKey >> 9;
                 int maxReadCountInUMI = precalcBuffer[UMIIdx];
-                if (p.Value < maxReadCountInUMI / 10)
-                    detectedUMIsByBc[p.Key] = (short)-p.Value;
+                int readCount = detectedUMIsByBc[codedKey];
+                if (readCount < maxReadCountInUMI / 10)
+                    detectedUMIsByBc[codedKey] = (short)-readCount;
             }
         }
 

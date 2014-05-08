@@ -269,46 +269,48 @@ namespace CmdSilverBullet
                     return;
                 }
             }
-            Console.WriteLine("\nUsage:\n\n" +
-                "SB.exe rf [rpkm] <Build> [<Annot>] <Outfile>       -    load transcripts and dump to refFlat-like file.\n" +
-                "SB.exe q [<RunLaneSpec>]+ [rpkm] [sense|antisense|nondir] <Bc> [-cN] [<Build>|<Idx>] [all|single] <ProjectPath>\n" +
-                "      extract data, run Bowtie, and annotate in one sweep using default parameters.\n" +
-                "      Use 'rpkm' to analyze standard Illumina non-directional random primed reads.\n" +
-                "SB.exe x [<RunLaneSpec>]+ <Bc> [-Lt n] <ProjectPath>  -   extract data from the reads folder.\n" +
-                "SB.exe ab [-oNAME] [insertc1data|rpkm|rpm|sense|antisense|nondir|multimap|5primemap|all|single]* [-cN] [<Build>|<Idx>] <ProjectPath>|<ExtractedPath>\n" +
-                "      annotate data from .map files in latest/specified Extracted folder.\n" +
-                "      you can give a non-standard output folder name using -o\n" +
-                "      Use 'all'/'single' to force analysis of all/single transcript variants.\n" +
-                "      Use 'rpkm' to analyze standard using rpkm instead of rpm.\n" +
-                "      Use 'sense'/'antisense'/'nondir' to specify sequence direction of reads.\n" +
-                "      Use '5primemap' to annotate reads/molecules to (one of) the transcript(s) they match closest to 5' end.\n" +
-                "      Use 'multimap' to annotate reads/molecules to every alternative transcript they match.\n" +
-                "      If Build/Idx is left out, these are taken from the <ProjectName>_SampleLayout.txt file in the project folder.\n" +
-                "      Will start by running Bowtie if .map files are missing.\n" +
-                "SB.exe download <Genus_species>                      -   download latest genome build and annotations.\n" +
-                "SB.exe mart2refflat <Idx> [<outfile>]                -   make a refFlat file from mart-style annotations.\n" +
-                "SB.exe knowngene2refflat <Idx> [<outfile>]           -   make a refFlat file from UCSC knownGene.txt annotations.\n" +
-                "SB.exe upd [ReadLen] <Idx> [<annotfile>] <errorfile> -   update 5' end annotations from an 'annot_errors.tab' file. Specify 'annotfile' to overide default.\n" +
-                "SB.exe idx <readLen> <Build> [<Annot>]  [<annotfile>] -  build annotations and Bowtie index. Specify 'annotfile' to overide default.\n" +
-                "SB.exe bt <Build>|<Idx> all|single <ProjectPath>|<ExtractedPath>\n" +
-                "      run Bowtie on latest/specified extracted data folder.\n" +
-                "SB.exe synt <Bc> <Idx> all|single <OutputFolder>     -   generate synthetic reads from a genome.\n" +
-                "SB.exe stats [<Bc>] <ProjectPath>                    -   calculate barcode statistics.\n" +
-                "SB.exe dumpfasta <Idx> <OutputPath> [<flankLength>]\n" +
-                "      dump all transcript sequences [with extra 5' and 3' flanks] to fasta file.\n" +
-                "SB.exe dump <Idx> <readLen> [<Step> [<MaxPerGene> [<MinOverhang> [Splices|Linear [<bcSet>]]]]] [<OutputPath>]\n" +
-                "      make fq file of transcript fragments. Makes all if MaxPerGene=0. Adds barcodes+GGG if bcSet given.\n\n" + 
-                "<RunLaneSpec> E.g. '17:235[:,,AGCTTG]', i.e. lanes 2,3,5 of run 17 [and only idx read AGCTTG of lane 5].\n" +
-                "              Regexps are allowed for idx read matching, e.g. AG?TTG.\n" +
-                "<Build> E.g. 'mm9', 'hg19', or 'gg3', <Annot> is 'UCSC', 'UALL', 'VEGA', 'ENSE', or 'RFSQ' (Default: 'UCSC' which == 'RFSQ')\n" +
-                "<Idx>   Specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_VEGA'.\n" +
-                "<Bc>    'v2' (96x6-mer), 'v4' (48x6-mer, random tags), 'v4r' (no random tags), or 'no' for no barcodes.\n" +
-                "-Lt n   Limit number of reads used to n. t is one of TotalReads, ValidReads, TotalReadsPerBc, ValidReadsPerBc\n" +
-                "-BcIndexes M,N[,...] Only process the specified barcodes indexes, even if barcode set contains more indexes.\n" +
-                "-cN     Total # of spike molecules. Individual fractions are taken from 2nd column of " + PathHandler.GetCTRLConcPath() + "\n" + 
-                "Define other barcode sets in 'Bc.barcodes' files in the barcodes directory in the project folder\n" +
-                "<readLen> Sequence length after barcode and GGG. For idx it should be 0-5 below actual data length.\n" +
-                "Paths are per default rooted in the data directory, so that e.g. 'L006' is enough as a ProjectPath.\n"
+            Console.WriteLine("\nValid commands (mono SB.exe command options...):\n\n" +
+                "x [RUNLANESPEC]+ BC [-Lt N] PROJECTPATH              extract data from the reads folder.\n" +
+                "   -Lt N     limit number of reads used to N. t is one of TotalReads, ValidReads, TotalReadsPerBc, ValidReadsPerBc\n" +
+                "q [RUNLANESPEC]+ BC [ANNOTATIONOPTION]* [-cN] [-BcIndexes...] [BUILD|IDX] PROJECTPATH\n" +
+                "   extract data, run Bowtie, and annotate in one sweep using default parameters.\n" +
+                "ab [-oNAME] [ANNOTATIONOPTION]* [-cN] [-BcIndexes...] [BUILD|IDX] PROJECTPATH|EXTRACTEDPATH\n" +
+                "   annotate extracted reads in latest/specified Extracted folder. Will start by running Bowtie if .map files are missing.\n" +
+                "   RUNLANESPEC  E.g. '17:235[:,,AGCTTG]', i.e. lanes 2,3,5 of run 17 [and only idx read AGCTTG of lane 5].\n" +
+                "                Regexps are allowed for idx read matching, e.g. AG?TTG.\n" +
+                "   -oNAME       Use a non-standard output folder\n" +
+                "   -cN          Specify total # of spike molecules.\n" +
+                "                Individual fractions are taken from 2nd column of " + PathHandler.GetCTRLConcPath() + "\n" +
+                "   -BcIndexes M,N[,...] Only process the specified barcodes indexes, even if the barcode set contains more indexes.\n" +
+                "   ANNOTATIONOPTION can be (default values first):\n" +
+                "     single/all              select between one per-gene summarizing value or separate values for all known transcript variants.\n" +
+                "     rpm/rpkm                specify rpkm to calculate rpkm values instead of rpm, for e.g. TruSeq samples.\n" +
+                "     sense/antisense/nondir  specify sequence direction of reads\n" +
+                "     5primemap/multimap      annotate reads/molecules to (one of) the transcript(s) they match closest to the 5' end of,\n" +
+                "                             or multiply to every alternative transcript they match.\n" +
+                "     insertc1data            insert data into the Sanger database when this is a C1 sample.\n" +
+                "   If BUILD/IDX is left out, these are taken from the xxx_SampleLayout.txt file in the project folder.\n" +
+                "bt BUILD|IDX all|single PROJECTPATH|EXTRACTEDPATH    run Bowtie on latest/specified extracted data folder.\n" +
+                "download GENUS_SPECIES                               download latest genome build and annotations, for e.g. 'Mus_musculus'\n" +
+                "mart2refflat IDX [OUTFILE]                           make a refFlat file from mart-style annotations.\n" +
+                "idx READLEN BUILD [ANNOT]  [ANNOTFILE]               build annotations and Bowtie index. Specify 'annotfile' to overide default.\n" +
+                "knowngene2refflat IDX [OUTFILE]                      make a refFlat file from UCSC knownGene.txt annotations.\n" +
+                "upd [READLEN] IDX [ANNOTFILE] ERRORFILE              update 5' end annotations from an 'annot_errors.tab' file. Specify 'annotfile' to overide default.\n" +
+                "synt BC IDX all|single OUTFOLDER                     generate synthetic reads from a genome.\n" +
+                "stats [BC] PROJECTPATH                               calculate barcode statistics.\n" +
+                "rf [rpkm] BUILD [ANNOT] OUTFILE                      load transcripts and dump to refFlat-like file.\n" +
+                "dumpfasta IDX OUTFILE [FLANKLEN]\n" +
+                "   dump all transcript sequences, including any config-extension, [with additional 5' and 3' flanks] to fasta file.\n" +
+                "dump IDX READLEN [STEP [MAXPERGENE [MINOVERHANG [Splices|Linear [BC]]]]] [OUTFILE]\n" +
+                "   make a fq file containing transcript fragments defined by IDX, at every STEP bases in transript models.\n" +
+                "   Make all if MAXPERGENE=0. Linear=never splice out exons. MINOVERHANG limits exonic end size at a junction. Adds barcodes+GGG if bcSet given.\n\n" + 
+                "   BUILD E.g. 'mm9', 'hg19', or 'gg3'\n" +
+                "   ANNOT is 'UCSC', 'UALL', 'VEGA', 'ENSE', or 'RFSQ' (Default: 'UCSC' which == 'RFSQ')\n" +
+                "   IDX   Specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_aVEGA'.\n" +
+                "   BC   'C1Plate1', 'C1Plate2', 'TruSeq', 'v4' (48x6-mer, random tags), 'v4r' (no random tags), or 'no' for no barcodes.\n" +
+                "   Define other barcode sets in 'Bc.barcodes' files in the barcodes directory in the project folder\n" +
+                "   READLEN Sequence length after barcode and GGG. For idx it should be 0-5 below actual data length.\n" +
+                "   Paths are per default rooted in the data directory, so that e.g. 'S066' is enough as a PROJECTPATH.\n"
             );
         }
 

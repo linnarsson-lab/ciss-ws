@@ -736,6 +736,7 @@ namespace Linnarsson.Strt
                     c1db.InsertExpressions(annotations.IterC1DBExpressions(cellIdByPlateWell));
                     string parString = MakeParameterString();
                     c1db.InsertAnalysisSetup(projectId, resultDescr.bowtieIndexVersion, resultDescr.resultFolder, parString);
+                    c1db.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByPlateWell));
                 }
                 catch (Exception e)
                 {

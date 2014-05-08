@@ -750,6 +750,25 @@ namespace Linnarsson.Strt
             }
         }
 
+        public IEnumerable<ExprBlob> IterC1DBExprBlobs(Dictionary<string, int> cellIdByPlateWell)
+        {
+            int nValues = 0;
+            foreach (GeneFeature gf in geneFeatures.Values)
+                nValues = Math.Max(nValues, gf.ExprBlobIdx);
+            ExprBlob exprBlob = new ExprBlob(nValues);
+            exprBlob.TranscriptomeID = dbTranscriptome.TranscriptomeID.Value;
+            foreach (int bcIdx in barcodes.GenomeBarcodeIndexes(genome, true))
+            {
+                exprBlob.ClearBlob();
+                exprBlob.CellID = cellIdByPlateWell[barcodes.GetWellId(bcIdx)].ToString();
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    exprBlob.SetBlobValue(gf.ExprBlobIdx, gf.TranscriptHitsByBarcode[bcIdx]);
+                }
+                yield return exprBlob;
+            }
+        }
+
         private void WriteReadsTable(string fileNameBase)
         {
             string readFile = fileNameBase + "_reads.tab";

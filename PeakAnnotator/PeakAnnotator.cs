@@ -209,7 +209,7 @@ namespace PeakAnnotator
             string[] infileNames = settings.infiles.Where(n => TSSExpressionPerFile.Keys.Contains(n)).ToArray();
             using (StreamWriter writer = settings.outfile.OpenWrite())
             {
-                writer.WriteLine("TSS/Repeat\tChr\tStrand\tStart\tEnd\tPromoterLen\t" + string.Join("\t", infileNames));
+                writer.WriteLine("#TSS/Repeat\tChr\tStrand\tStart\tEnd\tPromoterLen\t" + string.Join("\t", infileNames));
                 WriteAnnotationsToOutput(infileNames, writer);
                 foreach (string tssName in TSSNameToTSSIdx.Keys)
                 {

@@ -35,6 +35,8 @@ namespace C1
         public string WellExcludeFilePattern = "wells_to_exclude*.txt";
         public string C1BarcodeSet1 = "C1Plate1";
         public string C1BarcodeSet2 = "C2Plate2";
+        public string C1BarcodeSet3 = "C2Plate3";
+        public string C1BarcodeSet4 = "C2Plate4";
         public int C1RequiredSeqCycles = 50;
         public int C1RequiredIdxCycles = 8;
         public string C1SeqPrimer = "C1-P1-SEQ";

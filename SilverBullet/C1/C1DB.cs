@@ -123,6 +123,7 @@ namespace C1
             rdr = cmd.ExecuteReader();
             while (rdr.Read())
                 yield return MakeTranscriptFromDBReader(rdr);
+            rdr.Close();
             conn.Close();
         }
 
@@ -289,6 +290,20 @@ namespace C1
             conn.Close();
         }
 
+        public IEnumerable<Expression> IterExpressions(string cellId, int transcriptomeId)
+        {
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            string sql = string.Format("SELECT TranscriptID, Molecules FROM Expression WHERE CellID={0} AND " +
+                "TranscriptID IN (SELECT TranscriptID FROM Transcript WHERE TranscriptomeID={1}) ORDER BY TranscriptID", cellId, transcriptomeId);
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                yield return new Expression(cellId, rdr.GetInt32(0), 0, 0, 0, rdr.GetInt32(1));
+            rdr.Close();
+            conn.Close();
+        }
+
         public void InsertAnalysisSetup(string plate, string bowtieIndex, string resultFolder, string parameters)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
@@ -322,6 +337,22 @@ namespace C1
             conn.Close();
         }
 
+        public void InsertExprBlob(ExprBlob exprBlob)
+        {
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            string sqlPat = "REPLACE INTO ExprBlob (CellID, TranscriptomeID, Data) VALUES ('{0}',{1}, ?BLOBDATA)";
+            string sql = string.Format(sqlPat, exprBlob.CellID, exprBlob.TranscriptomeID);
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            cmd.CommandText = sql;
+            cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
+            if (true)
+                Console.WriteLine(sql);
+            else
+                cmd.ExecuteNonQuery();
+            conn.Close();
+        }
+
         public Dictionary<string, int> GetCellIdByPlateWell(string projectId)
         {
             Dictionary<string, int> cellIdByPlateWell = new Dictionary<string, int>();
@@ -334,6 +365,20 @@ namespace C1
                 cellIdByPlateWell.Add(rdr.GetString(0), rdr.GetInt32(1));
             conn.Close();
             return cellIdByPlateWell;
+        }
+
+        public List<string> GetCellIds()
+        {
+            List<string> cellIds = new List<string>();
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand("SELECT CellID FROM Cell", conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+                cellIds.Add(rdr.GetString(0));
+            rdr.Close();
+            conn.Close();
+            return cellIds;
         }
 
         private static List<string> GetCellAnnotationNames(string chipOrProjectWhereSql)

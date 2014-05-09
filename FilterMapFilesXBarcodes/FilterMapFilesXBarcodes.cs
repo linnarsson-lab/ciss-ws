@@ -10,66 +10,88 @@ namespace FilterMapFilesXBarcodes
     class PositionCounter
     {
         private static int nBcs, nUMIs;
-        private static int[] precalcBuffer;
+        public static double ratioThresholdForFilter = 0.1;
+        private static int[] maxReadCountsPerUMI, nBcsWithReadsPerUMI;
+        private static int[] bcOfMaxReadCountPerUMI;
+        public static Dictionary<int, int> maxBcTo2ndBcFreqs = new Dictionary<int, int>();
+
+        public static readonly int distroMaxNReads = 1000;
+        public static int[,] distroOfNReadsIn2ndPeakByMaxPeakNReads = new int[distroMaxNReads, distroMaxNReads];
 
         public static void SetNBcAndNUMIs(int nBcs, int nUMIs)
         {
             PositionCounter.nBcs = nBcs;
             PositionCounter.nUMIs = nUMIs;
-            precalcBuffer = new int[nUMIs];
+            maxReadCountsPerUMI = new int[nUMIs];
+            nBcsWithReadsPerUMI = new int[nUMIs];
+            bcOfMaxReadCountPerUMI = new int[nUMIs];
         }
 
         private Dictionary<int, short> detectedUMIsByBc;
-
 
         public PositionCounter()
         {
             detectedUMIsByBc = new Dictionary<int, short>();
         }
+
         public void Add(int bcIdx, int UMIIdx)
         {
-            int codedKey = (UMIIdx << 9) + bcIdx;
+            int codedKey = (UMIIdx << 9) | bcIdx;
             if (detectedUMIsByBc.ContainsKey(codedKey))
                 detectedUMIsByBc[codedKey] += 1;
             else
                 detectedUMIsByBc[codedKey] = 1;
         }
 
-        public void AddToCoOccuringBcHisto(int[] histoOfMaxReadCount, int[] histoOfCasesOfReadsInAnotherBc)
-        {
-            for (int UMIIdx = 0; UMIIdx < nUMIs; UMIIdx++)
-            {
-                int codedKeyBase = (UMIIdx << 9);
-                int maxReadCountInThisUMI = 0;
-                int nBcWithReadsUnThisUMI = 0;
-                short temp;
-                for (int codedKey = codedKeyBase; codedKey < codedKeyBase + nBcs; codedKey++)
-                {
-                    if (detectedUMIsByBc.TryGetValue(codedKey, out temp))
-                    {
-                        nBcWithReadsUnThisUMI++;
-                        maxReadCountInThisUMI = Math.Max(maxReadCountInThisUMI, Math.Abs(temp));
-                    }
-                }
-            }
-        }
-
         public void Precalc()
         {
-            Array.Clear(precalcBuffer, 0, nUMIs);
+            Array.Clear(maxReadCountsPerUMI, 0, nUMIs);
+            Array.Clear(nBcsWithReadsPerUMI, 0, nUMIs);
             foreach (KeyValuePair<int, short> p in detectedUMIsByBc)
             {
-                int UMIIdx = p.Key >> 9;
-                precalcBuffer[UMIIdx] = Math.Max(precalcBuffer[UMIIdx], p.Value);
+                int UMIIdx = (p.Key >> 9) & (nUMIs-1);
+                if (p.Value > maxReadCountsPerUMI[UMIIdx])
+                {
+                    maxReadCountsPerUMI[UMIIdx] = p.Value;
+                    int bcIdx = p.Key & 511;
+                    bcOfMaxReadCountPerUMI[UMIIdx] = bcIdx;
+                }
             }
             foreach (int codedKey in detectedUMIsByBc.Keys.ToArray())
             {
                 int bcIdx = codedKey & 511;
-                int UMIIdx = codedKey >> 9;
-                int maxReadCountInUMI = precalcBuffer[UMIIdx];
+                int UMIIdx = (codedKey >> 9) & (nUMIs-1);
+                nBcsWithReadsPerUMI[UMIIdx]++;
+                int maxReadCountInUMI = maxReadCountsPerUMI[UMIIdx];
                 int readCount = detectedUMIsByBc[codedKey];
-                if (readCount < maxReadCountInUMI / 10)
+                if (bcIdx != bcOfMaxReadCountPerUMI[UMIIdx]) // Secondary peak
+                {
+                    if (maxReadCountInUMI < distroMaxNReads)
+                        distroOfNReadsIn2ndPeakByMaxPeakNReads[maxReadCountInUMI, readCount]++;
+                    int maxBcFilterBcCombo = (bcOfMaxReadCountPerUMI[UMIIdx] << 9) | bcIdx;
+                    if (maxBcTo2ndBcFreqs.ContainsKey(maxBcFilterBcCombo))
+                        maxBcTo2ndBcFreqs[maxBcFilterBcCombo] += 1;
+                    else
+                        maxBcTo2ndBcFreqs[maxBcFilterBcCombo] = 1;
+                }
+                if (readCount < maxReadCountInUMI * ratioThresholdForFilter)
+                {
                     detectedUMIsByBc[codedKey] = (short)-readCount;
+                }
+            }
+        }
+
+        public void AddToCoOccuringBcHisto(int[] histoOfMaxReadCount, int[] histoOfCasesOfReadsInAnotherBc)
+        {
+            for (int UMIIdx = 0; UMIIdx < nUMIs; UMIIdx++)
+            {
+                int maxReadCountInUMI = maxReadCountsPerUMI[UMIIdx];
+                if (maxReadCountInUMI > 0)
+                {
+                    histoOfMaxReadCount[maxReadCountInUMI]++;
+                    if (nBcsWithReadsPerUMI[UMIIdx] > 1)
+                        histoOfCasesOfReadsInAnotherBc[maxReadCountInUMI]++;
+                }
             }
         }
 
@@ -78,36 +100,6 @@ namespace FilterMapFilesXBarcodes
             int codedKey = (UMIIdx << 9) + bcIdx;
             return detectedUMIsByBc[codedKey];
         }
-
-        /// <summary>
-        /// Return +readCount if should be kept, and -readCount otherwise.
-        /// </summary>
-        /// <param name="bcIdx"></param>
-        /// <param name="UMIIdx"></param>
-        /// <returns></returns>
-        public int ShouldKeep(int bcIdx, int UMIIdx)
-        {
-            int codedKey = (UMIIdx << 9) + bcIdx;
-            int readCount = detectedUMIsByBc[codedKey];
-            if (readCount >= GetCountThreshold(UMIIdx)) //(readCount > 2 || readCount >= GetCountThreshold(UMIIdx))
-                return readCount;
-            else
-                return -readCount;
-        }
-        private int GetCountThreshold(int UMIIdx)
-        {
-            int codedKeyBase = (UMIIdx << 9);
-            int maxReadCountInThisUMI = 0;
-            short temp;
-            for (int codedKey = codedKeyBase; codedKey < codedKeyBase + nBcs; codedKey++)
-            {
-                if (detectedUMIsByBc.TryGetValue(codedKey, out temp))
-                    maxReadCountInThisUMI = Math.Max(maxReadCountInThisUMI, temp);
-            }
-            int readCountThresholdInThisUMI = maxReadCountInThisUMI / 10;
-            return readCountThresholdInThisUMI;
-        }
-
     }
 
 
@@ -117,14 +109,18 @@ namespace FilterMapFilesXBarcodes
 
         private FilterMapFilesXBarcodesSettings settings;
         private Dictionary<string, Dictionary<int, PositionCounter>> counters;
-        private int[] keptReadCountsHisto, removedReadCountsHisto;
+        private int[] keptReadCountsHisto, removedReadCountsHisto, histoOfMaxReadCount, histoOfCasesOfReadsInAnotherBc;
+
         public FilterMapFilesXBarcodes(FilterMapFilesXBarcodesSettings settings)
         {
             this.settings = settings;
             PositionCounter.SetNBcAndNUMIs(settings.nBcs, settings.nUMIs);
+            PositionCounter.ratioThresholdForFilter = settings.ratioThresholdForFilter;
             counters = new Dictionary<string, Dictionary<int, PositionCounter>>();
             keptReadCountsHisto = new int[maxReadCountPerMol];
             removedReadCountsHisto = new int[maxReadCountPerMol];
+            histoOfMaxReadCount = new int[maxReadCountPerMol];
+            histoOfCasesOfReadsInAnotherBc = new int[maxReadCountPerMol];
         }
 
         public void Process()
@@ -137,12 +133,13 @@ namespace FilterMapFilesXBarcodes
 
         private void AnalyzeFiles()
         {
+            Console.Write("Analyzing...");
             NoBarcodes bcs =  new NoBarcodes();
             foreach (string inputFile in settings.inputFiles)
             {
                 string inputFilename = Path.GetFileName(inputFile);
                 int bcIdx = int.Parse(inputFilename.Substring(0, inputFilename.IndexOf('_')));
-                Console.WriteLine("{0}...", inputFile);
+                Console.Write(".");
                 foreach (MultiReadMappings mrm in new BowtieMapFile(100, bcs).MultiMappings(inputFile))
                 {
                     MultiReadMapping selectedMapping = mrm[0];
@@ -175,21 +172,25 @@ namespace FilterMapFilesXBarcodes
                     counter.Add(bcIdx, mrm.UMIIdx);
                 }
             }
+            Console.WriteLine();
         }
 
         private void PrecalcThresholds()
         {
+            Console.WriteLine("Calculation thresholds...");
             foreach (Dictionary<int, PositionCounter> countersByPos in counters.Values)
             {
                 foreach (PositionCounter counter in countersByPos.Values)
                 {
                     counter.Precalc();
+                    counter.AddToCoOccuringBcHisto(histoOfMaxReadCount, histoOfCasesOfReadsInAnotherBc);
                 }
             }
         }
 
         private void FilterFiles()
         {
+            Console.WriteLine("Filtering and writing output files...");
             NoBarcodes bcs =  new NoBarcodes();
             foreach (string inputFile in settings.inputFiles)
             {
@@ -232,16 +233,6 @@ namespace FilterMapFilesXBarcodes
 
         private void WriteStats()
         {
-            int[] histoOfMaxReadCount = new int[maxReadCountPerMol];
-            int[] histoOfCasesOfReadsInAnotherBc = new int[maxReadCountPerMol];
-            foreach (Dictionary<int, PositionCounter> countersByPos in counters.Values)
-            {
-                foreach (PositionCounter counter in countersByPos.Values)
-                {
-                    counter.AddToCoOccuringBcHisto(histoOfMaxReadCount, histoOfCasesOfReadsInAnotherBc);
-                }
-            }
-
             Console.WriteLine("Cases of max read counts per mol within UMI, cases of reads in another bc in same UMI, # removed, and # kept reads within each bin of reads per molecule:");
             Console.WriteLine("Reads/Mol\tCasesOfThisMax\tCasesOfReadsInAnotherBc\tReadsFiltered\tReadsKept");
             int maxCount = maxReadCountPerMol - 1;
@@ -249,11 +240,37 @@ namespace FilterMapFilesXBarcodes
                 if (keptReadCountsHisto[maxCount] > 0 || removedReadCountsHisto[maxCount] > 0 ||
                     histoOfMaxReadCount[maxCount] > 0 || histoOfCasesOfReadsInAnotherBc[maxCount] > 0)
                     break;
-            for (int c = 0; c <= maxCount; c++)
+            for (int c = 1; c <= maxCount; c++)
                 Console.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", 
                     c, histoOfMaxReadCount[c], histoOfCasesOfReadsInAnotherBc[c], removedReadCountsHisto[c], keptReadCountsHisto[c]);
 
+            Console.WriteLine("\nCases of potential 'flow' from each maxRead peak to secondary peak.");
+            Console.WriteLine("MaxBc\tSecondaryBc\tNumber of cases");
+            int[] bcCombos = PositionCounter.maxBcTo2ndBcFreqs.Keys.ToArray();
+            Array.Sort(bcCombos);
+            foreach (int bcCombo in bcCombos)
+            {
+                int maxBcIdx = (bcCombo >> 9) & 511;
+                int filteredBcIdx = bcCombo & 511;
+                if (settings.bcIdx2Bc != null)
+                    Console.WriteLine("{0}\t{1}\t{2}", settings.bcIdx2Bc[maxBcIdx], settings.bcIdx2Bc[filteredBcIdx], PositionCounter.maxBcTo2ndBcFreqs[bcCombo]);
+                else
+                    Console.WriteLine("{0}\t{1}\t{2}", maxBcIdx, filteredBcIdx, PositionCounter.maxBcTo2ndBcFreqs[bcCombo]);
+            }
+
+            Console.WriteLine("\nHistograms showing distro of # reads in secondary peak for each # reads in maxRead peak.");
+            Console.Write("MaxPeakReads\t2ndPeakReads=1");
+            for (int n = 2; n < PositionCounter.distroMaxNReads; n++)
+                Console.Write("\t" + n);
+            Console.WriteLine();
+            for (int maxReads = 1; maxReads < PositionCounter.distroMaxNReads; maxReads++)
+            {
+                Console.Write(maxReads);
+                for (int n = 1; n < PositionCounter.distroMaxNReads; n++)
+                    Console.Write("\t" + PositionCounter.distroOfNReadsIn2ndPeakByMaxPeakNReads[maxReads, n]);
+                Console.WriteLine();
+            }
         }
-        
+
     }
 }

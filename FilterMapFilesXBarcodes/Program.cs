@@ -12,7 +12,11 @@ namespace FilterMapFilesXBarcodes
         public int nUMIs = 4096;
         public string outputFolder = "";
         public List<string> inputFiles = new List<string>();
+        public double ratioThresholdForFilter = 0.1;
+        public Dictionary<int, string> bcIdx2Bc;
 
+        public FilterMapFilesXBarcodesSettings()
+        { }
         public FilterMapFilesXBarcodesSettings(string[] args)
         {
             int argIdx = 0;
@@ -20,6 +24,22 @@ namespace FilterMapFilesXBarcodes
             {
                 if (args[argIdx].StartsWith("--umis=")) nUMIs = int.Parse(args[argIdx].Substring(7));
                 else if (args[argIdx].StartsWith("--bcs=")) nBcs = int.Parse(args[argIdx].Substring(6));
+                else if (args[argIdx] == "-r") ratioThresholdForFilter = double.Parse(args[++argIdx]);
+                else if (args[argIdx] == "-b")
+                {
+                    bcIdx2Bc = new Dictionary<int, string>();
+                    int bcIdx = 0;
+                    using (StreamReader reader = new StreamReader(args[++argIdx]))
+                    {
+                        string line;
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            if (!line.StartsWith("#"))
+                                bcIdx2Bc[bcIdx] = line.Split('\t')[1];
+                        }
+                    }
+
+                }
                 else if (args[argIdx] == "-o") outputFolder = args[++argIdx];
                 else
                 {
@@ -36,11 +56,14 @@ namespace FilterMapFilesXBarcodes
         {
             if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
             {
+                FilterMapFilesXBarcodesSettings s = new FilterMapFilesXBarcodesSettings();
                 Console.WriteLine("Usage:\nmono FilterMapFilesXBarcodes.exe [OPTIONS] MAPFILEFOLDER [MAPFILEFOLDER2...]\n\n" +
                                   "Options:\n" +
-                                  "--umis=N         Number of UMIs (default 4096).\n" +
-                                  "--bcs=N         Number of barcodes (default 96).\n" +
-                                  "-o OUTFOLDER    Output all filtered map files to this folder.");
+                                  "--umis=N        Number of UMIs (default " + s.nUMIs + ").\n" +
+                                  "--bcs=N         Number of barcodes (default " + s.nBcs + ").\n" +
+                                  "-r FACTOR       Set the threshold factor for filter of lesser (" + s.ratioThresholdForFilter + ").\n" +
+                                  "-b BARCODESET   Specify barcode set for to see actual barcodes in statistics output.\n" +
+                                  "-o OUTFOLDER    Output all filtered map files to this folder (default is same as input files).");
 
             }
             else

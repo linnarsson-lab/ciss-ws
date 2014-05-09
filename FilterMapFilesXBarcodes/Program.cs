@@ -35,7 +35,7 @@ namespace FilterMapFilesXBarcodes
                         while ((line = reader.ReadLine()) != null)
                         {
                             if (!line.StartsWith("#"))
-                                bcIdx2Bc[bcIdx] = line.Split('\t')[1];
+                                bcIdx2Bc[bcIdx++] = line.Split('\t')[1];
                         }
                     }
 

@@ -7,6 +7,10 @@ using Linnarsson.Dna;
 
 namespace FilterMapFilesXBarcodes
 {
+    /// <summary>
+    /// Keeps track of, and builds statistics for, all reads that map at a certain genomic position (and strand).
+    /// They are sorted by UMI and barcode, in order to allow filtering across the whole dataset.
+    /// </summary>
     class PositionCounter
     {
         private static int nBcs, nUMIs;
@@ -15,8 +19,9 @@ namespace FilterMapFilesXBarcodes
         private static int[] bcOfMaxReadCountPerUMI;
         public static Dictionary<int, int> maxBcTo2ndBcFreqs = new Dictionary<int, int>();
 
-        public static readonly int distroMaxNReads = 1000;
+        public static readonly int distroMaxNReads = 4000;
         public static int[,] distroOfNReadsIn2ndPeakByMaxPeakNReads = new int[distroMaxNReads, distroMaxNReads];
+        public static int[,] distroOfNBcsWithDataByMaxPeakNReads;
 
         public static void SetNBcAndNUMIs(int nBcs, int nUMIs)
         {
@@ -25,6 +30,7 @@ namespace FilterMapFilesXBarcodes
             maxReadCountsPerUMI = new int[nUMIs];
             nBcsWithReadsPerUMI = new int[nUMIs];
             bcOfMaxReadCountPerUMI = new int[nUMIs];
+            distroOfNBcsWithDataByMaxPeakNReads = new int[distroMaxNReads, nBcs];
         }
 
         private Dictionary<int, short> detectedUMIsByBc;
@@ -89,7 +95,10 @@ namespace FilterMapFilesXBarcodes
                 if (maxReadCountInUMI > 0)
                 {
                     histoOfMaxReadCount[maxReadCountInUMI]++;
-                    if (nBcsWithReadsPerUMI[UMIIdx] > 1)
+                    int nBcsWithReads = nBcsWithReadsPerUMI[UMIIdx];
+                    if (maxReadCountInUMI < distroMaxNReads)
+                        distroOfNBcsWithDataByMaxPeakNReads[maxReadCountInUMI, nBcsWithReads]++;
+                    if (nBcsWithReads > 1)
                         histoOfCasesOfReadsInAnotherBc[maxReadCountInUMI]++;
                 }
             }
@@ -102,7 +111,10 @@ namespace FilterMapFilesXBarcodes
         }
     }
 
-
+    /// <summary>
+    /// Filters reads in map files of a full plate by analyzing cross-contamination between the different barcodes
+    /// within each UMI-position-strand combination.
+    /// </summary>
     class FilterMapFilesXBarcodes
     {
         private static readonly int maxReadCountPerMol = 10000;
@@ -245,13 +257,14 @@ namespace FilterMapFilesXBarcodes
                     c, histoOfMaxReadCount[c], histoOfCasesOfReadsInAnotherBc[c], removedReadCountsHisto[c], keptReadCountsHisto[c]);
 
             Console.WriteLine("\nCases of potential 'flow' from each maxRead peak to secondary peak.");
-            Console.WriteLine("MaxBc\tSecondaryBc\tNumber of cases");
+            Console.WriteLine("From->To\tMaxBc\tSecondaryBc\tNumber of cases");
             int[] bcCombos = PositionCounter.maxBcTo2ndBcFreqs.Keys.ToArray();
             Array.Sort(bcCombos);
             foreach (int bcCombo in bcCombos)
             {
                 int maxBcIdx = (bcCombo >> 9) & 511;
                 int filteredBcIdx = bcCombo & 511;
+                Console.Write("{0}->{1}\t", maxBcIdx, filteredBcIdx);
                 if (settings.bcIdx2Bc != null)
                     Console.WriteLine("{0}\t{1}\t{2}", settings.bcIdx2Bc[maxBcIdx], settings.bcIdx2Bc[filteredBcIdx], PositionCounter.maxBcTo2ndBcFreqs[bcCombo]);
                 else
@@ -268,6 +281,19 @@ namespace FilterMapFilesXBarcodes
                 Console.Write(maxReads);
                 for (int n = 1; n < PositionCounter.distroMaxNReads; n++)
                     Console.Write("\t" + PositionCounter.distroOfNReadsIn2ndPeakByMaxPeakNReads[maxReads, n]);
+                Console.WriteLine();
+            }
+
+            Console.WriteLine("\nHistograms showing distro of # barcodes with a peak for each # reads in maxRead peak.");
+            Console.Write("MaxPeakReads\tNBarcodes=1");
+            for (int n = 2; n < settings.nBcs; n++)
+                Console.Write("\t" + n);
+            Console.WriteLine();
+            for (int maxReads = 1; maxReads < PositionCounter.distroMaxNReads; maxReads++)
+            {
+                Console.Write(maxReads);
+                for (int n = 1; n < settings.nBcs; n++)
+                    Console.Write("\t" + PositionCounter.distroOfNBcsWithDataByMaxPeakNReads[maxReads, n]);
                 Console.WriteLine();
             }
         }

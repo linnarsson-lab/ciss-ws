@@ -97,7 +97,7 @@ namespace FilterMapFilesXBarcodes
                         maxBcTo2ndBcFreqs[maxBcFilterBcCombo] = 1;
                 }
                 if (UMIIdx != UMIOfMaxReadCountPerBc[bcIdx] && readCount == 1 && nUMIsWithReadsPerBc[bcIdx] == 2)
-                { // It is a lone secondary singleton peak within this barcode
+                { // It is a lonely secondary singleton peak within this barcode
                     int maxUMIToSingletonUMICombo = (UMIOfMaxReadCountPerBc[bcIdx] << 12) | UMIIdx;
                     if (maxUMIToSingletonUMIFreqs.ContainsKey(maxUMIToSingletonUMICombo))
                         maxUMIToSingletonUMIFreqs[maxUMIToSingletonUMICombo] += 1;
@@ -269,6 +269,15 @@ namespace FilterMapFilesXBarcodes
 
         private void WriteStats()
         {
+            WriteSecondaryPeakCountsAndFilteredReads();
+            WriteUMILeakage();
+            WriteBarcodeLeakage();
+            WriteHistosOfSecondaryPeakReadCounts();
+            WriteHistosOfNoOfSecondaryPeaks();
+        }
+
+        private void WriteSecondaryPeakCountsAndFilteredReads()
+        {
             Console.WriteLine("Cases of max read counts per mol within UMI, cases of reads in another bc in same UMI, # removed, and # kept reads within each bin of reads per molecule:");
             Console.WriteLine("Reads/Mol\tCasesOfThisMax\tCasesOfReadsInAnotherBc\tReadsFiltered\tReadsKept");
             int maxCount = maxReadCountPerMol - 1;
@@ -277,13 +286,8 @@ namespace FilterMapFilesXBarcodes
                     histoOfMaxReadCount[maxCount] > 0 || histoOfCasesOfReadsInAnotherBc[maxCount] > 0)
                     break;
             for (int c = 1; c <= maxCount; c++)
-                Console.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", 
+                Console.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}",
                     c, histoOfMaxReadCount[c], histoOfCasesOfReadsInAnotherBc[c], removedReadCountsHisto[c], keptReadCountsHisto[c]);
-
-            WriteUMILeakage();
-            WriteBarcodeLeakage();
-            WriteHistosOfSecondaryPeakReadCounts();
-            WriteHistosOfNoOfSecondaryPeaks();
         }
 
         private static void WriteHistosOfSecondaryPeakReadCounts()
@@ -338,7 +342,7 @@ namespace FilterMapFilesXBarcodes
 
         private void WriteUMILeakage()
         {
-            Console.WriteLine("\nCases of potential 'flow' from each maxRead UMI to secondary UMI with singleton, when these are the only peaks in bc,, sorted by sequence distance.");
+            Console.WriteLine("\nCases of potential 'flow' from each maxRead UMI to secondary UMI with singleton, when these are the only peaks in bc, sorted by sequence distance.");
             Console.WriteLine("Hamming distance\tNumber of cases");
             int[] UMICombos = PositionCounter.maxUMIToSingletonUMIFreqs.Keys.ToArray();
             int[] countsByDistance = new int[7];

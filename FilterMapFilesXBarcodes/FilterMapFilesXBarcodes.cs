@@ -19,6 +19,10 @@ namespace FilterMapFilesXBarcodes
         private static int[] bcOfMaxReadCountPerUMI;
         public static Dictionary<int, int> maxBcTo2ndBcFreqs = new Dictionary<int, int>();
 
+        private static int[] maxReadCountsPerBc, nUMIsWithReadsPerBc;
+        private static int[] UMIOfMaxReadCountPerBc;
+        public static Dictionary<int, int> maxUMIToSingletonUMIFreqs = new Dictionary<int, int>();
+
         public static readonly int distroMaxNReads = 4000;
         public static int[,] distroOfNReadsIn2ndPeakByMaxPeakNReads = new int[distroMaxNReads, distroMaxNReads];
         public static int[,] distroOfNBcsWithDataByMaxPeakNReads;
@@ -30,6 +34,9 @@ namespace FilterMapFilesXBarcodes
             maxReadCountsPerUMI = new int[nUMIs];
             nBcsWithReadsPerUMI = new int[nUMIs];
             bcOfMaxReadCountPerUMI = new int[nUMIs];
+            maxReadCountsPerBc = new int[nBcs];
+            nUMIsWithReadsPerBc = new int[nBcs];
+            UMIOfMaxReadCountPerBc = new int[nBcs];
             distroOfNBcsWithDataByMaxPeakNReads = new int[distroMaxNReads, nBcs];
         }
 
@@ -53,25 +60,34 @@ namespace FilterMapFilesXBarcodes
         {
             Array.Clear(maxReadCountsPerUMI, 0, nUMIs);
             Array.Clear(nBcsWithReadsPerUMI, 0, nUMIs);
+            Array.Clear(maxReadCountsPerBc, 0, nBcs);
+            Array.Clear(nUMIsWithReadsPerBc, 0, nBcs);
             foreach (KeyValuePair<int, short> p in detectedUMIsByBc)
             {
-                int UMIIdx = (p.Key >> 9) & (nUMIs-1);
+                int bcIdx = p.Key & 511;
+                int UMIIdx = (p.Key >> 9) & (nUMIs - 1);
                 if (p.Value > maxReadCountsPerUMI[UMIIdx])
                 {
                     maxReadCountsPerUMI[UMIIdx] = p.Value;
-                    int bcIdx = p.Key & 511;
                     bcOfMaxReadCountPerUMI[UMIIdx] = bcIdx;
                 }
+                if (p.Value > maxReadCountsPerBc[bcIdx])
+                {
+                    maxReadCountsPerBc[bcIdx] = p.Value;
+                    UMIOfMaxReadCountPerBc[bcIdx] = UMIIdx;
+                }
+
             }
             foreach (int codedKey in detectedUMIsByBc.Keys.ToArray())
             {
                 int bcIdx = codedKey & 511;
                 int UMIIdx = (codedKey >> 9) & (nUMIs-1);
                 nBcsWithReadsPerUMI[UMIIdx]++;
-                int maxReadCountInUMI = maxReadCountsPerUMI[UMIIdx];
+                nUMIsWithReadsPerBc[bcIdx]++;
                 int readCount = detectedUMIsByBc[codedKey];
-                if (bcIdx != bcOfMaxReadCountPerUMI[UMIIdx]) // Secondary peak
-                {
+                int maxReadCountInUMI = maxReadCountsPerUMI[UMIIdx];
+                if (bcIdx != bcOfMaxReadCountPerUMI[UMIIdx])
+                { // It is a secondary peak within this UMI
                     if (maxReadCountInUMI < distroMaxNReads)
                         distroOfNReadsIn2ndPeakByMaxPeakNReads[maxReadCountInUMI, readCount]++;
                     int maxBcFilterBcCombo = (bcOfMaxReadCountPerUMI[UMIIdx] << 9) | bcIdx;
@@ -79,6 +95,14 @@ namespace FilterMapFilesXBarcodes
                         maxBcTo2ndBcFreqs[maxBcFilterBcCombo] += 1;
                     else
                         maxBcTo2ndBcFreqs[maxBcFilterBcCombo] = 1;
+                }
+                if (UMIIdx != UMIOfMaxReadCountPerBc[bcIdx] && readCount == 1 && nUMIsWithReadsPerBc[bcIdx] == 2)
+                { // It is a lone secondary singleton peak within this barcode
+                    int maxUMIToSingletonUMICombo = (UMIOfMaxReadCountPerBc[bcIdx] << 12) | UMIIdx;
+                    if (maxUMIToSingletonUMIFreqs.ContainsKey(maxUMIToSingletonUMICombo))
+                        maxUMIToSingletonUMIFreqs[maxUMIToSingletonUMICombo] += 1;
+                    else
+                        maxUMIToSingletonUMIFreqs[maxUMIToSingletonUMICombo] = 1;
                 }
                 if (readCount < maxReadCountInUMI * ratioThresholdForFilter)
                 {
@@ -137,15 +161,17 @@ namespace FilterMapFilesXBarcodes
 
         public void Process()
         {
+            Console.Write("Analyzing...");
             AnalyzeFiles();
+            Console.WriteLine("Calculation thresholds...");
             PrecalcThresholds();
+            Console.WriteLine("Filtering and writing output files...");
             FilterFiles();
             WriteStats();
         }
 
         private void AnalyzeFiles()
         {
-            Console.Write("Analyzing...");
             NoBarcodes bcs =  new NoBarcodes();
             foreach (string inputFile in settings.inputFiles)
             {
@@ -189,7 +215,6 @@ namespace FilterMapFilesXBarcodes
 
         private void PrecalcThresholds()
         {
-            Console.WriteLine("Calculation thresholds...");
             foreach (Dictionary<int, PositionCounter> countersByPos in counters.Values)
             {
                 foreach (PositionCounter counter in countersByPos.Values)
@@ -202,7 +227,6 @@ namespace FilterMapFilesXBarcodes
 
         private void FilterFiles()
         {
-            Console.WriteLine("Filtering and writing output files...");
             NoBarcodes bcs =  new NoBarcodes();
             foreach (string inputFile in settings.inputFiles)
             {
@@ -256,21 +280,14 @@ namespace FilterMapFilesXBarcodes
                 Console.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", 
                     c, histoOfMaxReadCount[c], histoOfCasesOfReadsInAnotherBc[c], removedReadCountsHisto[c], keptReadCountsHisto[c]);
 
-            Console.WriteLine("\nCases of potential 'flow' from each maxRead peak to secondary peak.");
-            Console.WriteLine("From->To\tMaxBc\tSecondaryBc\tNumber of cases");
-            int[] bcCombos = PositionCounter.maxBcTo2ndBcFreqs.Keys.ToArray();
-            Array.Sort(bcCombos);
-            foreach (int bcCombo in bcCombos)
-            {
-                int maxBcIdx = (bcCombo >> 9) & 511;
-                int filteredBcIdx = bcCombo & 511;
-                Console.Write("{0}->{1}\t", maxBcIdx, filteredBcIdx);
-                if (settings.bcIdx2Bc != null)
-                    Console.WriteLine("{0}\t{1}\t{2}", settings.bcIdx2Bc[maxBcIdx], settings.bcIdx2Bc[filteredBcIdx], PositionCounter.maxBcTo2ndBcFreqs[bcCombo]);
-                else
-                    Console.WriteLine("{0}\t{1}\t{2}", maxBcIdx, filteredBcIdx, PositionCounter.maxBcTo2ndBcFreqs[bcCombo]);
-            }
+            WriteUMILeakage();
+            WriteBarcodeLeakage();
+            WriteHistosOfSecondaryPeakReadCounts();
+            WriteHistosOfNoOfSecondaryPeaks();
+        }
 
+        private static void WriteHistosOfSecondaryPeakReadCounts()
+        {
             Console.WriteLine("\nHistograms showing distro of # reads in secondary peak for each # reads in maxRead peak.");
             Console.Write("MaxPeakReads\t2ndPeakReads=1");
             for (int n = 2; n < PositionCounter.distroMaxNReads; n++)
@@ -283,7 +300,10 @@ namespace FilterMapFilesXBarcodes
                     Console.Write("\t" + PositionCounter.distroOfNReadsIn2ndPeakByMaxPeakNReads[maxReads, n]);
                 Console.WriteLine();
             }
+        }
 
+        private void WriteHistosOfNoOfSecondaryPeaks()
+        {
             Console.WriteLine("\nHistograms showing distro of # barcodes with a peak for each # reads in maxRead peak.");
             Console.Write("MaxPeakReads\tNBarcodes=1");
             for (int n = 2; n < settings.nBcs; n++)
@@ -298,5 +318,55 @@ namespace FilterMapFilesXBarcodes
             }
         }
 
+        private void WriteBarcodeLeakage()
+        {
+            Console.WriteLine("\nCases of potential 'flow' from each maxRead peak to secondary peak.");
+            Console.WriteLine("From->To\tMaxBc\tSecondaryBc\tNumber of cases");
+            int[] bcCombos = PositionCounter.maxBcTo2ndBcFreqs.Keys.ToArray();
+            Array.Sort(bcCombos);
+            foreach (int bcCombo in bcCombos)
+            {
+                int maxBcIdx = (bcCombo >> 9) & 511;
+                int filteredBcIdx = bcCombo & 511;
+                Console.Write("{0}->{1}\t", maxBcIdx, filteredBcIdx);
+                if (settings.bcIdx2Bc != null)
+                    Console.WriteLine("{0}\t{1}\t{2}", settings.bcIdx2Bc[maxBcIdx], settings.bcIdx2Bc[filteredBcIdx], PositionCounter.maxBcTo2ndBcFreqs[bcCombo]);
+                else
+                    Console.WriteLine("{0}\t{1}\t{2}", maxBcIdx, filteredBcIdx, PositionCounter.maxBcTo2ndBcFreqs[bcCombo]);
+            }
+        }
+
+        private void WriteUMILeakage()
+        {
+            Console.WriteLine("\nCases of potential 'flow' from each maxRead UMI to secondary UMI with singleton, when these are the only peaks in bc,, sorted by sequence distance.");
+            Console.WriteLine("Hamming distance\tNumber of cases");
+            int[] UMICombos = PositionCounter.maxUMIToSingletonUMIFreqs.Keys.ToArray();
+            int[] countsByDistance = new int[7];
+            foreach (int UMICombo in UMICombos)
+            {
+                int maxUMIIdx = (UMICombo >> 12) & 4095;
+                int singletonUMIIdx = UMICombo & 4095;
+                int dist = CalcDistance(maxUMIIdx, singletonUMIIdx);
+                countsByDistance[dist]++;
+            }
+            for (int i = 1; i < countsByDistance.Length; i++)
+            {
+                Console.WriteLine("{0}\t{1}", i, countsByDistance[i]);
+            }
+
+        }
+
+        private int CalcDistance(int bcIdx1, int bcIdx2)
+        {
+            int dist = 0;
+            while (bcIdx1 != 0 || bcIdx2 != 0)
+            {
+                if ((bcIdx1 & 3) != (bcIdx2 & 3))
+                    dist++;
+                bcIdx1 >>= 2;
+                bcIdx2 >>= 2;
+            }
+            return dist;
+        }
     }
 }

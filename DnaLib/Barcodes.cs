@@ -719,7 +719,6 @@ namespace Linnarsson.Dna
                     else if (line.StartsWith("#truncateat="))
                     {
                         m_MaxTotalLen = int.Parse(line.Substring(12));
-                        Console.WriteLine("MaxTotalReadLen=" + m_MaxTotalLen);
                     }
                 }
                 if (UseNoBarcodes)

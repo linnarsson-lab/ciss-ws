@@ -1445,7 +1445,8 @@ namespace Linnarsson.Strt
                                     "NON_ANNOTATED_" + molT.ToUpper(), "Non-annotated " + molT + " by barcode", "non-annotated " + molT);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, TotalHitsByBarcode,
                                     "HITS", "Total annotated hits by barcode", "annotated hits");
-                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, labelingEfficiencyEstimator.maxOccupiedUMIsByBc,
+                if (barcodes.HasUMIs)
+                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, labelingEfficiencyEstimator.maxOccupiedUMIsByBc,
                                     "MAX_OCCUPIED_UMIS", "Maximum occupied UMIs by barcode", "maximum occupied UMIs");
                 if (Props.props.AnalyzeGCContent)
                     WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, gcAnalyzer.GetPercentGCByBarcode(),

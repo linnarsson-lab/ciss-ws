@@ -61,6 +61,7 @@ namespace Linnarsson.Dna
         public bool GenerateWiggle = true; // Generate wiggle files for upload to UCSC Genome Browser
         public bool GenerateBed = false; // Generate read BED file
         public bool GenerateBarcodedWiggle = false; // Generate wiggle files per barcode for upload to UCSC Genome Browser
+        public bool GenerateReadCountsByUMI = false; // Generate BED like files that include UMI info
         public bool AnalyzeSNPs = true;
         public bool DetermineMotifs = false; // Analyse over-represented sequence motifs around read start
         public string[] SeqStatsChrIds = null; // Used to limit detailed statistics to only a subset of chromosomes

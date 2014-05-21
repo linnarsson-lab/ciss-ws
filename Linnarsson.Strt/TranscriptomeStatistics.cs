@@ -343,10 +343,8 @@ namespace Linnarsson.Strt
             }
             SampleReadStatistics(nMappedReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
             AnnotateFeaturesFromTagItems();
-            if (Props.props.MakeGeneReadsPerMoleculeHistograms && barcodes.HasUMIs)
-                AddToGeneReadsPerMoleculeHistograms();
-            MakeGeneRndTagProfiles();
-            MakeBcWigglePlots();
+            if (barcodes.HasUMIs)
+                GenerateUMIRelatedData();
             randomTagFilter.FinishBarcode();
             labelingEfficiencyEstimator.FinishBarcode(currentBcIdx);
         }
@@ -511,6 +509,17 @@ namespace Linnarsson.Strt
                 overlappingGeneFeatures[combNames] += molCount;
         }
 
+        private void GenerateUMIRelatedData()
+        {
+            if (Props.props.MakeGeneReadsPerMoleculeHistograms)
+                AddToGeneReadsPerMoleculeHistograms();
+            MakeGeneRndTagProfiles();
+            if (Props.props.GenerateBarcodedWiggle)
+                WriteWigglePlotsByBc();
+            if (Props.props.GenerateReadCountsByUMI)
+                WriteReadCountsByUMI();
+        }
+
         /// <summary>
         /// Add data from current barcode of selected chr-positions to the read count-per-molecule histograms
         /// </summary>
@@ -612,9 +621,33 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void MakeBcWigglePlots()
+        private void WriteReadCountsByUMI()
         {
-            if (!Props.props.GenerateBarcodedWiggle) return;
+            string readsByUMISubfolder = AssertOutputPathbase() + "_read_counts_by_UMI";
+            if (!Directory.Exists(readsByUMISubfolder))
+                Directory.CreateDirectory(readsByUMISubfolder);
+            string filename = Path.Combine(readsByUMISubfolder, barcodes.GetWellId(currentBcIdx) + "_reads.txt");
+            if (File.Exists(filename)) return;
+            using (StreamWriter writer = filename.OpenWrite())
+            {
+                foreach (KeyValuePair<string, ChrTagData> tagDataPair in randomTagFilter.chrTagDatas)
+                {
+                    string chr = tagDataPair.Key;
+                    foreach (MappedTagItem t in tagDataPair.Value.IterItems(currentBcIdx, chr))
+                    {
+                        ushort[] d = t.tagItem.GetReadCountsByRndTag();
+                        for (int UMIIdx = 0; UMIIdx < d.Length; UMIIdx++)
+                        {
+                            if (d[UMIIdx] > 0)
+                                writer.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", chr, t.SequencedStrand, t.hitStartPos, UMIIdx, d[UMIIdx]);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void WriteWigglePlotsByBc()
+        {
             int readLength = MappedTagItem.AverageReadLen;
             WriteBcWiggleStrand(readLength, '+');
             WriteBcWiggleStrand(readLength, '-');

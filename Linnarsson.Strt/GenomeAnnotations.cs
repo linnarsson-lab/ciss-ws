@@ -353,7 +353,7 @@ namespace Linnarsson.Strt
             if (Props.props.DirectionalReads)
             { // First check for antisense hits
                 foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
-                    if (!ivl.IsTrDetectingStrand(strand)) yield return ivl; // (ivl.Strand != strand) yield return ivl;
+                    if (!ivl.IsTrDetectingStrand(strand)) yield return ivl;
             }
             if (!NonExonAnnotations.ContainsKey(chr))
                 yield break;
@@ -372,7 +372,7 @@ namespace Linnarsson.Strt
         public bool HasTrOrRepeatMatches(string chr, char strand, int hitMidPos)
         {
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
-                if (ivl.IsTrDetectingStrand(strand)) return true; // (ivl.Strand == strand || !Props.props.DirectionalReads) return true;
+                if (ivl.IsTrDetectingStrand(strand)) return true;
             if (NonExonAnnotations.ContainsKey(chr))
                 foreach (FtInterval ivl in NonExonAnnotations[chr].IterItems(hitMidPos))
                     if (ivl.annotType == AnnotType.REPT) return true;
@@ -403,7 +403,7 @@ namespace Linnarsson.Strt
         public bool IsTranscript(string chr, char strand, int hitMidPos)
         {
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
-                if (ivl.IsTrDetectingStrand(strand)) return true; // (ivl.Strand == strand || !Props.props.DirectionalReads) return true;
+                if (ivl.IsTrDetectingStrand(strand)) return true;
             return false;
         }
 
@@ -411,7 +411,7 @@ namespace Linnarsson.Strt
         {
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
-                if (ivl.IsTrDetectingStrand(strand)) yield return ivl; // (ivl.Strand == strand || !Props.props.DirectionalReads) yield return ivl;
+                if (ivl.IsTrDetectingStrand(strand)) yield return ivl;
             }
         }
 
@@ -420,7 +420,7 @@ namespace Linnarsson.Strt
             List<FtInterval> ftIvls = new List<FtInterval>();
             foreach (FtInterval ivl in ExonAnnotations[chr].IterItems(hitMidPos))
             {
-                if (ivl.IsTrDetectingStrand(strand)) ftIvls.Add(ivl); // (ivl.Strand == strand || !Props.props.DirectionalReads) ftIvls.Add(ivl);
+                if (ivl.IsTrDetectingStrand(strand)) ftIvls.Add(ivl);
             }
             return ftIvls;
         }
@@ -550,7 +550,7 @@ namespace Linnarsson.Strt
         #endregion
 
         #region SaveResults
-        private string projectName;
+        public string ProjectName { get; private set; }
 
         /// <summary>
         /// Saves all gene centers tables as tab-delimited files
@@ -559,7 +559,7 @@ namespace Linnarsson.Strt
         /// <param name="averageReadLen"></param>
         public void SaveResult(string fileNameBase, int averageReadLen)
         {
-            projectName = Path.GetDirectoryName(fileNameBase);
+            ProjectName = Path.GetDirectoryName(fileNameBase);
             WriteIntronCounts(fileNameBase);
             if (props.GenerateGeneProfilesByBarcode)
             {
@@ -1191,7 +1191,7 @@ namespace Linnarsson.Strt
             String tabs = new String('\t', nTabs);
             matrixFile.Write("{0}Sample{1}", tabs, colon);
             foreach (int idx in selectedBcIndexes)
-                matrixFile.Write("\t{0}_{1}", projectName, barcodes.GetWellId(idx));
+                matrixFile.Write("\t{0}_{1}", ProjectName, barcodes.GetWellId(idx));
             matrixFile.WriteLine();
             matrixFile.Write("{0}Well{1}", tabs, colon);
             foreach (int idx in selectedBcIndexes)

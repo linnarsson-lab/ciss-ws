@@ -59,7 +59,14 @@ namespace Linnarsson.Dna
         {
             PlateLayout sampleLayout = null;
             if (projectName.StartsWith(C1Props.C1ProjectPrefix))
-                sampleLayout = new C1PlateLayout(projectName);
+            {
+                try
+                {
+                    sampleLayout = new C1PlateLayout(projectName);
+                }
+                catch (SampleLayoutFileException)
+                { }
+            }
             else if (File.Exists(sampleLayoutPath))
                 sampleLayout = new FilePlateLayout(sampleLayoutPath);
             return sampleLayout;
@@ -80,9 +87,8 @@ namespace Linnarsson.Dna
             {
                 string chipId = plateId.Replace(C1Props.C1ProjectPrefix, "");
                 c1db.GetCellAnnotationsByChip(chipId, out AnnotationsBySampleId, out AnnotationIndexes);
-                if (AnnotationsBySampleId.Count == 0)
-                    throw new SampleLayoutFileException("Can not extract any well/cell annotations for " + plateId + "  from C1 database.");
                 Console.WriteLine("WARNING: Plate " + plateId + " has not been properly loaded. Assuming matching chip->plate wellIds.");
+                throw new SampleLayoutFileException("Can not extract any well/cell annotations for " + plateId + "  from C1 database.");
             }
             foreach (KeyValuePair<string, string[]> p in AnnotationsBySampleId)
             {

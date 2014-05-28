@@ -53,6 +53,7 @@
     <Compile Include="BclReadExtractor.cs" />
     <Compile Include="CleavageSiteAnnotator.cs" />
     <Compile Include="GCAnalyzer.cs" />
+    <Compile Include="GeneExpressionSummary.cs" />
     <Compile Include="GenomeAnnotations.cs" />
     <Compile Include="AnnotationBuilder.cs" />
     <Compile Include="BarcodedReadStream.cs" />
@@ -76,6 +77,7 @@
     <Compile Include="StrtReadMapper.cs" />
     <Compile Include="StrtReport.cs" />
     <Compile Include="SyntReadReporter.cs" />
+    <Compile Include="TotalHitCounter.cs" />
     <Compile Include="TranscriptMatchers.cs" />
     <Compile Include="TranscriptomeStatistics.cs" />
     <Compile Include="UCSCGenomeDownloader.cs" />

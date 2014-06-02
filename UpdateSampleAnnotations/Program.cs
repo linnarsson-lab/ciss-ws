@@ -50,10 +50,17 @@ namespace UpdateSampleAnnotations
                 selectedBcIndexes[idx] = selIdx;
             }
             PlateLayout sampleLayout = PlateLayout.GetPlateLayout(projectName, sampleLayoutPath);
-            Console.WriteLine("SampleLAyout filename:" + sampleLayout.Filename);
+            Console.WriteLine("SampleLayouts from:" + sampleLayout.Filename);
             barcodes.SetSampleLayout(sampleLayout);
             Console.WriteLine("#Annotations:" + barcodes.GetAnnotationTitles().Count);
-            File.Move(annotFile, annotFile + ".old");
+            string oldAnnotFile = annotFile + ".old";
+            try
+            {
+                File.Delete(oldAnnotFile);
+            }
+            catch (Exception)
+            { }
+            File.Move(annotFile, oldAnnotFile);
             StreamWriter annotWriter = new StreamWriter(annotFile);
             SampleAnnotationWriter.WriteSampleAnnotationLines(annotWriter, barcodes, projectName, 0, false, selectedBcIndexes);
             annotWriter.Close();

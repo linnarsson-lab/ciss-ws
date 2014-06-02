@@ -30,7 +30,7 @@ namespace Linnarsson.Dna
                                                                     "LOW_QUALITY_IN_RANDOM_TAG","NEGATIVE_BARCODE_ERROR",
                                                                     "NO_BARCODE-CGACT25", "NO_BARCODE-NNNA25", "NO_BARCODE-SAL1-T25",
                                                                     "NO_BARCODE-SOLEXA-ADP2_CONTAINING", "NO_BARCODE-INTERNAL-T20",
-                                                                    "NO_VALID_BARCODE-UNCHARACTERIZED", "TSSEQ_MISSING", "TOO_SHORT_INSERT",
+                                                                    "NO_VALID_BARCODE", "TSSEQ_MISSING", "TOO_SHORT_INSERT",
                                                                     "FORBIDDEN_INTERNAL_SEQ" };
         public static int Parse(string category)
         {

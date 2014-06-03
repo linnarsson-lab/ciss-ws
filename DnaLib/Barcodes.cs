@@ -54,12 +54,30 @@ namespace Linnarsson.Dna
         public string Name { get { return m_Name; } }
 
         protected int m_UMIPos = 0;
-        public int UMIPos { get { return m_UMIPos; } }
+        public int UMIPos { get { return m_UMIPos; } protected set { m_UMIPos = value; } }
         protected int m_UMILen = 0;
-        public int UMILen { get { return m_UMILen; } }
-        public int UMIEndPos { get { return m_UMIPos + m_UMILen; } }
+        public int UMILen { get { return m_UMILen; } protected set { m_UMILen = value; m_UMIFieldLen = value; } }
+        /// <summary>
+        /// Same as UMILen if UMIMask is not used, otherwise less
+        /// </summary>
+        protected int m_UMIFieldLen = 0;
+        /// <summary>
+        /// Pattern 'NNN-NN' where unused nts in UMI are indicated with a '-'
+        /// </summary>
+        protected string m_UMIMask = null;
         public int UMICount { get { return 1 << (2 * m_UMILen); } }
         public bool HasUMIs { get { return m_UMILen > 0; } }
+        /// <summary>
+        /// Iterate the positions of the read which have valid UMI bases
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<int> ReadUMIPositions()
+        {
+            int p = 0;
+            for (int i = m_UMIPos; i < m_UMIPos + m_UMIFieldLen; i++)
+                if (m_UMIMask == null || m_UMIMask[p++] != '-')
+                    yield return i;
+        }
 
         protected int m_PrefixRead2 = 0;
         public int PrefixRead2 { get { return m_PrefixRead2; } }
@@ -80,7 +98,7 @@ namespace Linnarsson.Dna
             get
             {
                 if (m_InsertOrGGGPos == -1)
-                    m_InsertOrGGGPos = Math.Max(m_BarcodePos + m_BarcodeLen, m_UMIPos + m_UMILen);
+                    m_InsertOrGGGPos = Math.Max(m_BarcodePos + m_BarcodeLen, m_UMIPos + m_UMIFieldLen);
                 return m_InsertOrGGGPos;
             }
         }
@@ -176,7 +194,7 @@ namespace Linnarsson.Dna
             bcIdx = bcSeqToBcIdxMap[readId.Substring(readId.Length - m_BarcodeLen)];
             UMIIdx = 0;
             int p = readId.Length - BarcodeFieldLen;
-            for (int i = 0; i < m_UMILen; i++)
+            for (int i = 0; i < UMILen; i++)
             {
                 UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(readId[p++]));
             }
@@ -185,9 +203,9 @@ namespace Linnarsson.Dna
 
         public string MakeUMISeq(int UMIIdx)
         {
-            char[] UMISeq = new char[m_UMILen];
-            int p = m_UMILen - 1;
-            for (int i = 0; i < m_UMILen; i++)
+            char[] UMISeq = new char[UMILen];
+            int p = UMILen - 1;
+            for (int i = 0; i < UMILen; i++)
             {
                 UMISeq[p--] = "ACGT"[UMIIdx & 3];
                 UMIIdx = UMIIdx >> 2;
@@ -621,8 +639,8 @@ namespace Linnarsson.Dna
     {
         public STRTv3Barcodes() : base("v3", Barcodes.STRT_v2)
         {
-            this.m_UMIPos = 0;
-            this.m_UMILen = 4;
+            this.UMIPos = 0;
+            this.UMILen = 4;
             this.m_BarcodePos = 4;
             SetupPlate();
         }
@@ -698,11 +716,18 @@ namespace Linnarsson.Dna
                         m_TSTrimNt = line[6];
                     else if (line.StartsWith("#umipos="))
                     {
-                        m_UMIPos = int.Parse(line.Substring(8));
+                        UMIPos = int.Parse(line.Substring(8));
                     }
                     else if (line.StartsWith("#umilen="))
                     {
-                        m_UMILen = int.Parse(line.Substring(8));
+                        if (m_UMIMask != null)
+                            UMILen = int.Parse(line.Substring(8));
+                    }
+                    else if (line.StartsWith("#umimask="))
+                    {
+                        m_UMIMask = line.Substring(9);
+                        m_UMIFieldLen = m_UMIMask.Length;
+                        m_UMILen = m_UMIMask.Count(c => c != '-');
                     }
                     else if (line.StartsWith("#barcodepos="))
                         m_BarcodePos = int.Parse(line.Substring(12));

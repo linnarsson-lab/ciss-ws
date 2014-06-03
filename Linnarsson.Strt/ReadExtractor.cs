@@ -16,26 +16,24 @@ namespace Linnarsson.Strt
         private Barcodes barcodes;
         private int insertStartPos;
         private int minTotalReadLength;
-        private int UMIPos;
-        private int UMILen;
         private int minInsertNonAs;
         private int minQualityInUMI;
         private string[] diNtPatterns;
         private string[] trailingPrimerSeqs;
         private string[] forbiddenReadInternalSeqs;
         private int minPrimerSeqLen = 5;
+        char[] UMIChars; // Buffer for accumulated UMI bases
 
         public ReadExtractor()
         {
             barcodes = Props.props.Barcodes;
             insertStartPos = barcodes.InsertOrGGGPos;
             minTotalReadLength = barcodes.InsertOrGGGPos + Props.props.MinExtractionInsertLength;
-            UMIPos = barcodes.UMIPos;
-            UMILen = barcodes.UMILen;
             minInsertNonAs = Props.props.MinExtractionInsertNonAs;
             minQualityInUMI = Props.props.MinPhredScoreInRandomTag;
             trailingPrimerSeqs = Props.props.RemoveTrailingReadPrimerSeqs.Split(',').Where(s => s.Length >= minPrimerSeqLen).ToArray();
             forbiddenReadInternalSeqs = Props.props.ForbiddenReadInternalSeqs.Split(',').ToArray();
+            UMIChars = new char[barcodes.UMILen];
         }
 
         /// <summary>
@@ -69,16 +67,18 @@ namespace Linnarsson.Strt
             if (trimmedLength < minTotalReadLength)
                 return lenStatus;
             string headerUMISection = "";
-            if (UMILen > 0)
+            if (barcodes.HasUMIs)
             {
-                for (int i = UMIPos; i < UMIPos + UMILen; i++)
+                int UMICharsPos = 0;
+                foreach (int i in barcodes.ReadUMIPositions())
                 {
                     if (rec.Qualities[i] < minQualityInUMI)
                         return ReadStatus.LOW_QUALITY_IN_RANDOM_TAG;
                     if (rSeq[i] == 'N')
                         return ReadStatus.N_IN_RANDOM_TAG;
+                    UMIChars[UMICharsPos++] = rSeq[i];
                 }
-                headerUMISection = rSeq.Substring(UMIPos, UMILen) + '.';
+                headerUMISection = new string(UMIChars) + '.';
             }
             trimmedLength = barcodes.VerifyTotalLen(trimmedLength);
             int insertLength = trimmedLength - insertStart;

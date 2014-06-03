@@ -720,7 +720,7 @@ namespace Linnarsson.Dna
                     }
                     else if (line.StartsWith("#umilen="))
                     {
-                        if (m_UMIMask != null)
+                        if (m_UMIMask == null)
                             UMILen = int.Parse(line.Substring(8));
                     }
                     else if (line.StartsWith("#umimask="))

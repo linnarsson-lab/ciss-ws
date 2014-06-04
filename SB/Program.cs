@@ -38,6 +38,7 @@ namespace CmdSilverBullet
                     switch (cmd)
                     {
                         case "q":
+                            props.InsertCells10Data = false; // Default to not insert
                             options = new QXMAOptions(args);
                             props.DirectionalReads = options.directionalReads;
                             props.UseRPKM = options.useRPKM;
@@ -103,6 +104,7 @@ namespace CmdSilverBullet
                             break;
 
                         case "ab":
+                            props.InsertCells10Data = false; // Default to not insert
                             options = new QXMAOptions(args);
                             props.DirectionalReads = options.directionalReads;
                             props.UseRPKM = options.useRPKM;

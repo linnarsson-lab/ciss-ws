@@ -222,7 +222,7 @@ namespace Linnarsson.Dna
         /// </summary>
         public int TranscriptID;
         /// <summary>
-        /// C1 database expression BLOB ID - not in use
+        /// C1 database expression BLOB ID
         /// </summary>
         public int ExprBlobIdx;
 

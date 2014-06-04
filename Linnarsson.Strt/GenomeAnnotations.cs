@@ -754,7 +754,7 @@ namespace Linnarsson.Strt
         {
             int nValues = 0;
             foreach (GeneFeature gf in geneFeatures.Values)
-                nValues = Math.Max(nValues, gf.ExprBlobIdx);
+                nValues = Math.Max(nValues, gf.ExprBlobIdx + 1);
             ExprBlob exprBlob = new ExprBlob(nValues);
             exprBlob.TranscriptomeID = dbTranscriptome.TranscriptomeID.Value;
             foreach (int bcIdx in barcodes.GenomeBarcodeIndexes(genome, true))

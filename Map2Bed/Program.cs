@@ -12,7 +12,7 @@ namespace Map2Pclu
         public int maxBarcodeIdx = 95;
         public string barcodePattern = "0_";
         public string filenamePrefix = "";
-        public CountType countType = CountType.AllMolecules;
+        public UMICountType countType = UMICountType.AllMolecules;
         public int nUMIs = 4096;
         public bool HasUMIs { get { return nUMIs > 0; }}
         public int maxMultiReadMappings = 1;
@@ -20,7 +20,8 @@ namespace Map2Pclu
         public string outputFolderOrFilename = ".";
         public List<string> inputFiles = new List<string>();
         public bool estimateTrueMolCounts = false;
-        public bool IsCountingMols { get { return countType == CountType.AllMolecules || countType == CountType.NonSingeltonMolecules; } }
+        public bool analyzeBcLeakage = false;
+        public bool IsCountingMols { get { return countType == UMICountType.AllMolecules || countType == UMICountType.NonSingeltonMolecules; } }
 
         public Map2PcluSettings()
         { }
@@ -29,13 +30,14 @@ namespace Map2Pclu
             int argIdx = 0;
             for (; argIdx < args.Length; argIdx++)
             {
-                if (args[argIdx] == "--reads") countType = CountType.Reads;
-                else if (args[argIdx] == "--nosingletons") countType = CountType.NonSingeltonMolecules;
+                if (args[argIdx] == "--reads") countType = UMICountType.Reads;
+                else if (args[argIdx] == "--nosingletons") countType = UMICountType.NonSingeltonMolecules;
                 else if (args[argIdx].StartsWith("--UMIs=")) nUMIs = int.Parse(args[argIdx].Substring(7));
                 else if (args[argIdx].StartsWith("--multireads=")) maxMultiReadMappings = int.Parse(args[argIdx].Substring(13));
                 else if (args[argIdx] == "--estimatetrue") estimateTrueMolCounts = true;
                 else if (args[argIdx] == "--mergestrands") AllAsPlusStrand = true;
                 else if (args[argIdx] == "--bybarcode") iterateBarcodes = true;
+                else if (args[argIdx] == "--analyzebcleakage") analyzeBcLeakage = true;
                 else if (args[argIdx] == "--prefix=") filenamePrefix = args[argIdx].Substring(9);
                 else if (args[argIdx] == "-o") outputFolderOrFilename = args[++argIdx];
                 else inputFiles.Add(args[argIdx]);
@@ -70,6 +72,7 @@ namespace Map2Pclu
                                   "--estimatetrue   Compensate molecular counts for UMI collisions.\n" +
                                   "--multireads=N   Count also multireads with up to N mappings. A random mapping will be selected.\n" +
                                   "--UMIs=N         Analyze N different UMIs. Set N=0 to skip molecule counting.\n" +
+                                  "--analyzebcleakage Analyze bc-to-bc leakage frequencies.\n" +
                                   "--prefix=TXT     Prefix output filenames with some text (only valid with OUTPUT not ending '.gz').\n" +
                                   "--mergestrands   Reads are non-directional, all reads will be put on the '+' strand.");
 
@@ -80,7 +83,7 @@ namespace Map2Pclu
                 if (!settings.HasUMIs && settings.IsCountingMols)
                 {
                     Console.WriteLine("ERROR: You can not count molecules with no UMIs! Counting reads instead...");
-                    settings.countType = CountType.Reads;
+                    settings.countType = UMICountType.Reads;
                 }
                 if (settings.estimateTrueMolCounts && !settings.IsCountingMols)
                 {

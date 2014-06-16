@@ -9,60 +9,28 @@ using Linnarsson.Dna;
 
 namespace Map2Pclu
 {
-    enum CountType { Reads, AllMolecules, NonSingeltonMolecules };
-
-    class PositionCounter
+    class UMIProfileFactory
     {
-        private int detectedReads;
-        private BitArray detectedUMIs;
-        private BitArray multitonUMIs;
+        Map2PcluSettings settings;
 
-        public PositionCounter(int nUMIs)
+        public UMIProfileFactory(Map2PcluSettings settings)
         {
-            if (nUMIs > 0)
-            {
-                detectedUMIs = new BitArray(nUMIs);
-                multitonUMIs = new BitArray(nUMIs);
-            }
+            this.settings = settings;
         }
-        public void Add(int UMIIdx)
+        public IUMIProfile GetCounter()
         {
-            detectedReads++;
-            if (detectedUMIs != null)
-            {
-                if (detectedUMIs[UMIIdx])
-                    multitonUMIs[UMIIdx] = true;
-                detectedUMIs[UMIIdx] = true;
-            }
-        }
-        public int nMols()
-        {
-            int n = 0;
-            for (int i = 0; i < detectedUMIs.Length; i++)
-                if (detectedUMIs[i]) n++;
-            return n;
-        }
-        public int nNonSingeltonMols()
-        {
-            int n = 0;
-            for (int i = 0; i < detectedUMIs.Length; i++)
-                if (multitonUMIs[i]) n++;
-            return n;
-        }
-        public int nReads()
-        {
-            return detectedReads;
-        }
-        public int count(CountType ct)
-        {
-            return (ct == CountType.Reads) ? detectedReads : (ct == CountType.AllMolecules) ? nMols() : nNonSingeltonMols();
+            if (settings.analyzeBcLeakage)
+                return new UMIReadCountProfile(settings.nUMIs);
+            else
+                return new UMIZeroOneMoreProfile(settings.nUMIs);
         }
     }
 
     class Map2Pclu
     {
-        private Dictionary<string, Dictionary<int, PositionCounter>> counters;
+        private Dictionary<string, Dictionary<int, IUMIProfile>> counters;
         private Map2PcluSettings settings;
+        private UMIProfileFactory counterFactory;
 
         private int nTotReads = 0, nTotMols = 0;
         private int nTooMultiMappingReads, nMappedPositions;
@@ -75,12 +43,13 @@ namespace Map2Pclu
             this.settings = settings;
             nMaxMappings = settings.maxMultiReadMappings;
             rnd = new Random(System.DateTime.Now.Millisecond);
+            counterFactory = new UMIProfileFactory(settings);
         }
 
         public void Convert()
         {
             string bcPrefix = settings.iterateBarcodes ? "*_" : "";
-            string fType = (settings.countType == CountType.Reads) ? "reads" : (settings.countType == CountType.AllMolecules) ? "mols" : "nonSingletonMols";
+            string fType = (settings.countType == UMICountType.Reads) ? "reads" : (settings.countType == UMICountType.AllMolecules) ? "mols" : "nonSingletonMols";
             string outfilePat = settings.outputFolderOrFilename;
             if (!outfilePat.EndsWith(".gz"))
             {
@@ -92,7 +61,7 @@ namespace Map2Pclu
             for (int bcIdx = 0; bcIdx <= maxBcIdx; bcIdx++)
             {
                 List<int> readLens = new List<int>();
-                counters = new Dictionary<string, Dictionary<int, PositionCounter>>();
+                counters = new Dictionary<string, Dictionary<int, IUMIProfile>>();
                 int nReads = 0, nHits = 0;
                 nTooMultiMappingReads = nMappedPositions = 0;
                 foreach (string mapFile in settings.inputFiles)
@@ -139,20 +108,20 @@ namespace Map2Pclu
                 MultiReadMapping m = mrm[selectedMapping];
                 string chr = settings.AllAsPlusStrand ? m.Chr : m.Chr + m.Strand;
                 int posOf5Prime = (settings.AllAsPlusStrand || m.Strand == '+') ? m.Position : m.Position + mrm.SeqLen - 1;
-                Dictionary<int, PositionCounter> chrCounters;
+                Dictionary<int, IUMIProfile> chrCounters;
                 try
                 {
                     chrCounters = counters[chr];
                 }
                 catch (KeyNotFoundException)
                 {
-                    chrCounters = new Dictionary<int, PositionCounter>();
+                    chrCounters = new Dictionary<int, IUMIProfile>();
                     counters[chr] = chrCounters;
                 }
-                PositionCounter counter;
+                IUMIProfile counter;
                 if (!counters[chr].TryGetValue(posOf5Prime, out counter))
                 {
-                    counter = new PositionCounter(settings.nUMIs);
+                    counter = counterFactory.GetCounter();
                     counters[chr][posOf5Prime] = counter;
                     nMappedPositions++;
                 }
@@ -161,7 +130,7 @@ namespace Map2Pclu
             return nReads;
         }
 
-        int WriteOutput(string outfilePath, CountType ct)
+        int WriteOutput(string outfilePath, UMICountType ct)
         {
             int nTotal = 0;
             using (StreamWriter writer = outfilePath.OpenWrite())
@@ -178,7 +147,7 @@ namespace Map2Pclu
                         strand = chr[chr.Length - 1];
                         chr = chr.Substring(0, chr.Length - 1);
                     }
-                    Dictionary<int, PositionCounter> chrCounters = counters[chrStrand];
+                    Dictionary<int, IUMIProfile> chrCounters = counters[chrStrand];
                     int[] positions = chrCounters.Keys.ToArray();
                     Array.Sort(positions);
                     foreach (int pos in positions)

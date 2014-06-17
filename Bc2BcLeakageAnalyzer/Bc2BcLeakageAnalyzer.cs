@@ -75,17 +75,19 @@ namespace Bc2BcLeakageAnalyzer
 
         public void Analyze()
         {
-            Console.WriteLine("Pos\tMaxBcIdx\tUMIIdx\tMaxBcReads\tTotReads");
+            Console.WriteLine("Chr\tPos\tMaxBcIdx\tUMIIdx\tMaxBcReads\tTotReads");
             int[] readSumsByBc = new int[maxBcIdx + 1];
             int[] molSumsByBc = new int[maxBcIdx + 1];
             int[] bcIndexes = new int[maxBcIdx + 1];
             int[] readSumsByUMI = new int[settings.nUMIs + 1];
-            foreach (Dictionary<int, Dictionary<int, int>> chrCounters in counters.Values)
+            foreach (KeyValuePair<string, Dictionary<int, Dictionary<int, int>>> p1 in counters)
             {
-                foreach (KeyValuePair<int, Dictionary<int, int>> p in chrCounters)
+                string chr = p1.Key;
+                Dictionary<int, Dictionary<int, int>> chrCounters = p1.Value;
+                foreach (KeyValuePair<int, Dictionary<int, int>> p2 in chrCounters)
                 {
-                    int pos = p.Key;
-                    Dictionary<int, int> bcUMICounters = p.Value;
+                    int pos = p2.Key;
+                    Dictionary<int, int> bcUMICounters = p2.Value;
                     Array.Clear(readSumsByBc, 0, readSumsByBc.Length);
                     Array.Clear(molSumsByBc, 0, molSumsByBc.Length);
                     Array.Clear(readSumsByUMI, 0, readSumsByUMI.Length);
@@ -106,10 +108,10 @@ namespace Bc2BcLeakageAnalyzer
                     }
                     if (readSumsByBc.Max() >= settings.MinReadRatioBc1ToBc2)
                     {
-                        Sort.QuickSort(readSumsByBc, bcIndexes);
-                        int maxReadBcIdx = bcIndexes[0];
-                        if (readSumsByBc[0] > readSumsByBc[1] * settings.MinReadRatioBc1ToBc2
-                            && readSumsByBc[0] > molSumsByBc[0] * settings.MinReadToMolRatioBc1)
+                        Sort.QuickSort(readSumsByBc, bcIndexes, molSumsByBc);
+                        int maxReadBcIdx = bcIndexes[bcIndexes.Length - 1];
+                        if (readSumsByBc[readSumsByBc.Length - 1] > readSumsByBc[readSumsByBc.Length - 2] * settings.MinReadRatioBc1ToBc2
+                            && readSumsByBc[readSumsByBc.Length - 1] > molSumsByBc[molSumsByBc.Length - 1] * settings.MinReadToMolRatioBc1)
                         {
                             int nReads;
                             for (int UMIIdx = 0; UMIIdx < settings.nUMIs; UMIIdx++)
@@ -119,7 +121,7 @@ namespace Bc2BcLeakageAnalyzer
                                     if (nReads > settings.MinReadsPerUMIInMaxBc)
                                     {
                                         int secondaryBcsReadSum = readSumsByUMI[UMIIdx];
-                                        Console.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}", pos, maxBcIdx, UMIIdx, nReads, secondaryBcsReadSum);
+                                        Console.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", chr, pos, maxBcIdx, UMIIdx, nReads, secondaryBcsReadSum);
                                     }
                                 }
                             }

@@ -962,8 +962,10 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("    <curve legend=\"{0}\" color=\"#{1:x2}{2:x2}{3:x2}\">",
                                   legend, (bcIdx * 47) % 255, (bcIdx * 21) % 255, (255 - (60 * bcIdx % 255)));
                 foreach (Pair<string, double> laneAndFrac in data)
+                {
                     if (laneAndFrac.Second > 0.0)
                         xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1:0.0000000}\" />", laneAndFrac.First, laneAndFrac.Second);
+                }
                 xmlFile.WriteLine("    </curve>");
             }
             xmlFile.WriteLine("  </fracuniqueperlane>");

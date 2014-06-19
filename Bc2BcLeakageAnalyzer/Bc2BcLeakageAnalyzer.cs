@@ -121,7 +121,7 @@ namespace Bc2BcLeakageAnalyzer
                                     if (nReads > settings.MinReadsPerUMIInMaxBc)
                                     {
                                         int secondaryBcsReadSum = readSumsByUMI[UMIIdx];
-                                        Console.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", chr, pos, maxBcIdx, UMIIdx, nReads, secondaryBcsReadSum);
+                                        Console.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", chr, pos, maxReadBcIdx, UMIIdx, nReads, secondaryBcsReadSum);
                                     }
                                 }
                             }

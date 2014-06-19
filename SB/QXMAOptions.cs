@@ -97,6 +97,8 @@ namespace CmdSilverBullet
                                 resultFolder = opt.Substring(2);
                             else if (opt.StartsWith("-c"))
                                 totalSpikeMols = int.Parse(opt.Substring(2));
+                            else if (opt.StartsWith("--genome="))
+                                speciesAbbrev = opt.Substring(9);
                             else if (Array.IndexOf(allBcSetNames, opt) >= 0)
                                 barcodesName = opt;
                             else if (Array.IndexOf(new string[] { "hs", "hg", "mm", "gg", "ce", "cg" }, opt.ToLower()) >= 0)

@@ -53,17 +53,19 @@ namespace Linnarsson.Dna
             if (readDescriptor == null)
                 yield break;
             // Make a list of tiles
-            var tileConfig = from c in config.Descendants("Lane")
+            IEnumerable<int> tileConfig = from c in config.Descendants("Lane")
                              where c.Attribute("Index").Value == lane.ToString()
                              from v in c.Descendants("Tile")
                              select int.Parse(v.Value);
-
+            List<int> vaildTiles = tileConfig.ToList();
             // Load all the filter files (file_without_extension->byte_array[numberOfClusters])
             Dictionary<string, byte[]> filters = new Dictionary<string, byte[]>();
             var filterFiles = Directory.GetFiles(laneFolder, "s_" + lane + "_*.filter");
             foreach (var f in filterFiles)
             {
-                filters[Path.GetFileNameWithoutExtension(f)] = File.ReadAllBytes(f);
+                Match m = Regex.Match(f, "_([0-9]+)\\.filter$");
+                if (m != null && vaildTiles.Contains(int.Parse(m.Groups[1].Value)))
+                    filters[Path.GetFileNameWithoutExtension(f)] = File.ReadAllBytes(f);
             }
 
             // Parse out all the BCL files

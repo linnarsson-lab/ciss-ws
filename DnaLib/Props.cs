@@ -134,6 +134,7 @@ namespace Linnarsson.Dna
         public bool AnalyzeGCContent = false; // Analyze the GC content of transcript mapping reads
         public bool LogMode = false;
         public bool SenseStrandIsSequenced = true; // Exon/splice reads come from the sense strand (meaningful for DirectionalReads)
+        public bool WriteHotspots = false; // Output a file with local hotspots
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

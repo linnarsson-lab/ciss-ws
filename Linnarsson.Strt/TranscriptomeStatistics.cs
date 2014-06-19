@@ -704,7 +704,8 @@ namespace Linnarsson.Strt
             if (Props.props.GenerateWiggle)
             {
                 WriteWriggle();
-                WriteHotspots();
+                if (Props.props.WriteHotspots)
+                    WriteHotspots();
             }
             if (Props.props.GenerateBed)
                 WriteBed();
@@ -1833,12 +1834,12 @@ namespace Linnarsson.Strt
             {
                 writer.WriteLine("#Positions with local maximal read counts that lack gene or repeat annotation. Samples < 5 bp apart not shown.");
                 writer.WriteLine("#Chr\tPosition\tStrand\tCoverage");
+                int[] positions, counts;
                 foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                 {
                     string chr = data.Key;
                     if (StrtGenome.IsSyntheticChr(chr))
                         continue;
-                    int[] positions, counts;
                     data.Value.GetWiggle('+').GetPositionsAndCounts(out positions, out counts, true);
                     FindHotspots(writer, chr, '+', positions, counts);
                     data.Value.GetWiggle('-').GetPositionsAndCounts(out positions, out counts, true);

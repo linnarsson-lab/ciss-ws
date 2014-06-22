@@ -124,6 +124,7 @@ namespace Linnarsson.Dna
                     title = "Column" + (colIdx + 1).ToString();
                 if (title.ToLower() == "sampleid") sampleIdIdx = colIdx;
                 else if (title.ToLower() == "species") speciesIdIdx = colIdx;
+                else if (title == "merge") title = "Merge";
                 else AnnotationIndexes[title] = annotationIdx++;
             }
             if (sampleIdIdx == -1 || speciesIdIdx == -1)

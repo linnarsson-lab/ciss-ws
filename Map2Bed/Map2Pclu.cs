@@ -19,7 +19,7 @@ namespace Map2Pclu
         }
         public IUMIProfile GetCounter()
         {
-            if (settings.analyzeBcLeakage)
+            if (settings.analyzeBcLeakage || settings.AnalyzeReadsPerMol)
                 return new UMIReadCountProfile(settings.nUMIs);
             else
                 return new UMIZeroOneMoreProfile(settings.nUMIs);
@@ -132,6 +132,7 @@ namespace Map2Pclu
 
         int WriteOutput(string outfilePath, UMICountType ct)
         {
+            int[] readsPerMolDistro = new int[10000];
             int nTotal = 0;
             using (StreamWriter writer = outfilePath.OpenWrite())
             {
@@ -157,10 +158,29 @@ namespace Map2Pclu
                         if (n == 0) continue;
                         nTotal += n;
                         writer.WriteLine("{0}\t{1}\t{2}\t{3}", chr, strand, pos, n);
+                        if (settings.AnalyzeReadsPerMol)
+                        {
+                            foreach (int nReads in ((UMIReadCountProfile)chrCounters[pos]).IterReadsPerMol())
+                                readsPerMolDistro[nReads]++;
+                        }
                     }
                 }
             }
+            if (settings.AnalyzeReadsPerMol)
+                WriteReadsPerMolDistroLine(outfilePath, readsPerMolDistro);
             return nTotal;
+        }
+
+        private void WriteReadsPerMolDistroLine(string outfilePath, int[] readsPerMolDistro)
+        {
+            using (StreamWriter distroWriter = new StreamWriter(settings.readsPerMolFile, true))
+            {
+                distroWriter.Write(outfilePath);
+                foreach (int nCases in readsPerMolDistro)
+                    distroWriter.Write("\t" + nCases);
+                distroWriter.WriteLine();
+                distroWriter.Flush();
+            }
         }
 
         public int EstimateTrueCount(int nMols)

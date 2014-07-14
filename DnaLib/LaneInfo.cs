@@ -26,6 +26,7 @@ namespace Linnarsson.Dna
         public string extractionTopFolder { get; set; }
 
         public string readFilePath { get; set; }
+        public string nonPFReadFilePath { get; set; }
 
         /// <summary>
         /// Number of reads in fastQ file
@@ -71,7 +72,7 @@ namespace Linnarsson.Dna
         public void SetExtractedFilePaths(string extractedFolder, int nBarcodes)
         {
             extractionTopFolder = extractedFolder;
-            Match m = Regex.Match(readFilePath, "(Run[0-9]+_L[0-9]_[0-9]_[0-9]+)_");
+            Match m = Regex.Match(readFilePath, "(Run[0-9]+_L[0-9]_[0-9]_[0-9]+)_.+XX\\.fq");
             extractedFileFolder = Path.Combine(Path.Combine(extractedFolder, "fq"), m.Groups[1].Value);
             if (!Directory.Exists(extractedFileFolder))
                 Directory.CreateDirectory(extractedFileFolder);

@@ -33,6 +33,7 @@ namespace Linnarsson.Dna
         public int BarcodeLen { get { return m_BarcodeLen; } }
         public int BarcodeEndPos { get { return m_BarcodePos + m_BarcodeLen; } }
         public bool UseNoBarcodes;
+        public bool IncludeNonPF = false;
         public static readonly string NOBARCODE = "NOBAR";
 
         protected int m_MaxTotalLen = 0;
@@ -47,6 +48,7 @@ namespace Linnarsson.Dna
         protected string[] m_SpeciesByWell = null;
         public string[] SpeciesByWell { get { return m_SpeciesByWell; } }
         public static int MaxCount { get { return 96; } }
+        public string[] WellIds { get { return m_WellIds; } }
 
         private Dictionary<string, string[]> AnnotationsByWell = new Dictionary<string, string[]>();
 
@@ -737,6 +739,8 @@ namespace Linnarsson.Dna
                         AllowSingleMutations = true;
                     else if (line.StartsWith("#nobarcode"))
                         UseNoBarcodes = true;
+                    else if (line.StartsWith("#includednonpf"))
+                        IncludeNonPF = true;
                     else if (line.StartsWith("#prefixread2="))
                         m_PrefixRead2 = int.Parse(line.Substring(13));
                     else if (line.StartsWith("#prefixread3="))

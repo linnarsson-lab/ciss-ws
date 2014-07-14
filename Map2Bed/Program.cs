@@ -21,6 +21,8 @@ namespace Map2Pclu
         public List<string> inputFiles = new List<string>();
         public bool estimateTrueMolCounts = false;
         public bool analyzeBcLeakage = false;
+        public string readsPerMolFile = "";
+        public bool AnalyzeReadsPerMol { get { return readsPerMolFile != ""; } }
         public bool IsCountingMols { get { return countType == UMICountType.AllMolecules || countType == UMICountType.NonSingeltonMolecules; } }
 
         public Map2PcluSettings()
@@ -39,6 +41,7 @@ namespace Map2Pclu
                 else if (args[argIdx] == "--bybarcode") iterateBarcodes = true;
                 else if (args[argIdx] == "--analyzebcleakage") analyzeBcLeakage = true;
                 else if (args[argIdx] == "--prefix=") filenamePrefix = args[argIdx].Substring(9);
+                else if (args[argIdx].StartsWith("--readspermol=")) readsPerMolFile = args[argIdx].Substring(14);
                 else if (args[argIdx] == "-o") outputFolderOrFilename = args[++argIdx];
                 else inputFiles.Add(args[argIdx]);
             }
@@ -74,6 +77,7 @@ namespace Map2Pclu
                                   "--UMIs=N         Analyze N different UMIs. Set N=0 to skip molecule counting.\n" +
                                   "--analyzebcleakage Analyze bc-to-bc leakage frequencies.\n" +
                                   "--prefix=TXT     Prefix output filenames with some text (only valid with OUTPUT not ending '.gz').\n" +
+                                  "--readspermol=FILE Write reads per molecule profiles (one per map file) to specific file.\n" +
                                   "--mergestrands   Reads are non-directional, all reads will be put on the '+' strand.");
 
             }

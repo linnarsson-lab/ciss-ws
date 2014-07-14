@@ -50,6 +50,11 @@ namespace Linnarsson.Dna
         {
             return (ct == UMICountType.Reads) ? detectedUMIs.Sum(v => v) : (ct == UMICountType.AllMolecules) ? nMols() : nNonSingeltonMols();
         }
+        public IEnumerable<ushort> IterReadsPerMol()
+        {
+            foreach (ushort nReads in detectedUMIs)
+                if (nReads > 0) yield return nReads;
+        }
     }
 
     public class UMIZeroOneMoreProfile : IUMIProfile

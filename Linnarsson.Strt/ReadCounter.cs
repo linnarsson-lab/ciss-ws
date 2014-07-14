@@ -16,6 +16,7 @@ namespace Linnarsson.Strt
     {
         private int totalSum = 0;
         private int partialSum = 0;
+        private int passedIlluminaFilterSum = 0;
         private int[] totalCounts = new int[ReadStatus.Length];
         private int[] partialCounts = new int[ReadStatus.Length];
         private List<string> readFiles = new List<string>();
@@ -107,19 +108,21 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="readStatus">Status of the read</param>
         /// <param name="bcIdx">Barcode of the read</param>
-        public void AddARead(int readStatus, int bcIdx)
+        public void AddARead(int readStatus, int bcIdx, bool passedIlluminaFilter)
         {
             AddReads(readStatus, 1);
             if (bcIdx >= 0)
             {
                 totalBarcodeReads[bcIdx] += 1;
+                if (passedIlluminaFilter)
+                    passedIlluminaFilterSum += 1;
                 if (readStatus == ReadStatus.VALID)
                     validBarcodeReads[bcIdx] += 1;
             }
         }
 
         /// <summary>
-        /// A a number of reads (from statistics file) to the global statistics
+        /// Add a number of reads (from statistics file) to the global statistics
         /// </summary>
         /// <param name="readStatus"></param>
         /// <param name="count"></param>
@@ -155,7 +158,9 @@ namespace Linnarsson.Strt
                 s += string.Format("READFILE\t{0}\t{1}\n", readFiles[i], meanReadLens[i]);
             }
             s += "#Category\tCount\tPercent\n" +
-                 "TOTAL_PASSED_ILLUMINA_FILTER\t" + GrandTotal + "\t100%\n";
+                 "TOTAL_READS_IN_FILE\t" + GrandTotal + "\t100%\n" +
+                 "PASSED_ILLUMINA_FILTER\t" + passedIlluminaFilterSum + "\t" + 
+                                      ((GrandTotal == 0)? "0%\n" : string.Format("{0:0.#%}\n", passedIlluminaFilterSum / (double)GrandTotal));
             for (int statusCat = 0; statusCat < ReadStatus.Length; statusCat++)
             {
                 if (showRndTagCategories || !ReadStatus.categories[statusCat].Contains("RANDOM"))

@@ -85,7 +85,7 @@ namespace Linnarsson.Strt
             {
                 if (extrQ != null) extrQ.Add(rec.Sequence, rec.Qualities);
                 wordCounter.AddRead(rec.Sequence);
-                readCounter.AddARead(readStatus, bcIdx);
+                readCounter.AddARead(readStatus, bcIdx, rec.PassedFilter);
                 if (readStatus == ReadStatus.VALID)
                 {
                     totLen += rec.Sequence.Length;
@@ -102,6 +102,15 @@ namespace Linnarsson.Strt
             foreach (FastQRecord fastQRecord in
                      BarcodedReadStream.Stream(barcodes, laneInfo.readFilePath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
                 if (!Process(fastQRecord)) break;
+            if (barcodes.IncludeNonPF)
+            {
+                string nonPFFilename = Path.GetFileName(laneInfo.readFilePath).Replace(".fq", "_nonPF.fq");
+                string nonPFDir = Path.Combine(Path.GetDirectoryName(laneInfo.readFilePath), "nonPF");
+                string nonPFPath = Path.Combine(nonPFDir, nonPFFilename);
+                foreach (FastQRecord fastQRecord in
+                         BarcodedReadStream.Stream(barcodes, nonPFPath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
+                    if (!Process(fastQRecord)) break;
+            }
             CloseAndWriteSummary();
         }
 

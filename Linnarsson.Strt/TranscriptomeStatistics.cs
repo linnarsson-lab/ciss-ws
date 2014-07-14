@@ -1485,6 +1485,9 @@ namespace Linnarsson.Strt
         {
             xmlFile.Write("    <barcodestat section=\"barcodes\">");
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                bCodeLines.Write("\t{0}", barcodes.GetWellId(bcIdx));
+            bCodeLines.WriteLine();
+            for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
             {
                 bCodeLines.Write("\t{0}", barcodes.Seqs[bcIdx]);
                 if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
@@ -1492,6 +1495,8 @@ namespace Linnarsson.Strt
             }
             bCodeLines.WriteLine();
             xmlFile.WriteLine("\n    </barcodestat>");
+            barcodeStats.WriteLine("WellIds:\n");
+            barcodeStats.WriteLine(MakeDataMatrix(barcodes.WellIds, "-"));
             barcodeStats.WriteLine("Barcode by well:\n");
             barcodeStats.WriteLine(MakeDataMatrix(barcodes.Seqs, "-"));
         }

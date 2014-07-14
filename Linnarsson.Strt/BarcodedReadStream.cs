@@ -65,7 +65,7 @@ namespace Linnarsson.Strt
                 }
                 if (read2FilterPrefix.Length > 0 && !Regex.IsMatch(read2.Sequence, "^" + read2FilterPrefix))
                         continue;
-                if (read1.PassedFilter && (read2 == null || read2.PassedFilter) && (read3 == null || read3.PassedFilter))
+                if (true) //(read1.PassedFilter && (read2 == null || read2.PassedFilter) && (read3 == null || read3.PassedFilter))
                 {
                     CheckReadIdAndInsertPrefix(read1FqPath, read2CopyLen, read1, read2, "_R2_");
                     if (read3 != null)

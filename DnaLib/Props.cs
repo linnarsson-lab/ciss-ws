@@ -135,6 +135,7 @@ namespace Linnarsson.Dna
         public bool LogMode = false;
         public bool SenseStrandIsSequenced = true; // Exon/splice reads come from the sense strand (meaningful for DirectionalReads)
         public bool WriteHotspots = false; // Output a file with local hotspots
+        public bool WriteSlaskFiles = true; // Output unused seqs to slask.fq.gz during extraction
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

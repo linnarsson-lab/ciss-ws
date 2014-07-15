@@ -739,7 +739,7 @@ namespace Linnarsson.Dna
                         AllowSingleMutations = true;
                     else if (line.StartsWith("#nobarcode"))
                         UseNoBarcodes = true;
-                    else if (line.StartsWith("#includednonpf"))
+                    else if (line.StartsWith("#includenonpf"))
                         IncludeNonPF = true;
                     else if (line.StartsWith("#prefixread2="))
                         m_PrefixRead2 = int.Parse(line.Substring(13));

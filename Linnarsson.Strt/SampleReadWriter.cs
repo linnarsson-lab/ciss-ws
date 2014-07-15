@@ -38,7 +38,8 @@ namespace Linnarsson.Strt
             readCounter = new ReadCounter(barcodes.Count);
             wordCounter = new ExtractionWordCounter(Props.props.ExtractionCounterWordLength);
             sws_barcoded = OpenStreamWriters(laneInfo.extractedFilePaths);
-            sw_slask = laneInfo.slaskFilePath.OpenWrite();
+            if (Props.props.WriteSlaskFiles)
+                sw_slask = laneInfo.slaskFilePath.OpenWrite();
             extrQ = (Props.props.AnalyzeExtractionQualities) ? new ExtractionQuality(Props.props.LargestPossibleReadLength) : null;
         }
 
@@ -92,32 +93,39 @@ namespace Linnarsson.Strt
                     nRecords++;
                     sws_barcoded[bcIdx].WriteLine(rec.ToString(Props.props.QualityScoreBase));
                 }
-                else sw_slask.WriteLine(rec.ToString(Props.props.QualityScoreBase));
+                else if (sw_slask != null)
+                    sw_slask.WriteLine(rec.ToString(Props.props.QualityScoreBase));
             }
             return true;
         }
 
         public void ProcessLane()
         {
+            Console.WriteLine("nRecords=" + nRecords);
             foreach (FastQRecord fastQRecord in
                      BarcodedReadStream.Stream(barcodes, laneInfo.readFilePath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
                 if (!Process(fastQRecord)) break;
+            Console.WriteLine("nRecords=" + nRecords);
+            Console.WriteLine("IncludeNonPF=" + barcodes.IncludeNonPF);
             if (barcodes.IncludeNonPF)
             {
                 string nonPFFilename = Path.GetFileName(laneInfo.readFilePath).Replace(".fq", "_nonPF.fq");
                 string nonPFDir = Path.Combine(Path.GetDirectoryName(laneInfo.readFilePath), "nonPF");
                 string nonPFPath = Path.Combine(nonPFDir, nonPFFilename);
+                Console.WriteLine("Reading " + nonPFPath);
                 foreach (FastQRecord fastQRecord in
                          BarcodedReadStream.Stream(barcodes, nonPFPath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
                     if (!Process(fastQRecord)) break;
             }
+            Console.WriteLine("nRecords=" + nRecords);
             CloseAndWriteSummary();
         }
 
         public void CloseAndWriteSummary()
         {
             CloseStreamWriters(sws_barcoded);
-            sw_slask.Close();
+            if (sw_slask != null)
+                sw_slask.Close();
             using (StreamWriter sw_summary = new StreamWriter(laneInfo.summaryFilePath))
             {
                 int averageReadLen = (int)Math.Round(totLen / nRecords);

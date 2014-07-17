@@ -16,7 +16,7 @@ namespace Linnarsson.Strt
     {
         private int totalSum = 0;
         private int partialSum = 0;
-        private int passedIlluminaFilterSum = 0;
+        public int TotalPassedIlluminaFilter { get; private set; }
         private int[] totalCounts = new int[ReadStatus.Length];
         private int[] partialCounts = new int[ReadStatus.Length];
         private List<string> readFiles = new List<string>();
@@ -115,7 +115,7 @@ namespace Linnarsson.Strt
             {
                 totalBarcodeReads[bcIdx] += 1;
                 if (passedIlluminaFilter)
-                    passedIlluminaFilterSum += 1;
+                    TotalPassedIlluminaFilter += 1;
                 if (readStatus == ReadStatus.VALID)
                     validBarcodeReads[bcIdx] += 1;
             }
@@ -159,8 +159,8 @@ namespace Linnarsson.Strt
             }
             s += "#Category\tCount\tPercent\n" +
                  "TOTAL_READS_IN_FILE\t" + GrandTotal + "\t100%\n" +
-                 "PASSED_ILLUMINA_FILTER\t" + passedIlluminaFilterSum + "\t" + 
-                                      ((GrandTotal == 0)? "0%\n" : string.Format("{0:0.#%}\n", passedIlluminaFilterSum / (double)GrandTotal));
+                 "PASSED_ILLUMINA_FILTER\t" + TotalPassedIlluminaFilter + "\t" + 
+                                      ((GrandTotal == 0)? "0%\n" : string.Format("{0:0.#%}\n", TotalPassedIlluminaFilter / (double)GrandTotal));
             for (int statusCat = 0; statusCat < ReadStatus.Length; statusCat++)
             {
                 if (showRndTagCategories || !ReadStatus.categories[statusCat].Contains("RANDOM"))
@@ -195,6 +195,10 @@ namespace Linnarsson.Strt
                                         throw new ReadFileEmptyException();
                                     readFiles.Add(fields[1]);
                                     meanReadLens.Add(meanReadLen);
+                                }
+                                else if (line.StartsWith("PASSED_ILLUMINA_FILTER"))
+                                {
+                                    TotalPassedIlluminaFilter += int.Parse(fields[1]);
                                 }
                                 else if (line.StartsWith("BARCODEREADS"))
                                 {

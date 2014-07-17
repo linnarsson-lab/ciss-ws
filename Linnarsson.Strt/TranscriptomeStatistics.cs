@@ -995,7 +995,8 @@ namespace Linnarsson.Strt
             double speciesReads = readCounter.TotalReads(speciesBarcodes);
             if (speciesReads > 0 && allBcReads > 0)
             {
-                xmlFile.WriteLine("    <point x=\"All PF reads [{0}]\" y=\"{1}\" />", allBcCount, allBcReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Processed reads [{0}]\" y=\"{1}\" />", allBcCount, allBcReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"PF reads [{0}]\" y=\"{1}\" />", allBcCount, readCounter.TotalPassedIlluminaFilter / 1.0E6d);
                 xmlFile.WriteLine("    <point x=\"Barcoded as {0} [{1}] (100%)\" y=\"{2}\" />", Annotations.Genome.Abbrev, spBcCount, speciesReads / 1.0E6d);
                 int validReads = readCounter.ValidReads(speciesBarcodes);
                 xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, validReads / speciesReads, validReads / 1.0E6d);

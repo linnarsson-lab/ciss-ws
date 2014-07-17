@@ -101,23 +101,18 @@ namespace Linnarsson.Strt
 
         public void ProcessLane()
         {
-            Console.WriteLine("nRecords=" + nRecords);
             foreach (FastQRecord fastQRecord in
                      BarcodedReadStream.Stream(barcodes, laneInfo.readFilePath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
                 if (!Process(fastQRecord)) break;
-            Console.WriteLine("nRecords=" + nRecords);
-            Console.WriteLine("IncludeNonPF=" + barcodes.IncludeNonPF);
             if (barcodes.IncludeNonPF)
             {
                 string nonPFFilename = Path.GetFileName(laneInfo.readFilePath).Replace(".fq", "_nonPF.fq");
                 string nonPFDir = Path.Combine(Path.GetDirectoryName(laneInfo.readFilePath), "nonPF");
                 string nonPFPath = Path.Combine(nonPFDir, nonPFFilename);
-                Console.WriteLine("Reading " + nonPFPath);
                 foreach (FastQRecord fastQRecord in
                          BarcodedReadStream.Stream(barcodes, nonPFPath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
                     if (!Process(fastQRecord)) break;
             }
-            Console.WriteLine("nRecords=" + nRecords);
             CloseAndWriteSummary();
         }
 

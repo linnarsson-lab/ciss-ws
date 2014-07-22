@@ -773,7 +773,7 @@ namespace Linnarsson.Strt
         {
             string readFile = fileNameBase + "_reads.tab";
             Func<GeneFeature, int[]> getReads = x => x.TranscriptReadsByBarcode;
-            string header = MakeFirstHeader(true, "#{0} {1} read counts and sense+antisense reads counts for repeat types.{3}");
+            string header = MakeFirstHeader(true, "#{0} {1} unfiltered read counts and sense+antisense reads counts for repeat types.{3}");
             WriteBasicDataTable(readFile, header, getReads);
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             using (StreamWriter outFile = new StreamWriter(readFile, true))

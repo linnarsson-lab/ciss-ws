@@ -731,7 +731,8 @@ namespace Linnarsson.Dna
         {
             StringBuilder s = new StringBuilder();
             s.AppendFormat("{0}\t{1};{2}\t", Name, GeneType, GeneMetadata);
-            string chrName = (Chr == StrtGenome.chrCTRLId) ? StrtGenome.chrCTRLId : "chr" + Chr;
+            string chrName = StrtGenome.commonChrIds.Contains(Chr) ? Chr : "chr" + Chr;
+            //string chrName = (Chr == StrtGenome.chrCTRLId) ? StrtGenome.chrCTRLId : "chr" + Chr;
             s.AppendFormat("{0}\t", chrName);
             s.AppendFormat("{0}\t", Strand);
             s.AppendFormat("{0}\t", Start);

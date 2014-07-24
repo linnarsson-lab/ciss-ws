@@ -476,18 +476,20 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Adds the transcript models from the spike control chromosome
+        /// Adds the transcript models from the spike or other common control chromosome
         /// </summary>
-        public void AddCtrlGeneModels()
+        /// <param name="chrId">CTRL or e.g. EXTRA</param>
+        public void AddCommonGeneModels(string chrId)
         {
-            string CTRLGenesPath = PathHandler.GetCTRLGenesPath();
-            if (File.Exists(CTRLGenesPath))
+            string genesPath = PathHandler.GetCommonGenesPath(chrId);
+            //string genesPath = PathHandler.GetCTRLGenesPath();
+            if (File.Exists(genesPath))
             {
-                int nCTRLs = 0;
-                VisitedAnnotationPaths += ";" + CTRLGenesPath;
-                foreach (GeneFeature gf in AnnotationReader.IterRefFlatFile(CTRLGenesPath))
-                    if (AddGeneModel(gf)) nCTRLs++;
-                Console.WriteLine("Added {0} CTRL genes from {1}.", nCTRLs, CTRLGenesPath);
+                int nAddedGenes = 0;
+                VisitedAnnotationPaths += ";" + genesPath;
+                foreach (GeneFeature gf in AnnotationReader.IterRefFlatFile(genesPath))
+                    if (AddGeneModel(gf)) nAddedGenes++;
+                Console.WriteLine("Added {0} genes from {1}.", nAddedGenes, genesPath);
             }
         }
 

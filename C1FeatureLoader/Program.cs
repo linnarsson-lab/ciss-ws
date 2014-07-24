@@ -42,7 +42,9 @@ namespace C1
                 Extend5Primes(annotationReader);
                 Write5PrimeExtendedRefFlatFile(genome, annotationReader);
             }
-            annotationReader.AddCtrlGeneModels();
+            foreach (string commonChrId in StrtGenome.commonChrIds)
+                annotationReader.AddCommonGeneModels(commonChrId);
+            //annotationReader.AddCtrlGeneModels();
             if (doInsert)
             {
                 InsertIntoC1Db(genome, annotationReader);

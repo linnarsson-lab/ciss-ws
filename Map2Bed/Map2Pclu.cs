@@ -60,7 +60,6 @@ namespace Map2Pclu
             int maxBcIdx = settings.iterateBarcodes ? settings.maxBarcodeIdx : 0;
             for (int bcIdx = 0; bcIdx <= maxBcIdx; bcIdx++)
             {
-                List<int> readLens = new List<int>();
                 counters = new Dictionary<string, Dictionary<int, IUMIProfile>>();
                 int nReads = 0, nHits = 0;
                 nTooMultiMappingReads = nMappedPositions = 0;

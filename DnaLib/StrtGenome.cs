@@ -11,8 +11,9 @@ namespace Linnarsson.Dna
 	public class StrtGenome
 	{
         public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE", "RFSQ", "UALL" };
-        public static string DefaultAnnotationSource = "UCSC";
-        public static string chrCTRLId = "CTRL";
+        public readonly static string DefaultAnnotationSource = "UCSC";
+        public readonly static string chrCTRLId = "CTRL";
+        public static string[] commonChrIds = new string[] { chrCTRLId, "EXTRA" };
 
         public override string ToString()
         {
@@ -206,13 +207,19 @@ namespace Linnarsson.Dna
             return false;
         }
         /// <summary>
-        /// Check if the chr is a splice or a control gene chromosome
+        /// Check if the chr is a splice or a common or control gene chromosome
         /// </summary>
         /// <param name="chrId"></param>
         /// <returns></returns>
         public static bool IsSyntheticChr(string chrId)
         {
-            return chrId.EndsWith(chrCTRLId) || IsASpliceAnnotation(chrId);
+            return commonChrIds.Any(id => chrId.EndsWith(id)) || IsASpliceAnnotation(chrId);
+            //return chrId.EndsWith(chrCTRLId) || IsASpliceAnnotation(chrId);
+        }
+
+        public static bool IsACommonChrId(string chrId)
+        {
+            return commonChrIds.Any(id => chrId.EndsWith(id));
         }
 
         private StrtGenome() 

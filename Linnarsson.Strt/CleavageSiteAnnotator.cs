@@ -19,7 +19,9 @@ namespace Linnarsson.Strt
         {
             enzymes = Props.props.CAPCloseSiteSearchCutters;
             Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
-            chrIdToFileMap[StrtGenome.chrCTRLId] = PathHandler.GetChrCTRLPath();
+            foreach (string commonChrId in StrtGenome.commonChrIds)
+                chrIdToFileMap[commonChrId] = PathHandler.GetCommonChrPath(commonChrId);
+            //chrIdToFileMap[StrtGenome.chrCTRLId] = PathHandler.GetChrCTRLPath();
             foreach (string chrId in chrIdToFileMap.Keys)
             {
                 if (StrtGenome.IsASpliceAnnotation(chrId)) continue;
@@ -38,7 +40,8 @@ namespace Linnarsson.Strt
         public List<int> GetCleaveSites(GeneFeature gf)
         {
             DnaSequence trSeq;
-            int requestedExtension = (gf.Chr != StrtGenome.chrCTRLId) ? -CAPCloseSiteSearchStart : 0;
+            int requestedExtension = StrtGenome.IsACommonChrId(gf.Chr)? 0 : -CAPCloseSiteSearchStart;
+            //int requestedExtension = (gf.Chr != StrtGenome.chrCTRLId) ? -CAPCloseSiteSearchStart : 0;
             int actualExtension = GetTrSeq(gf.Chr, gf.Strand, gf.ExonStartsString, gf.ExonEndsString, requestedExtension, out trSeq);
             List<int> sitePositions = GetSiteList(trSeq, actualExtension);
             return sitePositions;
@@ -47,7 +50,7 @@ namespace Linnarsson.Strt
         public void Annotate(ref Transcript t)
         {
             DnaSequence trSeq;
-            int requestedExtension = (t.Chromosome != StrtGenome.chrCTRLId) ? -CAPCloseSiteSearchStart : 0;
+            int requestedExtension = StrtGenome.IsACommonChrId(t.Chromosome) ? 0 : -CAPCloseSiteSearchStart;
             int actualExtension = GetTrSeq(t.Chromosome, t.Strand, t.ExonStarts, t.ExonEnds, requestedExtension, out trSeq);
             List<int> sitePositions = GetSiteList(trSeq, actualExtension);
             string siteList = string.Join(",", sitePositions.ConvertAll(v => v.ToString()).ToArray());

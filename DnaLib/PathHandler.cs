@@ -355,12 +355,20 @@ namespace Linnarsson.Dna
 
         public static string GetChrCTRLPath()
         {
-            return Path.Combine(Props.props.GenomesFolder, "chr" + StrtGenome.chrCTRLId + ".fa");
+            return GetCommonChrPath(StrtGenome.chrCTRLId);
+        }
+        public static string GetCommonChrPath(string commonChrId)
+        {
+            return Path.Combine(Props.props.GenomesFolder, "chr" + commonChrId + ".fa");
         }
 
         public static string GetCTRLGenesPath()
         {
-            return Path.Combine(Props.props.GenomesFolder, "SilverBulletCTRL.txt");
+            return GetCommonGenesPath(StrtGenome.chrCTRLId);
+        }
+        public static string GetCommonGenesPath(string commonChrId)
+        {
+            return Path.Combine(Props.props.GenomesFolder, "SilverBullet" + commonChrId + ".txt");
         }
 
         public static string GetCTRLConcPath()

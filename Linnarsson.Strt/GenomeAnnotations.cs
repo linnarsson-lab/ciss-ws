@@ -672,7 +672,7 @@ namespace Linnarsson.Strt
                 warnFile.WriteLine("Feature\tExonHits\tPart\tPartHits\tPartLocation\tNewLeftExonStart\tNewRightExonStart");
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    if (gf.GetTotalHits(true) == 0 || gf.Chr == StrtGenome.chrCTRLId
+                    if (gf.GetTotalHits(true) == 0 || StrtGenome.IsACommonChrId(gf.Chr)
                         || gf.Name.EndsWith(GeneFeature.nonUTRExtendedIndicator))
                         continue;
                     if (gf.Strand == '+')

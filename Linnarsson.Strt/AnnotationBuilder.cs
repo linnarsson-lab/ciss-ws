@@ -319,23 +319,27 @@ namespace Linnarsson.Strt
             annotWriter.WriteLine("@MaxAlignmentMismatches={0}", MaxAlignmentMismatches);
             annotWriter.WriteLine("@MaxExonsSkip={0}", MaxExonsSkip);
             annotWriter.WriteLine("@InputAnnotationFile={0}", annotationReader.VisitedAnnotationPaths);
-            CopyCTRLData(genome, annotWriter);
+            foreach(string commonChrId in StrtGenome.commonChrIds)
+                CopyCommonChrData(commonChrId, genome, annotWriter);
+            //CopyCTRLData(genome, annotWriter);
             return annotWriter;
         }
 
-        private void CopyCTRLData(StrtGenome genome, StreamWriter refWriter)
+        private void CopyCommonChrData(string chrId, StrtGenome genome, StreamWriter refWriter)
         {
-            string chrCTRLPath = PathHandler.GetChrCTRLPath();
-            if (File.Exists(chrCTRLPath))
+            string chrPath = PathHandler.GetCommonChrPath(chrId);
+            //string chrPath = PathHandler.GetChrCTRLPath();
+            if (File.Exists(chrPath))
             {
-                Console.WriteLine("Adding control chromosome and annotations.");
-                string chrDest = Path.Combine(genome.GetOriginalGenomeFolder(), Path.GetFileName(chrCTRLPath));
+                Console.WriteLine("Adding " + chrId + " chromosome and annotations.");
+                string chrDest = Path.Combine(genome.GetOriginalGenomeFolder(), Path.GetFileName(chrPath));
                 if (!File.Exists(chrDest))
-                    File.Copy(chrCTRLPath, chrDest);
-                using (StreamReader CTRLReader = PathHandler.GetCTRLGenesPath().OpenRead())
+                    File.Copy(chrPath, chrDest);
+                //using (StreamReader reader = PathHandler.GetCTRLGenesPath().OpenRead())
+                using (StreamReader reader = PathHandler.GetCommonGenesPath(chrId).OpenRead())
                 {
-                    string CTRLData = CTRLReader.ReadToEnd();
-                    foreach (string line in CTRLData.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                    string data = reader.ReadToEnd();
+                    foreach (string line in data.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
                         refWriter.WriteLine(line);
                 }
             }

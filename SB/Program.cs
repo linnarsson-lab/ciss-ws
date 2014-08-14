@@ -289,8 +289,8 @@ namespace CmdSilverBullet
                 "     rpm/rpkm                specify rpkm to calculate rpkm values instead of rpm, for e.g. TruSeq samples.\n" +
                 "     sense/antisense/nondir  specify sequence direction of reads\n" +
                 "     5primemap/multimap      annotate reads/molecules to (one of) the transcript(s) they match closest to the 5' end of,\n" +
-                "                             or multiply to every alternative transcript they match.\n" +
-                "     insertc1data            insert data into the Sanger database when this is a C1 sample.\n" +
+                "                             or multi-annotate to every alternative transcript they match.\n" +
+                "     insertc1data            insert data into the Sanger cells10k database when this is a C1 sample.\n" +
                 "   If BUILD/IDX is left out, these are taken from the xxx_SampleLayout.txt file in the project folder.\n" +
                 "bt BUILD|IDX all|single PROJECTPATH|EXTRACTEDPATH    run Bowtie on latest/specified extracted data folder.\n" +
                 "download GENUS_SPECIES                               download latest genome build and annotations, for e.g. 'Mus_musculus'\n" +
@@ -303,16 +303,16 @@ namespace CmdSilverBullet
                 "rf [rpkm] BUILD [ANNOT] OUTFILE                      load transcripts and dump to refFlat-like file.\n" +
                 "dumpfasta IDX OUTFILE [FLANKLEN]\n" +
                 "   dump all transcript sequences, including any config-extension, [with additional 5' and 3' flanks] to fasta file.\n" +
-                "dump IDX READLEN [STEP [MAXPERGENE [MINOVERHANG [Splices|Linear [BC]]]]] [OUTFILE]\n" +
-                "   make a fq file containing transcript fragments defined by IDX, at every STEP bases in transript models.\n" +
-                "   Make all if MAXPERGENE=0. Linear=never splice out exons. MINOVERHANG limits exonic end size at a junction. Adds barcodes+GGG if bcSet given.\n\n" + 
+                "dump IDX READLEN [STEP [MAXPERGENE [MINOVERHANG [Splices|Linear [BCSET]]]]] [OUTFILE]\n" +
+                "   make a fq file containing transcript fragments as reads defined by IDX, at every STEP bases in transript models.\n" +
+                "   Make all if MAXPERGENE=0. Linear=never splice out exons. MINOVERHANG limits exonic end size at a junction. Adds barcodes+GGG if BCSET given.\n\n" + 
                 "   BUILD E.g. 'mm9', 'hg19', or 'gg3'\n" +
-                "   ANNOT is 'UCSC', 'UALL', 'VEGA', 'ENSE', or 'RFSQ' (Default: 'UCSC' which == 'RFSQ')\n" +
+                "   ANNOT is 'UCSC', 'UALL', 'VEGA', 'ENSE', or 'RFSQ' (Default: 'UCSC', synonymous with 'RFSQ')\n" +
                 "   IDX   Specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_aVEGA'.\n" +
                 "   BC   'C1Plate1', 'C1Plate2', 'TruSeq', 'v4' (48x6-mer, random tags), 'v4r' (no random tags), or 'no' for no barcodes.\n" +
-                "   Define other barcode sets in 'Bc.barcodes' files in the barcodes directory in the project folder\n" +
-                "   READLEN Sequence length after barcode and GGG. For idx it should be 0-5 below actual data length.\n" +
-                "   Paths are per default rooted in the data directory, so that e.g. 'S066' is enough as a PROJECTPATH.\n"
+                "   Define other barcode sets in 'Bc.barcodes' files in the barcodes sub-directory of the data folder\n" +
+                "   READLEN Seq len after barcode and GGG. The Bowtie index that is 0-5 below actual read len is used during annotation.\n" +
+                "   Paths are per default rooted in the data folder, so that e.g. 'S066' is enough as a PROJECTPATH.\n"
             );
         }
 

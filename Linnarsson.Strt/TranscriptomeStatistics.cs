@@ -323,6 +323,8 @@ namespace Linnarsson.Strt
             }
             SampleReadStatistics(nMappedReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
             AnnotateFeaturesFromTagItems();
+            if (Props.props.GenerateBarcodedWiggle)
+                WriteWigglePlotsByBc();
             if (barcodes.HasUMIs)
                 GenerateUMIRelatedData();
             randomTagFilter.FinishBarcode();
@@ -486,8 +488,6 @@ namespace Linnarsson.Strt
             if (Props.props.MakeGeneReadsPerMoleculeHistograms)
                 AddToGeneReadsPerMoleculeHistograms();
             MakeGeneRndTagProfiles();
-            if (Props.props.GenerateBarcodedWiggle)
-                WriteWigglePlotsByBc();
             if (Props.props.GenerateReadCountsByUMI)
                 WriteReadCountsByUMI();
         }

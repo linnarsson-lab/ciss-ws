@@ -8,6 +8,9 @@ using Linnarsson.Utilities;
 
 namespace Linnarsson.Dna
 {
+    /// <summary>
+    /// Parser for a UCSC knownGenes file
+    /// </summary>
     class KnownGeneAnnotationReader : AnnotationReader
     {
         public KnownGeneAnnotationReader(StrtGenome genome, string annotationFile)

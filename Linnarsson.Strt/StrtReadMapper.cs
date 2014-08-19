@@ -280,7 +280,7 @@ namespace Linnarsson.Strt
             else
                 foreach (string extractedFile in PathHandler.CollectReadsFilesNames(project))
                     laneInfos.Add(new LaneInfo(extractedFile, "X", 'x'));
-            string outputFolder = PathHandler.MakeExtractedFolder(outputProject, barcodes.Name, EXTRACTION_VERSION);
+            string outputFolder = PathHandler.MakeExtractionFolderSubPath(outputProject, barcodes.Name, EXTRACTION_VERSION);
             ExtractMissingAndOld(laneInfos, outputFolder);
             return laneInfos;
         }
@@ -289,7 +289,7 @@ namespace Linnarsson.Strt
         {
             pd.laneInfos = PathHandler.ListReadsFiles(pd.runIdsLanes.ToList());
             pd.extractionVersion = EXTRACTION_VERSION;
-            string outputFolder = PathHandler.MakeExtractedFolder(pd.ProjectFolder, barcodes.Name, EXTRACTION_VERSION);
+            string outputFolder = PathHandler.MakeExtractionFolderSubPath(pd.ProjectFolder, barcodes.Name, EXTRACTION_VERSION);
             ExtractMissingAndOld(pd.laneInfos, outputFolder);
         }
 
@@ -369,6 +369,12 @@ namespace Linnarsson.Strt
             }
         }
 
+        /// <summary>
+        /// Tries to locate a bowtie index useful for the genome and current read length. If none exists,
+        /// instead tries to change to the DefaultAnnotationSource (usually UCSC)
+        /// </summary>
+        /// <param name="projDescr"></param>
+        /// <param name="genome"></param>
         private static void SetAvailableBowtieIndexVersion(ProjectDescription projDescr, StrtGenome genome)
         {
             string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
@@ -380,6 +386,11 @@ namespace Linnarsson.Strt
             }
         }
 
+        /// <summary>
+        /// Calculates the average read length of all Extraction summary files in the project folder
+        /// </summary>
+        /// <param name="projDescr"></param>
+        /// <returns></returns>
         private int GetReadLen(ProjectDescription projDescr)
         {
             List<string> extractedByBcFolders = projDescr.laneInfos.ConvertAll(l => l.extractedFileFolder);
@@ -402,6 +413,14 @@ namespace Linnarsson.Strt
             return rc.AverageReadLen;
         }
 
+        /// <summary>
+        /// If sampleLayoutPath is parsable, the species name(s) to use are extracted from that file,
+        /// otherwise the defaultSpeciesArg is returned.
+        /// </summary>
+        /// <param name="projectName"></param>
+        /// <param name="sampleLayoutPath"></param>
+        /// <param name="defaultSpeciesArg"></param>
+        /// <returns></returns>
         private string[] GetSpeciesArgs(string projectName, string sampleLayoutPath, string defaultSpeciesArg)
         {
             string[] speciesArgs = new string[] { defaultSpeciesArg };
@@ -415,7 +434,13 @@ namespace Linnarsson.Strt
             return speciesArgs;
         }
 
-        private void CreateBowtieMaps(StrtGenome genome, List<LaneInfo> extrInfos, int[] genomeBcIndexes)
+        /// <summary>
+        /// Try to find a proper Bowtie index and align the lanes defined by laneInfo
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <param name="laneInfos"></param>
+        /// <param name="genomeBcIndexes">optionally only process specific barcodes</param>
+        private void CreateBowtieMaps(StrtGenome genome, List<LaneInfo> laneInfos, int[] genomeBcIndexes)
         {
             string splcIndexVersion = GetSplcIndexVersion(genome, true);
             string splcIndexName = genome.GetBowtieSplcIndexName();
@@ -424,7 +449,7 @@ namespace Linnarsson.Strt
             string maxAlt = (props.UseMaxAltMappings)?
                                string.Format(" and limiting alternative mappings to max {0}.", props.MaxAlternativeMappings) : "";
             tempBowtieStartMsg = string.Format("Using bowtie index {0}{1}", splcIndexVersion, maxAlt);
-            foreach (LaneInfo extrInfo in extrInfos)
+            foreach (LaneInfo extrInfo in laneInfos)
                 CreateBowtieMaps(genome, extrInfo, splcIndexVersion, splcIndexName, genomeBcIndexes);
         }
 
@@ -543,12 +568,19 @@ namespace Linnarsson.Strt
             return true;
         }
 
+        /// <summary>
+        /// Run Bowtie on reads in a specific Extraction folder, or on all reads in the last Extraction folder of a project.
+        /// </summary>
+        /// <param name="projectOrExtractedFolderOrName"></param>
+        /// <param name="speciesArg"></param>
+        /// <param name="defaultGeneVariants"></param>
+        /// <param name="defaultAnnotation"></param>
         public void Map(string projectOrExtractedFolderOrName, string speciesArg, bool defaultGeneVariants, string defaultAnnotation)
         {
             StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, false);
             string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
             string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
-            string extractedFolder = SetupForLatestExtractedFolder(projectOrExtractedFolder);
+            string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolder);
             Console.WriteLine("Processing data from {0}", extractedFolder);
             List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
             genome.ReadLen = GetReadLen(extractedFolder);
@@ -577,7 +609,7 @@ namespace Linnarsson.Strt
             string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
             string projectName = Path.GetFileName(projectFolder);
             string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
-            string extractedFolder = SetupForLatestExtractedFolder(projectOrExtractedFolder);
+            string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolder);
             List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
             string barcodeSet = PathHandler.ParseBarcodeSet(extractedFolder);
             SetBarcodeSet(barcodeSet);
@@ -609,9 +641,15 @@ namespace Linnarsson.Strt
             return resultSubFolders;
         }
 
-        private string SetupForLatestExtractedFolder(string projectOrExtractedFolder)
+        /// <summary>
+        /// Finds and verifies the version of extracted reads in project folder,
+        /// and sets the proper barcode set
+        /// </summary>
+        /// <param name="projectOrExtractedFolder"></param>
+        /// <returns></returns>
+        private string SetupForLatestExtractionFolder(string projectOrExtractedFolder)
         {
-            string extractedFolder = PathHandler.GetLatestExtractedFolder(projectOrExtractedFolder);
+            string extractedFolder = PathHandler.GetLatestExtractionFolder(projectOrExtractedFolder);
             string extractionVersion = PathHandler.GetExtractionVersion(extractedFolder);
             if (int.Parse(extractionVersion) < 28)
                 throw new Exception("Extractions of versions < 28 can not be processed anymore. Please redo extraction!");
@@ -620,34 +658,21 @@ namespace Linnarsson.Strt
             return extractedFolder;
         }
 
-        private List<string> SetExistingMapFilePaths(StrtGenome genome, List<LaneInfo> laneInfos)
+        /// <summary>
+        /// Construct laneInfos by scanning existing data in the Extraction folder
+        /// </summary>
+        /// <param name="extractionFolder"></param>
+        /// <returns></returns>
+        private List<LaneInfo> SetupLaneInfosFromExistingExtraction(string extractionFolder)
         {
-            string splcIndexVersion = GetSplcIndexVersion(genome, false);
-            string mainPattern = string.Format("*_{0}.map", genome.GetBowtieMainIndexName());
-            string splcPattern = string.Format("*_{0}chr{1}_*.map", genome.Build, genome.VarAnnot);
-            List<string> allLanesMapFiles = new List<string>();
-            foreach (LaneInfo info in laneInfos)
-            {
-                info.SetMappedFileFolder(splcIndexVersion);
-                List<string> laneMapFiles = new List<string>();
-                laneMapFiles.AddRange(Directory.GetFiles(info.mappedFileFolder, mainPattern));
-                laneMapFiles.AddRange(Directory.GetFiles(info.mappedFileFolder, splcPattern));
-                info.mappedFilePaths = laneMapFiles.ToArray();
-                allLanesMapFiles.AddRange(laneMapFiles);
-            }
-            return allLanesMapFiles;
-        }
-
-        private List<LaneInfo> SetupLaneInfosFromExistingExtraction(string extractedFolder)
-        {
-            string fqFolder = Path.Combine(extractedFolder, "fq");
+            string fqFolder = Path.Combine(extractionFolder, "fq");
             List<LaneInfo> laneInfos = new List<LaneInfo>();
             foreach (string extractedByBcFolder in Directory.GetDirectories(fqFolder))
             {
                 Match m = Regex.Match(Path.GetFileName(extractedByBcFolder), "^Run([0-9]+)_L([0-9])_[0-9]_[0-9]+$");
                 if (!m.Success) continue;
                 LaneInfo laneInfo = new LaneInfo(m.Groups[0].Value, m.Groups[1].Value, m.Groups[2].Value[0]);
-                laneInfo.extractionTopFolder = extractedFolder;
+                laneInfo.extractionTopFolder = extractionFolder;
                 laneInfo.extractedFileFolder = extractedByBcFolder;
                 laneInfo.SetExtractedFilesInfo(barcodes.Count);
                 laneInfos.Add(laneInfo);
@@ -655,16 +680,12 @@ namespace Linnarsson.Strt
             return laneInfos;
         }
 
-        private int CompareMapFiles(string path1, string path2)
-        {
-            string name1 = Path.GetFileName(path1);
-            string name2 = Path.GetFileName(path2);
-            int bc1 = int.Parse(name1.Substring(0, name1.IndexOf('_')));
-            int bc2 = int.Parse(name2.Substring(0, name2.IndexOf('_')));
-            return bc1.CompareTo(bc2);
-        }
-
-        private List<string> CollectExtractionSummaryPaths(List<string> mapFilePaths, StrtGenome genome)
+        /// <summary>
+        /// List all read extraction summary files that correspond to the .map files.
+        /// </summary>
+        /// <param name="mapFilePaths"></param>
+        /// <returns></returns>
+        private List<string> CollectExtractionSummaryPaths(List<string> mapFilePaths)
         {
             Dictionary<string, object> summaryPaths = new Dictionary<string, object>();
             foreach (string mapFilePath in mapFilePaths)
@@ -685,6 +706,15 @@ namespace Linnarsson.Strt
             return string.Format("{0}_{1}_{2}_{3}", projectName, barcodes.Name, genome.GetBowtieMainIndexName(), DateTime.Now.ToPathSafeString());
         }
 
+        /// <summary>
+        /// Annotate features on genome from mapped data in mapFilePaths
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <param name="projectFolder"></param>
+        /// <param name="projectId"></param>
+        /// <param name="resultFolderName"></param>
+        /// <param name="mapFilePaths"></param>
+        /// <returns></returns>
         private ResultDescription ProcessAnnotation(StrtGenome genome, string projectFolder, string projectId, 
                                                     string resultFolderName, List<string> mapFilePaths)
         {
@@ -694,11 +724,11 @@ namespace Linnarsson.Strt
             if (Directory.Exists(outputFolder))
                 outputFolder += "_" + DateTime.Now.ToPathSafeString();
             ReadCounter readCounter = new ReadCounter();
-            readCounter.AddExtractionSummaries(CollectExtractionSummaryPaths(mapFilePaths, genome));
+            readCounter.AddExtractionSummaries(CollectExtractionSummaryPaths(mapFilePaths));
             int averageReadLen = DetermineAverageReadLen(mapFilePaths, readCounter);
             MappedTagItem.AverageReadLen = averageReadLen;
             genome.ReadLen = averageReadLen;
-            UpdateGenesToPaint(projectFolder, props);
+            UpdateGenesToPaintProp(projectFolder);
             GenomeAnnotations annotations = new GenomeAnnotations(props, genome);
             annotations.Load();
             string outputPathbase = Path.Combine(outputFolder, projectId);
@@ -724,6 +754,12 @@ namespace Linnarsson.Strt
             return resultDescr;
         }
 
+        /// <summary>
+        /// Insert expression value and analysis setup info into cells10k DB.
+        /// </summary>
+        /// <param name="projectId"></param>
+        /// <param name="annotations"></param>
+        /// <param name="resultDescr"></param>
         private static void InsertCells10kData(string projectId, GenomeAnnotations annotations, ResultDescription resultDescr)
         {
             if (projectId.StartsWith(C1Props.C1ProjectPrefix))
@@ -756,6 +792,13 @@ namespace Linnarsson.Strt
             return parString;
         }
 
+        /// <summary>
+        ///  If read counter does not have AverageReadLen defined (e.g. if summary file was missing),
+        ///  try to estimate it by peeking into .map files instead.
+        /// </summary>
+        /// <param name="mapFilePaths"></param>
+        /// <param name="readCounter"></param>
+        /// <returns></returns>
         private int DetermineAverageReadLen(List<string> mapFilePaths, ReadCounter readCounter)
         {
             int averageReadLen;
@@ -782,7 +825,12 @@ namespace Linnarsson.Strt
             return (int)Math.Ceiling((double)totalReadLength / n);
         }
 
-        private void UpdateGenesToPaint(string projectFolder, Props props)
+        /// <summary>
+        /// If there is gene_to_paint.txt file in the projectFolder, the genes to paint Prop is taken from there
+        /// </summary>
+        /// <param name="projectFolder"></param>
+        /// <param name="props"></param>
+        private void UpdateGenesToPaintProp(string projectFolder)
         {
             string paintPath = Path.Combine(projectFolder, "genes_to_paint.txt");
             if (File.Exists(paintPath))

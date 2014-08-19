@@ -17,6 +17,9 @@ namespace Linnarsson.Dna
         { }
     }
 
+    /// <summary>
+    /// Methods to read gene annotation files, both original RefFlat and MART files, but also STRT-generated RefFlat-style files
+    /// </summary>
     public abstract class AnnotationReader
     {
         protected static string[] validXrefGeneTypes = new string[] {"pseudogene", "antisense RNA", "RNase MRP RNA", "microRNA",
@@ -44,6 +47,13 @@ namespace Linnarsson.Dna
             return genome.Annotation + "_mart_export.txt";
         }
 
+        /// <summary>
+        /// Returns a proper AnnotationReader for the annotationFile by parsing its name. If it is empty,
+        /// uses the default annotationFile of the genome
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <param name="annotationFile"></param>
+        /// <returns></returns>
         public static AnnotationReader GetAnnotationReader(StrtGenome genome, string annotationFile)
         {
             annotationFile = GetAnnotationFile(genome, annotationFile);
@@ -151,6 +161,10 @@ namespace Linnarsson.Dna
             Console.WriteLine("Read {0} gene type annotations from {1}.", kgXRefTrIdToType.Count, xrefPath);
         }
 
+        /// <summary>
+        /// Try to find out what type of transcript it is and assign to gf
+        /// </summary>
+        /// <param name="gf"></param>
         protected void SetTranscriptType(GeneFeature gf)
         {
             if (kgXRefTrIdToType == null)
@@ -163,6 +177,10 @@ namespace Linnarsson.Dna
             }
         }
 
+        /// <summary>
+        /// Add gene models defined in the refFlat.txt file of the original genome folder
+        /// </summary>
+        /// <returns></returns>
         protected int AddRefFlatGenes()
         {
             int nTotal = 0, nMerged = 0, nCreated = 0, nRandom = 0, nUpdated = 0;
@@ -189,6 +207,12 @@ namespace Linnarsson.Dna
             return nCreated;
         }
 
+        /// <summary>
+        /// Check if gf totally overlaps with an already existing transcript. If so, fuse gf to the old one, 
+        /// and annotate it appropriately in the GeneMetadata
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <returns></returns>
         protected bool FusedWithOverlapping(GeneFeature gf)
         {
             try
@@ -232,6 +256,12 @@ namespace Linnarsson.Dna
             pseudogeneCount = 0;
         }
  
+        /// <summary>
+        /// Make a full annotation file path inot original genome folder, and assert the file exists
+        /// </summary>
+        /// <param name="annotationFilename"></param>
+        /// <param name="checkExists"></param>
+        /// <returns></returns>
         protected string MakeFullAnnotationPath(string annotationFilename, bool checkExists)
         {
             string genomeFolder = genome.GetOriginalGenomeFolder();
@@ -260,6 +290,12 @@ namespace Linnarsson.Dna
             return createdNew;
         }
 
+        /// <summary>
+        /// Add a new gene model. If one exists with the same name, add appropriate suffixes telling the
+        /// locus or variant of the gene.
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <returns></returns>
         private bool AddToVariantGeneModels(GeneFeature gf)
         {
             //Console.Write("{0}: chr{1}{2}: {3}-{4}", gf.Name, gf.Chr, gf.Strand, gf.Start, gf.End);
@@ -362,68 +398,12 @@ namespace Linnarsson.Dna
             return true;
         }
 
-        private void FuseNearIdenticalMainGenes()
-        {
-            Console.WriteLine("Fusing overlapping...");
-            int maxStartDiff = 10; // Max bases between TSS:s for fusion
-            double minOverlapFrac = 0.90; // Min 90% of bases of the longer gene should also be present in the shorter
-            GeneFeature[] mainGenes = nameToGene.Values.ToArray();
-            for (int i = 0; i < mainGenes.Length - 1; i++)
-            {
-                GeneFeature gfA = mainGenes[i];
-                if (gfA == null)
-                    continue;
-                int trLenA = gfA.GetTranscriptLength();
-                for (int j = i + 1; j < mainGenes.Length; j++)
-                {
-                    GeneFeature gfB = mainGenes[j];
-                    if (gfB == null || gfA == gfB)
-                        continue;
-                    int trLenB = gfB.GetTranscriptLength();
-                    if (gfA.Chr == gfB.Chr && gfA.Strand == gfB.Strand && Math.Abs(gfA.Start - gfB.Start) <= maxStartDiff)
-                    {
-                        int nCommonBases = CalcCommonBases(gfA, gfB);
-                        if (nCommonBases / (double)Math.Max(trLenA, trLenB) > minOverlapFrac)
-                        { // They overlap in their entire length
-                            string combinedName = gfA.Name + "/" + gfB.Name;
-                            Console.WriteLine("Merging {0} & {1} into {2}", gfA.Name, gfB.Name, combinedName);
-                            GeneFeature combinedGf = CreateExonUnion(gfA, gfB);
-                            combinedGf.Name = combinedName;
-                            int idxB = genesByChr[gfB.Chr].IndexOf(gfB);
-                            genesByChr[gfB.Chr][idxB] = combinedGf;
-                            nameToGene[gfA.Name] = combinedGf;
-                            nameToGene[gfB.Name] = combinedGf;
-                            nameToGene[combinedGf.Name] = combinedGf;
-                            mainGenes[j] = null;
-                            genesByChr[gfA.Chr].Remove(gfA);
-                            break;
-                        }
-                        else if (nCommonBases / (double)Math.Min(trLenA, trLenB) > minOverlapFrac)
-                        { // One is contained inside the exons of the other
-                            Console.WriteLine("{0} is contained inside {1}", gfA.Name, gfB.Name);
-                        }
-                    }
-                }
-            }
-
-        }
-
-        private int CalcCommonBases(GeneFeature gfA, GeneFeature gfB)
-        {
-            int nCommonBases = 0;
-            for (int exIdxA = 0; exIdxA < gfA.ExonCount; exIdxA++)
-            {
-                int startExA = gfA.ExonStarts[exIdxA];
-                int endExA = gfA.ExonEnds[exIdxA];
-                for (int exIdxB = 0; exIdxB < gfB.ExonCount; exIdxB++)
-                {
-                    int n = Math.Min(endExA, gfB.ExonEnds[exIdxB]) - Math.Max(startExA, gfB.ExonStarts[exIdxB]);
-                    if (n > 0) nCommonBases += n;
-                }
-            }
-            return nCommonBases;
-        }
-
+        /// <summary>
+        /// Combine the exons of two overlapping models, and annotate the combined model.
+        /// </summary>
+        /// <param name="oldGf"></param>
+        /// <param name="newGf"></param>
+        /// <returns></returns>
         private GeneFeature CreateExonUnion(GeneFeature oldGf, GeneFeature newGf)
         {
             List<int> newStarts = oldGf.ExonStarts.ToList();
@@ -493,7 +473,11 @@ namespace Linnarsson.Dna
             }
         }
 
-        // Iterates the transcripts of a UCSC refFlat-formatted file, making no changes/variant detections of the data.
+        /// <summary>
+        /// Iterates the transcripts of a UCSC refFlat-formatted file, making no changes/variant detections of the data
+        /// </summary>
+        /// <param name="refFlatPath"></param>
+        /// <returns></returns>
         public static IEnumerable<IFeature> IterRefFlatFile(string refFlatPath)
         {
             using (StreamReader refReader = new StreamReader(refFlatPath))

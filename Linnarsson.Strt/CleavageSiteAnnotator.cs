@@ -7,6 +7,9 @@ using C1;
 
 namespace Linnarsson.Strt
 {
+    /// <summary>
+    /// Annotator for cleavage sites of restriction enzymes close to 5' ends of features
+    /// </summary>
     public class CleavageSiteAnnotator
     {
         private static int CAPCloseSiteSearchStart = -100;
@@ -21,7 +24,6 @@ namespace Linnarsson.Strt
             Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
             foreach (string commonChrId in StrtGenome.commonChrIds)
                 chrIdToFileMap[commonChrId] = PathHandler.GetCommonChrPath(commonChrId);
-            //chrIdToFileMap[StrtGenome.chrCTRLId] = PathHandler.GetChrCTRLPath();
             foreach (string chrId in chrIdToFileMap.Keys)
             {
                 if (StrtGenome.IsASpliceAnnotation(chrId)) continue;
@@ -41,7 +43,6 @@ namespace Linnarsson.Strt
         {
             DnaSequence trSeq;
             int requestedExtension = StrtGenome.IsACommonChrId(gf.Chr)? 0 : -CAPCloseSiteSearchStart;
-            //int requestedExtension = (gf.Chr != StrtGenome.chrCTRLId) ? -CAPCloseSiteSearchStart : 0;
             int actualExtension = GetTrSeq(gf.Chr, gf.Strand, gf.ExonStartsString, gf.ExonEndsString, requestedExtension, out trSeq);
             List<int> sitePositions = GetSiteList(trSeq, actualExtension);
             return sitePositions;

@@ -9,7 +9,10 @@ using Linnarsson.Mathematics;
 
 namespace Linnarsson.Strt
 {
-
+    /// <summary>
+    /// Defines a combination of (spliced) exons used for read alignment in the splice chromosome.
+    /// If one exon is shorter than read length, a combination will contain more than two exons.
+    /// </summary>
     public class ExonCombination
     {
         /// <summary>
@@ -49,6 +52,9 @@ namespace Linnarsson.Strt
         }
     }
 
+    /// <summary>
+    /// This class splices exons to construct sequences to align to on the splice chromosome
+    /// </summary>
     public class ExonCombinationGenerator
     {
         private static void MakeExonCombContinuations(int matchableLen, int totLen, int internalLen, int maxSkip, List<DnaSequence> exons,
@@ -86,6 +92,9 @@ namespace Linnarsson.Strt
         }
     }
 
+    /// <summary>
+    /// Methods to construct all the annotation and chromsome files needed in the STRT subfolder of a genome
+    /// </summary>
     public class AnnotationBuilder
     {
         private Props props;
@@ -249,7 +258,7 @@ namespace Linnarsson.Strt
                         }
                     }
                     if (jStarts.Count > 0)
-                        annotWriter.WriteLine(MakeGenesFileLine(egf, junctionsChrId,
+                        annotWriter.WriteLine(MakeJunctionChrAnnotationLine(egf, junctionsChrId,
                                               jStarts, jEnds, offsets, realExonIds, exonIdStrings));
                 }
                 if (Background.CancellationPending) return;
@@ -261,7 +270,7 @@ namespace Linnarsson.Strt
             Console.WriteLine("Length of artificial splice chromosome:" + jChrSeq.Count);
         }
 
-        public string MakeGenesFileLine(GeneFeature gf, string junctionsChrId,
+        public string MakeJunctionChrAnnotationLine(GeneFeature gf, string junctionsChrId,
                                         List<int> jStarts, List<int> jEnds,
                                         List<int> offsets, List<int> realExonIds, List<string> exonIdStrings)
         {
@@ -305,6 +314,11 @@ namespace Linnarsson.Strt
             return chrWriter;
         }
 
+        /// <summary>
+        /// Initiate the RefFlat-style annotation file
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <returns></returns>
         private StreamWriter PrepareAnnotationsFile(StrtGenome genome)
         {
             string annotationsPath = genome.MakeAnnotationsPath();
@@ -321,21 +335,24 @@ namespace Linnarsson.Strt
             annotWriter.WriteLine("@InputAnnotationFile={0}", annotationReader.VisitedAnnotationPaths);
             foreach(string commonChrId in StrtGenome.commonChrIds)
                 CopyCommonChrData(commonChrId, genome, annotWriter);
-            //CopyCTRLData(genome, annotWriter);
             return annotWriter;
         }
 
+        /// <summary>
+        /// Transfer annotations for features on the CTRL and EXTRA chromosomes
+        /// </summary>
+        /// <param name="chrId"></param>
+        /// <param name="genome"></param>
+        /// <param name="refWriter"></param>
         private void CopyCommonChrData(string chrId, StrtGenome genome, StreamWriter refWriter)
         {
             string chrPath = PathHandler.GetCommonChrPath(chrId);
-            //string chrPath = PathHandler.GetChrCTRLPath();
             if (File.Exists(chrPath))
             {
                 Console.WriteLine("Adding " + chrId + " chromosome and annotations.");
                 string chrDest = Path.Combine(genome.GetOriginalGenomeFolder(), Path.GetFileName(chrPath));
                 if (!File.Exists(chrDest))
                     File.Copy(chrPath, chrDest);
-                //using (StreamReader reader = PathHandler.GetCTRLGenesPath().OpenRead())
                 using (StreamReader reader = PathHandler.GetCommonGenesPath(chrId).OpenRead())
                 {
                     string data = reader.ReadToEnd();
@@ -345,6 +362,12 @@ namespace Linnarsson.Strt
             }
         }
 
+        /// <summary>
+        /// Convert the 5' ends of a RefFlat-style annotation file using data from errorsPath (usually '...annot_errors.tab')
+        /// and write a new update file
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <param name="errorsPath"></param>
         public void UpdateSilverBulletGenes(StrtGenome genome, string errorsPath)
         {
             if (!errorsPath.Contains(genome.GetBowtieMainIndexName()))
@@ -405,6 +428,11 @@ namespace Linnarsson.Strt
                                 "You need to replace the old file manually.", updatedPath);
         }
 
+        /// <summary>
+        /// Parse new 5' information from errorPath, usually '...annot_errors.tab'
+        /// </summary>
+        /// <param name="errorsPath"></param>
+        /// <returns></returns>
         private Dictionary<string, int> ReadErrorsFile(string errorsPath)
         {
             Dictionary<string, int> updates = new Dictionary<string, int>();

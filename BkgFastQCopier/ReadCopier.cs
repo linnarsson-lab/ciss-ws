@@ -13,6 +13,10 @@ using Linnarsson.Strt;
 
 namespace BkgFastQCopier
 {
+    /// <summary>
+    /// Methods to scan Illumina Runs folder for new data and copy the reads from .bcl or .qseq file into
+    /// the Reads folder for further processing
+    /// </summary>
     public class ReadCopier
     {
         string illuminaRunsFolder;
@@ -28,6 +32,10 @@ namespace BkgFastQCopier
             AssertOutputFolders(outputReadsFolder);
         }
 
+        /// <summary>
+        /// Make the read, non past filter, and statistics subfolders if they don't exist
+        /// </summary>
+        /// <param name="outputReadsFolder"></param>
         private static void AssertOutputFolders(string outputReadsFolder)
         {
             if (!File.Exists(outputReadsFolder))
@@ -129,6 +137,17 @@ namespace BkgFastQCopier
             return readFileResults;
         }
 
+        /// <summary>
+        /// This is a speed-up version that does Extraction of data into projectFolders at the same time as copying.
+        /// Not used yet, and needs bug fixing!
+        /// </summary>
+        /// <param name="runNo"></param>
+        /// <param name="runId"></param>
+        /// <param name="runFolder"></param>
+        /// <param name="readsFolder"></param>
+        /// <param name="laneFrom"></param>
+        /// <param name="laneTo"></param>
+        /// <returns></returns>
         private List<ReadFileResult> NewCopyRunFqData(int runNo, string runId, string runFolder, string readsFolder, int laneFrom, int laneTo)
         {
             string runFolderName = Path.GetFileName(runFolder);
@@ -149,7 +168,7 @@ namespace BkgFastQCopier
                     List<SampleReadWriter> srws = new List<SampleReadWriter>();
                     foreach (Pair<string, string> bcAndProj in projectDB.GetBarcodeSetsAndProjects(runNo, lane))
                     {
-                        string outputFolder = PathHandler.MakeExtractedFolder(bcAndProj.Second, bcAndProj.First, StrtReadMapper.EXTRACTION_VERSION);
+                        string outputFolder = PathHandler.MakeExtractionFolderSubPath(bcAndProj.Second, bcAndProj.First, StrtReadMapper.EXTRACTION_VERSION);
                         Barcodes barcodes = Barcodes.GetBarcodes(bcAndProj.First);
                         LaneInfo laneInfo = new LaneInfo(lrws[0].PFFilePath, runFolderName, lane.ToString()[0]);
                         laneInfo.SetExtractedFilePaths(outputFolder, barcodes.Count);
@@ -223,6 +242,14 @@ namespace BkgFastQCopier
             return m;
         }
 
+        /// <summary>
+        /// Method to call when manually copying (e.g. repairing lost data) some specific lane(s)
+        /// </summary>
+        /// <param name="runFolder"></param>
+        /// <param name="readsFolder"></param>
+        /// <param name="laneFrom"></param>
+        /// <param name="laneTo"></param>
+        /// <returns></returns>
         public int SingleUseCopy(string runFolder, string readsFolder, int laneFrom, int laneTo)
         {
             int nFilesCopied = 0;

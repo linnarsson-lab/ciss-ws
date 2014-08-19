@@ -9,6 +9,9 @@ using Linnarsson.Utilities;
 
 namespace Linnarsson.Strt
 {
+    /// <summary>
+    /// Handles writing of for per lane-extracted reads 1,2,3, and summaries into separate files
+    /// </summary>
     public class SampleReadWriter
     {
         Barcodes barcodes;

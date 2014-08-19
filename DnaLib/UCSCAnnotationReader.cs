@@ -7,6 +7,9 @@ using Linnarsson.Utilities;
 
 namespace Linnarsson.Dna
 {
+    /// <summary>
+    /// Parser for UCSC refFlat.txt files
+    /// </summary>
     public class RefFlatAnnotationReader : AnnotationReader
     {
         public RefFlatAnnotationReader(StrtGenome genome, string annotationFile)

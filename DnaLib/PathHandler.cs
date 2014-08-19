@@ -112,6 +112,11 @@ namespace Linnarsson.Dna
                                 Props.props.TestAnalysisFileMarker + "_0000_" + dataId);
         }
 
+        /// <summary>
+        /// Return an array of the repeat mask files of the given genome
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <returns></returns>
         public static string[] GetRepeatMaskFiles(StrtGenome genome)
         {
             string genomeFolder = genome.GetOriginalGenomeFolder();
@@ -130,10 +135,6 @@ namespace Linnarsson.Dna
             return gvfFiles[0];
         }
 
-        private static string GetReadFileMatchPattern(string runNoOrFlowcellId)
-        {
-            return GetReadFileMatchPattern(runNoOrFlowcellId, '*', ".gz");
-        }
         private static string GetReadFileMatchPattern(string runNoOrFlowcellId, char readNo, string extension)
         {
             string matchPat = "Run*_L{0}_" + readNo + "_*_?" + runNoOrFlowcellId + extension; // FlowcellId pattern
@@ -241,18 +242,23 @@ namespace Linnarsson.Dna
 
         /// <summary>
         /// If input is the name of a project folder, it is rooted in the project directory.
-        /// If input is an Extracted folder, return the rooted project folder
+        /// If input is an Extraction folder, return the rooted project folder
         /// </summary>
         /// <param name="projectFolderOrName"></param>
         /// <returns></returns>
         public static string GetRootedProjectFolder(string projectFolderOrName)
         {
             projectFolderOrName = GetRooted(projectFolderOrName);
-            if (Path.GetFileName(projectFolderOrName).IndexOf(extractedFolderCenter) >= 0)
+            if (Path.GetFileName(projectFolderOrName).IndexOf(extractionFolderCenter) >= 0)
                 projectFolderOrName = Path.GetDirectoryName(projectFolderOrName);
             return projectFolderOrName;
         }
 
+        /// <summary>
+        /// Expand the argument to a full project folder path, if needed
+        /// </summary>
+        /// <param name="projectFolderOrName"></param>
+        /// <returns></returns>
         public static string GetRooted(string projectFolderOrName)
         {
             if (!Path.IsPathRooted(projectFolderOrName))
@@ -260,31 +266,39 @@ namespace Linnarsson.Dna
             return projectFolderOrName;
         }
 
-        public static readonly string extractedFolderCenter = "_ExtractionVer";
-        public static string extractedFolderMakePattern = "{0}" + extractedFolderCenter + "{1}_{2}";
-        public static string extractedFolderMatchPattern = extractedFolderCenter + "([0-9]+)_(.+)$";
-        public static string MakeExtractedFolder(string projectFolder, string barcodeSet, string extractionVersion)
+        public static readonly string extractionFolderCenter = "_ExtractionVer";
+        public static string extractionFolderMakePattern = "{0}" + extractionFolderCenter + "{1}_{2}";
+        public static string extractionFolderMatchPattern = extractionFolderCenter + "([0-9]+)_(.+)$";
+
+        /// <summary>
+        /// Construct an Extraction folder name and return it combined as a subfolder to the projectFolder path
+        /// </summary>
+        /// <param name="projectFolder"></param>
+        /// <param name="barcodeSet"></param>
+        /// <param name="extractionVersion"></param>
+        /// <returns></returns>
+        public static string MakeExtractionFolderSubPath(string projectFolder, string barcodeSet, string extractionVersion)
         {
             string projectName = Path.GetFileName(projectFolder);
-            return Path.Combine(projectFolder, string.Format(extractedFolderMakePattern, projectName, extractionVersion, barcodeSet));
+            return Path.Combine(projectFolder, string.Format(extractionFolderMakePattern, projectName, extractionVersion, barcodeSet));
         }
 
         /// <summary>
-        /// Finds the latest Extracted folder inside input Project Folder,
+        /// Finds the latest Extraction folder inside input Project Folder,
         /// or just adds any missing root to an input Extracted folder.
         /// </summary>
         /// <param name="inputFolder"></param>
-        /// <returns>Path to the latest Extracted folder in inputFolder, 
+        /// <returns>Path to the latest Extraction folder in inputFolder, 
         ///          or the rooted inputFolder if it already was the path of 
-        ///          an Extracted folder</returns>
-        public static string GetLatestExtractedFolder(string inputFolder)
+        ///          an Extraction folder</returns>
+        public static string GetLatestExtractionFolder(string inputFolder)
         {
             inputFolder = GetRooted(inputFolder);
             string latestExtracted = inputFolder;
-            if (!inputFolder.Contains(extractedFolderCenter))
+            if (!inputFolder.Contains(extractionFolderCenter))
             { // inputFolder was a project folder
                 string projectName = Path.GetFileName(inputFolder);
-                string pat = projectName + extractedFolderMatchPattern;
+                string pat = projectName + extractionFolderMatchPattern;
                 List<string> extractedDirs = new List<string>();
                 string[] allDirs = Directory.GetDirectories(inputFolder);
                 foreach (string dir in allDirs)
@@ -301,13 +315,13 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Get the version of extraction from an extracted folder path
+        /// Get the version of extraction from an Extraction folder path
         /// </summary>
         /// <param name="extractedFolder"></param>
         /// <returns>"0" if path is not parsable</returns>
         public static string GetExtractionVersion(string extractedFolder)
         {
-            Match m = Regex.Match(extractedFolder, extractedFolderMatchPattern);
+            Match m = Regex.Match(extractedFolder, extractionFolderMatchPattern);
             if (m.Success) return m.Groups[1].Value;
             return "0";
         }
@@ -333,49 +347,74 @@ namespace Linnarsson.Dna
             return Path.Combine("Data", Path.Combine("Intensities", "BaseCalls"));
         }
 
+        /// <summary>
+        /// Return the full path to a barcode set definition file
+        /// </summary>
+        /// <param name="barcodeSetName"></param>
+        /// <returns></returns>
         public static string MakeBarcodeFilePath(string barcodeSetName)
         {
             string bcPath = Path.Combine(Props.props.ProjectsFolder, "barcodes");
             return Path.Combine(bcPath, barcodeSetName + ".barcodes");
         }
 
+        /// <summary>
+        /// Return an array of all barcode set names defined by barcode definition files
+        /// </summary>
+        /// <returns></returns>
         public static string[] GetAllCustomBarcodeSetNames()
         {
             string[] bcFiles = Directory.GetFiles(Path.Combine(Props.props.ProjectsFolder, "barcodes"), "*.barcodes");
             return Array.ConvertAll(bcFiles, f => Path.GetFileNameWithoutExtension(f));
         }
 
+        /// <summary>
+        /// Extract the barcode set name from the path name of an Extracted reads folder
+        /// </summary>
+        /// <param name="extractedFolder"></param>
+        /// <returns>The DefaultBarcodeSet if path is not parsable</returns>
         public static string ParseBarcodeSet(string extractedFolder)
         {
-            Match m = Regex.Match(extractedFolder, extractedFolderMatchPattern);
+            Match m = Regex.Match(extractedFolder, extractionFolderMatchPattern);
             if (m != null)
                 return m.Groups[2].Value;
             return Props.props.DefaultBarcodeSet;
         }
 
-        public static string GetChrCTRLPath()
-        {
-            return GetCommonChrPath(StrtGenome.chrCTRLId);
-        }
+        /// <summary>
+        /// Return the full path to a CTRL or EXTRA chromosome sequence
+        /// </summary>
+        /// <param name="commonChrId"></param>
+        /// <returns></returns>
         public static string GetCommonChrPath(string commonChrId)
         {
             return Path.Combine(Props.props.GenomesFolder, "chr" + commonChrId + ".fa");
         }
 
-        public static string GetCTRLGenesPath()
-        {
-            return GetCommonGenesPath(StrtGenome.chrCTRLId);
-        }
+        /// <summary>
+        /// Return the full path to a CTRL or EXTRA chromosome (RefFlat style) annotation file
+        /// </summary>
+        /// <param name="commonChrId"></param>
+        /// <returns></returns>
         public static string GetCommonGenesPath(string commonChrId)
         {
             return Path.Combine(Props.props.GenomesFolder, "SilverBullet" + commonChrId + ".txt");
         }
 
+        /// <summary>
+        /// Return the full path to the TAB-file giving CTRL gene concentrations
+        /// </summary>
+        /// <returns></returns>
         public static string GetCTRLConcPath()
         {
             return Path.Combine(Props.props.GenomesFolder, "SilverBulletCTRLConc.txt");
         }
 
+        /// <summary>
+        /// Replace any characters in name that are not valid in filenames with '_'
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public static string MakeSafeFilename(string name)
         {
             string safeName = name;

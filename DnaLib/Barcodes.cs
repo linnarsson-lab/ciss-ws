@@ -14,6 +14,9 @@ namespace Linnarsson.Dna
         { }
     }
     
+    /// <summary>
+    /// Handler of barcode set definitions, as well as cell specific annotations from any layout file
+    /// </summary>
 	public abstract class Barcodes
 	{
         private string[] m_Seqs;

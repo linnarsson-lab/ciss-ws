@@ -32,6 +32,10 @@ namespace Linnarsson.Strt
             }
         }
 
+        /// <summary>
+        /// Find 5' close clavage sites for method-critical restriction enzymes and annotate in the GeneMetadata
+        /// </summary>
+        /// <param name="gf"></param>
         public void AnnotateCleaveSites(GeneFeature gf)
         {
             List<int> sites = GetCleaveSites(gf);
@@ -39,7 +43,7 @@ namespace Linnarsson.Strt
             gf.GeneMetadata += ";" + siteList;
         }
 
-        public List<int> GetCleaveSites(GeneFeature gf)
+        private List<int> GetCleaveSites(GeneFeature gf)
         {
             DnaSequence trSeq;
             int requestedExtension = StrtGenome.IsACommonChrId(gf.Chr)? 0 : -CAPCloseSiteSearchStart;

@@ -361,11 +361,13 @@ namespace Linnarsson.Dna
         {
             AnnotationsByWell.Clear();
             m_SpeciesByWell = new string[m_WellIds.Length];
-            if (m_WellIds.Length != sampleLayout.Length)
+            for (int i = 0; i < m_SpeciesByWell.Length; i++)
+                m_SpeciesByWell[i] = "empty";
+            if (m_WellIds.Length < sampleLayout.Length)
             {
                 string xtra = (sampleLayout.Filename == "C1 database") ? "It may help to reload plate with C1SeqPlateLoader.exe" : "";
-                throw new SampleLayoutFileException("Line count of layout in " + sampleLayout.Filename + " (" + sampleLayout.Length +
-                                                    ") differs from barcode set " + this.Name + "(" + this.Count + ") " + xtra);
+                throw new SampleLayoutFileException("There are more wells in layout " + sampleLayout.Filename + " (" + sampleLayout.Length +
+                                                    ") then defined in barcode set " + this.Name + "(" + this.Count + ") " + xtra);
             }
             foreach (string annotation in sampleLayout.GetAnnotations())
                 AnnotationsByWell[annotation] = new string[m_WellIds.Length];

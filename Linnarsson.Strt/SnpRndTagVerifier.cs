@@ -9,7 +9,9 @@ using Linnarsson.Mathematics;
 namespace Linnarsson.Strt
 {
     /// <summary>
-    /// Holds counts for one barcode of each Nt in every rnd label for one single known SNP position, of reads mapped at a specific position and strand 
+    /// Holds counts for one barcode of each Nt in every UMI for one single known SNP position,
+    /// of reads mapped at a specific position and strand. This class was only used for
+    /// proof-of-concept that all reads with the same UMI really represent the same single molecule
     /// </summary>
     public class SnpRndTagVerChrPosBcData
     {
@@ -47,7 +49,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Checks that within a random label (representing one original molecule) the same Nt is used at the SNP position in all reads.
+        /// Checks that within a UMI (representing one original molecule) the same Nt is used at the SNP position in all reads.
         /// </summary>
         /// <param name="sameNtInEachRndTag">True indicates correctness</param>
         /// <param name="nUsedRndTags">Number of random labels containing data (i.e. number of original molecules)</param>
@@ -234,9 +236,10 @@ namespace Linnarsson.Strt
     }
 
     /// <summary>
-    /// Verifies that the same SNP occurs in all reads stemming from the same molecule (i.e. having equal chr, pos, bc, rnd label)
-    /// Reads all known SNP positions from a GVF file that has to be in genome folder of species.
-    /// </summary>
+    /// Verifies that the same SNP occurs in all reads stemming from the same molecule (i.e. having equal chr, pos, bc, UMI)
+    /// Reads and uses all known SNP positions from a GVF file that has to be in genome folder of species.
+    /// This class was only used for proof-of-concept that all reads with the same UMI really represent the same single molecule.
+    /// /// </summary>
     public class SnpRndTagVerifier
     {
         private Dictionary<string, SnpRndTagVerChrData> dataByChr = new Dictionary<string, SnpRndTagVerChrData>();
@@ -352,8 +355,8 @@ namespace Linnarsson.Strt
                                    int nCorrectHetero, int nCorrect, int nTotal, int nSkipped, int nWrongHetero)
         {
             writer.WriteLine("\n\nKnown SNP position from GVF file and reads with PhredScore >=" + minMismatchPhredAsciiVal + " on the read Nt were considered.");
-            writer.WriteLine("Skipped " + nSkipped + " pos-strand-barcodes with >" + nMaxUsedRndTags + " used rnd labels or <" + minReads + " reads.");
-            writer.WriteLine(nCorrect + " / " + nTotal + " positions with mapped alternative Nts had correctly the same Nt within every rnd label.");
+            writer.WriteLine("Skipped " + nSkipped + " pos-strand-barcodes with >" + nMaxUsedRndTags + " used UMIs or <" + minReads + " reads.");
+            writer.WriteLine(nCorrect + " / " + nTotal + " positions with mapped alternative Nts had correctly the same Nt within every UMI.");
             writer.WriteLine(nCorrectHetero + " of these were also found to be heterozygous (altNt with >= " + SnpRndTagVerChrPosBcData.MinCountForValidNtWithinRndTag +
                              " reads.)");
             writer.WriteLine(nWrongHetero + " of the " + (nTotal - nCorrect) + " problematic read cases appear to be true heterozygous.");

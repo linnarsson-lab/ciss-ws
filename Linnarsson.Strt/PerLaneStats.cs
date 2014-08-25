@@ -8,6 +8,9 @@ using Linnarsson.Dna;
 
 namespace Linnarsson.Strt
 {
+    /// <summary>
+    /// Class to sample molecule counts at specific read counts to report library complexity of individual reads files
+    /// </summary>
     class PerLaneStats
     {
         public static readonly int nMappedReadsPerFileAtSample = 200000;

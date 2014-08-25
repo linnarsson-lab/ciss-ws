@@ -628,8 +628,8 @@ namespace Linnarsson.Strt
                         List<int> freeExonsB = GetNonOverlappingExons(gfB, gfA);
                         int freeHitsB = gfB.GetExpressionFromExons(freeExonsB);
                         int nCommonExons = gfPair.Value;
-                        string freeExonsAList = MakeExonNumberList(freeExonsA);
-                        string freeExonsBList = MakeExonNumberList(freeExonsB);
+                        string freeExonsAList = MakeExonNumbersAsCommaSepString(freeExonsA);
+                        string freeExonsBList = MakeExonNumbersAsCommaSepString(freeExonsB);
                         file.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}", gfA.Chr, names[0], names[1], nCommonExons,
                                        aHits, bHits, freeExonsAList, freeHitsA, freeExonsBList, freeHitsB);
                         nPairs++;
@@ -638,7 +638,7 @@ namespace Linnarsson.Strt
             }
         }
 
-        private string MakeExonNumberList(List<int> exonIdxs)
+        private string MakeExonNumbersAsCommaSepString(List<int> exonIdxs)
         {
             if (exonIdxs.Count == 0)
                 return "-";
@@ -750,6 +750,12 @@ namespace Linnarsson.Strt
             }
         }
 
+        /// <summary>
+        /// Iterate expression data of non-empty wells as Blobs for DB insertion.
+        /// Note that the ExprBlob object is re-used at each cycle.
+        /// </summary>
+        /// <param name="cellIdByPlateWell"></param>
+        /// <returns></returns>
         public IEnumerable<ExprBlob> IterC1DBExprBlobs(Dictionary<string, int> cellIdByPlateWell)
         {
             int nValues = 0;

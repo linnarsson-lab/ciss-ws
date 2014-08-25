@@ -378,6 +378,10 @@ namespace Linnarsson.Strt
             }
         }
 
+        /// <summary>
+        /// Add to summary of read/mol-related statistics for which raw data is lost for each new barcode
+        /// </summary>
+        /// <param name="chrTagData"></param>
         private void FinishBarcodeWRndTags(ChrTagData chrTagData)
         {
             foreach (TagItem tagItem in chrTagData.IterNonEmptyTagItems())

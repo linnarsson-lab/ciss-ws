@@ -110,6 +110,11 @@ namespace Linnarsson.Dna
         /// </summary>
         public int Extension5Prime { get { return (Strand == '+') ? SavedCAPPos - Start : End - SavedCAPPos; } }
 
+        /// <summary>
+        /// In some genes, there are extremely short splices of one or a few bases. These may be true in some case,
+        /// but some seem erratic, and importantly, they mess up processing. They are simply joined together.
+        /// </summary>
+        /// <param name="minEvents"></param>
         public void JoinSpuriousSplices(int minEvents)
         {
             List<int> newStarts = new List<int>(ExonStarts.Length);
@@ -510,6 +515,13 @@ namespace Linnarsson.Dna
             return (start <= End - minIntrusion && end >= Start + minIntrusion);
         }
 
+        /// <summary>
+        /// Checks if any of the exons overlaps the start-end interval by at least minIntrusion
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="minIntrusion"></param>
+        /// <returns></returns>
         public bool ExonsWithin(int start, int end, int minIntrusion)
         {
             for (int i = 0; i < ExonCount; i++)
@@ -518,6 +530,11 @@ namespace Linnarsson.Dna
             return false;
         }
 
+        /// <summary>
+        /// Sums up total expression from specified exons
+        /// </summary>
+        /// <param name="selectedExonIdxs"></param>
+        /// <returns></returns>
         public int GetExpressionFromExons(List<int> selectedExonIdxs)
         {
             int count = 0;
@@ -590,6 +607,10 @@ namespace Linnarsson.Dna
             return annotType;
         }
 
+        /// <summary>
+        /// Register the counts that are shared for this TagItem with other features
+        /// </summary>
+        /// <param name="item"></param>
         private void AddSharingGenes(MappedTagItem item)
         {
             if (sharingGenes == null)

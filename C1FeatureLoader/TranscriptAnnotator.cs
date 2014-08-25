@@ -37,6 +37,14 @@ namespace C1
 
         public abstract void Annotate(ref Transcript t);
 
+        /// <summary>
+        /// Generalized annotator to annotate from a TAB-delim file, using some lookup and some annotation columns
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <param name="annotationFile"></param>
+        /// <param name="keyCols">column(s) to match during lookup</param>
+        /// <param name="valueCols">column(s) of anntotation values</param>
+        /// <param name="annotType">type of anntotation</param>
         public SimpleAnnotator(StrtGenome genome, string annotationFile, int[] keyCols, int[] valueCols, string annotType)
         {
             string aPath = PathHandler.ExistsOrGz(Path.Combine(genome.GetOriginalGenomeFolder(), annotationFile));

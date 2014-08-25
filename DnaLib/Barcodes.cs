@@ -357,6 +357,10 @@ namespace Linnarsson.Dna
             return AnnotationsByWell[annotationTitle][wellIdx];
         }
 
+        /// <summary>
+        /// Transfer species and other annotations from layout into the proper slots by barcodeIdx
+        /// </summary>
+        /// <param name="sampleLayout"></param>
         public void SetSampleLayout(PlateLayout sampleLayout)
         {
             AnnotationsByWell.Clear();

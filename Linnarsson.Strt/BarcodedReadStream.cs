@@ -9,7 +9,7 @@ using System.IO;
 namespace Linnarsson.Strt
 {
     /// <summary>
-    /// FastQ read file streamer that can handle also TrueSeq and similar runs where barcodes are separated,
+    /// FastQ read file streamer that can handle also TruSeq and similar runs where barcodes are separated,
     /// into the index file, by inserting barcodes from index file at start of reads before extraction.
     /// </summary>
     public class BarcodedReadStream

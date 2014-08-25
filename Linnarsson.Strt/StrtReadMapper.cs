@@ -215,6 +215,10 @@ namespace Linnarsson.Strt
 			Background.Message("Ready");
 		}
 
+        /// <summary>
+        /// Analyze barcode distro among STRT valid reads. Old and not recently tested code
+        /// </summary>
+        /// <param name="projectFolder"></param>
         public void BarcodeStats(string projectFolder)
         {
             Barcodes barcodes = props.Barcodes;
@@ -294,6 +298,13 @@ namespace Linnarsson.Strt
         }
 
         public static readonly string EXTRACTION_VERSION = "34";
+
+        /// <summary>
+        /// Extract and filter reads for the barcodes where there is no existing extracted file,
+        /// or the file is of an older version, or the read file is newer than the extracted file.
+        /// </summary>
+        /// <param name="laneInfos"></param>
+        /// <param name="outputFolder"></param>
         private void ExtractMissingAndOld(List<LaneInfo> laneInfos, string outputFolder)
         {
             foreach (LaneInfo laneInfo in laneInfos)
@@ -811,6 +822,11 @@ namespace Linnarsson.Strt
             return averageReadLen;
         }
 
+        /// <summary>
+        /// Return average length of the first 1000 reads in mapFilePaths[0]
+        /// </summary>
+        /// <param name="mapFilePaths"></param>
+        /// <returns></returns>
         private int EstimateReadLengthFromMapFiles(List<string> mapFilePaths)
         {
             MapFile mapFileReader = MapFile.GetMapFile(mapFilePaths[0], barcodes);
@@ -826,10 +842,10 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// If there is gene_to_paint.txt file in the projectFolder, the genes to paint Prop is taken from there
+        /// If there is a "gene_to_paint.txt" file in the projectFolder, Props.GenesToPaint is read
+        /// as one line of comma-separated gene names from that file
         /// </summary>
         /// <param name="projectFolder"></param>
-        /// <param name="props"></param>
         private void UpdateGenesToPaintProp(string projectFolder)
         {
             string paintPath = Path.Combine(projectFolder, "genes_to_paint.txt");

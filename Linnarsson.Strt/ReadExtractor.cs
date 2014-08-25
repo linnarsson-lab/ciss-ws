@@ -138,6 +138,13 @@ namespace Linnarsson.Strt
             return insertLength;
         }
 
+        /// <summary>
+        /// Check if reads is mainly polyN or polyA, or contains a (previously) common SalI-containing erratic sequence
+        /// </summary>
+        /// <param name="rSeq"></param>
+        /// <param name="insertStart"></param>
+        /// <param name="insertLength"></param>
+        /// <returns></returns>
         private int TestComplexity(string rSeq, int insertStart, int insertLength)
         {
             int nNonAs = 0;
@@ -154,6 +161,13 @@ namespace Linnarsson.Strt
             return ReadStatus.VALID;
         }
 
+        /// <summary>
+        /// Sequences that are dinucleotide repeats are removed
+        /// </summary>
+        /// <param name="rSeq"></param>
+        /// <param name="insertStart"></param>
+        /// <param name="insertLength"></param>
+        /// <returns></returns>
         private int TestDinucleotideRepeats(string rSeq, int insertStart, int insertLength)
         {
             string insertSeq = rSeq.Substring(insertStart, insertLength);
@@ -180,6 +194,11 @@ namespace Linnarsson.Strt
             }
         }
 
+        /// <summary>
+        /// Tries to classify reads with out barcode to some common artefact types
+        /// </summary>
+        /// <param name="seq"></param>
+        /// <returns></returns>
         private int AnalyzeNonBarcodeRead(string seq)
         {
             if (Regex.Match(seq, "GTCGACTTTTTTTTTTTTTTTTTTTTTTTTT").Success) return ReadStatus.NO_BC_SAL1;

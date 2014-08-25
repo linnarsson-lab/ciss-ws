@@ -29,6 +29,12 @@ namespace Linnarsson.Dna
         private TagItem m_TagItem;
         public TagItem tagItem { get { return m_TagItem; } }
 
+        /// <summary>
+        /// MappedTagItem is used as a singleton during iterations in order to save HEAP, and this methods loads a new set of data
+        /// </summary>
+        /// <param name="hitStartPos"></param>
+        /// <param name="strand"></param>
+        /// <param name="tagItem"></param>
         public void Update(int hitStartPos, char strand, TagItem tagItem)
         {
             this.m_HitStartPos = hitStartPos;
@@ -55,6 +61,10 @@ namespace Linnarsson.Dna
             }
         }
 
+        /// <summary>
+        /// Needed when calculating per-barcode statistics of reads/mol and filtered reads
+        /// </summary>
+        /// <param name="annotType"></param>
         public void SetTypeOfAnnotation(int annotType)
         {
             this.m_TagItem.typeOfAnnotation = (short)annotType;

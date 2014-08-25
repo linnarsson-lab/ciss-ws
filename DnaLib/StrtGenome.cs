@@ -265,6 +265,11 @@ namespace Linnarsson.Dna
         {
             return GetGenomes(false);
         }
+        /// <summary>
+        /// Return data on all genomes that can be use in an analysis.
+        /// </summary>
+        /// <param name="requireStrtFolder">if true, only consider genomes where the STRT-specific subfolder has been created</param>
+        /// <returns></returns>
         public static StrtGenome[] GetGenomes(bool requireStrtFolder)
         {
             List<StrtGenome> existingGenomes =  new List<StrtGenome> { Human, Mouse, Chicken };
@@ -302,6 +307,10 @@ namespace Linnarsson.Dna
             return existingGenomes.ToArray();
         }
 
+        /// <summary>
+        /// Create all the strings that would define a valid genome to use for STRT analyses, e.g. "hs", "mm10", "mm9_aUCSC", "mouse"
+        /// </summary>
+        /// <returns></returns>
         public static List<string> GetValidGenomeStrings()
         {
             HashSet<string> s = new HashSet<string>();
@@ -317,6 +326,11 @@ namespace Linnarsson.Dna
             return s.ToList();
         }
 
+        /// <summary>
+        /// Special usage when building STRT genomes
+        /// </summary>
+        /// <param name="speciesArg"></param>
+        /// <returns></returns>
         public static StrtGenome GetBaseGenome(string speciesArg)
         {
             return GetGenome(speciesArg, Props.props.AnalyzeAllGeneVariants, "", false);

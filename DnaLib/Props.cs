@@ -126,7 +126,6 @@ namespace Linnarsson.Dna
         public string ForbiddenReadInternalSeqs = ""; // Comma-separated list of seqs that if found inside reads disqualify them during extraction.
         public int sampleDistPerBcForAccuStats = 100000; // Statistics as fn. of #reads processed will be collected every this # of reads
         public bool sampleAccuFilteredExonMols = false; // Sample #EXON Mols after mutation filter as fn. of processed reads (slow)
-        public bool WriteReadsAsGVFFiles = false;
         public string[] CAPCloseSiteSearchCutters = new string[] { "PvuI" };
         public bool InsertCells10Data = false; // Set to true to insert results into cells10k database for "C1-" prefixed projects
         public bool AnalyzeGCContent = false; // Analyze the GC content of transcript mapping reads

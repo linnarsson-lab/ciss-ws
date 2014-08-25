@@ -7,6 +7,10 @@ using Linnarsson.Dna;
 
 namespace Linnarsson.Strt
 {
+    /// <summary>
+    /// Developmental class to analyze barcodes that erraticaly prime upstream of the correct position.
+    /// Produces a cross-correlation table of frequencies of neighboring barcodes
+    /// </summary>
     public class UpstreamAnalyzer
     {
         private int[] upstreamTests;

@@ -54,13 +54,19 @@ namespace BkgFastQCopier
             }
             catch (Exception)
             {
-                Console.WriteLine("\nOptions:\n\n" +
-                                  "-i <file>               - specify a non-standard Illumina runs folder\n" +
-                                  "-o <file>               - specify a non-standard reads output folder\n" +
+                Console.WriteLine("\nThis program regularly scans for new data in the Illumina output folder, " +
+                                  "defined by property RunsFolder in SilverBullet config file, and extracts the reads from " +
+                                  ".bcl/.qseq files into per-lane .fq files in the directory given by propery ReadsFolder. " +
+                                  "Checks that an Illumina run is finished by looking for the file defined by property IlluminaRunReadyFilename (" +
+                                  Props.props.IlluminaRunReadyFilename + ") in each run folder, and copies reads when either the output (past filter) .fq " +
+                                  "or the output statistics file is missing. To re-extract data a run, either delete the statistics file, or use option --run. " +
+                                  "\nOptions:\n\n" +
+                                  "-i <file>               - specify a non-standard Illumina runs folder (default=" + illuminaRunsFolder + ")\n" +
+                                  "-o <file>               - specify a non-standard reads output folder (default=" + outputReadsFolder + ")\n" +
                                   "-l <file>               - specify a non-standard log file\n" +
-                                  "-t <N>                  - specify a non-standard interval for scans in minutes\n" +
+                                  "-t <N>                  - specify a non-standard interval for scans in minutes (default=" + minutesWait + ")\n" +
                                   "--run <folder>[:lane]   - copy only specified [lane of] run folder and then quit\n" +
-                                  "Start using nohup to scan for new data every {0} minutes.\n", minutesWait);
+                                  "Start using nohup and put in crontab for activation at each reboot.");
                     return;
             }
             if (!File.Exists(logFile))

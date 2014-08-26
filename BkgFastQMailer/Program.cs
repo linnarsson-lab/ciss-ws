@@ -45,12 +45,16 @@ namespace BkgFastQMailer
             }
             catch (Exception)
             {
-                Console.WriteLine("\nOptions:\n\n" +
-                                  "-i<file>    - specify a non-standard reads folder" +
-                                  "-l<file>    - specify a non-standard log file\n\n" +
-                                  "-t<N>       - specify a non-standard interval for scans in minutes\n\n" +
-                                  "Start using nohup to scan forever every {0} minutes.\n" +
-                                  "Log output goes to {1}.", minutesWait, logFile);
+                Console.WriteLine("This program regularly scans the database fqmailqueue table for new mailing tasks, copies the" + 
+                                  ".fq file to the web server using rsync, and mails a http link for download to the recepient. " +
+                                  "ReadsFolder is defined by ReadsFolder in the SilverBullet config file. ssh port, scp destination, and " +
+                                   "http address are defined by ResultDownloadScpPort, ResultDownloadUrl, and ResultDownloadFolderHttp. " +
+                                  "\nOptions:\n\n" +
+                                  "-i<file>    - specify a non-standard reads folder (default=" + readsFolder + ")\n" +
+                                  "-l<file>    - specify a non-standard log file\n" +
+                                  "-t<N>       - specify a non-standard interval for scans in minutes (default=" + minutesWait + ")\n\n" +
+                                  "Start using nohup and put in crontab for startup at reboot.\n" +
+                                  "Log output goes to a file including the PID, like '{0}'.", logFile);
                 return;
             }
             if (!File.Exists(logFile))

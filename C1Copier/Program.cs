@@ -55,13 +55,16 @@ namespace C1
             {
                 if (!e.Message.Equals("OptionError"))
                     Console.WriteLine(e);
-                Console.WriteLine("\nOptions:\n\n" +
-                                  "-i <folder>   - specify a non-standard c1 input folder\n" +
+                Console.WriteLine("This program regularly (every " + minutesWait + " minutes) scans the C1 chip data folder, " +
+                                  "defined by property C1RunsFolder in C1Config file, for new or updated cell, " +
+                                  "image and metadata files, and inserts data and image paths into the cells10k database." +
+                                  "\nOptions:\n\n" +
+                                  "-i <folder>   - specify a non-standard c1 input folder (default=" + C1Props.props.C1RunsFolder + ")\n" +
                                   "-l <file>     - specify a non-standard log file\n" +
                                   "-s            - run only a single time, then quit\n" +
                                   "-u <folder>   - load or update from a specific chip folder, then quit\n" +
                                   "                Will succeed even if donor/mouse file is missing.\n" +
-                                  "Put in crontab for starting at every reboot.\n" +
+                                  "Start with nohup and put in crontab for starting at every reboot.\n" +
                                   "\nLogfile defaults to a name with Pid included like: " + logFile);
                 return;
             }

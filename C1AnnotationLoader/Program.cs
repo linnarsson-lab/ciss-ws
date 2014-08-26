@@ -11,7 +11,8 @@ namespace C1AnnotationLoader
         {
             if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
             {
-                Console.WriteLine("Usage:\nmono C1AnnotationLoader.exe ANNOTATIONTABFILE\n\n" +
+                Console.WriteLine("This program inserts additional cell annotations into the cells10k database from a TAB-delimited file." +
+                                  "\nUsage:\nmono C1AnnotationLoader.exe ANNOTATIONTABFILE\n\n" +
                                   "ANNOTATIONTABFILE should consist of lines of:\n" +
                                   "Chip TAB ChipWell TAB AnnotName TAB AnnotValue [ AnnotName2 TAB AnnotValue2... ]");
             }

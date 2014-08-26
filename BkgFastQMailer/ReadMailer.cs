@@ -15,6 +15,8 @@ namespace BkgFastQMailer
 {
     class ReadMailer
     {
+        private static readonly string readFilenamePattern = "Run{0:00000}_L{1}_[0-9].+fq";
+
         private string readsFolder;
         private StreamWriter logWriter;
 
@@ -34,7 +36,7 @@ namespace BkgFastQMailer
                 List<string> links = new List<string>();
                 foreach (MailTaskDescription md in mds[email])
                 {
-                    string pattern = string.Format("Run{0:00000}_L{1}_[0-9].+fq", int.Parse(md.runNo), md.laneNo);
+                    string pattern = string.Format(readFilenamePattern, int.Parse(md.runNo), md.laneNo);
                     string status = "filemissing";
                     foreach (string readsFile in readsFiles)
                     {

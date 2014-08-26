@@ -59,13 +59,19 @@ namespace BkgBackuper
             {
                 if (!e.Message.Equals("OptionError"))
                     Console.WriteLine(e);
-                Console.WriteLine("\nOptions:\n\n" +
-                                  "-i<file>     - specify a non-standard reads folder\n" +
+                Console.WriteLine("\nThis program regularly (every " + minutesWait + " minutes) scans the database backupqueue " +
+                                  "table for new reads files to be copied to the backup server. Copying is performed " +
+                                  "using scp only at night between a specified start and stop hour to avoid clogging networks. " +
+                                  "Files are read from the directory defined by ReadsFolder in SilverBullet config file and copied to " + 
+                                  "the remote address (user@server:/directory) given by property BackupDestinationFolder." +
+                                  "Correct function requires the automatic ssh-login has been setup. " +
+                                  "\nOptions:\n\n" +
+                                  "-i<file>     - specify a non-standard reads folder (default=" + readsFolder + ")\n" +
                                   "-l<file>     - specify a non-standard log file\n" +
                                   "-o<scp_dest> - specify a non-standard destination\n" +
                                   "--on <int>   - specify a non-standard start hour (default=" + startHour + ")\n" +
                                   "--off <int>  - specify a non-standard stop hour (default=" + stopHour + ")\n" +
-                                  "Put in crontab for starting at every reboot.\n" +
+                                  "Should be started as nohup and put in crontab for starting at every reboot.\n" +
                                   "Destination defaults to " + backupDest +
                                   "\nLogfile defaults to a name with Pid included like: " + logFile);
                 return;

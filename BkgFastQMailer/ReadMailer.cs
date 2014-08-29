@@ -15,8 +15,6 @@ namespace BkgFastQMailer
 {
     class ReadMailer
     {
-        private static readonly string readFilenamePattern = "Run{0:00000}_L{1}_[0-9].+fq";
-
         private string readsFolder;
         private StreamWriter logWriter;
 
@@ -36,7 +34,8 @@ namespace BkgFastQMailer
                 List<string> links = new List<string>();
                 foreach (MailTaskDescription md in mds[email])
                 {
-                    string pattern = string.Format(readFilenamePattern, int.Parse(md.runNo), md.laneNo);
+                    string pattern = string.Format(PathHandler.readFileAndLaneFolderCreatePattern,
+                                                   int.Parse(md.runNo), md.laneNo, "[0-9]", ".+fq");
                     string status = "filemissing";
                     foreach (string readsFile in readsFiles)
                     {
@@ -98,8 +97,7 @@ namespace BkgFastQMailer
                 destFilename += ".gz";
             }
             string destPath = Path.Combine(Props.props.ResultDownloadUrl, destFilename);
-            string cpCmd = "rsync"; // "scp";
-            //string cpCmdArg = string.Format("-P {0} {1} {2}", Props.props.ResultDownloadScpPort, gzReadsPath, destPath);
+            string cpCmd = "rsync";
             string cpCmdArg = string.Format("--ignore-existing -e 'ssh -p {0}' {1} {2}", Props.props.ResultDownloadScpPort, gzReadsPath, destPath);
             Console.WriteLine(DateTime.Now.ToString() + ": " + cpCmd + " " + cpCmdArg);
             CmdCaller cpCmdCaller = new CmdCaller(cpCmd, cpCmdArg);

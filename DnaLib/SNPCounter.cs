@@ -182,10 +182,10 @@ namespace Linnarsson.Dna
         public SNPCountsByRndTag(char refNt)
         {
             this.refNt = refNt;
-            this.nA = new ushort[TagItem.nRndTags];
-            this.nC = new ushort[TagItem.nRndTags];
-            this.nG = new ushort[TagItem.nRndTags];
-            this.nT = new ushort[TagItem.nRndTags];
+            this.nA = new ushort[TagItem.nUMIs];
+            this.nC = new ushort[TagItem.nUMIs];
+            this.nG = new ushort[TagItem.nUMIs];
+            this.nT = new ushort[TagItem.nUMIs];
         }
         public void Clear()
         {

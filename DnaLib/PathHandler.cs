@@ -10,26 +10,36 @@ namespace Linnarsson.Dna
 {
     public class PathHandler
     {
-        public static readonly string extractionSummaryFilename = "summary.txt";
-        public static readonly string statsSubFolder = "statistics";
-        public static readonly string nonPFSubFolder = "nonPF";
-        public static readonly string readFileIdCreatePattern = "Run{0:00000}_L{1}_{2}_{3}";
+        // Read folder stuff
+        public static readonly string readFileAndLaneFolderCreatePattern = "Run{0:00000}_L{1}_{2}_{3}"; // 0=RunNo - 1=LaneNo - 2=ReadNo - 3=Date or RunFolderName
+        public static readonly string readFileAndLaneFolderMatchPat = "Run([0-9]+)_L([0-9])_([0-9])_([0-9]+)"; // RunNo - LaneNo - ReadNo - Date or RunFolderName
+        public static readonly string readFileGlobPatWFlowCellId = "Run*_L{1}_{2}_*_?{0}"; // 0=FlowCellId - 1=LaneNo - 2=ReadNo
+        public static readonly string readStatsSubFolder = "statistics";
+        public static readonly string nonPFReadsSubFolder = "nonPF";
 
-        public static string GetReadFileId(string runFolderName, int runNo, int lane, int read)
+        // Extraction folder stuff
+        private static readonly string extractionFolderCenter = "_ExtractionVer";
+        public static readonly string extractionFolderCreatePattern = "{0}" + extractionFolderCenter + "{1}_{2}";
+        public static readonly string extractionFolderMatchPattern = extractionFolderCenter + "([0-9]+)_(.+)$";
+        public static readonly string extractionSummaryFilename = "summary.txt";
+
+        public static readonly string ctrlConcFilename = "SilverBulletCTRLConc.txt";
+
+        private static string CreateReadFilename(string runFolderName, int runNo, int lane, int read)
         {
-            return string.Format(readFileIdCreatePattern, runNo, lane, read, runFolderName);
+            return string.Format(readFileAndLaneFolderCreatePattern, runNo, lane, read, runFolderName);
         }
         public static string GetPFFilePath(string readsFolder, string runFolderName, int runNo, int lane, int read)
         {
-            return Path.Combine(readsFolder, GetReadFileId(runFolderName, runNo, lane, read) + ".fq.gz");
+            return Path.Combine(readsFolder, CreateReadFilename(runFolderName, runNo, lane, read) + ".fq.gz");
         }
         public static string GetNonPFFilePath(string readsFolder, string runFolderName, int runNo, int lane, int read)
         {
-            return Path.Combine(readsFolder, Path.Combine(nonPFSubFolder, GetReadFileId(runFolderName, runNo, lane, read) + "_nonPF.fq.gz"));
+            return Path.Combine(readsFolder, Path.Combine(nonPFReadsSubFolder, CreateReadFilename(runFolderName, runNo, lane, read) + "_nonPF.fq.gz"));
         }
         public static string GetReadStatsFilePath(string readsFolder, string runFolderName, int runNo, int lane, int read)
         {
-            return Path.Combine(readsFolder, Path.Combine(statsSubFolder, GetReadFileId(runFolderName, runNo, lane, read) + ".txt"));
+            return Path.Combine(readsFolder, Path.Combine(readStatsSubFolder, CreateReadFilename(runFolderName, runNo, lane, read) + ".txt"));
         }
 
         /// <summary>
@@ -101,15 +111,15 @@ namespace Linnarsson.Dna
 
         public static string GetSyntLevelFilePath(string projectFolder, bool useRndTags)
         {
-            string molPart = useRndTags ? "mol" : "read";
-            string syntPat = Path.Combine(projectFolder, "Run00000_L0_1_" + Props.props.TestAnalysisFileMarker + "*." + molPart + "levels");
+            string extension = "." + (useRndTags ? "mol" : "read") + "levels";
+            string syntPat = string.Format(readFileAndLaneFolderCreatePattern, 0, 0, 1, "*") + "_" + Props.props.TestAnalysisFileMarker + "*" + extension;
             string[] syntPatMatches = Directory.GetFiles(projectFolder, syntPat);
             return (syntPatMatches.Length == 1) ? syntPatMatches[0] : "";
         }
         public static string MakeSyntLevelFileHead(string dataId)
         {
-            return Path.Combine(Props.props.ReadsFolder, "Run00000_L0_1_" + DateTime.Now.ToString("yyMMdd") +
-                                Props.props.TestAnalysisFileMarker + "_0000_" + dataId);
+            return Path.Combine(Props.props.ReadsFolder, string.Format(readFileAndLaneFolderCreatePattern, 0, 0, 1, DateTime.Now.ToString("yyMMdd")) +
+                                                         "_" + Props.props.TestAnalysisFileMarker + "_0000_" + dataId);
         }
 
         /// <summary>
@@ -135,13 +145,13 @@ namespace Linnarsson.Dna
             return gvfFiles[0];
         }
 
-        private static string GetReadFileMatchPattern(string runNoOrFlowcellId, char readNo, string extension)
+        public static string GetReadFileMatchPattern(string runNoOrFlowcellId, char laneNo, char readNo, string extension)
         {
-            string matchPat = "Run*_L{0}_" + readNo + "_*_?" + runNoOrFlowcellId + extension; // FlowcellId pattern
             int runNo;
             if (int.TryParse(runNoOrFlowcellId, out runNo))
-                matchPat = "Run" + string.Format("{0:00000}", runNo) + "_L{0}_" + readNo + "*" + extension; // RunNo pattern
-            return matchPat;
+                return string.Format(readFileAndLaneFolderCreatePattern, runNo, laneNo, readNo, "*") + extension; // arg was RunNo
+            else
+                return string.Format(readFileGlobPatWFlowCellId, runNoOrFlowcellId, laneNo, readNo) + extension; // arg was FlowcellId 
         }
 
         /// <summary>
@@ -150,18 +160,17 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="runId">Either a run number, a run folder, or a flowcell id</param>
         /// <param name="laneNumbers">a string of lane numbers</param>
-        /// <param name="reqReadNo">Highest read number needed (1,2, or 3)</param>
+        /// <param name="highestRequiredReadNo">Highest read number needed (1,2, or 3)</param>
         /// <returns>The run number if all are ready, else -1</returns>
-        public static int CheckReadsCollected(string runId, string laneNumbers, char reqReadNo)
+        public static int CheckReadsCollected(string runId, string laneNumbers, char highestRequiredReadNo)
         {
             if (runId.Contains('_'))
                 runId = Regex.Match(runId, "_([0-9]+)_").Groups[1].Value;
-            string statFileMatchPat = GetReadFileMatchPattern(runId, reqReadNo, ".txt");
-            string readStatFolder = Path.Combine(Props.props.ReadsFolder, PathHandler.statsSubFolder);
+            string readStatFolder = Path.Combine(Props.props.ReadsFolder, readStatsSubFolder);
             int runNo = -1;
             foreach (char laneNo in laneNumbers)
             {
-                string laneStatFileMatchPat = string.Format(statFileMatchPat, laneNo);
+                string laneStatFileMatchPat = GetReadFileMatchPattern(runId, laneNo, highestRequiredReadNo, ".txt");
                 string[] statsFiles = Directory.GetFiles(readStatFolder, laneStatFileMatchPat);
                 if (statsFiles.Length == 0) return -1;
                 runNo = int.Parse(Path.GetFileName(statsFiles[0]).Substring(3, 5));
@@ -170,63 +179,12 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// laneArgs have the form RUNNO:LANENOS[:IDXSEQS]
-        /// RUNNO is a single digit, LANENOS may be serveral digits, and IDXSEQS is the index sequence
-        /// to filter by (or "" for using all indexes in that lane) for each of the lanes, separated with ','
-        /// </summary>
-        /// <param name="laneArgs"></param>
-        /// <returns></returns>
-        public static List<LaneInfo> ListReadsFiles(List<string> laneArgs)
-        {
-            List<LaneInfo> laneInfos = new List<LaneInfo>();
-            foreach (string laneArg in laneArgs)
-            {
-                string[] parts = laneArg.Split(':');
-                string runId = parts[0];
-                string matchPat = GetReadFileMatchPattern(runId, '1', ".fq.gz");
-                string idxSeqFilterString = new string(',', parts[1].Length - 1);
-                if (parts.Length >= 3)
-                {
-                    if (parts[2].Split(',').Length != parts[1].Length)
-                        throw new ArgumentException("One (possibly empty) index filter seq must exist for each lane");
-                    idxSeqFilterString = parts[2];
-                }
-                string[] idxSeqFilter = idxSeqFilterString.Split(',');
-                int n = 0;
-                foreach (char laneNo in parts[1])
-                {
-                    string readFilePat = string.Format(matchPat, laneNo);
-                    string[] laneFiles = Directory.GetFiles(Props.props.ReadsFolder, readFilePat);
-                    if (laneFiles.Length > 0)
-                        laneInfos.Add(new LaneInfo(laneFiles[0], runId, laneNo, idxSeqFilter[n++]));
-                }
-            }
-            return laneInfos;
-        }
-
-        /// <summary>
-        /// Returns rooted path to the Reads folder in projectFolder.
-        /// Changes nothing if projectFolder is rooted and ends with Reads/ or Reads\.
-        /// </summary>
-        /// <param name="projectFolder"></param>
-        /// <returns></returns>
-        public static string GetReadsFolder(string projectFolder)
-        {
-            projectFolder = GetRootedProjectFolder(projectFolder);
-            string readsFolder = projectFolder;
-            if (!readsFolder.TrimEnd(new char[] { '/', '\\' }).EndsWith("Reads"))
-                readsFolder = Path.Combine(projectFolder, "Reads");
-            return readsFolder;
-        }
-
-        /// <summary>
         /// List all sequence files contained in folder.
         /// </summary>
-        /// <param name="folder">Either a ...Lxxx/Reads/ reads folder, or a project folder or project name</param>
+        /// <param name="readsFolder">Directory containing .fq, .qseq, or .fasta (.gz) files</param>
         /// <returns></returns>
-        public static List<string> CollectReadsFilesNames(string folder)
+        public static List<string> ListAllSeqFiles(string readsFolder)
         {
-            string readsFolder = GetReadsFolder(folder);
             List<string> files = new List<string>();
             files.AddRange(Directory.GetFiles(readsFolder, "*.fq"));
             files.AddRange(Directory.GetFiles(readsFolder, "*.fq.gz"));
@@ -266,10 +224,6 @@ namespace Linnarsson.Dna
             return projectFolderOrName;
         }
 
-        public static readonly string extractionFolderCenter = "_ExtractionVer";
-        public static string extractionFolderMakePattern = "{0}" + extractionFolderCenter + "{1}_{2}";
-        public static string extractionFolderMatchPattern = extractionFolderCenter + "([0-9]+)_(.+)$";
-
         /// <summary>
         /// Construct an Extraction folder name and return it combined as a subfolder to the projectFolder path
         /// </summary>
@@ -280,7 +234,7 @@ namespace Linnarsson.Dna
         public static string MakeExtractionFolderSubPath(string projectFolder, string barcodeSet, string extractionVersion)
         {
             string projectName = Path.GetFileName(projectFolder);
-            return Path.Combine(projectFolder, string.Format(extractionFolderMakePattern, projectName, extractionVersion, barcodeSet));
+            return Path.Combine(projectFolder, string.Format(extractionFolderCreatePattern, projectName, extractionVersion, barcodeSet));
         }
 
         /// <summary>
@@ -407,7 +361,7 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static string GetCTRLConcPath()
         {
-            return Path.Combine(Props.props.GenomesFolder, "SilverBulletCTRLConc.txt");
+            return Path.Combine(Props.props.GenomesFolder, ctrlConcFilename);
         }
 
         /// <summary>

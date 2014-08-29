@@ -152,7 +152,7 @@ namespace Linnarsson.Strt
             exonHitFeatures = new List<IFeature>(100);
             spliceChrId = Annotations.Genome.Annotation;
             randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
-            TagItem.SetRndTagMutationFilter(props);
+            TagItem.SetUMIMutationFilter(props);
             mappingAdder = new MappingAdder(annotations, randomTagFilter, barcodes);
             statsSampleDistPerBarcode = Props.props.sampleDistPerBcForAccuStats;
             if (props.AnalyzeSeqUpstreamTSSite && barcodes.Count > 1)
@@ -470,7 +470,7 @@ namespace Linnarsson.Strt
 
         /// <summary>
         /// Called when a read hits several genes at the same mapping position. Some genes may overlap, but
-        /// should usually only happen if two alt. splices match the read and point to the same true genomic position.
+        /// should in 'single' mode only happen if two alt. splices match the read and point to the same true genomic position.
         /// </summary>
         /// <param name="molCount"></param>
         private void RegisterOverlappingGeneFeatures(int molCount)
@@ -607,7 +607,7 @@ namespace Linnarsson.Strt
                     string chr = tagDataPair.Key;
                     foreach (MappedTagItem t in tagDataPair.Value.IterItems(currentBcIdx, chr))
                     {
-                        ushort[] d = t.tagItem.GetReadCountsByRndTag();
+                        ushort[] d = t.tagItem.GetReadCountsByUMI();
                         for (int UMIIdx = 0; UMIIdx < d.Length; UMIIdx++)
                         {
                             if (d[UMIIdx] > 0)

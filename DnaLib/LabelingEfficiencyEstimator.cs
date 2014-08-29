@@ -83,7 +83,7 @@ namespace Linnarsson.Dna
 
         /// <summary>
         /// Calculate the estimated true number of molecule, taking efficiency and UMI collisions into account. Exhaustion of library assumed.
-        /// Also keep track of the maximal number of UMIS occupied.
+        /// Also keep track of the maximal number of UMIs occupied.
         /// </summary>
         /// <param name="numMolecules">Number of observed UMIs</param>
         /// <returns></returns>

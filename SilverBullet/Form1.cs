@@ -215,46 +215,6 @@ namespace SilverBullet
 			}
 		}
 
-		private void splitByBarcodeToolStripMenuItem_Click(object sender, EventArgs e)
-		{
-			if(Background.IsBusy)
-			{
-				if(MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
-			}
-            string projectFolder = SelectProject();
-			if(projectFolder != null)
-			{
-                string barcodeSet = SelectBarcodeSet();
-                SetupMapper(barcodeSet);
-                Background.RunAsync(() => {
-                    Background.Message("Splitting...");
-                    mapper.Split(projectFolder);
-                    Background.Message("Ready");
-                    Console.WriteLine("Done.");
-                });
-			}
-		}
-
-        private void barcodeStatsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (Background.IsBusy)
-            {
-                if (MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
-            }
-            string projectFolder = SelectProject();
-            if (projectFolder!= null)
-            {
-                string barcodeSet = SelectBarcodeSet();
-                SetupMapper(barcodeSet);
-                Background.RunAsync(() => {
-                    Background.Message("Calculating stats...");
-                    mapper.BarcodeStats(projectFolder);
-                    Background.Message("Ready");
-                    Console.WriteLine("Done.");
-                });
-            }
-        }
-
         private void buildSplicedExonsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (Background.IsBusy)
@@ -332,26 +292,6 @@ namespace SilverBullet
                         Console.WriteLine("Error in Form1.updateAnnotationsToolStripMenuItem_Click: " + exc);
                     }
                 });
-            }
-        }
-
-        private void importFastaFileToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (Background.IsBusy)
-            {
-                if (MessageBox.Show("A previous task has not yet completed. Do you wish to proceed anyway?", "Conflicting task", MessageBoxButtons.YesNo) == DialogResult.No) return;
-            }
-			OpenFileDialog ofd = new OpenFileDialog();
-            ofd.Title = "Locate a fasta sequence file you want to import into the STRT pipeline";
-            if (ofd.ShowDialog() == DialogResult.OK)
-            {
-                string fastaFile = ofd.FileName;
-                string barcodeSet = SelectBarcodeSet();
-                TextDialog nameDialog = new TextDialog();
-                nameDialog.ShowDialog();
-                string projectName = nameDialog.value;
-                SetupMapper(barcodeSet);
-                mapper.ConvertToReads(fastaFile, projectName, 25, 50);
             }
         }
 

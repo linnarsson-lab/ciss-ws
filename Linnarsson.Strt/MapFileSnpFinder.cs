@@ -102,6 +102,10 @@ namespace Linnarsson.Strt
             this.barcodes = barcodes;
         }
 
+        /// <summary>
+        /// Define all positions where potential SNPs are located, using only single-mapping reads
+        /// </summary>
+        /// <param name="mapFilePaths"></param>
         public void ProcessMapFiles(List<string> mapFilePaths)
         {
             Console.Write("Defining SNP positions by scanning {0} map files..", mapFilePaths.Count);

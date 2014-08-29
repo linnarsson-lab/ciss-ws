@@ -41,8 +41,8 @@ namespace BkgFastQCopier
             if (!File.Exists(outputReadsFolder))
             {
                 Directory.CreateDirectory(outputReadsFolder);
-                Directory.CreateDirectory(Path.Combine(outputReadsFolder, PathHandler.nonPFSubFolder));
-                Directory.CreateDirectory(Path.Combine(outputReadsFolder, PathHandler.statsSubFolder));
+                Directory.CreateDirectory(Path.Combine(outputReadsFolder, PathHandler.nonPFReadsSubFolder));
+                Directory.CreateDirectory(Path.Combine(outputReadsFolder, PathHandler.readStatsSubFolder));
             }
         }
 
@@ -168,10 +168,9 @@ namespace BkgFastQCopier
                     List<SampleReadWriter> srws = new List<SampleReadWriter>();
                     foreach (Pair<string, string> bcAndProj in projectDB.GetBarcodeSetsAndProjects(runNo, lane))
                     {
-                        string outputFolder = PathHandler.MakeExtractionFolderSubPath(bcAndProj.Second, bcAndProj.First, StrtReadMapper.EXTRACTION_VERSION);
+                        string extractionFolder = PathHandler.MakeExtractionFolderSubPath(bcAndProj.Second, bcAndProj.First, StrtReadMapper.EXTRACTION_VERSION);
                         Barcodes barcodes = Barcodes.GetBarcodes(bcAndProj.First);
-                        LaneInfo laneInfo = new LaneInfo(lrws[0].PFFilePath, runFolderName, lane.ToString()[0]);
-                        laneInfo.SetExtractedFilePaths(outputFolder, barcodes.Count);
+                        LaneInfo laneInfo = new LaneInfo(lrws[0].PFFilePath, runFolderName, lane.ToString()[0], extractionFolder, barcodes.Count);
                         srws.Add(new SampleReadWriter(barcodes, laneInfo));
                     }
                     BclReadExtractor bre = new BclReadExtractor(lrws, srws);

@@ -65,7 +65,7 @@ namespace Linnarsson.Strt
         {
             WriteGeneSummary(OutputPathbase + "_expression_genemax.tab", (x => x.nMols));
             WriteGeneSummary(OutputPathbase + "_expression_genemin.tab", (x => x.nUniqueMols));
-            if (TagItem.nRndTags > 1)
+            if (TagItem.nUMIs > 1)
             {
                 WriteGeneSummary(OutputPathbase + "_reads_genemax.tab", (x => x.nReads));
                 WriteGeneSummary(OutputPathbase + "_reads_genemin.tab", (x => x.nUniqueReads));

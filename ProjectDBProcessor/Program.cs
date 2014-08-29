@@ -114,6 +114,12 @@ namespace ProjectDBProcessor
             mailClient.Send(message);
         }
 
+        /// <summary>
+        /// Check that all needed read files and corresponding summary files have been created,
+        /// and set run numbers in projDescr
+        /// </summary>
+        /// <param name="projDescr"></param>
+        /// <returns>false if some fq file is missing, or there was an error</returns>
         private static bool CheckAllReadsCollected(ref ProjectDescription projDescr)
         {
             try

@@ -23,7 +23,7 @@ namespace Linnarsson.Dna
         /// </summary>
         public string idxSeqFilter { get; set; }
 
-        public string extractionTopFolder { get; set; }
+        public string extractionFolder { get; set; }
 
         public string readFilePath { get; set; }
         public string nonPFReadFilePath { get; set; }
@@ -41,18 +41,17 @@ namespace Linnarsson.Dna
         public string slaskFilePath { get; set; }
         public string summaryFilePath { get; set; }
         public string[] extractedFilePaths { get; set; }
-        public string extractedFileFolder { get; set; }
-        public string ExtractedFileFolderName { get { return Path.GetFileName(extractedFileFolder); } }
+        public string laneExtractionFolder { get; set; }
+        public string ExtractedFileFolderName { get { return Path.GetFileName(laneExtractionFolder); } }
 
         public string[] mappedFilePaths { get; set; }
         public string mappedFileFolder { get; set; }
         public string bowtieLogFilePath { get; set; }
 
+        /// <summary>
+        /// Needed for serialization
+        /// </summary>
         public LaneInfo()
-        { }
-
-        public LaneInfo(string readFilePath, string runId, char laneNo)
-            : this(readFilePath, runId, laneNo, "")
         { }
 
         public LaneInfo(string readFilePath, string runId, char laneNo, string idxSeqFilter)
@@ -63,29 +62,121 @@ namespace Linnarsson.Dna
             this.idxSeqFilter = idxSeqFilter;
         }
 
+        /// <summary>
+        /// Create fq subfolder, and lane-specific subsubfolder (templated from readFilePath) under
+        /// extractionFolder and setup file names for all fq output files
+        /// </summary>
+        /// <param name="readFilePath"></param>
+        /// <param name="runId"></param>
+        /// <param name="laneNo"></param>
+        /// <param name="extractionFolder"></param>
+        /// <param name="nBarcodes"></param>
+        public LaneInfo(string readFilePath, string runId, char laneNo, string extractionFolder, int nBarcodes)
+            : this(readFilePath, runId, laneNo, "")
+        {
+            Match m = Regex.Match(readFilePath, PathHandler.readFileAndLaneFolderMatchPat);
+            int readNo = int.Parse(m.Groups[1].Value);
+            string laneExtractionName = string.Format(PathHandler.readFileAndLaneFolderCreatePattern,
+                                                      readNo, m.Groups[2].Value, m.Groups[3].Value, m.Groups[4].Value);
+            laneExtractionFolder = Path.Combine(GetFqSubFolder(extractionFolder), laneExtractionName);
+            if (!Directory.Exists(laneExtractionFolder))
+                Directory.CreateDirectory(laneExtractionFolder);
+            SetExtractionFilePaths(extractionFolder, laneExtractionFolder, nBarcodes);
+        }
+
+        public static string GetFqSubFolder(string extractionFolder)
+        {
+            return Path.Combine(extractionFolder, "fq");
+        }
+
+        public static string[] GetLaneExtractionFolders(string extractionFolder)
+        {
+            return Directory.GetDirectories(GetFqSubFolder(extractionFolder));
+        }
+
+        public static string GetSummaryPath(string laneExtractionFolder)
+        {
+            return Path.Combine(laneExtractionFolder, PathHandler.extractionSummaryFilename);
+        }
+
+        private void SetExtractionFilePaths(string extractionFolder, string laneExtractionFolder, int nBarcodes)
+        {
+            this.extractionFolder = extractionFolder;
+            this.laneExtractionFolder = laneExtractionFolder;
+            this.extractedFilePaths = new string[Math.Max(1, nBarcodes)];
+            for (int i = 0; i < extractedFilePaths.Length; i++)
+                this.extractedFilePaths[i] = Path.Combine(laneExtractionFolder, i.ToString() + ".fq");
+            this.slaskFilePath = Path.Combine(laneExtractionFolder, "slask.fq.gz");
+            this.summaryFilePath = GetSummaryPath(laneExtractionFolder);
+        }
+
+        public bool AllExtractedFilesExist()
+        {
+            foreach (string path in this.extractedFilePaths)
+                if (!File.Exists(path))
+                    return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Construct laneInfos by scanning existing data in the extractionFolder
+        /// </summary>
+        /// <param name="extractionFolder"></param>
+        /// <returns></returns>
+        public static List<LaneInfo> SetupLaneInfosFromExistingExtraction(string extractionFolder, int nBarcodes)
+        {
+            List<LaneInfo> laneInfos = new List<LaneInfo>();
+            foreach (string laneExtractionFolder in GetLaneExtractionFolders(extractionFolder))
+            {
+                Match m = Regex.Match(Path.GetFileName(laneExtractionFolder), PathHandler.readFileAndLaneFolderMatchPat);
+                if (!m.Success) continue;
+                LaneInfo laneInfo = new LaneInfo(m.Groups[0].Value, m.Groups[1].Value, m.Groups[2].Value[0], "");
+                laneInfo.SetExtractionFilePaths(extractionFolder, laneExtractionFolder, nBarcodes);
+                laneInfos.Add(laneInfo);
+            }
+            return laneInfos;
+        }
+
         public void SetMappedFileFolder(string splcIndexVersion)
         {
             string mapFolderName = PathHandler.MakeMapFolder(splcIndexVersion);
-            mappedFileFolder = Path.Combine(Path.Combine(extractionTopFolder, mapFolderName), ExtractedFileFolderName);
+            this.mappedFileFolder = Path.Combine(Path.Combine(extractionFolder, mapFolderName), ExtractedFileFolderName);
         }
 
-        public void SetExtractedFilePaths(string extractedFolder, int nBarcodes)
+        /// <summary>
+        /// laneArgs have the form RUN:LANENOS[:IDXSEQS]
+        /// RUN is a run number or flowcell id, LANENOS may be several digits, each one lane, and IDXSEQS is the index sequence
+        /// to filter by (or "" for using all indexes in that lane) for each of the lanes, separated with ','
+        /// </summary>
+        /// <param name="laneArgs"></param>
+        /// <param name="extractionFolder"></param>
+        /// <param name="nBarcodes"></param>
+        /// <returns></returns>
+        public static List<LaneInfo> LaneInfosFromLaneArgs(List<string> laneArgs, string extractionFolder, int nBarcodes)
         {
-            extractionTopFolder = extractedFolder;
-            Match m = Regex.Match(readFilePath, "(Run[0-9]+_L[0-9]_[0-9]_[0-9]+)_.+XX\\.fq");
-            extractedFileFolder = Path.Combine(Path.Combine(extractedFolder, "fq"), m.Groups[1].Value);
-            if (!Directory.Exists(extractedFileFolder))
-                Directory.CreateDirectory(extractedFileFolder);
-            SetExtractedFilesInfo(nBarcodes);
-        }
-
-        public void SetExtractedFilesInfo(int nBarcodes)
-        {
-            extractedFilePaths = new string[Math.Max(1, nBarcodes)];
-            for (int i = 0; i < extractedFilePaths.Length; i++)
-                extractedFilePaths[i] = Path.Combine(extractedFileFolder, i.ToString() + ".fq");
-            slaskFilePath = Path.Combine(extractedFileFolder, "slask.fq.gz");
-            summaryFilePath = Path.Combine(extractedFileFolder, PathHandler.extractionSummaryFilename);
+            List<LaneInfo> laneInfos = new List<LaneInfo>();
+            foreach (string laneArg in laneArgs)
+            {
+                string[] parts = laneArg.Split(':');
+                string runId = parts[0];
+                string idxSeqFilterString = new string(',', parts[1].Length - 1);
+                if (parts.Length >= 3)
+                {
+                    if (parts[2].Split(',').Length != parts[1].Length)
+                        throw new ArgumentException("One (possibly empty) index filter seq must exist for each lane");
+                    idxSeqFilterString = parts[2];
+                }
+                string[] idxSeqFilter = idxSeqFilterString.Split(',');
+                int n = 0;
+                foreach (char laneNo in parts[1])
+                {
+                    string readFilePat = PathHandler.GetReadFileMatchPattern(runId, laneNo, '1', ".fq.gz");
+                    string[] readFiles = Directory.GetFiles(Props.props.ReadsFolder, readFilePat);
+                    if (readFiles.Length > 0)
+                        laneInfos.Add(new LaneInfo(readFiles[0], runId, laneNo, idxSeqFilter[n++]));
+                }
+            }
+            return laneInfos;
         }
 
         public static List<string> RetrieveAllMapFilePaths(List<LaneInfo> laneInfos)
@@ -100,9 +191,9 @@ namespace Linnarsson.Dna
         {
             string s = "LaneInfo: illuminaRunId=" + illuminaRunId + " laneNo=" + laneNo + "\n" +
                        "readFilePath=" + readFilePath + " nReads=" + nReads + "\n" +
-                       "extrTopF= " + extractionTopFolder + "\n" +
+                       "extrTopF= " + extractionFolder + "\n" +
                        ((extractedFilePaths != null && extractedFilePaths.Length > 0) ? "extrFilePaths[0]=" + extractedFilePaths[0] + "\n" : "") +
-                       "extractedFileFolder=" + extractedFileFolder + "\n" +
+                       "extractedFileFolder=" + laneExtractionFolder + "\n" +
                        " N=" + ((extractedFilePaths == null) ? "0" : extractedFilePaths.Length.ToString()) + "\n" +
                        "slaskFilePath=" + slaskFilePath + "\n" + 
                        "summaryFilePath= " + summaryFilePath + "\n" +

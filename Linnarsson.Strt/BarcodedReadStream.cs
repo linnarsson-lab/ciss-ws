@@ -27,13 +27,13 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Reads fq records from a stream, with the option of extraction barcodes from a 2nd (& 3rd) read index file(s),
-        /// and/or filtering to yield only records having a specific 2nd read prefix sequence.
+        /// Reads fq records from a stream, with the option of extraction barcodes from a 2nd (and 3rd) read index file(s),
+        /// and or filtering to yield only records having a specific 2nd read prefix sequence.
         /// </summary>
         /// <param name="barcodes"></param>
         /// <param name="read1FqPath"></param>
         /// <param name="qualityScoreBase"></param>
-        /// <param name="read2PrefixFilter">If non-empty, only records with index (2nd) reads starting with the given seq will be returned</param>
+        /// <param name="read2FilterPrefix">If non-empty, only records with index (2nd) reads starting with the given seq will be returned</param>
         /// <returns></returns>
         public static IEnumerable<FastQRecord> Stream(Barcodes barcodes, string read1FqPath,
                                                       byte qualityScoreBase, string read2FilterPrefix)
@@ -65,7 +65,7 @@ namespace Linnarsson.Strt
                 }
                 if (read2FilterPrefix.Length > 0 && !Regex.IsMatch(read2.Sequence, "^" + read2FilterPrefix))
                         continue;
-                if (true) //(read1.PassedFilter && (read2 == null || read2.PassedFilter) && (read3 == null || read3.PassedFilter))
+                if (true)
                 {
                     CheckReadIdAndInsertPrefix(read1FqPath, read2CopyLen, read1, read2, "_R2_");
                     if (read3 != null)

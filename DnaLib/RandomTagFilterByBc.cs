@@ -227,7 +227,7 @@ namespace Linnarsson.Strt
             TagItem t;
             if (tagItems.TryGetValue(posStrand, out  t))
             {
-                readProfile = t.GetReadCountsByRndTag();
+                readProfile = t.GetReadCountsByUMI();
                 molCount = t.GetFinalNumMolecules();
             }
             else
@@ -334,7 +334,7 @@ namespace Linnarsson.Strt
         {
             hasRndTags = barcodes.HasUMIs;
             nRndTags = barcodes.UMICount;
-            TagItem.nRndTags = nRndTags;
+            TagItem.nUMIs = nRndTags;
             nReadsByRandomTag = new int[nRndTags];
             nCasesPerRandomTagCount = new int[nRndTags + 1];
             chrTagDatas = new Dictionary<string, ChrTagData>();
@@ -386,7 +386,7 @@ namespace Linnarsson.Strt
         {
             foreach (TagItem tagItem in chrTagData.IterNonEmptyTagItems())
             {
-                ushort[] readsByRndTag = tagItem.GetReadCountsByRndTag();
+                ushort[] readsByRndTag = tagItem.GetReadCountsByUMI();
                 int nUsedRndTags = readsByRndTag.Count(c => c > 0);
                 totalMolecules += nUsedRndTags;
                 int nFilteredMols = tagItem.GetFinalNumMolecules();

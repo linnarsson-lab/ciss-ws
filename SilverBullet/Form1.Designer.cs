@@ -183,20 +183,6 @@
             this.peekAtgzFileToolStripMenuItem.Text = "Peek at .gz file";
             this.peekAtgzFileToolStripMenuItem.Click += new System.EventHandler(this.peekAtgzFileToolStripMenuItem_Click);
             // 
-            // splitByBarcodeToolStripMenuItem
-            // 
-            this.splitByBarcodeToolStripMenuItem.Name = "splitByBarcodeToolStripMenuItem";
-            this.splitByBarcodeToolStripMenuItem.Size = new System.Drawing.Size(252, 22);
-            this.splitByBarcodeToolStripMenuItem.Text = "Split by barcode...";
-            this.splitByBarcodeToolStripMenuItem.Click += new System.EventHandler(this.splitByBarcodeToolStripMenuItem_Click);
-            // 
-            // barcodeStatsToolStripMenuItem
-            // 
-            this.barcodeStatsToolStripMenuItem.Name = "barcodeStatsToolStripMenuItem";
-            this.barcodeStatsToolStripMenuItem.Size = new System.Drawing.Size(252, 22);
-            this.barcodeStatsToolStripMenuItem.Text = "Barcode stats...";
-            this.barcodeStatsToolStripMenuItem.Click += new System.EventHandler(this.barcodeStatsToolStripMenuItem_Click);
-            // 
             // buildSplicedExonsToolStripMenuItem
             // 
             this.buildSplicedExonsToolStripMenuItem.Name = "buildSplicedExonsToolStripMenuItem";
@@ -210,13 +196,6 @@
             this.updateAnnotationsToolStripMenuItem.Size = new System.Drawing.Size(252, 22);
             this.updateAnnotationsToolStripMenuItem.Text = "Update annotations...";
             this.updateAnnotationsToolStripMenuItem.Click += new System.EventHandler(this.updateAnnotationsToolStripMenuItem_Click);
-            // 
-            // importFastaFileToolStripMenuItem
-            // 
-            this.importFastaFileToolStripMenuItem.Name = "importFastaFileToolStripMenuItem";
-            this.importFastaFileToolStripMenuItem.Size = new System.Drawing.Size(252, 22);
-            this.importFastaFileToolStripMenuItem.Text = "Import fasta file...";
-            this.importFastaFileToolStripMenuItem.Click += new System.EventHandler(this.importFastaFileToolStripMenuItem_Click);
             // 
             // synthesizeReadsFileToolStripMenuItem
             // 

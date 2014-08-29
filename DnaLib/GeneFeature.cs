@@ -90,7 +90,8 @@ namespace Linnarsson.Dna
             }
         }
         /// <summary>
-        /// 0-based inclusive end position on chromosome of the rightmost exon. May be adjusted by 5' end extension defined by Props for '-' strand genes.
+        /// 0-based inclusive end position on chromosome of the rightmost exon. 
+        /// May be adjusted by 5' end extension defined by Props for '-' strand genes.
         /// </summary>
         public override int End
         {
@@ -139,7 +140,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Either molecules per barcode after rndTag mutation filtering, or total reads per barcode when no rndTag are used.
+        /// Either molecules per barcode after UMI mutation filtering, or total reads per barcode when no UMIs are used.
         /// </summary>
         public int[] TranscriptHitsByBarcode;
         /// <summary>
@@ -152,18 +153,18 @@ namespace Linnarsson.Dna
         public int[] NonConflictingTranscriptReadsByBarcode;
         public int[] EstimatedTrueMolsByBarcode;
         /// <summary>
-        /// Either molecules per barcode after rndTag mutation filtering, or total reads per barcode when no rndTag are used.
+        /// Either molecules per barcode after UMI mutation filtering, or total reads per barcode when no UMIs are used.
         /// </summary>
         public int[] NonConflictingTranscriptHitsByBarcode;
 
         /// <summary>
-        /// Either molecules per barcode after rndTag mutation filtering, or total reads per barcode when no rndTag are used.
+        /// Either molecules per barcode after UMI mutation filtering, or total reads per barcode when no UMIs are used.
         /// Only contains unquely mapping hits.
         /// </summary>
         public int[] CAPRegionHitsByBarcode;
 
         /// <summary>
-        /// Histograms of number of reads per molecule (accu across barcodes+rndTags) at selected chromosomal positions within gene.
+        /// Histograms of number of reads per molecule (accu across barcodes+UMIs) at selected chromosomal positions within gene.
         /// </summary>
         public Dictionary<int, ushort[]> readsPerMoleculeData;
 

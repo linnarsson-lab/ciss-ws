@@ -116,14 +116,18 @@ namespace Linnarsson.Strt
             foreach (string primerSeq in trailingPrimerSeqs)
             {
                 int i = rSeq.LastIndexOf(primerSeq.Substring(0, minPrimerSeqLen));
-                if (i >= minTotalReadLength)
+                if (i >= 0)
                 {
                     int restLen = rSeq.Length - i - minPrimerSeqLen;
                     if ((primerSeq.Length - minPrimerSeqLen) >= restLen
                         && rSeq.Substring(i + minPrimerSeqLen).Equals(primerSeq.Substring(minPrimerSeqLen, restLen)))
                     {
-                        tailReadStatus = ReadStatus.TOO_SHORT_INSERT;
-                        return i;
+                        if (i < minTotalReadLength)
+                        {
+                            tailReadStatus = ReadStatus.TOO_LONG_TRAILING_PRIMER_SEQ;
+                            return i;
+                        }
+                        insertLength = i;
                     }
                 }
             }

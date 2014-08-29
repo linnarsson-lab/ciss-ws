@@ -48,7 +48,7 @@ namespace CmdSilverBullet
                             projectFolder = options.projectFolder;
                             mapper = new StrtReadMapper(props);
                             List<LaneInfo> extrInfos = mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
-                            string extractedFolder = extrInfos[0].extractionTopFolder;
+                            string extractedFolder = extrInfos[0].extractionFolder;
                             mapper.MapAndAnnotate(extractedFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
                                                   options.annotation, "", options.specificBcIdxs);
                             break;
@@ -214,24 +214,6 @@ namespace CmdSilverBullet
                             nerm.Mask(genome, outFolder);
                             break;
 
-                        case "split":
-                            CheckArgs(args, 2, 3);
-                            if (args.Length == 3)
-                                props.BarcodesName = args[1];
-                            projectFolder = args[args.Length - 1];
-                            mapper = new StrtReadMapper(props);
-                            mapper.Split(projectFolder);
-                            break;
-
-                        case "stats":
-                            CheckArgs(args, 2, 3);
-                            if (args.Length == 3)
-                                props.BarcodesName = args[1];
-                            projectFolder = args[args.Length - 1];
-                            mapper = new StrtReadMapper(props);
-                            mapper.BarcodeStats(projectFolder);
-                            break;
-
                         case "upd":
                             CheckArgs(args, 3, 5);
                             if (int.TryParse(args[argOffset], out readLen))
@@ -299,7 +281,6 @@ namespace CmdSilverBullet
                 "knowngene2refflat IDX [OUTFILE]                      make a refFlat file from UCSC knownGene.txt annotations.\n" +
                 "upd [READLEN] IDX [ANNOTFILE] ERRORFILE              update 5' end annotations from an 'annot_errors.tab' file. Specify 'annotfile' to overide default.\n" +
                 "synt BC IDX all|single OUTFOLDER                     generate synthetic reads from a genome.\n" +
-                "stats [BC] PROJECTPATH                               calculate barcode statistics.\n" +
                 "rf [rpkm] BUILD [ANNOT] OUTFILE                      load transcripts and dump to refFlat-like file.\n" +
                 "dumpfasta IDX OUTFILE [FLANKLEN]\n" +
                 "   dump all transcript sequences, including any config-extension, [with additional 5' and 3' flanks] to fasta file.\n" +

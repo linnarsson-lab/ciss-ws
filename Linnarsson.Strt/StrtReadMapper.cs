@@ -144,157 +144,32 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Split reads into individual files according to the barcodes.
-        /// No filtering or removal of barcodes is performed.
-        /// </summary>
-        /// <param name="projectFolder"></param>
-		public void Split(string projectFolder)
-		{
-            Barcodes barcodes = props.Barcodes;
-			string date = DateTime.Now.ToPathSafeString();
-
-			// Put everything in the right place
-			string readsFolder = PathHandler.GetReadsFolder(projectFolder);
-			string outputFolder = Path.Combine(readsFolder, "ByBarcode " + date);
-
-			Directory.CreateDirectory(outputFolder);
-			var outputFiles = new Dictionary<string, StreamWriter>();
-			DateTime start = DateTime.Now;
-            List<string> files = PathHandler.CollectReadsFilesNames(projectFolder);
-			Console.WriteLine("Splitting {0} files from {1}...", files.Count, readsFolder);
-			foreach(string file in files)
-			{
-				int count = 0;
-                int nobcCount = 0;
-				string fileName = Path.GetFileNameWithoutExtension(file);
-				Console.WriteLine("Processing {0}", fileName);
-
-				Dictionary<string, StreamWriter> bcodeFiles = new Dictionary<string, StreamWriter>();
-                Dictionary<string, int> counts = new Dictionary<string,int>();
-                StreamWriter sw_slask = new StreamWriter(Path.Combine(outputFolder, fileName + "_" + Barcodes.NOBARCODE + ".fq"));
-				foreach (FastQRecord rec in FastQFile.Stream(file, props.QualityScoreBase))
-				{
-					count++;
-					int insertLength = rec.Sequence.Length;
-					StreamWriter f = sw_slask;
-                    int i = Array.IndexOf(barcodes.Seqs, rec.Sequence.Substring(0, barcodes.BarcodeLen));
-                    if (i >= 0)
-                    {
-                        string bc = barcodes.Seqs[i];
-                        if (!bcodeFiles.ContainsKey(bc))
-                        {
-                            string bcfileName = Path.Combine(outputFolder, string.Format("{0}_{1}.fq", fileName, bc));
-                            bcodeFiles[bc] = new StreamWriter(bcfileName);
-                            counts[bc] = 0;
-                        }
-                        f = bcodeFiles[bc];
-                        counts[bc]++;
-                    }
-                    else nobcCount++;
-					f.WriteLine(rec.ToString(props.QualityScoreBase));
-
-					if((DateTime.Now - start).TotalSeconds > 2)
-					{
-						start = DateTime.Now;
-						Background.Message(Math.Round(count / 1e6d, 1).ToString() + "M reads extracted.");
-					}
-					if(Background.CancellationPending) break;
-				}
-				sw_slask.Close();
-                StreamWriter sw_summary = new StreamWriter(Path.Combine(outputFolder, fileName + "_SUMMARY.fq"));
-                foreach (string bc in bcodeFiles.Keys)
-                    sw_summary.WriteLine("{0}\t{1}\t{2}", Path.GetFileName(file), bc, counts[bc]);
-                sw_summary.WriteLine("{0}\t{1}\t{2}", Path.GetFileName(file), Barcodes.NOBARCODE, nobcCount);
-                sw_summary.Close();
-                foreach (StreamWriter sw in bcodeFiles.Values)
-                    if (sw != null) sw.Close();
-				if(Background.CancellationPending) break;
-
-			}
-			Background.Progress(100);
-			Background.Message("Ready");
-		}
-
-        /// <summary>
-        /// Analyze barcode distro among STRT valid reads. Old and not recently tested code
-        /// </summary>
-        /// <param name="projectFolder"></param>
-        public void BarcodeStats(string projectFolder)
-        {
-            Barcodes barcodes = props.Barcodes;
-            const int MAX_READS = 200000;
-            string date = DateTime.Now.ToPathSafeString();
-            Console.WriteLine("Calculating...");
-            DateTime start = DateTime.Now;
-
-            List<string> files = PathHandler.CollectReadsFilesNames(projectFolder);
-            foreach (string file in files)
-            {
-                int count = 0;
-                string fileName = Path.GetFileNameWithoutExtension(file);
-                Console.WriteLine("Processing {0}", fileName);
-
-                int[] barcodeCounts = new int[barcodes.Count];
-                foreach (FastQRecord rec in FastQFile.Stream(file, props.QualityScoreBase))
-                {
-                    count++;
-                    if (count > MAX_READS) break;
-                    int bcIdx, insertStart;
-                    if (barcodes.VerifyBarcodeAndTS(rec.Sequence, 0, out bcIdx, out insertStart) == ReadStatus.VALID)
-                        barcodeCounts[bcIdx]++;
-                    if ((DateTime.Now - start).TotalSeconds > 2)
-                    {
-                        start = DateTime.Now;
-                        Background.Message(Math.Round(count / 1e6d, 1).ToString() + "M reads extracted.");
-                    }
-                    if (Background.CancellationPending) break;
-                }
-                if (Background.CancellationPending) break;
-
-                for (int i = 0; i < barcodes.Seqs.Length; i++)
-                {
-                    Console.WriteLine("{0} {1}", barcodes.Seqs[i], barcodeCounts[i]);
-                }
-            }
-            Background.Progress(100);
-            Background.Message("Ready");
-        }
-
-        /// <summary>
         /// Extract and filter reads from the raw reads files in the project Reads/ directory.
         /// Will, depending on barcodeSet specification, extract barcodes and trim template switch G:s.
         /// Removes low complexity, low quality and short reads.
         /// Accepted reads are written in FastQ format and separated from rejected reads written to slask.fq files.
         /// </summary>
-        /// <param name="project">project folder or project name</param>
-        /// <param name="laneArgs">Items of "RunNo:LaneNos[:idxSeqs]" that define the lanes of the project.
-        ///                        If empty, all sequence files in projectFolder/Reads are used.</param>
-        /// <param name="resultName">If not null, is abolute path or name of project to save results in</param>
-		public List<LaneInfo> Extract(string project, List<string> laneArgs, string resultName)
+        /// <param name="projectOrReadFileFolder">project folder, project name, or a folder with sequence files</param>
+        /// <param name="laneArgs">Items of "RunNo:LaneNos[:idxSeqs]" that define the lanes of the project.</param>
+        /// <param name="resultProject">If not null, is abolute path to, or name of, project to save results in</param>
+		public List<LaneInfo> Extract(string projectOrReadFileFolder, List<string> laneArgs, string resultProject)
 		{
-            project = PathHandler.GetRootedProjectFolder(project);
-            string outputProject = (resultName != null) ? PathHandler.GetRooted(resultName) : project;
-            List<LaneInfo> laneInfos = new List<LaneInfo>();
-            if (laneArgs.Count > 0)
-            {
-                laneInfos = PathHandler.ListReadsFiles(laneArgs);
-                if (laneInfos.Count == 0)
-                    Console.WriteLine("Warning: No read files found corresponding to {0}", string.Join("/", laneArgs.ToArray()));
-            }
-            else
-                foreach (string extractedFile in PathHandler.CollectReadsFilesNames(project))
-                    laneInfos.Add(new LaneInfo(extractedFile, "X", 'x'));
-            string outputFolder = PathHandler.MakeExtractionFolderSubPath(outputProject, barcodes.Name, EXTRACTION_VERSION);
-            ExtractMissingAndOld(laneInfos, outputFolder);
+            projectOrReadFileFolder = PathHandler.GetRootedProjectFolder(projectOrReadFileFolder);
+            string resultProjectFolder = (resultProject != null) ? PathHandler.GetRooted(resultProject) : projectOrReadFileFolder;
+            string extractionFolder = PathHandler.MakeExtractionFolderSubPath(resultProjectFolder, barcodes.Name, EXTRACTION_VERSION);
+            List<LaneInfo> laneInfos = LaneInfo.LaneInfosFromLaneArgs(laneArgs, extractionFolder, barcodes.Count);
+            if (laneInfos.Count == 0)
+                Console.WriteLine("Warning: No read files found corresponding to {0}", string.Join("/", laneArgs.ToArray()));
+            ExtractMissingAndOld(laneInfos, extractionFolder);
             return laneInfos;
         }
 
         private void Extract(ProjectDescription pd)
         {
-            pd.laneInfos = PathHandler.ListReadsFiles(pd.runIdsLanes.ToList());
             pd.extractionVersion = EXTRACTION_VERSION;
-            string outputFolder = PathHandler.MakeExtractionFolderSubPath(pd.ProjectFolder, barcodes.Name, EXTRACTION_VERSION);
-            ExtractMissingAndOld(pd.laneInfos, outputFolder);
+            string extractionFolder = PathHandler.MakeExtractionFolderSubPath(pd.ProjectFolder, barcodes.Name, EXTRACTION_VERSION);
+            pd.laneInfos = LaneInfo.LaneInfosFromLaneArgs(pd.runIdsLanes.ToList(), extractionFolder, barcodes.Count);
+            ExtractMissingAndOld(pd.laneInfos, extractionFolder);
         }
 
         public static readonly string EXTRACTION_VERSION = "34";
@@ -304,14 +179,12 @@ namespace Linnarsson.Strt
         /// or the file is of an older version, or the read file is newer than the extracted file.
         /// </summary>
         /// <param name="laneInfos"></param>
-        /// <param name="outputFolder"></param>
-        private void ExtractMissingAndOld(List<LaneInfo> laneInfos, string outputFolder)
+        /// <param name="extractionFolder"></param>
+        private void ExtractMissingAndOld(List<LaneInfo> laneInfos, string extractionFolder)
         {
             foreach (LaneInfo laneInfo in laneInfos)
 			{
-                laneInfo.extractionTopFolder = outputFolder;
-                laneInfo.SetExtractedFilePaths(outputFolder, barcodes.Count);
-                bool someExtractionMissing = !AllFilePathsExist(laneInfo.extractedFilePaths) || !File.Exists(laneInfo.summaryFilePath);
+                bool someExtractionMissing = !laneInfo.AllExtractedFilesExist() || !File.Exists(laneInfo.summaryFilePath);
                 bool readFileIsNewer = (File.Exists(laneInfo.summaryFilePath) && File.Exists(laneInfo.readFilePath)) &&
                                        DateTime.Compare(new FileInfo(laneInfo.readFilePath).LastWriteTime, new FileInfo(laneInfo.summaryFilePath).LastWriteTime) > 0;
                 if (someExtractionMissing || readFileIsNewer)
@@ -322,14 +195,6 @@ namespace Linnarsson.Strt
                 if (Background.CancellationPending) break;
             }
 		}
-
-        private bool AllFilePathsExist(string[] filePaths)
-        {
-            foreach (string path in filePaths)
-                if (!File.Exists(path))
-                    return false;
-            return true;
-        }
 
         /// <summary>
         /// Performs extraction, mapping, and annotation on the lanes, bc, and layout/species defined by projDescr.
@@ -404,22 +269,20 @@ namespace Linnarsson.Strt
         /// <returns></returns>
         private int GetReadLen(ProjectDescription projDescr)
         {
-            List<string> extractedByBcFolders = projDescr.laneInfos.ConvertAll(l => l.extractedFileFolder);
-            return GetReadLen(extractedByBcFolders.ToArray());
+            List<string> laneExtractionFolders = projDescr.laneInfos.ConvertAll(l => l.laneExtractionFolder);
+            return GetReadLen(laneExtractionFolders.ToArray());
         }
-        private int GetReadLen(string extractedFolder)
+        private int GetReadLen(string extractionFolder)
         {
-            string searchIn = Path.Combine(extractedFolder, "fq");
-            string[] extractedByBcFolders = Directory.GetDirectories(searchIn);
-            return GetReadLen(extractedByBcFolders);
+            string[] laneExtractionFolders = LaneInfo.GetLaneExtractionFolders(extractionFolder);
+            return GetReadLen(laneExtractionFolders);
         }
-        private int GetReadLen(string[] extractedByBcFolders)
+        private int GetReadLen(string[] laneExtractionFolders)
         {
             ReadCounter rc = new ReadCounter();
-            foreach (string extractedByBcFolder in extractedByBcFolders)
+            foreach (string laneExtractionFolder in laneExtractionFolders)
             {
-                string summaryPath = Path.Combine(extractedByBcFolder, PathHandler.extractionSummaryFilename);
-                rc.AddExtractionSummary(summaryPath);
+                rc.AddExtractionSummary(LaneInfo.GetSummaryPath(laneExtractionFolder));
             }
             return rc.AverageReadLen;
         }
@@ -593,7 +456,7 @@ namespace Linnarsson.Strt
             string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
             string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolder);
             Console.WriteLine("Processing data from {0}", extractedFolder);
-            List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
+            List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder, barcodes.Count);
             genome.ReadLen = GetReadLen(extractedFolder);
             int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             CreateBowtieMaps(genome, laneInfos, genomeBcIndexes);
@@ -621,7 +484,7 @@ namespace Linnarsson.Strt
             string projectName = Path.GetFileName(projectFolder);
             string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
             string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolder);
-            List<LaneInfo> laneInfos = SetupLaneInfosFromExistingExtraction(extractedFolder);
+            List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder, barcodes.Count);
             string barcodeSet = PathHandler.ParseBarcodeSet(extractedFolder);
             SetBarcodeSet(barcodeSet);
             string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
@@ -670,28 +533,6 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Construct laneInfos by scanning existing data in the Extraction folder
-        /// </summary>
-        /// <param name="extractionFolder"></param>
-        /// <returns></returns>
-        private List<LaneInfo> SetupLaneInfosFromExistingExtraction(string extractionFolder)
-        {
-            string fqFolder = Path.Combine(extractionFolder, "fq");
-            List<LaneInfo> laneInfos = new List<LaneInfo>();
-            foreach (string extractedByBcFolder in Directory.GetDirectories(fqFolder))
-            {
-                Match m = Regex.Match(Path.GetFileName(extractedByBcFolder), "^Run([0-9]+)_L([0-9])_[0-9]_[0-9]+$");
-                if (!m.Success) continue;
-                LaneInfo laneInfo = new LaneInfo(m.Groups[0].Value, m.Groups[1].Value, m.Groups[2].Value[0]);
-                laneInfo.extractionTopFolder = extractionFolder;
-                laneInfo.extractedFileFolder = extractedByBcFolder;
-                laneInfo.SetExtractedFilesInfo(barcodes.Count);
-                laneInfos.Add(laneInfo);
-            }
-            return laneInfos;
-        }
-
-        /// <summary>
         /// List all read extraction summary files that correspond to the .map files.
         /// </summary>
         /// <param name="mapFilePaths"></param>
@@ -702,10 +543,10 @@ namespace Linnarsson.Strt
             foreach (string mapFilePath in mapFilePaths)
             {
                 string laneMapFolder = Path.GetDirectoryName(mapFilePath);
-                string laneName = Path.GetFileName(laneMapFolder);
-                string extrFolder = Path.GetDirectoryName(Path.GetDirectoryName(laneMapFolder));
-                string summaryFolder = Path.Combine(Path.Combine(extrFolder, "fq"), laneName);
-                string summaryPath = Path.Combine(summaryFolder, PathHandler.extractionSummaryFilename);
+                string laneFolderName = Path.GetFileName(laneMapFolder);
+                string extractionFolder = Path.GetDirectoryName(Path.GetDirectoryName(laneMapFolder));
+                string summaryFolder = Path.Combine(LaneInfo.GetFqSubFolder(extractionFolder), laneFolderName);
+                string summaryPath = LaneInfo.GetSummaryPath(summaryFolder);
                 if (!summaryPaths.ContainsKey(summaryPath))
                     summaryPaths[summaryPath] = null;
             }
@@ -861,47 +702,6 @@ namespace Linnarsson.Strt
                     props.GenesToPaint = genesToPaint;
                 }
             }
-        }
-
-        /// <summary>
-        /// Extracts reads from a FASTA-formatted file to a Fasta file in a STRT project folder.
-        /// Removes too short reads and barcodes+GGG if a barcode set is defined.
-        /// </summary>
-        /// <param name="fastaFile">Path to input file</param>
-        /// <param name="projectFolder"></param>
-        /// <param name="minReadLength">Minimum read length excluding barcode+GGG[G...]</param>
-        /// <param name="maxReadLength">Longer sequences are trunctated at this length</param>
-        public void ConvertToReads(string fastaFile, string projectFolder,
-                                   int minReadLength, int maxReadLength)
-        {
-            string readsFolder = PathHandler.GetReadsFolder(projectFolder);
-            Directory.CreateDirectory(readsFolder);
-            string readsFile = Path.GetFileNameWithoutExtension(fastaFile) + "_trimmed.fasta";
-            string outFile = Path.Combine(readsFolder, readsFile);
-            int nTot = 0, nBarcoded = 0, nTooShort = 0;
-            using (StreamWriter writer = new StreamWriter(outFile))
-            {
-                foreach (FastaRecord rec in FastaFile.Stream(fastaFile))
-                {
-                    nTot++;
-                    string seq = rec.Sequence.ToString();
-                    int bcIdx, insertPos;
-                    if (barcodes.VerifyBarcodeAndTS(seq, 6, out bcIdx, out insertPos) == ReadStatus.VALID)
-                    {
-                        if (seq.Length - insertPos >= minReadLength)
-                        {
-                            int seqLen = Math.Min(maxReadLength, seq.Length - insertPos);
-                            writer.WriteLine(">{0}\n{1}", rec.HeaderLine, seq.Substring(insertPos, seqLen));
-                            nBarcoded++;
-                        }
-                        else
-                            nTooShort++;
-                    }
-                }
-            }
-            Console.WriteLine("{0} sequences scanned, {1} were barcoded, {2} had no barcoded, {3} were too short",
-                              nTot, nBarcoded, (nTot - nBarcoded - nTooShort), nTooShort);
-            Console.WriteLine("Output file ready for extraction is in {0}", outFile);
         }
 
         /// <summary>

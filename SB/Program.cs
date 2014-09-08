@@ -132,6 +132,8 @@ namespace CmdSilverBullet
                             CheckArgs(args, 2, 6);
                             if (int.TryParse(args[argOffset], out readLen))
                                 argOffset++;
+                            else
+                                readLen = props.StandardReadLen;
                             genome = StrtGenome.GetBaseGenome(args[argOffset++]);
                             if (args.Length > argOffset && StrtGenome.IsASpliceAnnotation(args[argOffset]))
                                 genome.Annotation = args[argOffset++];
@@ -146,6 +148,8 @@ namespace CmdSilverBullet
                             CheckArgs(args, 2, 6);
                             if (int.TryParse(args[argOffset], out readLen))
                                 argOffset++;
+                            else
+                                readLen = props.StandardReadLen;
                             genome = StrtGenome.GetBaseGenome(args[argOffset++]);
                             if (args.Length > argOffset && StrtGenome.IsASpliceAnnotation(args[argOffset]))
                                 genome.Annotation = args[argOffset++];
@@ -218,6 +222,8 @@ namespace CmdSilverBullet
                             CheckArgs(args, 3, 5);
                             if (int.TryParse(args[argOffset], out readLen))
                                 argOffset++;
+                            else
+                                readLen = props.StandardReadLen;
                             genome = StrtGenome.GetGenome(args[argOffset++]);
                             genome.ReadLen = readLen;
                             annotationFile = "";

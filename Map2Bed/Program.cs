@@ -40,7 +40,7 @@ namespace Map2Pclu
                 else if (args[argIdx] == "--mergestrands") AllAsPlusStrand = true;
                 else if (args[argIdx] == "--bybarcode") iterateBarcodes = true;
                 else if (args[argIdx] == "--analyzebcleakage") analyzeBcLeakage = true;
-                else if (args[argIdx] == "--prefix=") filenamePrefix = args[argIdx].Substring(9);
+                else if (args[argIdx].StartsWith("--prefix=")) filenamePrefix = args[argIdx].Substring(9);
                 else if (args[argIdx].StartsWith("--readspermol=")) readsPerMolFile = args[argIdx].Substring(14);
                 else if (args[argIdx] == "-o") outputFolderOrFilename = args[++argIdx];
                 else inputFiles.Add(args[argIdx]);

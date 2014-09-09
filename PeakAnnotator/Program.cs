@@ -32,7 +32,8 @@ namespace PeakAnnotator
                 else if (args[argIdx] == "-f") ReadInfiles(args[++argIdx]);
                 else infiles.Add(args[argIdx]);
             }
-            genome = StrtGenome.GetGenome(genomeName);
+            if (genomeName.ToLower() != "ctrl")
+                genome = StrtGenome.GetGenome(genomeName);
         }
 
         private void ReadInfiles(string filelistFile)
@@ -68,7 +69,7 @@ namespace PeakAnnotator
                                   "-5 N             Extend TSS region by N bases in the 5' end\n" +
                                   "-n FOLDER        Write non-annotated data to files in FOLDER.\n" +
                                   "-f FILELISTFILE  Read infile names from given file, one at the start of each line (TAB and annotations may follow).\n" +
-                                  "-g GENOME        Genome to analyze, e.g. 'Mm' \n");
+                                  "-g GENOME        Genome to analyze: 'Mm'/'Hs', or 'CTRL' for only spike-ins \n");
 
             }
             else

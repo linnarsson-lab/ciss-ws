@@ -64,20 +64,24 @@ namespace PeakAnnotator
         public PeakAnnotator(PeakAnnotatorSettings settings)
         {
             this.settings = settings;
-            SetupTSSPeaks(settings.genome.Build);
-            SetupRepeats();
+            SetupTSSPeaks(settings.genome);
         }
 
-        private void SetupTSSPeaks(string build)
+        private void SetupTSSPeaks(StrtGenome genome)
         {
-            string TSSPeakFile = string.Format("/data/seq/F5_data/{0}_peaks.tab", build);
             TSSFwIntervals = new Dictionary<string, IntervalMap<int>>();
             TSSRevIntervals = new Dictionary<string, IntervalMap<int>>();
+            RepeatIntervals = new Dictionary<string, IntervalMap<int>>();
             Console.Write("Reading TSS peaks...");
             int n = LoadTSSPeakFile("/data/seq/F5_data/CTRL_peaks.tab");
-            Console.WriteLine("{0} CTRL peaks.", n);
-            n = LoadTSSPeakFile(TSSPeakFile);
-            Console.WriteLine("{0} {1} peaks.", n, build);
+            Console.WriteLine("...{0} CTRL peaks.", n);
+            if (genome != null)
+            {
+                string TSSPeakFile = string.Format("/data/seq/F5_data/{0}_peaks.tab", genome.Build);
+                n = LoadTSSPeakFile(TSSPeakFile);
+                Console.WriteLine("...{0} {1} peaks.", n, genome.Build);
+                SetupRepeats();
+            }
         }
 
         private int LoadTSSPeakFile(string peakPath)
@@ -152,7 +156,6 @@ namespace PeakAnnotator
 
         private void SetupRepeats()
         {
-            RepeatIntervals = new Dictionary<string, IntervalMap<int>>();
             string[] rmskFiles = PathHandler.GetRepeatMaskFiles(settings.genome);
             Console.Write("Reading {0} masking files..", rmskFiles.Length);
             int n = 0;

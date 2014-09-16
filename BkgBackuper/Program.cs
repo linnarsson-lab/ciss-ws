@@ -12,6 +12,12 @@ using Linnarsson.Utilities;
 
 namespace BkgBackuper
 {
+    /// <summary>
+    /// Handles the copying of fastq read files to a backup server.
+    /// It works as a nohup service, that at regular intervals scans the backup table in the database for new tasks,
+    /// and copies them using scp.
+    /// The copying can be limited to off-office hours to reduce bandwidth consumption.
+    /// </summary>
     class Program
     {
         static int minutesWait = 10;
@@ -69,8 +75,8 @@ namespace BkgBackuper
                                   "-i<file>     - specify a non-standard reads folder (default=" + readsFolder + ")\n" +
                                   "-l<file>     - specify a non-standard log file\n" +
                                   "-o<scp_dest> - specify a non-standard destination\n" +
-                                  "--on <int>   - specify a non-standard start hour (default=" + startHour + ")\n" +
-                                  "--off <int>  - specify a non-standard stop hour (default=" + stopHour + ")\n" +
+                                  "--on <int>   - specify a non-standard start hour (24-h base, default=" + startHour + ")\n" +
+                                  "--off <int>  - specify a non-standard stop hour (24-h base, less than start hour, default=" + stopHour + ")\n" +
                                   "Should be started as nohup and put in crontab for starting at every reboot.\n" +
                                   "Destination defaults to " + backupDest +
                                   "\nLogfile defaults to a name with Pid included like: " + logFile);

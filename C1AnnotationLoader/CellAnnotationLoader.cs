@@ -9,6 +9,13 @@ namespace C1AnnotationLoader
 {
     public class CellAnnotationLoader
     {
+        /// <summary>
+        /// Parse cell annotations from tabFile and insert into cells10k database.
+        /// tabFile consists of lines of:
+        /// chip TAB well TAB key1 TAB value1 [TAB key2 TAB value2...]
+        /// Comment lines start with '#'
+        /// </summary>
+        /// <param name="tabFile"></param>
         public void Process(string tabFile)
         {
             C1DB db = new C1DB();

@@ -14,8 +14,13 @@ using Linnarsson.Strt;
 namespace BkgFastQCopier
 {
     /// <summary>
-    /// Methods to scan Illumina Runs folder for new data and copy the reads from .bcl or .qseq file into
-    /// the Reads folder for further processing
+    /// Methods to scan, at regular intervals, Illumina Runs folder
+    /// for new data and copy the reads from .bcl or .qseq file into
+    /// the Reads folder for further processing.
+    /// Looks for "Basecalling_Netcopy_complete_ReadN.txt" in the Run folder as an indication
+    /// that the output base call files are available from the HiSeq instrument.
+    /// If a fastq file is missing or has been removed in the Reads folder, the copying will
+    /// be performed again.
     /// </summary>
     public class ReadCopier
     {

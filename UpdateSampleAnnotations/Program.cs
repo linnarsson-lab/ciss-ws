@@ -16,7 +16,7 @@ namespace UpdateSampleAnnotations
             if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
             {
                 Console.WriteLine("Usage:\nmono UpdateSampleAnnotations.exe STRTRESULTFOLDER/FILE\n\n" + 
-                                  "The MABLAB_annotations.tab file will be updated with latest stored annotation data.");
+                                  "The MATLAB_annotations.tab file will be updated with latest annotation data from the layout file.");
             }
             else
             {

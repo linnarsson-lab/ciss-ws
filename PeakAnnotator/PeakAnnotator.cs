@@ -73,11 +73,11 @@ namespace PeakAnnotator
             TSSRevIntervals = new Dictionary<string, IntervalMap<int>>();
             RepeatIntervals = new Dictionary<string, IntervalMap<int>>();
             Console.Write("Reading TSS peaks...");
-            int n = LoadTSSPeakFile("/data/seq/F5_data/CTRL_peaks.tab");
+            int n = LoadTSSPeakFile(Path.Combine(settings.TSSModelFolder, "CTRL_peaks.tab"));
             Console.WriteLine("...{0} CTRL peaks.", n);
             if (genome != null)
             {
-                string TSSPeakFile = string.Format("/data/seq/F5_data/{0}_peaks.tab", genome.Build);
+                string TSSPeakFile = Path.Combine(settings.TSSModelFolder, string.Format("{0}_peaks.tab", genome.Build));
                 n = LoadTSSPeakFile(TSSPeakFile);
                 Console.WriteLine("...{0} {1} peaks.", n, genome.Build);
                 SetupRepeats();

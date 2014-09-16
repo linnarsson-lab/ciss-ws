@@ -15,9 +15,17 @@ namespace C1
         {
             if (args.Length == 0 || args[0] == "--help")
             {
+                Console.WriteLine("This program reads gene definition files, builds transcript models, annotates them using various annotation files,");
+                Console.WriteLine("and inserts the transcript models together with CTRL spike data and repeat type annotations into the cells10k database.");
+                Console.WriteLine("The raw gene models are read from 'refFlat.txt' (for UCSC) or 'XXXX_mart_export.txt' (for ENSE/VEGA) files in the genome folders.");
+                Console.WriteLine("5' ends are extended according to SilverBulletConfig property 'GeneFeature5PrimeExtension' before inserting.");
+                Console.WriteLine("Note that during analysis these extensions are made on-the-fly to the transcripts read from annotation files for non-C1 samples,");
+                Console.WriteLine("but for C1 samples the final transcript models including extensions are read from the database and used directly.");
+                Console.WriteLine("This should be the same models, but asserts that the database gene models exactly reflect the database expression values.");
+                Console.WriteLine("The input gene definition and annotation files can be downloaded with the 'SB.exe download' command.");
                 Console.WriteLine("Usage:\nmono C1FeatureLoader.exe GENOME [-f ANNOTATIONFILE] [-i]\nwhere genome is e.g. 'mm10_aUCSC' or 'hg19_sENSE'");
-                Console.WriteLine("Without -i, 5'-extensions are made and an update refFlat file is written, but no DB inserts made.");
-                Console.WriteLine("Use -f to specify a non-standard (mart or refFlat style) annotation file.");
+                Console.WriteLine("Without -i, an updated refFlat flat of the 5'-extended genes is written, but no DB inserts are made.");
+                Console.WriteLine("Use -f to specify a non-standard (still mart or refFlat format) annotation file.");
                 return;
             }
             StrtGenome genome = StrtGenome.GetGenome(args[0]);
@@ -44,7 +52,6 @@ namespace C1
             }
             foreach (string commonChrId in StrtGenome.commonChrIds)
                 annotationReader.AddCommonGeneModels(commonChrId);
-            //annotationReader.AddCtrlGeneModels();
             if (doInsert)
             {
                 InsertIntoC1Db(genome, annotationReader);
@@ -76,6 +83,11 @@ namespace C1
             Console.WriteLine("...totally {0} transcript models inserted.", n);
         }
 
+        /// <summary>
+        /// Repeat names and total lengths are stored in cell10k db, but not the indivudal regions.
+        /// These are read directly from the same repeat mask files during analysis.
+        /// </summary>
+        /// <param name="genome"></param>
         private static void InsertRepeatsIntoC1Db(StrtGenome genome)
         {
             Console.WriteLine("Inserting repeat types into database...");

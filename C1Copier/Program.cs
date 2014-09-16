@@ -13,6 +13,15 @@ using Linnarsson.Mathematics;
 
 namespace C1
 {
+    /// <summary>
+    /// Parser of C1 chip metadata, that reads info from text files in C1Props.props.C1RunsFolder, and
+    /// inserts/updates data in the cells10k database.
+    /// At startup, all available data files are processed, but at subsequence scans, at regular intervals, only
+    /// new and changed metadata files are processed.
+    /// If a metadata folder contains several files with names that match the pattern (from C1Props config)
+    /// for the given metadata type, the last written file is selected.
+    /// If there are several capture image folders, the one with the highest name in alphabetical order is selected.
+    /// </summary>
     class C1Copier
     {
         static string logFile;

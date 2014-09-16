@@ -14,7 +14,9 @@ namespace C1
     public delegate void AnnotationChain(ref Transcript t);
 
     /// <summary>
-    /// Add additonal annotations to new transcript models before inserting them into database
+    /// Add additional annotations to new transcript models before inserting them into database.
+    /// Several annotations are taken from files downloaded from UCSC/GoldenPath, and
+    /// include descriptions, synonyms, EntrezIDs, UniProtIDs, GO terms, and pathways.
     /// </summary>
     public class TranscriptAnnotator
     {

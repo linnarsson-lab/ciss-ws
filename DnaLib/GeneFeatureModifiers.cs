@@ -9,6 +9,11 @@ namespace Linnarsson.Dna
 {
     public delegate void ProcessStep();
 
+    /// <summary>
+    /// Collects various mwthods that modify the transcript models, by extending 5' ends, or marking overlap
+    /// with other transcripts on the same strand. These methods are called either just before expression analysis,
+    /// or when inserting gene models into the cells10k database.
+    /// </summary>
     public abstract class GeneFeatureModifiers
     {
         public virtual string GetStatsOutput()

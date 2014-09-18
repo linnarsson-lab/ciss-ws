@@ -82,6 +82,9 @@ namespace Linnarsson.Strt
             SetupRepeats();
         }
 
+        /// <summary>
+        /// Read the chrId-to-fastafile mapping. The sequences and/or lengths will be read if needed by config
+        /// </summary>
         public void SetupChromsomes()
         {
             ChrIdToFileMap = genome.GetStrtChrFilesMap();
@@ -138,6 +141,13 @@ namespace Linnarsson.Strt
             Console.WriteLine("Total length of all transcript models (including overlaps): {0} bp.", trLen);
         }
 
+        /// <summary>
+        /// For C1 samples the transcript models are read from the cells10k database, and the (refFlat style) Annotation file
+        /// in STRT genome dir is only use to get the splice junctions.
+        /// Note that any 5' extensions are already stored in the cells10k database and will not be made here.
+        /// </summary>
+        /// <param name="STRTAnnotationsPath"></param>
+        /// <returns></returns>
         private bool SetupGenesFromC1DB(string STRTAnnotationsPath)
         {
             C1DB db = new C1DB();
@@ -190,12 +200,18 @@ namespace Linnarsson.Strt
             Console.WriteLine(m.GetStatsOutput());
         }
 
+        /// <summary>
+        /// Generate all intervals to match alignments with, corresponding to exon, intron, upstream, downstream, splice...
+        /// </summary>
         private void SetupIntervals()
         {
             foreach (GeneFeature gf in geneFeatures.Values)
                 AddGeneIntervals((GeneFeature)gf);
         }
 
+        /// <summary>
+        /// Generate intervals to match alignments with, for the repeat regions.
+        /// </summary>
         private void SetupRepeats()
         {
             Dictionary<string, int> repeatToTrIdMap = new Dictionary<string, int>();
@@ -425,6 +441,11 @@ namespace Linnarsson.Strt
             return ftIvls;
         }
 
+        /// <summary>
+        /// Note that intervals corresponding to transcript derived reads are stored separate from other feature's intervals,
+        /// to later allow the identification and different handling of multimappings of each kind
+        /// </summary>
+        /// <param name="ft"></param>
         protected void AddGeneIntervals(LocusFeature ft)
         {
             foreach (FtInterval ivl in ft.IterIntervals())

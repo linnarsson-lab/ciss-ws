@@ -80,6 +80,10 @@ namespace Linnarsson.Dna
             return Directory.GetFiles(GetStrtGenomesFolder(), "chr*_" + Annotation + "Masked.fa");
         }
 
+        /// <summary>
+        /// Return a mapping from chromosome ids ("1", "2", "M" etc.) to each repeat masked fasta file in STRT genome directory
+        /// </summary>
+        /// <returns></returns>
         public Dictionary<string, string> GetStrtChrFilesMap()
         {
             Dictionary<string, string> chrIdToFileMap = new Dictionary<string, string>();

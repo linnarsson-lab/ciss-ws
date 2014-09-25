@@ -43,7 +43,8 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Locates the folder where bowtie stores its indexes
+        /// Locates the folder where bowtie stores its indexes. Uses Prop.BowtieIndexFolder if set, else searches PATH for bowtie
+        /// and appends "/indexes" to that path
         /// </summary>
         /// <returns>Folder for bowtie indexes</returns>
         public static string GetBowtieIndicesFolder()

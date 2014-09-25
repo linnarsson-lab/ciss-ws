@@ -414,6 +414,7 @@ namespace Linnarsson.Strt
             if (tempBowtieStartMsg != null)
                 Console.WriteLine(tempBowtieStartMsg);
             tempBowtieStartMsg = null;
+            string indexWPath = Path.Combine(PathHandler.GetBowtieIndicesFolder(), bowtieIndex);
             int nThreads = props.NumberOfAlignmentThreadsDefault;
             string threadArg = (nThreads == 1) ? "" : string.Format("-p {0}", nThreads);
             string unmappedArg = "";
@@ -427,7 +428,7 @@ namespace Linnarsson.Strt
             opts = opts.Replace("QualityScoreBase", props.QualityScoreBase.ToString());
             opts = opts.Replace("MaxAlternativeMappings", props.MaxAlternativeMappings.ToString());
             string arguments = String.Format("{0} {1} {2} {3} \"{4}\" \"{5}\"", opts, threadArg,
-                                                unmappedArg, bowtieIndex, inputFqReadPath, outputPath);
+                                                unmappedArg, indexWPath, inputFqReadPath, outputPath);
             StreamWriter logWriter = new StreamWriter(bowtieLogFile, true);
             logWriter.WriteLine("--- bowtie {0} ---", arguments); logWriter.Flush();
             CmdCaller cc = new CmdCaller("bowtie", arguments);

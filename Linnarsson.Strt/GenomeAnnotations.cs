@@ -581,6 +581,17 @@ namespace Linnarsson.Strt
         public void SaveResult(string fileNameBase, int averageReadLen)
         {
             ProjectName = Path.GetDirectoryName(fileNameBase);
+            if (barcodes.HasUMIs)
+            {
+                WriteTrueMolsTable(fileNameBase);
+                WriteReadsTable(fileNameBase);
+            }
+            string expressionFile = WriteExpressionTable(fileNameBase);
+            WriteMinExpressionTable(fileNameBase);
+            WriteExportTables(fileNameBase);
+            string rpmFile = WriteNormalizedExpression(fileNameBase);
+            if (props.ShowTranscriptSharingGenes)
+                WriteSharedGenes(fileNameBase);
             WriteIntronCounts(fileNameBase);
             if (props.GenerateGeneProfilesByBarcode)
             {
@@ -592,27 +603,15 @@ namespace Linnarsson.Strt
                 WriteTranscriptProfiles(fileNameBase);
                 WriteTranscriptHistograms(fileNameBase, averageReadLen);
             }
-            if (props.ShowTranscriptSharingGenes)
-                WriteSharedGenes(fileNameBase);
-            WritePotentialErronousAnnotations(fileNameBase);
             WriteSplicesByGeneLocus(fileNameBase);
             if (props.AnalyzeSpliceHitsByBarcode)
                 WriteSplicesByGeneLocusAndBc(fileNameBase);
-            if (barcodes.HasUMIs)
-            {
-                WriteTrueMolsTable(fileNameBase);
-                WriteReadsTable(fileNameBase);
-            }
-            string expressionFile = WriteExpressionTable(fileNameBase);
-            WriteMinExpressionTable(fileNameBase);
-            WriteExportTables(fileNameBase);
             if (props.DirectionalReads)
             {
                 WriteCAPRegionHitsTable(fileNameBase);
                 WriteExpressedAntisenseGenes(fileNameBase);
                 WriteUniquehits(fileNameBase);
             }
-            string rpmFile = WriteNormalizedExpression(fileNameBase);
             if (props.GenerateGeneLocusProfiles)
                 WriteLocusHitsByGeneLocus(fileNameBase);
             if (props.GenesToPaint != null && props.GenesToPaint.Length > 0)
@@ -621,6 +620,7 @@ namespace Linnarsson.Strt
                 PaintSelectedGeneTranscriptImages(fileNameBase);
             }
             WriteAnnotTypeAndExonCounts(fileNameBase);
+            WritePotentialErronousAnnotations(fileNameBase);
             WriteElongationEfficiency(fileNameBase, averageReadLen);
         }
 

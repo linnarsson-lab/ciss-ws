@@ -681,26 +681,10 @@ namespace Linnarsson.Strt
                 upstreamAnalyzer.WriteUpstreamStats(OutputPathbase);
             if (TestReporter != null)
                 TestReporter.Summarize(Annotations.geneFeatures);
-            if (barcodes.HasUMIs)
-            {
-                WriteReadCountDistroByRndTagCount();
-                if (readsPerMoleculeHistogramGenes != null)
-                    WriteGeneReadsPerMoleculeHistograms();
-            }
-            WriteMappingsBySpikeReads();
-            WriteSpikeEfficiencies();
-            WriteHitProfilesByBarcode();
             WriteRedundantExonHits();
-            WriteASExonDistributionHistogram();
             WriteSummary(readCounter, resultDescr);
             int averageReadLen = MappedTagItem.AverageReadLen;
             Annotations.SaveResult(OutputPathbase, averageReadLen);
-            if (snpRndTagVerifier != null)
-                snpRndTagVerifier.Verify(OutputPathbase);
-            if (Props.props.AnalyzeSNPs)
-                WriteSnps();
-            if (DetermineMotifs)
-                WriteSequenceLogos();
             if (Props.props.GenerateWiggle)
             {
                 WriteWriggle();
@@ -709,11 +693,27 @@ namespace Linnarsson.Strt
             }
             if (Props.props.GenerateBed)
                 WriteBed();
+            WriteMappingsBySpikeReads();
+            WriteSpikeEfficiencies();
+            WriteHitProfilesByBarcode();
+            WriteASExonDistributionHistogram();
+            if (barcodes.HasUMIs)
+            {
+                WriteReadCountDistroByRndTagCount();
+                if (readsPerMoleculeHistogramGenes != null)
+                    WriteGeneReadsPerMoleculeHistograms();
+            }
             if (rndTagProfileByGeneWriter != null)
             {
                 rndTagProfileByGeneWriter.Close();
                 rndTagProfileByGeneWriter.Dispose();
             }
+            if (snpRndTagVerifier != null)
+                snpRndTagVerifier.Verify(OutputPathbase);
+            if (Props.props.AnalyzeSNPs)
+                WriteSnps();
+            if (DetermineMotifs)
+                WriteSequenceLogos();
         }
 
         private void WriteMappingsBySpikeReads()

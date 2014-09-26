@@ -71,8 +71,8 @@ namespace Linnarsson.Dna
         /// <param name="laneNo"></param>
         /// <param name="extractionFolder"></param>
         /// <param name="nBarcodes"></param>
-        public LaneInfo(string readFilePath, string runId, char laneNo, string extractionFolder, int nBarcodes)
-            : this(readFilePath, runId, laneNo, "")
+        public LaneInfo(string readFilePath, string runId, char laneNo, string extractionFolder, int nBarcodes, string idxSeqFilter)
+            : this(readFilePath, runId, laneNo, idxSeqFilter)
         {
             Match m = Regex.Match(readFilePath, PathHandler.readFileAndLaneFolderMatchPat);
             int readNo = int.Parse(m.Groups[1].Value);
@@ -173,7 +173,7 @@ namespace Linnarsson.Dna
                     string readFilePat = PathHandler.GetReadFileMatchPattern(runId, laneNo, '1', ".fq.gz");
                     string[] readFiles = Directory.GetFiles(Props.props.ReadsFolder, readFilePat);
                     if (readFiles.Length > 0)
-                        laneInfos.Add(new LaneInfo(readFiles[0], runId, laneNo, idxSeqFilter[n++]));
+                        laneInfos.Add(new LaneInfo(readFiles[0], runId, laneNo, extractionFolder, nBarcodes, idxSeqFilter[n++]));
                 }
             }
             return laneInfos;

@@ -25,7 +25,7 @@ namespace Linnarsson.Dna
 
         public string extractionFolder { get; set; }
 
-        public string readFilePath { get; set; }
+        public string PFReadFilePath { get; set; }
         public string nonPFReadFilePath { get; set; }
 
         /// <summary>
@@ -56,7 +56,7 @@ namespace Linnarsson.Dna
 
         public LaneInfo(string readFilePath, string runId, char laneNo, string idxSeqFilter)
         {
-            this.readFilePath = readFilePath;
+            this.PFReadFilePath = readFilePath;
             this.illuminaRunId = runId;
             this.laneNo = laneNo.ToString();
             this.idxSeqFilter = idxSeqFilter;
@@ -190,7 +190,7 @@ namespace Linnarsson.Dna
         public override string ToString()
         {
             string s = "LaneInfo: illuminaRunId=" + illuminaRunId + " laneNo=" + laneNo + "\n" +
-                       "readFilePath=" + readFilePath + " nReads=" + nReads + "\n" +
+                       "readFilePath=" + PFReadFilePath + " nReads=" + nReads + "\n" +
                        "extrTopF= " + extractionFolder + "\n" +
                        ((extractedFilePaths != null && extractedFilePaths.Length > 0) ? "extrFilePaths[0]=" + extractedFilePaths[0] + "\n" : "") +
                        "extractedFileFolder=" + laneExtractionFolder + "\n" +

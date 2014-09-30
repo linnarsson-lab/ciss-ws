@@ -37,9 +37,9 @@ namespace Linnarsson.Strt
         string readsFolder;
         int lane;
         char read;
-        public string PFFilePath;
+        public string PFFilePath { get; private set; }
         public StreamWriter PFWriter { get; private set; }
-        string nonPFFilePath;
+        public string nonPFFilePath { get; private set; }
         public StreamWriter nonPFWriter { get; private set; }
         string statsFilePath;
         uint nReads = 0;

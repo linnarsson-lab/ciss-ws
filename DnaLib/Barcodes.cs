@@ -320,6 +320,10 @@ namespace Linnarsson.Dna
         {
             return Array.IndexOf(m_WellIds, wellId);
         }
+        public int GetBcIdxFromBarcode(string barcode)
+        {
+            return Array.IndexOf(m_Seqs, barcode);
+        }
 
         /// <summary>
         /// Get the bcIdx on which a map file should be analyzed. This is not same as

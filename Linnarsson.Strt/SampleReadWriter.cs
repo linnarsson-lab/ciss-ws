@@ -22,12 +22,9 @@ namespace Linnarsson.Strt
 
         ReadExtractor readExtractor;
         ReadCounter readCounter;
-        ExtractionWordCounter wordCounter;
         StreamWriter[] sws_barcoded;
         StreamWriter sw_slask;
         ExtractionQuality extrQ;
-        double totLen = 0.0;
-        long nRecords = 0;
 
         public SampleReadWriter(Barcodes barcodes, LaneInfo laneInfo)
         {
@@ -38,8 +35,7 @@ namespace Linnarsson.Strt
             if (laneInfo.idxSeqFilter.Length > 0)
                 read2FilterPrefix = "^" + laneInfo.idxSeqFilter;
             readExtractor = new ReadExtractor();
-            readCounter = new ReadCounter(barcodes.Count);
-            wordCounter = new ExtractionWordCounter(Props.props.ExtractionCounterWordLength);
+            readCounter = new ReadCounter(barcodes);
             sws_barcoded = OpenStreamWriters(laneInfo.extractedFilePaths);
             if (Props.props.WriteSlaskFiles)
                 sw_slask = laneInfo.slaskFilePath.OpenWrite();
@@ -55,7 +51,7 @@ namespace Linnarsson.Strt
             Console.WriteLine("Setup: read1Len=" + read1Len, " read2Len=" + read2Len + " read3en=" + read3Len);
         }
 
-        public void Process(string hdrStart, string hdrEnd, char[][] readSeqs, char[][] readQuals)
+        public void Process(string hdrStart, string hdrEnd, char[][] readSeqs, char[][] readQuals, bool passedFilter)
         {
             char[] seqChars = new char[seqLen];
             char[] qualChars = new char[seqLen];
@@ -74,44 +70,38 @@ namespace Linnarsson.Strt
             string seq = new string(seqChars);
             if (read2FilterPrefix != null && !Regex.IsMatch(seq, read2FilterPrefix))
                 return;
-            FastQRecord rec = new FastQRecord(hdrStart + '1' + hdrEnd, seq, FastQRecord.QualitiesFromCharArray(qualChars, Props.props.QualityScoreBase));
+            FastQRecord rec = new FastQRecord(hdrStart + '1' + hdrEnd, seq, FastQRecord.QualitiesFromCharArray(qualChars, Props.props.QualityScoreBase), passedFilter);
             Process(rec);
         }
 
-        public bool Process(FastQRecord rec)
+        private bool Process(FastQRecord rec)
         {
             int bcIdx;
             int readStatus = readExtractor.Extract(ref rec, out bcIdx);
-            LimitTest testResult = readCounter.IsLimitReached(readStatus, bcIdx);
-            if (testResult == LimitTest.Break)
-                return false;
-            if (testResult == LimitTest.UseThisRead)
+            bool useThisRead = (readCounter.IsLimitReached(readStatus, bcIdx) == LimitTest.UseThisRead);
+            if (useThisRead)
             {
                 if (extrQ != null) extrQ.Add(rec.Sequence, rec.Qualities);
-                wordCounter.AddRead(rec.Sequence);
-                readCounter.AddARead(readStatus, bcIdx, rec.PassedFilter);
                 if (readStatus == ReadStatus.VALID)
-                {
-                    totLen += rec.Sequence.Length;
-                    nRecords++;
                     sws_barcoded[bcIdx].WriteLine(rec.ToString(Props.props.QualityScoreBase));
-                }
                 else if (sw_slask != null)
                     sw_slask.WriteLine(rec.ToString(Props.props.QualityScoreBase));
             }
+            readCounter.AddARead(useThisRead, rec, readStatus, bcIdx);
             return true;
         }
 
         public void ProcessLane()
         {
             foreach (FastQRecord fastQRecord in
-                     BarcodedReadStream.Stream(barcodes, laneInfo.readFilePath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
+                     BarcodedReadStream.Stream(barcodes, laneInfo.PFReadFilePath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
                 if (!Process(fastQRecord)) break;
             if (barcodes.IncludeNonPF)
             {
-                string nonPFFilename = Path.GetFileName(laneInfo.readFilePath).Replace(".fq", "_nonPF.fq");
-                string nonPFDir = Path.Combine(Path.GetDirectoryName(laneInfo.readFilePath), "nonPF");
+                string nonPFFilename = Path.GetFileName(laneInfo.PFReadFilePath).Replace(".fq", "_nonPF.fq");
+                string nonPFDir = Path.Combine(Path.GetDirectoryName(laneInfo.PFReadFilePath), "nonPF");
                 string nonPFPath = Path.Combine(nonPFDir, nonPFFilename);
+                laneInfo.nonPFReadFilePath = nonPFPath;
                 foreach (FastQRecord fastQRecord in
                          BarcodedReadStream.Stream(barcodes, nonPFPath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
                     if (!Process(fastQRecord)) break;
@@ -126,20 +116,13 @@ namespace Linnarsson.Strt
                 sw_slask.Close();
             using (StreamWriter sw_summary = new StreamWriter(laneInfo.summaryFilePath))
             {
-                int averageReadLen = (int)Math.Round(totLen / nRecords);
-                readCounter.AddReadFile(laneInfo.readFilePath, averageReadLen);
-                sw_summary.WriteLine(readCounter.TotalsToTabString(barcodes.HasUMIs));
-                sw_summary.WriteLine("#\tBarcode\tValidSTRTReads\tTotalBarcodedReads");
-                for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
-                    sw_summary.WriteLine("BARCODEREADS\t{0}\t{1}\t{2}",
-                                         barcodes.Seqs[bcIdx], readCounter.ValidReadsByBarcode[bcIdx], readCounter.TotalReadsByBarcode[bcIdx]);
-                sw_summary.WriteLine("\nBelow are the most common words among all reads.\n");
-                sw_summary.WriteLine(wordCounter.GroupsToString(200));
+                FileReads fr = readCounter.FinishLane(laneInfo);
+                laneInfo.nReads = fr.readCount;
+                laneInfo.nValidReads = fr.validReadCount;
+                sw_summary.WriteLine(readCounter.ToSummarySection());
             }
             if (extrQ != null)
                 extrQ.Write(laneInfo);
-            laneInfo.nReads = readCounter.PartialTotal;
-            laneInfo.nValidReads = readCounter.PartialCount(ReadStatus.VALID);
         }
 
         private StreamWriter[] OpenStreamWriters(string[] extractedFilePaths)

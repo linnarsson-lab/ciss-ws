@@ -175,7 +175,9 @@ namespace BkgFastQCopier
                     {
                         string extractionFolder = PathHandler.MakeExtractionFolderSubPath(bcAndProj.Second, bcAndProj.First, StrtReadMapper.EXTRACTION_VERSION);
                         Barcodes barcodes = Barcodes.GetBarcodes(bcAndProj.First);
-                        LaneInfo laneInfo = new LaneInfo(lrws[0].PFFilePath, runFolderName, lane.ToString()[0], extractionFolder, barcodes.Count);
+                        LaneInfo laneInfo = new LaneInfo(lrws[0].PFFilePath, runFolderName, lane.ToString()[0], extractionFolder, barcodes.Count, "");
+                        if (barcodes.IncludeNonPF)
+                            laneInfo.nonPFReadFilePath = lrws[0].nonPFFilePath;
                         srws.Add(new SampleReadWriter(barcodes, laneInfo));
                     }
                     BclReadExtractor bre = new BclReadExtractor(lrws, srws);

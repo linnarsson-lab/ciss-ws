@@ -25,11 +25,11 @@ namespace Linnarsson.Strt
         /// 
         /// </summary>
         /// <param name="laneReadWriters">One for each read that should be extracted (e.g. up to 3)</param>
-        /// <param name="sampleReadExtractors">One for each sample that should be extracted from the lane</param>
-        public BclReadExtractor(List<LaneReadWriter> laneReadWriters, List<SampleReadWriter> sampleReadExtractors)
+        /// <param name="sampleReadWriters">One for each sample that should be extracted from the lane</param>
+        public BclReadExtractor(List<LaneReadWriter> laneReadWriters, List<SampleReadWriter> sampleReadWriters)
         {
             this.laneReadWriters = laneReadWriters;
-            this.sampleReadWriters = sampleReadExtractors;
+            this.sampleReadWriters = sampleReadWriters;
         }
 
         public void Process(string runFolder, int lane)
@@ -99,8 +99,8 @@ namespace Linnarsson.Strt
                     readSeqs[readIdx] = new char[nCycles];
                     readQuals[readIdx] = new char[nCycles];
                 }
-                foreach (SampleReadWriter sre in sampleReadWriters)
-                    sre.Setup(readSeqs[0].Length, (readSeqs[1] != null) ? readSeqs[1].Length : 0, (readSeqs[2] != null) ? readSeqs[2].Length : 0);
+                foreach (SampleReadWriter srw in sampleReadWriters)
+                    srw.Setup(readSeqs[0].Length, (readSeqs[1] != null) ? readSeqs[1].Length : 0, (readSeqs[2] != null) ? readSeqs[2].Length : 0);
                 string hdrStart = string.Format("Run{0}_{1}_L{2}_R", runId, flowcellId, lane);
                 string hdrEnd = string.Format("_T{0}_C", tile.Split('_')[2]);
                 for (int ix = 0; ix < bclData[0].Length; ix++) // ix is an index into the clusters (i.e. it is a read)
@@ -119,10 +119,8 @@ namespace Linnarsson.Strt
                         }
                         laneReadWriters[readIdx].Write(hdrStart, hdrEnd, readSeqs[readIdx], readQuals[readIdx], passedFilter);
                     }
-                    //Console.WriteLine("readSeqs[0]=" + readSeqs[0]);
-                    if (passedFilter)
-                        foreach (SampleReadWriter sre in sampleReadWriters)
-                            sre.Process(hdrStart, hdrEnd, readSeqs, readQuals);
+                    foreach (SampleReadWriter sre in sampleReadWriters)
+                        sre.Process(hdrStart, hdrEnd, readSeqs, readQuals, passedFilter);
                 }
             }
         }

@@ -49,9 +49,9 @@ namespace Linnarsson.Dna
         {
             // Dump quality profile & color balance
             string outputPathHead = Path.Combine(extrInfo.laneExtractionFolder, "extraction_");
-            WriteQualityProfile(qprofile, extrInfo.readFilePath, outputPathHead + "quality.txt");
-            WriteColorBalance(colorBalance, extrInfo.readFilePath, outputPathHead + "colors.txt");
-            WriteLengthDistribution(lengthDistro, extrInfo.readFilePath, outputPathHead + "lengths.txt");
+            WriteQualityProfile(qprofile, extrInfo.PFReadFilePath, outputPathHead + "quality.txt");
+            WriteColorBalance(colorBalance, extrInfo.PFReadFilePath, outputPathHead + "colors.txt");
+            WriteLengthDistribution(lengthDistro, extrInfo.PFReadFilePath, outputPathHead + "lengths.txt");
         }
 
         private static void WriteLengthDistribution(int[,] lengthDistro, string referredFile, string outputPath)

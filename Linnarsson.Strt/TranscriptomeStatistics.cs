@@ -977,17 +977,18 @@ namespace Linnarsson.Strt
             int[] speciesBarcodes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
             int spBcCount = speciesBarcodes.Length;
             xmlFile.WriteLine("  <readfiles>");
-            foreach (string path in readCounter.GetReadFiles())
-                xmlFile.WriteLine("    <readfile path=\"{0}\" />", path);
+            foreach (FileReads fr in readCounter.GetReadFiles())
+                xmlFile.WriteLine("    <readfile path=\"{0}\" totalReads=\"{1}\" validExtractedReads=\"{2}\"/>", 
+                                     fr.path, fr.readCount, fr.validReadCount);
             xmlFile.WriteLine("  </readfiles>");
-            double allBcReads = readCounter.GrandTotal;
+            double allBcReads = readCounter.TotalAnalyzedReads;
             if (allBcReads > 0)
             {
                 xmlFile.WriteLine("  <readstatus>");
                 xmlFile.WriteLine("    <title>Reads sorted by errors and artefacts.</title>");
                 for (int status = 0; status < ReadStatus.Length; status++)
                     xmlFile.WriteLine("    <point x=\"{0} ({1:0.00%})\" y=\"{2}\" />", ReadStatus.categories[status],
-                                      (readCounter.GrandCount(status) / allBcReads), readCounter.GrandCount(status));
+                                      (readCounter.ReadCount(status) / allBcReads), readCounter.ReadCount(status));
                 xmlFile.WriteLine("  </readstatus>");
             }
             xmlFile.WriteLine("  <reads>");
@@ -996,7 +997,7 @@ namespace Linnarsson.Strt
             if (speciesReads > 0 && allBcReads > 0)
             {
                 xmlFile.WriteLine("    <point x=\"Processed reads [{0}]\" y=\"{1}\" />", allBcCount, allBcReads / 1.0E6d);
-                xmlFile.WriteLine("    <point x=\"PF reads [{0}]\" y=\"{1}\" />", allBcCount, readCounter.TotalPassedIlluminaFilter / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"PF reads [{0}]\" y=\"{1}\" />", allBcCount, readCounter.PassedIlluminaFilter / 1.0E6d);
                 xmlFile.WriteLine("    <point x=\"Barcoded as {0} [{1}] (100%)\" y=\"{2}\" />", Annotations.Genome.Abbrev, spBcCount, speciesReads / 1.0E6d);
                 int validReads = readCounter.ValidReads(speciesBarcodes);
                 xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, validReads / speciesReads, validReads / 1.0E6d);
@@ -1393,7 +1394,7 @@ namespace Linnarsson.Strt
                 WriteBarcodes(xmlFile, barcodeStats, bCodeLines);
                 if (barcodes.SpeciesByWell != null)
                     WriteSpeciesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
-                if (readCounter.ValidReadsByBarcode.Count == barcodes.Count)
+                if (readCounter.ValidReadsByBarcode.Length == barcodes.Count)
                 {
                     WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, readCounter.ValidReadsByBarcode.ToArray(),
                                         "BARCODEDREADS", "Total barcoded reads by barcode", "barcoded reads");

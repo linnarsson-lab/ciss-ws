@@ -104,7 +104,10 @@ namespace Linnarsson.Strt
                 laneInfo.nonPFReadFilePath = nonPFPath;
                 foreach (FastQRecord fastQRecord in
                          BarcodedReadStream.Stream(barcodes, nonPFPath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
+                {
+                    fastQRecord.PassedFilter = false;
                     if (!Process(fastQRecord)) break;
+                }
             }
             CloseAndWriteSummary();
         }

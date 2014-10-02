@@ -22,7 +22,7 @@ namespace Linnarsson.Strt
 
         public FileReads()
         { }
-        public FileReads(string path, int readCount, int validReadCount, int validReadTotLen)
+        public FileReads(string path, int readCount, int validReadCount, long validReadTotLen)
         {
             this.path = path;
             this.readCount = readCount;
@@ -255,50 +255,82 @@ namespace Linnarsson.Strt
         {
             try
             {
-                using (StreamReader extrFile = new StreamReader(extractionSummaryPath))
-                {
-                    string line = extrFile.ReadLine();
-                    while (line != null)
-                    {
-                        if (!line.StartsWith("#"))
-                        {
-                            try
-                            {
-                                string[] fields = line.Split('\t');
-                                if (line.StartsWith("READFILE"))
-                                    fileReads.Add(FileReads.FromSummaryLine(line));
-                                else if (line.StartsWith("PASSED_ILLUMINA_FILTER"))
-                                {
-                                    PassedIlluminaFilter += int.Parse(fields[1]);
-                                }
-                                else if (line.StartsWith("BARCODEREADS"))
-                                {
-                                    int bcIdx = barcodes.GetBcIdxFromBarcode(fields[1]);
-                                    validBarcodeReads[bcIdx] += int.Parse(fields[2]);
-                                    if (fields.Length >= 4)
-                                        totalBarcodeReads[bcIdx] += int.Parse(fields[3]);
-                                }
-                                else
-                                {
-                                    int statusCategory = ReadStatus.Parse(fields[0]);
-                                    if (statusCategory >= 0)
-                                        AddReads(statusCategory, int.Parse(fields[1]));
-                                }
-                            }
-                            catch (ReadFileEmptyException)
-                            {
-                                Console.WriteLine("Warning: Skipping empty readfile:\n" + line);
-                                break;
-                            }
-                        }
-                        line = extrFile.ReadLine();
-                    }
-                }
+                AddExtractionSummaryFile(extractionSummaryPath);
             }
             catch (FileNotFoundException)
             {
-                Console.WriteLine("Error: Could not find summary file " + extractionSummaryPath);
+                Console.WriteLine("WARNING: " + extractionSummaryPath + " missing! Maybe the read extraction was interrupted?");
+                MakeExtractionSummaryFromFqFiles(Path.GetDirectoryName(extractionSummaryPath));
             }
+            if (fileReads.Count == 0)
+                throw new ReadFileEmptyException();
+        }
+
+        private void AddExtractionSummaryFile(string extractionSummaryPath)
+        {
+            using (StreamReader extrFile = new StreamReader(extractionSummaryPath))
+            {
+                string line = extrFile.ReadLine();
+                while (line != null)
+                {
+                    if (!line.StartsWith("#"))
+                    {
+                        try
+                        {
+                            string[] fields = line.Split('\t');
+                            if (line.StartsWith("READFILE"))
+                                fileReads.Add(FileReads.FromSummaryLine(line));
+                            else if (line.StartsWith("PASSED_ILLUMINA_FILTER"))
+                            {
+                                PassedIlluminaFilter += int.Parse(fields[1]);
+                            }
+                            else if (line.StartsWith("BARCODEREADS"))
+                            {
+                                int bcIdx = barcodes.GetBcIdxFromBarcode(fields[1]);
+                                validBarcodeReads[bcIdx] += int.Parse(fields[2]);
+                                if (fields.Length >= 4)
+                                    totalBarcodeReads[bcIdx] += int.Parse(fields[3]);
+                            }
+                            else
+                            {
+                                int statusCategory = ReadStatus.Parse(fields[0]);
+                                if (statusCategory >= 0)
+                                    AddReads(statusCategory, int.Parse(fields[1]));
+                            }
+                        }
+                        catch (ReadFileEmptyException)
+                        {
+                            Console.WriteLine("WARNING: Skipping empty readfile:\n" + line);
+                            break;
+                        }
+                    }
+                    line = extrFile.ReadLine();
+                }
+            }
+        }
+
+        private void MakeExtractionSummaryFromFqFiles(string laneExtractionFolder)
+        {
+            Console.WriteLine("WARNING: Calculating valid read counts and average read length from extracted .fq files in " + laneExtractionFolder + ".");
+            long totValidReadsLen = 0;
+            int totValidReads = 0;
+            for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+            {
+                string fqFile = Path.Combine(laneExtractionFolder, bcIdx.ToString() + ".fq");
+                int bcReads = 0;
+                if (File.Exists(fqFile))
+                {
+                    foreach (FastQRecord rec in FastQFile.Stream(fqFile, 64))
+                    {
+                        bcReads++;
+                        totValidReadsLen += rec.Sequence.Length;
+                    }
+                } 
+                totalBarcodeReads[bcIdx] = validBarcodeReads[bcIdx] = bcReads;
+                totValidReads += bcReads;
+            }
+            if (totValidReads > 0)
+                fileReads.Add(new FileReads(laneExtractionFolder, totValidReads, totValidReads, totValidReadsLen));
         }
     }
 

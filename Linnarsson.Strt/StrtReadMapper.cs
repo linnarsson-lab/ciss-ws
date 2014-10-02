@@ -223,19 +223,19 @@ namespace Linnarsson.Strt
                 SetAvailableBowtieIndexVersion(projDescr, genome);
                 logWriter.WriteLine("{0} Mapping to {1}...", DateTime.Now, genome.GetBowtieSplcIndexName()); logWriter.Flush();
                 CreateBowtieMaps(genome, projDescr.laneInfos, genomeBcIndexes);
-                List<string> mapFilePaths = LaneInfo.RetrieveAllMapFilePaths(projDescr.laneInfos);
+                List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(projDescr.laneInfos);
                 props.UseRPKM = projDescr.rpkm;
                 props.DirectionalReads = projDescr.DirectionalReads;
                 props.SenseStrandIsSequenced = projDescr.SenseStrandIsSequenced;
                 projDescr.SetGenomeData(genome);
-                logWriter.WriteLine("{0} Annotating {1} map files...", DateTime.Now, mapFilePaths.Count);
+                logWriter.WriteLine("{0} Annotating {1} map files...", DateTime.Now, mapFiles.Count);
                 logWriter.WriteLine("{0} setting: AllTrVariants={1} Gene5'Extensions={4} #SpikeMols={5} DirectionalReads={2} RPKM={3}",
                                     DateTime.Now, projDescr.analyzeVariants, props.DirectionalReads, props.UseRPKM,
                                     props.GeneFeature5PrimeExtension, props.TotalNumberOfAddedSpikeMolecules);
                 logWriter.Flush();
                 string resultFolderName = MakeDefaultResultFolderName(genome, projDescr.ProjectFolder, projDescr.plateId);
                 ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.plateId, resultFolderName,
-                                                                  mapFilePaths);
+                                                                  mapFiles);
                 projDescr.resultDescriptions.Add(resultDescr);
                 System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(projDescr.GetType());
                 using (StreamWriter writer = new StreamWriter(Path.Combine(resultDescr.resultFolder, "ProjectConfig.xml")))
@@ -263,7 +263,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Calculates the average read length of all Extraction summary files in the project folder
+        /// Calculates the average read length of all valid extracted reads
         /// </summary>
         /// <param name="laneInfos"></param>
         /// <returns></returns>
@@ -314,11 +314,7 @@ namespace Linnarsson.Strt
                                string.Format(" and limiting alternative mappings to max {0}.", props.MaxAlternativeMappings) : "";
             tempBowtieStartMsg = string.Format("Using bowtie index {0}{1}", splcIndexVersion, maxAlt);
             foreach (LaneInfo laneInfo in laneInfos)
-            {
-                if (!File.Exists(laneInfo.summaryFilePath))
-                    Console.WriteLine("WARNING: There is no summary file in " + laneInfo.extractionFolder + " The extraction was maybe unfinished!");
                 CreateBowtieMaps(genome, laneInfo, splcIndexVersion, splcIndexName, genomeBcIndexes);
-            }
         }
 
         /// <summary>
@@ -451,7 +447,7 @@ namespace Linnarsson.Strt
             StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, false);
             genome.ReadLen = GetAverageReadLen(laneInfos);
             int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-            Console.WriteLine("Processing data from {0}", extractedFolder);
+            Console.WriteLine("Mapping reads in {0} against {1}", extractedFolder, genome.GetBowtieSplcIndexName());
             CreateBowtieMaps(genome, laneInfos, genomeBcIndexes);
         }
 
@@ -492,7 +488,7 @@ namespace Linnarsson.Strt
                 if (resultFolderName == "" || resultFolderName == null)
                     spResultFolderName = MakeDefaultResultFolderName(genome, projectFolder, projectName);
                 string readDir = !props.DirectionalReads ? "No" : props.SenseStrandIsSequenced ? "Sense" : "Antisense";
-                Console.WriteLine("Annotating {0} lanes of {1} against {2}.\nDirectionalReads={3} RPKM={4} SelectedMappingType={5}...", 
+                Console.WriteLine("Mapping and annotating {0} lanes of {1} against {2}.\nDirectionalReads={3} RPKM={4} SelectedMappingType={5}...", 
                               laneInfos.Count, projectName, genome.GetBowtieSplcIndexName(),
                               readDir, props.UseRPKM, props.SelectedMappingType);
                 CreateBowtieMaps(genome, laneInfos, genomeSelectedBcIdxs);
@@ -537,8 +533,8 @@ namespace Linnarsson.Strt
                 string laneMapFolder = Path.GetDirectoryName(mapFilePath);
                 string laneFolderName = Path.GetFileName(laneMapFolder);
                 string extractionFolder = Path.GetDirectoryName(Path.GetDirectoryName(laneMapFolder));
-                string summaryFolder = Path.Combine(LaneInfo.GetFqSubFolder(extractionFolder), laneFolderName);
-                string summaryPath = LaneInfo.GetSummaryPath(summaryFolder);
+                string laneExtractionFolder = Path.Combine(LaneInfo.GetFqSubFolder(extractionFolder), laneFolderName);
+                string summaryPath = LaneInfo.GetSummaryPath(laneExtractionFolder);
                 if (!summaryPaths.ContainsKey(summaryPath))
                 {
                     summaryPaths[summaryPath] = null;
@@ -571,7 +567,7 @@ namespace Linnarsson.Strt
             if (Directory.Exists(outputFolder))
                 outputFolder += "_" + DateTime.Now.ToPathSafeString();
             ReadCounter readCounter = ReadExtractionSummaryFiles(mapFilePaths);
-            int averageReadLen = DetermineAverageReadLen(mapFilePaths, readCounter);
+            int averageReadLen = readCounter.AverageReadLen;
             MappedTagItem.AverageReadLen = averageReadLen;
             genome.ReadLen = averageReadLen;
             UpdateGenesToPaintProp(projectFolder);
@@ -636,25 +632,6 @@ namespace Linnarsson.Strt
             parameters.Add("MaxAlternativeMappings=" + Props.props.MaxAlternativeMappings);
             string parString = string.Join(",", parameters.ToArray());
             return parString;
-        }
-
-        /// <summary>
-        ///  If read counter does not have AverageReadLen defined (e.g. if summary file was missing),
-        ///  try to estimate it by peeking into .map files instead.
-        /// </summary>
-        /// <param name="mapFilePaths"></param>
-        /// <param name="readCounter"></param>
-        /// <returns></returns>
-        private int DetermineAverageReadLen(List<string> mapFilePaths, ReadCounter readCounter)
-        {
-            int averageReadLen;
-            averageReadLen = readCounter.AverageReadLen;
-            if (averageReadLen == 0)
-            {
-                averageReadLen = EstimateReadLengthFromMapFiles(mapFilePaths);
-                Console.WriteLine("WARNING: Could not read any extraction summary files - estimated read length from first map file = " + averageReadLen);
-            }
-            return averageReadLen;
         }
 
         /// <summary>

@@ -183,8 +183,8 @@ namespace Linnarsson.Dna
         public static List<string> RetrieveAllMapFilePaths(List<LaneInfo> laneInfos)
         {
             List<string> mapFiles = new List<string>();
-            foreach (LaneInfo info in laneInfos)
-                mapFiles.AddRange(info.mappedFilePaths);
+            foreach (LaneInfo laneInfo in laneInfos)
+                mapFiles.AddRange(laneInfo.mappedFilePaths);
             return mapFiles;
         }
 

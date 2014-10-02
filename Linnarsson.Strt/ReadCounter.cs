@@ -18,6 +18,7 @@ namespace Linnarsson.Strt
         public int readCount = 0;
         public int validReadCount = 0;
         public long validReadTotLen = 0;
+        public double AverageValidReadLen { get { return (validReadTotLen / (double)validReadCount); } }
 
         public FileReads()
         { }
@@ -40,19 +41,20 @@ namespace Linnarsson.Strt
             FileReads fr = new FileReads();
             string[] fields = line.Split('\t');
             fr.path = fields[1];
-            fr.validReadTotLen = int.Parse(fields[2]);
-            if (fr.validReadTotLen == 0)
+            double averageReadLen = double.Parse(fields[2]);
+            if (averageReadLen < 0.01)
                 throw new ReadFileEmptyException();
             fr.validReadCount = int.Parse(fields[3]);
+            fr.validReadTotLen = (long)Math.Round(averageReadLen * fr.validReadCount);
             fr.readCount = int.Parse(fields[4]);
             return fr;
         }
 
-        public static readonly string SummaryHeader = "#Files included in this extraction, total seqlength & count of valid extracted reads, and total read count:\n";
+        public static readonly string SummaryHeader = "#\tExtractedFile\tMeanValidReadLen\tValidReadCount\tTotalReadCount\n";
 
         public string ToSummaryLine()
         {
-            return string.Format("READFILE\t{0}\t{1}\t{2}\t{3}\n", path, validReadTotLen, validReadCount, readCount);
+            return string.Format("READFILE\t{0}\t{1:0.0000}\t{2}\t{3}\n", path, AverageValidReadLen, validReadCount, readCount);
         }
     }
 
@@ -199,6 +201,11 @@ namespace Linnarsson.Strt
             countByStatus[readStatus] += count;
         }
 
+        /// <summary>
+        /// Summarize the extracted reads of the lane and prepare for counting a new lane.
+        /// </summary>
+        /// <param name="laneInfo">Info with path to PF (and nonPF) of the recently extracted lane correctly set</param>
+        /// <returns></returns>
         public FileReads FinishLane(LaneInfo laneInfo)
         {
             PFFileReads.path = laneInfo.PFReadFilePath;
@@ -225,7 +232,7 @@ namespace Linnarsson.Strt
                 sb.Append(fr.ToSummaryLine());
             if (totalLimitedReads > 0)
                 sb.Append("#A limiter condition was used during extraction and some reads were skipped:\n" +
-                     "LIMITER_EXCLUDED_READS\t" + totalLimitedReads + "\n#Below figures refers to non-limiter filtered reads:");
+                     "LIMITER_EXCLUDED_READS\t" + totalLimitedReads + "\n#Below figures refers to non-limiter filtered reads:\n");
             sb.Append("#Category\tCount\tPercent\n");
             sb.Append("TOTAL_ANALYZED_READS\t" + TotalAnalyzedReads + "\t100%\n");
             string PFFrac = ((TotalAnalyzedReads == 0)? "0%\n" : string.Format("{0:0.#%}\n", PassedIlluminaFilter / (double)TotalAnalyzedReads));
@@ -280,10 +287,9 @@ namespace Linnarsson.Strt
                             }
                             catch (ReadFileEmptyException)
                             {
+                                Console.WriteLine("Warning: Skipping empty readfile:\n" + line);
                                 break;
                             }
-                            catch (Exception)
-                            { }
                         }
                         line = extrFile.ReadLine();
                     }
@@ -291,6 +297,7 @@ namespace Linnarsson.Strt
             }
             catch (FileNotFoundException)
             {
+                Console.WriteLine("Error: Could not find summary file " + extractionSummaryPath);
             }
         }
     }

@@ -978,8 +978,8 @@ namespace Linnarsson.Strt
             int spBcCount = speciesBarcodes.Length;
             xmlFile.WriteLine("  <readfiles>");
             foreach (FileReads fr in readCounter.GetReadFiles())
-                xmlFile.WriteLine("    <readfile path=\"{0}\" totalReads=\"{1}\" validExtractedReads=\"{2}\"/>", 
-                                     fr.path, fr.readCount, fr.validReadCount);
+                xmlFile.WriteLine("    <readfile path=\"{0}\" totalReads=\"{1}\" validExtractedReads=\"{2}\" averageValidReadLen=\"{3:0.000}\"/>", 
+                                     fr.path, fr.readCount, fr.validReadCount, fr.AverageValidReadLen);
             xmlFile.WriteLine("  </readfiles>");
             double allBcReads = readCounter.TotalAnalyzedReads;
             if (allBcReads > 0)

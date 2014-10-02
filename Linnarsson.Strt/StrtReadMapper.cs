@@ -219,7 +219,7 @@ namespace Linnarsson.Strt
             {
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, projDescr.analyzeVariants, projDescr.defaultBuild, true);
                 int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-                genome.ReadLen = GetReadLen(projDescr);
+                genome.ReadLen = GetAverageReadLen(projDescr.laneInfos);
                 SetAvailableBowtieIndexVersion(projDescr, genome);
                 logWriter.WriteLine("{0} Mapping to {1}...", DateTime.Now, genome.GetBowtieSplcIndexName()); logWriter.Flush();
                 CreateBowtieMaps(genome, projDescr.laneInfos, genomeBcIndexes);
@@ -265,24 +265,14 @@ namespace Linnarsson.Strt
         /// <summary>
         /// Calculates the average read length of all Extraction summary files in the project folder
         /// </summary>
-        /// <param name="projDescr"></param>
+        /// <param name="laneInfos"></param>
         /// <returns></returns>
-        private int GetReadLen(ProjectDescription projDescr)
-        {
-            List<string> laneExtractionFolders = projDescr.laneInfos.ConvertAll(l => l.laneExtractionFolder);
-            return GetReadLen(laneExtractionFolders.ToArray());
-        }
-        private int GetReadLen(string extractionFolder)
-        {
-            string[] laneExtractionFolders = LaneInfo.GetLaneExtractionFolders(extractionFolder);
-            return GetReadLen(laneExtractionFolders);
-        }
-        private int GetReadLen(string[] laneExtractionFolders)
+        private int GetAverageReadLen(List<LaneInfo> laneInfos)
         {
             ReadCounter rc = new ReadCounter(barcodes);
-            foreach (string laneExtractionFolder in laneExtractionFolders)
+            foreach (LaneInfo laneInfo in laneInfos)
             {
-                rc.AddExtractionSummary(LaneInfo.GetSummaryPath(laneExtractionFolder));
+                rc.AddExtractionSummary(laneInfo.summaryFilePath);
             }
             return rc.AverageReadLen;
         }
@@ -456,14 +446,12 @@ namespace Linnarsson.Strt
         /// <param name="defaultAnnotation"></param>
         public void Map(string projectOrExtractedFolderOrName, string speciesArg, bool defaultGeneVariants, string defaultAnnotation)
         {
-            StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, false);
-            string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
-            string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
-            string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolder);
-            Console.WriteLine("Processing data from {0}", extractedFolder);
+            string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolderOrName);
             List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder, barcodes.Count);
-            genome.ReadLen = GetReadLen(extractedFolder);
+            StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, false);
+            genome.ReadLen = GetAverageReadLen(laneInfos);
             int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            Console.WriteLine("Processing data from {0}", extractedFolder);
             CreateBowtieMaps(genome, laneInfos, genomeBcIndexes);
         }
 
@@ -485,15 +473,12 @@ namespace Linnarsson.Strt
         public List<string> MapAndAnnotate(string projectOrExtractedFolderOrName, string defaultSpeciesArg, 
                                      bool defaultGeneVariants, string defaultAnnotation, string resultFolderName, int[] selectedBcIdxs)
         {
-            string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
-            string projectName = Path.GetFileName(projectFolder);
-            string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
-            string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolder);
+            string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolderOrName);
             List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder, barcodes.Count);
-            string barcodeSet = PathHandler.ParseBarcodeSet(extractedFolder);
-            SetBarcodeSet(barcodeSet);
+            string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
             string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
             string[] speciesArgs = new string[] { defaultSpeciesArg };
+            string projectName = Path.GetFileName(projectFolder);
             if (defaultSpeciesArg == "" && File.Exists(sampleLayoutPath))
                 speciesArgs = GetSpeciesArgs(projectName, sampleLayoutPath, defaultSpeciesArg);
             List<string> resultSubFolders = new List<string>();
@@ -502,7 +487,7 @@ namespace Linnarsson.Strt
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, true);
                 int[] genomeSelectedBcIdxs = barcodes.GenomeAndEmptyBarcodeIndexes(genome).Where(i =>
                                                         (selectedBcIdxs == null || selectedBcIdxs.Contains(i))).ToArray();
-                genome.ReadLen = GetReadLen(extractedFolder);
+                genome.ReadLen = GetAverageReadLen(laneInfos);
                 string spResultFolderName = resultFolderName;
                 if (resultFolderName == "" || resultFolderName == null)
                     spResultFolderName = MakeDefaultResultFolderName(genome, projectFolder, projectName);
@@ -526,8 +511,9 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="projectOrExtractedFolder"></param>
         /// <returns></returns>
-        private string SetupForLatestExtractionFolder(string projectOrExtractedFolder)
+        private string SetupForLatestExtractionFolder(string projectOrExtractedFolderOrName)
         {
+            string projectOrExtractedFolder = PathHandler.GetRooted(projectOrExtractedFolderOrName);
             string extractedFolder = PathHandler.GetLatestExtractionFolder(projectOrExtractedFolder);
             string extractionVersion = PathHandler.GetExtractionVersion(extractedFolder);
             if (int.Parse(extractionVersion) < 28)

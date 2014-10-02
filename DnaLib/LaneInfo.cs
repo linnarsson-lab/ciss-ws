@@ -38,8 +38,8 @@ namespace Linnarsson.Dna
         /// </summary>
         public int nValidReads { get; set; }
 
-        public string slaskFilePath { get; set; }
-        public string summaryFilePath { get; set; }
+        public string slaskFilePath { get; private set; }
+        public string summaryFilePath { get; private set; }
         public string[] extractedFilePaths { get; set; }
         public string laneExtractionFolder { get; set; }
         public string ExtractedFileFolderName { get { return Path.GetFileName(laneExtractionFolder); } }
@@ -54,12 +54,11 @@ namespace Linnarsson.Dna
         public LaneInfo()
         { }
 
-        public LaneInfo(string readFilePath, string runId, char laneNo, string idxSeqFilter)
+        public LaneInfo(string extractionFolder, string laneExtractionFolder, string runId, char laneNo, int nBarcodes)
         {
-            this.PFReadFilePath = readFilePath;
             this.illuminaRunId = runId;
             this.laneNo = laneNo.ToString();
-            this.idxSeqFilter = idxSeqFilter;
+            SetExtractionFilePaths(extractionFolder, laneExtractionFolder, nBarcodes);
         }
 
         /// <summary>
@@ -72,8 +71,11 @@ namespace Linnarsson.Dna
         /// <param name="extractionFolder"></param>
         /// <param name="nBarcodes"></param>
         public LaneInfo(string readFilePath, string runId, char laneNo, string extractionFolder, int nBarcodes, string idxSeqFilter)
-            : this(readFilePath, runId, laneNo, idxSeqFilter)
         {
+            this.PFReadFilePath = readFilePath;
+            this.illuminaRunId = runId;
+            this.laneNo = laneNo.ToString();
+            this.idxSeqFilter = idxSeqFilter;
             Match m = Regex.Match(readFilePath, PathHandler.readFileAndLaneFolderMatchPat);
             int readNo = int.Parse(m.Groups[1].Value);
             string laneExtractionName = string.Format(PathHandler.readFileAndLaneFolderCreatePattern,
@@ -103,11 +105,11 @@ namespace Linnarsson.Dna
         {
             this.extractionFolder = extractionFolder;
             this.laneExtractionFolder = laneExtractionFolder;
-            this.extractedFilePaths = new string[Math.Max(1, nBarcodes)];
+            extractedFilePaths = new string[Math.Max(1, nBarcodes)];
             for (int i = 0; i < extractedFilePaths.Length; i++)
-                this.extractedFilePaths[i] = Path.Combine(laneExtractionFolder, i.ToString() + ".fq");
-            this.slaskFilePath = Path.Combine(laneExtractionFolder, "slask.fq.gz");
-            this.summaryFilePath = GetSummaryPath(laneExtractionFolder);
+                extractedFilePaths[i] = Path.Combine(laneExtractionFolder, i.ToString() + ".fq");
+            slaskFilePath = Path.Combine(laneExtractionFolder, "slask.fq.gz");
+            summaryFilePath = GetSummaryPath(laneExtractionFolder);
         }
 
         public bool AllExtractedFilesExist()
@@ -130,8 +132,7 @@ namespace Linnarsson.Dna
             {
                 Match m = Regex.Match(Path.GetFileName(laneExtractionFolder), PathHandler.readFileAndLaneFolderMatchPat);
                 if (!m.Success) continue;
-                LaneInfo laneInfo = new LaneInfo(m.Groups[0].Value, m.Groups[1].Value, m.Groups[2].Value[0], "");
-                laneInfo.SetExtractionFilePaths(extractionFolder, laneExtractionFolder, nBarcodes);
+                LaneInfo laneInfo = new LaneInfo(extractionFolder, laneExtractionFolder, m.Groups[0].Value, m.Groups[1].Value[0], nBarcodes);
                 laneInfos.Add(laneInfo);
             }
             return laneInfos;

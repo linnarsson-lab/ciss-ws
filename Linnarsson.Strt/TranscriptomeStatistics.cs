@@ -1424,7 +1424,7 @@ namespace Linnarsson.Strt
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, Annotations.GetByBcNumExpressedTranscripts(),
                                     "TRANSCRIPTS", "Detected transcripts by barcode", "detected transcripts");
             }
-            if (barcodes.HasUMIs)
+            if (barcodes.HasUMIs && Props.props.TotalNumberOfAddedSpikeMolecules > 0)
             {
                 xmlFile.Write("    <barcodestat section=\"labeling efficiency ({0} spike mols)\">", Props.props.TotalNumberOfAddedSpikeMolecules);
                 for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)

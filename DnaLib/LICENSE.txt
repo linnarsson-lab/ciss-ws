@@ -1,6 +1,6 @@
 ﻿LICENSE - DnaLib
 
-© 2007-2008 Sten Linnarsson (sten.linnarsson@ki.se). All Rights Reserved. 
+© 2007-2014 Sten Linnarsson (sten.linnarsson@ki.se). All Rights Reserved. 
 
 Permission to use, copy, modify, and distribute this software and its documentation 
 for any purpose is hereby granted without fee, provided that the copyright, permission 

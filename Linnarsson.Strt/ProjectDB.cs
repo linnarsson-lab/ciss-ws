@@ -233,8 +233,7 @@ namespace Linnarsson.Strt
 
         public ProjectDB()
         {
-            connectionString = string.Format("server={0};uid=cuser;pwd=3pmknHQyl;database=joomla;Connect Timeout=300;Charset=utf8;",
-                               Props.props.MySqlServerIP);
+            connectionString = Props.props.MySqlServerConnectionString;
         }
 
         private int IssueNonQuery(string sql)

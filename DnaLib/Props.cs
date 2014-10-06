@@ -38,7 +38,7 @@ namespace Linnarsson.Dna
         public string IlluminaRunReadyFilename = "Basecalling_Netcopy_complete.txt"; // File in Illumina runs folders that indicate run completed
         public string GenomesFolder = "\\\\127.0.0.1\\data\\genomes";
         public string RunsFolder = "\\\\127.0.0.1\\data\\runs"; // Where Illumina raw data are stored
-        public string MySqlServerIP = "127.0.0.1";
+        public string MySqlServerConnectionString = "server=127.0.0.1;uid=user;pwd=password;database=joomla;Connect Timeout=300;Charset=utf8;";
         public string ReadsFolder = "\\\\127.0.0.1\\data\\reads"; // Where FastQ files of concatenated reads for each lane are gathered
         public string ProjectsFolder = "\\\\127.0.0.1\\data\\strt";
         public string UploadsFolder = "\\\\127.0.0.1\\uploads";

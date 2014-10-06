@@ -3,7 +3,7 @@
 Some files (listed below) were originally developed by Sten Linnarsson, Peter Lönnerberg and 
 Ellef Hersoug at Global Genomics AB and Genizon Svenska AB. Original versions copyright © 1999-2008 
 Genizon Biosciences. All Rights Reserved. All other files, and all revisions made after February 1, 
-2008 are © 2007-2008 Sten Linnarsson (sten.linnarsson@ki.se). All Rights Reserved. 
+2008 are © 2007-2014 Sten Linnarsson (sten.linnarsson@ki.se). All Rights Reserved. 
 
 Permission to use, copy, modify, and distribute this software and its documentation 
 for any purpose is hereby granted without fee, provided that the copyright, permission 

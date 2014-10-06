@@ -1,4 +1,4 @@
-﻿LICENSE - UtilitiesLib
+﻿LICENSE - C1SeqPlateLoader
 
 © 2007-2014 Sten Linnarsson (sten.linnarsson@ki.se). All Rights Reserved. 
 

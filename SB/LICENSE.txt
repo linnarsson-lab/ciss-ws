@@ -1,4 +1,4 @@
-﻿LICENSE - UtilitiesLib
+﻿LICENSE - SB
 
 © 2007-2014 Sten Linnarsson (sten.linnarsson@ki.se). All Rights Reserved. 
 

@@ -21,8 +21,7 @@ namespace C1
 
         public C1DB()
         {
-            connectionString = string.Format("server={0};uid=cuser;pwd=3pmknHQyl;database=cells10k;Connect Timeout=300;Charset=utf8;",
-                                             C1Props.props.MySqlServerIP);
+            connectionString = C1Props.props.MySQlConnectionString;
         }
 
         /// <summary>

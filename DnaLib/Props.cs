@@ -36,24 +36,24 @@ namespace Linnarsson.Dna
 
         // Default values for configuration follows.
         public string IlluminaRunReadyFilename = "Basecalling_Netcopy_complete.txt"; // File in Illumina runs folders that indicate run completed
-        public string GenomesFolder = "\\\\130.237.117.141\\data\\genomes";
-        public string RunsFolder = "\\\\130.237.117.141\\data2\\runs"; // Where Illumina raw data are stored
-        public string MySqlServerIP = "130.237.117.141";
-        public string ReadsFolder = "\\\\130.237.117.141\\data\\reads"; // Where FastQ files of concatenated reads for each lane are gathered
-        public string ProjectsFolder = "\\\\130.237.117.141\\data\\strt";
-        public string UploadsFolder = "\\\\130.237.117.141\\uploads";
-        public string ResultDownloadUrl = "strtserver@130.237.117.141:/var/www/html/strt/";
-        public string ResultDownloadFolderHttp = "http://linnarsson.mbb.ki.se/strt/";
-        public string ResultDownloadScpPort = "9922";
-        public string FailureReportEmail = "peter.lonnerberg@ki.se";
-        public string ProjectDBProcessorNotifierEmailSender = "peter.lonnerberg@ki.se";
-        public string OutgoingMailSender = "linnarsson-server@mbb.ki.se";
-        public string OutgoingMailServer = "send.ki.se";
+        public string GenomesFolder = "\\\\127.0.0.1\\data\\genomes";
+        public string RunsFolder = "\\\\127.0.0.1\\data\\runs"; // Where Illumina raw data are stored
+        public string MySqlServerIP = "127.0.0.1";
+        public string ReadsFolder = "\\\\127.0.0.1\\data\\reads"; // Where FastQ files of concatenated reads for each lane are gathered
+        public string ProjectsFolder = "\\\\127.0.0.1\\data\\strt";
+        public string UploadsFolder = "\\\\127.0.0.1\\uploads";
+        public string ResultDownloadUrl = "strtserver@127.0.0.1:/html/strt/";
+        public string ResultDownloadFolderHttp = "http://127.0.0.1/html/strt/";
+        public string ResultDownloadScpPort = "0";
+        public string FailureReportEmail = "silver.bullet@my.server";
+        public string ProjectDBProcessorNotifierEmailSender = "silver.bullet@my.server";
+        public string OutgoingMailSender = "silver.bullet@my.server";
+        public string OutgoingMailServer = "send.my.server";
         public string OutgoingMailUser = "";
         public string OutgoingMailPassword = "";
-        public int OutgoingMailPort = 587;
-        public string BowtieIndexFolder = "\\\\130.237.117.141\\sequtils\\bowtie-0.12.7\\indexes";
-        public string OutputDocFile = "\\\\130.237.117.141\\data\\strt\\STRTOutputManual.pdf";
+        public int OutgoingMailPort = 0;
+        public string BowtieIndexFolder = "\\\\127.0.0.1\\sequtils\\bowtie-0.12.7\\indexes";
+        public string OutputDocFile = "\\\\127.0.0.1\\data\\strt\\STRTOutputManual.pdf";
         public int BkgBackuperStartHour = 17;
         public int BkgBackuperStopHour = 8;
 
@@ -120,7 +120,7 @@ namespace Linnarsson.Dna
         public RepeatMaskingType GenomeBuildRepeatMaskingType = RepeatMaskingType.Exon;
         public ReadLimitType ExtractionReadLimitType;
         public int ExtractionReadLimit = 0;
-        public string BackupDestinationFolder = "hiseq@130.237.142.75:/mnt/davidson/hiseq/data_reads/";
+        public string BackupDestinationFolder = "sb_backup@some.server:/mnt/data_reads/";
         public int MappingsBySpikeReadsSampleDist = 0; // Set > 0 to sample per-barcode curves of # unique mappings as fn. of # processed spike reads
         public string RemoveTrailingReadPrimerSeqs = ""; // Comma-separated list of seqs to remove if during extraction reads end with (part of) them.
         public string ForbiddenReadInternalSeqs = ""; // Comma-separated list of seqs that if found inside reads disqualify them during extraction.

@@ -18,7 +18,9 @@ namespace Linnarsson.Strt
         public int readCount = 0;
         public int validReadCount = 0;
         public long validReadTotLen = 0;
-        public double AverageValidReadLen { get { return (validReadTotLen / (double)validReadCount); } }
+        private double averageReadLenLegacy = 0;
+        public bool IsLegacy { get { return validReadCount == 0; } }
+        public double AverageValidReadLen { get { return (validReadCount > 0)? (validReadTotLen / (double)validReadCount) : averageReadLenLegacy; } }
 
         public FileReads()
         { }
@@ -41,12 +43,19 @@ namespace Linnarsson.Strt
             FileReads fr = new FileReads();
             string[] fields = line.Split('\t');
             fr.path = fields[1];
-            double averageReadLen = double.Parse(fields[2]);
-            if (averageReadLen < 0.01)
-                throw new ReadFileEmptyException();
-            fr.validReadCount = int.Parse(fields[3]);
-            fr.validReadTotLen = (long)Math.Round(averageReadLen * fr.validReadCount);
-            fr.readCount = int.Parse(fields[4]);
+            if (fields.Length < 4)
+            {
+                fr.averageReadLenLegacy = double.Parse(fields[2]);
+            }
+            else
+            {
+                double averageReadLen = double.Parse(fields[2]);
+                if (averageReadLen < 0.01)
+                    throw new ReadFileEmptyException();
+                fr.validReadCount = int.Parse(fields[3]);
+                fr.validReadTotLen = (long)Math.Round(averageReadLen * fr.validReadCount);
+                fr.readCount = int.Parse(fields[4]);
+            }
             return fr;
         }
 
@@ -95,6 +104,8 @@ namespace Linnarsson.Strt
         {
             get
             {
+                if (fileReads.Any(fr => fr.IsLegacy))
+                    return (int)Math.Floor(fileReads.ConvertAll(fr => fr.AverageValidReadLen).Sum() / fileReads.Count);
                 return (int)Math.Floor(fileReads.ConvertAll(fr => fr.validReadTotLen).Sum() / 
                                          (double) fileReads.ConvertAll(fr => fr.validReadCount).Sum());
             }

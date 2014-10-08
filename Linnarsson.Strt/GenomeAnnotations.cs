@@ -598,6 +598,8 @@ namespace Linnarsson.Strt
                 WriteExonCountsPerBarcode(fileNameBase);
                 WriteIntronCountsPerBarcode(fileNameBase);
             }
+            if (props.AnalyzeGCContent)
+                WriteGCContentByTranscript(fileNameBase);
             if (props.GenerateTranscriptProfiles)
             {
                 WriteTranscriptProfiles(fileNameBase);
@@ -1692,6 +1694,29 @@ namespace Linnarsson.Strt
                     for (int bcRow = nBarcodes - 1; bcRow >= 0; bcRow--)
                         file.Write("\t{0}", imgData[pos, bcRow]);
                     file.WriteLine();
+                }
+            }
+        }
+
+        private void WriteGCContentByTranscript(string fileNameBase)
+        {
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_GC_content.tab"))
+            {
+                file.WriteLine("Gene\tTrLen\tTrFracGC\tReadCoveredLen\tReadCoveredDNAFracGC\tReadsFracGC");
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    if (gf.GetTranscriptHits() == 0 || !ChromosomeSequences.ContainsKey(gf.Chr)) continue;
+                    DnaSequence chrSeq = ChromosomeSequences[gf.Chr];
+                    int nTrGC = 0;
+                    foreach (int p in  gf.IterExonPositionsInChrDir())
+                    {
+                        if ( chrSeq.GetNucleotide(p) == 'G' || chrSeq.GetNucleotide(p) == 'C')
+                            nTrGC++;
+                    }
+                    double trFracGC = nTrGC / (double)gf.GetTranscriptLength();
+                    double[] gc = CompactGenePainter.GetTranscriptFractionGC(gf, chrSeq, MappedTagItem.AverageReadLen);
+                    string safeName = ExcelRescueGeneName(gf.Name);
+                    file.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", safeName, gf.GetTranscriptLength(), trFracGC, gc[0], gc[1], gc[2]);
                 }
             }
         }

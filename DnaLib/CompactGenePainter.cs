@@ -172,6 +172,51 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
+        /// Return the fraction GC of the read-covered DNA seq and the corresponding reads
+        /// </summary>
+        /// <param name="gf"></param>
+        /// <param name="chrSeq"></param>
+        /// <param name="readLength">average read length</param>
+        /// <returns>len of read-covered DNA, frac GC of read-covered DNA, frac GC of reads (both may be biased 3' of spliced-out exons)</returns>
+        public static double[] GetTranscriptFractionGC(GeneFeature gf, DnaSequence chrSeq, int readLength)
+        {
+            Console.WriteLine("GetTranscriptFractionGC - readLength={0}", readLength);
+            MakeLocusProfile(gf.Strand, gf.LocusHits, -1);
+            int trLen = gf.GetTranscriptLength();
+            long nDNAGC = 0, nDNATot = 0;
+            long nReadGC = 0, nReadTot = 0;
+            int trPos = 0;
+            Queue<int> stops = new Queue<int>();
+            for (int exonIdx = 0; exonIdx < gf.ExonEnds.Length; exonIdx++)
+            {
+                for (int chrPos = gf.ExonStarts[exonIdx]; chrPos <= gf.ExonEnds[exonIdx]; chrPos++)
+                {
+                    int nReadsStartingAtPos = locusProfile[chrPos - gf.LocusStart];
+                    for (int cc = 0; cc < nReadsStartingAtPos; cc++)
+                        stops.Enqueue(trPos + readLength);
+                    int coverageAtPos = stops.Count();
+                    while (stops.Count > 0 && trPos == stops.Peek())
+                        stops.Dequeue();
+                    trPos += 1;
+                    if (coverageAtPos > 0)
+                    {
+                        char nt = chrSeq.GetNucleotide(chrPos);
+                        nDNATot += 1;
+                        nReadTot += coverageAtPos;
+                        if (nt == 'G' || nt == 'C')
+                        {
+                            nDNAGC += 1;
+                            nReadGC += coverageAtPos;
+                        }
+                    }
+                }
+            }
+            return new double[] { nDNATot, nDNAGC / (double)nDNATot, nReadGC / (double) nReadTot };
+        }
+
+
+
+        /// <summary>
         /// Paints a genes's molecules/reads onto an array of positions relative to ivlStart. Paints data from all barcodes if bcIdx==-1.
         /// </summary>
         /// <param name="gf">Gene to paint from</param>

@@ -627,7 +627,7 @@ namespace Linnarsson.Strt
 
         private void WriteBcWiggleStrand(int readLength, char strand)
         {
-            string projwell = Path.GetFileNameWithoutExtension(OutputPathbase) + "_" + barcodes.GetWellId(currentBcIdx);
+            string projwell = Path.GetFileName(OutputPathbase) + "_" + barcodes.GetWellId(currentBcIdx);
             string selAnnots = (SelectedBcWiggleAnnotations == null)? 
                                 "" : "_" + string.Join(".", Array.ConvertAll(SelectedBcWiggleAnnotations, t => AnnotType.GetName(t)));
             string bcWiggleSubfolder = AssertOutputPathbase() + "_wiggle_by_bc" + selAnnots;
@@ -980,7 +980,8 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  <readfiles>");
             foreach (FileReads fr in readCounter.GetReadFiles())
                 xmlFile.WriteLine("    <readfile path=\"{0}\" totalReads=\"{1}\" validExtractedReads=\"{2}\" averageValidReadLen=\"{3:0.000}\"/>", 
-                                     fr.path, fr.readCount, fr.validReadCount, fr.AverageValidReadLen);
+                                   fr.path, ((fr.readCount==0)? "---" : fr.readCount.ToString()),
+                                            ((fr.readCount==0)? "---" : fr.validReadCount.ToString()), fr.AverageValidReadLen);
             xmlFile.WriteLine("  </readfiles>");
             double allBcReads = readCounter.TotalAnalyzedReads;
             if (allBcReads > 0)

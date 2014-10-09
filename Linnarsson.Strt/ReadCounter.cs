@@ -43,13 +43,9 @@ namespace Linnarsson.Strt
             FileReads fr = new FileReads();
             string[] fields = line.Split('\t');
             fr.path = fields[1];
-            if (fields.Length < 4)
+            double averageReadLen = fr.averageReadLenLegacy = double.Parse(fields[2]);
+            if (fields.Length > 4)
             {
-                fr.averageReadLenLegacy = double.Parse(fields[2]);
-            }
-            else
-            {
-                double averageReadLen = double.Parse(fields[2]);
                 if (averageReadLen < 0.01)
                     throw new ReadFileEmptyException();
                 fr.validReadCount = int.Parse(fields[3]);

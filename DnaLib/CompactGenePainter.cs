@@ -180,7 +180,6 @@ namespace Linnarsson.Dna
         /// <returns>len of read-covered DNA, frac GC of read-covered DNA, frac GC of reads (both may be biased 3' of spliced-out exons)</returns>
         public static double[] GetTranscriptFractionGC(GeneFeature gf, DnaSequence chrSeq, int readLength)
         {
-            //Console.WriteLine("GetTranscriptFractionGC - readLength={0}", readLength);
             MakeLocusProfile(gf.Strand, gf.LocusHits, -1);
             int trLen = gf.GetTranscriptLength();
             long nDNAGC = 0, nDNATot = 0;

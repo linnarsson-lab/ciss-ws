@@ -627,12 +627,13 @@ namespace Linnarsson.Strt
 
         private void WriteBcWiggleStrand(int readLength, char strand)
         {
+            string projwell = Path.GetFileNameWithoutExtension(OutputPathbase) + "_" + barcodes.GetWellId(currentBcIdx);
             string selAnnots = (SelectedBcWiggleAnnotations == null)? 
                                 "" : "_" + string.Join(".", Array.ConvertAll(SelectedBcWiggleAnnotations, t => AnnotType.GetName(t)));
             string bcWiggleSubfolder = AssertOutputPathbase() + "_wiggle_by_bc" + selAnnots;
             if (!Directory.Exists(bcWiggleSubfolder))
                 Directory.CreateDirectory(bcWiggleSubfolder);
-            string fileNameHead = string.Format("{0}_{1}", barcodes.GetWellId(currentBcIdx), ((strand == '+') ? "fw" : "rev"));
+            string fileNameHead = string.Format("{0}_{1}", projwell, ((strand == '+') ? "fw" : "rev"));
             string filePathHead = Path.Combine(bcWiggleSubfolder, fileNameHead);
             string fileByRead = filePathHead + "_byread.wig.gz";
             string fileByMol = filePathHead + "_bymolecule.wig.gz";
@@ -640,11 +641,11 @@ namespace Linnarsson.Strt
             using (StreamWriter writerByRead = fileByRead.OpenWrite())
             using (StreamWriter writerByMol = (barcodes.HasUMIs && !File.Exists(fileByMol)? fileByMol.OpenWrite() : null))
             {
-                writerByRead.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} {2} ({1})\" visibility=full alwaysZero=on",
-                                       fileNameHead + "_Read", strand, DateTime.Now.ToString("yyMMdd"));
+                writerByRead.WriteLine("track type=wiggle_0 name=\"{0}{2}\" description=\"{1} {3} ({2})\" visibility=full alwaysZero=on",
+                                       projwell + "R", fileNameHead + "_Read", strand, DateTime.Now.ToString("yyMMdd"));
                 if (writerByMol != null)
-                    writerByMol.WriteLine("track type=wiggle_0 name=\"{0} ({1})\" description=\"{0} {2} ({1})\" visibility=full alwaysZero=on",
-                                          fileNameHead + "_Mol", strand, DateTime.Now.ToString("yyMMdd"));
+                    writerByMol.WriteLine("track type=wiggle_0 name=\"{0}{2}\" description=\"{1} {3} ({2})\" visibility=full alwaysZero=on",
+                                          projwell + "M", fileNameHead + "_Mol", strand, DateTime.Now.ToString("yyMMdd"));
                 foreach (KeyValuePair<string, ChrTagData> tagDataPair in randomTagFilter.chrTagDatas)
                 {
                     string chr = tagDataPair.Key;

@@ -194,10 +194,16 @@ namespace Linnarsson.Strt
     {
         public int id { get; set; }
         public string name { get; set; }
+        public string first { get; private set; }
+        public string last { get; private set; }
+        public string initials { get { return string.Join("", Array.ConvertAll(name.Split(' '), n => n[0].ToString())); } }
         public Person(int id, string name)
         {
             this.id = id;
             this.name = name;
+            string[] parts = name.Split(' ');
+            first = parts[0];
+            last = parts[parts.Length - 1];
         }
     }
 
@@ -617,31 +623,31 @@ namespace Linnarsson.Strt
         /// <param name="person">Full or partial person's name</param>
         /// <param name="failPerson">Return value if no unique match was found</param>
         /// <returns></returns>
-        public Person TryGetPerson(string table, string field, string person, Person failPerson)
+        public Person TryGetPerson(string table, string field, string origPerson, Person failPerson)
         {
             List<Person> exactMatch = new List<Person>();
             List<Person> lastMatch = new List<Person>();
             List<Person> firstMatch = new List<Person>();
             List<Person> initialsMatch = new List<Person>();
-            person = person.Trim().ToLower();
-            string last = person, first = person, initials = "#.#";
-            string[] parts = person.Split(' ');
+            string person = origPerson.Trim().ToLower();
+            string initials = "#.#";
+            string[] parts = origPerson.Split(' ');
             if (parts.Length >= 2)
             {
-                first = parts[0];
-                last = parts[parts.Length - 1];
                 initials = string.Join("", Array.ConvertAll(parts, n => n[0].ToString()));
             }
-            foreach (Person p in IterDBPersons(table, field))
+            foreach (Person DBPerson in IterDBPersons(table, field))
             {
-                if (p.name == person) exactMatch.Add(p);
-                if (p.name.StartsWith(first)) firstMatch.Add(p);
-                if (p.name.EndsWith(last)) lastMatch.Add(p);
-                string nameInitials = string.Join("", Array.ConvertAll(p.name.Split(' '), n => n[0].ToString()));
-                if (person == nameInitials || initials == p.name) initialsMatch.Add(p);
+                if (DBPerson.name == person) exactMatch.Add(DBPerson);
+                if (DBPerson.first == person) firstMatch.Add(DBPerson);
+                if (DBPerson.last == person) lastMatch.Add(DBPerson);
+                if (origPerson == DBPerson.initials.ToUpper()) initialsMatch.Add(DBPerson);
             }
-            return (exactMatch.Count == 1) ? exactMatch[0] : (lastMatch.Count == 1) ? lastMatch[0] :
-                (firstMatch.Count == 1) ? firstMatch[0] : (initialsMatch.Count == 1) ? initialsMatch[0] : failPerson;
+            return (exactMatch.Count == 1) ? exactMatch[0] : 
+                   (lastMatch.Count == 1 && firstMatch.Count == 0 && initialsMatch.Count == 0) ? lastMatch[0] :
+                   (firstMatch.Count == 1 && lastMatch.Count == 0 && initialsMatch.Count == 0) ? firstMatch[0] :
+                   (initialsMatch.Count == 1 && lastMatch.Count == 0 && firstMatch.Count == 0) ? initialsMatch[0] :
+                   failPerson;
         }
 
         public string TryGetPrimerId(string primername)

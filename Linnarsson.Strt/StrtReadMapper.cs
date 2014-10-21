@@ -213,7 +213,7 @@ namespace Linnarsson.Strt
             if (barcodes.HasUMIs)
                 logWriter.WriteLine("{0} MinPhredScoreInRandomTag={1}", DateTime.Now, props.MinPhredScoreInRandomTag);
             Extract(projDescr);
-            string[] speciesArgs = GetSpeciesArgs(projDescr.plateId, projDescr.SampleLayoutPath, projDescr.defaultSpecies);
+            string[] speciesArgs = ParsePlateLayout(projDescr.plateId, projDescr.SampleLayoutPath, projDescr.defaultSpecies);
             projDescr.annotationVersion = ANNOTATION_VERSION;
             foreach (string speciesArg in speciesArgs)
             {
@@ -279,13 +279,13 @@ namespace Linnarsson.Strt
 
         /// <summary>
         /// If sampleLayoutPath is parsable, the species name(s) to use are extracted from that file,
-        /// otherwise the defaultSpeciesArg is returned.
+        /// and reads the layout into Barcodes object. Otherwise the defaultSpeciesArg is simply returned. 
         /// </summary>
         /// <param name="projectName"></param>
         /// <param name="sampleLayoutPath"></param>
         /// <param name="defaultSpeciesArg"></param>
-        /// <returns></returns>
-        private string[] GetSpeciesArgs(string projectName, string sampleLayoutPath, string defaultSpeciesArg)
+        /// <returns>Ids of all the species that are on the plate</returns>
+        private string[] ParsePlateLayout(string projectName, string sampleLayoutPath, string defaultSpeciesArg)
         {
             string[] speciesArgs = new string[] { defaultSpeciesArg };
             PlateLayout sampleLayout = PlateLayout.GetPlateLayout(projectName, sampleLayoutPath);
@@ -476,7 +476,7 @@ namespace Linnarsson.Strt
             string[] speciesArgs = new string[] { defaultSpeciesArg };
             string projectName = Path.GetFileName(projectFolder);
             if (defaultSpeciesArg == "" && File.Exists(sampleLayoutPath))
-                speciesArgs = GetSpeciesArgs(projectName, sampleLayoutPath, defaultSpeciesArg);
+                speciesArgs = ParsePlateLayout(projectName, sampleLayoutPath, defaultSpeciesArg);
             List<string> resultSubFolders = new List<string>();
             foreach (string speciesArg in speciesArgs)
             {

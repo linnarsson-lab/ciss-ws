@@ -260,22 +260,6 @@ namespace Linnarsson.Strt
             return nRowsAffected;
         }
 
-        private int nextInQueue = 0;
-        public void ResetQueue()
-        {
-            nextInQueue = 0;
-        }
-        public ProjectDescription GetNextProjectInQueue()
-        {
-            ProjectDescription pd = null;
-            List<ProjectDescription> queue = GetProjectDescriptions("WHERE a.status=\"" + ProjectDescription.STATUS_INQUEUE + "\"");
-            if (nextInQueue < queue.Count)
-            {
-                pd = queue[nextInQueue++];
-            }
-            return pd;
-        }
-
         /// <summary>
         /// Get all projects for every barcode set that have been queued for analysis in given lane.
         /// </summary>
@@ -305,6 +289,23 @@ namespace Linnarsson.Strt
             rdr.Close();
             conn.Close();
             return projectsByBc;
+        }
+
+        private int nextInQueue = 0;
+        public void ResetQueue()
+        {
+            nextInQueue = 0;
+        }
+        public ProjectDescription GetNextProjectInQueue()
+        {
+            ProjectDescription pd = null;
+            List<ProjectDescription> queue = GetProjectDescriptions("WHERE a.status=\"" + ProjectDescription.STATUS_INQUEUE + "\"" +
+                " AND p.id NOT IN (SELECT p1.id FROM jos_aaaproject p1 JOIN jos_aaaanalysis a1 ON a1.jos_aaaprojectid=p1.id AND a1.status=\"processing\")");
+            if (nextInQueue < queue.Count)
+            {
+                pd = queue[nextInQueue++];
+            }
+            return pd;
         }
 
         private List<ProjectDescription> GetProjectDescriptions(string whereClause)

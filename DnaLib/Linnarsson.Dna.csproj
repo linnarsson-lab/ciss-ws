@@ -82,6 +82,7 @@
     <Compile Include="Barcodes.cs" />
     <Compile Include="BclFile.cs" />
     <Compile Include="BlatRunner.cs" />
+    <Compile Include="GencodeAnnotationReader.cs" />
     <Compile Include="UMIProfileCounters.cs" />
     <None Include="ChainParser.cs" />
     <Compile Include="BowtieMapFile.cs" />

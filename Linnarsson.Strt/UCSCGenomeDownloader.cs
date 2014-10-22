@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.IO;
 using System.IO.Compression;
 using Linnarsson.Dna;
 using Linnarsson.Utilities;
+using Linnarsson.Mathematics;
 
 namespace Linnarsson.Strt
 {
@@ -23,6 +25,7 @@ namespace Linnarsson.Strt
         string goldenPathGenomes = "ftp://hgdownload.cse.ucsc.edu/goldenPath";
         string loginName = "anonymous";
         string password = Props.props.FailureReportEmail;
+        string gencodeMatcher = "wgEncodeGencodeCompV([0-9]+).txt.gz";
 
         /// <summary>
         /// Downloads the most up-to-date chromosomes, refFlat, MART annotations, and repeat mask files for a 
@@ -89,11 +92,7 @@ namespace Linnarsson.Strt
         private void DownloadSpeciesGenome(string speciesURL, string buildName, string destDir)
         {
             string databaseURL = speciesURL + "/database";
-            List<string> downloadFilenames = new List<string>();
-            foreach (string file in ListFiles(databaseURL))
-                if (file.Contains("refFlat.txt") || file.Contains("refLink.txt") || file.Contains("kgXref.txt")
-                    || file.Contains("kgSpAlias.txt") || file.Contains("rmsk.txt") || file.Contains("README") || file.Contains("knownGene.txt"))
-                    downloadFilenames.Add(file);
+            List<string> downloadFilenames = GetNamesOfAnnotationFiles(databaseURL);
             if (downloadFilenames.Count == 0)
                 throw new FileNotFoundException("Can not find required database files at UCSC: " + speciesURL);
             DownloadFiles(databaseURL, destDir, downloadFilenames);
@@ -111,6 +110,33 @@ namespace Linnarsson.Strt
             foreach (string file in downloadFilenames)
                 if (file.EndsWith("gz"))
                     GunzipFile(Path.Combine(destDir, file));
+        }
+
+        private List<string> GetNamesOfAnnotationFiles(string databaseURL)
+        {
+            List<string> downloadFilenames = new List<string>();
+            List<string> gencodeFiles = new List<string>();
+            List<int> gencodeVersions = new List<int>();
+            foreach (string file in ListFiles(databaseURL))
+            {
+                if (file.Contains("refFlat.txt") || file.Contains("refLink.txt") || file.Contains("kgXref.txt")
+                    || file.Contains("kgSpAlias.txt") || file.Contains("rmsk.txt") || file.Contains("README") || file.Contains("knownGene.txt"))
+                    downloadFilenames.Add(file);
+                if (Regex.Match(file, gencodeMatcher).Success)
+                {
+                    gencodeFiles.Add(file);
+                    gencodeVersions.Add(int.Parse(Regex.Match(file, gencodeMatcher).Groups[1].Value));
+                }
+            }
+            if (gencodeFiles.Count > 0)
+            {
+                Sort.QuickSort(gencodeVersions, gencodeFiles);
+                string latestGencodeFile = gencodeFiles.Last();
+                downloadFilenames.Add(latestGencodeFile);
+                string attrsFile = latestGencodeFile.Replace("Comp", "Attrs");
+                downloadFilenames.Add(attrsFile);
+            }
+            return downloadFilenames;
         }
 
         private static void GunzipFile(string inFilePath)

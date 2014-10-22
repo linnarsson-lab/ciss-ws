@@ -44,6 +44,8 @@ namespace Linnarsson.Dna
                 return "refFlat.txt";
             if (genome.Annotation == "UALL")
                 return "knownGene.txt";
+            if (genome.Annotation == "GENC")
+                return Path.GetFileName(Directory.GetFiles(genome.GetOriginalGenomeFolder(), "wgEncodeGencodeCompV*")[0]);
             return genome.Annotation + "_mart_export.txt";
         }
 
@@ -61,6 +63,8 @@ namespace Linnarsson.Dna
                 return new RefFlatAnnotationReader(genome, annotationFile);
             if (annotationFile.Contains("knownGene"))
                 return new KnownGeneAnnotationReader(genome, annotationFile);
+            if (annotationFile.Contains("wgEncodeGencodeCompV"))
+                return new GencodeAnnotationReader(genome, annotationFile);
             return new BioMartAnnotationReader(genome, annotationFile);
         }
 
@@ -77,7 +81,7 @@ namespace Linnarsson.Dna
         /// <returns>Number of gene models constructed</returns>
         public virtual int BuildGeneModelsByChr()
         {
-            bool addRefFlat = (genome.Annotation != "UCSC" && genome.Annotation != "RFSQ");
+            bool addRefFlat = (genome.Annotation != "UCSC" && genome.Annotation != "RFSQ" && genome.Annotation != "GENC");
             return BuildGeneModelsByChr(addRefFlat);
         }
         public virtual int BuildGeneModelsByChr(bool addRefFlat)

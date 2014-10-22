@@ -14,7 +14,7 @@ namespace Linnarsson.Dna
     /// </summary>
 	public class StrtGenome
 	{
-        public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE", "RFSQ", "UALL" };
+        public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE", "RFSQ", "UALL", "GENC" };
         public readonly static string DefaultAnnotationSource = "UCSC";
         public readonly static string chrCTRLId = "CTRL";
         /// <summary>

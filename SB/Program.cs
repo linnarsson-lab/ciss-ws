@@ -293,8 +293,8 @@ namespace CmdSilverBullet
                 "dump IDX READLEN [STEP [MAXPERGENE [MINOVERHANG [Splices|Linear [BCSET]]]]] [OUTFILE]\n" +
                 "   make a fq file containing transcript fragments as reads defined by IDX, at every STEP bases in transript models.\n" +
                 "   Make all if MAXPERGENE=0. Linear=never splice out exons. MINOVERHANG limits exonic end size at a junction. Adds barcodes+GGG if BCSET given.\n\n" + 
-                "   BUILD E.g. 'mm9', 'hg19', or 'gg3'\n" +
-                "   ANNOT is 'UCSC', 'UALL', 'VEGA', 'ENSE', or 'RFSQ' (Default: 'UCSC', synonymous with 'RFSQ')\n" +
+                "   BUILD E.g. 'mm10', 'hg19', or 'gg3'\n" +
+                "   ANNOT is 'UCSC', 'GENC', 'UALL', 'VEGA', 'ENSE', or 'RFSQ' (Default: 'UCSC', synonymous with 'RFSQ')\n" +
                 "   IDX   Specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_aVEGA'.\n" +
                 "   BC   'C1Plate1', 'C1Plate2', 'TruSeq', 'v4' (48x6-mer, random tags), 'v4r' (no random tags), or 'no' for no barcodes.\n" +
                 "   Define other barcode sets in 'Bc.barcodes' files in the barcodes sub-directory of the data folder\n" +

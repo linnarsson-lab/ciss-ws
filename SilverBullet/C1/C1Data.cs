@@ -32,6 +32,7 @@ namespace C1
         public int Red { get; set; }
         public int Green { get; set; }
         public int Blue { get; set; }
+        public int SpikeMolecules { get; set; }
         public List<CellImage> cellImages { get; set; }
         public List<CellAnnotation> cellAnnotations = new List<CellAnnotation>();
 
@@ -39,7 +40,7 @@ namespace C1
                     string strtProtocol, DateTime dateDissected, DateTime dateCollected, string species, string strain,
                     string donorID, string age, string sex, string tissue, string treatment,
                     double diameter, double area, string PI, string op, string sci, string comments,
-                    int red, int green, int blue, string weight)
+                    int red, int green, int blue, string weight, int spikes)
         {
             this.CellID = cellId;
             this.Chip = chip;
@@ -66,6 +67,7 @@ namespace C1
             this.Green = green;
             this.Blue = blue;
             this.Weight = weight;
+            this.SpikeMolecules = spikes;
             this.cellImages = new List<CellImage>();
         }
 
@@ -103,6 +105,7 @@ namespace C1
                     case "date of run": break;
                     case "chipfolder": break;
                     case "attached_chip_number": break;
+                    case "spikes": SpikeMolecules = int.Parse(p.Value); break;
                     case "chip type": break;
                     default:
                         CellAnnotation ca = new CellAnnotation(null, 0, p.Key, p.Value);

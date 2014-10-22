@@ -414,7 +414,7 @@ namespace C1
             conn.Open();
             string sql = "SELECT CellID, Chip, ChipWell, Plate, PlateWell, StrtProtocol, DateDissected, DateCollected, Species, " +
                          "Strain, DonorID, Age, Sex, Tissue, Treatment, Diameter, Area, PI, Operator, Scientist, Comments, " +
-                         "Red, Green, Blue, Weight " +
+                         "Red, Green, Blue, Weight, SpikeMolecules " +
                          "FROM Cell {0}";
             sql = string.Format(sql, whereClause);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -426,7 +426,7 @@ namespace C1
                                      rdr.GetString(9), rdr.GetString(10), rdr.GetString(11), rdr.GetString(12),
                                      rdr.GetString(13), rdr.GetString(14), rdr.GetDouble(15), rdr.GetDouble(16),
                                      rdr.GetString(17), rdr.GetString(18), rdr.GetString(19), rdr.GetString(20),
-                                     rdr.GetInt32(21), rdr.GetInt32(22), rdr.GetInt32(23), rdr.GetString(24));
+                                     rdr.GetInt32(21), rdr.GetInt32(22), rdr.GetInt32(23), rdr.GetString(24), rdr.GetInt32(25));
                 cells.Add(cell);
             }
             conn.Close();

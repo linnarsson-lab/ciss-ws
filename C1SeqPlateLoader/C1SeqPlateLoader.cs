@@ -147,6 +147,7 @@ namespace C1SeqPlateLoader
             HashSet<string> tissues = new HashSet<string>();
             HashSet<string> chips = new HashSet<string>();
             HashSet<string> protocols = new HashSet<string>();
+            int spikeMolecules = C1Props.props.SpikeMoleculeCount;
             foreach (Cell c in cells)
             {
                 string s = c.Species.ToLower();
@@ -156,6 +157,8 @@ namespace C1SeqPlateLoader
                 chips.Add(c.Chip);
                 protocols.Add(c.StrtProtocol);
                 tissues.Add(c.Tissue);
+                spikeMolecules = (c.SpikeMolecules == 0) ? C1Props.props.SpikeMoleculeCount : c.SpikeMolecules;
+                    
             }
             string chip = string.Join(" / ", chips.ToArray());
             string tissue = string.Join("/", tissues.ToArray());
@@ -165,7 +168,7 @@ namespace C1SeqPlateLoader
             ProjectDescription pd = new ProjectDescription(cells[0].Scientist, cells[0].Operator, cells[0].PI,
                 chip, DateTime.Now, plate, "", species, tissue,
                 "single cell", "C1", "", protocol, barcodesSet, "", layoutFile,
-                cells[0].Comments, C1Props.props.SpikeMoleculeCount);
+                cells[0].Comments, spikeMolecules);
             pd.nSeqCycles = C1Props.props.C1RequiredSeqCycles;
             pd.nIdxCycles = C1Props.props.C1RequiredIdxCycles;
             pd.nPairedCycles = 0;

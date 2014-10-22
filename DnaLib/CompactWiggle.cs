@@ -16,6 +16,10 @@ namespace Linnarsson.Dna
         private static uint molMask = (uint)(1 << readShift) - 1;
         private static uint maxReads = (uint)(1 << (32 - readShift)) - 1;
 
+        private static readonly int QSize = 500;
+        private static int[] posQ = new int[QSize];
+        private static int[] countQ = new int[QSize];
+
         /// <summary>
         /// Total counts (all barcodes) of reads and molecules for each hit start position on one strand of the chromosome
         /// Read count is shifted up readShift bits, and molecule count is kept in lower half.
@@ -95,7 +99,7 @@ namespace Linnarsson.Dna
         /// <param name="chrLength">(approximate) length of chromosome</param>
         /// <param name="sortedHitStartPositions">SORTED! start positions of reads on chromomsome</param>
         /// <param name="countAtEachSortedPosition">number of reads at every corresponding SORTED start position</param>
-        public static void WriteToWigFile(StreamWriter writer, string chr, int readLength, char strand, int chrLength,
+        public static void WriteToWigFileOLD(StreamWriter writer, string chr, int readLength, char strand, int chrLength,
                                            int[] sortedHitStartPositions, int[] countAtEachSortedPosition)
         {
             int strandSign = (strand == '+') ? 1 : -1;
@@ -121,6 +125,46 @@ namespace Linnarsson.Dna
                     writer.WriteLine(stops.Count * strandSign);
                     i++;
                     while (stops.Count > 0 && i == stops.Peek()) stops.Dequeue();
+                }
+            }
+        }
+
+        public static void WriteToWigFile(StreamWriter writer, string chr, int readLength, char strand, int chrLength,
+                                           int[] sortedHitStartPositions, int[] countAtEachSortedPosition)
+        {
+            int strandSign = (strand == '+') ? 1 : -1;
+            int inQIdx = 0, outQIdx = 0;
+            int hitIdx = 0;
+            int i = 0;
+            int countAtPos = 0, coverage = 0;
+            while (i < chrLength && hitIdx < sortedHitStartPositions.Length)
+            {
+                countAtPos = countAtEachSortedPosition[hitIdx];
+                coverage += countAtPos;
+                i = sortedHitStartPositions[hitIdx++];
+                if (i < chrLength && countAtPos > 0)
+                        writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
+                while (i < chrLength && coverage > 0)
+                {
+                    while (hitIdx < sortedHitStartPositions.Length && sortedHitStartPositions[hitIdx] == i)
+                    {
+                        countAtPos += countAtEachSortedPosition[hitIdx++];
+                        coverage += countAtPos;
+                    }
+                    if (countAtPos > 0)
+                    {
+                        posQ[inQIdx] = i + readLength;
+                        countQ[inQIdx] = countAtPos;
+                        inQIdx = (inQIdx + 1) % QSize;
+                        countAtPos = 0;
+                    }
+                    writer.WriteLine(coverage * strandSign);
+                    i++;
+                    if (i == posQ[outQIdx])
+                    {
+                        coverage -= countQ[outQIdx];
+                        outQIdx = (outQIdx + 1) % QSize;
+                    }
                 }
             }
         }

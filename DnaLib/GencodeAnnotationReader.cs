@@ -52,7 +52,7 @@ namespace Linnarsson.Dna
                     string trId = fields[4].Trim();
                     string trName = fields[5].Trim();
                     string trType = fields[6].Trim();
-                    attrsData[geneId] = new string[] { trName, trId, trType };
+                    attrsData[trId] = new string[] { trName, trId, trType };
 
                 }
             }
@@ -71,7 +71,7 @@ namespace Linnarsson.Dna
                     string[] fields = line.Split('\t');
                     if (fields.Length < 16)
                         throw new AnnotationFileException("Wrong format of file " + gencodePath + " Should be 16 TAB-delimited columns.");
-                    string geneId = fields[1].Trim();
+                    string trId = fields[1].Trim();
                     string chr = fields[2].Trim();
                     char strand = fields[3][0];
                     int[] exonStarts = SplitField(fields[9], 0);
@@ -79,14 +79,13 @@ namespace Linnarsson.Dna
                     string geneName = fields[12].Trim();
                     string geneType = "", trName = "";
                     string[] attrsItem;
-                    if (attrsData.TryGetValue(geneId, out attrsItem))
+                    if (attrsData.TryGetValue(trId, out attrsItem))
                     {
                         geneName = attrsItem[0];
                         trName = attrsItem[1];
                         geneType = attrsItem[2];
                     }
-                    if (!geneName.StartsWith("abParts"))
-                        yield return new GeneFeature(geneName, chr, strand, exonStarts, exonEnds, geneType, trName);
+                    yield return new GeneFeature(geneName, chr, strand, exonStarts, exonEnds, geneType, trName);
                 }
             }
         }

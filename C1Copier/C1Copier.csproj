@@ -63,7 +63,7 @@
       <Name>Linnarsson.Mathematics</Name>
     </ProjectReference>
     <ProjectReference Include="..\SilverBullet\C1\Linnarsson.C1Model.csproj">
-      <Project>{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}</Project>
+      <Project>{3A772E57-EC5B-4A18-B2CD-A9F9812C22FA}</Project>
       <Name>Linnarsson.C1Model</Name>
     </ProjectReference>
   </ItemGroup>

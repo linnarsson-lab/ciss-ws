@@ -86,7 +86,7 @@ namespace Linnarsson.Strt
                 threeName = abbrev.Substring(0, 3) + abbrev.Substring(spaceIdx + 1, 1).ToUpper() + abbrev.Substring(spaceIdx + 2, 2);
                 abbrev = abbrev.Substring(0, 1) + abbrev.Substring(spaceIdx + 1, 1);
             }
-            if (abbrev == "hs") abbrev = "hg";
+            if (abbrev.StartsWith("hs")) abbrev = "hg" + abbrev.Substring(2);
         }
 
         private void DownloadSpeciesGenome(string speciesURL, string buildName, string destDir)

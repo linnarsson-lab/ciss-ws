@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Linnarsson.Strt;
+using Linnarsson.Dna;
 using C1;
 
 namespace C1SeqPlateLoader
@@ -18,9 +18,9 @@ namespace C1SeqPlateLoader
             if (args.Length == 0 || args[0] == "-h" || args[0] == "--help")
             {
                 Console.WriteLine("Usage:\nmono C1SeqPlateLoader.exe [-f] [--all] [-2|-3|-4|-bBCSET] CHIPID_OR_MIXPLATEID");
-                Console.WriteLine("The argument is either the Id of a C1 chip in the the 10kCell database,\n" +
+                Console.WriteLine("The argument is either the Id of a C1 chip in the the Sanger DB,\n" +
                                   "or the name of a C1 sequencing plate mix file in the {0} directory.\n" +
-                                  "In the latter case, the new sequencing project will be named '{1}name'.\n" +
+                                  "In the latter case, all chips on the plate have to exist in the DB, and the sequencing project will be named '{1}name'.\n" +
                                   "Use -2/-3/-4 if the barcode set corresponds to 97-192/193-288/289-384 in a plate-combo.\n" +
                                   "Use -bBCSET to specify the barcode set name.\n" +
                                   "Without --all, cells that have been excluded will be counted as empty in global statistics.\n" +

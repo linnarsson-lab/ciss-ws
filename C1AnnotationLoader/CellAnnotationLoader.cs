@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using C1;
+using Linnarsson.Dna;
 
 namespace C1AnnotationLoader
 {
@@ -18,7 +19,7 @@ namespace C1AnnotationLoader
         /// <param name="tabFile"></param>
         public void Process(string tabFile)
         {
-            C1DB db = new C1DB();
+            ProjectDB db = new ProjectDB();
             using (StreamReader reader = new StreamReader(tabFile))
             {
                 string line;
@@ -36,7 +37,8 @@ namespace C1AnnotationLoader
                         try
                         {
                             Cell cell = db.GetCellFromChipWell(chip, chipWell);
-                            db.InsertOrUpdateCellAnnotation((int)cell.CellID, key, value);
+                            CellAnnotation ca = new CellAnnotation(null, cell.id.Value, key, value);
+                            db.InsertOrUpdateCellAnnotation(ca);
                         }
                         catch (IndexOutOfRangeException)
                         {

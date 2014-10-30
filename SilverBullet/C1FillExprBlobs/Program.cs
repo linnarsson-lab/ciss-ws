@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Linnarsson.Dna;
 using C1;
 
 namespace C1FillExprBlobs
@@ -39,12 +40,13 @@ namespace C1FillExprBlobs
         public void Insert(int transcriptomeID, ZeroStorage zeroStorage)
         {
             C1DB db = new C1DB();
+            ProjectDB pdb = new ProjectDB();
             Dictionary<int, int> trIDToBlobIdx = new Dictionary<int, int>();
             foreach (Transcript t in db.IterTranscriptsFromDB(transcriptomeID))
                 trIDToBlobIdx[t.TranscriptID.Value] = t.ExprBlobIdx;
             int nTranscripts = trIDToBlobIdx.Count;
             ExprBlob exprBlob = new ExprBlob(nTranscripts);
-            List<string> cellIds = db.GetCellIds();
+            List<string> cellIds = pdb.GetCellIds();
             int nCells = 0, nInsCells = 0;
             foreach (string cellId in cellIds)
             {

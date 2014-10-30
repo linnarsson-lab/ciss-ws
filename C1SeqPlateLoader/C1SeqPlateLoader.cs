@@ -14,6 +14,7 @@ namespace C1SeqPlateLoader
     /// Use to load or reload a sequencing plate from C1 cell data as a (new) sequencing project plate.
     /// Either a whole C1 chip can be loaded, or a mixed plate from several chips, in which case a
     /// mapping file must exist telling which chip well is loaded into each sequencing plate well.
+    /// In both cases, the chip(s) must already be registered in the Sanger database.
     /// A PlateLayout file is constructed containing this mapping and the species of the cell in each well.
     /// </summary>
     public class C1SeqPlateLoader
@@ -29,35 +30,35 @@ namespace C1SeqPlateLoader
             cdb = new C1DB();
         }
 
-        public void LoadC1SeqPlate(string plateOrChip, string barcodesSet)
+        public void LoadC1SeqPlate(string mixplateOrChipid, string barcodesSet)
+        {
+            List<Cell> plateOrderedCells;
+            string mixPlateFile = C1Props.props.C1SeqPlateFilenamePattern.Replace("*", mixplateOrChipid);
+            mixPlateFile = Path.Combine(C1Props.props.C1SeqPlatesFolder, mixPlateFile);
+            if (File.Exists(mixPlateFile))
+                plateOrderedCells = ReadSeqPlateMixFile(mixPlateFile);
+            else
+                plateOrderedCells = ReadChipPlateCellsFromDB(mixplateOrChipid);
+            string plateid = C1Props.C1ProjectPrefix + mixplateOrChipid;
+            Dictionary<int, Chip> chipsById = pdb.GetChipsById(plateOrderedCells);
+            string layoutFilename = ConstructLayoutFile(plateid, plateOrderedCells, chipsById);
+            pdb.UpdatePlateWellOfCells(plateOrderedCells);
+            InsertNewProject(plateid, chipsById, layoutFilename, barcodesSet);
+        }
+
+        private List<Cell> ReadChipPlateCellsFromDB(string mixplateOrChipid)
         {
             List<Cell> cells;
-            string seqPlateFile = C1Props.props.C1SeqPlateFilenamePattern.Replace("*", plateOrChip);
-            seqPlateFile = Path.Combine(C1Props.props.C1SeqPlatesFolder, seqPlateFile);
-            string seqPlateName = C1Props.C1ProjectPrefix + plateOrChip;
-            if (File.Exists(seqPlateFile))
+            cells = pdb.GetCellsOfChip(mixplateOrChipid);
+            if (cells.Count == 0)
+                throw new Exception(string.Format("ERROR: No chip {0} in DB. Register/reload the chip(s) on Sanger DB web page.", mixplateOrChipid));
+            HashSet<string> emptyWells = ReadExcludeFile(mixplateOrChipid);
+            foreach (Cell cell in cells)
             {
-                cells = ReadSeqPlateMixFile(seqPlateFile, seqPlateName);
-                if (cells.Count == 0)
-                    throw new Exception(string.Format("ERROR: Could not find any 10kCells using plate mix file {0}.", seqPlateFile));
+                cell.platewell = cell.chipwell;
+                cell.empty = emptyWells.Contains(cell.chipwell);
             }
-            else
-            {
-                cells = cdb.GetCellsOfChip(plateOrChip);
-                if (cells.Count == 0)
-                    throw new Exception(string.Format("ERROR: Could not find any 10kCells in database for chip {0}.", plateOrChip));
-                HashSet<string> emptyWells = ReadExcludeFile(plateOrChip);
-                foreach (Cell c in cells)
-                {
-                    c.Plate = seqPlateName;
-                    c.PlateWell = c.ChipWell;
-                    if (emptyWells.Contains(c.ChipWell))
-                        c.Species = "Empty";
-                }
-            }
-            cdb.UpdateDBCellSeqPlateWell(cells);
-            string layoutFilename = ConstructLayoutFile(seqPlateName, cells);
-            InsertNewProject(cells, layoutFilename, barcodesSet);
+            return cells;
         }
 
         private HashSet<string> ReadExcludeFile(string chip)
@@ -86,7 +87,31 @@ namespace C1SeqPlateLoader
             return emptyWells;
         }
 
-        private string ConstructLayoutFile(string seqPlateName, List<Cell> cells)
+        private List<Cell> ReadSeqPlateMixFile(string mixFile)
+        {
+            List<Cell> cells = new List<Cell>();
+            using (StreamReader r = new StreamReader(mixFile))
+            {
+                string line;
+                while ((line = r.ReadLine()) != null)
+                {
+                    if (line == "" || line.StartsWith("#") || line.Contains("plate"))
+                        continue;
+                    string[] fields = line.Split('\t');
+                    string chipid = fields[0].Trim();
+                    string chipWell = string.Format("{0}{1:00}", fields[1].Trim(), int.Parse(fields[2]));
+                    string plateWell = string.Format("{0}{1:00}", fields[3].Trim(), int.Parse(fields[4]));
+                    Cell cell = pdb.GetCellFromChipWell(chipid, chipWell);
+                    if (cell == null)
+                        throw new Exception(string.Format("ERROR: Chip {0} not in DB. Register/reload the chip in Sanger DB web page.", chipid));
+                    cell.platewell = plateWell;
+                    cells.Add(cell);
+                }
+            }
+            return cells;
+        }
+
+        private string ConstructLayoutFile(string seqPlateName, List<Cell> plateOrderedCells, Dictionary<int, Chip> chipsById)
         {
             string layoutFile = PathHandler.GetSampleLayoutPath(seqPlateName);
             string projectPath = Path.GetDirectoryName(layoutFile);
@@ -95,10 +120,14 @@ namespace C1SeqPlateLoader
                 Directory.CreateDirectory(projectPath);
             using (StreamWriter writer = new StreamWriter(layoutFile))
             {
-                writer.WriteLine("SampleId\tSpecies\tC1Chip\tC1ChipWell");
-                foreach (Cell cell in cells)
+                writer.WriteLine("SampleId\tSpecies\tC1Chip\tC1ChipWell\tSpikeMolecules\tDiameter\tArea\tRed\tGreen\tBlue");
+                foreach (Cell cell in plateOrderedCells)
                 {
-                    writer.WriteLine("{0}\t{1}\t{2}\t{3}", cell.PlateWell, cell.Species, cell.Chip, cell.ChipWell);
+                    Chip chip = chipsById[cell.jos_aaachipid];
+                    string species = cell.empty ? "empty" : chip.species;
+                    writer.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}",
+                                     cell.platewell, species, chip.chipid, cell.chipwell, chip.spikemolecules,
+                                     cell.diameter, cell.area, cell.red, cell.green, cell.blue);
                 }
             }
             try
@@ -114,68 +143,52 @@ namespace C1SeqPlateLoader
             return layoutFilename;
         }
 
-        private List<Cell> ReadSeqPlateMixFile(string mixFile, string seqPlateName)
-        {
-            List<Cell> cells = new List<Cell>();
-            using (StreamReader r = new StreamReader(mixFile))
-            {
-                string line; 
-                while ((line = r.ReadLine()) != null)
-                {
-                    if (line == "" || line.StartsWith("#") || line.Contains("plate"))
-                        continue;
-                    string[] fields = line.Split('\t');
-                    string chip = fields[0].Trim();
-                    string chipWell = string.Format("{0}{1:00}", fields[1].Trim(), int.Parse(fields[2]));
-                    string plateWell = string.Format("{0}{1:00}", fields[3].Trim(), int.Parse(fields[4]));
-                    Cell cell = cdb.GetCellFromChipWell(chip, chipWell);
-                    cell.Plate = seqPlateName;
-                    cell.PlateWell = plateWell;
-                    cells.Add(cell);
-                }
-            }
-            return cells;
-        }
-
         /// <summary>
         /// Insert a new project into STRT pipeline
         /// </summary>
-        /// <param name="cells">full data of C1 cells that make up the project</param>
-        private void InsertNewProject(List<Cell> cells, string layoutFile, string barcodesSet)
+        /// <param name="plateid">The new plate id</param>
+        /// <param name="chipsById">More than one if it is a mix plate</param>
+        /// <param name="layoutFile">path to the layout file</param>
+        /// <param name="barcodesSet">barcode set of the new plate</param>
+        private void InsertNewProject(string plateid, Dictionary<int, Chip> chipsById, string layoutFile, string barcodesSet)
         {
+            HashSet<string> chipids = new HashSet<string>();
             HashSet<string> speciess = new HashSet<string>();
             HashSet<string> tissues = new HashSet<string>();
-            HashSet<string> chips = new HashSet<string>();
             HashSet<string> protocols = new HashSet<string>();
-            int spikeMolecules = C1Props.props.SpikeMoleculeCount;
-            foreach (Cell c in cells)
+            HashSet<string> comments = new HashSet<string>();
+            int jos_aaaclientid = -1, jos_aaacontactid = -1, jos_aaamanagerid = -1, spikemolecules = -1;
+            foreach (Chip c in chipsById.Values)
             {
-                string s = c.Species.ToLower();
-                if (s == "mouse" || s.StartsWith("mus")) s = "Mm";
-                if (s == "human" || s.StartsWith("homo")) s = "Hs";
-                if (s.ToLower() != "empty") speciess.Add(s);
-                chips.Add(c.Chip);
-                protocols.Add(c.StrtProtocol);
-                tissues.Add(c.Tissue);
-                spikeMolecules = (c.SpikeMolecules == 0) ? C1Props.props.SpikeMoleculeCount : c.SpikeMolecules;
-                    
+                chipids.Add(c.chipid);
+                speciess.Add(c.species);
+                tissues.Add(c.tissue);
+                protocols.Add(c.strtprotocol);
+                comments.Add(c.comments);
+                jos_aaaclientid = (jos_aaaclientid < 0 || jos_aaaclientid == c.jos_aaaclientid)? c.jos_aaaclientid : 0;
+                jos_aaacontactid = (jos_aaacontactid < 0 || jos_aaacontactid == c.jos_aaacontactid) ? c.jos_aaacontactid : 0;
+                jos_aaamanagerid = (jos_aaamanagerid < 0 || jos_aaamanagerid == c.jos_aaamanagerid) ? c.jos_aaamanagerid : 0;
+                if (c.spikemolecules > 0)
+                    spikemolecules = (spikemolecules == -1) ? c.spikemolecules : 0; // Set to 0 if different values in chips of a mix plate
             }
-            string chip = string.Join(" / ", chips.ToArray());
-            string tissue = string.Join("/", tissues.ToArray());
-            string plate = cells[0].Plate;
+            string chipid = string.Join(" / ", chipids.ToArray());
+            string tissue = string.Join(" / ", tissues.ToArray());
+            string comment = string.Join(" / ", comments.ToArray());
             string species = string.Join("/", speciess.ToArray());
             string protocol = string.Join(" / ", protocols.ToArray());
-            ProjectDescription pd = new ProjectDescription(cells[0].Scientist, cells[0].Operator, cells[0].PI,
-                chip, DateTime.Now, plate, "", species, tissue,
+            if (spikemolecules == -1)
+                spikemolecules = C1Props.props.SpikeMoleculeCount;
+            ProjectDescription pd = new ProjectDescription(jos_aaacontactid, jos_aaamanagerid, jos_aaaclientid,
+                chipid, DateTime.Now, plateid, "", species, tissue,
                 "single cell", "C1", "", protocol, barcodesSet, "", layoutFile,
-                cells[0].Comments, spikeMolecules);
+                comment, spikemolecules);
             pd.nSeqCycles = C1Props.props.C1RequiredSeqCycles;
             pd.nIdxCycles = C1Props.props.C1RequiredIdxCycles;
             pd.nPairedCycles = 0;
             pd.seqPrimer = C1Props.props.C1SeqPrimer;
             pd.idxPrimer = C1Props.props.C1IdxPrimer;
             pd.pairedPrimer = null;
-            new ProjectDB().InsertOrUpdateProject(pd);
+            pdb.InsertOrUpdateProject(pd);
         }
 
     }

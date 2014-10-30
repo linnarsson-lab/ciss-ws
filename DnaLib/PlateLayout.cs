@@ -81,12 +81,12 @@ namespace Linnarsson.Dna
         /// <param name="plateId"></param>
         public C1PlateLayout(string plateId)
         {
-            C1DB c1db = new C1DB();
-            c1db.GetCellAnnotationsByPlate(plateId, out AnnotationsBySampleId, out AnnotationIndexes);
+            ProjectDB pdb = new ProjectDB();
+            pdb.GetCellAnnotationsByPlate(plateId, out AnnotationsBySampleId, out AnnotationIndexes);
             if (AnnotationsBySampleId.Count == 0)
             {
                 string chipId = plateId.Replace(C1Props.C1ProjectPrefix, "");
-                c1db.GetCellAnnotationsByChip(chipId, out AnnotationsBySampleId, out AnnotationIndexes);
+                pdb.GetCellAnnotationsByChip(chipId, out AnnotationsBySampleId, out AnnotationIndexes);
                 Console.WriteLine("WARNING: Plate " + plateId + " has not been properly loaded. Assuming matching chip->plate wellIds.");
                 throw new SampleLayoutFileException("Can not extract any well/cell annotations for " + plateId + "  from C1 database.");
             }

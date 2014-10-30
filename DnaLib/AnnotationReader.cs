@@ -466,7 +466,6 @@ namespace Linnarsson.Dna
         public void AddCommonGeneModels(string chrId)
         {
             string genesPath = PathHandler.GetCommonGenesPath(chrId);
-            //string genesPath = PathHandler.GetCTRLGenesPath();
             if (File.Exists(genesPath))
             {
                 int nAddedGenes = 0;

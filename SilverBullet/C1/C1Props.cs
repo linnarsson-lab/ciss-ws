@@ -12,7 +12,7 @@ namespace C1
     /// Note that C1Props.props is a singleton.
     /// </summary>
     [Serializable]
-    public sealed class C1Props
+    public class C1Props
     {
         [NonSerialized]
         public static readonly string configFilename = "C1Config.xml"; // Filename of machine specific Props

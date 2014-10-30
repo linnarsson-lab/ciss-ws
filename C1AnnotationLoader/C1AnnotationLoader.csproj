@@ -50,6 +50,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DnaLib\Linnarsson.Dna.csproj">
+      <Project>{70EA71CD-073B-4195-B04F-36A7F6B1D4E7}</Project>
+      <Name>Linnarsson.Dna</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SilverBullet\C1\Linnarsson.C1Model.csproj">
       <Project>{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}</Project>
       <Name>Linnarsson.C1Model</Name>

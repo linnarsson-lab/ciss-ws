@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 using Linnarsson.Dna;
 using C1;
 
@@ -23,7 +24,11 @@ namespace Linnarsson.Strt
             enzymes = Props.props.CAPCloseSiteSearchCutters;
             Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
             foreach (string commonChrId in StrtGenome.commonChrIds)
-                chrIdToFileMap[commonChrId] = PathHandler.GetCommonChrPath(commonChrId);
+            {
+                string commonChrPath = PathHandler.GetCommonChrPath(commonChrId);
+                if (File.Exists(commonChrPath))
+                    chrIdToFileMap[commonChrId] = commonChrPath;
+            }
             foreach (string chrId in chrIdToFileMap.Keys)
             {
                 if (StrtGenome.IsASpliceAnnotation(chrId)) continue;

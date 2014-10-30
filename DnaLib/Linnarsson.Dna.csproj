@@ -61,6 +61,7 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="MySql.Data, Version=6.2.4.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -83,6 +84,7 @@
     <Compile Include="BclFile.cs" />
     <Compile Include="BlatRunner.cs" />
     <Compile Include="GencodeAnnotationReader.cs" />
+    <Compile Include="ProjectDB.cs" />
     <Compile Include="UMIProfileCounters.cs" />
     <None Include="ChainParser.cs" />
     <Compile Include="BowtieMapFile.cs" />
@@ -153,7 +155,7 @@
       <Name>Linnarsson.Mathematics</Name>
     </ProjectReference>
     <ProjectReference Include="..\SilverBullet\C1\Linnarsson.C1Model.csproj">
-      <Project>{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}</Project>
+      <Project>{3A772E57-EC5B-4A18-B2CD-A9F9812C22FA}</Project>
       <Name>Linnarsson.C1Model</Name>
     </ProjectReference>
     <ProjectReference Include="..\UtilitiesLib\Linnarsson.Utilities.csproj">

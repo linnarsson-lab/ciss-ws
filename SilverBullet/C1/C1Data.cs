@@ -5,114 +5,88 @@ using System.Text;
 
 namespace C1
 {
+    public class Chip
+    {
+        public int? id { get; set; }
+        public string chipid { get; set; }                  // "1234345-123"
+        public string strtprotocol { get; set; }            // "v1.11"
+        public DateTime datedissected { get; set; }
+        public DateTime datecollected { get; set; }
+        public string species { get; set; }                 // "Ms" or "Hs"
+        public string strain { get; set; }                  // "C57/bl6"
+        public string donorid { get; set; }                 // "129"
+        public string age { get; set; }                     // "e14.5"
+        public string sex { get; set; }                     // 'M' or 'F' or 'M+F'
+        public string weight { get; set; }                  // "17"
+        public string tissue { get; set; }                  // "cortex" or "HeLa"
+        public string treatment { get; set; }
+        public int spikemolecules { get; set; }
+        public int? jos_aaaprojectid { get; set; }
+        public int jos_aaaclientid { get; set; }
+        public int jos_aaacontactid { get; set; }
+        public int jos_aaamanagerid { get; set; }
+        public string comments { get; set; }
+        public List<Cell> cells { get; set; }
+
+        public Chip(int? id, string chipid, string strtprotocol, DateTime datedissected, DateTime datecollected,
+                    string species, string strain, string donorid, string age, string sex, string weight, 
+                    string tissue, string treatment, int spikes,
+                    int? jos_aaaprojectid, int jos_aaaclientid, int jos_aaacontactid, int jos_aaamanagerid, string comments)
+        {
+            this.id = id;
+            this.chipid = chipid;
+            this.strtprotocol = strtprotocol;
+            this.datedissected = datedissected;
+            this.datecollected = datecollected;
+            this.species = species;
+            this.strain = strain;
+            this.donorid = donorid;
+            this.age = age;
+            this.sex = sex.ToUpper();
+            this.weight = weight;
+            this.tissue = tissue;
+            this.treatment = treatment;
+            this.spikemolecules = spikes;
+            this.jos_aaaprojectid = jos_aaaprojectid;
+            this.jos_aaaclientid = jos_aaaclientid;
+            this.jos_aaacontactid = jos_aaacontactid;
+            this.jos_aaamanagerid = jos_aaamanagerid;
+            this.comments = comments;
+            this.cells = new List<Cell>();
+        }
+    }
+
     public class Cell
     {
-        public int? CellID { get; set; }
-        public string Chip { get; set; }                    // "1234345-123"
-        public string ChipWell { get; set; }                // Well on C1 chip, e.g. "A02"
-        public string Plate { get; set; }                   // Sequencing plate, e.g. "C1-243"
-        public string PlateWell { get; set; }                // Well on sequencing plate, e.g. "B04"
-        public string StrtProtocol { get; set; }            // "STRT c1 v1.11"
-        public DateTime DateDissected { get; set; }
-        public DateTime DateCollected { get; set; }
-        public string Species { get; set; }                 // "mouse" or "human"
-        public string DonorID { get; set; }                 // "129"
-        public string Weight { get; set; }                 // "350g"
-        public string Strain { get; set; }                  // "C57/Bl6"
-        public string Age { get; set; }                     // "E14.5"
-        public string Sex { get; set; }                       // 'M' or 'F' or 'M+F'
-        public string Tissue { get; set; }
-        public string Treatment { get; set; }
-        public double Diameter { get; set; }
-        public double Area { get; set; }
-        public string PI { get; set; }
-        public string Operator { get; set; }
-        public string Scientist { get; set; }
-        public string Comments { get; set; }
-        public int Red { get; set; }
-        public int Green { get; set; }
-        public int Blue { get; set; }
-        public int SpikeMolecules { get; set; }
+        public int? id { get; set; }
+        public int jos_aaachipid { get; set; }
+        public string chipwell { get; set; }                // Well on C1 chip, e.g. "A02"
+        public string platewell { get; set; }               // Well on sequencing plate, e.g. "B04"
+        public double diameter { get; set; }
+        public double area { get; set; }
+        public bool empty { get; set; }                     // True if the C1 chamber is empty
+        public int red { get; set; }
+        public int green { get; set; }
+        public int blue { get; set; }
+        public bool valid { get; set; }                     // True if the cell is not excluded (visual inspection)
         public List<CellImage> cellImages { get; set; }
-        public List<CellAnnotation> cellAnnotations = new List<CellAnnotation>();
+        public List<CellAnnotation> cellAnnotations { get; set; }
 
-        public Cell(int? cellId, string chip, string chipWell, string plate, string plateWell,
-                    string strtProtocol, DateTime dateDissected, DateTime dateCollected, string species, string strain,
-                    string donorID, string age, string sex, string tissue, string treatment,
-                    double diameter, double area, string PI, string op, string sci, string comments,
-                    int red, int green, int blue, string weight, int spikes)
+        public Cell(int? cellId, int jos_aaachipid, string chipWell, string plateWell,
+                    double diameter, double area, int red, int green, int blue)
         {
-            this.CellID = cellId;
-            this.Chip = chip;
-            this.ChipWell = chipWell;
-            this.Plate = plate;
-            this.PlateWell = plateWell;
-            this.StrtProtocol = strtProtocol;
-            this.DateDissected = dateDissected;
-            this.DateCollected = dateCollected;
-            this.Species = species;
-            this.Strain = strain;
-            this.DonorID = donorID;
-            this.Age = age;
-            this.Sex = sex.ToUpper();
-            this.Tissue = tissue;
-            this.Treatment = treatment;
-            this.Diameter = diameter;
-            this.Area = area;
-            this.PI = PI;
-            this.Operator = op;
-            this.Scientist = sci;
-            this.Comments = comments;
-            this.Red = red;
-            this.Green = green;
-            this.Blue = blue;
-            this.Weight = weight;
-            this.SpikeMolecules = spikes;
+            this.id = cellId;
+            this.jos_aaachipid = jos_aaachipid;
+            this.chipwell = chipWell;
+            this.platewell = plateWell;
+            this.diameter = diameter;
+            this.area = area;
+            this.red = red;
+            this.green = green;
+            this.blue = blue;
+            this.valid = true;
             this.cellImages = new List<CellImage>();
-        }
-
-        public Cell(string chipWell, DateTime dateDissected, DateTime dateOfRun, double diameter, double area,
-                                    int red, int green, int blue, Dictionary<string, string> metadata)
-        {
-            ChipWell = chipWell;
-            Plate = PlateWell = "";
-            DateDissected = dateDissected;
-            DateCollected = dateOfRun;
-            Diameter = diameter;
-            Area = area;
-            Red = red;
-            Green = green;
-            Blue = blue;
-            foreach (KeyValuePair<string, string> p in metadata)
-            {
-                switch (p.Key)
-                {
-                    case "chip serial number": Chip = p.Value; break;
-                    case "protocol": StrtProtocol = p.Value; break;
-                    case "species": Species = p.Value; break;
-                    case "strain": Strain = p.Value; break;
-                    case "donorid": DonorID = p.Value; break;
-                    case "age": Age = p.Value; break;
-                    case "sex": Sex = p.Value.ToUpper(); break;
-                    case "tissue": Tissue = p.Value; break;
-                    case "treatment": Treatment = p.Value; break;
-                    case "principal investigator": PI = p.Value; break;
-                    case "operator": Operator = p.Value; break;
-                    case "scientist": Scientist = p.Value; break;
-                    case "comments": Comments = p.Value; break;
-                    case "weight": Weight = p.Value; break;
-                    case "datedissected": break;
-                    case "date of run": break;
-                    case "chipfolder": break;
-                    case "attached_chip_number": break;
-                    case "spikes": SpikeMolecules = int.Parse(p.Value); break;
-                    case "chip type": break;
-                    default:
-                        CellAnnotation ca = new CellAnnotation(null, 0, p.Key, p.Value);
-                        cellAnnotations.Add(ca);
-                        break;
-                }
-            }
+            this.cellAnnotations = new List<CellAnnotation>();
         }
     }
 

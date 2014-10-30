@@ -624,6 +624,7 @@ namespace Linnarsson.Strt
             WriteAnnotTypeAndExonCounts(fileNameBase);
             WritePotentialErronousAnnotations(fileNameBase);
             WriteElongationEfficiency(fileNameBase, averageReadLen);
+            WriteSpikeProfilesByBc(fileNameBase);
         }
 
         private void WriteExpressedAntisenseGenes(string fileNameBase)
@@ -1717,6 +1718,37 @@ namespace Linnarsson.Strt
                     double[] gc = CompactGenePainter.GetTranscriptFractionGC(gf, chrSeq, MappedTagItem.AverageReadLen);
                     string safeName = ExcelRescueGeneName(gf.Name);
                     file.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", safeName, gf.GetTranscriptLength(), trFracGC, gc[0], gc[1], gc[2]);
+                }
+            }
+        }
+
+        private void WriteSpikeProfilesByBc(string fileNameBase)
+        {
+            int minTotCount = barcodes.Count * 20;
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_spike_profiles.tab"))
+            {
+                string countType = (barcodes.HasUMIs) ? "molecule" : "read";
+                file.WriteLine("Read {0} hits per barcode to abundant (>= {1} total counts) spike transcripts from 5' to 3' end.",
+                               countType, minTotCount);
+                file.Write("Spike\tTr5'Pos\tTrLen\tWell\tBarcode\t");
+                for (int p = 1; p < 3000; p++)
+                    file.Write("\tPos{0}", p);
+                file.WriteLine();
+                foreach (GeneFeature gf in geneFeatures.Values)
+                {
+                    if (!gf.IsSpike() || gf.GetTranscriptHits() < minTotCount) continue;
+                    string safeName = ExcelRescueGeneName(gf.Name);
+                    for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                    {
+                        file.Write("{0}\t{1}\t{2}\t{3}\t{4}", 
+                                safeName, gf.Start, gf.GetTranscriptLength(), barcodes.GetWellId(bcIdx), barcodes.Seqs[bcIdx]);
+                        ushort[] trProfile = CompactGenePainter.GetTranscriptProfile(gf, bcIdx);
+                        int i = trProfile.Length - 1;
+                        while (i > 0 && trProfile[i] == 0) i--;
+                        for (int p = 0; p <= i; p++)
+                            file.Write("\t{0}", trProfile[p]);
+                        file.WriteLine();
+                    }
                 }
             }
         }

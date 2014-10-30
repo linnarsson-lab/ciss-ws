@@ -610,7 +610,7 @@ namespace Linnarsson.Strt
                 try
                 {
                     C1DB c1db = new C1DB();
-                    Dictionary<string, int> cellIdByPlateWell = c1db.GetCellIdByPlateWell(projectId);
+                    Dictionary<string, int> cellIdByPlateWell = new ProjectDB().GetCellIdByPlateWell(projectId);
                     c1db.InsertExpressions(annotations.IterC1DBExpressions(cellIdByPlateWell));
                     string parString = MakeParameterString();
                     c1db.InsertAnalysisSetup(projectId, resultDescr.bowtieIndexVersion, resultDescr.resultFolder, parString);

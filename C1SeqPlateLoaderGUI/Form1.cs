@@ -43,8 +43,8 @@ namespace C1SeqPlateLoader
         private void Form1_Load(object sender, EventArgs e)
         {
             loadedC1Plates = new ProjectDB().GetProjectColumn("plateid", C1Props.C1ProjectPrefix + "%", "plateid");
-            availableC1Plates = new C1DB().GetLoadedChips();
-            while (!Directory.Exists(C1Props.props.C1SeqPlatesFolder))
+            availableC1Plates = new ProjectDB().GetLoadedChips();
+            if (!Directory.Exists(C1Props.props.C1SeqPlatesFolder))
             {
                 FolderBrowserDialog plateFolderBrowserDialog1 = new FolderBrowserDialog();
                 plateFolderBrowserDialog1.Description = "Please locate the c1-seqplates folder!";
@@ -54,11 +54,12 @@ namespace C1SeqPlateLoader
                 }
                 plateFolderBrowserDialog1.Dispose();
             }
-            foreach (string file in Directory.GetFiles(C1Props.props.C1SeqPlatesFolder, C1Props.props.C1SeqPlateFilenamePattern))
-            {
-                string chipName = Path.GetFileNameWithoutExtension(file);
-                availableC1Plates.Add(chipName);
-            }
+            if (Directory.Exists(C1Props.props.C1SeqPlatesFolder))
+                foreach (string file in Directory.GetFiles(C1Props.props.C1SeqPlatesFolder, C1Props.props.C1SeqPlateFilenamePattern))
+                {
+                    string chipName = Path.GetFileNameWithoutExtension(file);
+                    availableC1Plates.Add(chipName);
+                }
             LoadSelectOptions();
             Console.WriteLine("Select chip/plate above!");
         }

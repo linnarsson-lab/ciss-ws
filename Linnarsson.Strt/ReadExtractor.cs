@@ -205,11 +205,12 @@ namespace Linnarsson.Strt
         /// <returns></returns>
         private int AnalyzeNonBarcodeRead(string seq)
         {
+            if (seq.Contains("CTGTCTCTTATACACATCTGACGC")) return ReadStatus.NO_BC_TN5;
+            if (seq.Contains("TTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_INTERNAL_T20;
+            // Formerly occuring stuff:
             if (Regex.Match(seq, "GTCGACTTTTTTTTTTTTTTTTTTTTTTTTT").Success) return ReadStatus.NO_BC_SAL1;
             if (seq.StartsWith("CGACTTTTTTTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_CGACT25;
             if (Regex.Match(seq, "^...AAAAAAAAAAAAAAAAAAAAAAAAA").Success) return ReadStatus.NO_BC_NNNA25;
-            if (seq.Contains("TCGGAAGAGCTCGTATG")) return ReadStatus.NO_BC_SOLEXA_ADP2;
-            if (seq.Contains("TTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_INTERNAL_T20;
             return ReadStatus.BARCODE_ERROR;
         }
 

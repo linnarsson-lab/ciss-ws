@@ -18,7 +18,7 @@ namespace Linnarsson.Dna
         public readonly static int NO_BC_CGACT25 = 8;
         public readonly static int NO_BC_NNNA25 = 9;
         public readonly static int NO_BC_SAL1 = 10;
-        public readonly static int NO_BC_SOLEXA_ADP2 = 11;
+        public readonly static int NO_BC_TN5 = 11;
         public readonly static int NO_BC_INTERNAL_T20 = 12;
         public readonly static int BARCODE_ERROR = 13;
         public readonly static int TSSEQ_MISSING = 14;
@@ -30,7 +30,7 @@ namespace Linnarsson.Dna
                                                                     "COMPLEXITY_ERROR",  "SAL1-T25_IN_READ", "N_IN_RANDOM_TAG",
                                                                     "LOW_QUALITY_IN_RANDOM_TAG","NEGATIVE_BARCODE_ERROR",
                                                                     "NO_BARCODE-CGACT25", "NO_BARCODE-NNNA25", "NO_BARCODE-SAL1-T25",
-                                                                    "NO_BARCODE-SOLEXA-ADP2_CONTAINING", "NO_BARCODE-INTERNAL-T20",
+                                                                    "NO_BARCODE-HAS_TN5_MOSAIC_END", "NO_BARCODE-INTERNAL-T20",
                                                                     "NO_VALID_BARCODE", "TSSEQ_MISSING", "TOO_SHORT_INSERT",
                                                                     "FORBIDDEN_INTERNAL_SEQ", "TOO_LONG_TRAILING_PRIMER_SEQ" };
         public static int Parse(string category)

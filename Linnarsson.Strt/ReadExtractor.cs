@@ -143,7 +143,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Check if reads is mainly polyN or polyA, or contains a (previously) common SalI-containing erratic sequence
+        /// Check if the read is mainly polyN or polyA, or contains some known erratic sequence (e.g. primer)
         /// </summary>
         /// <param name="rSeq"></param>
         /// <param name="insertStart"></param>
@@ -160,8 +160,8 @@ namespace Linnarsson.Strt
                 }
             if (nNonAs < minInsertNonAs)
                 return ReadStatus.COMPLEXITY_ERROR;
-            if (Regex.Match(rSeq, "GTCGACTTTTTTTTTTTTTTTTTTTTTTTTT").Success)
-                return ReadStatus.SAL1T25_IN_READ;
+            if (Regex.Match(rSeq, "AATGATACGGCGACCACCGAT").Success)
+                return ReadStatus.P1_IN_READ;
             return ReadStatus.VALID;
         }
 
@@ -207,8 +207,8 @@ namespace Linnarsson.Strt
         {
             if (seq.Contains("CTGTCTCTTATACACATCTGACGC")) return ReadStatus.NO_BC_TN5;
             if (seq.Contains("TTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_INTERNAL_T20;
+            if (Regex.Match(seq, "AATGATACGGCGACCACCGAT").Success) return ReadStatus.NO_BC_P1;
             // Formerly occuring stuff:
-            if (Regex.Match(seq, "GTCGACTTTTTTTTTTTTTTTTTTTTTTTTT").Success) return ReadStatus.NO_BC_SAL1;
             if (seq.StartsWith("CGACTTTTTTTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_CGACT25;
             if (Regex.Match(seq, "^...AAAAAAAAAAAAAAAAAAAAAAAAA").Success) return ReadStatus.NO_BC_NNNA25;
             return ReadStatus.BARCODE_ERROR;

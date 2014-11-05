@@ -351,8 +351,8 @@ namespace Linnarsson.Strt
             {
                 Console.WriteLine("Adding " + chrId + " chromosome and annotations.");
                 string chrDest = Path.Combine(genome.GetOriginalGenomeFolder(), Path.GetFileName(chrPath));
-                if (!File.Exists(chrDest))
-                    File.Copy(chrPath, chrDest);
+                if (File.Exists(chrDest)) File.Delete(chrDest);
+                File.Copy(chrPath, chrDest);
                 using (StreamReader reader = PathHandler.GetCommonGenesPath(chrId).OpenRead())
                 {
                     string data = reader.ReadToEnd();

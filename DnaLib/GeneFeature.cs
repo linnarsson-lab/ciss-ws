@@ -31,7 +31,7 @@ namespace Linnarsson.Dna
         private bool locusHitsSorted;
         private int[] m_LocusHits;
         /// <summary>
-        /// Hits (molecules when using random tags) are stored as ints of pp..pppbbbbbbbs where
+        /// Hits (molecules when using UMIs) are stored as ints of pp..pppbbbbbbbs where
         /// p is hitMidPosition relative to LocusStart
         /// in chromosome orientation, b is barcode, and s is chromosome strand (0 = '+', 1 = '-')
         /// Always returned sorted when accessed.

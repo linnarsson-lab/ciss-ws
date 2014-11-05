@@ -295,8 +295,8 @@ namespace CmdSilverBullet
                 "   Make all if MAXPERGENE=0. Linear=never splice out exons. MINOVERHANG limits exonic end size at a junction. Adds barcodes+GGG if BCSET given.\n\n" + 
                 "   BUILD E.g. 'mm10', 'hg19', or 'gg3'\n" +
                 "   ANNOT is 'UCSC', 'GENC', 'UALL', 'VEGA', 'ENSE', or 'RFSQ' (Default: 'UCSC', synonymous with 'RFSQ')\n" +
-                "   IDX   Specific Bowtie index, e.g. 'hg19_UCSC' or 'mm9_aVEGA'.\n" +
-                "   BC   'C1Plate1', 'C1Plate2', 'TruSeq', 'v4' (48x6-mer, random tags), 'v4r' (no random tags), or 'no' for no barcodes.\n" +
+                "   IDX   Specific Bowtie index, e.g. 'hg19_sUCSC' or 'mm9_aVEGA'.\n" +
+                "   BC   'C1Plate1', 'C1Plate2', 'TruSeq', 'v4' (48x6-mer w UMIs), 'v4r' (no UMIs), or 'no' for no barcodes.\n" +
                 "   Define other barcode sets in 'Bc.barcodes' files in the barcodes sub-directory of the data folder\n" +
                 "   READLEN Seq len after barcode and GGG. The Bowtie index that is 0-5 below actual read len is used during annotation.\n" +
                 "   Paths are per default rooted in the data folder, so that e.g. 'S066' is enough as a PROJECTPATH.\n"

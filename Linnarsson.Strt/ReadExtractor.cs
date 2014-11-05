@@ -211,7 +211,7 @@ namespace Linnarsson.Strt
             // Formerly occuring stuff:
             if (seq.StartsWith("CGACTTTTTTTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_CGACT25;
             if (Regex.Match(seq, "^...AAAAAAAAAAAAAAAAAAAAAAAAA").Success) return ReadStatus.NO_BC_NNNA25;
-            return ReadStatus.BARCODE_ERROR;
+            return ReadStatus.NO_BC_OTHER;
         }
 
     }

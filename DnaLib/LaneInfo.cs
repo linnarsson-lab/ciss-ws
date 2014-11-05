@@ -171,8 +171,10 @@ namespace Linnarsson.Dna
                 int n = 0;
                 foreach (char laneNo in parts[1])
                 {
-                    string readFilePat = PathHandler.GetReadFileMatchPattern(runId, laneNo, '1', ".fq.gz");
-                    string[] readFiles = Directory.GetFiles(Props.props.ReadsFolder, readFilePat);
+                    string readFilePat = PathHandler.GetReadFileMatchPattern(runId, laneNo, '1', "");
+                    string[] readFiles = Directory.GetFiles(Props.props.ReadsFolder, readFilePat + ".fq.gz");
+                    if (readFiles.Length == 0)
+                        readFiles = Directory.GetFiles(Props.props.ReadsFolder, readFilePat + ".fq");
                     if (readFiles.Length > 0)
                         laneInfos.Add(new LaneInfo(readFiles[0], runId, laneNo, extractionFolder, nBarcodes, idxSeqFilter[n++]));
                 }

@@ -152,7 +152,7 @@ namespace Linnarsson.Strt
             exonHitFeatures = new List<IFeature>(100);
             spliceChrId = Annotations.Genome.Annotation;
             randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
-            TagItem.SetUMIMutationFilter(props);
+            UMIMutationFilters.SetUMIMutationFilter();
             mappingAdder = new MappingAdder(annotations, randomTagFilter, barcodes);
             statsSampleDistPerBarcode = Props.props.sampleDistPerBcForAccuStats;
             if (props.AnalyzeSeqUpstreamTSSite && barcodes.Count > 1)
@@ -883,14 +883,14 @@ namespace Linnarsson.Strt
         {
             if (!barcodes.HasUMIs) return;
             xmlFile.WriteLine("  <randomtagfrequence>");
-            xmlFile.WriteLine("    <title>Number of reads detected in each random tag</title>");
-            xmlFile.WriteLine("    <xtitle>Random tag index (AA...-TT...)</xtitle>");
+            xmlFile.WriteLine("    <title>Number of reads detected in each UMI</title>");
+            xmlFile.WriteLine("    <xtitle>UMI index (AA...-TT...)</xtitle>");
             for (int i = 0; i < randomTagFilter.nReadsByRandomTag.Length; i++)
                 xmlFile.WriteLine("      <point x=\"{0}\" y=\"{1}\" />", barcodes.MakeUMISeq(i), randomTagFilter.nReadsByRandomTag[i]);
             xmlFile.WriteLine("  </randomtagfrequence>");
             xmlFile.WriteLine("  <nuniqueateachrandomtagcoverage>");
-            xmlFile.WriteLine("    <title>Unique alignmentposition-barcodes vs. # random tags they occur in</title>");
-            xmlFile.WriteLine("    <xtitle>Number of different random tags</xtitle>");
+            xmlFile.WriteLine("    <title>Unique alignmentposition-barcodes vs. # UMIs they occur in</title>");
+            xmlFile.WriteLine("    <xtitle>Number of different UMIs</xtitle>");
             for (int i = 1; i < randomTagFilter.nCasesPerRandomTagCount.Length; i++)
                 xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerRandomTagCount[i]);
             xmlFile.WriteLine("  </nuniqueateachrandomtagcoverage>");

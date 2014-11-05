@@ -175,7 +175,7 @@ namespace Linnarsson.Dna
             {
                 bcIdx = -1;
                 if (!bcSeqToBcIdxMap.TryGetValue(read.Substring(BarcodePos, BarcodeLen), out bcIdx))
-                    return ReadStatus.BARCODE_ERROR;
+                    return ReadStatus.NO_BC_OTHER;
             }
             if (read.Substring(InsertOrGGGPos, TSSeq.Length) != TSSeq)
                 return ReadStatus.TSSEQ_MISSING;
@@ -218,11 +218,15 @@ namespace Linnarsson.Dna
             return new string(UMISeq);
         }
 
-        public static string[] GetAllPredefinedBarcodeSetNames()
+        /// <summary>
+        /// All names are converted to lower case
+        /// </summary>
+        /// <returns></returns>
+        public static string[] GetAllKnownBarcodeSetNames()
         {
             string[] allBarcodeSetNames = PathHandler.GetAllCustomBarcodeSetNames();
             Array.Resize(ref allBarcodeSetNames, allBarcodeSetNames.Length + 6);
-            Array.Copy(new string[] { "v1", "v2", "v3", "PE_8", "no", "Lin8" }, 0, allBarcodeSetNames, allBarcodeSetNames.Length - 6, 6);
+            Array.Copy(new string[] { "v1", "v2", "v3", "pe_8", "no", "lin8" }, 0, allBarcodeSetNames, allBarcodeSetNames.Length - 6, 6);
             return allBarcodeSetNames;
         }
 

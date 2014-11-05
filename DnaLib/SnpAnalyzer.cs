@@ -22,12 +22,12 @@ namespace Linnarsson.Dna
             int minHitsToTestSNP = (barcodes.HasUMIs) ? Props.props.MinMoleculesToTestSnp : Props.props.MinReadsToTestSnp;
             using (StreamWriter snpFile = new StreamWriter(snpPath))
             {
-                if (barcodes.HasUMIs)
+                if (!barcodes.HasUMIs)
                     snpFile.WriteLine("#Read counts at positions with >= {0} hits and >= 1 non-reference nt hits.", minHitsToTestSNP);
                 else
                 {
                     snpFile.WriteLine("#Molecule counts at positions with >= {0} hits and >= 1 non-reference nt hits,", minHitsToTestSNP);
-                    snpFile.WriteLine("#Spurious molecules in random tags that likely are results of artefactial (PCR) mutations have been removed.");
+                    snpFile.WriteLine("#Spurious molecules in UMIs that likely are results of artefactial (PCR) mutations have been removed.");
                 }
                 snpFile.Write("#Gene\tTrLen\tChr\tStrand\tChrPos\tTrPos\tNt\tTotal");
                 foreach (int bcIdx in selectedBarcodes)

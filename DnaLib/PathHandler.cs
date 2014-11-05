@@ -314,13 +314,13 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Return an array of all barcode set names defined by barcode definition files
+        /// Return an array of all (lower case-converted) barcode set names defined by barcode definition files
         /// </summary>
         /// <returns></returns>
         public static string[] GetAllCustomBarcodeSetNames()
         {
             string[] bcFiles = Directory.GetFiles(Path.Combine(Props.props.ProjectsFolder, "barcodes"), "*.barcodes");
-            return Array.ConvertAll(bcFiles, f => Path.GetFileNameWithoutExtension(f));
+            return Array.ConvertAll(bcFiles, f => Path.GetFileNameWithoutExtension(f).ToLower());
         }
 
         /// <summary>

@@ -291,11 +291,11 @@ namespace Linnarsson.Strt
 
         public static int nRndTags;
         /// <summary>
-        /// Number of reads in every random tag
+        /// Number of reads in every UMI
         /// </summary>
         public int[] nReadsByRandomTag;
         /// <summary>
-        /// Histogram of saturation of random tags by different position-strand combinations
+        /// Histogram of saturation of UMIs by different position-strand combinations
         /// </summary>
         public int[] nCasesPerRandomTagCount;
 

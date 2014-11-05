@@ -29,9 +29,8 @@ namespace CmdSilverBullet
         public QXMAOptions(string[] args)
         {
             int argOffset = 1;
-            int tempVer;
             Match m;
-            string[] allBcSetNames = Barcodes.GetAllPredefinedBarcodeSetNames();
+            string[] allBcSetNames = Barcodes.GetAllKnownBarcodeSetNames();
             while (argOffset < args.Length - 1)
             {
                 string opt = args[argOffset];
@@ -99,24 +98,18 @@ namespace CmdSilverBullet
                                 totalSpikeMols = int.Parse(opt.Substring(2));
                             else if (opt.StartsWith("--genome="))
                                 speciesAbbrev = opt.Substring(9);
-                            else if (Array.IndexOf(allBcSetNames, opt) >= 0)
+                            else if (allBcSetNames.Contains(opt.ToLower()))
                                 barcodesName = opt;
-                            else if (Array.IndexOf(new string[] { "hs", "hg", "mm", "gg", "ce", "cg" }, opt.ToLower()) >= 0)
+                            else if (Regex.Match(opt.ToLower(), "^(hs|hg|mm|gg|ce|cg)[0-9]*$").Success)
                                 speciesAbbrev = opt.ToLower();
-                            else if ((opt[0] == 'a' || opt[0] == 's') && Array.IndexOf(StrtGenome.AnnotationSources, opt.Substring(1)) >= 0)
-                            {
-                                geneVariantsChar = opt.Substring(0, 1);
+                            else if (Array.IndexOf(StrtGenome.AnnotationSources, opt.ToUpper()) == 0)
                                 annotation = opt.Substring(1);
-                            }
-                            else if (opt.Length >= 3 && Array.IndexOf(new string[] { "hs", "hg", "mm", "gg", "ce", "cg" }, opt.Substring(0, 2).ToLower()) >= 0
-                                && int.TryParse(opt.Substring(2), out tempVer))
-                                speciesAbbrev = opt;
-                            else if (Regex.Match(opt, "[0-9A-Za-z]+:[0-9]+").Success)
+                            else if (Regex.Match(opt, "^[0-9A-Za-z]+:[0-9]+").Success)
                                 laneArgs.Add(opt);
                             else
                             {
                                 string srcOr = string.Join("|", StrtGenome.AnnotationSources);
-                                if ((m = Regex.Match(opt, "(.+[0-9]*)_([as]?)(" + srcOr + ")")).Success)
+                                if ((m = Regex.Match(opt.ToLower(), "^([a-z]+[0-9]*)_([as])(" + srcOr + ")$")).Success)
                                 {
                                     speciesAbbrev = m.Groups[0].Value;
                                     geneVariantsChar = m.Groups[1].Value;

@@ -105,76 +105,6 @@ namespace Linnarsson.Dna
     public class TagItem
     {
         /// <summary>
-        /// Threshold parameter for removing molecules that are a result of mutated UMIs.
-        /// Actual meaning depends on the MutationThresholder selected.
-        /// </summary>
-        private static int UMIMutationFilterParameter;
-
-        public static void SetUMIMutationFilter(Props props)
-        {
-            if (props.RndTagMutationFilter == RndTagMutationFilterMethod.FractionOfMax)
-                mutationThresholder = FractionOfMaxThresholder;
-            else if (props.RndTagMutationFilter == RndTagMutationFilterMethod.FractionOfMean)
-                mutationThresholder = FractionOfMeanThresholder;
-            else if (props.RndTagMutationFilter == RndTagMutationFilterMethod.Singleton)
-                mutationThresholder = SingletonThresholder;
-            else
-                mutationThresholder = LowPassThresholder;
-            UMIMutationFilterParameter = props.RndTagMutationFilterParam;
-        }
-
-        /// <summary>
-        /// Returns a hit count threshold for filtering away UMIs that likely stem from mutations in other UMIs
-        /// </summary>
-        /// <param name="tagItem"></param>
-        /// <returns></returns>
-        private delegate int MutationThresholder(TagItem tagItem);
-        private static MutationThresholder mutationThresholder;
-
-        /// <summary>
-        /// If UMIMutationFilterParameter==0, all singletons will be removed.
-        /// Otherwise, singletons will only be removed when some UMI has #reads > UMIMutationFilterParameter.
-        /// </summary>
-        /// <param name="tagItem"></param>
-        /// <returns></returns>
-        private static int SingletonThresholder(TagItem tagItem)
-        {
-            foreach (int c in tagItem.GetReadCountsByUMI())
-                if (c > UMIMutationFilterParameter)
-                    return 1;
-            return 0;
-        }
-        /// <summary>
-        /// Will only count UMIs with > UMIMutationFilterParameter reads.
-        /// </summary>
-        /// <param name="tagItem"></param>
-        /// <returns></returns>
-        private static int LowPassThresholder(TagItem tagItem)
-        {
-            return UMIMutationFilterParameter;
-        }
-        private static int FractionOfMaxThresholder(TagItem tagItem)
-        {
-            int maxNumReads = tagItem.GetReadCountsByUMI().Max();
-            return maxNumReads / UMIMutationFilterParameter;
-        }
-        private static int FractionOfMeanThresholder(TagItem tagItem)
-        {
-            double sum = 0.0;
-            int n = 0;
-            foreach (int i in tagItem.GetReadCountsByUMI())
-            {
-                if (i > 0) 
-                {
-                    sum += i;
-                    n++;
-                }
-                       
-            }
-            return (int)Math.Round(sum / n / UMIMutationFilterParameter);
-        }
-
-        /// <summary>
         /// Mirrors the number of UMIs from Barcodes
         /// </summary>
         public static int nUMIs;
@@ -357,7 +287,7 @@ namespace Linnarsson.Dna
             if (nUMIs == 1)
                 return woUMIsUMIIndices;
             List<int> filteredUsedUMIIndices = new List<int>();
-            int threshold = mutationThresholder(this);
+            int threshold = UMIMutationFilters.filter(this);
             for (int i = 0; i < readCountsByUMI.Length; i++)
                 if (readCountsByUMI[i] > threshold) filteredUsedUMIIndices.Add(i);
             return filteredUsedUMIIndices;
@@ -377,7 +307,7 @@ namespace Linnarsson.Dna
                 return totalReadCount;
             if (readCountsByUMI == null || totalReadCount == 0)
                 return 0;
-            int threshold = mutationThresholder(this);
+            int threshold = UMIMutationFilters.filter(this);
             return readCountsByUMI.Count(v => v > threshold);
         }
         /// <summary>
@@ -395,7 +325,7 @@ namespace Linnarsson.Dna
                 finalFilteredCount = 0;
             else
             {
-                int threshold = mutationThresholder(this);
+                int threshold = UMIMutationFilters.filter(this);
                 finalFilteredCount = readCountsByUMI.Count(v => v > threshold);
             }
             return finalFilteredCount;
@@ -414,7 +344,7 @@ namespace Linnarsson.Dna
 
         public int GetMutationThreshold()
         {
-            return mutationThresholder(this);
+            return UMIMutationFilters.filter(this);
         }
 
     }

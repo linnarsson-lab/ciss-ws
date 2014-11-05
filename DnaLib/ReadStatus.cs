@@ -20,18 +20,19 @@ namespace Linnarsson.Dna
         public readonly static int NO_BC_P1 = 10;
         public readonly static int NO_BC_TN5 = 11;
         public readonly static int NO_BC_INTERNAL_T20 = 12;
-        public readonly static int BARCODE_ERROR = 13;
+        public readonly static int NO_BC_OTHER = 13;
         public readonly static int TSSEQ_MISSING = 14;
         public readonly static int TOO_SHORT_INSERT = 15;
         public readonly static int FORBIDDEN_INTERNAL_SEQ = 16;
         public readonly static int TOO_LONG_TRAILING_PRIMER_SEQ = 17;
         public readonly static int Length = 18;
         public readonly static string[] categories = new string[] { "VALID", "TOO_LONG_pA_pN_TAIL", "SEQ_QUALITY_ERROR",
-                                                                    "COMPLEXITY_ERROR",  "P1-PRIMER_IN_READ", "N_IN_RANDOM_TAG",
-                                                                    "LOW_QUALITY_IN_RANDOM_TAG","NEGATIVE_BARCODE_ERROR",
-                                                                    "NO_BARCODE-CGACT25", "NO_BARCODE-NNNA25", "NO_BARCODE-HAS-P1-PRIMER",
-                                                                    "NO_BARCODE-HAS_TN5_MOSAIC_END", "NO_BARCODE-INTERNAL-T20",
-                                                                    "NO_VALID_BARCODE", "TSSEQ_MISSING", "TOO_SHORT_INSERT",
+                                                                    "COMPLEXITY_ERROR",  "P1_PRIMER_IN_INSERT", "N_IN_RANDOM_TAG",
+                                                                    "LOW_QUALITY_IN_UMI","NEGATIVE_BARCODE_ERROR",
+                                                                    "NO_BARCODE-CONTAINS_CGACT25", "NO_BARCODE-CONTAINS_NNNA25",
+                                                                    "NO_BARCODE-CONTAINS_P1_PRIMER",
+                                                                    "NO_BARCODE-CONTAINS_TN5_MOSAIC_END", "NO_BARCODE-CONTAINS_T(20)",
+                                                                    "NO_BARCODE-UNIDENTIFIED", "TSSEQ_MISSING", "TOO_SHORT_INSERT",
                                                                     "FORBIDDEN_INTERNAL_SEQ", "TOO_LONG_TRAILING_PRIMER_SEQ" };
         public static int Parse(string category)
         {

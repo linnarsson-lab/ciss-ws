@@ -211,7 +211,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Feed all SNP data from the valid random tags into the SNPCounter.
+        /// Feed all SNP data from the valid UMIs into the SNPCounter.
         /// </summary>
         /// <param name="countsAtOffset"></param>
         /// <param name="validRndTags"></param>
@@ -221,7 +221,7 @@ namespace Linnarsson.Dna
                 countsAtOffset.Add(GetNt(rndTagIdx), refNt);
         }
         /// <summary>
-        /// Return the winning nt in the given random tag
+        /// Return the winning nt in the given UMI
         /// </summary>
         /// <param name="rndTagIdx"></param>
         /// <returns></returns>

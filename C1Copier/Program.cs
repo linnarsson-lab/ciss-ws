@@ -258,7 +258,8 @@ namespace C1
                             continue;
                         line = line.Trim();
                         char row = line[0];
-                        int wellNo = int.Parse(line.Substring(line.Contains("\t") ? line.IndexOf('\t') : 1));
+                        int idx = line.Contains("\t") ? line.IndexOf("\t") + 1 : 1;
+                        int wellNo = int.Parse(line.Substring(idx));
                         string well = string.Format("{0}{1:00}", row, wellNo);
                         emptyWells.Add(well);
                     }

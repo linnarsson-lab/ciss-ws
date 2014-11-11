@@ -273,6 +273,7 @@ namespace CmdSilverBullet
                 "                Individual fractions are taken from 2nd column of " + PathHandler.GetCTRLConcPath() + "\n" +
                 "   -BcIndexes M,N[,...] Only process the specified barcodes indexes, even if the barcode set contains more indexes.\n" +
                 "   ANNOTATIONOPTION can be (default values first):\n" +
+                "     compact / compact-no-filter - use memory-saving UMI counting with filtering of singleton reads / no reads \n" +
                 "     single/all              select between one per-gene summarizing value or separate values for all known transcript variants.\n" +
                 "     rpm/rpkm                specify rpkm to calculate rpkm values instead of rpm, for e.g. TruSeq samples.\n" +
                 "     sense/antisense/nondir  specify sequence direction of reads\n" +

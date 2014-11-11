@@ -510,6 +510,17 @@ namespace Linnarsson.Strt
             return repeatFeatures.Values.Count(r => r.GetTotalHits() > 0);
         }
 
+        public int NumLocusHitEntries
+        {
+            get
+            {
+                int n = 0;
+                foreach (GeneFeature gf in geneFeatures.Values)
+                    n += gf.NumLocusHitEntries;
+                return n;
+            }
+        }
+
         /// <summary>
         /// Find largest number of exons for any transcript model
         /// </summary>
@@ -561,9 +572,14 @@ namespace Linnarsson.Strt
             foreach (GeneFeature gf in geneFeatures.Values)
                 if (gf.IsSpike() == selectSpikes)
                 {
-                    int[] countsByBc = (gf.IsMainVariant())? gf.TranscriptHitsByBarcode : gf.NonConflictingTranscriptHitsByBarcode;
-                    for (int bcIdx = 0; bcIdx < UniqueGeneCountsByBarcode.Length; bcIdx++)
-                        UniqueGeneCountsByBarcode[bcIdx] += countsByBc[bcIdx];
+                    if (gf.IsMainVariant())
+                    {
+                        for (int bcIdx = 0; bcIdx < UniqueGeneCountsByBarcode.Length; bcIdx++)
+                            UniqueGeneCountsByBarcode[bcIdx] += gf.TrHits(bcIdx);
+                    } else {
+                        for (int bcIdx = 0; bcIdx < UniqueGeneCountsByBarcode.Length; bcIdx++)
+                            UniqueGeneCountsByBarcode[bcIdx] += gf.TrNCHits(bcIdx);
+                    }
                 }
             return UniqueGeneCountsByBarcode;
         }
@@ -610,7 +626,8 @@ namespace Linnarsson.Strt
                 WriteSplicesByGeneLocusAndBc(fileNameBase);
             if (props.DirectionalReads)
             {
-                WriteCAPRegionHitsTable(fileNameBase);
+                if (props.WriteCAPRegionHits)
+                    WriteCAPRegionHitsTable(fileNameBase);
                 WriteExpressedAntisenseGenes(fileNameBase);
                 WriteUniquehits(fileNameBase);
             }
@@ -755,10 +772,10 @@ namespace Linnarsson.Strt
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     exprHolder.TranscriptID = gf.TranscriptID;
-                    exprHolder.UniqueMolecules = gf.NonConflictingTranscriptHitsByBarcode[bcIdx];
-                    exprHolder.UniqueReads = gf.NonConflictingTranscriptReadsByBarcode[bcIdx];
-                    exprHolder.Molecules = gf.TranscriptHitsByBarcode[bcIdx];
-                    exprHolder.Reads = gf.TranscriptReadsByBarcode[bcIdx];
+                    exprHolder.UniqueMolecules = gf.TrNCHits(bcIdx);
+                    exprHolder.Molecules = gf.TrHits(bcIdx);
+                    exprHolder.UniqueReads = gf.NonConflictingTrReadsByBc[bcIdx];
+                    exprHolder.Reads = gf.TrReadsByBc[bcIdx];
                     yield return exprHolder;
                 }
                 foreach (RepeatFeature rf in repeatFeatures.Values)
@@ -767,8 +784,8 @@ namespace Linnarsson.Strt
                     exprHolder.TranscriptID = rf.C1DBTranscriptID;
                     exprHolder.UniqueMolecules = 0;
                     exprHolder.UniqueReads = 0;
-                    exprHolder.Molecules = rf.TotalHitsByBarcode[bcIdx];
-                    exprHolder.Reads = rf.TotalReadsByBarcode[bcIdx];
+                    exprHolder.Molecules = rf.Hits(bcIdx);
+                    exprHolder.Reads = rf.TotalReadsByBc[bcIdx];
                     yield return exprHolder;
                 }
             }
@@ -793,7 +810,7 @@ namespace Linnarsson.Strt
                 exprBlob.CellID = cellIdByPlateWell[barcodes.GetWellId(bcIdx)].ToString();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    exprBlob.SetBlobValue(gf.ExprBlobIdx, gf.TranscriptHitsByBarcode[bcIdx]);
+                    exprBlob.SetBlobValue(gf.ExprBlobIdx, gf.TrHits(bcIdx));
                 }
                 yield return exprBlob;
             }
@@ -802,33 +819,31 @@ namespace Linnarsson.Strt
         private void WriteReadsTable(string fileNameBase)
         {
             string readFile = fileNameBase + "_reads.tab";
-            Func<GeneFeature, int[]> getReads = x => x.TranscriptReadsByBarcode;
             string header = MakeFirstHeader(true, "#{0} {1} unfiltered read counts and sense+antisense reads counts for repeat types.{3}");
-            WriteBasicDataTable(readFile, header, getReads);
+            WriteBasicDataTable(readFile, header, GeneFeature.IterTrReads);
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             using (StreamWriter outFile = new StreamWriter(readFile, true))
             {
                 foreach (RepeatFeature rf in repeatFeatures.Values)
                 {
                     StringBuilder sb = new StringBuilder();
-                    foreach (int idx in speciesBcIndexes)
+                    foreach (int bcIdx in speciesBcIndexes)
                     {
                         sb.Append("\t");
-                        sb.Append(rf.TotalReadsByBarcode[idx]);
+                        sb.Append(rf.TotalReadsByBc[bcIdx]);
                     }
-                    outFile.WriteLine("r_{0}\t\t\t\t{1}\t{2}{3}", rf.Name, rf.GetLocusLength(), rf.TotalReadsByBarcode.Sum(), sb);
+                    outFile.WriteLine("r_{0}\t\t\t\t{1}\t{2}{3}", rf.Name, rf.GetLocusLength(), rf.TotalReadsByBc.Sum(), sb);
                 }
             }
         }
 
         private void WriteTrueMolsTable(string fileNameBase)
         {
-            Func<GeneFeature, int[]> getTrueMols = x => x.EstimatedTrueMolsByBarcode;
             string header = MakeFirstHeader(true, "#{0} {1} estimated true molecule counts.{3}");
-            WriteBasicDataTable(fileNameBase + "_true_counts.tab", header, getTrueMols);
+            WriteBasicDataTable(fileNameBase + "_true_counts.tab", header, GeneFeature.IterTrEstTrueMolCounts);
         }
 
-        private void WriteBasicDataTable(string fileName, string header, Func<GeneFeature, int[]> dataGetter)
+        private void WriteBasicDataTable(string fileName, string header, HitIterator hitIterator)
         {
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             using (StreamWriter outFile = new StreamWriter(fileName))
@@ -838,15 +853,16 @@ namespace Linnarsson.Strt
                 outFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tExonHits");
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    int[] data = dataGetter(gf);
                     StringBuilder sbDatarow = new StringBuilder();
-                    foreach (int idx in speciesBcIndexes)
+                    int total = 0;
+                    foreach (int c in hitIterator(gf,  speciesBcIndexes))
                     {
+                        total += c;
                         sbDatarow.Append("\t");
-                        sbDatarow.Append(data[idx]);
+                        sbDatarow.Append(c);
                     }
                     outFile.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}{6}",
-                                   gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), data.Sum(), sbDatarow);
+                                   gf.Name, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), total, sbDatarow);
 
                 }
             }
@@ -880,20 +896,19 @@ namespace Linnarsson.Strt
         private string WriteExpressionTable(string fileNameBase)
         {
             string exprPath = fileNameBase + "_expression.tab";
-            Func<GeneFeature, int[]> getMaxHits = x => x.TranscriptHitsByBarcode;
-            return WriteExtendedDataTable(exprPath, true, getMaxHits);
+            return WriteExtendedDataTable(exprPath, true, GeneFeature.IterTrMaxHits);
         }
         private string WriteMinExpressionTable(string fileNameBase)
         {
             string exprPath = fileNameBase + "_expression_singlereads.tab";
-            Func<GeneFeature, int[]> getMaxHits = x => x.NonConflictingTranscriptHitsByBarcode;
-            return WriteExtendedDataTable(exprPath, false, getMaxHits);
+            return WriteExtendedDataTable(exprPath, false, GeneFeature.IterTrNCHits);
         }
-        private string WriteExtendedDataTable(string fileName, bool withMultireads, Func<GeneFeature, int[]> dataGetter)
+        private string WriteExtendedDataTable(string fileName, bool withMultireads, HitIterator hitIterator)
         {
             using (StreamWriter writer = new StreamWriter(fileName))
             {
-                string firstHeader = MakeFirstHeader(withMultireads,"#{0} {1} {2} counts for transcripts, and sense+antisense {2} counts for repeat types.{3}");
+                string firstHeader = MakeFirstHeader(withMultireads,
+                                       "#{0} {1} {2} counts for transcripts, and sense+antisense {2} counts for repeat types.{3}");
                 writer.WriteLine(firstHeader);
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 WriteSampleAnnotationLines(writer, 9, true, speciesBcIndexes);
@@ -904,21 +919,19 @@ namespace Linnarsson.Strt
                     string[] fs = (gf.GeneMetadata + ";").Split(';');
                     string trName = fs[0];
                     string cutSites = fs[1].Replace(GeneFeature.capCutSitesPrefix, "");
-                    int ncHits = gf.NonConflictingTranscriptHitsByBarcode.Sum();
-                    int maxHits = gf.TranscriptHitsByBarcode.Sum();
                     string safeName = ExcelRescueGeneName(gf.Name);
                     writer.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}",
-                                     safeName, gf.GeneType, trName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), cutSites, ncHits, maxHits);
-                    int[] data = dataGetter(gf);
-                    foreach (int idx in speciesBcIndexes)
-                        writer.Write("\t{0}", data[idx]);
+                               safeName, gf.GeneType, trName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), cutSites,
+                               gf.TrNCHitSum(), gf.TrHitSum());
+                    foreach (int c in hitIterator(gf, speciesBcIndexes))
+                        writer.Write("\t{0}", c);
                     writer.WriteLine();
                 }
                 foreach (RepeatFeature rf in repeatFeatures.Values)
                 {
-                    writer.Write("r_{0}\trepeats\t\t\t\t\t{1}\t\t{2}\t{2}", rf.Name, rf.GetLocusLength(), rf.GetTotalHits());
-                    foreach (int idx in speciesBcIndexes)
-                        writer.Write("\t{0}", rf.TotalHitsByBarcode[idx]);
+                    writer.Write("r_{0}\trepeats\t\t\t\t\t{1}\t\t{2}\t{2}", rf.Name, rf.GetLocusLength(), rf.Hits());
+                    foreach (int bcIdx in speciesBcIndexes)
+                        writer.Write("\t{0}", rf.Hits(bcIdx));
                     writer.WriteLine();
                 }
             }
@@ -942,15 +955,16 @@ namespace Linnarsson.Strt
             return name;
         }
 
+        private delegate IEnumerable<int> HitIterator(GeneFeature gf, int[] bcIndexes);
+
         private void WriteExportTables(string fileNameBase)
         {
-            Func<GeneFeature, int[]> getMaxHits = x => x.TranscriptHitsByBarcode;
-            WriteMatlabTables(fileNameBase, getMaxHits);
-            WriteRTable(fileNameBase, getMaxHits);
+            WriteMatlabTables(fileNameBase, GeneFeature.IterTrMaxHits);
+            WriteRTable(fileNameBase, GeneFeature.IterTrMaxHits);
             WriteQlucoreTable(fileNameBase);
         }
 
-        private void WriteRTable(string fileNameBase, Func<GeneFeature, int[]> dataGetter)
+        private void WriteRTable(string fileNameBase, HitIterator hitIterator)
         {
             string fileName = fileNameBase + "_expression_for_R.tab";
             using (StreamWriter writer = new StreamWriter(fileName))
@@ -961,16 +975,15 @@ namespace Linnarsson.Strt
                 writer.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    int[] data = dataGetter(gf);
                     writer.Write(gf.Name);
-                    foreach (int idx in speciesBcIndexes)
-                        writer.Write("\t{0}", data[idx]);
+                    foreach (int c in hitIterator(gf, speciesBcIndexes))
+                        writer.Write("\t{0}", c);
                     writer.WriteLine();
                 }
             }
         }
 
-        private string WriteMatlabTables(string fileNameBase, Func<GeneFeature, int[]> dataGetter)
+        private string WriteMatlabTables(string fileNameBase, HitIterator hitIterator)
         {
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             using (StreamWriter file = new StreamWriter(fileNameBase + "_MATLAB_annotations.tab"))
@@ -985,16 +998,15 @@ namespace Linnarsson.Strt
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     writer.Write("{0}\t{1}\t{2}\t{3}", gf.Name, gf.Chr, gf.Start, gf.Strand);
-                    int[] data = dataGetter(gf);
-                    foreach (int idx in speciesBcIndexes)
-                        writer.Write("\t{0}", data[idx]);
+                    foreach (int c in hitIterator(gf, speciesBcIndexes))
+                        writer.Write("\t{0}", c);
                     writer.WriteLine();
                 }
                 foreach (RepeatFeature rf in repeatFeatures.Values)
                 {
                     writer.Write("r_{0}\t\t\t", rf.Name);
-                    foreach (int idx in speciesBcIndexes)
-                        writer.Write("\t{0}", rf.TotalHitsByBarcode[idx]);
+                    foreach (int bcIdx in speciesBcIndexes)
+                        writer.Write("\t{0}", rf.Hits(bcIdx));
                     writer.WriteLine();
                 }
             }
@@ -1042,9 +1054,9 @@ namespace Linnarsson.Strt
                 if (props.UseRPKM)
                     trLenFactor = gf.GetTranscriptLength() / 1000.0;
                 int exprIdx = 0;
-                foreach (int idx in selectedBcIndexes)
+                foreach (int bcIdx in selectedBcIndexes)
                 {
-                    double normedValue = (normFactors[idx] * gf.TranscriptHitsByBarcode[idx]) / trLenFactor;
+                    double normedValue = (normFactors[bcIdx] * gf.TrHits(bcIdx)) / trLenFactor;
                     expr[exprIdx++] = normedValue;
                 }
                 normalizedData[gf] = expr;
@@ -1119,9 +1131,9 @@ namespace Linnarsson.Strt
                 }
                 StringBuilder sb = new StringBuilder();
                 DescriptiveStatistics ds = new DescriptiveStatistics();
-                foreach (int idx in speciesBcIndexes)
+                foreach (int bcIdx in speciesBcIndexes)
                 {
-                    double normedValue = (normFactors[idx] * gf.TranscriptHitsByBarcode[idx]) * 1000.0 / trLenFactor;
+                    double normedValue = (normFactors[bcIdx] * gf.TrHits(bcIdx)) * 1000.0 / trLenFactor;
                     ds.Add(normedValue);
                     sb.AppendFormat("\t{0:G6}", normedValue);
                 }
@@ -1201,11 +1213,11 @@ namespace Linnarsson.Strt
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    foreach (int idx in speciesBcIndexes)
+                    foreach (int bcIdx in speciesBcIndexes)
                     {
-                        tableFile.Write("{0}\t", barcodes.Seqs[idx]);
+                        tableFile.Write("{0}\t", barcodes.Seqs[bcIdx]);
                         tableFile.Write("{0}\t", gf.Name);
-                        tableFile.WriteLine(gf.TranscriptHitsByBarcode[idx]);
+                        tableFile.WriteLine(gf.TrHits(bcIdx));
                     }
                 }
             }
@@ -1259,7 +1271,7 @@ namespace Linnarsson.Strt
                     }
                     sGfGroup.Sort();
                     if (sGfGroup.Count > 0)
-                        trShareFile.WriteLine("{0}\t{1}\t{2}", gf.Name, gf.TranscriptReadsByBarcode.Sum(), string.Join("\t", sGfGroup.ToArray()));
+                        trShareFile.WriteLine("{0}\t{1}\t{2}", gf.Name, gf.TrReadsByBc.Sum(), string.Join("\t", sGfGroup.ToArray()));
                 }
             }
         }
@@ -1489,14 +1501,14 @@ namespace Linnarsson.Strt
                 {
                     string safeName = ExcelRescueGeneName(gf.Name);
                     matrixFile.Write("{0}\t{1}\t{2}\t{3}\t", safeName, gf.ExonCount, gf.GetTranscriptHits(), gf.GetJunctionHits());
-                    List<Pair<string, int[]>> splicesAndBcCounts = gf.GetSpliceCountsPerBarcode();
-                    foreach (Pair<string, int[]> spliceAndBcCounts in splicesAndBcCounts)
+                    List<Pair<string, ushort[]>> splicesAndBcCounts = gf.GetSpliceCountsPerBarcode();
+                    foreach (Pair<string, ushort[]> spliceAndBcCounts in splicesAndBcCounts)
                         matrixFile.Write("\t{0}", spliceAndBcCounts.First);
                     matrixFile.WriteLine();
                     for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                     {
                         matrixFile.Write("{0}\t\t\t\t{1}", gf.Name, barcodes.Seqs[bcIdx]);
-                        foreach (Pair<string, int[]> spliceAndBcCounts in splicesAndBcCounts)
+                        foreach (Pair<string, ushort[]> spliceAndBcCounts in splicesAndBcCounts)
                             matrixFile.Write("\t{0}", spliceAndBcCounts.Second[bcIdx]);
                         matrixFile.WriteLine();
                     }
@@ -1660,7 +1672,8 @@ namespace Linnarsson.Strt
                 if (!geneFeatures.ContainsKey(gene))
                     continue;
                 int[] bcodeCounts = new int[barcodes.Count];
-                Array.Copy(geneFeatures[gene].TranscriptHitsByBarcode, bcodeCounts, barcodes.Count);
+                for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                    bcodeCounts[bcIdx] = geneFeatures[gene].TrHits(bcIdx);
                 int[] bcodesOrderedByCount = new int[bcodeCounts.Length];
                 for (int i = 0; i < bcodeCounts.Length; i++)
                     bcodesOrderedByCount[i] = i;

@@ -484,7 +484,7 @@ namespace Linnarsson.Strt
                 testSummary.WriteLine("Gene\tActualCount\tKnownBkg\tMissedRedundant\tMeasuredMin\tMeasuredMax");
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    int minHits = gf.NonConflictingTranscriptHitsByBarcode.Sum();
+                    int minHits = gf.TrNCHitSum();
                     int maxHits = gf.HitsByAnnotType[AnnotType.EXON];
                     int actualLevel = 0;
                     int levelInclKnownBkg = realGeneBkgCounts[gf.Name];

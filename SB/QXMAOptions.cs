@@ -40,6 +40,13 @@ namespace CmdSilverBullet
                 {
                     switch (opt)
                     {
+                        case "compact-filter-singletons":
+                        case "compact":
+                        case "compact-no-filter":
+                            Props.props.DenseUMICounter = true;
+                            Props.props.RndTagMutationFilter = RndTagMutationFilterMethod.LowPassFilter;
+                            Props.props.RndTagMutationFilterParam = (opt == "compact-no-filter")? 0 : 1;
+                            break;
                         case "insertc1data":
                             Props.props.InsertCells10Data = true;
                             break;

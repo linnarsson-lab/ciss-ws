@@ -16,9 +16,9 @@ namespace Linnarsson.Dna
         /// </summary>
         public int End;
         public NewMarkHit Mark;
-        public int ExtraData;
         public IFeature Feature;
-        public int annotType;
+        public ushort ExtraData; // The index of an exon, intron, or splice junctino
+        public byte annotType;
         public char Strand;
 
         public bool IsTrDetectingStrand(char strand)
@@ -37,9 +37,9 @@ namespace Linnarsson.Dna
             Start = start;
             End = end;
             Mark = item;
-            ExtraData = extraData;
             Feature = feature;
-            this.annotType = annotType;
+            ExtraData = (ushort)extraData;
+            this.annotType = (byte)annotType;
             Strand = strand;
         }
 

@@ -13,37 +13,26 @@ namespace Linnarsson.Strt
     /// </summary>
     public class ChrTagData
     {
-        public ChrTagData(string chr)
-        {
-            this.chr = chr;
-            if (Props.props.GenerateWiggle || Props.props.AnalyzeSNPs)
-            {
-                wiggleFw = new Wiggle();
-                wiggleRev = new Wiggle();
-            }
-        }
-
         /// <summary>
         /// Mismatches closer than this to either read end will not be used for SNP analysis
         /// </summary>
         public static int marginInReadForSNP = 2;
         public static int averageReadLen; // Needed for SNP handling
+
+        public ChrTagData(string chr)
+        {
+            this.chr = chr;
+            tagItems = new Dictionary<int, TagItem>();
+        }
+
         public string chr;
 
         /// <summary>
         /// PosAndStrand_on_Chr -> countsByRndTagIdx
         /// Read start position stored as "(pos * 2) | strand" where strand in bit0: +/- => 0/1
         /// </summary>
-        private Dictionary<int, TagItem> tagItems = new Dictionary<int, TagItem>();
-
-        /// <summary>
-        /// Wiggle data in forward, i.e. total counts (all barcodes) of reads and molecules for each position on the chromosome
-        /// </summary>
-        private Wiggle wiggleFw;
-        /// <summary>
-        /// Wiggle data in reverse, i.e. total counts (all barcodes) of reads and molecules for each position on the chromosome
-        /// </summary>
-        private Wiggle wiggleRev;
+        private Dictionary<int, TagItem> tagItems;
+        public int NumTagItems { get { return tagItems.Count; } }
 
         private static int MakePosStrandIdx(int pos, char strand)
         {
@@ -72,7 +61,7 @@ namespace Linnarsson.Strt
             TagItem item;
             if (!tagItems.TryGetValue(posStrand, out item))
             {
-                item = new TagItem(false);
+                item = TagItem.CreateTagItem();
                 tagItems[posStrand] = item;
             }
             tagItems[posStrand].RegisterSNP(snpOffset);
@@ -83,50 +72,26 @@ namespace Linnarsson.Strt
         /// </summary>
         public void FinishBarcode()
         {
-            AddToWiggle();
             foreach (TagItem tagItem in tagItems.Values)
                 tagItem.Clear();
         }
 
-        public void AddToWiggle()
-        {
-            if (wiggleFw == null) return;
-            foreach (KeyValuePair<int, TagItem> codedPair in tagItems)
-            {
-                int numReads = codedPair.Value.GetNumReads();
-                if (numReads > 0)
-                {
-                    int hitStartPos = codedPair.Key >> 1;
-                    int nMols = codedPair.Value.GetFinalNumMolecules();
-                    if ((codedPair.Key & 1) == 0)
-                        wiggleFw.AddCount(hitStartPos, numReads, nMols);
-                    else
-                        wiggleRev.AddCount(hitStartPos, numReads, nMols);
-                }
-            }
-        }
-
-        public Wiggle GetWiggle(char strand)
-        {
-            return (strand == '+') ? wiggleFw : wiggleRev;
-        }
-
         /// <summary>
-        /// Add a read and checks whether the specified rndTag has been seen before on the pos and strand.
+        /// Add a read and checks whether the specified UMI has been seen before on the pos and strand.
         /// </summary>
         /// <param name="m">A multireadmapping to analyze</param>
         /// <param name="isTranscript"></param>
-        /// <returns>true if the rndTag is new at this position-strand</returns>
+        /// <returns>true if the UMI is new at this position-strand</returns>
         public bool Add(MultiReadMapping m, bool isTranscript)
         {
             int posStrand = MakePosStrandIdx(m.Position, m.Strand);
             TagItem item;
             if (!tagItems.TryGetValue(posStrand, out item))
             {
-                item = new TagItem(m.HasAltMappings, isTranscript);
+                item = TagItem.CreateTagItem(m.HasAltMappings, isTranscript);
                 tagItems[posStrand] = item;
             }
-            else if (item.hasAltMappings && !m.HasAltMappings && !m.HasMismatches && item.GetNumReads() == 1)
+            else if (item.hasAltMappings && !m.HasAltMappings && !m.HasMismatches && item.GetBcNumReads() == 1)
             { // When the first mapped read contained mismatches and was a multiread, but the second is a perfect match singleread,
               // rethink the TagItem to consist of singlereads. Increases the chance of detecting true exon signals.
                 item.hasAltMappings = false;
@@ -143,19 +108,19 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Add a read and check whether the specified rndTag has been seen before on the pos and strand.
+        /// Add a read and check whether the specified UMI has been seen before on the pos and strand.
         /// </summary>
         /// <param name="m">A multireadmapping to analyze</param>
         /// <param name="sharingRealFeatures">List of other features that compete due to the read being a multiread</param>
         /// <param name="isTranscript"></param>
-        /// <returns>true if the rndTag is new at this position-strand</returns>
+        /// <returns>true if the UMI is new at this position-strand</returns>
         public bool Add(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures, bool isTranscript)
         {
             int posStrand = MakePosStrandIdx(m.Position, m.Strand);
             TagItem item;
             if (!tagItems.TryGetValue(posStrand, out item))
             {
-                item = new TagItem(m.HasAltMappings, isTranscript);
+                item = TagItem.CreateTagItem(m.HasAltMappings, isTranscript);
                 tagItems[posStrand] = item;
             }
             if (!m.HasAltMappings && item.HasSNPs) // Should maybe move this code into new TagItem.Add(MultiReadMapping m)
@@ -166,7 +131,8 @@ namespace Linnarsson.Strt
                     item.AddSNP(m.UMIIdx, mm);
                 }
             }
-            item.AddSharedGenes(sharingRealFeatures);
+            if (Props.props.ShowTranscriptSharingGenes)
+                item.AddSharedGenes(sharingRealFeatures);
             return item.Add(m.UMIIdx);
         }
 
@@ -220,7 +186,7 @@ namespace Linnarsson.Strt
         /// <param name="pos">Requested hit start pos</param>
         /// <param name="strand"></param>
         /// <param name="molCount">Estimated number of molecules detected after filtering</param>
-        /// <param name="readProfile">Array with number of reads in each rndTag</param>
+        /// <param name="readProfile">Array with number of reads in each UMI</param>
         public void GetReadCounts(int pos, char strand, out int molCount, out ushort[] readProfile)
         {
             int posStrand = MakePosStrandIdx(pos, strand);
@@ -228,7 +194,7 @@ namespace Linnarsson.Strt
             if (tagItems.TryGetValue(posStrand, out  t))
             {
                 readProfile = t.GetReadCountsByUMI();
-                molCount = t.GetFinalNumMolecules();
+                molCount = t.GetFinalBcNumMols();
             }
             else
             {
@@ -238,10 +204,10 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Number of distinct mappings (position-strand) that have been observed, irrespective of rndTags.
+        /// Number of distinct mappings (position-strand) that have been observed, irrespective of UMIs.
         /// Note that this may be more than number of distinct molecules, if all multiread mappings to exons are analyzed
         /// </summary>
-        /// <returns>Number of distinct mappings (position-strand) that have been observed, irrespective of rndTags</returns>
+        /// <returns>Number of distinct mappings (position-strand) that have been observed, irrespective of UMIs</returns>
         public int GetNumDistinctMappings()
         {
             return tagItems.Values.Count(v => v.HasReads);
@@ -252,10 +218,10 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="strand">Strand to analyze</param>
         /// <param name="positions">All positions with some mapped read start on given strand</param>
-        /// <param name="molCountAtEachPosition">Number of distinct rndTags (=molecules) mapped at each of these positions</param>
+        /// <param name="molCountAtEachPosition">Number of distinct UMIs (=molecules) mapped at each of these positions</param>
         /// <param name="readCountAtEachPosition">Number of reads mapped at each of these positions</param>
         public void GetDistinctPositionsAndCounts(char strand, int[] selectedAnnotTypes, out int[] positions,
-                                                  out int[] molCountAtEachPosition, out int[] readCountAtEachPosition)
+                                                  out int[] molCountAtEachPosition, out int[] readCountAtEachPosition, bool allBarcodes)
         {
             positions = new int[tagItems.Count];
             molCountAtEachPosition = new int[tagItems.Count];
@@ -264,12 +230,12 @@ namespace Linnarsson.Strt
             int p = 0;
             foreach (KeyValuePair<int, TagItem> codedPair in tagItems)
             {
-                int numReads = codedPair.Value.GetNumReads();
+                int numReads = codedPair.Value.GetNumReads(allBarcodes);
                 if (numReads > 0 && (codedPair.Key & 1) == strandIdx &&
                     (selectedAnnotTypes == null || selectedAnnotTypes.Contains(codedPair.Value.typeOfAnnotation)))
                 {
                     readCountAtEachPosition[p] = numReads;
-                    molCountAtEachPosition[p] = codedPair.Value.GetFinalNumMolecules();
+                    molCountAtEachPosition[p] = codedPair.Value.GetFinalNumMols(allBarcodes);
                     positions[p++] = codedPair.Key >> 1;
                 }
             }
@@ -286,18 +252,18 @@ namespace Linnarsson.Strt
 
     public class RandomTagFilterByBc
     {
-        private bool hasRndTags;
+        private bool hasUMIs;
         public Dictionary<string, ChrTagData> chrTagDatas;
 
-        public static int nRndTags;
+        public static int nUMIs;
         /// <summary>
         /// Number of reads in every UMI
         /// </summary>
-        public int[] nReadsByRandomTag;
+        public int[] nReadsByUMI;
         /// <summary>
         /// Histogram of saturation of UMIs by different position-strand combinations
         /// </summary>
-        public int[] nCasesPerRandomTagCount;
+        public int[] nCasesPerUMICount;
 
         /// <summary>
         /// Total number of detected molecules mapping to any feature type before mutation filter
@@ -332,17 +298,17 @@ namespace Linnarsson.Strt
 
         public RandomTagFilterByBc(Barcodes barcodes, string[] chrIds)
         {
-            hasRndTags = barcodes.HasUMIs;
-            nRndTags = barcodes.UMICount;
-            TagItem.nUMIs = nRndTags;
-            nReadsByRandomTag = new int[nRndTags];
-            nCasesPerRandomTagCount = new int[nRndTags + 1];
+            hasUMIs = barcodes.HasUMIs;
+            nUMIs = barcodes.UMICount;
+            TagItem.nUMIs = nUMIs;
+            nReadsByUMI = new int[nUMIs];
+            nCasesPerUMICount = new int[nUMIs + 1];
             chrTagDatas = new Dictionary<string, ChrTagData>();
             foreach (string chrId in chrIds)
                 chrTagDatas[chrId] = new ChrTagData(chrId);
             readsPerMolHistogram = new int[MaxValueInReadCountHistogram + 1];
             readsPerTrMolHistogram = new int[MaxValueInReadCountHistogram + 1];
-            readDistributionByMolCount = new int[nRndTags + 1, MaxValueInReadCountHistogram + 1];
+            readDistributionByMolCount = new int[nUMIs + 1, MaxValueInReadCountHistogram + 1];
         }
 
         /// <summary>
@@ -370,11 +336,23 @@ namespace Linnarsson.Strt
         {
             foreach (ChrTagData chrTagData in chrTagDatas.Values)
             {
-                if (nRndTags > 1)
+                if (nUMIs > 1)
                 {
-                    FinishBarcodeWRndTags(chrTagData);
+                    FinishBarcodeWithUMIs(chrTagData);
                 }
                 chrTagData.FinishBarcode();
+            }
+            //Console.WriteLine("RndTagFilterByBc: Current total NumTagItems=" + NumTagItems);
+        }
+
+        public int NumTagItems
+        {
+            get
+            {
+                int n = 0;
+                foreach (ChrTagData d in chrTagDatas.Values)
+                    n += d.NumTagItems;
+                return n;
             }
         }
 
@@ -382,31 +360,36 @@ namespace Linnarsson.Strt
         /// Add to summary of read/mol-related statistics for which raw data is lost for each new barcode
         /// </summary>
         /// <param name="chrTagData"></param>
-        private void FinishBarcodeWRndTags(ChrTagData chrTagData)
+        private void FinishBarcodeWithUMIs(ChrTagData chrTagData)
         {
             foreach (TagItem tagItem in chrTagData.IterNonEmptyTagItems())
             {
-                ushort[] readsByRndTag = tagItem.GetReadCountsByUMI();
-                int nUsedRndTags = readsByRndTag.Count(c => c > 0);
-                totalMolecules += nUsedRndTags;
-                int nFilteredMols = tagItem.GetFinalNumMolecules();
-                totalFilteredMolecules += nFilteredMols;
+                int nUsedUMIs = tagItem.GetNumUsedUMIs();
+                totalMolecules += nUsedUMIs;
+                int nFilteredBcMols = tagItem.GetFinalBcNumMols();
+                totalFilteredMolecules += nFilteredBcMols;
                 if (tagItem.typeOfAnnotation == AnnotType.EXON)
                 {
-                    totalTrMolecules += nUsedRndTags;
-                    totalFilteredTrMolecules += nFilteredMols;
+                    totalTrMolecules += nUsedUMIs;
+                    totalFilteredTrMolecules += nFilteredBcMols;
                 }
-                nCasesPerRandomTagCount[nUsedRndTags]++;
-                int threshold = tagItem.GetMutationThreshold();
-                foreach (ushort nReadsInRndTag in readsByRndTag.Where(c => c > threshold))
+                nCasesPerUMICount[nUsedUMIs]++;
+                if (TagItem.CountsReadsPerUMI)
+                    AddToReadsPerMolecule(tagItem, nUsedUMIs);
+            }
+        }
+
+        private void AddToReadsPerMolecule(TagItem tagItem, int nUsedUMIs)
+        {
+            int threshold = tagItem.GetMutationThreshold();
+            foreach (ushort nReadsInUMI in tagItem.GetReadCountsByUMI().Where(c => c > threshold))
+            {
+                int limitedReadCount = Math.Min(MaxValueInReadCountHistogram, nReadsInUMI);
+                readsPerMolHistogram[limitedReadCount]++;
+                readDistributionByMolCount[nUsedUMIs, limitedReadCount]++;
+                if (tagItem.typeOfAnnotation == AnnotType.EXON)
                 {
-                    int limitedReadCount = Math.Min(MaxValueInReadCountHistogram, nReadsInRndTag);
-                    readsPerMolHistogram[limitedReadCount]++;
-                    readDistributionByMolCount[nUsedRndTags, limitedReadCount]++;
-                    if (tagItem.typeOfAnnotation == AnnotType.EXON)
-                    {
-                        readsPerTrMolHistogram[limitedReadCount]++;
-                    }
+                    readsPerTrMolHistogram[limitedReadCount]++;
                 }
             }
         }
@@ -420,9 +403,9 @@ namespace Linnarsson.Strt
         /// <returns>True if the chr-strand-pos-bc-rndTag combination is new</returns>
         public bool Add(MultiReadMapping m, bool isTranscript)
         {
-            nReadsByRandomTag[m.UMIIdx]++;
+            nReadsByUMI[m.UMIIdx]++;
             bool isNew = chrTagDatas[m.Chr].Add(m, isTranscript);
-            return isNew | !hasRndTags;
+            return isNew | !hasUMIs;
         }
 
         /// <summary>
@@ -433,12 +416,12 @@ namespace Linnarsson.Strt
         /// <param name="m">The mapping to add</param>
         /// <param name="sharingRealFeatures">List of other features compete due to the read being a multiread</param>
         /// <param name="isTranscript"></param>
-        /// <returns>True if the chr-strand-pos-bc-rndTag combination is new</returns>
+        /// <returns>True if the chr-strand-pos-bc-UMI combination is new</returns>
         public bool Add(MultiReadMapping m, Dictionary<IFeature, object> sharingRealFeatures, bool isTranscript)
         {
-            nReadsByRandomTag[m.UMIIdx]++;
+            nReadsByUMI[m.UMIIdx]++;
             bool isNew = chrTagDatas[m.Chr].Add(m, sharingRealFeatures, isTranscript);
-            return isNew | !hasRndTags;
+            return isNew | !hasUMIs;
         }
 
         /// <summary>
@@ -466,7 +449,7 @@ namespace Linnarsson.Strt
         /// <param name="pos"></param>
         /// <param name="strand"></param>
         /// <param name="molCount">Filtered molecule count at given genomic location</param>
-        /// <param name="readProfile">Number of reads as function of rndTag index at given genomic location, or null if no reads has hit that location</param>
+        /// <param name="readProfile">Number of reads as function of UMI index at given genomic location, or null if no reads has hit that location</param>
         public void GetReadCountProfile(string chr, int pos, char strand, out int molCount, out ushort[] readProfile)
         {
             chrTagDatas[chr].GetReadCounts(pos, strand, out molCount, out readProfile);
@@ -496,7 +479,7 @@ namespace Linnarsson.Strt
             {
                 foreach (TagItem tagItem in chrTagData.IterNonEmptyTagItems())
                     if (tagItem.typeOfAnnotation == AnnotType.EXON)
-                        total += tagItem.CalcCurrentNumMolecules();
+                        total += tagItem.CalcCurrentBcNumMols();
             }
             return total;
         }

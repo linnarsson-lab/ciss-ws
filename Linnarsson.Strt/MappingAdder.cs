@@ -191,7 +191,8 @@ namespace Linnarsson.Strt
                 foreach (FtInterval ivl in Annotations.IterExonAnnotations(m.Chr, m.Strand, m.HitMidPos))
                 {
                     isTranscript = true;
-                    sharingRealFeatures[ivl.Feature.RealFeature] = null;
+                    if (Props.props.ShowTranscriptSharingGenes)
+                        sharingRealFeatures[ivl.Feature.RealFeature] = null;
                 }
                 if (isTranscript)
                     mappingChoices[nMrms++] = m;
@@ -225,7 +226,8 @@ namespace Linnarsson.Strt
                     return m;
                 foreach (FtInterval ivl in Annotations.IterExonAnnotations(m.Chr, m.Strand, m.HitMidPos))
                 {
-                    sharingRealFeatures[ivl.Feature.RealFeature] = null;
+                    if (Props.props.ShowTranscriptSharingGenes)
+                        sharingRealFeatures[ivl.Feature.RealFeature] = null;
                     int dist = ivl.GetTranscriptPos(m.HitMidPos);
                     if (dist < bestDist)
                     {
@@ -299,7 +301,8 @@ namespace Linnarsson.Strt
                 foreach (FtInterval ivl in Annotations.IterExonAnnotations(m.Chr, m.Strand, m.HitMidPos))
                 {
                     isTranscript = true;
-                    sharingRealFeatures[ivl.Feature.RealFeature] = null;
+                    if (Props.props.ShowTranscriptSharingGenes)
+                        sharingRealFeatures[ivl.Feature.RealFeature] = null;
                 }
                 if (isTranscript)
                     mappingChoices[nMrms++] = m;

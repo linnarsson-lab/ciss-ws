@@ -50,6 +50,8 @@ namespace Linnarsson.Dna
             }
         }
 
+        public int NumLocusHitEntries { get { return locusHitIdx; } }
+
         /// <summary>
         /// SNPCounter arrays by bcIdx for every SNP positions
         /// </summary>
@@ -140,22 +142,69 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Either molecules per barcode after UMI mutation filtering, or total reads per barcode when no UMIs are used.
-        /// </summary>
-        public int[] TranscriptHitsByBarcode;
-        /// <summary>
         /// Always total reads per barcode
         /// </summary>
-        public int[] TranscriptReadsByBarcode;
+        public int[] TrReadsByBc;
         /// <summary>
         /// Unique reads per barcode
         /// </summary>
-        public int[] NonConflictingTranscriptReadsByBarcode;
-        public int[] EstimatedTrueMolsByBarcode;
+        public int[] NonConflictingTrReadsByBc;
+
         /// <summary>
-        /// Either molecules per barcode after UMI mutation filtering, or total reads per barcode when no UMIs are used.
+        /// Molecules per barcode after UMI mutation filtering
         /// </summary>
-        public int[] NonConflictingTranscriptHitsByBarcode;
+        private ushort[] TrMolsByBc;
+        private ushort[] NonConflictingTrMolsByBc;
+        private ushort[] EstimatedTrueMolsByBarcode;
+
+        /// <summary>
+        /// Will return molecules if UMIs are in use, else reads
+        /// </summary>
+        /// <param name="bcIdx"></param>
+        /// <returns></returns>
+        public int TrHits(int bcIdx)
+        {
+            return (TrMolsByBc != null) ? TrMolsByBc[bcIdx] : TrReadsByBc[bcIdx];
+        }
+        public int TrHitSum()
+        {
+            return (TrMolsByBc != null) ? TrMolsByBc.Sum(v => (int)v) : TrReadsByBc.Sum();
+        }
+
+        /// <summary>
+        /// Will return molecules if UMIs are in use, else reads
+        /// </summary>
+        /// <param name="bcIdx"></param>
+        /// <returns></returns>
+        public int TrNCHits(int bcIdx)
+        {
+            return (TrMolsByBc != null) ? NonConflictingTrMolsByBc[bcIdx] : NonConflictingTrReadsByBc[bcIdx];
+        }
+        public int TrNCHitSum()
+        {
+            return (TrMolsByBc != null) ? NonConflictingTrMolsByBc.Sum(v => (int)v) : NonConflictingTrReadsByBc.Sum();
+        }
+
+        public static IEnumerable<int> IterTrMaxHits(GeneFeature gf, int[] bcIndexes)
+        {
+            foreach (int bcIdx in bcIndexes)
+                yield return (gf.TrMolsByBc != null) ? gf.TrMolsByBc[bcIdx] : gf.TrReadsByBc[bcIdx];
+        }
+        public static IEnumerable<int> IterTrNCHits(GeneFeature gf, int[] bcIndexes)
+        {
+            foreach (int bcIdx in bcIndexes)
+                yield return (gf.NonConflictingTrMolsByBc != null) ? gf.NonConflictingTrMolsByBc[bcIdx] : gf.NonConflictingTrReadsByBc[bcIdx];
+        }
+        public static IEnumerable<int> IterTrReads(GeneFeature gf, int[] bcIndexes)
+        {
+            foreach (int bcIdx in bcIndexes)
+                yield return gf.TrReadsByBc[bcIdx];
+        }
+        public static IEnumerable<int> IterTrEstTrueMolCounts(GeneFeature gf, int[] bcIndexes)
+        {
+            foreach (int bcIdx in bcIndexes)
+                yield return gf.EstimatedTrueMolsByBarcode[bcIdx];
+        }
 
         /// <summary>
         /// Either molecules per barcode after UMI mutation filtering, or total reads per barcode when no UMIs are used.
@@ -174,10 +223,9 @@ namespace Linnarsson.Dna
         /// </summary>
         public int[] TranscriptHitsByExonIdx;
         /// <summary>
-        /// Used to analyse cross-junction hit distribution
+        /// Used to analyse cross-junction hit distribution. If !Props.props.AnalyzeSpliceHitsByBarcode, all data is collected in [0]
         /// </summary>
-        public Dictionary<string, int> TranscriptHitsByJunction;
-        public Dictionary<string, int[]> TranscriptHitsByJunctionAndBc;
+        public Dictionary<string, ushort[]> TranscriptHitsByJunctionAndBc;
         /// <summary>
         /// Total hits for every annotation type. Note that EXON/AEXON counts will include SPLC/ASPLC counts
         /// </summary>
@@ -259,20 +307,22 @@ namespace Linnarsson.Dna
             LeftFlankLength = RightFlankLength = LocusFlankLength; // Init with default length
             MaskedAEXON = new bool[exonEnds.Length];
             MaskedINTR = new bool[exonEnds.Length - 1];
-            TranscriptHitsByBarcode = new int[Props.props.Barcodes.Count];
-            TranscriptReadsByBarcode = new int[Props.props.Barcodes.Count];
-            NonConflictingTranscriptReadsByBarcode = new int[Props.props.Barcodes.Count];
-            EstimatedTrueMolsByBarcode = new int[Props.props.Barcodes.Count];
-            NonConflictingTranscriptHitsByBarcode = new int[Props.props.Barcodes.Count];
-            CAPRegionHitsByBarcode = new int[Props.props.Barcodes.Count];
+            if (Props.props.Barcodes.HasUMIs)
+            {
+                TrMolsByBc = new ushort[Props.props.Barcodes.Count];
+                EstimatedTrueMolsByBarcode = new ushort[Props.props.Barcodes.Count];
+                NonConflictingTrMolsByBc = new ushort[Props.props.Barcodes.Count];
+            }
+            TrReadsByBc = new int[Props.props.Barcodes.Count];
+            NonConflictingTrReadsByBc = new int[Props.props.Barcodes.Count];
+            if (Props.props.WriteCAPRegionHits)
+                CAPRegionHitsByBarcode = new int[Props.props.Barcodes.Count];
             VariationSamples = new List<double>();
             TranscriptHitsByExonIdx = new int[exonStarts.Length];
-            TranscriptHitsByJunction = new Dictionary<string, int>();
-            if (Props.props.AnalyzeSpliceHitsByBarcode)
-                TranscriptHitsByJunctionAndBc = new Dictionary<string, int[]>();
+            TranscriptHitsByJunctionAndBc = new Dictionary<string, ushort[]>();
             HitsByAnnotType = new int[AnnotType.Count];
             NonMaskedHitsByAnnotType = new int[AnnotType.Count];
-            m_LocusHits = new int[1000];
+            m_LocusHits = new int[400];
             locusHitIdx = 0;
             SavedCAPPos = (strand == '+') ? exonStarts[0] : exonEnds[exonEnds.Length - 1];
         }
@@ -330,7 +380,7 @@ namespace Linnarsson.Dna
         }
         public bool IsExpressed(int barcodeIdx)
         {
-            return TranscriptHitsByBarcode[barcodeIdx] > 0;
+            return TrMolsByBc[barcodeIdx] > 0;
         }
         /// <summary>
         /// # of hits to INTR, USTR and DSTR. (+Anti-versions for non-directional data)
@@ -591,19 +641,19 @@ namespace Linnarsson.Dna
             MarkLocusHitPos(item);
             AddToTotalHits(item);
             TranscriptHitsByExonIdx[exonIdx] += item.MolCount;
-            TranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
-            TranscriptReadsByBarcode[item.bcIdx] += item.ReadCount;
-            EstimatedTrueMolsByBarcode[item.bcIdx] += item.EstTrueMolCount;
+            if (TrMolsByBc != null) TrMolsByBc[item.bcIdx] += (ushort)item.MolCount;
+            TrReadsByBc[item.bcIdx] += item.ReadCount;
+            EstimatedTrueMolsByBarcode[item.bcIdx] += (ushort)item.EstTrueMolCount;
             if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
             {
-                NonConflictingTranscriptHitsByBarcode[item.bcIdx] += item.MolCount;
-                NonConflictingTranscriptReadsByBarcode[item.bcIdx] += item.ReadCount;
-                if (Math.Abs(item.HitMidPos - SavedCAPPos) < Props.props.CapRegionSize)
+                if (NonConflictingTrMolsByBc != null) NonConflictingTrMolsByBc[item.bcIdx] += (ushort)item.MolCount;
+                NonConflictingTrReadsByBc[item.bcIdx] += item.ReadCount;
+                if (Props.props.WriteCAPRegionHits && Math.Abs(item.HitMidPos - SavedCAPPos) < Props.props.CapRegionSize)
                     CAPRegionHitsByBarcode[item.bcIdx] += item.MolCount;
             }
             HitsByAnnotType[annotType] += item.MolCount;
             NonMaskedHitsByAnnotType[annotType] += item.MolCount; // Count all EXON/SPLC hits for counter-oriented genes in statistics
-            if (item.tagItem.sharingGenes != null)
+            if (item.tagItem.SharingGenes != null)
                 AddSharingGenes(item);
             return annotType;
         }
@@ -616,7 +666,7 @@ namespace Linnarsson.Dna
         {
             if (sharingGenes == null)
                 sharingGenes = new Dictionary<IFeature, int>();
-            foreach (KeyValuePair<IFeature, int> pair in item.tagItem.sharingGenes)
+            foreach (KeyValuePair<IFeature, int> pair in item.tagItem.SharingGenes)
                 if (pair.Key != this)
                 {
                     if (sharingGenes.ContainsKey(pair.Key))
@@ -646,21 +696,14 @@ namespace Linnarsson.Dna
 
         private void MarkJunctionHit(string junctionId, MappedTagItem item)
         {
-            if (!TranscriptHitsByJunction.ContainsKey(junctionId))
+            if (!TranscriptHitsByJunctionAndBc.ContainsKey(junctionId))
             {
-                TranscriptHitsByJunction[junctionId] = item.MolCount;
-                if (TranscriptHitsByJunctionAndBc != null)
-                {
-                    TranscriptHitsByJunctionAndBc[junctionId] = new int[Props.props.Barcodes.Count];
-                    TranscriptHitsByJunctionAndBc[junctionId][item.bcIdx] = item.MolCount;
-                }
+                int n = Props.props.AnalyzeSpliceHitsByBarcode ? Props.props.Barcodes.Count : 1;
+                TranscriptHitsByJunctionAndBc[junctionId] = new ushort[n];
             }
-            else
-            {
-                TranscriptHitsByJunction[junctionId] += item.MolCount;
-                if (TranscriptHitsByJunctionAndBc != null)
-                    TranscriptHitsByJunctionAndBc[junctionId][item.bcIdx] += item.MolCount;
-            }
+            ushort c = Math.Min(ushort.MaxValue, (ushort)item.MolCount);
+            int idx = Props.props.AnalyzeSpliceHitsByBarcode ? item.bcIdx : 0;
+            TranscriptHitsByJunctionAndBc[junctionId][idx] += c;
         }
 
         public override IEnumerable<FtInterval> IterIntervals()
@@ -692,21 +735,21 @@ namespace Linnarsson.Dna
             List<Pair<string, int>> result = new List<Pair<string, int>>();
             for (int exonIdx = 0; exonIdx < TranscriptHitsByExonIdx.Length; exonIdx++)
                 result.Add(new Pair<string,int>((exonIdx+1).ToString(), TranscriptHitsByExonIdx[exonIdx]));
-            string[] junctionIds = TranscriptHitsByJunction.Keys.ToArray();
-            Array.Sort(junctionIds);
-            foreach (string junctionId in junctionIds)
-                result.Add(new Pair<string, int>(junctionId, TranscriptHitsByJunction[junctionId]));
-            return result;
-        }
-
-        public List<Pair<string, int[]>> GetSpliceCountsPerBarcode()
-        {
-            int nExons = ExonStarts.Length;
-            List<Pair<string, int[]>> result = new List<Pair<string, int[]>>();
             string[] junctionIds = TranscriptHitsByJunctionAndBc.Keys.ToArray();
             Array.Sort(junctionIds);
             foreach (string junctionId in junctionIds)
-                result.Add(new Pair<string, int[]>(junctionId, TranscriptHitsByJunctionAndBc[junctionId]));
+                result.Add(new Pair<string, int>(junctionId, TranscriptHitsByJunctionAndBc[junctionId].Sum(v => (int)v)));
+            return result;
+        }
+
+        public List<Pair<string, ushort[]>> GetSpliceCountsPerBarcode()
+        {
+            int nExons = ExonStarts.Length;
+            List<Pair<string, ushort[]>> result = new List<Pair<string, ushort[]>>();
+            string[] junctionIds = TranscriptHitsByJunctionAndBc.Keys.ToArray();
+            Array.Sort(junctionIds);
+            foreach (string junctionId in junctionIds)
+                result.Add(new Pair<string, ushort[]>(junctionId, TranscriptHitsByJunctionAndBc[junctionId]));
             return result;
         }
 
@@ -730,7 +773,7 @@ namespace Linnarsson.Dna
                 {
                     if (totByBarcode[bcodeIdx] > minTotByBarcode)
                     {
-                        double frac = (double)TranscriptHitsByBarcode[bcodeIdx] / (double)totByBarcode[bcodeIdx];
+                        double frac = (double)TrMolsByBc[bcodeIdx] / (double)totByBarcode[bcodeIdx];
                         fracsByBarcode.Add(frac);
                         fracsSum += frac;
                     }
@@ -957,6 +1000,7 @@ namespace Linnarsson.Dna
             locusHitsSorted = false;
             while (locusHitIdx + item.MolCount >= m_LocusHits.Length)
             {
+                //Console.WriteLine(Name + ":Resize m_LocusHits to " + (m_LocusHits.Length * 2));
                 Array.Resize(ref m_LocusHits, m_LocusHits.Length * 2);
             }
             int s = GetStrandAsInt(item.DetectedStrand);

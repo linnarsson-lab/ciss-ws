@@ -25,14 +25,13 @@ namespace Linnarsson.Dna
         /// Read count is shifted up readShift bits, and molecule count is kept in lower half.
         /// </summary>
         private Dictionary<int, uint> wiggle = new Dictionary<int, uint>();
+        public int NumWiggleEntries { get { return wiggle.Count; } }
 
         public void AddCount(int hitStartPos, int nReads, int nMols)
         {
             if (!wiggle.ContainsKey(hitStartPos))
             {
                 wiggle[hitStartPos] = (Math.Min(maxReads, (uint)nReads) << readShift) | Math.Min(molMask, (uint)nMols);
-                // Old unchecked version:
-                // wiggle[hitStartPos] = ((uint)nReads << readShift) | (uint)nMols;
             }
             else
             {
@@ -41,8 +40,6 @@ namespace Linnarsson.Dna
                 uint newMols = (uint)nMols + (wiggle[hitStartPos] & molMask);
                 if (newMols > molMask) newMols = molMask;
                 wiggle[hitStartPos] = (newReads << readShift) | newMols;
-                // Old unchecked version:
-                // wiggle[hitStartPos] += ((uint)nReads << readShift) | (uint)nMols;
             }
         }
 
@@ -99,36 +96,6 @@ namespace Linnarsson.Dna
         /// <param name="chrLength">(approximate) length of chromosome</param>
         /// <param name="sortedHitStartPositions">SORTED! start positions of reads on chromomsome</param>
         /// <param name="countAtEachSortedPosition">number of reads at every corresponding SORTED start position</param>
-        public static void WriteToWigFileOLD(StreamWriter writer, string chr, int readLength, char strand, int chrLength,
-                                           int[] sortedHitStartPositions, int[] countAtEachSortedPosition)
-        {
-            int strandSign = (strand == '+') ? 1 : -1;
-            Queue<int> stops = new Queue<int>();
-            int hitIdx = 0;
-            int i = 0;
-            while (i < chrLength && hitIdx < sortedHitStartPositions.Length)
-            {
-                int c0 = countAtEachSortedPosition[hitIdx];
-                i = sortedHitStartPositions[hitIdx++];
-                for (int cc = 0; cc < c0; cc++)
-                    stops.Enqueue(i + readLength);
-                if (i < chrLength && stops.Count > 0)
-                    writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
-                while (i < chrLength && stops.Count > 0)
-                {
-                    while (hitIdx < sortedHitStartPositions.Length && sortedHitStartPositions[hitIdx] == i)
-                    {
-                        int c = countAtEachSortedPosition[hitIdx++];
-                        for (int cc = 0; cc < c; cc++)
-                            stops.Enqueue(i + readLength);
-                    }
-                    writer.WriteLine(stops.Count * strandSign);
-                    i++;
-                    while (stops.Count > 0 && i == stops.Peek()) stops.Dequeue();
-                }
-            }
-        }
-
         public static void WriteToWigFile(StreamWriter writer, string chr, int readLength, char strand, int chrLength,
                                            int[] sortedHitStartPositions, int[] countAtEachSortedPosition)
         {
@@ -185,7 +152,7 @@ namespace Linnarsson.Dna
         /// <param name="strand"></param>
         /// <param name="sortedHitStartPositions">SORTED! start positions of reads on chromomsome</param>
         /// <param name="countAtEachSortedPosition">number of reads at every corresponding SORTED start position</param>
-        private static void WriteToBedFile(StreamWriter writer, string chr, int readLength, char strand,
+        public static void WriteToBedFile(StreamWriter writer, string chr, int readLength, char strand,
                                            int[] sortedHitStartPositions, int[] countAtEachSortedPosition)
         {
             for (int i = 0; i < sortedHitStartPositions.Length; i++)

@@ -84,9 +84,11 @@
     <Compile Include="BclFile.cs" />
     <Compile Include="BlatRunner.cs" />
     <Compile Include="GencodeAnnotationReader.cs" />
+    <Compile Include="MappedTagItem.cs" />
     <Compile Include="ProjectDB.cs" />
     <Compile Include="UMIMutationFilters.cs" />
     <Compile Include="UMIProfileCounters.cs" />
+    <Compile Include="ZeroOneMoreTagItem.cs" />
     <None Include="ChainParser.cs" />
     <Compile Include="BowtieMapFile.cs" />
     <Compile Include="CompactGenePainter.cs" />

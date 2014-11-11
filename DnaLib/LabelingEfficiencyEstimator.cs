@@ -66,7 +66,7 @@ namespace Linnarsson.Dna
             {
                 if (fractionOfSpikeMols.ContainsKey(gf.NonVariantName))
                 {
-                    double nSpikeMols = gf.TranscriptHitsByBarcode[bcIdx];
+                    double nSpikeMols = gf.TrHits(bcIdx);
                     efficiencyBySpike[gf.NonVariantName][bcIdx] = nSpikeMols / AddedCount(gf.NonVariantName);
                     nMols += nSpikeMols;
                 }

@@ -61,14 +61,14 @@ namespace Linnarsson.Strt
             }
         }
 
-        public void WriteOutput(string OutputPathbase)
+        public void WriteOutput(string outputPathbase)
         {
-            WriteGeneSummary(OutputPathbase + "_expression_genemax.tab", (x => x.nMols));
-            WriteGeneSummary(OutputPathbase + "_expression_genemin.tab", (x => x.nUniqueMols));
+            WriteGeneSummary(outputPathbase + "_expression_genemax.tab", (x => x.nMols));
+            WriteGeneSummary(outputPathbase + "_expression_genemin.tab", (x => x.nUniqueMols));
             if (TagItem.nUMIs > 1)
             {
-                WriteGeneSummary(OutputPathbase + "_reads_genemax.tab", (x => x.nReads));
-                WriteGeneSummary(OutputPathbase + "_reads_genemin.tab", (x => x.nUniqueReads));
+                WriteGeneSummary(outputPathbase + "_reads_genemax.tab", (x => x.nReads));
+                WriteGeneSummary(outputPathbase + "_reads_genemin.tab", (x => x.nUniqueReads));
             }
         }
 

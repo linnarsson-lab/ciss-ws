@@ -51,6 +51,7 @@ namespace Linnarsson.Dna
 
         /// <summary>
         /// Will only count UMIs with > UMIMutationFilterParameter reads.
+        /// E.g., with UMIMutationFilterParameter==1, all singletons will be removed.
         /// </summary>
         /// <param name="tagItem"></param>
         /// <returns></returns>

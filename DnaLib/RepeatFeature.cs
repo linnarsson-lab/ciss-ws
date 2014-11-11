@@ -34,13 +34,27 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Either molecules per barcode after rndTag mutation filtering, or total reads per barcode when no rndTag are used.
+        /// Molecules per barcode after UMI mutation filtering
         /// </summary>
-        public int[] TotalHitsByBarcode;
+        public int[] TotalMolsByBc;
         /// <summary>
         /// Always total reads per barcode
         /// </summary>
-        public int[] TotalReadsByBarcode;
+        public int[] TotalReadsByBc;
+
+        /// <summary>
+        /// Returns total molecules if UMIs are in use, else total reads
+        /// </summary>
+        /// <param name="bcIdx"></param>
+        /// <returns></returns>
+        public int Hits(int bcIdx)
+        {
+            return (TotalMolsByBc != null)? TotalMolsByBc[bcIdx] : TotalReadsByBc[bcIdx];
+        }
+        public int Hits()
+        {
+            return (TotalMolsByBc != null) ? TotalMolsByBc.Sum(v => (int)v) : TotalReadsByBc.Sum();
+        }
 
         /// <summary>
         /// </summary>
@@ -52,8 +66,9 @@ namespace Linnarsson.Dna
             Name = name;
             Length = 0;
             TotalHits = 0;
-            TotalHitsByBarcode = new int[Barcodes.MaxCount];
-            TotalReadsByBarcode = new int[Barcodes.MaxCount];
+            if (Props.props.Barcodes.HasUMIs)
+                TotalMolsByBc = new int[Barcodes.MaxCount];
+            TotalReadsByBc = new int[Barcodes.MaxCount];
             C1DBTranscriptID = -1;
         }
 
@@ -75,13 +90,12 @@ namespace Linnarsson.Dna
             Length += end - start + 1;
         }
 
-        //public MarkResult MarkHit(MappedTagItem item, int extraData, MarkStatus markType)
         public int MarkHit(MappedTagItem item, int extraData, MarkStatus markType)
         {
             TotalHits += item.MolCount;
-            TotalHitsByBarcode[item.bcIdx] += item.MolCount;
-            TotalReadsByBarcode[item.bcIdx] += item.ReadCount;
-            return AnnotType.REPT; // return new MarkResult(AnnotType.REPT, this); // Do not care about orientation for repeats
+            if (TotalMolsByBc != null) TotalMolsByBc[item.bcIdx] += item.MolCount;
+            TotalReadsByBc[item.bcIdx] += item.ReadCount;
+            return AnnotType.REPT;
         }
 
         public int CompareTo(object obj)

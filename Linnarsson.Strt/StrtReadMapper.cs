@@ -563,9 +563,9 @@ namespace Linnarsson.Strt
         {
             if (mapFilePaths.Count == 0)
                 return null;
-            string outputFolder = Path.Combine(projectFolder, resultFolderName);
-            if (Directory.Exists(outputFolder))
-                outputFolder += "_" + DateTime.Now.ToPathSafeString();
+            string resultFolder = Path.Combine(projectFolder, resultFolderName);
+            if (Directory.Exists(resultFolder))
+                resultFolder += "_" + DateTime.Now.ToPathSafeString();
             ReadCounter readCounter = ReadExtractionSummaryFiles(mapFilePaths);
             int averageReadLen = readCounter.AverageReadLen;
             MappedTagItem.AverageReadLen = averageReadLen;
@@ -573,8 +573,7 @@ namespace Linnarsson.Strt
             UpdateGenesToPaintProp(projectFolder);
             GenomeAnnotations annotations = new GenomeAnnotations(props, genome);
             annotations.Load();
-            string outputPathbase = Path.Combine(outputFolder, projectId);
-            TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props, outputPathbase);
+            TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props, resultFolder, projectId);
             string syntLevelFile = PathHandler.GetSyntLevelFilePath(projectFolder, barcodes.HasUMIs);
             if (syntLevelFile != "")
                 ts.SetSyntReadReporter(syntLevelFile);
@@ -583,13 +582,13 @@ namespace Linnarsson.Strt
                 Console.WriteLine("WARNING: contigIds of reads do not seem to match with genome Ids.\nWas the Bowtie index made on a different genome or contig set?");
             Console.WriteLine("Totally {0} annotations: {1} expressed genes and {2} expressed repeat types.",
                               ts.GetNumMappedReads(), annotations.GetNumExpressedTranscripts(), annotations.GetNumExpressedRepeats());
-            Directory.CreateDirectory(outputFolder);
-            Console.WriteLine("Saving to {0}...", outputFolder);
+            Directory.CreateDirectory(resultFolder);
+            Console.WriteLine("Saving to {0}...", resultFolder);
             string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
-            ResultDescription resultDescr = new ResultDescription(mapFilePaths, bowtieIndexVersion, outputFolder);
+            ResultDescription resultDescr = new ResultDescription(mapFilePaths, bowtieIndexVersion, resultFolder);
             ts.SaveResult(readCounter, resultDescr);
             System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(props.GetType());
-            using (StreamWriter writer = new StreamWriter(Path.Combine(outputFolder, "SilverBulletConfig.xml")))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(resultFolder, "SilverBulletConfig.xml")))
                 x.Serialize(writer, props);
             if (Props.props.InsertCells10Data)
                 InsertCells10kData(projectId, annotations, resultDescr);

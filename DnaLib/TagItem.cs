@@ -6,132 +6,62 @@ using System.Text;
 namespace Linnarsson.Dna
 {
     /// <summary>
-    /// Keeps TagItems together with their location during the annotation step
-    /// </summary>
-    public class MappedTagItem
-    {
-        public static int AverageReadLen;
-        public static LabelingEfficiencyEstimator labelingEfficiencyEstimator;
-
-        private int cachedMolCount;
-        private int cachedReadCount;
-        private int cachedEstTrueMolCount;
-        private List<SNPCounter> cachedSNPCounts;
-
-        /// <summary>
-        /// Number of molecules (after filtering mutated UMIs). Equals ReadCount if UMIs are not used.
-        /// </summary>
-        public int MolCount { get { return cachedMolCount; } }
-        public int ReadCount { get { return cachedReadCount; } }
-        public int EstTrueMolCount { get { return cachedEstTrueMolCount; } }
-        public List<SNPCounter> SNPCounts { get { return cachedSNPCounts; } }
-
-        private TagItem m_TagItem;
-        public TagItem tagItem { get { return m_TagItem; } }
-
-        /// <summary>
-        /// MappedTagItem is used as a singleton during iterations in order to save HEAP, and this methods loads a new set of data
-        /// </summary>
-        /// <param name="hitStartPos"></param>
-        /// <param name="strand"></param>
-        /// <param name="tagItem"></param>
-        public void Update(int hitStartPos, char strand, TagItem tagItem)
-        {
-            this.m_HitStartPos = hitStartPos;
-            this.m_Strand = strand;
-            this.m_TagItem = tagItem;
-            cachedSNPCounts = m_TagItem.GetTotalSNPCounts(m_HitStartPos);
-            cachedReadCount = m_TagItem.GetNumReads();
-
-            int observedMolCount = m_TagItem.GetFinalNumMolecules(); // Possibly filter away mutated UMIs
-            if (TagItem.nUMIs == 1)
-            {
-                cachedEstTrueMolCount = cachedMolCount = observedMolCount;
-            }
-            else if (observedMolCount < TagItem.nUMIs)
-            {
-                cachedMolCount = labelingEfficiencyEstimator.UMICollisionCompensate(observedMolCount); // Compensate for UMI collision effect
-                cachedEstTrueMolCount = labelingEfficiencyEstimator.EstimateTrueCount(observedMolCount);
-            }
-            else
-            {
-                cachedMolCount = labelingEfficiencyEstimator.UMICollisionCompensate(observedMolCount - 1);
-                cachedEstTrueMolCount = labelingEfficiencyEstimator.EstimateTrueCount(observedMolCount - 1);
-                throw new Exception("All UMIs are used up!");
-            }
-        }
-
-        /// <summary>
-        /// Needed when calculating per-barcode statistics of reads/mol and filtered reads
-        /// </summary>
-        /// <param name="annotType"></param>
-        public void SetTypeOfAnnotation(int annotType)
-        {
-            this.m_TagItem.typeOfAnnotation = (short)annotType;
-        }
-
-        public int bcIdx;
-        public string chr;
-        private int m_HitStartPos;
-        public int hitStartPos { get { return m_HitStartPos; } }
-        private char m_Strand;
-        /// <summary>
-        /// The strand the read sequence equals
-        /// </summary>
-        public char SequencedStrand { get { return m_Strand; } }
-        /// <summary>
-        /// The strand that is actually detected
-        /// </summary>
-        public char DetectedStrand { get { return Props.props.SenseStrandIsSequenced ? m_Strand : (m_Strand == '+') ? '-' : '+'; } }
-
-        public int splcToRealChrOffset = 0;
-        public bool hasAltMappings { get { return m_TagItem.hasAltMappings; } }
-        public int HitLen { get { return AverageReadLen; } }
-        public int HitMidPos { get { return hitStartPos + HitLen / 2 + splcToRealChrOffset; } }
-
-        public override string ToString()
-        {
-            return string.Format("MappedTagItem(chr={0} strand={1} hitStartPos={2} [Average]HitLen={3}" + 
-                                 " bcIdx={4} HitMidPos={5} MolCount={6} ReadCount={7} HasAltMappings={8} DetectedStrand={9})",
-                                 chr, SequencedStrand, hitStartPos, HitLen, bcIdx, HitMidPos, MolCount, ReadCount, m_TagItem.hasAltMappings,
-                                 DetectedStrand);
-        }
-
-    }
-
-    /// <summary>
     /// TagItem summarizes all reads that map to a specific (possibly redundant when hasAltMappings==true) (chr, pos, strand) combination[s].
     /// </summary>
-    public class TagItem
+    public abstract class TagItem
     {
+        public static TagItem CreateTagItem(bool hasAltMappings, bool isTranscript)
+        {
+            if (Props.props.DenseUMICounter)
+                return new ZeroOneMoreTagItem(hasAltMappings, isTranscript);
+            return new UShortTagItem(hasAltMappings, isTranscript);
+        }
+        public static TagItem CreateTagItem()
+        {
+            return CreateTagItem(false, false);
+        }
+
+        public static bool CountsReadsPerUMI { get; protected set; }
+
+        public static void InitTagItemType()
+        {
+            if (Props.props.DenseUMICounter)
+                UShortTagItem.Init();
+            else
+                ZeroOneMoreTagItem.Init();
+        }
+
         /// <summary>
         /// Mirrors the number of UMIs from Barcodes
         /// </summary>
         public static int nUMIs;
 
         /// <summary>
-        /// Counts number of reads in each UMI
+        /// Counts number of reads in barcode irrespective of UMI
         /// </summary>
-        private ushort[] readCountsByUMI;
-        /// <summary>
-        /// Counts number of reads irrespective of UMI
-        /// </summary>
-        private int totalReadCount;
+        protected int bcNumReads;
+        protected int totNumReads;
+
         /// <summary>
         /// Number of non-empty UMIs, after mutation filtering, or read count if no UMIs are used. -1 indicates not calculated yet.
         /// </summary>
-        private int finalFilteredCount = -1;
+        protected int filteredBcNumMols = -1;
+        protected int filteredTotNumMols = 0;
 
         /// <summary>
-        /// List of the genes that share this TagItem's counts. (If some reads are SNPed, the sharing genes may be not belong to all reads.)
+        /// Return the total number of reads at this position-strand. (Molecule mutation filter not applied for UMI data.)
         /// </summary>
-        public Dictionary<IFeature, int> sharingGenes;
+        /// <returns></returns>
+        public virtual int GetBcNumReads()
+        {
+            return bcNumReads;
+        }
+        public int GetNumReads(bool allBarcodes)
+        {
+            return allBarcodes ? totNumReads : bcNumReads;
+        }
 
-        /// <summary>
-        /// At each offset relative to the 5' pos on chr of the reads' alignment where some SNPs appear,
-        /// keep an array by UMI of counts for each SNP nt. 
-        /// </summary>
-        public Dictionary<byte, SNPCountsByRndTag> SNPCountsByOffset { get; private set; }
+        public virtual bool HasReads { get { return bcNumReads > 0; } }
 
         /// <summary>
         /// true when the read sequence at the (chr, pos, strand) of this TagItem is not unique in genome.
@@ -144,15 +74,82 @@ namespace Linnarsson.Dna
         public short typeOfAnnotation { get; set; }
 
         /// <summary>
-        /// TagItem summarizes all reads that map to a specific (possibly redundant when hasAltMappings==true) (chr, pos, strand) combination[s].
+        /// Predefined for used by GetIndicesOfUsedUMIsAfterFiltering() when UMI counting is not applicable
+        /// </summary>
+        protected static List<int> woUMIsUMIIndices = new List<int> { 0 };
+
+        public void ClearBase()
+        {
+            typeOfAnnotation = (short)AnnotType.NOHIT;
+            bcNumReads = 0;
+            filteredBcNumMols = -1;
+        }
+
+        public int GetFinalNumMols(bool allBarcodes)
+        {
+            if (filteredBcNumMols == -1)
+                CalcFinalBcNumMols();
+            return allBarcodes ? filteredTotNumMols : filteredBcNumMols;
+        }
+
+        public int GetFinalBcNumMols()
+        {
+            if (filteredBcNumMols == -1)
+                CalcFinalBcNumMols();
+            return filteredBcNumMols;
+        }
+
+        protected abstract void CalcFinalBcNumMols();
+        public abstract void Clear();
+        public abstract Dictionary<IFeature, int> SharingGenes { get; }
+        public abstract void RegisterSNP(byte snpOffset);
+        public abstract void AddSNP(int UMIIdx, Mismatch mm);
+        public abstract bool Add(int UMIIdx);
+        public abstract void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures);
+        public abstract bool HasSNPs { get; }
+        public abstract List<SNPCounter> GetTotalSNPCounts(int readPosOnChr);
+        public abstract int CalcCurrentBcNumMols();
+        public abstract int GetMutationThreshold();
+        public abstract int GetNumUsedUMIs();
+
+        public abstract ushort[] GetReadCountsByUMI();
+    }
+
+    /// <summary>
+    /// TagItem summarizes all reads that map to a specific (possibly redundant when hasAltMappings==true) (chr, pos, strand) combination[s].
+    /// </summary>
+    public class UShortTagItem : TagItem
+    {
+        public static void Init()
+        {
+            TagItem.CountsReadsPerUMI = false;
+            UMIMutationFilters.SetUMIMutationFilter();
+        }
+
+        /// <summary>
+        /// Counts number of reads in each UMI
+        /// </summary>
+        private ushort[] readCountsByUMI;
+
+        /// <summary>
+        /// List of the genes that share this TagItem's counts. (If some reads are SNPed, the sharing genes may be not belong to all reads.)
+        /// </summary>
+        private Dictionary<IFeature, int> sharingGenes;
+
+        public override Dictionary<IFeature, int> SharingGenes { get { return sharingGenes; } }
+
+        /// <summary>
+        /// At each offset relative to the 5' pos on chr of the reads' alignment where some SNPs appear,
+        /// keep an array by UMI of counts for each SNP nt. 
+        /// </summary>
+        private Dictionary<byte, SNPCountsByRndTag> SNPCountsByOffset { get; set; }
+
+        /// <summary>
+        /// Create a new full TagItem, which counts every read
         /// </summary>
         /// <param name="hasAltMappings">True indicates that the location is not unique in the genome</param>
-        public TagItem(bool hasAltMappings)
-        {
-            this.hasAltMappings = hasAltMappings;
-            this.typeOfAnnotation = (short)AnnotType.NOHIT;
-        }
-        public TagItem(bool hasAltMappings, bool isTranscript)
+        /// <param name="isTranscript">true to indicate that this TagItem represents exonic reads</param>
+        public UShortTagItem(bool hasAltMappings, bool isTranscript)
         {
             this.hasAltMappings = hasAltMappings;
             this.typeOfAnnotation = isTranscript? (short)AnnotType.EXON : (short)AnnotType.NOHIT;
@@ -162,7 +159,7 @@ namespace Linnarsson.Dna
         /// Prepare for analyzing potential SNPs at specified offset within the reads
         /// </summary>
         /// <param name="snpOffset"></param>
-        public void RegisterSNP(byte snpOffset)
+        public override void RegisterSNP(byte snpOffset)
         {
             if (SNPCountsByOffset == null)
                 SNPCountsByOffset = new Dictionary<byte, SNPCountsByRndTag>();
@@ -176,7 +173,7 @@ namespace Linnarsson.Dna
         /// <param name="UMIIdx">The UMI of the read</param>
         /// <param name="snpOffset">Offset within the read of the SNP</param>
         /// <param name="snpNt">The reads' Nt at the SNP positions</param>
-        public void AddSNP(int UMIIdx, Mismatch mm)
+        public override void AddSNP(int UMIIdx, Mismatch mm)
         {
             SNPCountsByRndTag SNPCounts;
             if (!SNPCountsByOffset.TryGetValue(mm.relPosInChrDir, out SNPCounts))
@@ -192,12 +189,10 @@ namespace Linnarsson.Dna
         /// <summary>
         /// Clear data before handling the next barcode
         /// </summary>
-        public void Clear()
+        public override void Clear()
         {
-            typeOfAnnotation = (short)AnnotType.NOHIT;
+            ClearBase();
             readCountsByUMI = null;
-            totalReadCount = 0;
-            finalFilteredCount = -1;
             if (sharingGenes != null)
                 sharingGenes.Clear();
             if (SNPCountsByOffset != null)
@@ -211,10 +206,11 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="UMIIdx"></param>
         /// <returns>True if the UMI is new</returns>
-        public bool Add(int UMIIdx)
+        public override bool Add(int UMIIdx)
         {
-            int currentCount = totalReadCount;
-            totalReadCount++;
+            int currentCount = bcNumReads;
+            bcNumReads++;
+            totNumReads++;
             if (readCountsByUMI == null)
                 readCountsByUMI = new ushort[nUMIs];
             currentCount = readCountsByUMI[UMIIdx];
@@ -226,8 +222,9 @@ namespace Linnarsson.Dna
         /// Record other transcripts that share the count from a multiread
         /// </summary>
         /// <param name="sharingRealFeatures"></param>
-        public void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures)
+        public override void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures)
         {
+            if (sharingRealFeatures.Count == 0) return;
             if (sharingGenes == null)
                 sharingGenes = new Dictionary<IFeature, int>();
             foreach (IFeature sGf in sharingRealFeatures.Keys)
@@ -239,17 +236,7 @@ namespace Linnarsson.Dna
             }
         }
 
-        public bool HasReads { get { return totalReadCount > 0; } }
-        public bool HasSNPs { get { return SNPCountsByOffset != null; } }
-
-        /// <summary>
-        /// Return the total number of reads at this position-strand. (Molecule mutation filter not applied for UMI data.)
-        /// </summary>
-        /// <returns></returns>
-        public int GetNumReads()
-        {
-            return totalReadCount;
-        }
+        public override bool HasSNPs { get { return SNPCountsByOffset != null; } }
 
         /// <summary>
         /// Get Nt counts at all positions where there is SNP data available
@@ -257,7 +244,7 @@ namespace Linnarsson.Dna
         /// <param name="readPosOnChr">Needed to convert the SNP offset to position within chromosome</param>
         /// <returns>SNPCounters that summarize the (winning, if some mutated read) Nts found at each offset in valid UMIs,
         /// or null if no SNPs are present.</returns>
-        public List<SNPCounter> GetTotalSNPCounts(int readPosOnChr)
+        public override List<SNPCounter> GetTotalSNPCounts(int readPosOnChr)
         {
             if (SNPCountsByOffset == null)
                 return null;
@@ -292,57 +279,59 @@ namespace Linnarsson.Dna
                 if (readCountsByUMI[i] > threshold) filteredUsedUMIIndices.Add(i);
             return filteredUsedUMIIndices;
         }
-        /// <summary>
-        /// Predefined for used by above method when UMI counting is not applicable
-        /// </summary>
-        private static List<int> woUMIsUMIIndices = new List<int> { 0 };
 
         /// <summary>
         /// Count number of molecules (reads if UMIs not used) at this position-strand. Filters away mutated UMIs according to thresholding filter.
         /// </summary>
         /// <returns>Number of molecules (mutated UMIs excluded), or number of reads if UMIs are not used.</returns>
-        public int CalcCurrentNumMolecules()
+        public override int CalcCurrentBcNumMols()
         {
             if (nUMIs == 1) 
-                return totalReadCount;
-            if (readCountsByUMI == null || totalReadCount == 0)
+                return bcNumReads;
+            if (readCountsByUMI == null || bcNumReads == 0)
                 return 0;
             int threshold = UMIMutationFilters.filter(this);
             return readCountsByUMI.Count(v => v > threshold);
         }
+
         /// <summary>
         /// Final number of molecules (or reads if UMIs are not used) after mutation filtering. Call ONLY after all reads in barcode have been added!
         /// Used for speed up of repeated calls.
         /// </summary>
         /// <returns>Number of molecules (mutated UMIs excluded), or number of reads if UMIs are not used.</returns>
-        public int GetFinalNumMolecules()
+        protected override void CalcFinalBcNumMols()
         {
-            if (finalFilteredCount >= 0)
-                return finalFilteredCount;
+            if (filteredBcNumMols >= 0)
+                return;
             if (nUMIs == 1)
-                finalFilteredCount = totalReadCount;
-            else if (readCountsByUMI == null || totalReadCount == 0)
-                finalFilteredCount = 0;
+                filteredBcNumMols = bcNumReads;
+            else if (readCountsByUMI == null || bcNumReads == 0)
+                filteredBcNumMols = 0;
             else
             {
                 int threshold = UMIMutationFilters.filter(this);
-                finalFilteredCount = readCountsByUMI.Count(v => v > threshold);
+                filteredBcNumMols = readCountsByUMI.Count(v => v > threshold);
             }
-            return finalFilteredCount;
+            filteredTotNumMols += filteredBcNumMols;
+        }
+
+        public override int GetNumUsedUMIs()
+        {
+            return readCountsByUMI.Count(c => c > 0);
         }
 
         /// <summary>
         /// Get number of reads in each UMI. (Mutated molecule reads are not filtered away even when UMIs are used.)
         /// </summary>
         /// <returns>null if no reads have been found</returns>
-        public ushort[] GetReadCountsByUMI()
+        public override ushort[] GetReadCountsByUMI()
         {
             if (nUMIs == 1)
-                return new ushort[1] { (ushort)totalReadCount };
+                return new ushort[1] { (ushort)bcNumReads };
             return readCountsByUMI;
         }
 
-        public int GetMutationThreshold()
+        public override int GetMutationThreshold()
         {
             return UMIMutationFilters.filter(this);
         }

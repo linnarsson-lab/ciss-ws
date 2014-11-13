@@ -96,8 +96,8 @@ namespace Linnarsson.Strt
               // rethink the TagItem to consist of singlereads. Increases the chance of detecting true exon signals.
                 item.hasAltMappings = false;
             }
-            if (!m.HasAltMappings && item.HasSNPs) // Should maybe move this code into new TagItem.Add(MultiReadMapping m)
-            {                                      // and do IterMismatches(minPhredScore).
+            if (Props.props.AnalyzeSNPs && !m.HasAltMappings && item.HasSNPs)
+            {
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {
                     if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;
@@ -123,8 +123,8 @@ namespace Linnarsson.Strt
                 item = TagItem.CreateTagItem(m.HasAltMappings, isTranscript);
                 tagItems[posStrand] = item;
             }
-            if (!m.HasAltMappings && item.HasSNPs) // Should maybe move this code into new TagItem.Add(MultiReadMapping m)
-            {                                      // and do IterMismatches(minPhredScore).
+            if (Props.props.AnalyzeSNPs && !m.HasAltMappings && item.HasSNPs)
+            {
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {
                     if (mm.relPosInChrDir < marginInReadForSNP || mm.relPosInChrDir > m.SeqLen - marginInReadForSNP) continue;

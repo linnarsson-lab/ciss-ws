@@ -321,23 +321,23 @@ namespace Linnarsson.Strt
             return totCounts;
         }
 
-        public int GetTotalAnnotLength(int annotType, bool excludeMasked)
+        public long GetTotalAnnotLength(int annotType, bool excludeMasked)
         {
             if (annotType == AnnotType.REPT || annotType == AnnotType.AREPT)
                 return GetTotalRepeatLength();
-            int totLen = 0;
+            long totLen = 0;
             foreach (GeneFeature gf in geneFeatures.Values)
                 totLen += gf.GetAnnotLength(annotType, excludeMasked);
             return totLen;
         }
-        public int GetTotalAnnotLength(int annotType)
+        public long GetTotalAnnotLength(int annotType)
         {
             return GetTotalAnnotLength(annotType, false);
         }
 
-        public int GetTotalRepeatLength()
+        public long GetTotalRepeatLength()
         {
-            int totLen = 0;
+            long totLen = 0;
             foreach (RepeatFeature rf in repeatFeatures.Values)
                 totLen += rf.GetLocusLength();
             return totLen;

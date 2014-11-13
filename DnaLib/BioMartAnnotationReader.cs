@@ -77,7 +77,10 @@ namespace Linnarsson.Dna
                         chr = fields[chrCol].Trim();
                         strand = (fields[strandCol].Trim() == "1") ? '+' : '-';
                     }
-                    exons.Add(new Interval(int.Parse(fields[exStartCol]) - 1, int.Parse(fields[exEndCol]) - 1));
+                    int exonStart = int.Parse(fields[exStartCol]) - 1;
+                    int exonEnd = int.Parse(fields[exEndCol]) - 1;
+                    if (exonEnd > exonStart)
+                        exons.Add(new Interval(exonStart, exonEnd));
                 }
                 if (name != "")
                     yield return CreateGeneFeature(name, chr, strand, exons, trName, trType);

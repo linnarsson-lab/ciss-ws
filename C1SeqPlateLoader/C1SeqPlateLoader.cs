@@ -51,7 +51,7 @@ namespace C1SeqPlateLoader
             List<Cell> cells;
             cells = pdb.GetCellsOfChip(mixplateOrChipid);
             if (cells.Count == 0)
-                throw new Exception(string.Format("ERROR: No chip {0} in DB. Register/reload the chip(s) on Sanger DB web page.", mixplateOrChipid));
+                throw new Exception(string.Format("ERROR: No cells for chip {0} in DB. Register/reload the chip(s) on Sanger DB web page.", mixplateOrChipid));
             HashSet<string> emptyWells = ReadExcludeFile(mixplateOrChipid);
             foreach (Cell cell in cells)
             {

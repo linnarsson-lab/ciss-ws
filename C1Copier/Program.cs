@@ -231,9 +231,12 @@ namespace C1
         private static bool HasChanged(string chipDir)
         {
             string bf = GetLastMatchingFolder(chipDir, C1Props.props.C1BFImageSubfoldernamePattern);
+            string xf = GetLastMatchingFile(chipDir, C1Props.props.WellExcludeFilePattern);
             if (bf == null) return false;
             string lcp = GetLastMatchingFile(bf, C1Props.props.C1CaptureFilenamePattern);
-            return (lcp != null && (new FileInfo(lcp).LastWriteTime > lastCopyTime || new FileInfo(lcp).CreationTime > lastCopyTime));
+            return (lcp != null && 
+                (new FileInfo(lcp).LastWriteTime > lastCopyTime || new FileInfo(lcp).CreationTime > lastCopyTime ||
+                 new FileInfo(xf).LastAccessTime > lastCopyTime));
         }
 
         private static bool GetCellPaths(string chipDir, out string chipFolder, out string BFFolder, out string lastCapPath)
@@ -282,6 +285,7 @@ namespace C1
                 {
                     string chipwell = string.Format("{0}{1:00}", wr, wc);
                     Cell newCell = new Cell(null, 0, chipwell, "", 0.0, 0.0, 0, 0, 0);
+                    newCell.valid = !emptyWells.Contains(chipwell);
                     cells.Add(newCell);
                 }
             }

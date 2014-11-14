@@ -118,11 +118,11 @@ namespace C1
         {
             bool someCopyDone = false;
             string[] availableChipDirs = Directory.GetDirectories(C1Props.props.C1RunsFolder, "*-*-*");
-            List<string> loadedChipIds = new ProjectDB().GetLoadedChips();
+            //List<string> loadedChipIds = new ProjectDB().GetLoadedChips();
             foreach (string chipDir in availableChipDirs)
             {
                 string chipId = GetChipIdFromChipDir(chipDir);
-                if (loadedChipIds.Contains(chipId) && HasChanged(chipDir))
+                if (HasChanged(chipDir))
                 {
                     string msg = Copy(chipDir);
                     if (msg.StartsWith("OK"))
@@ -164,7 +164,12 @@ namespace C1
                 HashSet<string> emptyWells = ReadExcludeFile(chipDir);
                 List<Cell> celldata = ReadCellData(chipDir, emptyWells);
                 if (celldata == null)
-                    return "WARNING: Skipped " + chipDir + " - no celldata.";
+                {
+                    if (specificChipDir == "")
+                        return "WARNING: Skipped " + chipDir + " - no celldata.";
+                    Console.WriteLine(DateTime.Now.ToString() + " " + chipDir + ": No celldata - faking 96 cells");
+                    celldata = FakeCellData(emptyWells);
+                }
                 InsertCells(celldata, chipId);
                 return "OK: Loaded.";
             }
@@ -266,6 +271,21 @@ namespace C1
                 }
             }
             return emptyWells;
+        }
+
+        private static List<Cell> FakeCellData(HashSet<string> emptyWells)
+        {
+            List<Cell> cells = new List<Cell>();
+            foreach (char wr in "ABCDEFGH")
+            {
+                for (int wc = 1; wc <= 12; wc++)
+                {
+                    string chipwell = string.Format("{0}{1:00}", wr, wc);
+                    Cell newCell = new Cell(null, 0, chipwell, "", 0.0, 0.0, 0, 0, 0);
+                    cells.Add(newCell);
+                }
+            }
+            return cells;
         }
 
         private static List<Cell> ReadCellData(string chipDir, HashSet<string> emptyWells)

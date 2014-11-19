@@ -73,7 +73,7 @@ namespace C1
         public List<CellAnnotation> cellAnnotations { get; set; }
 
         public Cell(int? cellId, int jos_aaachipid, string chipWell, string plateWell,
-                    double diameter, double area, int red, int green, int blue)
+                    double diameter, double area, int red, int green, int blue, bool valid)
         {
             this.id = cellId;
             this.jos_aaachipid = jos_aaachipid;
@@ -84,7 +84,7 @@ namespace C1
             this.red = red;
             this.green = green;
             this.blue = blue;
-            this.valid = true;
+            this.valid = valid;
             this.cellImages = new List<CellImage>();
             this.cellAnnotations = new List<CellAnnotation>();
         }

@@ -284,7 +284,7 @@ namespace C1
                 for (int wc = 1; wc <= 12; wc++)
                 {
                     string chipwell = string.Format("{0}{1:00}", wr, wc);
-                    Cell newCell = new Cell(null, 0, chipwell, "", 0.0, 0.0, 0, 0, 0);
+                    Cell newCell = new Cell(null, 0, chipwell, "", 0.0, 0.0, 0, 0, 0, true);
                     newCell.valid = !emptyWells.Contains(chipwell);
                     cells.Add(newCell);
                 }
@@ -314,8 +314,8 @@ namespace C1
                     int red = (fields.Length < 6) ? Detection.Unknown : (fields[5] == "1") ? Detection.Yes : Detection.No;
                     int green = (fields.Length < 7) ? Detection.Unknown : (fields[6] == "1") ? Detection.Yes : Detection.No;
                     int blue = (fields.Length < 8) ? Detection.Unknown : (fields[7] == "1") ? Detection.Yes : Detection.No;
-                    Cell newCell = new Cell(null, 0, chipwell, "", diameter, area, red, green, blue);
-                    newCell.valid = !emptyWells.Contains(chipwell);
+                    bool valid = !emptyWells.Contains(chipwell);
+                    Cell newCell = new Cell(null, 0, chipwell, "", diameter, area, red, green, blue, valid);
                     List<CellImage> cellImages = new List<CellImage>();
                     foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)
                     {

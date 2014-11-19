@@ -90,10 +90,12 @@ namespace Linnarsson.Dna
                 Console.WriteLine("WARNING: Plate " + plateId + " has not been properly loaded. Assuming matching chip->plate wellIds.");
                 throw new SampleLayoutFileException("Can not extract any well/cell annotations for " + plateId + "  from C1 database.");
             }
+            int spIdx = AnnotationIndexes["Species"];
+            int validIdx = AnnotationIndexes["Valid"];
             foreach (KeyValuePair<string, string[]> p in AnnotationsBySampleId)
             {
-                string speciesId = ParseSpeciesId(p.Value[AnnotationIndexes["Species"]]);
-                SpeciesIdBySampleId[p.Key] = speciesId;
+                string speciesId = ParseSpeciesId(p.Value[spIdx]);
+                SpeciesIdBySampleId[p.Key] = (p.Value[validIdx] == "Y")? speciesId : "empty";
             }
             if (m_SpeciesIds.Count == 0)
                 throw new SampleLayoutFileException("No parseable species in database for " + plateId +

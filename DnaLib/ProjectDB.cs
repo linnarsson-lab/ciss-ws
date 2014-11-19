@@ -703,14 +703,15 @@ namespace Linnarsson.Dna
             List<Cell> cells = new List<Cell>();
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
-            string sql = "SELECT c.id, jos_aaachipid, chipwell, platewell, diameter, area, red, green, blue FROM jos_aaacell c {0}";
+            string sql = "SELECT c.id, jos_aaachipid, chipwell, platewell, diameter, area, red, green, blue, valid FROM jos_aaacell c {0}";
             sql = string.Format(sql, whereClause);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             while (rdr.Read())
             {
+                bool valid = (rdr.GetInt32(9) == 1);
                 Cell cell = new Cell(rdr.GetInt32(0), rdr.GetInt32(1), rdr.GetString(2), rdr.GetString(3),
-                                     rdr.GetDouble(4), rdr.GetDouble(5), rdr.GetInt32(6), rdr.GetInt32(7), rdr.GetInt32(8));
+                                     rdr.GetDouble(4), rdr.GetDouble(5), rdr.GetInt32(6), rdr.GetInt32(7), rdr.GetInt32(8), valid);
                 cells.Add(cell);
             }
             conn.Close();
@@ -775,6 +776,7 @@ namespace Linnarsson.Dna
             annotationIndexes["Blue"] = i++;
             annotationIndexes["Green"] = i++;
             annotationIndexes["SpikeMolecules"] = i++;
+            annotationIndexes["Valid"] = i++;
             annotationIndexes["Comments"] = i++;
             List<string> extraAnnotNames = GetCellAnnotationNames(chipOrProjectWhereSql);
             for (i = 0; i < extraAnnotNames.Count; i++)
@@ -802,6 +804,8 @@ namespace Linnarsson.Dna
                 wellAnn[i++] = cell.red.ToString();
                 wellAnn[i++] = cell.blue.ToString();
                 wellAnn[i++] = cell.green.ToString();
+                wellAnn[i++] = chip.spikemolecules.ToString();
+                wellAnn[i++] = cell.valid? "Y" : "-";
                 wellAnn[i++] = chip.comments;
                 annotations[plateWell] = wellAnn;
             }

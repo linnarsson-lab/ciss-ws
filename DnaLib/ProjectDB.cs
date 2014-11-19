@@ -660,18 +660,30 @@ namespace Linnarsson.Dna
             IssueNonQuery(sql);
         }
 
-        private static int GetLastInsertId(string table)
+        public void SetChipsProjectId(string plateid, List<Chip> chips)
         {
-            string sql = "SELECT MAX(id) FROM " + table;
+            int dbProjId = GetPlateInsertId(plateid);
+            string chipids = string.Join("','", chips.ConvertAll(c => c.chipid).ToArray());
+            string sql = string.Format("UPDATE jos_aaachip SET jos_aaaprojectid={0} WHERE chipid IN ('{1}')", dbProjId, chipids);
+            Console.WriteLine(sql);
+            IssueNonQuery(sql);
+        }
+
+        public int GetPlateInsertId(string plateId)
+        {
+            return GetInsertId(string.Format("SELECT id FROM jos_aaaproject WHERE plateid='{0}'", plateId));
+        }
+        private int GetInsertId(string sql)
+        {
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             rdr.Read();
-            int lastInsertId = rdr.GetInt32(0);
+            int insertId = rdr.GetInt32(0);
             rdr.Close();
             conn.Close();
-            return lastInsertId;
+            return insertId;
         }
 
         public Cell GetCellFromChipWell(string chipid, string chipwell)
@@ -733,13 +745,14 @@ namespace Linnarsson.Dna
         public void GetCellAnnotationsByPlate(string projectId,
             out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
-            GetCellAnnotations(string.Format("WHERE plateId='{0}' ORDER BY platewell", projectId),
+            GetCellAnnotations(string.Format("LEFT JOIN jos_aaachip h ON jos_aaachipid=h.id " +
+                        "LEFT JOIN jos_aaaproject p ON h.jos_aaaprojectid=p.id WHERE p.plateid='{0}' ORDER BY platewell", projectId),
                 out annotations, out annotationIndexes);
         }
         public void GetCellAnnotationsByChip(string chipId,
             out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
-            GetCellAnnotations(string.Format("WHERE chipid='{0}' ORDER BY chipwell", chipId),
+            GetCellAnnotations(string.Format("WHERE jos_aaachipid='{0}' ORDER BY chipwell", chipId),
                 out annotations, out annotationIndexes);
         }
         public void GetCellAnnotations(string chipOrProjectWhereSql,
@@ -793,7 +806,7 @@ namespace Linnarsson.Dna
                 annotations[plateWell] = wellAnn;
             }
             string sqlPat = "SELECT c.platewell, name, value FROM jos_aaacellannotation a LEFT JOIN jos_aaacell c ON a.jos_aaacellid=c.id " +
-                    string.Format("WHERE a.jos_aaacellid IN (SELECT id FROM jos_aaacell {0})", chipOrProjectWhereSql);
+                    string.Format("WHERE a.jos_aaacellid IN (SELECT jos_aaacell.id FROM jos_aaacell {0})", chipOrProjectWhereSql);
             string sql = string.Format(sqlPat, chipOrProjectWhereSql);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
@@ -812,7 +825,7 @@ namespace Linnarsson.Dna
 
         private static List<string> GetCellAnnotationNames(string chipOrProjectWhereSql)
         {
-            string sql = "SELECT DISTINCT(name) FROM jos_aaacellannotation WHERE jos_aaacellid IN (SELECT id FROM jos_aaacell {0})";
+            string sql = "SELECT DISTINCT(name) FROM jos_aaacellannotation WHERE jos_aaacellid IN (SELECT jos_aaacell.id FROM jos_aaacell {0})";
             sql = string.Format(sql, chipOrProjectWhereSql);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();

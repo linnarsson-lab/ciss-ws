@@ -605,11 +605,16 @@ namespace Linnarsson.Strt
         {
             if (projectId.StartsWith(C1Props.C1ProjectPrefix))
             {
+                Dictionary<string, int> cellIdByPlateWell = new ProjectDB().GetCellIdByPlateWell(projectId);
+                if (cellIdByPlateWell.Count == 0)
+                {
+                    Console.WriteLine("Warning: No mapping from C1-chip to Seq-plate wells exists in DB. No expression data is inserted.");
+                    return;
+                }
                 Console.WriteLine("Saving results to cells10k database...");
                 try
                 {
                     C1DB c1db = new C1DB();
-                    Dictionary<string, int> cellIdByPlateWell = new ProjectDB().GetCellIdByPlateWell(projectId);
                     c1db.InsertExpressions(annotations.IterC1DBExpressions(cellIdByPlateWell));
                     string parString = MakeParameterString();
                     c1db.InsertAnalysisSetup(projectId, resultDescr.bowtieIndexVersion, resultDescr.resultFolder, parString);

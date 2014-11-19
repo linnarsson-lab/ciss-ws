@@ -315,6 +315,11 @@ namespace Linnarsson.Dna
             return indexes.ToArray();
         }
 
+        /// <summary>
+        /// Return the wellid, e.g. "A01"
+        /// </summary>
+        /// <param name="wellIdx"></param>
+        /// <returns></returns>
         public string GetWellId(int wellIdx)
         {
             return m_WellIds[wellIdx];

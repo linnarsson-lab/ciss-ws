@@ -189,6 +189,7 @@ namespace C1SeqPlateLoader
             pd.idxPrimer = C1Props.props.C1IdxPrimer;
             pd.pairedPrimer = null;
             pdb.InsertOrUpdateProject(pd);
+            pdb.SetChipsProjectId(plateid, chipsById.Values.ToList());
         }
 
     }

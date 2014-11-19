@@ -205,7 +205,8 @@ namespace Linnarsson.Strt
         public void AddReads(int readStatus, int count)
         {
             totAnalyzedCount += count;
-            countByStatus[readStatus] += count;
+            if (readStatus >= 0)
+                countByStatus[readStatus] += count;
         }
 
         /// <summary>
@@ -298,11 +299,10 @@ namespace Linnarsson.Strt
                                 if (fields.Length >= 4)
                                     totalBarcodeReads[bcIdx] += int.Parse(fields[3]);
                             }
-                            else
+                            else if (fields.Length >= 2)
                             {
                                 int statusCategory = ReadStatus.Parse(fields[0]);
-                                if (statusCategory >= 0)
-                                    AddReads(statusCategory, int.Parse(fields[1]));
+                                AddReads(statusCategory, int.Parse(fields[1]));
                             }
                         }
                         catch (ReadFileEmptyException)

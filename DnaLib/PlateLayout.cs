@@ -76,7 +76,7 @@ namespace Linnarsson.Dna
     public class C1PlateLayout : PlateLayout
     {
         /// <summary>
-        /// Constructor that will read cell data from the C1 database
+        /// Constructor that will read cell data from Sanger database
         /// </summary>
         /// <param name="plateId"></param>
         public C1PlateLayout(string plateId)

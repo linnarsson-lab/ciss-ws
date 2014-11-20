@@ -27,7 +27,7 @@ namespace Linnarsson.Dna
         public readonly static int TOO_LONG_TRAILING_PRIMER_SEQ = 17;
         public readonly static int Length = 18;
 
-        private static int[] UMIStatuses = { 5, 6 };
+        private static int[] UMIStatuses = { N_IN_RANDOM_TAG, LOW_QUALITY_IN_RANDOM_TAG };
         private readonly static string[] categories = new string[] { "VALID", "TOO_LONG_pA_pN_TAIL", "SEQ_QUALITY_ERROR",
                                                                     "COMPLEXITY_ERROR",  "P1_PRIMER_IN_INSERT", "N_IN_UMI",
                                                                     "LOW_QUALITY_IN_UMI","NEGATIVE_BARCODE_ERROR",
@@ -37,10 +37,11 @@ namespace Linnarsson.Dna
                                                                     "NO_BARCODE-UNIDENTIFIED", "TSSEQ_MISSING", "TOO_SHORT_INSERT",
                                                                     "FORBIDDEN_INTERNAL_SEQ", "TOO_LONG_TRAILING_PRIMER_SEQ" };
         private readonly static Dictionary<string, int> oldCategories = new Dictionary<string,int>() 
-                { {"N_IN_RANDOM_TAG", 5}, {"LOW_QUALITY_IN_RANDOM_TAG", 6}, {"SAL1-T25_IN_READ", 13},
-                  {"NEGATIVE_BARCODE_ERROR", 13}, {"NO_BARCODE-CGACT25", 8}, {"NO_BARCODE-NNNA25", 9},
-                  {"NO_BARCODE-SAL1-T25", 13}, {"NO_BARCODE-INTERNAL-T20", 12},
-                  {"NO_BARCODE-SOLEXA-ADP2_CONTAINING", 13}, {"NO_VALID_BARCODE-UNCHARACTERIZED", 13} };
+                { {"N_IN_RANDOM_TAG", N_IN_RANDOM_TAG}, {"LOW_QUALITY_IN_RANDOM_TAG", LOW_QUALITY_IN_RANDOM_TAG}, 
+                  {"SAL1-T25_IN_READ", NO_BC_OTHER},
+                  {"NEGATIVE_BARCODE_ERROR", NO_BC_OTHER}, {"NO_BARCODE-CGACT25", NO_BC_CGACT25}, {"NO_BARCODE-NNNA25", NO_BC_NNNA25},
+                  {"NO_BARCODE-SAL1-T25", NO_BC_OTHER}, {"NO_BARCODE-INTERNAL-T20", NO_BC_INTERNAL_T20},
+                  {"NO_BARCODE-SOLEXA-ADP2_CONTAINING", NO_BC_OTHER}, {"NO_VALID_BARCODE-UNCHARACTERIZED", NO_BC_OTHER} };
 
         public static string GetName(int readStatus)
         {

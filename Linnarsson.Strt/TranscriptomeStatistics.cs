@@ -939,10 +939,14 @@ namespace Linnarsson.Strt
             if (allBcReads > 0)
             {
                 xmlFile.WriteLine("  <readstatus>");
-                xmlFile.WriteLine("    <title>Reads sorted by errors and artefacts.</title>");
+                xmlFile.WriteLine("    <title>Reads (10^6) sorted by errors and artefacts.</title>");
                 for (int readStatus = 0; readStatus < ReadStatus.Length; readStatus++)
-                    xmlFile.WriteLine("    <point x=\"{0} ({1:0.00%})\" y=\"{2}\" />", ReadStatus.GetName(readStatus),
-                                      (readCounter.ReadCount(readStatus) / allBcReads), readCounter.ReadCount(readStatus));
+                {
+                    int c = readCounter.ReadCount(readStatus);
+                    if (c > 0)
+                        xmlFile.WriteLine("    <point x=\"{0} ({1:0.00%})\" y=\"{2}\" />",
+                                             ReadStatus.GetName(readStatus), c / allBcReads, c / 1.0E6d);
+                }
                 xmlFile.WriteLine("  </readstatus>");
             }
             xmlFile.WriteLine("  <reads>");
@@ -951,19 +955,22 @@ namespace Linnarsson.Strt
             if (speciesReads > 0 && allBcReads > 0)
             {
                 if (readCounter.LimiterExcludedReads > 0)
-                    xmlFile.WriteLine("    <point x=\"Limiter excluded [{0}]\" y=\"{1}\" />", allBcCount, readCounter.LimiterExcludedReads / 1.0E6d);
-                xmlFile.WriteLine("    <point x=\"Processed reads [{0}]\" y=\"{1}\" />", allBcCount, allBcReads / 1.0E6d);
-                xmlFile.WriteLine("    <point x=\"PF reads [{0}]\" y=\"{1}\" />", allBcCount, readCounter.PassedIlluminaFilter / 1.0E6d);
-                xmlFile.WriteLine("    <point x=\"Valid BC [{1} {0} wells] (100%)\" y=\"{2}\" />", Annotations.Genome.Abbrev, spBcCount, speciesReads / 1.0E6d);
+                    xmlFile.WriteLine("    <point x=\"Limiter excluded\" y=\"{0}\" />", readCounter.LimiterExcludedReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Processed reads\" y=\"{0}\" />", allBcReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"PF reads\" y=\"{0}\" />", readCounter.PassedIlluminaFilter / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Valid BC [{1} {0} wells] (100%)\" y=\"{2}\" />",
+                                             Annotations.Genome.Abbrev, spBcCount, speciesReads / 1.0E6d);
                 int validReads = readCounter.ValidReads(speciesBarcodes);
-                xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, validReads / speciesReads, validReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />",
+                                             spBcCount, validReads / speciesReads, validReads / 1.0E6d);
             }
             else if (allBcReads > 0)
             { // Old versions of extraction summary files without the total-reads-per-barcode data
                 speciesReads = allBcReads;
-                xmlFile.WriteLine("    <point x=\"All PF reads [{0}] (100%)\" y=\"{1}\" />", allBcCount, allBcReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"All PF reads (100%)\" y=\"{0}\" />", allBcReads / 1.0E6d);
                 int validReads = readCounter.ValidReads(speciesBarcodes);
-                xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, validReads / speciesReads, validReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />",
+                                            spBcCount, validReads / speciesReads, validReads / 1.0E6d);
             }
             else
                 speciesReads = TotalNMappedReads; // Default to nMappedReads if extraction summary files are missing

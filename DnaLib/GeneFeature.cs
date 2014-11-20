@@ -155,7 +155,7 @@ namespace Linnarsson.Dna
         /// </summary>
         private ushort[] TrMolsByBc;
         private ushort[] NonConflictingTrMolsByBc;
-        private ushort[] EstimatedTrueMolsByBarcode;
+        private ushort[] EstimatedTrueMolsByBc;
 
         /// <summary>
         /// Will return molecules if UMIs are in use, else reads
@@ -203,14 +203,14 @@ namespace Linnarsson.Dna
         public static IEnumerable<int> IterTrEstTrueMolCounts(GeneFeature gf, int[] bcIndexes)
         {
             foreach (int bcIdx in bcIndexes)
-                yield return gf.EstimatedTrueMolsByBarcode[bcIdx];
+                yield return gf.EstimatedTrueMolsByBc[bcIdx];
         }
 
         /// <summary>
         /// Either molecules per barcode after UMI mutation filtering, or total reads per barcode when no UMIs are used.
         /// Only contains unquely mapping hits.
         /// </summary>
-        public int[] CAPRegionHitsByBarcode;
+        public int[] CAPRegionHitsByBc;
 
         /// <summary>
         /// Histograms of number of reads per molecule (accu across barcodes+UMIs) at selected chromosomal positions within gene.
@@ -310,13 +310,13 @@ namespace Linnarsson.Dna
             if (Props.props.Barcodes.HasUMIs)
             {
                 TrMolsByBc = new ushort[Props.props.Barcodes.Count];
-                EstimatedTrueMolsByBarcode = new ushort[Props.props.Barcodes.Count];
+                EstimatedTrueMolsByBc = new ushort[Props.props.Barcodes.Count];
                 NonConflictingTrMolsByBc = new ushort[Props.props.Barcodes.Count];
             }
             TrReadsByBc = new int[Props.props.Barcodes.Count];
             NonConflictingTrReadsByBc = new int[Props.props.Barcodes.Count];
             if (Props.props.WriteCAPRegionHits)
-                CAPRegionHitsByBarcode = new int[Props.props.Barcodes.Count];
+                CAPRegionHitsByBc = new int[Props.props.Barcodes.Count];
             VariationSamples = new List<double>();
             TranscriptHitsByExonIdx = new int[exonStarts.Length];
             TranscriptHitsByJunctionAndBc = new Dictionary<string, ushort[]>();
@@ -643,13 +643,13 @@ namespace Linnarsson.Dna
             TranscriptHitsByExonIdx[exonIdx] += item.MolCount;
             if (TrMolsByBc != null) TrMolsByBc[item.bcIdx] += (ushort)item.MolCount;
             TrReadsByBc[item.bcIdx] += item.ReadCount;
-            EstimatedTrueMolsByBarcode[item.bcIdx] += (ushort)item.EstTrueMolCount;
+            EstimatedTrueMolsByBc[item.bcIdx] += (ushort)item.EstTrueMolCount;
             if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
             {
                 if (NonConflictingTrMolsByBc != null) NonConflictingTrMolsByBc[item.bcIdx] += (ushort)item.MolCount;
                 NonConflictingTrReadsByBc[item.bcIdx] += item.ReadCount;
-                if (Props.props.WriteCAPRegionHits && Math.Abs(item.HitMidPos - SavedCAPPos) < Props.props.CapRegionSize)
-                    CAPRegionHitsByBarcode[item.bcIdx] += item.MolCount;
+                if (CAPRegionHitsByBc != null && Math.Abs(item.HitMidPos - SavedCAPPos) < Props.props.CapRegionSize)
+                    CAPRegionHitsByBc[item.bcIdx] += item.MolCount;
             }
             HitsByAnnotType[annotType] += item.MolCount;
             NonMaskedHitsByAnnotType[annotType] += item.MolCount; // Count all EXON/SPLC hits for counter-oriented genes in statistics

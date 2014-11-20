@@ -1187,12 +1187,12 @@ namespace Linnarsson.Strt
                 matrixFile.WriteLine();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    int totalHits = gf.CAPRegionHitsByBarcode.Sum();
+                    int totalHits = gf.CAPRegionHitsByBc.Sum();
                     string safeName = ExcelRescueGeneName(gf.Name);
                     matrixFile.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
                                      safeName, gf.Chr, gf.SavedCAPPos, gf.Strand, gf.GetTranscriptHits(), totalHits);
                     foreach (int idx in speciesBcIndexes)
-                        matrixFile.Write("\t{0}", gf.CAPRegionHitsByBarcode[idx]);
+                        matrixFile.Write("\t{0}", gf.CAPRegionHitsByBc[idx]);
                     matrixFile.WriteLine();
                 }
             }

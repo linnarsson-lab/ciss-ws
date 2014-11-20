@@ -26,17 +26,36 @@ namespace Linnarsson.Dna
         public readonly static int FORBIDDEN_INTERNAL_SEQ = 16;
         public readonly static int TOO_LONG_TRAILING_PRIMER_SEQ = 17;
         public readonly static int Length = 18;
-        public readonly static string[] categories = new string[] { "VALID", "TOO_LONG_pA_pN_TAIL", "SEQ_QUALITY_ERROR",
-                                                                    "COMPLEXITY_ERROR",  "P1_PRIMER_IN_INSERT", "N_IN_RANDOM_TAG",
+
+        private static int[] UMIStatuses = { 5, 6 };
+        private readonly static string[] categories = new string[] { "VALID", "TOO_LONG_pA_pN_TAIL", "SEQ_QUALITY_ERROR",
+                                                                    "COMPLEXITY_ERROR",  "P1_PRIMER_IN_INSERT", "N_IN_UMI",
                                                                     "LOW_QUALITY_IN_UMI","NEGATIVE_BARCODE_ERROR",
                                                                     "NO_BARCODE-CONTAINS_CGACT25", "NO_BARCODE-CONTAINS_NNNA25",
                                                                     "NO_BARCODE-CONTAINS_P1_PRIMER",
                                                                     "NO_BARCODE-CONTAINS_TN5_MOSAIC_END", "NO_BARCODE-CONTAINS_T(20)",
                                                                     "NO_BARCODE-UNIDENTIFIED", "TSSEQ_MISSING", "TOO_SHORT_INSERT",
                                                                     "FORBIDDEN_INTERNAL_SEQ", "TOO_LONG_TRAILING_PRIMER_SEQ" };
+        private readonly static Dictionary<string, int> oldCategories = new Dictionary<string,int>() 
+                { {"N_IN_RANDOM_TAG", 5}, {"LOW_QUALITY_IN_RANDOM_TAG", 6}, {"SAL1-T25_IN_READ", 13},
+                  {"NEGATIVE_BARCODE_ERROR", 13}, {"NO_BARCODE-CGACT25", 8}, {"NO_BARCODE-NNNA25", 9},
+                  {"NO_BARCODE-SAL1-T25", 13}, {"NO_BARCODE-INTERNAL-T20", 12},
+                  {"NO_BARCODE-SOLEXA-ADP2_CONTAINING", 13}, {"NO_VALID_BARCODE-UNCHARACTERIZED", 13} };
+
+        public static string GetName(int readStatus)
+        {
+            return categories[readStatus];
+        }
+        public static bool IsUMICategory(int readStatus)
+        {
+            return UMIStatuses.Contains(readStatus);
+        }
         public static int Parse(string category)
         {
-            return Array.FindIndex(categories, (c) => category.Equals(c, StringComparison.CurrentCultureIgnoreCase));
+            int readStatus = Array.FindIndex(categories, (c) => category.Equals(c, StringComparison.CurrentCultureIgnoreCase));
+            if (readStatus == -1)
+                oldCategories.TryGetValue(category, out readStatus);
+            return readStatus;
         }
     }
 

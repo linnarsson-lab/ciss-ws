@@ -72,11 +72,16 @@ namespace Linnarsson.Strt
         private FileReads PFFileReads = new FileReads();
         private FileReads NonPFFileReads = new FileReads();
 
-        private int totalLimitedReads = 0; // If the user extracted with an upper read count limit
-        private int totAnalyzedCount = 0;
+        private readonly static string LimiterExcludedReadsID = "LIMITER_EXCLUDED_READS";
+        public int LimiterExcludedReads { get; private set; } // If the user extracted with an upper read count limit
+        private readonly static string TotalAnalyzedReadsID = "TOTAL_ANALYZED_READS";
+        public int TotalAnalyzedReads { get; private set; }
+        private readonly static string PassedIlluminaFilterID = "PASSED_ILLUMINA_FILTER";
         public int PassedIlluminaFilter { get; private set; }
         private int[] countByStatus = new int[ReadStatus.Length];
+        public int ReadCount(int readStatus) { return countByStatus[readStatus]; }
 
+        private readonly static string BarcodeReadsID = "BARCODEREADS";
         private int[] validBarcodeReads;
         private int[] totalBarcodeReads;
 
@@ -131,12 +136,10 @@ namespace Linnarsson.Strt
                 sum += totalBarcodeReads[idx];
             return sum;
         }
-        public int TotalAnalyzedReads { get { return totAnalyzedCount; } }
-        public int ReadCount(int readStatus) { return countByStatus[readStatus]; }
 
         private double ReadCountFraction(int readStatus)
         {
-            return (totAnalyzedCount > 0) ? (countByStatus[readStatus] / (double)totAnalyzedCount) : 0.0;
+            return (TotalAnalyzedReads > 0) ? (countByStatus[readStatus] / (double)TotalAnalyzedReads) : 0.0;
         }
 
         /// <summary>
@@ -178,11 +181,12 @@ namespace Linnarsson.Strt
             FileReads fr = rec.PassedFilter ? PFFileReads : NonPFFileReads;
             fr.readCount++;
             if (!readIsUsed)
-                totalLimitedReads++;
+                LimiterExcludedReads++;
             else
             {
                 wordCounter.AddRead(rec.Sequence);
-                AddReads(readStatus, 1);
+                TotalAnalyzedReads++;
+                countByStatus[readStatus]++;
                 if (rec.PassedFilter)
                     PassedIlluminaFilter++;
                 if (bcIdx >= 0)
@@ -195,18 +199,6 @@ namespace Linnarsson.Strt
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Add a number of reads (from statistics file) to the global statistics
-        /// </summary>
-        /// <param name="readStatus"></param>
-        /// <param name="count"></param>
-        public void AddReads(int readStatus, int count)
-        {
-            totAnalyzedCount += count;
-            if (readStatus >= 0)
-                countByStatus[readStatus] += count;
         }
 
         /// <summary>
@@ -238,21 +230,21 @@ namespace Linnarsson.Strt
             sb.Append(FileReads.SummaryHeader);
             foreach (FileReads fr in fileReads)
                 sb.Append(fr.ToSummaryLine());
-            if (totalLimitedReads > 0)
+            if (LimiterExcludedReads > 0)
                 sb.Append("#A limiter condition was used during extraction and some reads were skipped:\n" +
-                     "LIMITER_EXCLUDED_READS\t" + totalLimitedReads + "\n#Below figures refers to non-limiter filtered reads:\n");
+                     LimiterExcludedReadsID + "\t" + LimiterExcludedReads + "\n#Below figures refers to non-limiter filtered reads:\n");
             sb.Append("#Category\tCount\tPercent\n");
-            sb.Append("TOTAL_ANALYZED_READS\t" + TotalAnalyzedReads + "\t100%\n");
+            sb.Append(TotalAnalyzedReadsID + "\t" + TotalAnalyzedReads + "\t100%\n");
             string PFFrac = ((TotalAnalyzedReads == 0)? "0%\n" : string.Format("{0:0.#%}\n", PassedIlluminaFilter / (double)TotalAnalyzedReads));
-            sb.Append(string.Format("PASSED_ILLUMINA_FILTER\t{0}\t{1}\n", PassedIlluminaFilter, PFFrac));
+            sb.Append(string.Format(PassedIlluminaFilterID + "\t{0}\t{1}\n", PassedIlluminaFilter, PFFrac));
             for (int statusCat = 0; statusCat < ReadStatus.Length; statusCat++)
             {
-                if (barcodes.HasUMIs || !ReadStatus.categories[statusCat].Contains("RANDOM"))
-                    sb.Append(string.Format("{0}\t{1}\t{2:0.#%}\n", ReadStatus.categories[statusCat], ReadCount(statusCat), ReadCountFraction(statusCat)));
+                if (barcodes.HasUMIs || !ReadStatus.IsUMICategory(statusCat))
+                    sb.Append(string.Format("{0}\t{1}\t{2:0.#%}\n", ReadStatus.GetName(statusCat), ReadCount(statusCat), ReadCountFraction(statusCat)));
             }
             sb.Append("#\tBarcode\tValidSTRTReads\tTotalBarcodedReads\n");
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
-                sb.Append(string.Format("BARCODEREADS\t{0}\t{1}\t{2}\n", barcodes.Seqs[bcIdx], validBarcodeReads[bcIdx], totalBarcodeReads[bcIdx]));
+                sb.Append(string.Format(BarcodeReadsID + "\t{0}\t{1}\t{2}\n", barcodes.Seqs[bcIdx], validBarcodeReads[bcIdx], totalBarcodeReads[bcIdx]));
             sb.Append("\nBelow are the most common words among all reads.\n\n");
             sb.Append(wordCounter.GroupsToString(200));
             sb.Append("\n");
@@ -288,11 +280,13 @@ namespace Linnarsson.Strt
                             string[] fields = line.Split('\t');
                             if (line.StartsWith("READFILE"))
                                 fileReads.Add(FileReads.FromSummaryLine(line));
-                            else if (line.StartsWith("PASSED_ILLUMINA_FILTER"))
-                            {
+                            else if (line.StartsWith(LimiterExcludedReadsID))
+                                LimiterExcludedReads += int.Parse(fields[1]);
+                            else if (line.StartsWith(TotalAnalyzedReadsID))
+                                TotalAnalyzedReads += int.Parse(fields[1]);
+                            else if (line.StartsWith(PassedIlluminaFilterID) || line.StartsWith("TOTAL_PASSED_ILLUMINA_FILTER"))
                                 PassedIlluminaFilter += int.Parse(fields[1]);
-                            }
-                            else if (line.StartsWith("BARCODEREADS"))
+                            else if (line.StartsWith(BarcodeReadsID))
                             {
                                 int bcIdx = barcodes.GetBcIdxFromBarcode(fields[1]);
                                 validBarcodeReads[bcIdx] += int.Parse(fields[2]);
@@ -301,8 +295,10 @@ namespace Linnarsson.Strt
                             }
                             else if (fields.Length >= 2)
                             {
-                                int statusCategory = ReadStatus.Parse(fields[0]);
-                                AddReads(statusCategory, int.Parse(fields[1]));
+                                int readStatus = ReadStatus.Parse(fields[0]);
+                                int count = int.Parse(fields[1]);
+                                if (readStatus >= 0)
+                                    countByStatus[readStatus] += count;
                             }
                         }
                         catch (ReadFileEmptyException)

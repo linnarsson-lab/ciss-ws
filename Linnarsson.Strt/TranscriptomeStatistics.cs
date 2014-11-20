@@ -940,9 +940,9 @@ namespace Linnarsson.Strt
             {
                 xmlFile.WriteLine("  <readstatus>");
                 xmlFile.WriteLine("    <title>Reads sorted by errors and artefacts.</title>");
-                for (int status = 0; status < ReadStatus.Length; status++)
-                    xmlFile.WriteLine("    <point x=\"{0} ({1:0.00%})\" y=\"{2}\" />", ReadStatus.categories[status],
-                                      (readCounter.ReadCount(status) / allBcReads), readCounter.ReadCount(status));
+                for (int readStatus = 0; readStatus < ReadStatus.Length; readStatus++)
+                    xmlFile.WriteLine("    <point x=\"{0} ({1:0.00%})\" y=\"{2}\" />", ReadStatus.GetName(readStatus),
+                                      (readCounter.ReadCount(readStatus) / allBcReads), readCounter.ReadCount(readStatus));
                 xmlFile.WriteLine("  </readstatus>");
             }
             xmlFile.WriteLine("  <reads>");
@@ -950,9 +950,11 @@ namespace Linnarsson.Strt
             double speciesReads = readCounter.TotalReads(speciesBarcodes);
             if (speciesReads > 0 && allBcReads > 0)
             {
+                if (readCounter.LimiterExcludedReads > 0)
+                    xmlFile.WriteLine("    <point x=\"Limiter excluded [{0}]\" y=\"{1}\" />", allBcCount, readCounter.LimiterExcludedReads / 1.0E6d);
                 xmlFile.WriteLine("    <point x=\"Processed reads [{0}]\" y=\"{1}\" />", allBcCount, allBcReads / 1.0E6d);
                 xmlFile.WriteLine("    <point x=\"PF reads [{0}]\" y=\"{1}\" />", allBcCount, readCounter.PassedIlluminaFilter / 1.0E6d);
-                xmlFile.WriteLine("    <point x=\"Barcoded as {0} [{1}] (100%)\" y=\"{2}\" />", Annotations.Genome.Abbrev, spBcCount, speciesReads / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Valid BC [{1} {0} wells] (100%)\" y=\"{2}\" />", Annotations.Genome.Abbrev, spBcCount, speciesReads / 1.0E6d);
                 int validReads = readCounter.ValidReads(speciesBarcodes);
                 xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, validReads / speciesReads, validReads / 1.0E6d);
             }

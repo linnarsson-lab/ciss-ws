@@ -73,9 +73,9 @@ namespace Linnarsson.Strt
                 foreach (int i in barcodes.ReadUMIPositions())
                 {
                     if (rec.Qualities[i] < minQualityInUMI)
-                        return ReadStatus.LOW_QUALITY_IN_RANDOM_TAG;
+                        return ReadStatus.LOW_QUALITY_IN_UMI;
                     if (rSeq[i] == 'N')
-                        return ReadStatus.N_IN_RANDOM_TAG;
+                        return ReadStatus.N_IN_UMI;
                     UMIChars[UMICharsPos++] = rSeq[i];
                 }
                 headerUMISection = new string(UMIChars) + '.';
@@ -110,7 +110,7 @@ namespace Linnarsson.Strt
                 lenWOPolyXTail--;
             if (lenWOPolyXTail < minTotalReadLength)
             {
-                tailReadStatus = ReadStatus.LENGTH_ERROR;
+                tailReadStatus = ReadStatus.TOO_LONG_TRAILING_pApN;
                 return lenWOPolyXTail;
             }
             foreach (string primerSeq in trailingPrimerSeqs)
@@ -206,10 +206,11 @@ namespace Linnarsson.Strt
         private int AnalyzeNonBarcodeRead(string seq)
         {
             if (seq.Contains("CTGTCTCTTATACACATCTGACGC")) return ReadStatus.NO_BC_TN5;
-            if (seq.Contains("TTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_INTERNAL_T20;
-            if (Regex.Match(seq, "AATGATACGGCGACCACCGAT").Success) return ReadStatus.NO_BC_P1;
-            // Formerly occuring stuff:
             if (seq.StartsWith("CGACTTTTTTTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_CGACT25;
+            if (seq.Contains("TTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_INTERNAL_T20;
+            if (seq.Contains("AATGATACGGCGACCACCGAT")) return ReadStatus.NO_BC_P1;
+            if (seq.Contains("TAGTCACACAGTCCTTGACG")) return ReadStatus.NO_BC_PHIX;
+            if (seq.Contains("ACCTCAGATCAGACGTGGCGACCCGCTGAA")) return ReadStatus.NO_BC_RNA45S;
             if (Regex.Match(seq, "^...AAAAAAAAAAAAAAAAAAAAAAAAA").Success) return ReadStatus.NO_BC_NNNA25;
             return ReadStatus.NO_BC_OTHER;
         }

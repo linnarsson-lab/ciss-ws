@@ -413,6 +413,8 @@ namespace Linnarsson.Strt
                 string crapMaxPath = Path.Combine(Path.GetDirectoryName(outputFqUnmappedReadPath), "bowtie_maxM_reads_map.temp");
                 unmappedArg = string.Format(" --un {0} --max {1}", outputFqUnmappedReadPath, crapMaxPath);
             }
+            if (!File.Exists(inputFqReadPath) && File.Exists(inputFqReadPath + ".gz"))
+                CmdCaller.Run("gunzip", inputFqReadPath + ".gz");
             string opts = props.BowtieOptionPattern.Replace("MaxAlignmentMismatches", 
                         props.MaxAlignmentMismatches.ToString());
             opts = opts.Replace("QualityScoreBase", props.QualityScoreBase.ToString());

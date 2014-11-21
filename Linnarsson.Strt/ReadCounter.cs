@@ -78,7 +78,7 @@ namespace Linnarsson.Strt
         public int TotalAnalyzedReads { get; private set; }
         private readonly static string PassedIlluminaFilterID = "PASSED_ILLUMINA_FILTER";
         public int PassedIlluminaFilter { get; private set; }
-        private int[] countByStatus = new int[ReadStatus.Length];
+        private int[] countByStatus = new int[ReadStatus.Count];
         public int ReadCount(int readStatus) { return countByStatus[readStatus]; }
 
         private readonly static string BarcodeReadsID = "BARCODEREADS";
@@ -237,7 +237,7 @@ namespace Linnarsson.Strt
             sb.Append(TotalAnalyzedReadsID + "\t" + TotalAnalyzedReads + "\t100%\n");
             string PFFrac = ((TotalAnalyzedReads == 0)? "0%\n" : string.Format("{0:0.#%}\n", PassedIlluminaFilter / (double)TotalAnalyzedReads));
             sb.Append(string.Format(PassedIlluminaFilterID + "\t{0}\t{1}\n", PassedIlluminaFilter, PFFrac));
-            for (int statusCat = 0; statusCat < ReadStatus.Length; statusCat++)
+            for (int statusCat = 0; statusCat < ReadStatus.Count; statusCat++)
             {
                 if (barcodes.HasUMIs || !ReadStatus.IsUMICategory(statusCat))
                     sb.Append(string.Format("{0}\t{1}\t{2:0.#%}\n", ReadStatus.GetName(statusCat), ReadCount(statusCat), ReadCountFraction(statusCat)));

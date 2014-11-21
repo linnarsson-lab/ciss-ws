@@ -940,7 +940,7 @@ namespace Linnarsson.Strt
             {
                 xmlFile.WriteLine("  <readstatus>");
                 xmlFile.WriteLine("    <title>Reads (10^6) sorted by errors and artefacts.</title>");
-                for (int readStatus = 0; readStatus < ReadStatus.Length; readStatus++)
+                for (int readStatus = 0; readStatus < ReadStatus.Count; readStatus++)
                 {
                     int c = readCounter.ReadCount(readStatus);
                     if (c > 0)

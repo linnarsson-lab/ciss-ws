@@ -112,10 +112,14 @@ namespace Linnarsson.Dna
             summaryFilePath = GetSummaryPath(laneExtractionFolder);
         }
 
+        /// <summary>
+        /// Search for a .fq or .fq.gz file for each barcode
+        /// </summary>
+        /// <returns></returns>
         public bool AllExtractedFilesExist()
         {
             foreach (string path in this.extractedFilePaths)
-                if (!File.Exists(path))
+                if (!File.Exists(path) && !File.Exists(path + ".gz"))
                     return false;
             return true;
         }

@@ -23,7 +23,7 @@ namespace Linnarsson.Strt
         {
             enzymes = Props.props.CAPCloseSiteSearchCutters;
             Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
-            foreach (string commonChrId in StrtGenome.commonChrIds)
+            foreach (string commonChrId in Props.props.CommonChrIds)
             {
                 string commonChrPath = PathHandler.GetCommonChrPath(commonChrId);
                 if (File.Exists(commonChrPath))

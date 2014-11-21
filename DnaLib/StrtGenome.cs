@@ -16,11 +16,9 @@ namespace Linnarsson.Dna
 	{
         public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE", "RFSQ", "UALL", "GENC" };
         public readonly static string DefaultAnnotationSource = "UCSC";
-        public readonly static string chrCTRLId = "CTRL";
         /// <summary>
         /// Ids of chromosomes shared by all genomes. Includes spike CTRL:s and possibly EXTRA genes like GFP and other markers.
         /// </summary>
-        public static string[] commonChrIds = new string[] { chrCTRLId, "EXTRA" };
 
         public override string ToString()
         {
@@ -224,13 +222,13 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static bool IsSyntheticChr(string chrId)
         {
-            return commonChrIds.Any(id => chrId.EndsWith(id)) || IsASpliceAnnotation(chrId);
+            return Props.props.CommonChrIds.Any(id => chrId.EndsWith(id)) || IsASpliceAnnotation(chrId);
             //return chrId.EndsWith(chrCTRLId) || IsASpliceAnnotation(chrId);
         }
 
         public static bool IsACommonChrId(string chrId)
         {
-            return commonChrIds.Any(id => chrId.EndsWith(id));
+            return Props.props.CommonChrIds.Any(id => chrId.EndsWith(id));
         }
 
         private StrtGenome() 

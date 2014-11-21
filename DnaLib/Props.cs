@@ -135,6 +135,8 @@ namespace Linnarsson.Dna
         public bool WriteSlaskFiles = true; // Output unused seqs to slask.fq.gz during extraction
         public bool DenseUMICounter = false; // Save memory using ZeroOneMoreTagItem. Only with LowPass/0, LowPass/1 and Singleton/0 RndTagMutation filters.
         public bool WriteCAPRegionHits = false; // true to write hit counts within +/- something of 5' end of transcripts
+        public string ChrCTRLId = "CTRL";
+        public string[] CommonChrIds = new string[] { "CTRL", "EXTRA" };
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

@@ -357,7 +357,7 @@ namespace Linnarsson.Strt
                     nExonAnnotatedReads++;
                     if (Props.props.AnalyzeGCContent && Annotations.HasChromosome(mrm[0].Chr))
                         gcAnalyzer.Add(currentBcIdx, Annotations.GetChromosome(mrm[0].Chr).SubSequence(mrm[0].Position, mrm[0].SeqLen));
-                    if (analyzeMappingsBySpikeReads && mrm[0].Chr == StrtGenome.chrCTRLId)
+                    if (analyzeMappingsBySpikeReads && mrm[0].Chr == Props.props.ChrCTRLId)
                     {
                         if (--sampleSpikeReadsPerMolCounter == 0)
                         {
@@ -388,9 +388,9 @@ namespace Linnarsson.Strt
         private void AnnotateFeaturesFromTagItems()
         {
             List<string> ctrlChrId = new List<string>();
-            if (randomTagFilter.chrTagDatas.ContainsKey(StrtGenome.chrCTRLId))
+            if (randomTagFilter.chrTagDatas.ContainsKey(Props.props.ChrCTRLId))
             { // First process CTRL chromosome to get the labeling efficiency
-                ctrlChrId.Add(StrtGenome.chrCTRLId);
+                ctrlChrId.Add(Props.props.ChrCTRLId);
                 foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, true))
                     Annotate(mtitem);
                 labelingEfficiencyEstimator.CalcEfficiencyFromSpikes(Annotations.geneFeatures.Values, currentBcIdx);

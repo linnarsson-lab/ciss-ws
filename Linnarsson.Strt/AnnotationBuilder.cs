@@ -333,7 +333,7 @@ namespace Linnarsson.Strt
             annotWriter.WriteLine("@MaxAlignmentMismatches={0}", MaxAlignmentMismatches);
             annotWriter.WriteLine("@MaxExonsSkip={0}", MaxExonsSkip);
             annotWriter.WriteLine("@InputAnnotationFile={0}", annotationReader.VisitedAnnotationPaths);
-            foreach(string commonChrId in StrtGenome.commonChrIds)
+            foreach (string commonChrId in Props.props.CommonChrIds)
                 CopyCommonChrData(commonChrId, genome, annotWriter);
             return annotWriter;
         }

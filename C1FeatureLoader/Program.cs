@@ -50,7 +50,7 @@ namespace C1
                 Extend5Primes(annotationReader);
                 Write5PrimeExtendedRefFlatFile(genome, annotationReader);
             }
-            foreach (string commonChrId in StrtGenome.commonChrIds)
+            foreach (string commonChrId in Props.props.CommonChrIds)
                 annotationReader.AddCommonGeneModels(commonChrId);
             if (doInsert)
             {

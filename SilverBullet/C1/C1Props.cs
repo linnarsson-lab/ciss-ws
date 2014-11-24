@@ -33,6 +33,7 @@ namespace C1
         public string C1ImageFilenamePattern = "well_*_center.png";
         public int SpikeMoleculeCount = 27900;
         public string WellExcludeFilePattern = "wells_to_exclude*.txt";
+        public string WellMarkerFilePattern = "wells_positive_COLOR*.txt"; // COLOR is green, red, blue
         public string C1BarcodeSet1 = "C1Plate1";
         public string C1BarcodeSet2 = "C2Plate2";
         public string C1BarcodeSet3 = "C2Plate3";

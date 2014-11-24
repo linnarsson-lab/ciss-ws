@@ -23,9 +23,9 @@ namespace C1
                 Console.WriteLine("but for C1 samples the final transcript models including extensions are read from the database and used directly.");
                 Console.WriteLine("This should be the same models, but asserts that the database gene models exactly reflect the database expression values.");
                 Console.WriteLine("The input gene definition and annotation files can be downloaded with the 'SB.exe download' command.");
-                Console.WriteLine("Usage:\nmono C1FeatureLoader.exe GENOME [-f ANNOTATIONFILE] [-i]\nwhere genome is e.g. 'mm10_aUCSC' or 'hg19_sENSE'");
+                Console.WriteLine("Usage:\nmono C1FeatureLoader.exe GENOME [-r] [-f ANNOTATIONFILE] [-i]\nwhere genome is e.g. 'mm10_aUCSC' or 'hg19_sENSE'");
                 Console.WriteLine("Without -i, an updated refFlat flat of the 5'-extended genes is written, but no DB inserts are made.");
-                Console.WriteLine("Use -f to specify a non-standard (still mart or refFlat format) annotation file.");
+                Console.WriteLine("Use -r to add RefSeq (UCSC) models from refFlat.txt to non-RefSeq annotations.");
                 return;
             }
             StrtGenome genome = StrtGenome.GetGenome(args[0]);
@@ -36,7 +36,7 @@ namespace C1
             {
                 if (args[i] == "-i")
                     doInsert = true;
-                if (args[i] == "-f")
+                else if (args[i] == "-f")
                     annotationFile = args[++i];
                 i++;
             }

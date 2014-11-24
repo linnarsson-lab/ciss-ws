@@ -81,14 +81,9 @@ namespace Linnarsson.Dna
         /// <returns>Number of gene models constructed</returns>
         public virtual int BuildGeneModelsByChr()
         {
-            bool addRefFlat = (genome.Annotation != "UCSC" && genome.Annotation != "RFSQ" && genome.Annotation != "GENC");
-            return BuildGeneModelsByChr(addRefFlat);
-        }
-        public virtual int BuildGeneModelsByChr(bool addRefFlat)
-        {
             ClearGenes();
             int nCreated = ReadGenes();
-            if (addRefFlat)
+            if (Props.props.AddRefFlatToNonRefSeqBuilds)
                 nCreated += AddRefFlatGenes();
             //FuseNearIdenticalMainGenes();
             return nCreated;

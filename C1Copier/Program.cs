@@ -118,7 +118,6 @@ namespace C1
         {
             bool someCopyDone = false;
             string[] availableChipDirs = Directory.GetDirectories(C1Props.props.C1RunsFolder, "*-*-*");
-            //List<string> loadedChipIds = new ProjectDB().GetLoadedChips();
             foreach (string chipDir in availableChipDirs)
             {
                 string chipId = GetChipIdFromChipDir(chipDir);
@@ -161,7 +160,7 @@ namespace C1
             try
             {
                 string chipId = GetChipIdFromChipDir(chipDir);
-                HashSet<string> emptyWells = ReadExcludeFile(chipDir);
+                HashSet<string> emptyWells = ReadWellFile(chipDir, C1Props.props.WellExcludeFilePattern);
                 List<Cell> celldata = ReadCellData(chipDir, emptyWells);
                 if (celldata == null)
                 {
@@ -250,14 +249,21 @@ namespace C1
             return (lastCapPath != null);
         }
 
-        private static HashSet<string> ReadExcludeFile(string chipDir)
+        /// <summary>
+        /// Use to read exclude-file, or manual read/green/blue well file
+        /// </summary>
+        /// <param name="chipDir"></param>
+        /// <param name="filenamePat"></param>
+        /// <returns>null if no file was found, otherwise the set of wells listed in the file</returns>
+        private static HashSet<string> ReadWellFile(string chipDir, string filenamePat)
         {
-            HashSet<string> emptyWells = new HashSet<string>();
+            HashSet<string> wells = null;
             string chipFolder = Path.Combine(C1Props.props.C1RunsFolder, chipDir);
-            string[] excludeFiles = Directory.GetFiles(chipFolder, C1Props.props.WellExcludeFilePattern);
-            if (excludeFiles.Length == 1)
+            string wellFile = GetLastMatchingFile(chipFolder, filenamePat);
+            if (wellFile != null)
             {
-                using (StreamReader reader = new StreamReader(excludeFiles[0]))
+                wells = new HashSet<string>();
+                using (StreamReader reader = new StreamReader(wellFile))
                 {
                     string line;
                     while ((line = reader.ReadLine()) != null)
@@ -269,11 +275,11 @@ namespace C1
                         int idx = line.Contains("\t") ? line.IndexOf("\t") + 1 : 1;
                         int wellNo = int.Parse(line.Substring(idx));
                         string well = string.Format("{0}{1:00}", row, wellNo);
-                        emptyWells.Add(well);
+                        wells.Add(well);
                     }
                 }
             }
-            return emptyWells;
+            return wells;
         }
 
         private static List<Cell> FakeCellData(HashSet<string> emptyWells)
@@ -292,12 +298,25 @@ namespace C1
             return cells;
         }
 
+        private static int GetColorStatus(string chipwell, string[] fields, int fieldIdx, HashSet<string> positiveWells)
+        {
+            int status = Detection.Unknown;
+            if (positiveWells != null)
+                status = positiveWells.Contains(chipwell) ? Detection.Yes : Detection.No;
+            else if (fields.Length > fieldIdx)
+                status = (fields[fieldIdx] == "1") ? Detection.Yes : Detection.No;
+            return status;
+        }
+
         private static List<Cell> ReadCellData(string chipDir, HashSet<string> emptyWells)
         {
             List<Cell> cells = new List<Cell>();
             string chipFolder, BFFolder, lastCapPath;
             if (!GetCellPaths(chipDir, out chipFolder, out BFFolder, out lastCapPath))
                 return null;
+            HashSet<string> redWells = ReadWellFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "red"));
+            HashSet<string> greenWells = ReadWellFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "green"));
+            HashSet<string> blueWells = ReadWellFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "blue"));
             bool missing = false;
             using (StreamReader r = new StreamReader(lastCapPath))
             {
@@ -311,10 +330,10 @@ namespace C1
                     string wellShort = fields[0] + fields[1];
                     double area = double.Parse(fields[3]);
                     double diameter = double.Parse(fields[4]);
-                    int red = (fields.Length < 6) ? Detection.Unknown : (fields[5] == "1") ? Detection.Yes : Detection.No;
-                    int green = (fields.Length < 7) ? Detection.Unknown : (fields[6] == "1") ? Detection.Yes : Detection.No;
-                    int blue = (fields.Length < 8) ? Detection.Unknown : (fields[7] == "1") ? Detection.Yes : Detection.No;
-                    bool valid = !emptyWells.Contains(chipwell);
+                    int red = GetColorStatus(chipwell, fields, 5, redWells);
+                    int green = GetColorStatus(chipwell, fields, 6, greenWells);
+                    int blue = GetColorStatus(chipwell, fields, 7, blueWells);
+                    bool valid = (emptyWells == null) || !emptyWells.Contains(chipwell);
                     Cell newCell = new Cell(null, 0, chipwell, "", diameter, area, red, green, blue, valid);
                     List<CellImage> cellImages = new List<CellImage>();
                     foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)

@@ -14,6 +14,7 @@ namespace Linnarsson.Dna
     /// </summary>
 	public class StrtGenome
 	{
+        public static string buildMatchPat = "^([A-Za-z]+)[0-9\\.]+$";
         public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE", "RFSQ", "UALL", "GENC" };
         public readonly static string DefaultAnnotationSource = "UCSC";
         /// <summary>
@@ -30,7 +31,7 @@ namespace Linnarsson.Dna
 		public string LatinName { get; set; }
 		public string Description { get; set; }
         /// <summary>
-        /// Version of the genome build, e.g. "mm9" or "hg19"
+        /// Version of the genome build, e.g. "mm9.2" or "hg19"
         /// </summary>
         public string Build { get; set; }
         public string m_Annotation;
@@ -282,7 +283,7 @@ namespace Linnarsson.Dna
             foreach (string buildFolder in buildFolders)
             {
                 string build = Path.GetFileName(buildFolder);
-                Match m = Regex.Match(build, "^([A-Za-z]+)[0-9]+$");
+                Match m = Regex.Match(build, buildMatchPat);
                 string abbrev = build.ToLower();
                 if (m.Success && !abbrevs.ContainsKey(m.Groups[1].Value))
                     abbrev = m.Groups[1].Value.ToLower();

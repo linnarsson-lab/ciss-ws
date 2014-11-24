@@ -70,7 +70,8 @@ namespace CmdSilverBullet
                             if (args.Length > 2)
                                 outfile = args[2];
                             AnnotationReader ar = AnnotationReader.GetAnnotationReader(genome);
-                            int nModels = ar.BuildGeneModelsByChr(false);
+                            Props.props.AddRefFlatToNonRefSeqBuilds = false;
+                            int nModels = ar.BuildGeneModelsByChr();
                             using (StreamWriter mw = outfile.OpenWrite())
                             {
                                 foreach (GeneFeature gf in ar.IterChrSortedGeneModels())

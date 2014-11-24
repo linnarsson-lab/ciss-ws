@@ -107,7 +107,7 @@ namespace CmdSilverBullet
                                 speciesAbbrev = opt.Substring(9);
                             else if (allBcSetNames.Contains(opt.ToLower()))
                                 barcodesName = opt;
-                            else if (Regex.Match(opt.ToLower(), "^(hs|hg|mm|gg|ce|cg)[0-9]*$").Success)
+                            else if (Regex.Match(opt.ToLower(), "^(hs|hg|mm|gg|ce|cg)[0-9\\.]*$").Success)
                                 speciesAbbrev = opt.ToLower();
                             else if (Array.IndexOf(StrtGenome.AnnotationSources, opt.ToUpper()) == 0)
                                 annotation = opt.Substring(1);
@@ -116,7 +116,7 @@ namespace CmdSilverBullet
                             else
                             {
                                 string srcOr = string.Join("|", StrtGenome.AnnotationSources);
-                                if ((m = Regex.Match(opt.ToLower(), "^([a-z]+[0-9]*)_([as])(" + srcOr + ")$")).Success)
+                                if ((m = Regex.Match(opt.ToLower(), "^([a-z]+[0-9\\.]*)_([as])(" + srcOr + ")$")).Success)
                                 {
                                     speciesAbbrev = m.Groups[0].Value;
                                     geneVariantsChar = m.Groups[1].Value;

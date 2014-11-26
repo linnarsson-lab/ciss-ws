@@ -1039,7 +1039,7 @@ namespace Linnarsson.Strt
             }
             xmlFile.WriteLine("  <reads species=\"{0}\">", speciesName);
             string molTitle = (barcodes.HasUMIs)? "molecule": "read";
-            double reducer = (barcodes.HasUMIs)? 1.0E6d : 1.0E3d;
+            double reducer = (barcodes.HasUMIs)? 1000d : 1.0E6d;
             xmlFile.WriteLine("    <title>Distribution of {0} hits (10^{3}) by categories in {1} {2} wells</title>",
                               molTitle, speciesBcIndexes.Length, speciesName, (int)Math.Log10(reducer));
             xmlFile.WriteLine("    <point x=\"Mapped {0}s (100%)\" y=\"{1}\" />", molTitle, nUniqueMolecules / reducer);

@@ -235,7 +235,7 @@ namespace C1
             string lcp = GetLastMatchingFile(bf, C1Props.props.C1CaptureFilenamePattern);
             return (lcp != null && 
                 (new FileInfo(lcp).LastWriteTime > lastCopyTime || new FileInfo(lcp).CreationTime > lastCopyTime ||
-                 new FileInfo(xf).LastAccessTime > lastCopyTime));
+                 (xf != null && new FileInfo(xf).LastAccessTime > lastCopyTime)));
         }
 
         private static bool GetCellPaths(string chipDir, out string chipFolder, out string BFFolder, out string lastCapPath)

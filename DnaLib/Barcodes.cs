@@ -398,6 +398,7 @@ namespace Linnarsson.Dna
                 foreach (string annotation in sampleLayout.GetAnnotations())
                     AnnotationsByWell[annotation][wellIdx] = sampleLayout.GetSampleAnnotation(annotation, sampleId);
             }
+            //Console.WriteLine(m_SpeciesByWell.Count(v => v == "empty") + " plate wells are empty.");
         }
 
 		#region Paired-end

@@ -78,7 +78,6 @@ namespace Linnarsson.Dna
         public static readonly string STATUS_FAILED = "failed";
 
         public string title { get; set; }
-        public DateTime productionDate { get; set; }
         public string tissue { get; set; }
         public string description { get; set; }
         public string protocol { get; set; }
@@ -87,8 +86,13 @@ namespace Linnarsson.Dna
         public string sampleType { get; set; }
         public string collectionMethod { get; set; }
         public string labBookPage { get; set; }
+        [XmlIgnoreAttribute]
+        public DateTime productionDate { get; set; }
+        [XmlIgnoreAttribute]
         public int jos_aaacontactid { get; set; }
+        [XmlIgnoreAttribute]
         public int jos_aaamanagerid { get; set; }
+        [XmlIgnoreAttribute]
         public int jos_aaaclientid { get; set; }
 
         [XmlIgnoreAttribute]
@@ -766,6 +770,7 @@ namespace Linnarsson.Dna
             annotationIndexes["Species"] = i++;
             annotationIndexes["Age"] = i++;
             annotationIndexes["Sex"] = i++;
+            annotationIndexes["Strain"] = i++;
             annotationIndexes["Tissue"] = i++;
             annotationIndexes["Treatment"] = i++;
             annotationIndexes["DonorID"] = i++;
@@ -795,6 +800,7 @@ namespace Linnarsson.Dna
                 wellAnn[i++] = chip.species;
                 wellAnn[i++] = chip.age;
                 wellAnn[i++] = chip.sex;
+                wellAnn[i++] = chip.strain;
                 wellAnn[i++] = chip.tissue;
                 wellAnn[i++] = chip.treatment;
                 wellAnn[i++] = chip.donorid;

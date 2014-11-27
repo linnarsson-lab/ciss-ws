@@ -63,7 +63,7 @@ namespace C1SeqPlateLoader
             }
             catch (Exception e)
             {
-                Console.WriteLine("ERROR: e", e.Message);
+                Console.WriteLine("ERROR: " + e.Message);
             }
         }
 

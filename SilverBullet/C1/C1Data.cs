@@ -64,7 +64,6 @@ namespace C1
         public string platewell { get; set; }               // Well on sequencing plate, e.g. "B04"
         public double diameter { get; set; }
         public double area { get; set; }
-        public bool empty { get; set; }                     // True if the C1 chamber is empty
         public int red { get; set; }
         public int green { get; set; }
         public int blue { get; set; }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.IO;
+using System.Configuration;
 using Linnarsson.Utilities;
 
 namespace C1
@@ -57,7 +58,25 @@ namespace C1
                 props = new C1Props();
                 SimpleXmlSerializer.ToXmlFile(configFilePath, props);
             }
+            SetConnectionStrings(props);
             return props;
+        }
+
+        private static void SetConnectionStrings(C1Props props)
+        {
+            string appDir = AppDomain.CurrentDomain.BaseDirectory;
+            string exeFilePath = Path.Combine(appDir, "SB.exe"); // THe application that holds ConnectionString config
+            Configuration config = ConfigurationManager.OpenExeConfiguration(exeFilePath);
+            ConnectionStringsSection section = config.GetSection("connectionStrings") as ConnectionStringsSection;
+            if (!section.SectionInformation.IsProtected)
+            {
+                section.SectionInformation.ProtectSection("RsaProtectedConfigurationProvider");
+                config.Save(ConfigurationSaveMode.Full, true);
+            }
+            section.SectionInformation.UnprotectSection();
+            ConnectionStringSettings settings = section.ConnectionStrings["SB.Properties.Settings.C1DBConnString"];
+            if (settings != null)
+                props.MySQlConnectionString = settings.ConnectionString;
         }
 
         // Singleton stuff below

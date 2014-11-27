@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Configuration;
 using Linnarsson.Utilities;
 using System.IO;
 
@@ -172,8 +173,25 @@ namespace Linnarsson.Dna
                 props = new Props();
                 SimpleXmlSerializer.ToXmlFile(configFilePath, props);
             }
-            
+            SetConnectionStrings(props);
             return props;
+        }
+
+        private static void SetConnectionStrings(Props props)
+        {
+            string appDir = AppDomain.CurrentDomain.BaseDirectory;
+            string exeFilePath = Path.Combine(appDir, "SB.exe"); // The application that holds ConnectionString config
+            Configuration config = ConfigurationManager.OpenExeConfiguration(exeFilePath);
+            ConnectionStringsSection section = config.GetSection("connectionStrings") as ConnectionStringsSection;
+            if (!section.SectionInformation.IsProtected)
+            {
+                section.SectionInformation.ProtectSection("RsaProtectedConfigurationProvider");
+                config.Save(ConfigurationSaveMode.Full, true);
+            } 
+            section.SectionInformation.UnprotectSection();
+            ConnectionStringSettings settings = section.ConnectionStrings["SB.Properties.Settings.MainDBConnString"];
+            if (settings != null)
+                props.MySqlServerConnectionString = settings.ConnectionString;
         }
 
         // Singleton stuff below

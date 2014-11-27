@@ -38,6 +38,7 @@
             this.labelBarcodes = new System.Windows.Forms.Label();
             this.radioButtonBc193to288 = new System.Windows.Forms.RadioButton();
             this.radioButtonBc289to384 = new System.Windows.Forms.RadioButton();
+            this.radioButtonNEWBc97To192 = new System.Windows.Forms.RadioButton();
             this.SuspendLayout();
             // 
             // checkBox1
@@ -73,7 +74,7 @@
             // button1
             // 
             this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button1.Location = new System.Drawing.Point(130, 367);
+            this.button1.Location = new System.Drawing.Point(229, 367);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 3;
@@ -98,6 +99,7 @@
             this.radioButtonBc1To96.Name = "radioButtonBc1To96";
             this.radioButtonBc1To96.Size = new System.Drawing.Size(96, 20);
             this.radioButtonBc1To96.TabIndex = 6;
+            this.radioButtonBc1To96.TabStop = true;
             this.radioButtonBc1To96.Text = "Tn5 Bc 1-96";
             this.radioButtonBc1To96.UseVisualStyleBackColor = true;
             this.radioButtonBc1To96.CheckedChanged += new System.EventHandler(this.radioButtonBc1To96_CheckedChanged);
@@ -106,11 +108,11 @@
             // 
             this.radioButtonBc97To192.AutoSize = true;
             this.radioButtonBc97To192.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.radioButtonBc97To192.Location = new System.Drawing.Point(220, 310);
+            this.radioButtonBc97To192.Location = new System.Drawing.Point(96, 362);
             this.radioButtonBc97To192.Name = "radioButtonBc97To192";
-            this.radioButtonBc97To192.Size = new System.Drawing.Size(110, 20);
+            this.radioButtonBc97To192.Size = new System.Drawing.Size(114, 20);
             this.radioButtonBc97To192.TabIndex = 7;
-            this.radioButtonBc97To192.Text = "Tn5 Bc 97-192";
+            this.radioButtonBc97To192.Text = "Bc 97-192 (old)";
             this.radioButtonBc97To192.UseVisualStyleBackColor = true;
             // 
             // labelBarcodes
@@ -145,11 +147,23 @@
             this.radioButtonBc289to384.Text = "Tn5 Bc 289-384";
             this.radioButtonBc289to384.UseVisualStyleBackColor = true;
             // 
+            // radioButtonNEWBc97To192
+            // 
+            this.radioButtonNEWBc97To192.AutoSize = true;
+            this.radioButtonNEWBc97To192.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.radioButtonNEWBc97To192.Location = new System.Drawing.Point(213, 308);
+            this.radioButtonNEWBc97To192.Name = "radioButtonNEWBc97To192";
+            this.radioButtonNEWBc97To192.Size = new System.Drawing.Size(119, 20);
+            this.radioButtonNEWBc97To192.TabIndex = 11;
+            this.radioButtonNEWBc97To192.Text = "NEW Bc 97-192";
+            this.radioButtonNEWBc97To192.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(358, 528);
+            this.Controls.Add(this.radioButtonNEWBc97To192);
             this.Controls.Add(this.radioButtonBc289to384);
             this.Controls.Add(this.radioButtonBc193to288);
             this.Controls.Add(this.labelBarcodes);
@@ -180,6 +194,7 @@
         private System.Windows.Forms.Label labelBarcodes;
         private System.Windows.Forms.RadioButton radioButtonBc193to288;
         private System.Windows.Forms.RadioButton radioButtonBc289to384;
+        private System.Windows.Forms.RadioButton radioButtonNEWBc97To192;
     }
 }
 

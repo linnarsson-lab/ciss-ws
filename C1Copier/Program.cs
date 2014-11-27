@@ -230,12 +230,12 @@ namespace C1
         private static bool HasChanged(string chipDir)
         {
             string bf = GetLastMatchingFolder(chipDir, C1Props.props.C1BFImageSubfoldernamePattern);
-            string xf = GetLastMatchingFile(chipDir, C1Props.props.WellExcludeFilePattern);
             if (bf == null) return false;
-            string lcp = GetLastMatchingFile(bf, C1Props.props.C1CaptureFilenamePattern);
-            return (lcp != null && 
-                (new FileInfo(lcp).LastWriteTime > lastCopyTime || new FileInfo(lcp).CreationTime > lastCopyTime ||
-                 (xf != null && new FileInfo(xf).LastAccessTime > lastCopyTime)));
+            string cf = GetLastMatchingFile(bf, C1Props.props.C1CaptureFilenamePattern);
+            string xf = GetLastMatchingFile(chipDir, C1Props.props.WellExcludeFilePattern);
+            bool cfNew = cf != null && (new FileInfo(cf).LastWriteTime > lastCopyTime || new FileInfo(cf).CreationTime > lastCopyTime);
+            bool xfNew = xf != null && (new FileInfo(xf).LastWriteTime > lastCopyTime || new FileInfo(xf).CreationTime > lastCopyTime);
+            return (cfNew || xfNew);
         }
 
         private static bool GetCellPaths(string chipDir, out string chipFolder, out string BFFolder, out string lastCapPath)

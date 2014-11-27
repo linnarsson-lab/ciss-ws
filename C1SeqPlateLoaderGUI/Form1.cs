@@ -87,6 +87,7 @@ namespace C1SeqPlateLoader
             {
                 string barcodeSet = C1Props.props.C1BarcodeSet1;
                 if (radioButtonBc97To192.Checked) barcodeSet = C1Props.props.C1BarcodeSet2;
+                else if (radioButtonNEWBc97To192.Checked) barcodeSet = C1Props.props.C1BarcodeSet2New;
                 else if (radioButtonBc193to288.Checked) barcodeSet = C1Props.props.C1BarcodeSet3;
                 else if (radioButtonBc289to384.Checked) barcodeSet = C1Props.props.C1BarcodeSet4;
                 new C1SeqPlateLoader(false).LoadC1SeqPlate(selPlate, barcodeSet);

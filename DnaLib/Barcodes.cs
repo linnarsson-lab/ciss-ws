@@ -132,26 +132,58 @@ namespace Linnarsson.Dna
             Seqs = seqs;
         }
 
-        public virtual void MakeBcSeqToBcIdxMap()
+        protected virtual void MakeBcSeqToBcIdxMap()
         {
             bcSeqToBcIdxMap = new Dictionary<string, int>();
             for (int bcIdx = 0; bcIdx < Count; bcIdx++)
             {
-                string bcSeq = m_Seqs[bcIdx];
-                bcSeqToBcIdxMap[bcSeq] = bcIdx;
-                if (AllowSingleMutations && bcSeq != NOBARCODE)
+                if (bcSeqToBcIdxMap.ContainsKey(m_Seqs[bcIdx]))
+                    Console.WriteLine("ERROR: Identical barcodes (" + m_Seqs[bcIdx] + ") found in barcode set " + m_Name + "!");
+                bcSeqToBcIdxMap[m_Seqs[bcIdx]] = bcIdx;
+            }
+            if (AllowSingleMutations)
+                AddSingleMutations();
+        }
+
+        private void AddSingleMutations()
+        {
+            for (int bcIdx = 0; bcIdx < Count; bcIdx++)
+            {
+                if (m_Seqs[bcIdx] == NOBARCODE) continue;
+                foreach (string singleMutSeq in GenerateAllSingleMutations(m_Seqs[bcIdx]))
                 {
-                    for (int p = 0; p < BarcodeLen; p++)
+                    if (m_Seqs.Contains(singleMutSeq))
                     {
-                        foreach (char subNt in new char[] { 'A', 'C', 'G', 'T' })
-                        {
-                            if (bcSeq[p] != subNt)
-                            {
-                                char[] subS = bcSeq.ToCharArray();
-                                subS[p] = subNt;
-                                bcSeqToBcIdxMap[new string(subS)] = bcIdx;
-                            }
-                        }
+                        Console.WriteLine("INFO: Avoiding singleMutation barcode " + singleMutSeq + " that matches a non-mutated barcode.");
+                        continue;
+                    }
+                    int bcValue = bcSeqToBcIdxMap.ContainsKey(singleMutSeq) ? -1 : bcIdx;
+                    bcSeqToBcIdxMap[singleMutSeq] = bcValue;
+                }
+            } // Remove cases where two singleMutations have the same sequence
+            int nDupMut = 0;
+            foreach (string bcs in bcSeqToBcIdxMap.Keys.ToArray())
+                if (bcSeqToBcIdxMap[bcs] == -1)
+                {
+                    nDupMut++;
+                    bcSeqToBcIdxMap.Remove(bcs);
+                }
+            if (nDupMut > 0)
+                Console.WriteLine("INFO: Avoiding " + nDupMut + " singleMutation barcodes that match another singleMutation barcode.");
+            Console.WriteLine("INFO: AllowSingleMutations generated " + bcSeqToBcIdxMap.Count + " index sequences to match.");
+        }
+
+        private IEnumerable<string> GenerateAllSingleMutations(string bcSeq)
+        {
+            for (int p = 0; p < BarcodeLen; p++)
+            {
+                foreach (char subNt in new char[] { 'A', 'C', 'G', 'T' })
+                {
+                    if (bcSeq[p] != subNt)
+                    {
+                        char[] subS = bcSeq.ToCharArray();
+                        subS[p] = subNt;
+                        yield return new string(subS);
                     }
                 }
             }
@@ -683,7 +715,7 @@ namespace Linnarsson.Dna
             this.m_WellIds = new string[] { "Sample" };
             UseNoBarcodes = true;
         }
-        public override void MakeBcSeqToBcIdxMap()
+        protected override void MakeBcSeqToBcIdxMap()
         {
             bcSeqToBcIdxMap = new Dictionary<string, int>();
             bcSeqToBcIdxMap[""] = 0;

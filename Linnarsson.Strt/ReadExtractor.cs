@@ -11,6 +11,10 @@ namespace Linnarsson.Strt
 {
     public class ReadExtractor
     {
+        private readonly static string tn5Seq = "CTGTCTCTTATACACATCTGACGC";
+        private readonly static string tn5SeqStart = tn5Seq.Substring(0, 10);
+        private readonly static string p1Seq = "AATGATACGGCGACC";
+
         private readonly static int ReadSegmentQualityControlIndicator = 2; // Phred score '2' corresponding to 'B' in fastQ read qualities
         private readonly static int maxExtraTSNts = 6; // Limit # of extra (G) Nts (in addition to min#==3) to remove from template switching
         private Barcodes barcodes;
@@ -55,13 +59,10 @@ namespace Linnarsson.Strt
                 return ReadStatus.SEQ_QUALITY_ERROR;
             int insertStart;
             int bcStatus = barcodes.VerifyBarcodeAndTS(rSeq, maxExtraTSNts, out bcIdx, out insertStart);
-            if (bcStatus == ReadStatus.TSSEQ_MISSING)
-                return bcStatus;
-            if (bcStatus != ReadStatus.VALID)
-            {
-                bcIdx = -1;
+            if (bcStatus == ReadStatus.NO_BC_OTHER)
                 return AnalyzeNonBarcodeRead(rSeq);
-            }
+            if (bcStatus == ReadStatus.TSSEQ_MISSING_OTHER)
+                return AnalyzeMissingTSSeqRead(rSeq);
             int lenStatus = ReadStatus.VALID;
             trimmedLength = TrimTrailingNOrPrimerAndCheckAs(rSeq, trimmedLength, out lenStatus);
             if (trimmedLength < minTotalReadLength)
@@ -160,7 +161,7 @@ namespace Linnarsson.Strt
                 }
             if (nNonAs < minInsertNonAs)
                 return ReadStatus.COMPLEXITY_ERROR;
-            if (Regex.Match(rSeq, "AATGATACGGCGACCACCGAT").Success)
+            if (Regex.Match(rSeq, p1Seq).Success)
                 return ReadStatus.P1_IN_READ;
             return ReadStatus.VALID;
         }
@@ -203,18 +204,37 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="seq"></param>
         /// <returns></returns>
-        private int AnalyzeNonBarcodeRead(string seq)
+        private static int AnalyzeNonBarcodeRead(string seq)
         {
-            if (seq.Contains("CTGTCTCTTATACACATCTGACGC")) return ReadStatus.NO_BC_TN5;
+            if (TestContainsOrEndsWithTn5(seq)) return ReadStatus.NO_BC_TN5;
             if (seq.StartsWith("CGACTTTTTTTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_CGACT25;
             if (seq.Contains("TTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_INTERNAL_T20;
-            if (seq.Contains("AATGATACGGCGACCACCGAT")) return ReadStatus.NO_BC_P1;
+            if (seq.Contains(p1Seq)) return ReadStatus.NO_BC_P1;
             if (seq.Contains("TAGTCACACAGTCCTTGACG")) return ReadStatus.NO_BC_PHIX;
             if (seq.Contains("ACCTCAGATCAGACGTGGCGACCCGCTGAA")) return ReadStatus.NO_BC_RNA45S;
-            if (Regex.Match(seq, "^...AAAAAAAAAAAAAAAAAAAAAAAAA").Success) return ReadStatus.NO_BC_NNNA25;
+            if (seq.Contains("AAAAAAAAAAAAAAAAAAAA")) return ReadStatus.NO_BC_INTERNAL_A20;
             return ReadStatus.NO_BC_OTHER;
         }
 
+        private static int AnalyzeMissingTSSeqRead(string seq)
+        {
+            if (TestContainsOrEndsWithTn5(seq)) return ReadStatus.TSSEQ_MISSING_TN5;
+            if (seq.Contains("TTTTTTTTTTTTTTTTTTTT")) return ReadStatus.TSSEQ_MISSING_INTERNAL_T20;
+            if (seq.Contains("AAAAAAAAAAAAAAAAAAAA")) return ReadStatus.TSSEQ_MISSING_INTERNAL_A20;
+            if (seq.Contains(p1Seq)) return ReadStatus.TSSEQ_MISSING_P1;
+            return ReadStatus.TSSEQ_MISSING_OTHER;
+        }
+
+        private static bool TestContainsOrEndsWithTn5(string seq)
+        {
+            int p = seq.IndexOf(tn5SeqStart);
+            if (p >= 0)
+            {
+                int l = Math.Min(tn5Seq.Length, seq.Length - p);
+                if (seq.Substring(p, l).Equals(tn5Seq.Substring(0, l))) return true;
+            }
+            return false;
+        }
     }
 
 }

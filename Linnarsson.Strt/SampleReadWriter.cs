@@ -23,7 +23,7 @@ namespace Linnarsson.Strt
         ReadExtractor readExtractor;
         ReadCounter readCounter;
         StreamWriter[] sws_barcoded;
-        StreamWriter sw_slask;
+        StreamWriter sw_slask_w_bc, sw_slask_no_bc;
         ExtractionQuality extrQ;
 
         public SampleReadWriter(Barcodes barcodes, LaneInfo laneInfo)
@@ -38,7 +38,10 @@ namespace Linnarsson.Strt
             readCounter = new ReadCounter(barcodes);
             sws_barcoded = OpenStreamWriters(laneInfo.extractedFilePaths);
             if (Props.props.WriteSlaskFiles)
-                sw_slask = laneInfo.slaskFilePath.OpenWrite();
+            {
+                sw_slask_w_bc = laneInfo.slaskWBcFilePath.OpenWrite();
+                sw_slask_no_bc = laneInfo.slaskNoBcFilePath.OpenWrite();
+            }
             extrQ = (Props.props.AnalyzeExtractionQualities) ? new ExtractionQuality(Props.props.LargestPossibleReadLength) : null;
         }
 
@@ -84,8 +87,14 @@ namespace Linnarsson.Strt
                 if (extrQ != null) extrQ.Add(rec.Sequence, rec.Qualities);
                 if (readStatus == ReadStatus.VALID)
                     sws_barcoded[bcIdx].WriteLine(rec.ToString(Props.props.QualityScoreBase));
-                else if (sw_slask != null)
-                    sw_slask.WriteLine(rec.ToString(Props.props.QualityScoreBase));
+                else if (sw_slask_w_bc != null)
+                {
+                    rec.Header += "_" + ReadStatus.GetName(readStatus);
+                    if (ReadStatus.IsBarcodedCategory(readStatus))
+                        sw_slask_w_bc.WriteLine(rec.ToString(Props.props.QualityScoreBase));
+                    else
+                        sw_slask_no_bc.WriteLine(rec.ToString(Props.props.QualityScoreBase));
+                }
             }
             readCounter.AddARead(useThisRead, rec, readStatus, bcIdx);
             return true;
@@ -115,8 +124,11 @@ namespace Linnarsson.Strt
         public void CloseAndWriteSummary()
         {
             CloseStreamWriters(sws_barcoded);
-            if (sw_slask != null)
-                sw_slask.Close();
+            if (sw_slask_w_bc != null)
+            {
+                sw_slask_w_bc.Close();
+                sw_slask_no_bc.Close();
+            }
             using (StreamWriter sw_summary = new StreamWriter(laneInfo.summaryFilePath))
             {
                 FileReads fr = readCounter.FinishLane(laneInfo);

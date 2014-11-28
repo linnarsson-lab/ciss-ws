@@ -210,7 +210,7 @@ namespace Linnarsson.Dna
                     return ReadStatus.NO_BC_OTHER;
             }
             if (read.Substring(InsertOrGGGPos, TSSeq.Length) != TSSeq)
-                return ReadStatus.TSSEQ_MISSING;
+                return ReadStatus.TSSEQ_MISSING_OTHER;
             while (maxTrimExtraGs > 0 && read.Length > actualInsertPos && read[actualInsertPos] == m_TSTrimNt)
             {
                 actualInsertPos++;

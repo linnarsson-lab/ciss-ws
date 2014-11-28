@@ -38,7 +38,8 @@ namespace Linnarsson.Dna
         /// </summary>
         public int nValidReads { get; set; }
 
-        public string slaskFilePath { get; private set; }
+        public string slaskWBcFilePath { get; private set; }
+        public string slaskNoBcFilePath { get; private set; }
         public string summaryFilePath { get; private set; }
         public string[] extractedFilePaths { get; set; }
         public string laneExtractionFolder { get; set; }
@@ -108,7 +109,8 @@ namespace Linnarsson.Dna
             extractedFilePaths = new string[Math.Max(1, nBarcodes)];
             for (int i = 0; i < extractedFilePaths.Length; i++)
                 extractedFilePaths[i] = Path.Combine(laneExtractionFolder, i.ToString() + ".fq");
-            slaskFilePath = Path.Combine(laneExtractionFolder, "slask.fq.gz");
+            slaskWBcFilePath = Path.Combine(laneExtractionFolder, "slask_w_bc.fq.gz");
+            slaskNoBcFilePath = Path.Combine(laneExtractionFolder, "slask_no_bc.fq.gz");
             summaryFilePath = GetSummaryPath(laneExtractionFolder);
         }
 
@@ -202,7 +204,8 @@ namespace Linnarsson.Dna
                        ((extractedFilePaths != null && extractedFilePaths.Length > 0) ? "extrFilePaths[0]=" + extractedFilePaths[0] + "\n" : "") +
                        "extractedFileFolder=" + laneExtractionFolder + "\n" +
                        " N=" + ((extractedFilePaths == null) ? "0" : extractedFilePaths.Length.ToString()) + "\n" +
-                       "slaskFilePath=" + slaskFilePath + "\n" + 
+                       "slaskWBcFilePath=" + slaskWBcFilePath + "\n" +
+                       "slaskNoBcFilePath=" + slaskNoBcFilePath + "\n" +
                        "summaryFilePath= " + summaryFilePath + "\n" +
                        "mappedFileFolder= " + mappedFileFolder +
                        " N=" + ((mappedFilePaths == null) ? "0" : mappedFilePaths.Length.ToString());

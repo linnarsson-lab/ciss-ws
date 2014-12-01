@@ -6,6 +6,7 @@ using System.IO;
 using Linnarsson.Dna;
 using Linnarsson.Dna.GeneOntology;
 using Linnarsson.Utilities;
+using Linnarsson.Mathematics;
 using Linnarsson.Strt;
 using C1;
 
@@ -248,7 +249,7 @@ namespace C1
 
     class BiosystemsAnnotator
     {
-        private Dictionary<string, List<int>> entrezIDToBiosystem = new Dictionary<string, List<int>>();
+        private List<Pair<int, int>> entrezIDToBiosystem = new List<Pair<int, int>>();
         private Biosystems biosystems = null;
 
         public BiosystemsAnnotator(StrtGenome genome)
@@ -269,32 +270,38 @@ namespace C1
                 {
                     string[] fields = line.Split('\t');
                     int bsid = int.Parse(fields[0].Trim());
-                    string entrezId = fields[1].Trim();
-                    List<int> bss;
-                    if (!entrezIDToBiosystem.TryGetValue(entrezId, out bss))
-                    {
-                        bss = new List<int>(10);
-                        entrezIDToBiosystem[entrezId] = bss;
-                    }
-                    bss.Add(bsid);
+                    int entrezId = int.Parse(fields[1].Trim());
+                    entrezIDToBiosystem.Add(new Pair<int, int>(entrezId, bsid));
                 }
             }
-            Console.WriteLine("Initiated transcript annotator with pathways for {0} genes from {1}",
+            entrezIDToBiosystem.Sort(EntrezIDComparer);
+            Console.WriteLine("Initiated transcript annotator with {0} pathway associations from {1}",
                                entrezIDToBiosystem.Count, genePath);
+        }
+
+        private static int EntrezIDComparer(Pair<int, int> p1, Pair<int, int> p2)
+        {
+            return p1.First.CompareTo(p2.First);
         }
 
         public void AnnotateFromBiosystems(ref Transcript t)
         {
-            if (biosystems == null)
+            if (biosystems == null || t.EntrezID == null || t.EntrezID == "")
                 return;
-            List<int> bsids;
-            if (entrezIDToBiosystem.TryGetValue(t.EntrezID, out bsids))
+            int e = int.Parse(t.EntrezID);
+            int idx = entrezIDToBiosystem.FindIndex(p => p.First == e);
+            if (idx >= 0)
             {
                 Biosystem b;
-                foreach (int bsid in bsids)
+                Pair<int, int> p = entrezIDToBiosystem[idx];
+                while (p.First == e)
                 {
+                    int bsid = p.Second;
                     if ((b = biosystems.GetSystem(bsid)) != null)
-                    t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, b.Source, b.Accession, b.Name));
+                        t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, b.Source, b.Accession, b.Name));
+                    if (++idx >= entrezIDToBiosystem.Count)
+                        break;
+                    p = entrezIDToBiosystem[idx];
                 }
             }
         }
@@ -309,10 +316,10 @@ namespace C1
         public string Source { get; set; }
         public string Accession { get; set; }
         public string Name { get; set; }
-        public string Type { get; set; }
-        public string TaxonomyScope { get; set; }
-        public string TaxId { get; set; }
-        public string Description { get; set; }
+        //public string Type { get; set; }
+        //public string TaxonomyScope { get; set; }
+        //public string TaxId { get; set; }
+        //public string Description { get; set; }
 
         public Biosystem(string bsid, string source, string acc, string name, string type, string scope, string taxId, string descr)
         {
@@ -320,10 +327,10 @@ namespace C1
             this.Source = source;
             this.Accession = acc;
             this.Name = name;
-            this.Type = type;
-            this.TaxonomyScope = scope;
-            this.TaxId = taxId;
-            this.Description = descr;
+            //this.Type = type;
+            //this.TaxonomyScope = scope;
+            //this.TaxId = taxId;
+            //this.Description = descr;
         }
 
         public static Biosystem FromBs2IdLine(string line)

@@ -183,7 +183,14 @@ namespace C1
             string sql = "REPLACE INTO TranscriptAnnotation (TranscriptID, Source, Value, Description) " +
                          "VALUES ('{0}','{1}','{2}','{3}')";
             sql = string.Format(sql, ta.TranscriptID, ta.Source, ta.Value, description);
-            IssueNonQuery(sql);
+            try
+            {
+                IssueNonQuery(sql);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("InsertTranscriptAnnotation ERROR: " + ta.ToString());
+            }
         }
 
         public void InsertExpressions(IEnumerable<Expression> exprIterator)

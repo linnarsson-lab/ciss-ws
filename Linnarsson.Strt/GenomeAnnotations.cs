@@ -48,6 +48,8 @@ namespace Linnarsson.Strt
         public Transcriptome dbTranscriptome;
         protected StrtGenome genome;
         public StrtGenome Genome { get { return genome; } }
+        public bool GenesSetupFromC1DB { get; private set; }
+
         protected Barcodes barcodes;
         public Barcodes Barcodes { get { return barcodes; } }
         protected Props props;
@@ -135,7 +137,8 @@ namespace Linnarsson.Strt
         public void SetupGenes()
         {
             string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
-            if (!props.InsertCells10Data || !SetupGenesFromC1DB(STRTAnnotationsPath))
+            bool genesSetupFromC1DB = (props.InsertCells10Data && SetupGenesFromC1DB(STRTAnnotationsPath));
+            if (!genesSetupFromC1DB)
                 SetupGenesFromSTRTAnnotationFile(STRTAnnotationsPath);
             int trLen = geneFeatures.Sum(gf => gf.Value.GetTranscriptLength());
             Console.WriteLine("Total length of all transcript models (including overlaps): {0} bp.", trLen);

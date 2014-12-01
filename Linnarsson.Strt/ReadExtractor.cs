@@ -28,9 +28,9 @@ namespace Linnarsson.Strt
         private int minPrimerSeqLen = 5;
         char[] UMIChars; // Buffer for accumulated UMI bases
 
-        public ReadExtractor()
+        public ReadExtractor(Barcodes barcodes)
         {
-            barcodes = Props.props.Barcodes;
+            this.barcodes = barcodes;
             insertStartPos = barcodes.InsertOrGGGPos;
             minTotalReadLength = barcodes.InsertOrGGGPos + Props.props.MinExtractionInsertLength;
             minInsertNonAs = Props.props.MinExtractionInsertNonAs;

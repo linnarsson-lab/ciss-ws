@@ -325,6 +325,17 @@ namespace C1
             this.TaxId = taxId;
             this.Description = descr;
         }
+
+        public static Biosystem FromBs2IdLine(string line)
+        {
+            string[] fields = line.Split('\t');
+            string bsid = fields[0].Trim();
+            if (fields.Length == 8)
+                return new Biosystem(bsid, fields[1].Trim(), fields[2].Trim(), fields[3].Trim(),
+                                        fields[4].Trim(), fields[5].Trim(), fields[6].Trim(), fields[7].Trim());
+            else
+                return new Biosystem(bsid, fields[1].Trim(), fields[2].Trim(), fields[3].Trim(), "N/A", "N/A", "N/A", "");
+        }
     }
 
     public class Biosystems
@@ -351,11 +362,8 @@ namespace C1
                 {
                     if (line == "" || line.StartsWith("#") || line.StartsWith("!"))
                         continue;
-                    string[] fields = line.Split('\t');
-                    string bsid = fields[0].Trim();
-                    Biosystem b = new Biosystem(bsid, fields[1].Trim(), fields[2].Trim(), fields[3].Trim(),
-                                                fields[4].Trim(), fields[5].Trim(), fields[6].Trim(), fields[7].Trim());
-                    bs.bsidToSystem[int.Parse(bsid)] = b;
+                    Biosystem b = Biosystem.FromBs2IdLine(line);
+                    bs.bsidToSystem[int.Parse(b.BsId)] = b;
                 }
             }
             return bs;

@@ -65,7 +65,7 @@ namespace C1
         }
 
         /// <summary>
-        /// Returns Transcriptome data for the specified genome data
+        /// Returns most up-to-date Transcriptome data for the specified genome data
         /// </summary>
         /// <param name="buildVarAnnot">e.g. "mm10_sUCSC"</param>
         /// <returns>null if no match exists in database, or can not connect</returns>
@@ -74,7 +74,7 @@ namespace C1
             Transcriptome t = null;
             try
             {
-                string sql = string.Format("SELECT * FROM Transcriptome WHERE Name ='{0}'", buildVarAnnot);
+                string sql = string.Format("SELECT * FROM Transcriptome WHERE Name ='{0}' ORDER BY BuildDate DESC LIMIT 1", buildVarAnnot);
                 MySqlConnection conn = new MySqlConnection(connectionString);
                 conn.Open();
                 MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -161,7 +161,7 @@ namespace C1
             string description = MySqlHelper.EscapeString(t.Description);
             string sql = "INSERT INTO Transcript (TranscriptomeID, Name, Type, GeneName, EntrezID, Description, Chromosome, " +
                                     "Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds, " + 
-                                    "ExprBlobIdx, StartToCloseSiteSite) " +
+                                    "ExprBlobIdx, StartToCloseCutSite) " +
                                     "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}'," +
                                     "'{7}','{8}','{9}','{10}','{11}','{12}','{13}'," +
                                     "'{14}','{15}')";

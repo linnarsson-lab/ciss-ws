@@ -125,17 +125,14 @@ namespace Linnarsson.Dna
                     sb.Length = 0;	// Clear it for the next read;
 
                     // make the read sequence
-                    //StringBuilder readSeq = new StringBuilder(bclData.Count);
-                    //StringBuilder qualSeq = new StringBuilder(bclData.Count);
                     for (int c = 0; c < bclData.Count; c++)
                     {
                         int nt = (bclData[c][ix] & 3);
-                        readSeq[c] = "ACGT"[nt]; //readSeq.Append("ACGT"[nt]);
+                        readSeq[c] = "ACGT"[nt];
                         quals[c] = (byte)((bclData[c][ix] & 252) >> 2);
                     }
                     bool pf = filters[tile][ix + 8] == 1;
                     yield return new FastQRecord(hdr, new string(readSeq), quals, pf);
-                    //yield return new FastQRecord(hdr, readSeq.ToString(), qualSeq.ToString(), pf);
                 }
             }
         }

@@ -34,7 +34,7 @@ namespace Linnarsson.Strt
             this.laneInfo = laneInfo;
             if (laneInfo.idxSeqFilter.Length > 0)
                 read2FilterPrefix = "^" + laneInfo.idxSeqFilter;
-            readExtractor = new ReadExtractor();
+            readExtractor = new ReadExtractor(barcodes);
             readCounter = new ReadCounter(barcodes);
             sws_barcoded = OpenStreamWriters(laneInfo.extractedFilePaths);
             if (Props.props.WriteSlaskFiles)

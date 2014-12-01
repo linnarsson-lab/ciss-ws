@@ -19,7 +19,7 @@ namespace C1
         public static readonly string configFilename = "C1Config.xml"; // Filename of machine specific Props
         [NonSerialized]
         public static readonly string C1ProjectPrefix = "C1-"; // Prefix used for cells10k plates in ProjectDB.
-
+        // ConnectionString is now imported from the "SB.exe.config" file, where it is encrypted, see below.
         public string MySQlConnectionString = "server=127.0.0.1;uid=user;pwd=password;database=c1db;Connect Timeout=300;Charset=utf8;";
         public string C1SeqPlatesFolder = "/data2/c1-seqplates";
         public string C1SeqPlateFilenamePattern = "*.txt";
@@ -66,7 +66,7 @@ namespace C1
         private static void SetConnectionStrings(C1Props props)
         {
             string appDir = AppDomain.CurrentDomain.BaseDirectory;
-            string exeFilePath = Path.Combine(appDir, "SB.exe"); // THe application that holds ConnectionString config
+            string exeFilePath = Path.Combine(appDir, "SB.exe"); // The application that holds ConnectionString config
             Configuration config = ConfigurationManager.OpenExeConfiguration(exeFilePath);
             ConnectionStringsSection section = config.GetSection("connectionStrings") as ConnectionStringsSection;
             if (!section.SectionInformation.IsProtected)

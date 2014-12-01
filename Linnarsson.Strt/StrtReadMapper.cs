@@ -605,7 +605,7 @@ namespace Linnarsson.Strt
         /// <param name="resultDescr"></param>
         private static void InsertCells10kData(string projectId, GenomeAnnotations annotations, ResultDescription resultDescr)
         {
-            if (projectId.StartsWith(C1Props.C1ProjectPrefix))
+            if (projectId.StartsWith(C1Props.C1ProjectPrefix) && annotations.GenesSetupFromC1DB)
             {
                 Dictionary<string, int> cellIdByPlateWell = new ProjectDB().GetCellIdByPlateWell(projectId);
                 if (cellIdByPlateWell.Count == 0)

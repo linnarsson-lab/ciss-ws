@@ -156,6 +156,7 @@ namespace Linnarsson.Dna
         private ushort[] TrMolsByBc;
         private ushort[] NonConflictingTrMolsByBc;
         private ushort[] EstimatedTrueMolsByBc;
+        private ushort[] MaxOccupiedUMIsOnEXONByBc;
 
         /// <summary>
         /// Will return molecules if UMIs are in use, else reads
@@ -204,6 +205,11 @@ namespace Linnarsson.Dna
         {
             foreach (int bcIdx in bcIndexes)
                 yield return gf.EstimatedTrueMolsByBc[bcIdx];
+        }
+        public static IEnumerable<int> IterMaxOccupiedUMIsByEXON(GeneFeature gf, int[] bcIndexes)
+        {
+            foreach (int bcIdx in bcIndexes)
+                yield return gf.MaxOccupiedUMIsOnEXONByBc[bcIdx];
         }
 
         /// <summary>
@@ -312,6 +318,7 @@ namespace Linnarsson.Dna
                 TrMolsByBc = new ushort[Props.props.Barcodes.Count];
                 EstimatedTrueMolsByBc = new ushort[Props.props.Barcodes.Count];
                 NonConflictingTrMolsByBc = new ushort[Props.props.Barcodes.Count];
+                MaxOccupiedUMIsOnEXONByBc = new ushort[Props.props.Barcodes.Count];
             }
             TrReadsByBc = new int[Props.props.Barcodes.Count];
             NonConflictingTrReadsByBc = new int[Props.props.Barcodes.Count];
@@ -641,6 +648,8 @@ namespace Linnarsson.Dna
             MarkLocusHitPos(item);
             AddToTotalHits(item);
             TranscriptHitsByExonIdx[exonIdx] += item.MolCount;
+            if (MaxOccupiedUMIsOnEXONByBc != null)
+                MaxOccupiedUMIsOnEXONByBc[item.bcIdx] = Math.Max((ushort)item.ObservedMolCount, MaxOccupiedUMIsOnEXONByBc[item.bcIdx]);
             if (TrMolsByBc != null) TrMolsByBc[item.bcIdx] += (ushort)item.MolCount;
             TrReadsByBc[item.bcIdx] += item.ReadCount;
             EstimatedTrueMolsByBc[item.bcIdx] += (ushort)item.EstTrueMolCount;

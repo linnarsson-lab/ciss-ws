@@ -16,10 +16,15 @@ namespace Linnarsson.Dna
         private int cachedMolCount;
         private int cachedReadCount;
         private int cachedEstTrueMolCount;
+        private int observedMolCount;
         private List<SNPCounter> cachedSNPCounts;
 
         /// <summary>
-        /// Number of molecules (after filtering mutated UMIs). Equals ReadCount if UMIs are not used.
+        /// Number of molecules after filtering mutated UMIs but NOT collision compensation. Equals ReadCount if UMIs are not used.
+        /// </summary>
+        public int ObservedMolCount { get { return observedMolCount; } }
+        /// <summary>
+        /// Number of molecules after filtering mutated UMIs and collision compensation. Equals ReadCount if UMIs are not used.
         /// </summary>
         public int MolCount { get { return cachedMolCount; } }
         public int ReadCount { get { return cachedReadCount; } }
@@ -43,7 +48,7 @@ namespace Linnarsson.Dna
             cachedSNPCounts = m_TagItem.GetTotalSNPCounts(m_HitStartPos);
             cachedReadCount = m_TagItem.GetBcNumReads();
 
-            int observedMolCount = m_TagItem.GetFinalBcNumMols(); // Possibly filter away mutated UMIs
+            observedMolCount = m_TagItem.GetFinalBcNumMols(); // Apply filter for mutated UMIs
             if (TagItem.nUMIs == 1)
             {
                 cachedEstTrueMolCount = cachedMolCount = observedMolCount;

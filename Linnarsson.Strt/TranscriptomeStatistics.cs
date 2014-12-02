@@ -1340,7 +1340,7 @@ namespace Linnarsson.Strt
         /// <param name="readCounter"></param>
         private void WriteBarcodeStats(StreamWriter xmlFile, ReadCounter readCounter)
         {
-            int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(Annotations.Genome);
+            int[] onlyGenomeBcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
             using (StreamWriter barcodeStats = new StreamWriter(OutputPathbase + "_barcode_summary.tab"))
             using (StreamWriter bCodeLines = new StreamWriter(OutputPathbase + "_barcode_oneliners.tab"))
             {
@@ -1356,35 +1356,35 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("\n    </barcodestat>");
                 WriteBarcodes(xmlFile, barcodeStats, bCodeLines);
                 if (barcodes.SpeciesByWell != null)
-                    WriteSpeciesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
+                    WriteSpeciesByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes);
                 if (readCounter.ValidReadsByBarcode.Length == barcodes.Count)
                 {
-                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, readCounter.ValidReadsByBarcode.ToArray(),
+                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, readCounter.ValidReadsByBarcode.ToArray(),
                                         "BARCODEDREADS", "Total barcoded reads by barcode", "barcoded reads");
-                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, readCounter.ValidReadsByBarcode.ToArray(),
+                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, readCounter.ValidReadsByBarcode.ToArray(),
                                         "VALIDSTRTREADS", "Total valid STRT reads by barcode", "valid STRT reads");
                 }
-                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, nMappedReadsByBarcode,
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, nMappedReadsByBarcode,
                                     "MAPPEDREADS", "Total mapped reads by barcode", "mapped reads");
                 if (barcodes.HasUMIs)
-                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, mappingAdder.NDuplicateReadsByBc(),
+                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, mappingAdder.NDuplicateReadsByBc(),
                                     "DUPLICATE_READS", "Duplicate reads of molecules (same UMI/position/strand) by barcode", "redundant reads (PCR)");
-                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, nNonAnnotatedItemsByBc,
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, nNonAnnotatedItemsByBc,
                                     "NON_ANNOTATED_POS_STRANDS", "Non-annotated strand-positions by barcode", "non-annotated strand-positions");
-                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, nNonAnnotatedMolsByBc,
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, nNonAnnotatedMolsByBc,
                                     "NON_ANNOTATED_" + molT.ToUpper(), "Non-annotated " + molT + " by barcode", "non-annotated " + molT);
-                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, totalHitCounter.GetTotalHitsByBarcode(),
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, totalHitCounter.GetTotalHitsByBarcode(),
                                     "HITS", "Total annotated hits by barcode", "annotated hits");
                 if (barcodes.HasUMIs)
-                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, labelingEfficiencyEstimator.maxOccupiedUMIsByBc,
+                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, labelingEfficiencyEstimator.maxOccupiedUMIsByBc,
                                     "MAX_OCCUPIED_UMIS", "Maximum occupied UMIs by barcode", "maximum occupied UMIs");
                 if (Props.props.AnalyzeGCContent)
-                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, gcAnalyzer.GetPercentGCByBarcode(),
+                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, gcAnalyzer.GetPercentGCByBarcode(),
                                         "PERCENT_READ_GC_CONTENT", "Percent GC in transcript mapping reads", "transcript reads percent GC");
-                WriteFeaturesByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes);
-                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, TotalTranscriptMolsByBarcode,
+                WriteFeaturesByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes);
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, TotalTranscriptMolsByBarcode,
                                     "TRNSR_DETECTING_" + molT.ToUpper(), "Transcript detecting " + molT + " by barcode", "tr. detecting " + molT);
-                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, genomeBcIndexes, Annotations.GetByBcNumExpressedTranscripts(),
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, Annotations.GetByBcNumExpressedTranscripts(),
                                     "TRANSCRIPTS", "Detected transcripts by barcode", "detected transcripts");
             }
             if (barcodes.HasUMIs && Props.props.TotalNumberOfAddedSpikeMolecules > 0)
@@ -1393,7 +1393,7 @@ namespace Linnarsson.Strt
                 for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                 {
                     if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
-                    if (genomeBcIndexes.Contains(bcIdx)) xmlFile.Write("    <d>{0:0.###}</d>", labelingEfficiencyEstimator.LabelingEfficiencyByBc[bcIdx]);
+                    if (onlyGenomeBcIndexes.Contains(bcIdx)) xmlFile.Write("    <d>{0:0.###}</d>", labelingEfficiencyEstimator.LabelingEfficiencyByBc[bcIdx]);
                     else xmlFile.Write("    <d>({0:0.###})</d>", labelingEfficiencyEstimator.LabelingEfficiencyByBc[bcIdx]);
                 }
                 xmlFile.WriteLine("\n    </barcodestat>");
@@ -1426,7 +1426,7 @@ namespace Linnarsson.Strt
             string molTitle = (barcodes.HasUMIs) ? "molecules" : "reads";
             for (var annotType = 0; annotType < AnnotType.Count; annotType++)
             {
-                if (annotType == AnnotType.AREPT) continue;
+                if (annotType == AnnotType.AREPT || annotType == AnnotType.ASPLC) continue;
                 string bCodeLinesTitle = AnnotType.GetName(annotType);
                 bCodeLines.Write(bCodeLinesTitle);
                 xmlFile.Write("    <barcodestat section=\"{0} hits\">", bCodeLinesTitle);
@@ -1435,7 +1435,7 @@ namespace Linnarsson.Strt
                     string annotHits = totalHitCounter.GetBcAnnotHits(bcIdx, annotType).ToString();
                     bCodeLines.Write("\t{0}", annotHits);
                     if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
-                    string d = genomeBcIndexes.Contains(bcIdx) ? annotHits : string.Format("({0})", annotHits);
+                    string d = genomeBcIndexes.Contains(bcIdx) ? annotHits : "(" + annotHits + ")";
                     xmlFile.Write("    <d>{0}</d>", d);
                 }
                 xmlFile.WriteLine("\n    </barcodestat>");

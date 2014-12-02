@@ -604,6 +604,7 @@ namespace Linnarsson.Strt
             {
                 WriteTrueMolsTable(fileNameBase);
                 WriteReadsTable(fileNameBase);
+                WriteMaxOccupiedUMIsByEXONTable(fileNameBase);
             }
             string expressionFile = WriteExpressionTable(fileNameBase);
             WriteMinExpressionTable(fileNameBase);
@@ -838,6 +839,12 @@ namespace Linnarsson.Strt
                     outFile.WriteLine("r_{0}\t\t\t\t{1}\t{2}{3}", rf.Name, rf.GetLocusLength(), rf.TotalReadsByBc.Sum(), sb);
                 }
             }
+        }
+
+        private void WriteMaxOccupiedUMIsByEXONTable(string fileNameBase)
+        {
+            string header = "#Maximal occupied UMIs (after mutated UMI filtering) in each barcode of each transcript.";
+            WriteBasicDataTable(fileNameBase + "_EXON_UMI_usage.tab", header, GeneFeature.IterMaxOccupiedUMIsByEXON);
         }
 
         private void WriteTrueMolsTable(string fileNameBase)

@@ -27,7 +27,7 @@ namespace C1
         {
             Annotate += new kgXrefAnnotator(genome).Annotate;
             Annotate += new RefLinkAnnotator(genome).Annotate;
-            Annotate += new AliasAnnotator(genome).Annotate;  // Has to be preceeded by kgXrefAnnotator
+            //Annotate += new AliasAnnotator(genome).Annotate;  // Has to be preceeded by kgXrefAnnotator
             Annotate += new GeneAssociationAnnotator(genome).AnnotateFromGeneAssociation;
             Annotate += new BiosystemsAnnotator(genome).AnnotateFromBiosystems;
             Annotate += new CleavageSiteAnnotator(genome).Annotate;
@@ -65,8 +65,13 @@ namespace C1
                         continue;
                     string[] fields = line.Split('\t');
                     string[] values = Array.ConvertAll(valueCols, col => fields[col].Trim());
-                    foreach (int keyCol in keyCols)
-                        keyToValueMap[fields[keyCol].Trim()] = values;
+                    if (!values.All(v => v == ""))
+                        foreach (int keyCol in keyCols)
+                        {
+                            string key = fields[keyCol].Trim();
+                            if (key != "")
+                                keyToValueMap[key] = values;
+                        }
                 }
             }
             Console.WriteLine("Initiated {0} annotator with {1} items from {2}", annotType, keyToValueMap.Count, aPath);
@@ -109,7 +114,7 @@ namespace C1
         private static string annotationFilename = "refLink.txt";
 
         public RefLinkAnnotator(StrtGenome genome)
-            : base(genome, annotationFilename, new int[] {0, 2}, new int[] {1, 6}, "ENTREZIds & Descriptions")
+            : base(genome, annotationFilename, new int[] { 0, 2 }, new int[] { 1, 6 }, "Description & EntrezId")
         { }
 
         public override void Annotate(ref Transcript t)
@@ -159,6 +164,8 @@ namespace C1
                     string[] fields = line.Split('\t');
                     string UniProtAcc = fields[1].Trim();
                     string alias = fields[2].Trim();
+                    if (UniProtAcc == "" || alias == "")
+                        continue;
                     if (alias.EndsWith("_MOUSE")) alias = alias.Replace("_MOUSE", "");
                     if (alias.EndsWith("_HUMAN")) alias = alias.Replace("_HUMAN", "");
                     alias = alias.Replace("'", "-prime");
@@ -216,7 +223,9 @@ namespace C1
                         string[] fields = line.Split('\t');
                         string geneName = fields[2].Trim();
                         string term = fields[4].Trim();
-                        if (geneNameToGOTerms.ContainsKey(geneName))
+                        if (geneName == "" || term == "")
+                            continue;
+                        if (geneNameToGOTerms.ContainsKey(geneName) && !geneNameToGOTerms[geneName].Contains(term))
                             geneNameToGOTerms[geneName] += ";" + term;
                         else
                             geneNameToGOTerms[geneName] = term;
@@ -232,34 +241,37 @@ namespace C1
             string terms;
             if (geneNameToGOTerms.TryGetValue(t.GeneName, out terms))
             {
-                GoTerm goTerm;
-                string ns = "gene_ontology", descr = "";
-                foreach (string term in terms.Split(';'))
+                List<string> descrs = new List<string>();
+                if (go != null)
                 {
-                    if (go != null && (goTerm = go.GetTerm(term)) != null)
+                    GoTerm goTerm;
+                    foreach (string term in terms.Split(';'))
                     {
-                        ns = goTerm.Namespace.ToString();
-                        descr = goTerm.Name;
+                        if ((goTerm = go.GetTerm(term)) != null)
+                            descrs.Add(goTerm.Name);
                     }
-                    t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, ns, term, descr));
                 }
+                t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, "GO", terms, string.Join(";", descrs.ToArray())));
             }
         }
     }
 
     class BiosystemsAnnotator
     {
+        private readonly static string bsid2InfoFile = "biosystems/bsid2info.sed";
+        private readonly static string biosystemsFile = "biosystems/biosystems_gene";
+
         private List<Pair<int, int>> entrezIDToBiosystem = new List<Pair<int, int>>();
         private Biosystems biosystems = null;
 
         public BiosystemsAnnotator(StrtGenome genome)
         { 
-            string bsid2InfoPath = PathHandler.ExistsOrGz(Path.Combine(Props.props.GenomesFolder, "biosystems/bsid2info.sed"));
-            string genePath = PathHandler.ExistsOrGz(Path.Combine(Props.props.GenomesFolder, "biosystems/biosystems_gene"));
+            string bsid2InfoPath = PathHandler.ExistsOrGz(Path.Combine(Props.props.GenomesFolder, bsid2InfoFile));
+            string genePath = PathHandler.ExistsOrGz(Path.Combine(Props.props.GenomesFolder, biosystemsFile));
             if (bsid2InfoPath == null || genePath == null)
             {
-                Console.WriteLine("Please download {0} and {1} from NCBI Biosystems and rerun to get pathway annotations.",
-                                  bsid2InfoPath, genePath);
+                Console.WriteLine("Download {0} and {1} from NCBI Biosystems and save under {2} and rerun to get pathway annotations.",
+                                  bsid2InfoFile, biosystemsFile, Props.props.GenomesFolder);
                 return;
             }
             biosystems = Biosystems.FromFile(bsid2InfoPath);
@@ -292,16 +304,28 @@ namespace C1
             int idx = entrezIDToBiosystem.FindIndex(p => p.First == e);
             if (idx >= 0)
             {
+                Dictionary<string, List<Biosystem>> sysBySource = new Dictionary<string, List<Biosystem>>();
                 Biosystem b;
                 Pair<int, int> p = entrezIDToBiosystem[idx];
                 while (p.First == e)
                 {
                     int bsid = p.Second;
                     if ((b = biosystems.GetSystem(bsid)) != null)
-                        t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, b.Source, b.Accession, b.Name));
+                    {
+                        if (!sysBySource.ContainsKey(b.Source))
+                            sysBySource[b.Source] = new List<Biosystem>();
+                        if (!sysBySource[b.Source].Contains(b))
+                            sysBySource[b.Source].Add(b);
+                    }
                     if (++idx >= entrezIDToBiosystem.Count)
                         break;
                     p = entrezIDToBiosystem[idx];
+                }
+                foreach (KeyValuePair<string, List<Biosystem>> sbb in sysBySource)
+                {
+                    string accs = string.Join(";", sbb.Value.ConvertAll(bs => bs.Accession).ToArray());
+                    string names = string.Join(";", sbb.Value.ConvertAll(bs => bs.Name).ToArray());
+                    t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, sbb.Key, accs, names));
                 }
             }
         }

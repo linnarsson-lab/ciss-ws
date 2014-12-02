@@ -180,9 +180,10 @@ namespace C1
         public void InsertTranscriptAnnotation(TranscriptAnnotation ta)
         {
             string description = MySqlHelper.EscapeString(ta.Description);
+            string value = MySqlHelper.EscapeString(ta.Value);
             string sql = "REPLACE INTO TranscriptAnnotation (TranscriptID, Source, Value, Description) " +
                          "VALUES ('{0}','{1}','{2}','{3}')";
-            sql = string.Format(sql, ta.TranscriptID, ta.Source, ta.Value, description);
+            sql = string.Format(sql, ta.TranscriptID, ta.Source, value, description);
             try
             {
                 IssueNonQuery(sql);

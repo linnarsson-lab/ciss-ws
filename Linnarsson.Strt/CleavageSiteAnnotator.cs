@@ -22,6 +22,7 @@ namespace Linnarsson.Strt
         public CleavageSiteAnnotator(StrtGenome genome)
         {
             enzymes = Props.props.CAPCloseSiteSearchCutters;
+            Console.WriteLine("CleavageSiteAnnotator loading chromosome sequences...");
             Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
             foreach (string commonChrId in Props.props.CommonChrIds)
             {
@@ -59,6 +60,11 @@ namespace Linnarsson.Strt
 
         public void Annotate(ref Transcript t)
         {
+            if (!ChrSeqs.ContainsKey(t.Chromosome))
+            {
+                Console.WriteLine("Can not find chr" + t.Chromosome + " for " + t.GeneName + ". Skipping CleavageSiteAnnotation.");
+                return;
+            }
             DnaSequence trSeq;
             int requestedExtension = StrtGenome.IsACommonChrId(t.Chromosome) ? 0 : -CAPCloseSiteSearchStart;
             int actualExtension = GetTrSeq(t.Chromosome, t.Strand, t.ExonStarts, t.ExonEnds, requestedExtension, out trSeq);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Text.RegularExpressions;
 using Linnarsson.Dna;
 using Linnarsson.Dna.GeneOntology;
 using Linnarsson.Utilities;
@@ -186,13 +187,11 @@ namespace C1
             string aliases;
             if (t.UniProtAccession != null && UniProtAcc2GOAliases.TryGetValue(t.UniProtAccession, out aliases))
             {
-                List<string> useful = new List<string>();
                 foreach (string alias in aliases.Split(';'))
                 {
                     if (alias != t.Name && alias != t.GeneName && !alias.EndsWith("Rik"))
-                        useful.Add(alias);
+                        t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, "synonym", alias, ""));
                 }
-                t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, "synonyms", string.Join(";", useful.ToArray()), ""));
             }
         }
     }
@@ -225,6 +224,9 @@ namespace C1
                         string term = fields[4].Trim();
                         if (geneName == "" || term == "")
                             continue;
+                        GoTerm gt = go.GetTerm(term);
+                        if (gt == null || gt.Name == "cellular_component" || gt.Name == "biological_process" || gt.Name == "molecular_function")
+                            continue;
                         if (geneNameToGOTerms.ContainsKey(geneName) && !geneNameToGOTerms[geneName].Contains(term))
                             geneNameToGOTerms[geneName] += ";" + term;
                         else
@@ -241,17 +243,15 @@ namespace C1
             string terms;
             if (geneNameToGOTerms.TryGetValue(t.GeneName, out terms))
             {
-                List<string> descrs = new List<string>();
                 if (go != null)
                 {
                     GoTerm goTerm;
                     foreach (string term in terms.Split(';'))
                     {
                         if ((goTerm = go.GetTerm(term)) != null)
-                            descrs.Add(goTerm.Name);
+                            t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, "GO", term.Replace("GO:", ""), goTerm.Name));
                     }
                 }
-                t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, "GO", terms, string.Join(";", descrs.ToArray())));
             }
         }
     }
@@ -275,6 +275,13 @@ namespace C1
                 return;
             }
             biosystems = Biosystems.FromFile(bsid2InfoPath);
+            ReadBiosystemsGene(genePath);
+            Console.WriteLine("Initiated transcript annotator with {0} pathway associations from {1}",
+                               entrezIDToBiosystem.Count, genePath);
+        }
+
+        private void ReadBiosystemsGene(string genePath)
+        {
             using (StreamReader r = genePath.OpenRead())
             {
                 string line;
@@ -287,8 +294,6 @@ namespace C1
                 }
             }
             entrezIDToBiosystem.Sort(EntrezIDComparer);
-            Console.WriteLine("Initiated transcript annotator with {0} pathway associations from {1}",
-                               entrezIDToBiosystem.Count, genePath);
         }
 
         private static int EntrezIDComparer(Pair<int, int> p1, Pair<int, int> p2)
@@ -314,7 +319,7 @@ namespace C1
                     {
                         if (!sysBySource.ContainsKey(b.Source))
                             sysBySource[b.Source] = new List<Biosystem>();
-                        if (!sysBySource[b.Source].Contains(b))
+                        if (!sysBySource[b.Source].Any(v => v.Accession == b.Accession))
                             sysBySource[b.Source].Add(b);
                     }
                     if (++idx >= entrezIDToBiosystem.Count)
@@ -323,9 +328,8 @@ namespace C1
                 }
                 foreach (KeyValuePair<string, List<Biosystem>> sbb in sysBySource)
                 {
-                    string accs = string.Join(";", sbb.Value.ConvertAll(bs => bs.Accession).ToArray());
-                    string names = string.Join(";", sbb.Value.ConvertAll(bs => bs.Name).ToArray());
-                    t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, sbb.Key, accs, names));
+                    foreach (Biosystem bs in sbb.Value)
+                        t.TranscriptAnnotations.Add(new TranscriptAnnotation(null, null, bs.Source, bs.Accession, bs.Name));
                 }
             }
         }
@@ -361,11 +365,23 @@ namespace C1
         {
             string[] fields = line.Split('\t');
             string bsid = fields[0].Trim();
+            string source = fields[1].Trim();
+            string acc = fields[2].Trim();
+            if (source == "KEGG")
+            {
+                Match m = Regex.Match(acc, "^[A-Za-z]+([0-9]+)$");
+                if (m.Success)
+                    acc = m.Groups[1].Value;
+            }
+            else if (source == "REACTOME")
+                acc = acc.Replace("REACT_", "");
+            else if (source == "WikiPathways")
+                acc = acc.Replace("WP", "");
             if (fields.Length == 8)
-                return new Biosystem(bsid, fields[1].Trim(), fields[2].Trim(), fields[3].Trim(),
+                return new Biosystem(bsid, source, acc, fields[3].Trim(),
                                         fields[4].Trim(), fields[5].Trim(), fields[6].Trim(), fields[7].Trim());
             else
-                return new Biosystem(bsid, fields[1].Trim(), fields[2].Trim(), fields[3].Trim(), "N/A", "N/A", "N/A", "");
+                return new Biosystem(bsid, source, acc, fields[3].Trim(), "N/A", "N/A", "N/A", "");
         }
     }
 

@@ -41,7 +41,7 @@ namespace C1
             }
             Props.props.DirectionalReads = true;
             AnnotationReader annotationReader = AnnotationReader.GetAnnotationReader(genome, annotationFile);
-            Console.WriteLine("Building transcript models from...", annotationFile);
+            Console.WriteLine("Building transcript models from " + annotationFile + "...");
             int nModels = annotationReader.BuildGeneModelsByChr();
             Console.WriteLine("...{0} models constructed.", nModels);
             if (Props.props.GeneFeature5PrimeExtension > 0)
@@ -53,20 +53,27 @@ namespace C1
                 annotationReader.AddCommonGeneModels(commonChrId);
             if (doInsert)
             {
-                InsertIntoC1Db(genome, annotationReader);
-                InsertRepeatsIntoC1Db(genome);
+                int transcriptomeID = InsertTranscriptomeIntoC1Db(genome, annotationReader);
+                InsertGenesIntoC1Db(transcriptomeID, genome, annotationReader);
+                InsertRepeatsIntoC1Db(transcriptomeID, genome);
             }
         }
 
-        private static void InsertIntoC1Db(StrtGenome genome, AnnotationReader annotationReader)
+        private static int InsertTranscriptomeIntoC1Db(StrtGenome genome, AnnotationReader annotationReader)
         {
-            TranscriptAnnotator ta = new TranscriptAnnotator(genome);
             C1DB db = new C1DB();
             Console.WriteLine("Inserting transcriptome metadata into database...");
             Transcriptome tt = new Transcriptome(null, genome.BuildVarAnnot, genome.Abbrev, genome.Annotation,
                                                  annotationReader.VisitedAnnotationPaths,
                                                  "", DateTime.Now, "1", DateTime.MinValue, null);
             db.InsertTranscriptome(tt);
+            return tt.TranscriptomeID.Value;
+        }
+
+        private static void InsertGenesIntoC1Db(int transcriptomeID, StrtGenome genome, AnnotationReader annotationReader)
+        {
+            C1DB db = new C1DB();
+            TranscriptAnnotator ta = new TranscriptAnnotator(genome);
             Console.WriteLine("Inserting transcripts into database...");
             int n = 0;
             foreach (GeneFeature gf in annotationReader.IterChrSortedGeneModels())
@@ -74,7 +81,7 @@ namespace C1
                 string type = gf.GeneType == "" ? "gene" : gf.GeneType;
                 Transcript t = AnnotationReader.CreateNewTranscriptFromGeneFeature(gf);
                 ta.Annotate(ref t);
-                t.TranscriptomeID = tt.TranscriptomeID.Value;
+                t.TranscriptomeID = transcriptomeID;
                 t.ExprBlobIdx = n;
                 db.InsertTranscript(t);
                 n++;
@@ -87,7 +94,7 @@ namespace C1
         /// These are read directly from the same repeat mask files during analysis.
         /// </summary>
         /// <param name="genome"></param>
-        private static void InsertRepeatsIntoC1Db(StrtGenome genome)
+        private static void InsertRepeatsIntoC1Db(int transcriptomeID, StrtGenome genome)
         {
             Console.WriteLine("Inserting repeat types into database...");
             C1DB db = new C1DB();
@@ -124,6 +131,7 @@ namespace C1
                 foreach (KeyValuePair<string, int> p in repeatTypeLengths)
                 {
                     Transcript rt = new Transcript(p.Key, "repeat", p.Key, p.Key, "", "", "", 0, 0, p.Value, '0', 0, "0,", "0,");
+                    rt.TranscriptomeID = transcriptomeID;
                     db.InsertTranscript(rt);
                 }
                 Console.WriteLine("... totally {0} repeat types inserted.", nRepeatFeatures);

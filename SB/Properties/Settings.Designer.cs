@@ -44,5 +44,15 @@ namespace SB.Properties {
                 return ((string)(this["C1DBConnString"]));
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.SpecialSettingAttribute(global::System.Configuration.SpecialSetting.ConnectionString)]
+        [global::System.Configuration.DefaultSettingValueAttribute("server=send.ki.se;uid=linmbb;pwd=ser345MM;port=25")]
+        public string EmailConnString {
+            get {
+                return ((string)(this["EmailConnString"]));
+            }
+        }
     }
 }

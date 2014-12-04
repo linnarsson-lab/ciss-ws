@@ -860,7 +860,7 @@ namespace Linnarsson.Strt
             {
                 outFile.WriteLine(header);
                 WriteSampleAnnotationLines(outFile, 5, true, speciesBcIndexes);
-                outFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tExonHits");
+                outFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tAllBcSum");
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     StringBuilder sbDatarow = new StringBuilder();

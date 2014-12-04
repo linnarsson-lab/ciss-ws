@@ -6,7 +6,6 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Threading;
-using System.Net.Mail;
 using Linnarsson.Dna;
 using Linnarsson.Strt;
 using Linnarsson.Mathematics;
@@ -145,14 +144,9 @@ namespace C1
 
         private static void NotifyManager(string chipDir, string errormsg)
         {
-            string from = Props.props.ProjectDBProcessorNotifierEmailSender;
             string subject = "C1Copier.exe error on loading " + chipDir;
             string body = "<html><p>" + errormsg + "</p><p>Please consult logfile " + logFile + ".</p></html>\n";
-            string toEmails = Props.props.FailureReportEmail;
-            MailMessage message = new MailMessage(from, toEmails, subject, body);
-            message.IsBodyHtml = true;
-            SmtpClient mailClient = new SmtpClient("localhost", 25);
-            mailClient.Send(message);
+            EmailSender.ReportFailureToAdmin(subject, body, true);
         }
 
         private static string Copy(string chipDir)

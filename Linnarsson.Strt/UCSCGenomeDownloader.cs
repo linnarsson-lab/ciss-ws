@@ -24,7 +24,7 @@ namespace Linnarsson.Strt
 
         string goldenPathGenomes = "ftp://hgdownload.cse.ucsc.edu/goldenPath";
         string loginName = "anonymous";
-        string password = Props.props.FailureReportEmail;
+        string password = Props.props.FailureReportAndAnonDownloadEmail;
         string gencodeMatcher = "wgEncodeGencodeCompV([0-9]+).txt.gz";
 
         /// <summary>

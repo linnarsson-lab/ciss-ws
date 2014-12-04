@@ -47,8 +47,7 @@ namespace Linnarsson.Dna
         public string ResultDownloadUrl = "strtserver@127.0.0.1:/html/strt/";
         public string ResultDownloadFolderHttp = "http://127.0.0.1/html/strt/";
         public string ResultDownloadScpPort = "0";
-        public string FailureReportEmail = "silver.bullet@my.server";
-        public string ProjectDBProcessorNotifierEmailSender = "silver.bullet@my.server";
+        public string FailureReportAndAnonDownloadEmail = "silver.bullet@my.server";
         public string OutgoingMailSender = "silver.bullet@my.server";
         public string OutgoingMailServer = "send.my.server";
         public string OutgoingMailUser = "";
@@ -193,6 +192,25 @@ namespace Linnarsson.Dna
             ConnectionStringSettings settings = section.ConnectionStrings["SB.Properties.Settings.MainDBConnString"];
             if (settings != null)
                 props.MySqlServerConnectionString = settings.ConnectionString;
+            settings = section.ConnectionStrings["SB.Properties.Settings.EmailConnString"];
+            if (settings != null)
+            {
+                foreach (string part in settings.ConnectionString.Split(';'))
+                {
+                    string[] fields = part.Split('=');
+                    if (fields.Length == 2)
+                    {
+                        if (fields[0] == "server")
+                            props.OutgoingMailServer = fields[1];
+                        else if (fields[0] == "uid")
+                            props.OutgoingMailUser = fields[1];
+                        else if (fields[0] == "pwd")
+                            props.OutgoingMailPassword = fields[1];
+                        else if (fields[0] == "port")
+                            props.OutgoingMailPort = int.Parse(fields[1]);
+                    }
+                }
+            }
         }
 
         // Singleton stuff below

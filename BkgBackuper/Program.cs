@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Diagnostics;
-using System.Net.Mail;
 using System.Threading;
 using Linnarsson.Strt;
 using Linnarsson.Dna;
@@ -110,15 +109,9 @@ namespace BkgBackuper
 
         private static void ReportExceptionTermination(string logFile)
         {
-            string from = Props.props.ProjectDBProcessorNotifierEmailSender;
-            string to = Props.props.FailureReportEmail;
-            string smtp = "localhost";
             string subject = "BkgBackuper PID=" + Process.GetCurrentProcess().Id + " quit with exceptions.";
             string body = "Please consult logfile " + logFile + " for more info on the errors.";
-            MailMessage message = new MailMessage(from, to, subject, body);
-            message.IsBodyHtml = false;
-            SmtpClient mailClient = new SmtpClient(smtp, 25);
-            mailClient.Send(message);
+            EmailSender.ReportFailureToAdmin(subject, body, true);
         }
 
         private static bool TimeOfDayOK()

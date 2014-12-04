@@ -8,8 +8,6 @@ using System.Diagnostics;
 using Linnarsson.Dna;
 using Linnarsson.Strt;
 using Linnarsson.Utilities;
-using System.Net.Mail;
-using tar_cs;
 
 namespace ProjectDBProcessor
 {
@@ -102,16 +100,10 @@ namespace ProjectDBProcessor
 
         private static void ReportExceptionTermination(string logFile)
         {
-            string from = Props.props.ProjectDBProcessorNotifierEmailSender;
-            string to = Props.props.FailureReportEmail;
-            string smtp = "localhost";
             string subject = "ProjectDBProcessor PID=" + Process.GetCurrentProcess().Id + " quit with exceptions.";
             string body = "Please consult logfile " + logFile + " for more info on the errors.\n" +
                           "After fixing the error, restart with 'nohup ProjectDBProcessor.exe > PDBP.out &'";
-            MailMessage message = new MailMessage(from, to, subject, body);
-            message.IsBodyHtml = false;
-            SmtpClient mailClient = new SmtpClient(smtp, 25);
-            mailClient.Send(message);
+            EmailSender.ReportFailureToAdmin(subject, body, false);
         }
 
         /// <summary>
@@ -207,7 +199,7 @@ namespace ProjectDBProcessor
 
         private static bool HandleError(ProjectDescription projDescr, List<string> messages, Exception e, bool recoverable)
         {
-            projDescr.managerEmails += ";" + Props.props.FailureReportEmail;
+            projDescr.managerEmails += ";" + Props.props.FailureReportAndAnonDownloadEmail;
             logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.plateId + " ***\n" + e);
             logWriter.Flush();
             string errorMsg = e.Message;
@@ -256,8 +248,6 @@ namespace ProjectDBProcessor
         private static void NotifyManager(ProjectDescription projDescr, List<string> results)
         {
             if (projDescr.managerEmails == "") return;
-            string from = Props.props.ProjectDBProcessorNotifierEmailSender;
-            string smtp = "localhost";
             bool success = (projDescr.status == ProjectDescription.STATUS_READY);
             string subject = (success)? "Results ready from STRT project " + projDescr.plateId :
                                         "Failure processing STRT project " + projDescr.plateId;
@@ -290,10 +280,8 @@ namespace ProjectDBProcessor
                 sb.Append("<br />\nBowtie index: " + rd.bowtieIndexVersion + " - Results: " + rd.resultFolder);
             sb.Append("\n</code>\n</html>");
             string toEmails = projDescr.managerEmails.Replace(';', ','); // C# requires email addresses separated by ','
-            MailMessage message = new MailMessage(from, toEmails, subject, sb.ToString());
-            message.IsBodyHtml = true;
-            SmtpClient mailClient = new SmtpClient(smtp, 25);
-            mailClient.Send(message);
+            string body = sb.ToString();
+            EmailSender.SendMsg(toEmails, subject, body, true);
         }
 
         private static List<string> PublishResultsForDownload(ProjectDescription projDescr)

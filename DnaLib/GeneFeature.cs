@@ -385,9 +385,9 @@ namespace Linnarsson.Dna
         {
             return GetTranscriptHits() > 0;
         }
-        public bool IsExpressed(int barcodeIdx)
+        public bool IsExpressed(int bcIdx)
         {
-            return TrMolsByBc[barcodeIdx] > 0;
+            return (TrMolsByBc != null) ? TrMolsByBc[bcIdx] > 0 : TrReadsByBc[bcIdx] > 0;
         }
         /// <summary>
         /// # of hits to INTR, USTR and DSTR. (+Anti-versions for non-directional data)
@@ -648,11 +648,13 @@ namespace Linnarsson.Dna
             MarkLocusHitPos(item);
             AddToTotalHits(item);
             TranscriptHitsByExonIdx[exonIdx] += item.MolCount;
-            if (MaxOccupiedUMIsOnEXONByBc != null)
+            if (Props.props.Barcodes.HasUMIs)
+            {
+                TrMolsByBc[item.bcIdx] += (ushort)item.MolCount;
+                EstimatedTrueMolsByBc[item.bcIdx] += (ushort)item.EstTrueMolCount;
                 MaxOccupiedUMIsOnEXONByBc[item.bcIdx] = Math.Max((ushort)item.ObservedMolCount, MaxOccupiedUMIsOnEXONByBc[item.bcIdx]);
-            if (TrMolsByBc != null) TrMolsByBc[item.bcIdx] += (ushort)item.MolCount;
+            }
             TrReadsByBc[item.bcIdx] += item.ReadCount;
-            EstimatedTrueMolsByBc[item.bcIdx] += (ushort)item.EstTrueMolCount;
             if (markType == MarkStatus.UNIQUE_EXON_MAPPING)
             {
                 if (NonConflictingTrMolsByBc != null) NonConflictingTrMolsByBc[item.bcIdx] += (ushort)item.MolCount;

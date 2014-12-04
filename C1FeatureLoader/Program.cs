@@ -25,18 +25,25 @@ namespace C1
                 Console.WriteLine("The input gene definition and annotation files can be downloaded with the 'SB.exe download' command.");
                 Console.WriteLine("Usage:\nmono C1FeatureLoader.exe GENOME [-f ANNOTATIONFILE] [-i]\nwhere genome is e.g. 'mm10_aUCSC' or 'hg19_sENSE'");
                 Console.WriteLine("Without -i, an updated refFlat flat of the 5'-extended genes is written, but no DB inserts are made.");
+                Console.WriteLine("Use -u ID to only update/replace the transcript annotations of the transcriptome with database id ID.");
                 return;
             }
             StrtGenome genome = StrtGenome.GetGenome(args[0]);
-            bool doInsert = false;
+            string doInsert = "";
+            int updateTomeID = -1;
             string annotationFile = "";
             int i = 1;
             while (i < args.Length)
             {
                 if (args[i] == "-i")
-                    doInsert = true;
+                    doInsert = "i";
                 else if (args[i] == "-f")
                     annotationFile = args[++i];
+                else if (args[i] == "-u")
+                {
+                    doInsert = "u";
+                    updateTomeID = int.Parse(args[++i]);
+                }
                 i++;
             }
             Props.props.DirectionalReads = true;
@@ -51,12 +58,14 @@ namespace C1
             }
             foreach (string commonChrId in Props.props.CommonChrIds)
                 annotationReader.AddCommonGeneModels(commonChrId);
-            if (doInsert)
+            if (doInsert == "i")
             {
                 int transcriptomeID = InsertTranscriptomeIntoC1Db(genome, annotationReader);
                 InsertGenesIntoC1Db(transcriptomeID, genome, annotationReader);
                 InsertRepeatsIntoC1Db(transcriptomeID, genome);
             }
+            else if (doInsert == "u")
+                UpdateTranscriptAnnotations(updateTomeID, genome, annotationReader);
         }
 
         private static int InsertTranscriptomeIntoC1Db(StrtGenome genome, AnnotationReader annotationReader)
@@ -87,6 +96,23 @@ namespace C1
                 n++;
             }
             Console.WriteLine("...totally {0} transcript models inserted.", n);
+        }
+
+        private static void UpdateTranscriptAnnotations(int transcriptomeID, StrtGenome genome, AnnotationReader annotationReader)
+        {
+            C1DB db = new C1DB();
+            TranscriptAnnotator ta = new TranscriptAnnotator(genome);
+            Console.WriteLine("Updating transcript annotations for transcriptome " + transcriptomeID + " in database...");
+            int n = 0;
+            foreach (GeneFeature gf in annotationReader.IterChrSortedGeneModels())
+            {
+                string type = gf.GeneType == "" ? "gene" : gf.GeneType;
+                Transcript t = AnnotationReader.CreateNewTranscriptFromGeneFeature(gf);
+                ta.Annotate(ref t);
+                t.TranscriptomeID = transcriptomeID;
+                if (db.UpdateTranscriptAnnotations(t)) n++;
+            }
+            Console.WriteLine("...updated annotations for {0} uniquely identified transcript models.", n);
         }
 
         /// <summary>

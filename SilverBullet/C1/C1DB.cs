@@ -177,6 +177,35 @@ namespace C1
             }
         }
 
+        public bool UpdateTranscriptAnnotations(Transcript t)
+        {
+            string sql = "SELECT TranscriptID FROM Transcript WHERE TranscriptomeID='{0}' AND Type='{1}' " +
+                              "AND GeneName='{2}' AND EntrezID='{3}' AND Chromosome='{4}'";
+            sql = string.Format(sql, t.TranscriptomeID, t.Type, t.UniqueGeneName, t.EntrezID, t.Chromosome);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            int transcriptId = -1;            
+            if (rdr.Read())
+            {
+                transcriptId = int.Parse(rdr["TranscriptId"].ToString());
+                if (rdr.Read())
+                    transcriptId = -1;
+            }
+            conn.Close();
+            if (transcriptId > -1)
+            {
+                IssueNonQuery("DELETE FROM TranscriptAnnotation WHERE TranscriptID=" + transcriptId);
+                foreach (TranscriptAnnotation ta in t.TranscriptAnnotations)
+                {
+                    ta.TranscriptID = transcriptId;
+                    InsertTranscriptAnnotation(ta);
+                }
+            }
+            return (transcriptId > -1);
+        }
+
         public void InsertTranscriptAnnotation(TranscriptAnnotation ta)
         {
             string description = MySqlHelper.EscapeString(ta.Description);

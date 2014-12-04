@@ -115,7 +115,7 @@ namespace C1
         private static string annotationFilename = "refLink.txt";
 
         public RefLinkAnnotator(StrtGenome genome)
-            : base(genome, annotationFilename, new int[] { 0, 2 }, new int[] { 1, 6 }, "Description & EntrezId")
+            : base(genome, annotationFilename, new int[] { 0, 2 }, new int[] { 1, 6 }, "EntrezId & alt. descriptions")
         { }
 
         public override void Annotate(ref Transcript t)

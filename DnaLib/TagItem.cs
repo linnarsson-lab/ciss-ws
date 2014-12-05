@@ -21,6 +21,9 @@ namespace Linnarsson.Dna
             return CreateTagItem(false, false);
         }
 
+        /// <summary>
+        /// true indicates that # reads/UMI is counted and available (by the xxxTagItem subclass)
+        /// </summary>
         public static bool CountsReadsPerUMI { get; protected set; }
 
         public static void InitTagItemType()

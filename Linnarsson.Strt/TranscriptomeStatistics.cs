@@ -119,6 +119,7 @@ namespace Linnarsson.Strt
         private UpstreamAnalyzer upstreamAnalyzer;
         private GCAnalyzer gcAnalyzer;
         private PerLaneStats perLaneStats;
+        private OverOccupiedUMICounter occupiedUMICounter;
 
         private StreamWriter UMIProfileByGeneWriter;
         private List<GeneFeature> readsPerMoleculeHistogramGenes;
@@ -162,6 +163,8 @@ namespace Linnarsson.Strt
                 upstreamAnalyzer = new UpstreamAnalyzer(Annotations, barcodes);
             if (props.AnalyzeGCContent)
                 gcAnalyzer = new GCAnalyzer(barcodes.Count);
+            if (barcodes.HasUMIs)
+                occupiedUMICounter = new OverOccupiedUMICounter(barcodes);
             perLaneStats = new PerLaneStats(barcodes);
             minMismatchReadCountForSNPDetection = props.MinAltNtsReadCountForSNPDetection;
             nMaxMappings = props.MaxAlternativeMappings - 1;
@@ -444,6 +447,8 @@ namespace Linnarsson.Strt
                     upstreamAnalyzer.CheckSeqUpstreamTSSite(item, currentBcIdx);
                 if (exonHitFeatures.Count > 1)
                     RegisterOverlappingGeneFeatures(molCount);
+                if (occupiedUMICounter != null)
+                    occupiedUMICounter.Check(item, exonHitFeatures);
             }
             else if (item.chr != spliceChrId)
             { // Annotate all features of molecules that do not map to any transcript
@@ -628,6 +633,8 @@ namespace Linnarsson.Strt
         /// <param name="resultDescr"></param>
 		public void SaveResult(ReadCounter readCounter, ResultDescription resultDescr)
 		{
+            if (occupiedUMICounter != null)
+                occupiedUMICounter.WriteOutput(OutputPathbase);
             if (geneExpressionSummary != null)
                 geneExpressionSummary.WriteOutput(OutputPathbase);
             PaintReadIntervals();

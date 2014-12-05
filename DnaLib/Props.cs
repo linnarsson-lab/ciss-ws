@@ -139,6 +139,7 @@ namespace Linnarsson.Dna
         public string ChrCTRLId = "CTRL";
         public string[] CommonChrIds = new string[] { "CTRL", "EXTRA" };
         public bool AddRefFlatToNonRefSeqBuilds = false;
+        public double CriticalOccupiedUMIFraction = 0.80;
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

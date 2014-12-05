@@ -61,6 +61,7 @@
     <Compile Include="MappingAdder.cs" />
     <Compile Include="NonExonRepeatMasker.cs" />
     <Compile Include="MoleculeCounter.cs" />
+    <Compile Include="OveroccupiedUMICounter.cs" />
     <Compile Include="PerLaneStats.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReadCounter.cs" />

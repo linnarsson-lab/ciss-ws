@@ -1393,8 +1393,10 @@ namespace Linnarsson.Strt
                 for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                 {
                     if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
-                    if (onlyGenomeBcIndexes.Contains(bcIdx)) xmlFile.Write("    <d>{0:0.###}</d>", labelingEfficiencyEstimator.LabelingEfficiencyByBc[bcIdx]);
-                    else xmlFile.Write("    <d>({0:0.###})</d>", labelingEfficiencyEstimator.LabelingEfficiencyByBc[bcIdx]);
+                    double e = labelingEfficiencyEstimator.LabelingEfficiencyByBc[bcIdx];
+                    string es = (e < 0.0005) ? "0" : string.Format("{0:0.000}", e);
+                    if (onlyGenomeBcIndexes.Contains(bcIdx)) xmlFile.Write("    <d>{0}</d>", es);
+                    else xmlFile.Write("    <d>({0})</d>", es);
                 }
                 xmlFile.WriteLine("\n    </barcodestat>");
             }

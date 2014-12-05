@@ -19,8 +19,8 @@ namespace Linnarsson.Dna
     {
         public string Filename;
         public Dictionary<string, string> SpeciesIdBySampleId = new Dictionary<string, string>(); // All speciesIds are lower case
-        protected HashSet<string> m_SpeciesIds = new HashSet<string>(); // Distinct abbreviations found in SpeciesIdBySampleId
-        public string[] SpeciesIds { get { return m_SpeciesIds.ToArray(); } }
+        protected HashSet<string> m_BuildIds = new HashSet<string>(); // Distinct builds corresponding to abbrevs in SpeciesIdBySampleId
+        public string[] BuildIds { get { return m_BuildIds.ToArray(); } }
         protected Dictionary<string, string[]> AnnotationsBySampleId = new Dictionary<string, string[]>();
         protected Dictionary<string, int> AnnotationIndexes = new Dictionary<string, int>();
         public int Length { get { return SpeciesIdBySampleId.Count; } }
@@ -34,12 +34,18 @@ namespace Linnarsson.Dna
             return AnnotationsBySampleId[sampleId][AnnotationIndexes[annotation]];
         }
 
-        protected string ParseSpeciesId(string speciesId)
+        /// <summary>
+        /// Get a valid speciesId, e.g. 'mm' out of a user-specified species or build Id. Also add to buildIds HashSet.
+        /// </summary>
+        /// <param name="speciesId"></param>
+        /// <returns></returns>
+        protected string ParseSpeciesOrBuildId(string speciesId)
         {
             try
             {
-                speciesId = StrtGenome.GetGenome(speciesId.ToLower().Trim()).Abbrev;
-                m_SpeciesIds.Add(speciesId);
+                StrtGenome g = StrtGenome.GetGenome(speciesId.ToLower().Trim());
+                speciesId = g.Abbrev;
+                m_BuildIds.Add(g.Build);
             }
             catch (ArgumentException)
             {
@@ -94,10 +100,10 @@ namespace Linnarsson.Dna
             int validIdx = AnnotationIndexes["Valid"];
             foreach (KeyValuePair<string, string[]> p in AnnotationsBySampleId)
             {
-                string speciesId = ParseSpeciesId(p.Value[spIdx]);
+                string speciesId = ParseSpeciesOrBuildId(p.Value[spIdx]);
                 SpeciesIdBySampleId[p.Key] = (p.Value[validIdx] == "Y")? speciesId : "empty";
             }
-            if (m_SpeciesIds.Count == 0)
+            if (m_BuildIds.Count == 0)
                 throw new SampleLayoutFileException("No parseable species in database for " + plateId +
                                                     ". Change to two-letter abbrevation or full latin name (e.g. 'Hs' or 'Homo sapiens')");
             Filename = "C1 database";
@@ -140,7 +146,7 @@ namespace Linnarsson.Dna
                     string sampleId = fields[sampleIdIdx].Trim();
                     if (SpeciesIdBySampleId.ContainsKey(sampleId))
                         throw new SampleLayoutFileException("Duplicated sampleId in " + plateLayoutPath);
-                    string speciesId = ParseSpeciesId(fields[speciesIdIdx]);
+                    string speciesId = ParseSpeciesOrBuildId(fields[speciesIdIdx]);
                     SpeciesIdBySampleId[sampleId] = speciesId;
                     List<string> otherFields = new List<string>();
                     for (int colIdx = 0; colIdx < fields.Length; colIdx++)
@@ -153,7 +159,7 @@ namespace Linnarsson.Dna
                 line = reader.ReadLine();
             }
             reader.Close();
-            if (m_SpeciesIds.Count == 0)
+            if (m_BuildIds.Count == 0)
                 throw new SampleLayoutFileException("No parseable species in " + plateLayoutPath + 
                                                     ". Use two-letter abbrevation or full latin name (e.g. 'Hs' or 'Homo sapiens')");
         }

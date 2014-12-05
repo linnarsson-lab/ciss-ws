@@ -278,13 +278,13 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// If sampleLayoutPath is parsable, the species name(s) to use are extracted from that file,
-        /// and reads the layout into Barcodes object. Otherwise the defaultSpeciesArg is simply returned. 
+        /// If sampleLayoutPath is parsable, the species/build name(s) to use are extracted from that file,
+        /// and the layout it read into Barcodes object. Otherwise the defaultSpeciesArg is simply returned.
         /// </summary>
         /// <param name="projectName"></param>
         /// <param name="sampleLayoutPath"></param>
         /// <param name="defaultSpeciesArg"></param>
-        /// <returns>Ids of all the species that are on the plate</returns>
+        /// <returns>Ids of all the species/builds that are on the plate</returns>
         private string[] ParsePlateLayout(string projectName, string sampleLayoutPath, string defaultSpeciesArg)
         {
             string[] speciesArgs = new string[] { defaultSpeciesArg };
@@ -293,7 +293,7 @@ namespace Linnarsson.Strt
             if (sampleLayout != null)
             {
                 barcodes.SetSampleLayout(sampleLayout);
-                speciesArgs = sampleLayout.SpeciesIds;
+                speciesArgs = sampleLayout.BuildIds;
             }
             return speciesArgs;
         }

@@ -358,8 +358,8 @@ namespace Linnarsson.Strt
                 if (mappingAdder.Add(mrm))
                 {
                     nExonAnnotatedReads++;
-                    if (Props.props.AnalyzeGCContent && Annotations.HasChromosome(mrm[0].Chr))
-                        gcAnalyzer.Add(currentBcIdx, Annotations.GetChromosome(mrm[0].Chr).SubSequence(mrm[0].Position, mrm[0].SeqLen));
+                    if (Props.props.AnalyzeGCContent && Annotations.HasChrSeq(mrm[0].Chr))
+                        gcAnalyzer.Add(currentBcIdx, Annotations.GetChrSeq(mrm[0].Chr).SubSequence(mrm[0].Position, mrm[0].SeqLen));
                     if (analyzeMappingsBySpikeReads && mrm[0].Chr == Props.props.ChrCTRLId)
                     {
                         if (--sampleSpikeReadsPerMolCounter == 0)
@@ -463,8 +463,8 @@ namespace Linnarsson.Strt
             if (someAnnotationHit)
             {
                 nAnnotatedMappings += molCount;
-                if (DetermineMotifs && item.chr != spliceChrId && !item.hasAltMappings && Annotations.HasChromosome(item.chr))
-                    motifs[currentBcIdx].Add(Annotations.GetChromosome(item.chr), item.hitStartPos - 20 - 1, item.DetectedStrand);
+                if (DetermineMotifs && item.chr != spliceChrId && !item.hasAltMappings && Annotations.HasChrSeq(item.chr))
+                    motifs[currentBcIdx].Add(Annotations.GetChrSeq(item.chr), item.hitStartPos - 20 - 1, item.DetectedStrand);
             }
             else
             {
@@ -1786,9 +1786,9 @@ namespace Linnarsson.Strt
                 foreach (KeyValuePair<string, ChrTagData> tagDataPair in randomTagFilter.chrTagDatas)
                 {
                     string chr = tagDataPair.Key;
-                    if (!StrtGenome.IsSyntheticChr(chr))
+                    if (!StrtGenome.IsSyntheticChr(chr) && Annotations.HasChrLen(chr))
                     {
-                        int chrLen = Annotations.ChromosomeLengths[chr];
+                        int chrLen = Annotations.GetChrLen(chr);
                         int[] positions, molsAtEachPos, readsAtEachPos;
                         tagDataPair.Value.GetDistinctPositionsAndCounts(strand, SelectedBcWiggleAnnotations,
                                                         out positions, out molsAtEachPos, out readsAtEachPos, allBarcodes);
@@ -1820,7 +1820,7 @@ namespace Linnarsson.Strt
                 foreach (KeyValuePair<string, ChrTagData> data in randomTagFilter.chrTagDatas)
                 {
                     string chr = data.Key;
-                    if (!StrtGenome.IsSyntheticChr(chr))
+                    if (!StrtGenome.IsSyntheticChr(chr) && Annotations.HasChrLen(chr))
                     {
                         data.Value.GetDistinctPositionsAndCounts('+', null, out positions, out molsAtEachPos, out readsAtEachPos, true);
                         FindHotspots(writer, chr, '+', positions, readsAtEachPos);
@@ -1834,7 +1834,7 @@ namespace Linnarsson.Strt
         private void FindHotspots(StreamWriter writer, string chr, char strand, int[] positions, int[] counts)
         {
             int averageReadLength = MappedTagItem.AverageReadLen;
-            int chrLength = Annotations.ChromosomeLengths[chr];
+            int chrLength = Annotations.GetChrLen(chr);
             HotspotFinder hFinder = new HotspotFinder(maxHotspotCount);
             Queue<int> stops = new Queue<int>();
             int lastHit = 0;

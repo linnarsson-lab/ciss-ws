@@ -35,12 +35,17 @@ namespace Linnarsson.Dna
         [NonSerialized]
         public static readonly string configFilename = "SilverBulletConfig.xml"; // Filename of machine specific Props
 
+        // Following props are imported from the "SB.exe.config" file, where they are encrypted, see below.
+        public string MySqlServerConnectionString = "server=127.0.0.1;uid=user;pwd=password;database=joomla;Connect Timeout=300;Charset=utf8;";
+        public string OutgoingMailServer = "send.my.server";
+        public string OutgoingMailUser = "";
+        public string OutgoingMailPassword = "";
+        public int OutgoingMailPort = 0;
+
         // Default values for configuration follows.
         public string IlluminaRunReadyFilename = "Basecalling_Netcopy_complete.txt"; // File in Illumina runs folders that indicate run completed
         public string GenomesFolder = "\\\\127.0.0.1\\data\\genomes";
         public string RunsFolder = "\\\\127.0.0.1\\data\\runs"; // Where Illumina raw data are stored
-        // ConnectionString is now imported from the "SB.exe.config" file, where it is encrypted, see below.
-        public string MySqlServerConnectionString = "server=127.0.0.1;uid=user;pwd=password;database=joomla;Connect Timeout=300;Charset=utf8;";
         public string ReadsFolder = "\\\\127.0.0.1\\data\\reads"; // Where FastQ files of concatenated reads for each lane are gathered
         public string ProjectsFolder = "\\\\127.0.0.1\\data\\strt";
         public string UploadsFolder = "\\\\127.0.0.1\\uploads";
@@ -49,15 +54,10 @@ namespace Linnarsson.Dna
         public string ResultDownloadScpPort = "0";
         public string FailureReportAndAnonDownloadEmail = "silver.bullet@my.server";
         public string OutgoingMailSender = "silver.bullet@my.server";
-        public string OutgoingMailServer = "send.my.server";
-        public string OutgoingMailUser = "";
-        public string OutgoingMailPassword = "";
-        public int OutgoingMailPort = 0;
         public string BowtieIndexFolder = "\\\\127.0.0.1\\sequtils\\bowtie-0.12.7\\indexes";
         public string OutputDocFile = "\\\\127.0.0.1\\data\\strt\\STRTOutputManual.pdf";
         public int BkgBackuperStartHour = 17;
         public int BkgBackuperStopHour = 8;
-
         public bool DebugAnnotation = false; // Will give output files of non-annotated and non-exon reads
         public bool GenerateWiggle = true; // Generate wiggle files for upload to UCSC Genome Browser
         public bool GenerateBed = false; // Generate read BED file

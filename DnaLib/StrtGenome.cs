@@ -224,7 +224,6 @@ namespace Linnarsson.Dna
         public static bool IsSyntheticChr(string chrId)
         {
             return Props.props.CommonChrIds.Any(id => chrId.EndsWith(id)) || IsASpliceAnnotation(chrId);
-            //return chrId.EndsWith(chrCTRLId) || IsASpliceAnnotation(chrId);
         }
 
         public static bool IsACommonChrId(string chrId)

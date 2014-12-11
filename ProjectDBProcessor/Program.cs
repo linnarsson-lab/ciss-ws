@@ -253,6 +253,7 @@ namespace ProjectDBProcessor
                                         "Failure processing STRT project " + projDescr.plateId;
             StringBuilder sb = new StringBuilder();
             sb.Append("<html>");
+            string toEmails = projDescr.managerEmails;
             if (success)
             {
                 if (results.Count == 0)
@@ -266,6 +267,7 @@ namespace ProjectDBProcessor
             }
             else
             {
+                toEmails = Props.props.FailureReportAndAnonDownloadEmail;
                 sb.Append("<p>The data analysis failed!</p>");
                 foreach (string msg in results)
                     sb.Append(msg);
@@ -279,7 +281,7 @@ namespace ProjectDBProcessor
             foreach (ResultDescription rd in projDescr.resultDescriptions)
                 sb.Append("<br />\nBowtie index: " + rd.bowtieIndexVersion + " - Results: " + rd.resultFolder);
             sb.Append("\n</code>\n</html>");
-            string toEmails = projDescr.managerEmails.Replace(';', ','); // C# requires email addresses separated by ','
+            toEmails = toEmails.Replace(';', ','); // C# requires email addresses separated by ','
             string body = sb.ToString();
             EmailSender.SendMsg(toEmails, subject, body, true);
         }

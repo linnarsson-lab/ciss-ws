@@ -20,13 +20,30 @@ namespace Linnarsson.Strt
         /// <summary>
         /// The actual chromosome sequences - only those needed for stat calc.
         /// </summary>
-        public Dictionary<string, DnaSequence> ChromosomeSequences { get; set; }
-        public Dictionary<string, int> ChromosomeLengths { get; set; }
+        private Dictionary<string, DnaSequence> ChromosomeSequences { get; set; }
+        private Dictionary<string, int> ChromosomeLengths { get; set; }
+
+        public bool HasChrSeq(string chr)
+        {
+            return ChromosomeSequences.ContainsKey(chr);
+        }
+        public DnaSequence GetChrSeq(string chr)
+        {
+            return ChromosomeSequences[chr];
+        }
+        public bool HasChrLen(string chr)
+        {
+            return ChromosomeLengths.ContainsKey(chr);
+        }
+        public int GetChrLen(string chr)
+        {
+            return ChromosomeLengths[chr];
+        }
 
         /// <summary>
         /// Map of all chrIds to their sequence files.
         /// </summary>
-        public Dictionary<string, string> ChrIdToFileMap;
+        private Dictionary<string, string> ChrIdToFileMap;
 
         /// <summary>
         /// Keeps number of overlapping exons for counter-orientation overlapping genes.
@@ -469,15 +486,6 @@ namespace Linnarsson.Strt
                 annotMaps[chr] = qMap;
             }
             qMap.Add(ivl);
-        }
-
-        public bool HasChromosome(string chr)
-        {
-            return ChromosomeSequences.ContainsKey(chr);
-        }
-        public DnaSequence GetChromosome(string chr)
-        {
-            return ChromosomeSequences[chr];
         }
 
         public int GetNumExpressedSpikes()

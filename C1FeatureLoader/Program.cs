@@ -129,30 +129,15 @@ namespace C1
             foreach (string rmskPath in rmskFiles)
             {
                 int nRepeatFeatures = 0;
-                string[] record;
-                int fileTypeOffset = 0;
-                if (rmskPath.EndsWith("out"))
-                    fileTypeOffset = -1;
-                using (StreamReader reader = rmskPath.OpenRead())
+                foreach (RmskData rd in RmskData.IterRmskFile(rmskPath))
                 {
-                    string line = reader.ReadLine();
-                    while (line == "" || !char.IsDigit(line.Trim()[0]))
-                        line = reader.ReadLine();
-                    while (line != null)
-                    {
-                        record = line.Split('\t');
-                        int start = int.Parse(record[6 + fileTypeOffset]);
-                        int end = int.Parse(record[7 + fileTypeOffset]);
-                        int len = 1 + end - start;
-                        string name = record[10 + fileTypeOffset];
-                        if (!repeatTypeLengths.ContainsKey(name))
+                        int len = 1 + rd.End - rd.Start;
+                        if (!repeatTypeLengths.ContainsKey(rd.Name))
                         {
                             nRepeatFeatures++;
-                            repeatTypeLengths[name] = 0;
+                            repeatTypeLengths[rd.Name] = 0;
                         }
-                        repeatTypeLengths[name] += len;
-                        line = reader.ReadLine();
-                    }
+                        repeatTypeLengths[rd.Name] += len;
                 }
                 foreach (KeyValuePair<string, int> p in repeatTypeLengths)
                 {

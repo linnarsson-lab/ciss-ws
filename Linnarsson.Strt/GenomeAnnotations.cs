@@ -249,42 +249,22 @@ namespace Linnarsson.Strt
 
         private void LoadRepeatMaskFile(string rmskPath, Dictionary<string, int> repeatToTrIdMap)
         {
-            int nLines = 0;
-            int nRepeatFeatures = 0;
-            string[] record;
             RepeatFeature reptFeature;
             QuickAnnotationMap annotMap;
-            int fileTypeOffset = 0;
-            if (rmskPath.EndsWith("out"))
-                fileTypeOffset = -1;
-            using (StreamReader reader = rmskPath.OpenRead())
+            foreach (RmskData rd in RmskData.IterRmskFile(rmskPath))
             {
-                string line = reader.ReadLine();
-                while (line == "" || !char.IsDigit(line.Trim()[0]))
-                    line = reader.ReadLine();
-                while (line != null)
+                if (NonExonAnnotations.TryGetValue(rd.Chr, out annotMap))
                 {
-                    nLines++;
-                    record = line.Split('\t');
-                    string chr = record[5 + fileTypeOffset].Substring(3);
-                    if (NonExonAnnotations.TryGetValue(chr, out annotMap))
+                    if (!repeatFeatures.TryGetValue(rd.Name, out reptFeature))
                     {
-                        int start = int.Parse(record[6 + fileTypeOffset]);
-                        int end = int.Parse(record[7 + fileTypeOffset]);
-                        string name = record[10 + fileTypeOffset];
-                        nRepeatFeatures++;
-                        if (!repeatFeatures.TryGetValue(name, out reptFeature))
-                        {
-                            repeatFeatures[name] = new RepeatFeature(name);
-                            int trID;
-                            if (!repeatToTrIdMap.TryGetValue(name, out trID)) trID = -1;
-                            repeatFeatures[name].C1DBTranscriptID = trID;
-                            reptFeature = repeatFeatures[name];
-                        }
-                        reptFeature.AddRegion(start, end);
-                        annotMap.Add(new FtInterval(start, end, reptFeature.MarkHit, 0, reptFeature, AnnotType.REPT, '0'));
+                        repeatFeatures[rd.Name] = new RepeatFeature(rd.Name);
+                        int trID;
+                        if (!repeatToTrIdMap.TryGetValue(rd.Name, out trID)) trID = -1;
+                        repeatFeatures[rd.Name].C1DBTranscriptID = trID;
+                        reptFeature = repeatFeatures[rd.Name];
                     }
-                    line = reader.ReadLine();
+                    reptFeature.AddRegion(rd.Start, rd.End);
+                    annotMap.Add(new FtInterval(rd.Start, rd.End, reptFeature.MarkHit, 0, reptFeature, AnnotType.REPT, '0'));
                 }
             }
         }
@@ -844,7 +824,7 @@ namespace Linnarsson.Strt
                         sb.Append("\t");
                         sb.Append(rf.TotalReadsByBc[bcIdx]);
                     }
-                    outFile.WriteLine("r_{0}\t\t\t\t{1}\t{2}{3}", rf.Name, rf.GetLocusLength(), rf.TotalReadsByBc.Sum(), sb);
+                    outFile.WriteLine("{0}\t\t\t\t{1}\t{2}{3}", rf.Name, rf.GetLocusLength(), rf.TotalReadsByBc.Sum(), sb);
                 }
             }
         }
@@ -947,7 +927,7 @@ namespace Linnarsson.Strt
                 }
                 foreach (RepeatFeature rf in repeatFeatures.Values)
                 {
-                    writer.Write("r_{0}\trepeats\t\t\t\t\t{1}\t\t{2}\t{2}", rf.Name, rf.GetLocusLength(), rf.Hits());
+                    writer.Write("{0}\trepeat\t\t\t\t\t{1}\t\t{2}\t{2}", rf.Name, rf.GetLocusLength(), rf.Hits());
                     foreach (int bcIdx in speciesBcIndexes)
                         writer.Write("\t{0}", rf.Hits(bcIdx));
                     writer.WriteLine();
@@ -1022,7 +1002,7 @@ namespace Linnarsson.Strt
                 }
                 foreach (RepeatFeature rf in repeatFeatures.Values)
                 {
-                    writer.Write("r_{0}\t\t\t", rf.Name);
+                    writer.Write("{0}\t\t\t", rf.Name);
                     foreach (int bcIdx in speciesBcIndexes)
                         writer.Write("\t{0}", rf.Hits(bcIdx));
                     writer.WriteLine();

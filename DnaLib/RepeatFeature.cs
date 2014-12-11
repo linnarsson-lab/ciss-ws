@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
+using Linnarsson.Utilities;
 
 namespace Linnarsson.Dna
 {
@@ -72,19 +74,6 @@ namespace Linnarsson.Dna
             C1DBTranscriptID = -1;
         }
 
-        public static RmskLine rmskLine = new RmskLine();
- 
-        public static RmskLine ParseRmskLine(string line)
-        {
-            string[] record = line.Split('\t');
-            rmskLine.Chr = record[5].Substring(3); // Remove "chr"
-            rmskLine.Start = int.Parse(record[6]);
-            rmskLine.End = int.Parse(record[7]);
-            rmskLine.Strand = record[9][0];
-            rmskLine.Name = "r_" + record[10];
-            return rmskLine;
-        }
-
         public void AddRegion(int start, int end)
         {
             Length += end - start + 1;
@@ -102,14 +91,41 @@ namespace Linnarsson.Dna
         {
             return Name.CompareTo(((IFeature)obj).Name);
         }
+
     }
 
-    public struct RmskLine
+    public class RmskData
     {
         public string Name;
         public string Chr;
         public char Strand;
         public int Start;
         public int End;
+
+        public static IEnumerable<RmskData> IterRmskFile(string rmskPath)
+        {
+            string[] record;
+            int fileTypeOffset = 0;
+            if (rmskPath.EndsWith("out"))
+                fileTypeOffset = -1;
+            using (StreamReader reader = rmskPath.OpenRead())
+            {
+                string line = reader.ReadLine();
+                while (line == "" || !char.IsDigit(line.Trim()[0]))
+                    line = reader.ReadLine();
+                while (line != null)
+                {
+                    RmskData rmskData = new RmskData();
+                    record = line.Split('\t');
+                    rmskData.Chr = record[5 + fileTypeOffset].Substring(3); // Remove "chr"
+                    rmskData.Start = int.Parse(record[6 + fileTypeOffset]);
+                    rmskData.End = int.Parse(record[7 + fileTypeOffset]);
+                    rmskData.Strand = record[9 + fileTypeOffset][0];
+                    rmskData.Name = "r_" + record[10 + fileTypeOffset];
+                    yield return rmskData;
+                    line = reader.ReadLine();
+                }
+            }
+        }
     }
 }

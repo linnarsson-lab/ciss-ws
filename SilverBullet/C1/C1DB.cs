@@ -101,7 +101,8 @@ namespace C1
             MySqlDataReader rdr = cmd.ExecuteReader();
             while (rdr.Read())
                 yield return MakeTranscriptFromDBReader(rdr);
-            sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' AND Chromosome!='CTRL' AND LEFT(GeneName,2)!='r_' ORDER BY Chromosome, Start", transcriptomeId);
+            sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' AND Chromosome!='CTRL' " + 
+                                "AND LEFT(GeneName,2)!='r_' ORDER BY Chromosome, Start", transcriptomeId);
             rdr.Close();
             cmd = new MySqlCommand(sql, conn);
             rdr = cmd.ExecuteReader();
@@ -117,7 +118,7 @@ namespace C1
             Transcriptome c1Trome = GetTranscriptome(buildVarAnnot);
             if (c1Trome == null)
                 return mapping;
-            string sql = string.Format("SELECT GeneName, TranscriptID FROM Transcript WHERE TranscriptomeID='{0}' AND LEFT(GeneName,2)='r_';", 
+            string sql = string.Format("SELECT GeneName, TranscriptID FROM Transcript WHERE TranscriptomeID='{0}' AND Type='repeat';", 
                                        c1Trome.TranscriptomeID.Value);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();

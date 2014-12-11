@@ -166,37 +166,21 @@ namespace PeakAnnotator
 
         private int LoadRepeatMaskFile(string rmskPath)
         {
-            string[] record;
-            int fileTypeOffset = 0;
-            if (rmskPath.EndsWith("out"))
-                fileTypeOffset = -1;
             int n = 0;
-            using (StreamReader reader = rmskPath.OpenRead())
+            int idx;
+            foreach (RmskData rd in RmskData.IterRmskFile(rmskPath))
             {
-                string line = reader.ReadLine();
-                while (line == "" || !char.IsDigit(line.Trim()[0]))
-                    line = reader.ReadLine();
-                while (line != null)
+                if (!RepeatIntervals.ContainsKey(rd.Chr))
+                    RepeatIntervals[rd.Chr] = new IntervalMap<int>(30000);
+                if (!RepeatNameToRepeatIdx.TryGetValue(rd.Name, out idx))
                 {
-                    record = line.Split('\t');
-                    string chr = record[5 + fileTypeOffset].Substring(3);
-                    int start = int.Parse(record[6 + fileTypeOffset]);
-                    int end = int.Parse(record[7 + fileTypeOffset]);
-                    string name = "r_" + record[10 + fileTypeOffset];
-                    if (!RepeatIntervals.ContainsKey(chr))
-                        RepeatIntervals[chr] = new IntervalMap<int>(30000);
-                    int idx;
-                    if (!RepeatNameToRepeatIdx.TryGetValue(name, out idx))
-                    {
-                        idx = RepeatNameToRepeatIdx.Count + 1;
-                        RepeatNameToRepeatIdx[name] = idx;
-                        repeatDatas.Add(new RepeatData());
-                    }
-                    RepeatIntervals[chr].Add(start, end, idx);
-                    repeatDatas[idx - 1].AddLength(end - start);
-                    n++;
-                    line = reader.ReadLine();
+                    idx = RepeatNameToRepeatIdx.Count + 1;
+                    RepeatNameToRepeatIdx[rd.Name] = idx;
+                    repeatDatas.Add(new RepeatData());
                 }
+                RepeatIntervals[rd.Chr].Add(rd.Start, rd.End, idx);
+                repeatDatas[idx - 1].AddLength(rd.Length);
+                n++;
             }
             return n;
         }

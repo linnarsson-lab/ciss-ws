@@ -131,13 +131,12 @@ namespace C1
                 int nRepeatFeatures = 0;
                 foreach (RmskData rd in RmskData.IterRmskFile(rmskPath))
                 {
-                        int len = 1 + rd.End - rd.Start;
                         if (!repeatTypeLengths.ContainsKey(rd.Name))
                         {
                             nRepeatFeatures++;
                             repeatTypeLengths[rd.Name] = 0;
                         }
-                        repeatTypeLengths[rd.Name] += len;
+                        repeatTypeLengths[rd.Name] +=  rd.Length;
                 }
                 foreach (KeyValuePair<string, int> p in repeatTypeLengths)
                 {

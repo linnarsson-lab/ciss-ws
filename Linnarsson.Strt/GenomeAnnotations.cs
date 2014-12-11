@@ -263,7 +263,7 @@ namespace Linnarsson.Strt
                         repeatFeatures[rd.Name].C1DBTranscriptID = trID;
                         reptFeature = repeatFeatures[rd.Name];
                     }
-                    reptFeature.AddRegion(rd.Start, rd.End);
+                    reptFeature.AddRegion(rd);
                     annotMap.Add(new FtInterval(rd.Start, rd.End, reptFeature.MarkHit, 0, reptFeature, AnnotType.REPT, '0'));
                 }
             }

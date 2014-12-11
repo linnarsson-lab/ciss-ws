@@ -74,9 +74,9 @@ namespace Linnarsson.Dna
             C1DBTranscriptID = -1;
         }
 
-        public void AddRegion(int start, int end)
+        public void AddRegion(RmskData rd)
         {
-            Length += end - start + 1;
+            Length += rd.Length;
         }
 
         public int MarkHit(MappedTagItem item, int extraData, MarkStatus markType)
@@ -101,6 +101,7 @@ namespace Linnarsson.Dna
         public char Strand;
         public int Start;
         public int End;
+        public int Length { get { return 1 + End - Start; } }
 
         public static IEnumerable<RmskData> IterRmskFile(string rmskPath)
         {

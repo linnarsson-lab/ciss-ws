@@ -44,7 +44,7 @@ namespace Linnarsson.Strt
         public GeneExpressionSummary(GenomeAnnotations annotations)
         {
             this.annotations = annotations;
-            foreach (GeneFeature gf in annotations.geneFeatures.Values)
+            foreach (GeneFeature gf in annotations.IterOrderedGeneFeatures(true, true))
                 if (!data.ContainsKey(gf.NonVariantName))
                     data[gf.NonVariantName] = new GeneExpression(annotations.Barcodes.Count);
         }

@@ -124,7 +124,7 @@ namespace CmdSilverBullet
                             GenomeAnnotations annotations = new GenomeAnnotations(props, genome);
                             annotations.Load();
                             StreamWriter writer = options.projectFolder.OpenWrite();
-                            foreach (GeneFeature gf in annotations.geneFeatures.Values)
+                            foreach (GeneFeature gf in annotations.IterOrderedGeneFeatures(true, true))
                                 writer.WriteLine(gf);
                             writer.Close();
                             break;

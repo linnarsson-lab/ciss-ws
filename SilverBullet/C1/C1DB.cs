@@ -141,7 +141,7 @@ namespace C1
                                           rdr.GetString("EntrezID"), rdr.GetString("Description"),
                                           rdr.GetString("Chromosome"), rdr.GetInt32("Start"), rdr.GetInt32("End"),
                                           rdr.GetInt32("Length"), rdr.GetChar("Strand"), rdr.GetInt32("Extension5Prime"),
-                                          rdr.GetString("ExonStarts"), rdr.GetString("ExonEnds"));
+                                          rdr.GetString("ExonStarts"), rdr.GetString("ExonEnds"), rdr.GetString("StartToCloseCutSite"));
             return t;
         }
 
@@ -168,7 +168,7 @@ namespace C1
                                     "'{14}','{15}')";
             sql = string.Format(sql, t.TranscriptomeID, t.Name, t.Type, t.UniqueGeneName, t.EntrezID, description, t.Chromosome,
                                      t.Start, t.End, t.Length, t.Strand, t.Extension5Prime, t.ExonStarts, t.ExonEnds,
-                                     t.ExprBlobIdx, t.StartToCloseCutSite);
+                                     t.ExprBlobIdx, t.StartToCloseCutSites);
             int newTranscriptId = InsertAndGetLastId(sql, "Transcript");
             t.TranscriptID = newTranscriptId;
             foreach (TranscriptAnnotation ta in t.TranscriptAnnotations)

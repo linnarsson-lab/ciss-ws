@@ -115,18 +115,37 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Iterate all gene models, order by increasing start position
+        /// Iterate all gene models, order by chrId (but first CTRL & EXTRAs), then increasing start position
         /// </summary>
         /// <returns></returns>
         public IEnumerable<GeneFeature> IterChrSortedGeneModels()
         {
-            foreach (string chrId in genesByChr.Keys)
-            {
-                List<GeneFeature> chrGfs = genesByChr[chrId];
-                chrGfs.Sort((gf1, gf2) => gf1.Start - gf2.Start);
-                foreach (GeneFeature gf in chrGfs)
-                    yield return gf;
-            }
+            List<string> orderedChrIds = Props.props.CommonChrIds.ToList();
+            List<string> nonCommonChrIds = genesByChr.Keys.Where(id => !Props.props.CommonChrIds.Contains(id)).ToList();
+            nonCommonChrIds.Sort();
+            orderedChrIds.AddRange(nonCommonChrIds);
+            foreach (string chrId in orderedChrIds)
+                if (genesByChr.ContainsKey(chrId))
+                {
+                    List<GeneFeature> chrGfs = genesByChr[chrId];
+                    chrGfs.Sort((gf1, gf2) => gf1.Start - gf2.Start);
+                    foreach (GeneFeature gf in chrGfs)
+                        yield return gf;
+                }
+        }
+
+        /// <summary>
+        /// Iterate the genes features on specified chromosome, order by increasing start position
+        /// </summary>
+        /// <param name="chrId">Specified chromosome</param>
+        /// <returns></returns>
+        public IEnumerable<GeneFeature> IterChrSortedGeneModels(string chrId)
+        {
+            if (!genesByChr.ContainsKey(chrId)) yield break;
+            List<GeneFeature> chrGfs = genesByChr[chrId];
+            chrGfs.Sort((gf1, gf2) => gf1.Start - gf2.Start);
+            foreach (GeneFeature gf in chrGfs)
+                yield return gf;
         }
 
         protected string ValidateKgXrefType(string typeField)
@@ -228,20 +247,6 @@ namespace Linnarsson.Dna
             }
             catch (KeyNotFoundException) { }
             return false;
-        }
-
-        /// <summary>
-        /// Iterate the genes features on specified chromosome, order by increasing start position
-        /// </summary>
-        /// <param name="chrId">Specified chromosome</param>
-        /// <returns></returns>
-        public IEnumerable<GeneFeature> IterChrSortedGeneModels(string chrId)
-        {
-            if (!genesByChr.ContainsKey(chrId)) yield break;
-            List<GeneFeature> chrGfs = genesByChr[chrId];
-            chrGfs.Sort((gf1, gf2) => gf1.Start - gf2.Start);
-            foreach (GeneFeature gf in chrGfs)
-                yield return gf;
         }
 
         /// <summary>
@@ -426,12 +431,20 @@ namespace Linnarsson.Dna
                     i--;
                 }
             }
-            bool newCoding = newGf.GeneType == "mRNA" || newGf.GeneType == "protein_coding";
+            HashSet<string> allTypes = new HashSet<string>();
+            allTypes.UnionWith(oldGf.GeneType.Split(GeneFeature.metadataSubDelim));
+            allTypes.UnionWith(newGf.GeneType.Split(GeneFeature.metadataSubDelim));
+            if (allTypes.Count > 1 && allTypes.Contains("gene"))
+                allTypes.Remove("gene");
+            /*bool newCoding = newGf.GeneType == "mRNA" || newGf.GeneType == "protein_coding";
             bool oldCoding = oldGf.GeneType == "mRNA" || oldGf.GeneType == "protein_coding";
             string combTrType = oldGf.GeneType;
             if (oldGf.GeneType == "gene" && newCoding) combTrType = newGf.GeneType;
             else if (!(oldCoding && newGf.GeneType == "gene") && !oldGf.GeneType.Contains(newGf.GeneType))
-                combTrType += ";" + newGf.GeneType;
+                combTrType += GeneFeature.metadataSubDelim + newGf.GeneType;*/
+            string[] combTrTypes = allTypes.ToArray();
+            Array.Sort(combTrTypes);
+            string combTrType = string.Join(GeneFeature.metadataSubDelim.ToString(), combTrTypes);
             string combTrName = oldGf.GeneMetadata.Contains(newGf.GeneMetadata) ? oldGf.GeneMetadata : (oldGf.GeneMetadata + "/" + newGf.GeneMetadata);
             GeneFeature newFeature = new GeneFeature(oldGf.Name, oldGf.Chr, oldGf.Strand, 
                                                     newStarts.ToArray(), newEnds.ToArray(), combTrType, combTrName);
@@ -526,22 +539,22 @@ namespace Linnarsson.Dna
         {
             string[] record = line.Split('\t');
             string name = record[0].Trim();
-            string trName = record[1].Trim();
+            string metadata = record[1].Trim();
             string geneType = "";
-            int i = trName.IndexOf(';');
-            if (trName == "")
-                trName = name;
+            int i = metadata.IndexOf(GeneFeature.metadataDelim);
+            if (metadata == "")
+                metadata = name;
             else if (i > 0)
             {
-                geneType = trName.Substring(0, i);
-                trName = trName.Substring(i + 1);
+                geneType = metadata.Substring(0, i);
+                metadata = metadata.Substring(i + 1);
             }
             string chr = record[2].Trim();
             char strand = record[3].Trim()[0];
             int nExons = int.Parse(record[8]);
             int[] exonStarts = SplitField(record[9], 0);
             int[] exonEnds = SplitExonEndsField(record[10]); // Convert to inclusive ends
-            return new GeneFeature(name, chr, strand, exonStarts, exonEnds, geneType, trName);
+            return new GeneFeature(name, chr, strand, exonStarts, exonEnds, geneType, metadata);
         }
 
         private static IFeature FromSTRTAnnotationsLine(string line)
@@ -589,14 +602,15 @@ namespace Linnarsson.Dna
         {
             int[] exonStarts = SplitField(tt.ExonStarts, 0); // 0-based
             int[] exonEnds = SplitExonEndsField(tt.ExonEnds); // Convert to 0-based inclusive ends
+            string metadata = tt.Name + GeneFeature.metadataDelim + tt.StartToCloseCutSites;
             return new GeneFeature(tt.UniqueGeneName, tt.Chromosome, tt.Strand, exonStarts, exonEnds,
-                                   tt.Type, tt.Name, tt.TranscriptID.Value, tt.ExprBlobIdx);
+                                   tt.Type, metadata, tt.TranscriptID.Value, tt.ExprBlobIdx);
         }
 
         public static Transcript CreateNewTranscriptFromGeneFeature(GeneFeature gf)
         {
             string type = gf.GeneType == "" ? "gene" : gf.GeneType;
-            string trName = gf.GeneMetadata.Split(';')[0];
+            string trName = gf.GeneMetadata.Split(GeneFeature.metadataDelim)[0];
             return new Transcript(trName, type, gf.NonVariantName, gf.Name, "",  "",
                                   gf.Chr, gf.Start + 1, gf.End + 1, gf.GetTranscriptLength(), gf.Strand,
                                   gf.Extension5Prime, gf.ExonStartsString, gf.ExonEndsString);

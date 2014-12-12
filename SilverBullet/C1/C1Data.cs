@@ -253,19 +253,19 @@ namespace C1
         public int ExprBlobIdx { get; set; }                // Used when storing expr data as blob
         public List<TranscriptAnnotation> TranscriptAnnotations { get; set; }
         public string UniProtAccession { get; set; }        // Temporary for cross-correlation between annotation files
-        public string StartToCloseCutSite { get; set; }
+        public string StartToCloseCutSites { get; set; }    // Comma-delimited list of distances from CAP to (PvuI) cut sites
 
         public Transcript(string name, string type, string geneName, string uniqueGeneName,
                           string entrezId, string description, string chromosome, int start, int end, int length,
                           char strand, int extension5Prime, string exonStarts, string exonEnds)
             : this(null, 0, 0, name, type, geneName, uniqueGeneName, entrezId, description, chromosome, start, end, length,
-                   strand, extension5Prime, exonStarts, exonEnds)
+                   strand, extension5Prime, exonStarts, exonEnds, "")
         { }
 
         public Transcript(int? transcriptId, int transcriptomeId, int exprBlobIdx, 
                           string name, string type, string geneName, string uniqueGeneName,
                           string entrezId, string description, string chromosome, int start, int end, int length,
-                          char strand, int extension5Prime, string exonStarts, string exonEnds)
+                          char strand, int extension5Prime, string exonStarts, string exonEnds, string startToCloseCutSites)
         {
             this.TranscriptID = transcriptId;
             this.TranscriptomeID = transcriptomeId;
@@ -284,6 +284,7 @@ namespace C1
             this.Extension5Prime = extension5Prime;
             this.ExonStarts = exonStarts;
             this.ExonEnds = exonEnds;
+            this.StartToCloseCutSites = startToCloseCutSites;
             this.TranscriptAnnotations = new List<TranscriptAnnotation>();
         }
         public override string ToString()
@@ -294,7 +295,7 @@ namespace C1
                                  "ExonStarts={12}\nExonEnds={13})",
                                  TranscriptID, Name, Type, GeneName, EntrezID, Description, Chromosome,
                                  Start, End, Length, Strand, Extension5Prime, ExonStarts, ExonEnds, TranscriptomeID,
-                                 ExprBlobIdx, StartToCloseCutSite);
+                                 ExprBlobIdx, StartToCloseCutSites);
         }
 
     }

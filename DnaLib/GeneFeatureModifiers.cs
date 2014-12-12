@@ -82,14 +82,18 @@ namespace Linnarsson.Dna
         public void Extend5PrimeEnds()
         {
             CollectExonsFromChrGenes();
-            //Console.WriteLine("Process {0} chrGenes {1} exonStarts.", chrGenes.Count, sortedExonStarts.Length);
             foreach (GeneFeature gf in chrGenes)
             {
                 int extension = gf.Extend5Prime(sortedExonStarts, startSortedExonStrands, endSortedExonEnds, endSortedExonStrands);
                 if (extension == Props.props.GeneFeature5PrimeExtension) nFullyExtended5Primes++;
-                if (extension > 0) nExtended++;
+                if (extension > 0)
+                {
+                    nExtended++;
+                    gf.AddOffsetToCutSites(extension);
+                }
             }
         }
+
         public string Extend5PrimeEndsResult()
         {
             return string.Format("{0} genes had their 5' end extended, {1} with the maximal {2} bps.",

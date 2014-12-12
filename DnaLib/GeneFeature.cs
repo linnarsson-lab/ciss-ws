@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Linnarsson.Utilities;
 using Linnarsson.Mathematics;
 using System.IO;
@@ -17,7 +18,8 @@ namespace Linnarsson.Dna
     {
         public readonly static string pseudoGeneIndicator = "_p";
         public readonly static string altLocusIndicator = "_loc";
-        public readonly static string capCutSitesPrefix = "Cuts=";
+        public readonly static char metadataSubDelim = ',';
+        public readonly static char metadataDelim = ';';
         public readonly static string nonUTRExtendedIndicator = variantIndicator + "Original";
         public static int LocusFlankLength = Props.props.LocusFlankLength;
 
@@ -287,11 +289,11 @@ namespace Linnarsson.Dna
         public int ExprBlobIdx;
 
         /// <summary>
-        /// Type of gene, e.g. "mRNA", "microRNA", "pseudogene"
+        /// Type of gene, e.g. "mRNA", "microRNA,gene", "pseudogene"
         /// </summary>
         public string GeneType;
         /// <summary>
-        /// Transcript id1/id2... ; CAP close cut sites
+        /// TranscriptIds and CAP close cut sites: id1 [/id2...] ; pos1 [,pos2...]
         /// </summary>
         public string GeneMetadata;
 
@@ -806,7 +808,7 @@ namespace Linnarsson.Dna
         public string ToRefFlatString()
         {
             StringBuilder s = new StringBuilder();
-            s.AppendFormat("{0}\t{1};{2}\t", Name, GeneType, GeneMetadata);
+            s.AppendFormat("{0}\t{1}{2}{3}\t", Name, GeneType, metadataDelim, GeneMetadata);
             string chrName = Props.props.CommonChrIds.Contains(Chr) ? Chr : "chr" + Chr;
             //string chrName = (Chr == StrtGenome.chrCTRLId) ? StrtGenome.chrCTRLId : "chr" + Chr;
             s.AppendFormat("{0}\t", chrName);
@@ -889,6 +891,17 @@ namespace Linnarsson.Dna
                 }
             }
             return extension;
+        }
+
+        public void AddOffsetToCutSites(int extension)
+        {
+            Match m = Regex.Match(GeneMetadata, "^(.+" + GeneFeature.metadataDelim + ")([0-9\\-,]+)$");
+            if (m.Success)
+            {
+                string[] oldSites = m.Groups[2].Value.Split(GeneFeature.metadataSubDelim);
+                string[] newSites = Array.ConvertAll(oldSites, s => (int.Parse(s) + extension).ToString());
+                GeneMetadata = m.Groups[1].Value + string.Join(GeneFeature.metadataSubDelim.ToString(), newSites);
+            }
         }
 
         /// <summary>

@@ -708,7 +708,7 @@ namespace Linnarsson.Strt
                 if (makeSplices)
                     spliceWriter = spliceOutput.OpenWrite();
                 int nSeqs = 0, nTrSeqs = 0, nSplSeq = 0, bcIdx = 0;
-                foreach (GeneFeature gf in annotations.geneFeatures.Values)
+                foreach (GeneFeature gf in annotations.IterOrderedGeneFeatures(true, true))
                 {
                     if (StrtGenome.IsASpliceAnnotation(gf.Chr)) continue;
                     if (!variantGenes && gf.IsVariant())

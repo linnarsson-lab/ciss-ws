@@ -39,14 +39,19 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Find 5' close clavage sites for method-critical restriction enzymes and annotate in the GeneMetadata
+        /// Annotate cleavage sites close to TSS for method-critical restriction enzymes and annotate in the GeneMetadata
         /// </summary>
         /// <param name="gf"></param>
         public void AnnotateCleaveSites(GeneFeature gf)
         {
             List<int> sites = GetCleaveSites(gf);
-            string siteList = (sites.Count == 0)? "" : GeneFeature.capCutSitesPrefix + string.Join(",", sites.ConvertAll(v => v.ToString()).ToArray());
-            gf.GeneMetadata += ";" + siteList;
+            string siteList = "";
+            if (sites.Count == 0)
+            {
+                string[] sitesStr = sites.ConvertAll(v => v.ToString()).ToArray();
+                siteList = string.Join(GeneFeature.metadataSubDelim.ToString(), sitesStr);
+            }
+            gf.GeneMetadata += GeneFeature.metadataDelim + siteList;
         }
 
         private List<int> GetCleaveSites(GeneFeature gf)
@@ -70,9 +75,15 @@ namespace Linnarsson.Strt
             int actualExtension = GetTrSeq(t.Chromosome, t.Strand, t.ExonStarts, t.ExonEnds, requestedExtension, out trSeq);
             List<int> sitePositions = GetSiteList(trSeq, actualExtension);
             string siteList = string.Join(",", sitePositions.ConvertAll(v => v.ToString()).ToArray());
-            t.StartToCloseCutSite = siteList;
+            t.StartToCloseCutSites = siteList;
         }
 
+        /// <summary>
+        /// Finds the location of cut sites just before or at most CAPCloseSiteSearchEnd after TSS.
+        /// </summary>
+        /// <param name="trSeq">Transcript sequence, including any 5' extension</param>
+        /// <param name="actualExtension">Distance from 5' end of seq to TSS</param>
+        /// <returns>List of cut positions relative to TSS</returns>
         private List<int> GetSiteList(DnaSequence trSeq, int actualExtension)
         {
             List<int> sitePositions = new List<int>();
@@ -81,9 +92,9 @@ namespace Linnarsson.Strt
                 RestrictionEnzyme enzyme = RestrictionEnzymes.Get(enzymeName);
                 DnaSequence[] fragments = enzyme.Cut(trSeq);
                 int cutPos = -actualExtension;
-                foreach (DnaSequence fragment in fragments)
+                for (int i = 0; i < fragments.Length - 1; i++)
                 {
-                    cutPos += (int)fragment.Count;
+                    cutPos += (int)fragments[i].Count;
                     if (cutPos < CAPCloseSiteSearchEnd)
                         sitePositions.Add(cutPos);
                 }
@@ -92,6 +103,16 @@ namespace Linnarsson.Strt
             return sitePositions;
         }
 
+        /// <summary>
+        /// Extracts the trancript sequence given by the exon intervals and the requested upstream 5' extension
+        /// </summary>
+        /// <param name="chr"></param>
+        /// <param name="strand"></param>
+        /// <param name="exonStarts">comma separated list of exon starts on chr</param>
+        /// <param name="exonEnds">comma separated list of exon ends on chr</param>
+        /// <param name="upstreamExtension">requested upstream of TSS extension</param>
+        /// <param name="trSeq">output transcript (mRNA orientation) sequence</param>
+        /// <returns>actual extension 5' of TSS. May be less than upstreamExtension if end of chr is reached</returns>
         private int GetTrSeq(string chr, char strand, string exonStarts, string exonEnds, int upstreamExtension, out DnaSequence trSeq)
         {
             int[] starts = Array.ConvertAll(exonStarts.Remove(exonStarts.Length - 1).Split(','), v => int.Parse(v));

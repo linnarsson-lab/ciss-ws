@@ -539,16 +539,31 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Iterate spikes or main transcript variants
+        /// Iterate spikes and/or transcripts ordered by 1) start position, 2) length,
+        /// with common chrs first, then other in alphabetical order
         /// </summary>
-        /// <param name="selectSpikes">true => iterate only spikes, false => iterate only non-spike main transcript models</param>
+        /// <param name="inclSpikes">include spikes (chrs with CTRL or SPIKE in the name)</param>
+        /// <param name="inclNonSpikes">include the non-spike chromsomes (EXTRA and the rest)</param>
         /// <returns></returns>
-        public IEnumerable<GeneFeature> IterMainTranscriptVariants(bool selectSpikes)
+        public IEnumerable<GeneFeature> IterOrderedGeneFeatures(bool inclSpikes, bool inclNonSpikes)
         {
-            foreach (GeneFeature gf in geneFeatures.Values)
-                if (gf.IsSpike() == selectSpikes && gf.IsMainVariant())
+            List<string> orderedChrIds = new List<string>();
+            if (inclSpikes)
+                orderedChrIds.AddRange(Props.props.CommonChrIds.Where(c => c.Contains("CTRL") || c.Contains("SPIKE")));
+            if (inclNonSpikes)
+            {
+                orderedChrIds.AddRange(Props.props.CommonChrIds.Where(c => !(c.Contains("CTRL") || c.Contains("SPIKE") )));
+                List<string> nonCommonChrIds = ExonAnnotations.Keys.Where(id => !Props.props.CommonChrIds.Contains(id)).ToList();
+                nonCommonChrIds.Sort();
+                orderedChrIds.AddRange(nonCommonChrIds);
+            }
+            foreach (string chrId in orderedChrIds)
+            {
+                List<GeneFeature> chrGfs = geneFeatures.Values.Where(gf => gf.Chr == chrId).ToList();
+                chrGfs.Sort((gf1, gf2) => (gf1.Start != gf2.Start)? (gf1.Start - gf2.Start) : (gf2.Length - gf1.Length));
+                foreach (GeneFeature gf in chrGfs)
                     yield return gf;
-            yield break;
+            }
         }
 
         /// <summary>
@@ -703,7 +718,7 @@ namespace Linnarsson.Strt
             using (StreamWriter warnFile = new StreamWriter(warnFilename))
             {
                 warnFile.WriteLine("Feature\tExonHits\tPart\tPartHits\tPartLocation\tNewLeftExonStart\tNewRightExonStart");
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     if (gf.GetTotalHits(true) == 0 || StrtGenome.IsACommonChrId(gf.Chr)
                         || gf.Name.EndsWith(GeneFeature.nonUTRExtendedIndicator))
@@ -849,7 +864,7 @@ namespace Linnarsson.Strt
                 outFile.WriteLine(header);
                 WriteSampleAnnotationLines(outFile, 5, true, speciesBcIndexes);
                 outFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tAllBcSum");
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     StringBuilder sbDatarow = new StringBuilder();
                     int total = 0;
@@ -912,11 +927,11 @@ namespace Linnarsson.Strt
                 WriteSampleAnnotationLines(writer, 9, true, speciesBcIndexes);
                 writer.WriteLine("Feature\tType\tTrNames\tChr\tPos\tStrand\tTrLen\tClose{0}\tMinExonHits\tExonHits",
                                  string.Join("/", props.CAPCloseSiteSearchCutters));
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
-                    string[] fs = (gf.GeneMetadata + ";").Split(';');
-                    string trName = fs[0];
-                    string cutSites = fs[1].Replace(GeneFeature.capCutSitesPrefix, "");
+                    string[] fields = (gf.GeneMetadata + GeneFeature.metadataDelim).Split(GeneFeature.metadataDelim);
+                    string trName = fields[0];
+                    string cutSites = fields[1];
                     string safeName = ExcelRescueGeneName(gf.Name);
                     writer.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}",
                                safeName, gf.GeneType, trName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), cutSites,
@@ -971,7 +986,7 @@ namespace Linnarsson.Strt
                 foreach (int idx in speciesBcIndexes)
                     writer.Write("\t{0}", barcodes.GetWellId(idx));
                 writer.WriteLine();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     writer.Write(gf.Name);
                     foreach (int c in hitIterator(gf, speciesBcIndexes))
@@ -993,7 +1008,7 @@ namespace Linnarsson.Strt
                 foreach (int idx in speciesBcIndexes)
                     writer.Write("\t{0}", barcodes.GetWellId(idx));
                 writer.WriteLine();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     writer.Write("{0}\t{1}\t{2}\t{3}", gf.Name, gf.Chr, gf.Start, gf.Strand);
                     foreach (int c in hitIterator(gf, speciesBcIndexes))
@@ -1015,7 +1030,7 @@ namespace Linnarsson.Strt
         {
             string fileName = fileNameBase + MakeRPFileType() + ".gedata";
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-            Dictionary<GeneFeature, double[]> normalizedData = GetNormalizedData(false, speciesBcIndexes);
+            Dictionary<GeneFeature, double[]> normalizedData = GetNormalizedData(speciesBcIndexes);
             int nSamples = speciesBcIndexes.Length;
             int nSampleAttributes = GetNSampleAnnotationLines();
             int nVariables = normalizedData.First().Value.Length;
@@ -1038,15 +1053,15 @@ namespace Linnarsson.Strt
             }
         }
 
-        private Dictionary<GeneFeature, double[]> GetNormalizedData(bool selectSpikes, int[] selectedBcIndexes)
+        private Dictionary<GeneFeature, double[]> GetNormalizedData(int[] selectedBcIndexes)
         {
-            int[] totalByBarcode = GetTotalTranscriptCountsByBarcode(selectSpikes);
+            int[] totalByBarcode = GetTotalTranscriptCountsByBarcode(false);
             int grandTotal = totalByBarcode.Sum();
             double normalizer = barcodes.HasUMIs ? (grandTotal / (double)totalByBarcode.Count(v => v > 0)) : 1.0E+6;
             double[] normFactors = CalcNormalizationFactors(totalByBarcode);
             double trLenFactor = 1.0;
             Dictionary<GeneFeature, double[]> normalizedData = new Dictionary<GeneFeature, double[]>();
-            foreach (GeneFeature gf in IterMainTranscriptVariants(selectSpikes))
+            foreach (GeneFeature gf in IterOrderedGeneFeatures(false, true))
             {
                 double[] expr = new double[selectedBcIndexes.Length];
                 if (props.UseRPKM)
@@ -1115,7 +1130,7 @@ namespace Linnarsson.Strt
                 exprWriter.Write("\t{0:G6}", normFactors[idx]);
             exprWriter.WriteLine();
 
-            foreach (GeneFeature gf in IterMainTranscriptVariants(selectSpikes))
+            foreach (GeneFeature gf in IterOrderedGeneFeatures(selectSpikes, !selectSpikes))
             {
                 double trLenFactor = (props.UseRPKM) ? gf.GetTranscriptLength() : 1000.0;
                 string safeName = ExcelRescueGeneName(gf.Name);
@@ -1147,7 +1162,7 @@ namespace Linnarsson.Strt
         private void GetDetectionThresholds(bool selectSpikes, int totCount, out double RPkbM99, out double RPkbM999)
         {
             List<double> allASReadsPerBase = new List<double>();
-            foreach (GeneFeature gf in IterMainTranscriptVariants(selectSpikes))
+            foreach (GeneFeature gf in IterOrderedGeneFeatures(true, false))
             {
                 int antiHits = gf.NonMaskedHitsByAnnotType[AnnotType.AEXON];
                 double ASReadsPerBase = antiHits / (double)gf.GetNonMaskedTranscriptLength();
@@ -1183,7 +1198,7 @@ namespace Linnarsson.Strt
                 foreach (int idx in speciesBcIndexes)
                     matrixFile.Write("\t{0}", barcodes.GetWellId(idx));
                 matrixFile.WriteLine();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     int totalHits = gf.CAPRegionHitsByBc.Sum();
                     string safeName = ExcelRescueGeneName(gf.Name);
@@ -1209,7 +1224,7 @@ namespace Linnarsson.Strt
                 tableFile.WriteLine("Barcode\tFeature\t{0}", exonHitType);
                 tableFile.WriteLine();
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     foreach (int bcIdx in speciesBcIndexes)
                     {
@@ -1256,7 +1271,7 @@ namespace Linnarsson.Strt
             {
                 trShareFile.WriteLine("Transcripts/variants competing for reads (# shared reads within parenthesis)");
                 trShareFile.WriteLine("Feature\t#Assigned Reads\tCompetes with genes...");
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     if (gf.sharingGenes == null)
                         continue;
@@ -1298,7 +1313,7 @@ namespace Linnarsson.Strt
                 for (int exonId = 1; exonId <= nExonsToShow; exonId++)
                     file.Write("\t{0}{1}", exonTitle, exonId);
                 file.WriteLine();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     string mixedSenseGene = "";
                     if (gf.HitsByAnnotType[AnnotType.INTR] >= 5 ||
@@ -1343,7 +1358,7 @@ namespace Linnarsson.Strt
                 for (int intronId = 1; intronId <= nIntronsToShow; intronId++)
                     file.Write("\tIntr{0}", intronId);
                 file.WriteLine();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     string safeName = ExcelRescueGeneName(gf.Name);
                     file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", safeName, gf.Chr, gf.Strand, gf.LocusStart, gf.GetLocusLength(), gf.LocusEnd);
@@ -1377,7 +1392,7 @@ namespace Linnarsson.Strt
                     file.Write("\tIntr{0}", intronId);
                 file.WriteLine();
                 int[,] counts = new int[barcodes.Count, nIntronsToShow];
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     int n = CompactGenePainter.GetCountsPerIntronAndBarcode(gf, props.DirectionalReads, barcodes.Count, ref counts);
                     string safeName = ExcelRescueGeneName(gf.Name);
@@ -1430,7 +1445,7 @@ namespace Linnarsson.Strt
                     file.Write("\tExon{0}", exonId);
                 file.WriteLine();
                 int[,] counts = new int[barcodes.Count, nExonsToShow];
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     int n = CompactGenePainter.GetCountsPerExonAndBarcode(gf, props.DirectionalReads, barcodes.Count, ref counts);
                     string safeName = ExcelRescueGeneName(gf.Name);
@@ -1470,7 +1485,7 @@ namespace Linnarsson.Strt
                 matrixFile.WriteLine("Gene\t#Exons\t#TrHits\t#JunctionHits\tExon/Junction IDs...");
                 matrixFile.WriteLine("\t\t\t\tCounts...");
                 matrixFile.WriteLine();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     string safeName = ExcelRescueGeneName(gf.Name);
                     matrixFile.Write("{0}\t{1}\t{2}\t{3}", safeName, gf.ExonCount, gf.GetTranscriptHits(), gf.GetJunctionHits());
@@ -1495,7 +1510,7 @@ namespace Linnarsson.Strt
                 matrixFile.WriteLine("Gene\t#Exons\t#TrHits\t#JunctionHits\t\tJunctionIDs...");
                 matrixFile.WriteLine("\t\t\t\tBarcode\tCounts...");
                 matrixFile.WriteLine();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     string safeName = ExcelRescueGeneName(gf.Name);
                     matrixFile.Write("{0}\t{1}\t{2}\t{3}\t", safeName, gf.ExonCount, gf.GetTranscriptHits(), gf.GetJunctionHits());
@@ -1527,7 +1542,7 @@ namespace Linnarsson.Strt
                 for (int i = 0; i < 100; i++)
                     file.Write("{0}\t", i * props.LocusProfileBinSize);
                 file.WriteLine();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     if (!gf.IsExpressed()) continue;
                     string safeName = ExcelRescueGeneName(gf.Name);
@@ -1558,7 +1573,7 @@ namespace Linnarsson.Strt
                 foreach (GeneFeature gf in geneFeatures.Values)
                     histoSize = Math.Max(histoSize, gf.GetLocusLength());
                 int[] histo = new int[histoSize];
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     if (gf.GetTotalHits() == 0) continue;
                     WriteLocusHistogramLine(file, ref histo, gf, true);
@@ -1586,7 +1601,7 @@ namespace Linnarsson.Strt
                                 GeneFeature.LocusFlankLength);
                 file.Write("Gene\tTrscrDir\tChr\tLeftFlankStart\tRightFlankEnd\tStrand\t#Positions\t");
                 file.WriteLine();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     List<int> hisPoss = CompactGenePainter.GetLocusHitPositions(gf, '+');
                     string safeName = ExcelRescueGeneName(gf.Name);
@@ -1715,7 +1730,7 @@ namespace Linnarsson.Strt
             using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_GC_content.tab"))
             {
                 file.WriteLine("Gene\tTrLen\tTrFracGC\tReadCoveredLen\tReadCoveredDNAFracGC\tReadsFracGC");
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     if (gf.GetTranscriptHits() == 0 || !ChromosomeSequences.ContainsKey(gf.Chr)) continue;
                     DnaSequence chrSeq = ChromosomeSequences[gf.Chr];
@@ -1745,7 +1760,7 @@ namespace Linnarsson.Strt
                 for (int p = 1; p < 3000; p++)
                     file.Write("\tPos{0}", p);
                 file.WriteLine();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     if (!gf.IsSpike() || gf.GetTranscriptHits() < minTotCount) continue;
                     string safeName = ExcelRescueGeneName(gf.Name);
@@ -1775,7 +1790,7 @@ namespace Linnarsson.Strt
                 for (int p = 1; p < 10000; p++)
                     file.Write("\tPos{0}", p);
                 file.WriteLine();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     if (gf.GetTranscriptHits() == 0) continue;
                     string safeName = ExcelRescueGeneName(gf.Name);

@@ -757,7 +757,7 @@ namespace Linnarsson.Strt
         {
             StringBuilder sbt = new StringBuilder();
             StringBuilder sbf = new StringBuilder();
-            foreach (GeneFeature gf in Annotations.IterMainTranscriptVariants(true))
+            foreach (GeneFeature gf in Annotations.IterOrderedGeneFeatures(true, false))
             {
                 if (!gf.IsExpressed())
                     continue;
@@ -1665,7 +1665,7 @@ namespace Linnarsson.Strt
                 snpFile.WriteLine("#(minimum {0} {3}/Pos required to check, limits used heterozygous: {1}-{2}% AltNt and homozygous: >{2}% Alt Nt)",
                                   minHitsToTestSNP, thres, 100 - thres, minTxt);
                 snpFile.WriteLine("#Gene\tChr\tmRNALeftChrPos\tSNPChrPos\tType\tRefNt\tTotal\tMut-A\tMut-C\tMut-G\tMut-T");
-                foreach (GeneFeature gf in Annotations.geneFeatures.Values)
+                foreach (GeneFeature gf in Annotations.IterOrderedGeneFeatures(true, true))
                 {
                     if (gf.bcSNPCountsByRealChrPos == null)
                         continue;

@@ -46,7 +46,7 @@ namespace Linnarsson.Strt
         {
             List<int> sites = GetCleaveSites(gf);
             string siteList = "";
-            if (sites.Count == 0)
+            if (sites.Count > 0)
             {
                 string[] sitesStr = sites.ConvertAll(v => v.ToString()).ToArray();
                 siteList = string.Join(GeneFeature.metadataSubDelim.ToString(), sitesStr);

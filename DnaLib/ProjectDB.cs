@@ -592,7 +592,7 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public List<string> GetProjectColumn(string likeCol, string likeFilter, string resultCol)
         {
-            string sql = string.Format("SELECT {0} FROM jos_aaaproject WHERE {1} LIKE '{2}'", resultCol, likeCol, likeFilter);
+            string sql = string.Format("SELECT {0} FROM jos_aaaproject WHERE {1} LIKE '{2}' AND status!='cancelled'", resultCol, likeCol, likeFilter);
             return GetStrings(sql);
         }
 
@@ -664,6 +664,11 @@ namespace Linnarsson.Dna
             IssueNonQuery(sql);
         }
 
+        /// <summary>
+        /// Set the DB projectid of the chip (chips if it is a mix plate) of a sequencing plate
+        /// </summary>
+        /// <param name="plateid">The plate identifier ("Lxxx" or "C1-xxxxxxx-xxx")</param>
+        /// <param name="chips">THe (combined) chip id(s) (xxxxxxx-xxx)</param>
         public void SetChipsProjectId(string plateid, List<Chip> chips)
         {
             int dbProjId = GetPlateInsertId(plateid);
@@ -673,6 +678,11 @@ namespace Linnarsson.Dna
             IssueNonQuery(sql);
         }
 
+        /// <summary>
+        /// Get the DB id of a textual plate identifier
+        /// </summary>
+        /// <param name="plateId">"Lxxx" or "C1-xxxxxxx-xxx"</param>
+        /// <returns></returns>
         public int GetPlateInsertId(string plateId)
         {
             return GetInsertId(string.Format("SELECT id FROM jos_aaaproject WHERE plateid='{0}'", plateId));
@@ -849,6 +859,11 @@ namespace Linnarsson.Dna
             return annotNames;
         }
 
+        /// <summary>
+        /// Collect Chip metadata mapped by the DBId of each Chip represented among the given cells
+        /// </summary>
+        /// <param name="cells">Cells to collect Chip metadata for</param>
+        /// <returns></returns>
         public Dictionary<int, Chip> GetChipsById(List<Cell> cells)
         {
             Dictionary<int, Chip> chipsById = new Dictionary<int, Chip>();

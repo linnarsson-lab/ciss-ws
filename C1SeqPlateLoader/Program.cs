@@ -57,7 +57,7 @@ namespace C1SeqPlateLoader
                 if (loadedC1Plates.Contains(C1Props.C1ProjectPrefix + plateOrChip))
                 {
                     if (!force)
-                        throw new Exception(string.Format("ERROR: {0} is already loaded! Use '-f' to force reload.", plateOrChip));
+                        throw new Exception(string.Format("ERROR: {0} is already loaded!\n", plateOrChip));
                     Console.WriteLine("Reloading plate {0}", plateOrChip);
                 }
                 new C1SeqPlateLoader(useExcluded).LoadC1SeqPlate(plateOrChip, barcodeSet);

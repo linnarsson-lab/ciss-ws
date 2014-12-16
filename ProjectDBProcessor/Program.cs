@@ -224,16 +224,23 @@ namespace ProjectDBProcessor
                 if (File.Exists(layoutSrcPath))
                 {
                     string layoutDestPath = projDescr.SampleLayoutPath;
-                    logWriter.WriteLine(DateTime.Now.ToString() + " cp " + layoutSrcPath + " -> " + layoutDestPath); logWriter.Flush();
-                    if (!Directory.Exists(Path.GetDirectoryName(layoutDestPath)))
-                        Directory.CreateDirectory(Path.GetDirectoryName(layoutDestPath));
-                    if (File.Exists(layoutDestPath))
-                        File.Delete(layoutDestPath);
-                    File.Copy(layoutSrcPath, layoutDestPath, true);
+                    try
+                    {
+                        if (!Directory.Exists(Path.GetDirectoryName(layoutDestPath)))
+                            Directory.CreateDirectory(Path.GetDirectoryName(layoutDestPath));
+                        File.Copy(layoutSrcPath, layoutDestPath, true);
+                        logWriter.WriteLine(DateTime.Now.ToString() + " cp " + layoutSrcPath + " -> " + layoutDestPath); logWriter.Flush();
+                    }
+                    catch (Exception e)
+                    {
+                        logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: Could not copy layout " + layoutSrcPath
+                                                                    + " to " + layoutDestPath + ": " + e.Message);
+                        logWriter.Flush();
+                    }
                 }
                 else
                 {
-                    logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: " + projDescr.plateId + " - layout file does not exist: " + layoutSrcPath);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: " + projDescr.plateId + " - layout does not exist: " + layoutSrcPath);
                     logWriter.Flush();
                 }
             }
@@ -313,7 +320,7 @@ namespace ProjectDBProcessor
                 else
                 {
                     resultLinks.Add(Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server - contact administrator!");
-                    logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: " + 
+                    logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: " + 
                                          Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server");
                     logWriter.Flush();
                 }

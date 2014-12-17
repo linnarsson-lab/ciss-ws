@@ -58,8 +58,8 @@ namespace Linnarsson.Dna
             ClearBase();
             if (detectedUMIs != null)
             {
-                detectedUMIs = null; //detectedUMIs.SetAll(false);
-                multitonUMIs = null; // multitonUMIs.SetAll(false);
+                detectedUMIs = null;
+                multitonUMIs = null;
             }
         }
 

@@ -1384,7 +1384,7 @@ namespace Linnarsson.Strt
                                     "HITS", "Total annotated hits by barcode", "annotated hits");
                 if (barcodes.HasUMIs)
                     WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, labelingEfficiencyEstimator.maxOccupiedUMIsByBc,
-                                    "MAX_OCCUPIED_UMIS", "Maximum occupied UMIs by barcode", "maximum occupied UMIs");
+                                    "MAX_OCCUPIED_UMIS", "Max detected UMIs (after singleton/mutation filter) by barcode", "max detected UMIs (after mutation filter)");
                 if (Props.props.AnalyzeGCContent)
                     WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, gcAnalyzer.GetPercentGCByBarcode(),
                                         "PERCENT_READ_GC_CONTENT", "Percent GC in transcript mapping reads", "transcript reads percent GC");

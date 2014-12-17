@@ -27,7 +27,7 @@ namespace Linnarsson.Dna
         private Dictionary<string, double> fractionOfSpikeMols = new Dictionary<string, double>();
 
         /// <summary>
-        /// Maximum number of UMIs used anywhere in each barcode
+        /// Maximum number of UMIs used anywhere in each barcode, after singleton/mutation filtering
         /// </summary>
         public int[] maxOccupiedUMIsByBc;
         private int currentMaxOccupiedUMIs = 0;
@@ -85,13 +85,13 @@ namespace Linnarsson.Dna
         /// Calculate the estimated true number of molecule, taking efficiency and UMI collisions into account. Exhaustion of library assumed.
         /// Also keep track of the maximal number of UMIs occupied.
         /// </summary>
-        /// <param name="numMolecules">Number of observed UMIs</param>
+        /// <param name="observedMolCount">Number of observed UMIs (after singleton/mutation filter)</param>
         /// <returns></returns>
-        public int EstimateTrueCount(int numMolecules)
+        public int EstimateTrueCount(int observedMolCount)
         {
-            if (numMolecules > currentMaxOccupiedUMIs)
-                currentMaxOccupiedUMIs = numMolecules;
-            return (int)Math.Round(Math.Log(1.0 - numMolecules / UMICount) / Math.Log(1.0 - currentBcLabelingEfficiency / UMICount));
+            if (observedMolCount > currentMaxOccupiedUMIs)
+                currentMaxOccupiedUMIs = observedMolCount;
+            return (int)Math.Round(Math.Log(1.0 - observedMolCount / UMICount) / Math.Log(1.0 - currentBcLabelingEfficiency / UMICount));
         }
 
         /// <summary>

@@ -81,13 +81,6 @@ namespace Linnarsson.Dna
         /// </summary>
         protected static List<int> woUMIsUMIIndices = new List<int> { 0 };
 
-        public void ClearBase()
-        {
-            typeOfAnnotation = (short)AnnotType.NOHIT;
-            bcNumReads = 0;
-            filteredBcNumMols = -1;
-        }
-
         public int GetFinalNumMols(bool allBarcodes)
         {
             if (filteredBcNumMols == -1)
@@ -102,21 +95,93 @@ namespace Linnarsson.Dna
             return filteredBcNumMols;
         }
 
+        /// <summary>
+        /// Final number of molecules (or reads if UMIs are not used) after mutation filtering. 
+        /// Call ONLY after all reads in barcode have been added! Used for speed up of repeated calls.
+        /// </summary>
+        /// <returns>Number of molecules (mutated UMIs excluded), or number of reads if UMIs are not used.</returns>
         protected abstract void CalcFinalBcNumMols();
-        public abstract void Clear();
+
+        /// <summary>
+        /// Should always be called by Clear() implementations
+        /// </summary>
+        public void ClearBase()
+        {
+            typeOfAnnotation = (short)AnnotType.NOHIT;
+            bcNumReads = 0;
+            filteredBcNumMols = -1;
+        }
+
+        /// <summary>
+        /// Clear data before handling the next barcode. Always call ClearBase() in  implementations
+        /// </summary>
+        public virtual void Clear()
+        {
+            ClearBase();
+        }
+
         public abstract Dictionary<IFeature, int> SharingGenes { get; }
+
+        /// <summary>
+        /// Prepare for analyzing potential SNPs at specified offset within the reads
+        /// </summary>
+        /// <param name="snpOffset"></param>
         public abstract void RegisterSNP(byte snpOffset);
+
+        /// <summary>
+        /// Add the Nt at a SNP position from a read.
+        /// If the position has not been defined as a SNP by a previous call to RegisterSNPAtOffset(), it will be skipped
+        /// </summary>
+        /// <param name="UMIIdx">The UMI of the read</param>
+        /// <param name="snpOffset">Offset within the read of the SNP</param>
+        /// <param name="snpNt">The reads' Nt at the SNP positions</param>
         public abstract void AddSNP(int UMIIdx, Mismatch mm);
-        public abstract bool Add(int UMIIdx);
-        public abstract void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures);
+
         public abstract bool HasSNPs { get; }
+
+        /// <summary>
+        /// Add a read to the data, ignoring any SNP annotations
+        /// </summary>
+        /// <param name="UMIIdx"></param>
+        /// <returns>True if the UMI is new</returns>
+        public abstract bool Add(int UMIIdx);
+
+        /// <summary>
+        /// Record other transcripts that share the count from a multiread
+        /// </summary>
+        /// <param name="sharingRealFeatures"></param>
+        public abstract void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures);
+
+        /// <summary>
+        /// Get Nt counts at all positions where there is SNP data available
+        /// </summary>
+        /// <param name="readPosOnChr">Needed to convert the SNP offset to position within chromosome</param>
+        /// <returns>SNPCounters that summarize the (winning, if some mutated read) Nts found at each offset in valid UMIs,
+        /// or null if no SNPs are present.</returns>
         public abstract List<SNPCounter> GetTotalSNPCounts(int readPosOnChr);
+
+        /// <summary>
+        /// Count number of molecules (reads if UMIs not used) at this position-strand.
+        /// Filters away mutated UMIs according to thresholding filter.
+        /// </summary>
+        /// <returns>Number of molecules (mutated UMIs excluded), or number of reads if UMIs are not used.</returns>
         public abstract int CalcCurrentBcNumMols();
+
         public abstract int GetMutationThreshold();
+
+        /// <summary>
+        /// Count # UMIs with at least one read (no filtering applied)
+        /// </summary>
+        /// <returns></returns>
         public abstract int GetNumUsedUMIs();
 
+        /// <summary>
+        /// Get number of reads in each UMI. (Mutated molecule reads are not filtered away even when UMIs are used.)
+        /// </summary>
+        /// <returns>null if no reads have been found</returns>
         public abstract ushort[] GetReadCountsByUMI();
     }
+
 
     /// <summary>
     /// TagItem summarizes all reads that map to a specific (possibly redundant when hasAltMappings==true) (chr, pos, strand) combination[s].
@@ -158,10 +223,6 @@ namespace Linnarsson.Dna
             this.typeOfAnnotation = isTranscript? (short)AnnotType.EXON : (short)AnnotType.NOHIT;
         }
 
-        /// <summary>
-        /// Prepare for analyzing potential SNPs at specified offset within the reads
-        /// </summary>
-        /// <param name="snpOffset"></param>
         public override void RegisterSNP(byte snpOffset)
         {
             if (SNPCountsByOffset == null)
@@ -169,13 +230,6 @@ namespace Linnarsson.Dna
             SNPCountsByOffset[snpOffset] = null;
         }
 
-        /// <summary>
-        /// Add the Nt at a SNP position from a read.
-        /// If the position has not been defined as a SNP by a previous call to RegisterSNPAtOffset(), it will be skipped
-        /// </summary>
-        /// <param name="UMIIdx">The UMI of the read</param>
-        /// <param name="snpOffset">Offset within the read of the SNP</param>
-        /// <param name="snpNt">The reads' Nt at the SNP positions</param>
         public override void AddSNP(int UMIIdx, Mismatch mm)
         {
             SNPCountsByRndTag SNPCounts;
@@ -189,9 +243,6 @@ namespace Linnarsson.Dna
             SNPCounts.Add(UMIIdx, mm.ntInChrDir);
         }
 
-        /// <summary>
-        /// Clear data before handling the next barcode
-        /// </summary>
         public override void Clear()
         {
             ClearBase();
@@ -204,11 +255,6 @@ namespace Linnarsson.Dna
                         counts.Clear();
         }
 
-        /// <summary>
-        /// Add a read to the data, ignoring any SNP annotations
-        /// </summary>
-        /// <param name="UMIIdx"></param>
-        /// <returns>True if the UMI is new</returns>
         public override bool Add(int UMIIdx)
         {
             int currentCount = bcNumReads;
@@ -221,10 +267,6 @@ namespace Linnarsson.Dna
             return (currentCount == 0);
         }
 
-        /// <summary>
-        /// Record other transcripts that share the count from a multiread
-        /// </summary>
-        /// <param name="sharingRealFeatures"></param>
         public override void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures)
         {
             if (sharingRealFeatures.Count == 0) return;
@@ -241,12 +283,6 @@ namespace Linnarsson.Dna
 
         public override bool HasSNPs { get { return SNPCountsByOffset != null; } }
 
-        /// <summary>
-        /// Get Nt counts at all positions where there is SNP data available
-        /// </summary>
-        /// <param name="readPosOnChr">Needed to convert the SNP offset to position within chromosome</param>
-        /// <returns>SNPCounters that summarize the (winning, if some mutated read) Nts found at each offset in valid UMIs,
-        /// or null if no SNPs are present.</returns>
         public override List<SNPCounter> GetTotalSNPCounts(int readPosOnChr)
         {
             if (SNPCountsByOffset == null)
@@ -283,10 +319,6 @@ namespace Linnarsson.Dna
             return filteredUsedUMIIndices;
         }
 
-        /// <summary>
-        /// Count number of molecules (reads if UMIs not used) at this position-strand. Filters away mutated UMIs according to thresholding filter.
-        /// </summary>
-        /// <returns>Number of molecules (mutated UMIs excluded), or number of reads if UMIs are not used.</returns>
         public override int CalcCurrentBcNumMols()
         {
             if (nUMIs == 1) 
@@ -297,11 +329,6 @@ namespace Linnarsson.Dna
             return readCountsByUMI.Count(v => v > threshold);
         }
 
-        /// <summary>
-        /// Final number of molecules (or reads if UMIs are not used) after mutation filtering. Call ONLY after all reads in barcode have been added!
-        /// Used for speed up of repeated calls.
-        /// </summary>
-        /// <returns>Number of molecules (mutated UMIs excluded), or number of reads if UMIs are not used.</returns>
         protected override void CalcFinalBcNumMols()
         {
             if (filteredBcNumMols >= 0)
@@ -323,10 +350,6 @@ namespace Linnarsson.Dna
             return readCountsByUMI.Count(c => c > 0);
         }
 
-        /// <summary>
-        /// Get number of reads in each UMI. (Mutated molecule reads are not filtered away even when UMIs are used.)
-        /// </summary>
-        /// <returns>null if no reads have been found</returns>
         public override ushort[] GetReadCountsByUMI()
         {
             if (nUMIs == 1)

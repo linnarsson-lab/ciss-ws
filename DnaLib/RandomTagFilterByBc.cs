@@ -220,6 +220,7 @@ namespace Linnarsson.Strt
         /// <param name="positions">All positions with some mapped read start on given strand</param>
         /// <param name="molCountAtEachPosition">Number of distinct UMIs (=molecules) mapped at each of these positions</param>
         /// <param name="readCountAtEachPosition">Number of reads mapped at each of these positions</param>
+        /// <param name="allBarcodes">true will sum up across all barcodes, false returns values only for current barcodes</param>
         public void GetDistinctPositionsAndCounts(char strand, int[] selectedAnnotTypes, out int[] positions,
                                                   out int[] molCountAtEachPosition, out int[] readCountAtEachPosition, bool allBarcodes)
         {

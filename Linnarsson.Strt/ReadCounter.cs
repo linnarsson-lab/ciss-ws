@@ -127,6 +127,10 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
+        /// Total read counts per barcode over all files
+        /// </summary>
+        public int[] TotalReadsByBarcode { get { return totalBarcodeReads; } }
+        /// <summary>
         /// Count of all analyzed reads over all files in specific barcodes
         /// </summary>
         public int TotalReads(int[] selectedBcIndexes)

@@ -957,7 +957,7 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("  </readstatus>");
             }
             xmlFile.WriteLine("  <reads>");
-            xmlFile.WriteLine("    <title>Read distribution (10^6). [#samples]</title>");
+            xmlFile.WriteLine("    <title>Read distribution (10^6). [#wells/samples]</title>");
             double speciesReads = readCounter.TotalReads(speciesBarcodes);
             if (speciesReads > 0 && allBcReads > 0)
             {
@@ -965,7 +965,7 @@ namespace Linnarsson.Strt
                     xmlFile.WriteLine("    <point x=\"Limiter excluded\" y=\"{0}\" />", readCounter.LimiterExcludedReads / 1.0E6d);
                 xmlFile.WriteLine("    <point x=\"Processed reads\" y=\"{0}\" />", allBcReads / 1.0E6d);
                 xmlFile.WriteLine("    <point x=\"PF reads\" y=\"{0}\" />", readCounter.PassedIlluminaFilter / 1.0E6d);
-                xmlFile.WriteLine("    <point x=\"Valid BC [{1} {0} wells] (100%)\" y=\"{2}\" />",
+                xmlFile.WriteLine("    <point x=\"{0} reads [{1}] (100%)\" y=\"{2}\" />",
                                              Annotations.Genome.Abbrev, spBcCount, speciesReads / 1.0E6d);
                 int validReads = readCounter.ValidReads(speciesBarcodes);
                 xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />",
@@ -999,10 +999,10 @@ namespace Linnarsson.Strt
             {
                 dividend = nMappings;
                 reducer = 1.0E3d;
-                xmlFile.WriteLine("    <title>Molecule mappings distribution (10^3). [#samples].\n[{0}]</title>", mrHead);
+                xmlFile.WriteLine("    <title>Molecule mappings distribution (10^3). [#wells/samples].\n[{0}]</title>", mrHead);
             }
             else
-                xmlFile.WriteLine("    <title>Read mappings distribution (10^6) [#samples].\n[{0}]</title>", mrHead);
+                xmlFile.WriteLine("    <title>Read mappings distribution (10^6) [#wells/samples].\n[{0}]</title>", mrHead);
             xmlFile.WriteLine("    <point x=\"Mappings [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMappings / dividend, nMappings / reducer);
             xmlFile.WriteLine("    <point x=\"Annotated [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nAnnotatedMappings / dividend, nAnnotatedMappings / reducer);
             xmlFile.WriteLine("    <point x=\"Feature hits [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nAllHits / dividend, nAllHits / reducer);
@@ -1366,7 +1366,7 @@ namespace Linnarsson.Strt
                     WriteSpeciesByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes);
                 if (readCounter.ValidReadsByBarcode.Length == barcodes.Count)
                 {
-                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, readCounter.ValidReadsByBarcode.ToArray(),
+                    WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, readCounter.TotalReadsByBarcode.ToArray(),
                                         "BARCODEDREADS", "Total barcoded reads by barcode", "barcoded reads");
                     WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, readCounter.ValidReadsByBarcode.ToArray(),
                                         "VALIDSTRTREADS", "Total valid STRT reads by barcode", "valid STRT reads");

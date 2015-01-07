@@ -205,9 +205,11 @@ namespace Linnarsson.Dna
                 bcIdx = 0;
             else
             {
-                bcIdx = -1;
                 if (!bcSeqToBcIdxMap.TryGetValue(read.Substring(BarcodePos, BarcodeLen), out bcIdx))
+                {
+                    bcIdx = -1;
                     return ReadStatus.NO_BC_OTHER;
+                }
             }
             if (read.Substring(InsertOrGGGPos, TSSeq.Length) != TSSeq)
                 return ReadStatus.TSSEQ_MISSING_OTHER;

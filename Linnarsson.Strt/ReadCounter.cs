@@ -83,7 +83,7 @@ namespace Linnarsson.Strt
 
         private readonly static string BarcodeReadsID = "BARCODEREADS";
         private int[] validBarcodeReads;
-        private int[] totalBarcodePFReads;
+        private int[] totalBarcodeReads;
 
         private ReadLimitType readLimitType = ReadLimitType.None; // By default all reads in fq files will be analyzed
         private int readLimit = 0; // Parameter to the read limiter
@@ -92,7 +92,7 @@ namespace Linnarsson.Strt
         {
             this.barcodes = barcodes;
             validBarcodeReads = new int[barcodes.Count];
-            totalBarcodePFReads = new int[barcodes.Count];
+            totalBarcodeReads = new int[barcodes.Count];
             readLimitType = Props.props.ExtractionReadLimitType;
             readLimit = Props.props.ExtractionReadLimit;
             wordCounter = new ExtractionWordCounter(Props.props.ExtractionCounterWordLength);
@@ -127,13 +127,13 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Count of all analyzed PF reads over all files in specific barcodes
+        /// Count of all analyzed reads over all files in specific barcodes
         /// </summary>
-        public int TotalPFReads(int[] selectedBcIndexes)
+        public int TotalReads(int[] selectedBcIndexes)
         {
             int sum = 0;
             foreach (int idx in selectedBcIndexes)
-                sum += totalBarcodePFReads[idx];
+                sum += totalBarcodeReads[idx];
             return sum;
         }
 
@@ -162,8 +162,8 @@ namespace Linnarsson.Strt
                     if (bcIdx < 0 || validBarcodeReads[bcIdx] < readLimit) return LimitTest.UseThisRead;
                     return (ValidReadsByBarcode.All(v => v >= readLimit)) ? LimitTest.Break : LimitTest.SkipThisRead;
                 case ReadLimitType.TotalReadsPerBarcode:
-                    if (bcIdx < 0 || totalBarcodePFReads[bcIdx] < readLimit) return LimitTest.UseThisRead;
-                    return (totalBarcodePFReads.All(v => v >= readLimit)) ? LimitTest.Break : LimitTest.SkipThisRead;
+                    if (bcIdx < 0 || totalBarcodeReads[bcIdx] < readLimit) return LimitTest.UseThisRead;
+                    return (totalBarcodeReads.All(v => v >= readLimit)) ? LimitTest.Break : LimitTest.SkipThisRead;
                 default:
                     return LimitTest.UseThisRead;
             }
@@ -191,8 +191,7 @@ namespace Linnarsson.Strt
                     PassedIlluminaFilter++;
                 if (bcIdx >= 0)
                 {
-                    if (rec.PassedFilter)
-                        totalBarcodePFReads[bcIdx]++;
+                    totalBarcodeReads[bcIdx]++;
                     if (readStatus == ReadStatus.VALID)
                     {
                         fr.AddAValidRead(rec.Sequence.Length);
@@ -243,9 +242,9 @@ namespace Linnarsson.Strt
                 if (barcodes.HasUMIs || !ReadStatus.IsUMICategory(statusCat))
                     sb.Append(string.Format("{0}\t{1}\t{2:0.#%}\n", ReadStatus.GetName(statusCat), ReadCount(statusCat), ReadCountFraction(statusCat)));
             }
-            sb.Append("#\tBarcode\tValidSTRTReads\tTotalPFReads\n");
+            sb.Append("#\tBarcode\tValidSTRTReads\tTotalBarcodedReads\n");
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
-                sb.Append(string.Format(BarcodeReadsID + "\t{0}\t{1}\t{2}\n", barcodes.Seqs[bcIdx], validBarcodeReads[bcIdx], totalBarcodePFReads[bcIdx]));
+                sb.Append(string.Format(BarcodeReadsID + "\t{0}\t{1}\t{2}\n", barcodes.Seqs[bcIdx], validBarcodeReads[bcIdx], totalBarcodeReads[bcIdx]));
             sb.Append("\nBelow are the most common words among all reads.\n\n");
             sb.Append(wordCounter.GroupsToString(200));
             sb.Append("\n");
@@ -292,7 +291,7 @@ namespace Linnarsson.Strt
                                 int bcIdx = barcodes.GetBcIdxFromBarcode(fields[1]);
                                 validBarcodeReads[bcIdx] += int.Parse(fields[2]);
                                 if (fields.Length >= 4)
-                                    totalBarcodePFReads[bcIdx] += int.Parse(fields[3]);
+                                    totalBarcodeReads[bcIdx] += int.Parse(fields[3]);
                             }
                             else if (fields.Length >= 2)
                             {
@@ -330,7 +329,7 @@ namespace Linnarsson.Strt
                         totValidReadsLen += rec.Sequence.Length;
                     }
                 } 
-                totalBarcodePFReads[bcIdx] = validBarcodeReads[bcIdx] = bcReads;
+                totalBarcodeReads[bcIdx] = validBarcodeReads[bcIdx] = bcReads;
                 totValidReads += bcReads;
             }
             if (totValidReads > 0)

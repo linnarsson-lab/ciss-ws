@@ -958,7 +958,7 @@ namespace Linnarsson.Strt
             }
             xmlFile.WriteLine("  <reads>");
             xmlFile.WriteLine("    <title>Read distribution (10^6). [#samples]</title>");
-            double speciesReads = readCounter.TotalReads(speciesBarcodes);
+            double speciesReads = readCounter.TotalPFReads(speciesBarcodes);
             if (speciesReads > 0 && allBcReads > 0)
             {
                 if (readCounter.LimiterExcludedReads > 0)

@@ -12,7 +12,7 @@ namespace Linnarsson.Strt
     public class ReadExtractor
     {
         private readonly static string tn5Seq = "CTGTCTCTTATACACATCTGACGC";
-        private readonly static string tn5SeqStart = tn5Seq.Substring(0, 10);
+        private readonly static string tn5SeqStart = tn5Seq.Substring(0, 12);
         private readonly static string p1Seq = "AATGATACGGCGACC";
 
         private readonly static int ReadSegmentQualityControlIndicator = 2; // Phred score '2' corresponding to 'B' in fastQ read qualities

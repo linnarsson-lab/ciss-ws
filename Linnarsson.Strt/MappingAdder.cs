@@ -26,12 +26,12 @@ namespace Linnarsson.Strt
         private Random rnd = new Random(DateTime.Now.Millisecond); // Used in random selection of multireads mappings
 
         /// <summary>
-        /// Total number of reads that have at least some unique position, strand, rndTag, barcode combination.
+        /// Total number of reads that have at least some unique position, strand, UMI, barcode combination.
         /// </summary>
         public int TotalNUniqueReadSignatures { get { return nUniqueByBarcode.Sum(); } }
 
         /// <summary>
-        /// Number of reads with distinct signatures, i.e. at least some position, strand, and rndTag combination is unique.
+        /// Number of reads with distinct signatures, i.e. at least some position, strand, and UMI combination is unique.
         /// </summary>
         /// <param name="bcIdx">Barcode index</param>
         public int NUniqueReadSignatures(int bcIdx)
@@ -45,7 +45,7 @@ namespace Linnarsson.Strt
         public int TotalNDuplicateReads { get { return nDuplicatesByBarcode.Sum(); } }
 
         /// <summary>
-        /// Number of reads that are copies of a first unique signature. i.e., the position, strand, and rndTag are exactly the same.
+        /// Number of reads that are copies of a first unique signature. i.e., the position, strand, and UMI are exactly the same.
         /// </summary>
         public int[] NDuplicateReadsByBc()
         {

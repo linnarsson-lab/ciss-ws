@@ -96,6 +96,8 @@ namespace Linnarsson.Strt
               // rethink the TagItem to consist of singlereads. Increases the chance of detecting true exon signals.
                 item.hasAltMappings = false;
             }
+            if (isTranscript) // Needed when (an emptied) item already exists from previous bc, or from SNP setup
+                item.typeOfAnnotation = (short)AnnotType.EXON;
             if (Props.props.AnalyzeSNPs && !m.HasAltMappings && item.HasSNPs)
             {
                 foreach (Mismatch mm in m.IterMismatches(0))
@@ -123,6 +125,8 @@ namespace Linnarsson.Strt
                 item = TagItem.CreateTagItem(m.HasAltMappings, isTranscript);
                 tagItems[posStrand] = item;
             }
+            if (isTranscript) // Needed when (an emptied) item already exists from previous bc, or from SNP setup
+                item.typeOfAnnotation = (short)AnnotType.EXON;
             if (Props.props.AnalyzeSNPs && !m.HasAltMappings && item.HasSNPs)
             {
                 foreach (Mismatch mm in m.IterMismatches(0))
@@ -460,7 +464,7 @@ namespace Linnarsson.Strt
         /// Number of distinct mappings (position + strand) since last barcode change.
         /// Note that this may be higher than number of distinct molecules if multiread mappings to exons are analyzed
         /// </summary>
-        /// <returns>Number of distinct mappings (position + strand) that have been observed in current barcode, irrespective of rndTags</returns>
+        /// <returns>Number of distinct mappings (position + strand) observed in current barcode, irrespective of UMI</returns>
         public int GetNumDistinctMappings()
         {
             int nAllChr = 0;
@@ -470,10 +474,10 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Snapshot of number of molecules, after mutated UMI filtering, detected so far in current barcode.
+        /// Snapshot of number of EXON hitting molecules, after mutated UMI filtering, detected so far in current barcode.
         /// </summary>
         /// <returns>Current estimate after filtering of mutations (note that some molecules may be filtered away later during processing)</returns>
-        public int GetCurrentNumFilteredMolecules()
+        public int GetCurrentNumFilteredExonMols()
         {
             int total = 0;
             foreach (ChrTagData chrTagData in chrTagDatas.Values)

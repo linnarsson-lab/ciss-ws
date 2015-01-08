@@ -36,10 +36,15 @@ namespace Linnarsson.Dna
         public static readonly string configFilename = "SilverBulletConfig.xml"; // Filename of machine specific Props
 
         // Following props are imported from the "SB.exe.config" file, where they are encrypted, see below.
+        [NonSerialized]
         public string MySqlServerConnectionString = "server=127.0.0.1;uid=user;pwd=password;database=joomla;Connect Timeout=300;Charset=utf8;";
+        [NonSerialized]
         public string OutgoingMailServer = "send.my.server";
+        [NonSerialized]
         public string OutgoingMailUser = "";
+        [NonSerialized]
         public string OutgoingMailPassword = "";
+        [NonSerialized]
         public int OutgoingMailPort = 0;
 
         // Default values for configuration follows.
@@ -125,8 +130,8 @@ namespace Linnarsson.Dna
         public int MappingsBySpikeReadsSampleDist = 0; // Set > 0 to sample per-barcode curves of # unique mappings as fn. of # processed spike reads
         public string RemoveTrailingReadPrimerSeqs = ""; // Comma-separated list of seqs to remove if during extraction reads end with (part of) them.
         public string ForbiddenReadInternalSeqs = ""; // Comma-separated list of seqs that if found inside reads disqualify them during extraction.
-        public int sampleDistPerBcForAccuStats = 100000; // Statistics as fn. of #reads processed will be collected every this # of reads
-        public bool sampleAccuFilteredExonMols = false; // Sample #EXON Mols after mutation filter as fn. of processed reads (slow)
+        public int SampleDistPerBcForAccuStats = 100000; // Statistics as fn. of #reads processed will be collected every this # of reads
+        public bool SampleAccuFilteredExonMols = false; // Sample #EXON Mols after mutation filter as fn. of processed reads (slow)
         public string[] CAPCloseSiteSearchCutters = new string[] { "PvuI" };
         public bool InsertCells10Data = false; // Set to true to insert results into cells10k database for "C1-" prefixed projects
         public bool AnalyzeGCContent = false; // Analyze the GC content of transcript mapping reads

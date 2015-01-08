@@ -38,7 +38,8 @@ namespace Linnarsson.Strt
         private SyntReadReporter TestReporter;
 
         /// <summary>
-        /// Total exon/splc matching molecules (or reads when no UMIs are used) per barcode, each molecule/read is counted exactly once
+        /// Total exon/splc matching molecules (or reads when no UMIs are used) per barcode.
+        /// Each molecule/read is counted as exactly one hit. Molecules are singleton filtered and UMI collision compensated.
         /// </summary>
         int[] TotalTranscriptMolsByBarcode;
 
@@ -110,7 +111,7 @@ namespace Linnarsson.Strt
         // For non-UMI samples the following two will be identical:
         Dictionary<int, List<int>> sampledUniqueMoleculesByBcIdx = new Dictionary<int, List<int>>();
         Dictionary<int, List<int>> sampledUniqueHitPositionsByBcIdx = new Dictionary<int, List<int>>();
-        Dictionary<int, List<int>> sampledFilteredMolsByBcIdx = new Dictionary<int, List<int>>();
+        Dictionary<int, List<int>> sampledFilteredExonMolsByBcIdx = new Dictionary<int, List<int>>();
 
         // Samplings by barcode:
         bool analyzeMappingsBySpikeReads = false;
@@ -158,7 +159,7 @@ namespace Linnarsson.Strt
             randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
             TagItem.InitTagItemType();
             mappingAdder = new MappingAdder(annotations, randomTagFilter, barcodes);
-            statsSampleDistPerBarcode = Props.props.sampleDistPerBcForAccuStats;
+            statsSampleDistPerBarcode = Props.props.SampleDistPerBcForAccuStats;
             if (props.AnalyzeSeqUpstreamTSSite && barcodes.Count > 1)
                 upstreamAnalyzer = new UpstreamAnalyzer(Annotations, barcodes);
             if (props.AnalyzeGCContent)
@@ -327,7 +328,7 @@ namespace Linnarsson.Strt
                 if (File.Exists(mapFilePath))
                     AddReadMappingsToTagItems(mapFilePath);
             }
-            SampleReadStatistics(nMappedReadsByBarcode[currentBcIdx] % statsSampleDistPerBarcode);
+            SampleReadStatistics();
             AnnotateFeaturesFromTagItems();
             if (Props.props.GenerateBarcodedWiggle)
                 WriteCurrentBcWiggle();
@@ -372,7 +373,7 @@ namespace Linnarsson.Strt
                 if (snpRndTagVerifier != null)
                     snpRndTagVerifier.Add(mrm);
                 if ((++nMappedReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
-                    SampleReadStatistics(statsSampleDistPerBarcode);
+                    SampleReadStatistics();
                 if ((nMappedReadsByBarcode[currentBcIdx]) == libraryDepthSampleReadCountPerBc)
                 {
                     sampledLibraryDepths.Add(randomTagFilter.GetNumDistinctMappings());
@@ -402,19 +403,19 @@ namespace Linnarsson.Strt
                 Annotate(mtitem);
         }
 
-        public void SampleReadStatistics(int numReadsInBin)
+        public void SampleReadStatistics()
         {
             if (!sampledUniqueHitPositionsByBcIdx.ContainsKey(currentBcIdx))
             {
                 sampledUniqueMoleculesByBcIdx[currentBcIdx] = new List<int>();
                 sampledUniqueHitPositionsByBcIdx[currentBcIdx] = new List<int>();
-                if (Props.props.sampleAccuFilteredExonMols)
-                    sampledFilteredMolsByBcIdx[currentBcIdx] = new List<int>();
+                if (Props.props.SampleAccuFilteredExonMols)
+                    sampledFilteredExonMolsByBcIdx[currentBcIdx] = new List<int>();
             }
             sampledUniqueMoleculesByBcIdx[currentBcIdx].Add(mappingAdder.NUniqueReadSignatures(currentBcIdx));
             sampledUniqueHitPositionsByBcIdx[currentBcIdx].Add(randomTagFilter.GetNumDistinctMappings());
-            if (Props.props.sampleAccuFilteredExonMols)
-                sampledFilteredMolsByBcIdx[currentBcIdx].Add(randomTagFilter.GetCurrentNumFilteredMolecules());
+            if (Props.props.SampleAccuFilteredExonMols)
+                sampledFilteredExonMolsByBcIdx[currentBcIdx].Add(randomTagFilter.GetCurrentNumFilteredExonMols());
         }
 
         public void Annotate(MappedTagItem item)
@@ -854,9 +855,9 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </nuniqueateachrandomtagcoverage>");
             WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules (all feature types) vs. mapped reads processed",
                                    sampledUniqueMoleculesByBcIdx, 0, sampledUniqueMoleculesByBcIdx.Keys.Count);
-            if (Props.props.sampleAccuFilteredExonMols)
-                WriteAccuMoleculesByBc(xmlFile, "filteredmoleculesbybc", "No. of EXON molecules after mutation filtering vs. mapped reads processed",
-                                   sampledFilteredMolsByBcIdx, 0, sampledFilteredMolsByBcIdx.Keys.Count);
+            if (Props.props.SampleAccuFilteredExonMols)
+                WriteAccuMoleculesByBc(xmlFile, "filteredmoleculesbybc", "EXON molecules (mutation filtered, not UMI collision compensated) vs. mapped reads processed",
+                                   sampledFilteredExonMolsByBcIdx, 0, sampledFilteredExonMolsByBcIdx.Keys.Count);
             if (TagItem.CountsReadsPerUMI)
                 WriteReadsPerMolDistros(xmlFile);
         }
@@ -892,6 +893,8 @@ namespace Linnarsson.Strt
             {
                 int bcIdx = bcIndices[bII];
                 List<int> curve = data[bcIdx];
+                if (curve.Count < 2)
+                    continue;
                 string legend = string.Format("{0}[{1}]", barcodes.Seqs[bcIdx], barcodes.GetWellId(bcIdx));
                 xmlFile.WriteLine("      <curve legend=\"{0}\" color=\"#{1:x2}{2:x2}{3:x2}\">",
                                   legend, (bcIdx * 47) % 255, (bcIdx * 21) % 255, (255 - (60 * bcIdx % 255)));

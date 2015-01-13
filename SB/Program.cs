@@ -24,7 +24,7 @@ namespace CmdSilverBullet
             if (args.Length >= 1 + 0)
             {
                 bool analyzeAllGeneVariants = Props.props.AnalyzeAllGeneVariants;
-                StrtGenome genome;
+                StrtGenome genome = null;
                 Props props = Props.props;
                 StrtReadMapper mapper;
                 string projectFolder;
@@ -45,6 +45,7 @@ namespace CmdSilverBullet
                             props.SenseStrandIsSequenced = options.readSequenceIsSense;
                             props.BarcodesName = options.barcodesName;
                             props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
+                            props.Aligner = options.Aligner;
                             projectFolder = options.projectFolder;
                             mapper = new StrtReadMapper(props);
                             List<LaneInfo> extrInfos = mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
@@ -100,6 +101,7 @@ namespace CmdSilverBullet
 
                         case "bt":
                             options = new QXMAOptions(args);
+                            props.Aligner = options.Aligner;
                             mapper = new StrtReadMapper(props);
                             mapper.Map(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants, options.annotation);
                             break;
@@ -110,6 +112,7 @@ namespace CmdSilverBullet
                             props.DirectionalReads = options.directionalReads;
                             props.UseRPKM = options.useRPKM;
                             props.SenseStrandIsSequenced = options.readSequenceIsSense;
+                            props.Aligner = options.Aligner;
                             props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
                             mapper = new StrtReadMapper(props);
                             mapper.MapAndAnnotate(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
@@ -130,35 +133,36 @@ namespace CmdSilverBullet
                             break;
 
                         case "jct":
-                            CheckArgs(args, 2, 6);
-                            if (int.TryParse(args[argOffset], out readLen))
-                                argOffset++;
-                            else
-                                readLen = props.StandardReadLen;
-                            genome = StrtGenome.GetBaseGenome(args[argOffset++]);
-                            if (args.Length > argOffset && StrtGenome.IsASpliceAnnotation(args[argOffset]))
-                                genome.Annotation = args[argOffset++];
-                            if (args.Length > argOffset)
-                                annotationFile = args[argOffset++];
-                            genome.ReadLen = readLen;
-                            mapper = new StrtReadMapper(props);
-                            mapper.BuildJunctions(genome, annotationFile);
-                            break;
-
                         case "idx":
-                            CheckArgs(args, 2, 6);
-                            if (int.TryParse(args[argOffset], out readLen))
-                                argOffset++;
-                            else
-                                readLen = props.StandardReadLen;
-                            genome = StrtGenome.GetBaseGenome(args[argOffset++]);
-                            if (args.Length > argOffset && StrtGenome.IsASpliceAnnotation(args[argOffset]))
-                                genome.Annotation = args[argOffset++];
-                            if (args.Length > argOffset)
-                                annotationFile = args[argOffset++];
-                            genome.ReadLen = readLen;
+                        case "build":
+                            string annotation;
+                            for (; argOffset < args.Length; argOffset++)
+                            {
+                                if (args[argOffset] == "-bowtie") props.Aligner = "bowtie";
+                                else if (args[argOffset] == "-STAR") props.Aligner = "STAR";
+                                else if (int.TryParse(args[argOffset], out readLen))
+                                    props.StandardReadLen = readLen;
+                                else if (StrtGenome.AnnotationSources.Contains(args[argOffset]))
+                                    annotation = args[argOffset];
+                                else try
+                                {
+                                    genome = StrtGenome.GetBaseGenome(args[argOffset++]);
+                                }
+                                catch (ArgumentException)
+                                {
+                                    annotationFile = args[argOffset++];
+                                }
+                            }
+                            if (genome == null)
+                                throw new ArgumentException("Can not parse the genome!");
+                            genome.SplcIndexReadLen = props.StandardReadLen;
                             mapper = new StrtReadMapper(props);
-                            mapper.BuildJunctionsAndIndex(genome, annotationFile);
+                            if (cmd == "jct")
+                                mapper.BuildJunctions(genome, annotationFile);
+                            else if (cmd == "build")
+                                mapper.BuildJunctionsAndIndex(genome, annotationFile);
+                            else
+                                mapper.BuildIndex(genome);
                             break;
 
                         case "dumpfasta":
@@ -226,7 +230,7 @@ namespace CmdSilverBullet
                             else
                                 readLen = props.StandardReadLen;
                             genome = StrtGenome.GetGenome(args[argOffset++]);
-                            genome.ReadLen = readLen;
+                            genome.SplcIndexReadLen = readLen;
                             annotationFile = "";
                             if (args.Length > argOffset + 1)
                                 annotationFile = args[argOffset++];
@@ -264,9 +268,9 @@ namespace CmdSilverBullet
                 "x [RUNLANESPEC]+ BC [-Lt N] PROJECTPATH              extract data from the reads folder.\n" +
                 "   -Lt N     limit number of reads used to N. t is one of TotalReads, ValidReads, TotalReadsPerBc, ValidReadsPerBc\n" +
                 "q [RUNLANESPEC]+ BC [ANNOTATIONOPTION]* [-cN] [-BcIndexes...] [BUILD|IDX] PROJECTPATH\n" +
-                "   extract data, run Bowtie, and annotate in one sweep using default parameters.\n" +
+                "   extract data, align, and annotate in one sweep using default parameters.\n" +
                 "ab [-oNAME] [ANNOTATIONOPTION]* [-cN] [-BcIndexes...] [BUILD|IDX] PROJECTPATH|EXTRACTEDPATH\n" +
-                "   annotate extracted reads in latest/specified Extracted folder. Will start by running Bowtie if .map files are missing.\n" +
+                "   annotate extracted reads in latest/specified Extracted folder. Will start by aligning if mapping files are missing.\n" +
                 "   RUNLANESPEC  E.g. '17:235[:,,AGCTTG]', i.e. lanes 2,3,5 of run 17 [and only idx read AGCTTG of lane 5].\n" +
                 "                Regexps are allowed for idx read matching, e.g. AG?TTG.\n" +
                 "   -oNAME       Use a non-standard output folder\n" +
@@ -274,6 +278,7 @@ namespace CmdSilverBullet
                 "                Individual fractions are taken from 2nd column of " + PathHandler.GetCTRLConcPath() + "\n" +
                 "   -BcIndexes M,N[,...] Only process the specified barcodes indexes, even if the barcode set contains more indexes.\n" +
                 "   ANNOTATIONOPTION can be (default values first):\n" +
+                "     -bowtie/-STAR             select a specific aligner. (Aligner options are set in config file.)\n" +
                 "     compact / compact-no-filter - use memory-saving UMI counting with filtering of singleton reads / no reads \n" +
                 "     single/all              select between one per-gene summarizing value or separate values for all known transcript variants.\n" +
                 "     rpm/rpkm                specify rpkm to calculate rpkm values instead of rpm, for e.g. TruSeq samples.\n" +
@@ -282,14 +287,14 @@ namespace CmdSilverBullet
                 "                             or multi-annotate to every alternative transcript they match.\n" +
                 "     insertc1data            insert data into the Sanger cells10k database when this is a C1 sample.\n" +
                 "   If BUILD/IDX is left out, these are taken from the xxx_SampleLayout.txt file in the project folder.\n" +
-                "bt BUILD|IDX all|single PROJECTPATH|EXTRACTEDPATH    run Bowtie on latest/specified extracted data folder.\n" +
-                "download GENUS_SPECIES                               download latest genome build and annotations, for e.g. 'Mus_musculus'\n" +
-                "mart2refflat IDX [OUTFILE]                           make a refFlat file from mart-style annotations.\n" +
-                "idx READLEN BUILD [ANNOT]  [ANNOTFILE]               build annotations and Bowtie index. Specify 'annotfile' to overide default.\n" +
-                "knowngene2refflat IDX [OUTFILE]                      make a refFlat file from UCSC knownGene.txt annotations.\n" +
-                "upd [READLEN] IDX [ANNOTFILE] ERRORFILE              update 5' end annotations from an 'annot_errors.tab' file. Specify 'annotfile' to overide default.\n" +
-                "synt BC IDX all|single OUTFOLDER                     generate synthetic reads from a genome.\n" +
-                "rf [rpkm] BUILD [ANNOT] OUTFILE                      load transcripts and dump to refFlat-like file.\n" +
+                "bt BUILD|IDX all|single PROJECTPATH|EXTRACTEDPATH      run Bowtie on latest/specified extracted data folder.\n" +
+                "download GENUS_SPECIES                                 download latest genome build and annotations, for e.g. 'Mus_musculus'\n" +
+                "mart2refflat IDX [OUTFILE]                             make a refFlat file from mart-style annotations.\n" +
+                "idx READLEN BUILD [-STAR|-bowtie][ANNOT]  [ANNOTFILE]  build annotations and Bowtie index. Specify 'annotfile' to overide default.\n" +
+                "knowngene2refflat IDX [OUTFILE]                        make a refFlat file from UCSC knownGene.txt annotations.\n" +
+                "upd [READLEN] IDX [ANNOTFILE] ERRORFILE                update 5' end annotations from an 'annot_errors.tab' file. Specify 'annotfile' to overide default.\n" +
+                "synt BC IDX all|single OUTFOLDER                       generate synthetic reads from a genome.\n" +
+                "rf [rpkm] BUILD [ANNOT] OUTFILE                        load transcripts and dump to refFlat-like file.\n" +
                 "dumpfasta IDX OUTFILE [FLANKLEN]\n" +
                 "   dump all transcript sequences, including any config-extension, [with additional 5' and 3' flanks] to fasta file.\n" +
                 "dump IDX READLEN [STEP [MAXPERGENE [MINOVERHANG [Splices|Linear [BCSET]]]]] [OUTFILE]\n" +

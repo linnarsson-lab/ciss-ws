@@ -14,6 +14,10 @@ namespace Linnarsson.Dna
     /// </summary>
 	public class StrtGenome
 	{
+        private static string AnnotationsFilePattern = "Annotations_*_#bp.txt";
+        private static string AnnotationsBuildRegex = "Annotations_[as]([^_]+)_.+txt";
+        private static string AnnotationsBuildPattern = "Annotations_*.txt";
+
         public static string buildMatchPat = "^([A-Za-z]+)[0-9\\.]+$";
         public static string[] AnnotationSources = new string[] { "UCSC", "VEGA", "ENSE", "RFSQ", "UALL", "GENC" };
         public readonly static string DefaultAnnotationSource = "UCSC";
@@ -25,7 +29,7 @@ namespace Linnarsson.Dna
         {
             return "Abrev=" + Abbrev + " Build=" + Build + " VarAnnot=" + VarAnnot;
         }
-        public int ReadLen { get; set; }
+        public int SplcIndexReadLen { get; set; }
 		public string Name { get; set; }
         public string Abbrev { get; set; }
 		public string LatinName { get; set; }
@@ -34,7 +38,8 @@ namespace Linnarsson.Dna
         /// Version of the genome build, e.g. "mm9.2" or "hg19"
         /// </summary>
         public string Build { get; set; }
-        public string m_Annotation;
+
+        private string m_Annotation;
         /// <summary>
         /// Source of annotations, e.g. "UCSC" or "VEGA"
         /// </summary>
@@ -43,7 +48,7 @@ namespace Linnarsson.Dna
             get { return m_Annotation; }
             set 
             {
-                if (value.Length == 5 && "as".Contains(value[0]))
+                if (value.Length >= 5 && "as".Contains(value[0]))
                 {
                     m_Annotation = value.Substring(1);
                     GeneVariants = (value[0] == 'a');
@@ -52,6 +57,8 @@ namespace Linnarsson.Dna
                     m_Annotation = value;
             }
         }
+
+        public string AnnotationDate { get; set; }
         public bool GeneVariants { get; set; }
         public string GeneVariantsChar { get { return GeneVariants ? "a" : "s"; } }
         public string VarAnnot { get { return GeneVariantsChar + Annotation; } }
@@ -60,40 +67,6 @@ namespace Linnarsson.Dna
         public string GetOriginalGenomeFolder()
         {
             return Path.Combine(Path.Combine(Props.props.GenomesFolder, Build), "genome");
-        }
-        public string GetStrtGenomesFolder()
-        {
-            return GetStrtGenomesFolder(Build);
-        }
-        public static string GetStrtGenomesFolder(string build)
-        {
-            return Path.Combine(Path.Combine(Props.props.GenomesFolder, build), "strt");
-        }
-
-        public string MakeMaskedChrFileName(string chrId)
-        {
-            return "chr" + chrId + "_" + Annotation + "Masked.fa";
-        }
-        public string[] GetMaskedChrPaths()
-        {
-            return Directory.GetFiles(GetStrtGenomesFolder(), "chr*_" + Annotation + "Masked.fa");
-        }
-
-        /// <summary>
-        /// Return a mapping from chromosome ids ("1", "2", "M" etc.) to each repeat masked fasta file in STRT genome directory
-        /// </summary>
-        /// <returns></returns>
-        public Dictionary<string, string> GetStrtChrFilesMap()
-        {
-            Dictionary<string, string> chrIdToFileMap = new Dictionary<string, string>();
-            foreach (string filePath in GetMaskedChrPaths())
-            {
-                Match m = Regex.Match(filePath, "chr(.+)_[^_]+");
-                string chrId = m.Groups[1].Value;
-                chrIdToFileMap[chrId] = filePath;
-            }
-            chrIdToFileMap[Annotation] = MakeJunctionChrPath();
-            return chrIdToFileMap;
         }
 
         public Dictionary<string, string> GetOriginalGenomeFilesMap()
@@ -121,48 +94,98 @@ namespace Linnarsson.Dna
             return chrId;
         }
 
-        public string MakeJunctionChrPath()
+        public string GetGenomeStrtFolder()
         {
-            return Path.Combine(GetStrtGenomesFolder(), GetJunctionChrFileName());
+            return GetGenomeStrtFolder(Build);
+        }
+        public static string GetGenomeStrtFolder(string build)
+        {
+            return Path.Combine(Path.Combine(Props.props.GenomesFolder, build), "strt");
+        }
+
+        /// <summary>
+        /// Get/Make the path of a STRT annotations/chr folder, e.g. "GenomesFolder/mm10/strt/UCSC141211".
+        /// If AnnotationDate was null, set AnnotationDate to that of, and return the latest folder.
+        /// Return null if AnnotationDate was null and no folder exists.
+        /// </summary>
+        /// <returns></returns>
+        public string GetStrtAnnotFolder()
+        {
+            string strtFolder = GetGenomeStrtFolder();
+            if (AnnotationDate == null)
+            {
+                string[] annotFolders = Directory.GetDirectories(strtFolder, Annotation + "??????");
+                if (annotFolders.Length == 0)
+                    return null;
+                Array.Sort(annotFolders);
+                string lastAnnotFolderName = Path.GetFileName(annotFolders[annotFolders.Length - 1]);
+                AnnotationDate = lastAnnotFolderName.Substring(Annotation.Length);
+            }
+            return Path.Combine(strtFolder, Annotation + AnnotationDate);
+        }
+
+        public string MakeMaskedChrFileName(string chrId)
+        {
+            return "chr" + chrId + "_" + Annotation + "Masked.fa";
+        }
+
+        public string[] GetMaskedChrPaths()
+        {
+            return Directory.GetFiles(GetStrtAnnotFolder(), "chr*_" + Annotation + "Masked.fa");
+        }
+
+        /// <summary>
+        /// Return a mapping from chromosome ids ("1", "2", "M" etc.) to each repeat masked fasta file in STRT genome directory
+        /// </summary>
+        /// <returns></returns>
+        public Dictionary<string, string> GetStrtChrFilesMap()
+        {
+            Dictionary<string, string> chrIdToFileMap = new Dictionary<string, string>();
+            foreach (string filePath in GetMaskedChrPaths())
+            {
+                Match m = Regex.Match(filePath, "chr(.+)_[^_]+");
+                string chrId = m.Groups[1].Value;
+                chrIdToFileMap[chrId] = filePath;
+            }
+            chrIdToFileMap[Annotation] = GetJunctionChrPath();
+            return chrIdToFileMap;
+        }
+
+        public string GetJunctionChrPath()
+        {
+            return Path.Combine(GetGenomeStrtFolder(), GetJunctionChrFileName());
         }
         public string GetJunctionChrFileName()
         {
-            return ReplaceReadLen(ReadLen, "chr" + VarAnnot + "{0}.splices");
+            return string.Format("chr{0}_{1}bp.splices", VarAnnot, SplcIndexReadLen);
         }
-
-        private static string AnnotationsFilePattern = "Annotations_#{0}.txt";
-        private static string AnnotationsBuildRegex = "Annotations_[as]([^_]+)_.+txt";
-        private static string AnnotationsBuildPattern = "Annotations_*.txt";
+        public string GetJunctionChrId()
+        {
+            return "chr" + Annotation;
+        }
 
         /// <summary>
         /// Use the predefined ReadLen for the path
         /// </summary>
         /// <returns></returns>
-        public string MakeAnnotationsPath()
+        public string MakeStrtAnnotPath()
         {
-            string pathPattern = Path.Combine(GetStrtGenomesFolder(), AnnotationsFilePattern.Replace("#", VarAnnot));
-            return ReplaceReadLen(ReadLen, pathPattern);
+            string file = AnnotationsFilePattern.Replace("*", VarAnnot).Replace("#", SplcIndexReadLen.ToString());
+            return Path.Combine(GetStrtAnnotFolder(), file);
         }
-        /// <summary>
-        /// Search the genomes directory for some existing anntation file that best fits with current ReadLen
-        /// </summary>
-        /// <returns>Full annotations path or ""</returns>
-        private string GetAnAnnotationsPath()
-        {
-            string pathPattern = Path.Combine(GetStrtGenomesFolder(), AnnotationsFilePattern.Replace("#", VarAnnot));
-            return FindABpVersion(ReadLen, pathPattern);
-        }
+
         /// <summary>
         /// Search the genomes directory for the existing anntation file that best fits with current ReadLen.
         /// throw exception if none appropriate is found.
         /// </summary>
         /// <returns></returns>
-        public string VerifyAnAnnotationPath()
+        public string AssertAStrtAnnotPath()
         {
-            string tryAnnotationsPath = GetAnAnnotationsPath();
+            string pathPattern = Path.Combine(GetStrtAnnotFolder(), AnnotationsFilePattern.Replace("*", VarAnnot));
+            string tryAnnotationsPath = FindABpVersion(pathPattern);
             string annotationsPath = PathHandler.ExistsOrGz(tryAnnotationsPath);
             if (annotationsPath == null)
-                throw new Exception("Could not find annotation file " + MakeAnnotationsPath() + " or one with similar read length.");
+                throw new Exception("Could not find annotation file " + MakeStrtAnnotPath() + " or one with similar read length.");
             return annotationsPath;
         }
 
@@ -170,37 +193,47 @@ namespace Linnarsson.Dna
         /// Returns 'Build_Annotation', e.g. 'mm9_UCSC'
         /// </summary>
         /// <returns></returns>
-        public string GetBowtieMainIndexName()
+        public string GetMainIndexName()
         {
             return Build + "_" + Annotation;
         }
 
         /// <summary>
-        /// Tries to find an existing splice chr bowtie index that has read length as close as possible below ReadLen.
+        /// Returns e.g. 'mm10chrsUCSC_38bp'
         /// </summary>
-        /// <returns>Empty string if none found</returns>
-        public string GetBowtieSplcIndexName()
+        /// <returns></returns>
+        public string GetSplcIndexName()
         {
-            string pathPattern = Path.Combine(PathHandler.GetBowtieIndicesFolder(), Build + "chr" + VarAnnot + "{0}.1.ebwt");
-            return Path.GetFileName(FindABpVersion(ReadLen, pathPattern)).Replace(".1.ebwt", "");
+            return GetSplcIndexName(SplcIndexReadLen.ToString());
         }
-        public string MakeBowtieSplcIndexName()
+        public string GetSplcIndexName(string readLenItem)
         {
-            return ReplaceReadLen(ReadLen, Build + "chr" + VarAnnot + "{0}");
+            return string.Format("{0}chr{1}_{2}bp", Build, VarAnnot, readLenItem);
+        }
+        public string GetSplcIndexNamePattern()
+        {
+            return GetSplcIndexName("*") + "*";
+        }
+        public string GetSplcIndexAndDate()
+        {
+            return GetSplcIndexName() + AnnotationDate;
         }
 
-        private string ReplaceReadLen(int readLen, string pathPattern)
+        /// <summary>
+        /// Search for an existing path matching '#' in pattern replaced by current readLen or less. Return "" on failure
+        /// </summary>
+        /// <param name="pathPattern">should contain a '#' at the place of the readLen</param>
+        /// <returns></returns>
+        public string FindABpVersion(string pathPattern)
         {
-            string readLenPart = string.Format("_{0}bp", readLen);
-            return string.Format(pathPattern, readLenPart);
-        }
-        private string FindABpVersion(int readLen, string pathPattern)
-        {
-            for (int mapLen = readLen; mapLen > readLen - 10; mapLen--)
+            for (int testReadLen = SplcIndexReadLen; testReadLen > SplcIndexReadLen - 8; testReadLen--)
             {
-                string path = ReplaceReadLen(mapLen, pathPattern);
-                if (File.Exists(path))
+                string path = pathPattern.Replace("#", testReadLen.ToString());
+                if (File.Exists(path) || Directory.Exists(path))
+                {
+                    SplcIndexReadLen = testReadLen;
                     return path;
+                }
             }
             return "";
         }
@@ -233,11 +266,11 @@ namespace Linnarsson.Dna
 
         private StrtGenome() 
         {
-            ReadLen = Props.props.StandardReadLen;
+            SplcIndexReadLen = Props.props.StandardReadLen;
         }
         private StrtGenome(string build, string abbrev, string annotation)
         {
-            ReadLen = Props.props.StandardReadLen;
+            SplcIndexReadLen = Props.props.StandardReadLen;
             Abbrev = abbrev;
             Build = build;
             Description = "genome of " + build;
@@ -287,21 +320,26 @@ namespace Linnarsson.Dna
                 if (m.Success && !abbrevs.ContainsKey(m.Groups[1].Value))
                     abbrev = m.Groups[1].Value.ToLower();
                 abbrevs[abbrev] = null; // Used to only get latest version of each genome
-                string strtFolder = GetStrtGenomesFolder(build);
+                string strtFolder = GetGenomeStrtFolder(build);
                 if (!requireStrtFolder)
                     existingGenomes.Add(new StrtGenome(build, abbrev, DefaultAnnotationSource));
                 if (Directory.Exists(strtFolder))
                 {
-                    string[] annFiles = Directory.GetFiles(strtFolder, AnnotationsBuildPattern);
-                    foreach (string file in annFiles)
+                    foreach (string annotFolder in Directory.GetDirectories(strtFolder))
                     {
-                        m = Regex.Match(file, AnnotationsBuildRegex);
-                        if (m.Success)
+                        Match m1 = Regex.Match(Path.GetFileName(annotFolder), "^(....)[0-9][0-9][0-9][0-9][0-9][0-9]$");
+                        if (!m1.Success || !AnnotationSources.Contains(m1.Groups[1].Value)) continue;
+                        string[] annFiles = Directory.GetFiles(annotFolder, AnnotationsBuildPattern);
+                        foreach (string file in annFiles)
                         {
-                            string annotation = m.Groups[1].Value;
-                            if (existingGenomes.Any(g => (g.Build == build && g.Annotation == annotation)))
-                                continue;
-                            existingGenomes.Add(new StrtGenome(build, abbrev, annotation));
+                            m = Regex.Match(file, AnnotationsBuildRegex);
+                            if (m.Success)
+                            {
+                                string annotation = m.Groups[1].Value;
+                                if (existingGenomes.Any(g => (g.Build == build && g.Annotation == annotation)))
+                                    continue;
+                                existingGenomes.Add(new StrtGenome(build, abbrev, annotation));
+                            }
                         }
                     }
                 }

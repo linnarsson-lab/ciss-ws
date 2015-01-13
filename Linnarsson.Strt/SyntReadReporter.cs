@@ -183,7 +183,7 @@ namespace Linnarsson.Strt
         {
             StreamWriter reportWriter = outputFile.OpenWrite();
             reportWriter.WriteLine("Synthetic data - parameters:\nBarcodeSet\t{0}\nGenome\t{1}\nMutationProb\t{2}",
-                                   barcodes.Name, genome.GetBowtieMainIndexName(), Props.props.SyntheticReadsRandomMutationProb);
+                                   barcodes.Name, genome.GetMainIndexName(), Props.props.SyntheticReadsRandomMutationProb);
             reportWriter.WriteLine("MaxExprLevel\t{0}BackgroundFreq\t{1}\n\nGeneFeature\tExprLevel",
                                    meanMolExprLevelPerBc, Props.props.SyntheticReadsBackgroundFreq);
             return reportWriter;
@@ -218,9 +218,9 @@ namespace Linnarsson.Strt
                 if (StrtGenome.IsASpliceAnnotation(chrId)) continue;
                 chrIdToFeature[chrId] = new List<GeneFeature>();
             }
-            string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
-            Console.WriteLine("Annotations are taken from " + STRTAnnotationsPath);
-            foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
+            string strtAnnotPath = genome.AssertAStrtAnnotPath();
+            Console.WriteLine("Annotations are taken from " + strtAnnotPath);
+            foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotFile(strtAnnotPath))
                 if (chrIdToFeature.ContainsKey(gf.Chr))
                     chrIdToFeature[gf.Chr].Add((GeneFeature)gf);
             return chrIdToFeature;

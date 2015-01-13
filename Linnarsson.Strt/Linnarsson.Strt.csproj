@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Aligner.cs" />
     <Compile Include="BclReadExtractor.cs" />
     <Compile Include="CleavageSiteAnnotator.cs" />
     <Compile Include="EmailSender.cs" />

@@ -236,11 +236,11 @@ namespace Linnarsson.Strt
         /// <param name="chrIntervals"></param>
         private static void DefineProtectedChrIntervals(StrtGenome genome, Dictionary<string, ChrIntervals> chrIntervals)
         {
-            string tryAnnotationsPath = genome.MakeAnnotationsPath();
-            string STRTAnnotationsPath = PathHandler.ExistsOrGz(tryAnnotationsPath);
-            if (STRTAnnotationsPath == null)
-                throw new Exception("Could not find annotation file: " + tryAnnotationsPath + " (or .gz)");
-            foreach (LocusFeature f in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
+            string tryStrtAnnotPath = genome.MakeStrtAnnotPath();
+            string StrtAnnotPath = PathHandler.ExistsOrGz(tryStrtAnnotPath);
+            if (StrtAnnotPath == null)
+                throw new Exception("Could not find annotation file: " + tryStrtAnnotPath + " (or .gz)");
+            foreach (LocusFeature f in AnnotationReader.IterSTRTAnnotFile(StrtAnnotPath))
                 if (chrIntervals.ContainsKey(f.Chr))
                 {
                     GeneFeature gf = (GeneFeature)f;

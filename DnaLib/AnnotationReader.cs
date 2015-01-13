@@ -36,7 +36,7 @@ namespace Linnarsson.Dna
         /// <param name="genome"></param>
         /// <param name="annotationFile"></param>
         /// <returns></returns>
-        public static string GetAnnotationFile(StrtGenome genome, string annotationFile)
+        public static string GetAnnotationFilename(StrtGenome genome, string annotationFile)
         {
             if (annotationFile != null && annotationFile != "")
                 return annotationFile;
@@ -58,7 +58,7 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static AnnotationReader GetAnnotationReader(StrtGenome genome, string annotationFile)
         {
-            annotationFile = GetAnnotationFile(genome, annotationFile);
+            annotationFile = GetAnnotationFilename(genome, annotationFile);
             if (annotationFile.Contains("refFlat"))
                 return new RefFlatAnnotationReader(genome, annotationFile);
             if (annotationFile.Contains("knownGene"))
@@ -513,7 +513,7 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="STRTAnnotationsPath"></param>
         /// <returns></returns>
-        public static IEnumerable<IFeature> IterSTRTAnnotationsFile(string STRTAnnotationsPath)
+        public static IEnumerable<IFeature> IterSTRTAnnotFile(string STRTAnnotationsPath)
         {
             using (StreamReader annotReader = new StreamReader(STRTAnnotationsPath))
             {

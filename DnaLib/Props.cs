@@ -101,17 +101,20 @@ namespace Linnarsson.Dna
         public int MaxAlignmentMismatches = 3;  // Should be the value used in bowtie calls
         public int MaxAlternativeMappings = 25; // Experimental for new version handling of unique repeat positions
         public byte QualityScoreBase = 64; // For ASCII-encoding of phred scores
-        public string BowtieOptionPattern = "--phredQualityScoreBase-quals -k MaxAlternativeMappings -v MaxAlignmentMismatches --best --strata";
+        public string BowtieIndexArgs = "$FastaPaths $IndexPath";
+        public string BowtieAlignArgs = "-p $NThreads --phred$QualityScoreBase-quals -k $MaxAlternativeMappings -v $MaxAlignmentMismatches --best --strata $IndexPath $FqPath $OutPath";
+        public string StarIndexArgs = "--runMode genomeGenerate --runThreadN $NThreads --outFileNamePrefix $IndexDir/ --genomeDir $IndexDir --genomeFastaFiles $FastaPaths";
+        public string StarAlignArgs = "--runMode alignReads --outFilterMultimapNmax $MaxAlternativeMappings --alignIntronMax 1 --outFilterMismatchNmax $MaxAlignmentMismatches --outReadsUnmapped Fastq --outFileNamePrefix $OutFolder/ --runThreadN $NThreads --genomeDir $IndexPath --readFilesIn $FqPath";
         public double SyntheticReadsRandomMutationProb = 0.0; // Used only in synthetic data construction
         public double SyntheticReadsBackgroundFreq = 0.0; // Frequency of random background reads in synthetic data
         public bool SynthesizeReadsFromGeneVariants = false; // Used only in synthetic data construction
         public string TestAnalysisFileMarker = "SYNT_READS"; // Indicator in files related to synthesized test reads
         public int MaxFeatureLength = 2500000; // Longer features (loci) are excluded from analysis
-        public int NumberOfAlignmentThreadsDefault = 12; // Bowtie multi-processor alignment
+        public int NumberOfAlignmentThreadsDefault = 16; // Bowtie multi-processor alignment
         public int ExtractionCounterWordLength = 12; // Used for over-representation analysis by ExtractionWordCounter
         public string SampleLayoutFileFolder = ""; // If empty, the PlateLayout file is looked for in the project folder
         public string SampleLayoutFileFormat = "{0}_SampleLayout.txt"; // Formatter for sample layout filenames. Arg0 is project name
-        public int TotalNumberOfAddedSpikeMolecules = 2500;
+        public int TotalNumberOfAddedSpikeMolecules = 6975;
         public bool UseMost5PrimeExonMapping = true; // if true, exonic multireads get only one single hit at the transcript with closest 5' end
         public MultiReadMappingType DefaultExonMapping = MultiReadMappingType.Random; // Decides non-directional multiread mapping method
         public bool ShowTranscriptSharingGenes = true;
@@ -145,6 +148,7 @@ namespace Linnarsson.Dna
         public string[] CommonChrIds = new string[] { "CTRL", "EXTRA" };
         public bool AddRefFlatToNonRefSeqBuilds = false;
         public double CriticalOccupiedUMIFraction = 0.80;
+        public string Aligner = "bowtie";
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {
@@ -158,10 +162,10 @@ namespace Linnarsson.Dna
             get { if (m_BarcodesName == null) m_BarcodesName = DefaultBarcodeSet; return m_BarcodesName; }
             set { m_BarcodesName = value; m_Barcodes = null; }
         }
-
+        
         public MultiReadMappingType SelectedMappingType { get { return (DirectionalReads && UseMost5PrimeExonMapping) ? MultiReadMappingType.Most5Prime : DefaultExonMapping; } }
 
-        public bool UseMaxAltMappings { get { return props.BowtieOptionPattern.Contains("MaxAlternativeMappings"); } }
+        public bool UseMaxAltMappings { get { return props.BowtieAlignArgs.Contains("MaxAlternativeMappings"); } }
 
         public string AssemblyVersion { get { return System.Reflection.Assembly.GetEntryAssembly().GetName().Version.ToString(); } }
 

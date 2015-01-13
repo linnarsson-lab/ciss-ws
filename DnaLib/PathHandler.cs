@@ -43,47 +43,6 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Locates the folder where bowtie stores its indexes. Uses Prop.BowtieIndexFolder if set, else searches PATH for bowtie
-        /// and appends "/indexes" to that path
-        /// </summary>
-        /// <returns>Folder for bowtie indexes</returns>
-        public static string GetBowtieIndicesFolder()
-        {
-            if (Props.props.BowtieIndexFolder != "" && Props.props.BowtieIndexFolder != null)
-                return Props.props.BowtieIndexFolder;
-            string pathVar = Environment.GetEnvironmentVariable("PATH");
-            string[] vars = pathVar.Contains(";")? pathVar.Split(';') : pathVar.Split(':');
-            foreach (string v in vars)
-                if (!v.Contains("bowtie2") && v.Contains("bowtie")) return Path.Combine(v, "indexes");
-            return Props.props.BowtieIndexFolder;
-        }
-
-        /// <summary>
-        /// Tries to find a bowtie index version, including create date, with read length exactly matching or slightly less than genome.ReadLen
-        /// </summary>
-        /// <param name="genome"></param>
-        /// <returns>Empty string if none found</returns>
-        public static string GetSpliceIndexVersion(StrtGenome genome)
-        {
-            string indexName = genome.GetBowtieSplcIndexName();
-            if (indexName == "")
-                return "";
-            string testFile = Path.Combine(GetBowtieIndicesFolder(), indexName + ".1.ebwt");
-            FileInfo fInfo = new FileInfo(testFile);
-            return indexName + fInfo.CreationTime.ToString("yyMMdd");
-        }
-        /// <summary>
-        /// Convert e.g. "mm9chrsUCSC_42bp120112" to "mm9_UCSC_120112"
-        /// </summary>
-        /// <param name="spliceIndexVersion"></param>
-        /// <returns></returns>
-        public static string MakeMapFolder(string spliceIndexVersion)
-        {
-            Match m = Regex.Match(spliceIndexVersion, "(.+)chr[as](.+)_.+bp([0-9]+)");
-            return m.Groups[1].Value + "_" + m.Groups[2].Value + "_" + m.Groups[3].Value;
-        }
-
-        /// <summary>
         /// Replace the "NNbp" part of a splc map file with "*" to enable searching of arbitrary read length splice files
         /// </summary>
         /// <param name="mapFile"></param>

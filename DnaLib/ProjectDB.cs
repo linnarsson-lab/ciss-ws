@@ -16,14 +16,20 @@ namespace Linnarsson.Dna
     [Serializable()]
     public class ResultDescription
     {
-        public string bowtieIndexVersion { get; set; }
+        public string build { get; set; }
+        public string annotAndDate { get; set; }
+        public string variants { get; set; }
+        public string splcIndexVersion { get; set; }
         public string resultFolder { get; set; }
         public List<string> mapFileFolders { get; set; }
 
         public ResultDescription() { }
-        public ResultDescription(List<string> mapFilePaths, string bowtieIndexVersion, string resultFolder)
+        public ResultDescription(List<string> mapFilePaths, StrtGenome genome, string resultFolder)
         {
-            this.bowtieIndexVersion = bowtieIndexVersion;
+            build = genome.Build;
+            annotAndDate = genome.Annotation + genome.AnnotationDate;
+            variants = genome.GeneVariants ? "all" : "single";
+            splcIndexVersion = genome.GetSplcIndexAndDate();
             this.resultFolder = resultFolder;
             this.mapFileFolders = new List<string>();
             foreach (string mapFilePath in mapFilePaths)
@@ -395,19 +401,13 @@ namespace Linnarsson.Dna
             bool firstResult = true;
             foreach (ResultDescription resultDescr in projDescr.resultDescriptions)
             {
-                int i = 3;
-                int p = resultDescr.bowtieIndexVersion.IndexOf("chr");
-                if (p == -1) { i = 1; p = resultDescr.bowtieIndexVersion.IndexOf("_"); } // Backward compability
-                string genome = resultDescr.bowtieIndexVersion.Substring(0, p);
-                string variants = (resultDescr.bowtieIndexVersion[p + i] == 'a') ? "all" : "single";
-                string dbbuild = resultDescr.bowtieIndexVersion.Substring(p + i + 1);
                 if (firstResult)
                 {
                     sql = string.Format("UPDATE jos_aaaanalysis " +
                             "SET extraction_version=\"{0}\", annotation_version=\"{1}\", genome=\"{2}\", transcript_db_version=\"{3}\", " +
                             "transcript_variant=\"{4}\", resultspath=\"{5}\", status=\"{6}\", time=NOW() WHERE id=\"{7}\" ",
-                            projDescr.extractionVersion, projDescr.annotationVersion, genome, dbbuild,
-                            variants, resultDescr.resultFolder, projDescr.status, projDescr.analysisId);
+                            projDescr.extractionVersion, projDescr.annotationVersion, resultDescr.build, resultDescr.annotAndDate,
+                            resultDescr.variants, resultDescr.resultFolder, projDescr.status, projDescr.analysisId);
                 }
                 else
                 {
@@ -415,8 +415,8 @@ namespace Linnarsson.Dna
                                "(jos_aaaprojectid, extraction_version, annotation_version, genome, comment, emails, user, " +
                                 "transcript_db_version, transcript_variant, lanecount, resultspath, status, rpkm, time) " +
                                "VALUES (\"{0}\", \"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\", \"{8}\", \"{9}\", \"{10}\", \"{11}\", \"{12}\", NOW());",
-                               projectId, projDescr.extractionVersion, projDescr.annotationVersion, genome, comment, emails, user,
-                               dbbuild, variants, laneCount, resultDescr.resultFolder, projDescr.status, isRpkm);
+                               projectId, projDescr.extractionVersion, projDescr.annotationVersion, resultDescr.build, comment, emails, user,
+                               resultDescr.annotAndDate, resultDescr.variants, laneCount, resultDescr.resultFolder, projDescr.status, isRpkm);
                 }
                 cmd = new MySqlCommand(sql, conn);
                 cmd.ExecuteNonQuery();

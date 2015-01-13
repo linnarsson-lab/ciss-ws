@@ -153,10 +153,10 @@ namespace Linnarsson.Strt
 
         public void SetupGenes()
         {
-            string STRTAnnotationsPath = genome.VerifyAnAnnotationPath();
-            bool genesSetupFromC1DB = (props.InsertCells10Data && SetupGenesFromC1DB(STRTAnnotationsPath));
+            string strtAnnotPath = genome.AssertAStrtAnnotPath();
+            bool genesSetupFromC1DB = (props.InsertCells10Data && SetupGenesFromC1DB(strtAnnotPath));
             if (!genesSetupFromC1DB)
-                SetupGenesFromSTRTAnnotationFile(STRTAnnotationsPath);
+                SetupGenesFromStrtAnnotFile(strtAnnotPath);
             int trLen = geneFeatures.Sum(gf => gf.Value.GetTranscriptLength());
             Console.WriteLine("Total length of all transcript models (including overlaps): {0} bp.", trLen);
         }
@@ -166,9 +166,9 @@ namespace Linnarsson.Strt
         /// in STRT genome dir is only use to get the splice junctions.
         /// Note that any 5' extensions are already stored in the cells10k database and will not be made here.
         /// </summary>
-        /// <param name="STRTAnnotationsPath"></param>
+        /// <param name="STRTAnnotPath"></param>
         /// <returns></returns>
-        private bool SetupGenesFromC1DB(string STRTAnnotationsPath)
+        private bool SetupGenesFromC1DB(string STRTAnnotPath)
         {
             C1DB db = new C1DB();
             dbTranscriptome = db.GetTranscriptome(genome.BuildVarAnnot);
@@ -183,28 +183,28 @@ namespace Linnarsson.Strt
             }
             Console.WriteLine("Read {0} transcript models totalling {1} exons from database {2}.", nModels, nExons, dbTranscriptome.Name);
             ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
-            foreach (LocusFeature spliceGf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
+            foreach (LocusFeature spliceGf in AnnotationReader.IterSTRTAnnotFile(STRTAnnotPath))
                 if (spliceGf.Chr == genome.Annotation)
                 {
                     int nParts = RegisterGeneFeature(spliceGf);
                     if (nParts > 0) { nModels++; nExons += nParts; }
                     else nSpliceModels -= nParts;
                 }
-            Console.WriteLine("Added splice junctions for {0} transcript models from {1}.", nSpliceModels, STRTAnnotationsPath);
+            Console.WriteLine("Added splice junctions for {0} transcript models from {1}.", nSpliceModels, STRTAnnotPath);
             return true;
         }
 
-        private void SetupGenesFromSTRTAnnotationFile(string STRTAnnotationsPath)
+        private void SetupGenesFromStrtAnnotFile(string STRTAnnotPath)
         {
             int nModels = 0, nSpliceModels = 0, nExons = 0;
-            foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationsPath))
+            foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotFile(STRTAnnotPath))
             {
                 int nParts = RegisterGeneFeature(gf);
                 if (nParts > 0) { nModels++; nExons += nParts; }
                 else nSpliceModels -= nParts;
             }
             Console.WriteLine("Read {0}:\n{1} transcript models totalling {2} exons, {3} with splices.",
-                               STRTAnnotationsPath, nModels, nExons, nSpliceModels);
+                               STRTAnnotPath, nModels, nExons, nSpliceModels);
             ModifyGeneFeatures(new GeneFeature5PrimeAndOverlapMarkUpModifier());
         }
 
@@ -713,7 +713,7 @@ namespace Linnarsson.Strt
 
         private void WritePotentialErronousAnnotations(string fileNameBase)
         {
-            string warnFilename = fileNameBase + "_annot_errors_" + genome.GetBowtieMainIndexName() + ".tab";
+            string warnFilename = fileNameBase + "_annot_errors_" + genome.GetMainIndexName() + ".tab";
             int nErr = 0;
             using (StreamWriter warnFile = new StreamWriter(warnFilename))
             {

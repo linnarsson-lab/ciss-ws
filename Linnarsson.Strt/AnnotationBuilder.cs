@@ -188,9 +188,8 @@ namespace Linnarsson.Strt
 
         public void BuildExonSplices(StrtGenome genome)
         {
-            ReadLen = genome.ReadLen;
+            ReadLen = genome.SplcIndexReadLen;
             int smallestReadMatchDistFromEnd = Math.Max(0, props.MinExtractionInsertLength / 2 - props.MaxAlignmentMismatches);
-            string junctionsChrId = "chr" + genome.Annotation;
             Console.WriteLine("Reading genes for genome {0} and annotations {1}...", genome.Annotation, genome.Build);
             int nModels = annotationReader.BuildGeneModelsByChr();
             Console.WriteLine("Preparing CAP-close cleavage site annotator...");
@@ -201,8 +200,8 @@ namespace Linnarsson.Strt
             Console.WriteLine("ReadLen={0} MaxMismatches={1} MaxExonsSkip={2}", ReadLen, MaxAlignmentMismatches, MaxExonsSkip);
             DnaSequence jChrSeq = new LongDnaSequence();
             Dictionary<string, string> chrIdToFileMap = genome.GetOriginalGenomeFilesMap();
-            StreamWriter annotWriter = PrepareAnnotationsFile(genome);
-            StreamWriter chrWriter = PrepareJunctionChrFile(genome, junctionsChrId);
+            StreamWriter strtAnnotWriter = PrepareStrtAnnotFile(genome);
+            StreamWriter junctionChrWriter = PrepareJunctionChrFile(genome);
             foreach (string chrId in chrIdToFileMap.Keys)
             {
                 if (annotationReader.GeneCount(chrId) == 0)
@@ -222,7 +221,7 @@ namespace Linnarsson.Strt
                     gfEnds.Add(egf.End);
                     gfJPos.Add((int)jChrSeq.Count);
                     csa.AnnotateCleaveSites(egf);
-                    annotWriter.WriteLine(egf.ToRefFlatString()); // Write the real chr annotations to output
+                    strtAnnotWriter.WriteLine(egf.ToRefFlatString()); // Write the real chr annotations to output
                     if (egf.ExonCount < 2)
                         continue;
                     List<int> jStarts = new List<int>();
@@ -239,7 +238,7 @@ namespace Linnarsson.Strt
                         {
                             jStartInSpliceChr = (int)jChrSeq.Count;
                             jChrSeq.Append(ec.Seq);
-                            chrWriter.WriteLine(ec.Seq.ToString());
+                            junctionChrWriter.WriteLine(ec.Seq.ToString());
                         }
                         for (int i = 0; i < ec.StartsInJunction.Count; i++)
                         {
@@ -258,15 +257,15 @@ namespace Linnarsson.Strt
                         }
                     }
                     if (jStarts.Count > 0)
-                        annotWriter.WriteLine(MakeJunctionChrAnnotationLine(egf, junctionsChrId,
+                        strtAnnotWriter.WriteLine(MakeJunctionChrAnnotationLine(egf, genome.GetJunctionChrId(),
                                               jStarts, jEnds, offsets, realExonIds, exonIdStrings));
                 }
                 if (Background.CancellationPending) return;
             }
-            annotWriter.Close();
+            strtAnnotWriter.Close();
             if (jChrSeq.Count == 0)
-                chrWriter.WriteLine("CCCCCCCCCCCCCCCCCCCC"); // bowtie-build needs some bases to not break
-            chrWriter.Close();
+                junctionChrWriter.WriteLine("CCCCCCCCCCCCCCCCCCCC"); // bowtie-build needs some bases to not break
+            junctionChrWriter.Close();
             Console.WriteLine("Length of artificial splice chromosome:" + jChrSeq.Count);
         }
 
@@ -300,9 +299,9 @@ namespace Linnarsson.Strt
             return s.ToString();
         }
 
-        private StreamWriter PrepareJunctionChrFile(StrtGenome genome, string junctionChrId)
+        private StreamWriter PrepareJunctionChrFile(StrtGenome genome)
         {
-            string jChrPath = genome.MakeJunctionChrPath();
+            string jChrPath = genome.GetJunctionChrPath();
             Console.WriteLine("Artificial exon junction chromosome: {0}", jChrPath);
             if (File.Exists(jChrPath))
             {
@@ -310,7 +309,7 @@ namespace Linnarsson.Strt
                 File.Move(jChrPath, jChrPath + ".old");
             }
             StreamWriter chrWriter = new StreamWriter(jChrPath, false);
-            chrWriter.WriteLine(">" + junctionChrId);
+            chrWriter.WriteLine(">" +  genome.GetJunctionChrId());
             return chrWriter;
         }
 
@@ -319,23 +318,23 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="genome"></param>
         /// <returns></returns>
-        private StreamWriter PrepareAnnotationsFile(StrtGenome genome)
+        private StreamWriter PrepareStrtAnnotFile(StrtGenome genome)
         {
-            string annotationsPath = genome.MakeAnnotationsPath();
-            Console.WriteLine("Annotations file: " + annotationsPath);
-            if (File.Exists(annotationsPath))
+            string strtAnnotPath = genome.MakeStrtAnnotPath();
+            Console.WriteLine("Annotations file: " + strtAnnotPath);
+            if (File.Exists(strtAnnotPath))
             {
-                File.Delete(annotationsPath + ".old");
-                File.Move(annotationsPath, annotationsPath + ".old");
+                File.Delete(strtAnnotPath + ".old");
+                File.Move(strtAnnotPath, strtAnnotPath + ".old");
             }
-            StreamWriter annotWriter = new StreamWriter(annotationsPath, false);
-            annotWriter.WriteLine("@ReadLen={0}", ReadLen);
-            annotWriter.WriteLine("@MaxAlignmentMismatches={0}", MaxAlignmentMismatches);
-            annotWriter.WriteLine("@MaxExonsSkip={0}", MaxExonsSkip);
-            annotWriter.WriteLine("@InputAnnotationFile={0}", annotationReader.VisitedAnnotationPaths);
+            StreamWriter strtAnnotWriter = new StreamWriter(strtAnnotPath, false);
+            strtAnnotWriter.WriteLine("@ReadLen={0}", ReadLen);
+            strtAnnotWriter.WriteLine("@MaxAlignmentMismatches={0}", MaxAlignmentMismatches);
+            strtAnnotWriter.WriteLine("@MaxExonsSkip={0}", MaxExonsSkip);
+            strtAnnotWriter.WriteLine("@InputAnnotationFile={0}", annotationReader.VisitedAnnotationPaths);
             foreach (string commonChrId in Props.props.CommonChrIds)
-                CopyCommonChrData(commonChrId, genome, annotWriter);
-            return annotWriter;
+                CopyCommonChrData(commonChrId, genome, strtAnnotWriter);
+            return strtAnnotWriter;
         }
 
         /// <summary>
@@ -343,8 +342,8 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="chrId"></param>
         /// <param name="genome"></param>
-        /// <param name="refWriter"></param>
-        private void CopyCommonChrData(string chrId, StrtGenome genome, StreamWriter refWriter)
+        /// <param name="strtAnnotWriter"></param>
+        private void CopyCommonChrData(string chrId, StrtGenome genome, StreamWriter strtAnnotWriter)
         {
             string chrPath = PathHandler.GetCommonChrPath(chrId);
             if (File.Exists(chrPath))
@@ -357,7 +356,7 @@ namespace Linnarsson.Strt
                 {
                     string data = reader.ReadToEnd();
                     foreach (string line in data.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
-                        refWriter.WriteLine(line);
+                        strtAnnotWriter.WriteLine(line);
                 }
             }
         }
@@ -370,21 +369,21 @@ namespace Linnarsson.Strt
         /// <param name="errorsPath"></param>
         public void UpdateSilverBulletGenes(StrtGenome genome, string errorsPath)
         {
-            if (!errorsPath.Contains(genome.GetBowtieMainIndexName()))
+            if (!errorsPath.Contains(genome.GetMainIndexName()))
                 throw new ArgumentException("The update has to be of the same build as the updated genome");
             Dictionary<string, int> geneToNewPos = ReadErrorsFile(errorsPath);
             Console.WriteLine("There are {0} genes to have their first/last extended.", geneToNewPos.Count);
             Background.Progress(5);
-            string STRTAnnotationPath = genome.MakeAnnotationsPath();
-            long fileSize = new FileInfo(STRTAnnotationPath).Length;
-            string updatedPath = STRTAnnotationPath + ".extended";
+            string strtAnnotPath = genome.MakeStrtAnnotPath();
+            long fileSize = new FileInfo(strtAnnotPath).Length;
+            string updatedPath = strtAnnotPath + ".extended";
             using (StreamWriter writer = new StreamWriter(updatedPath))
             {
                 string lastOriginal = "";
                 string originalFlag = GeneFeature.nonUTRExtendedIndicator;
                 long nc = 0;
                 Console.WriteLine("Updating annotation file...");
-                foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotationsFile(STRTAnnotationPath))
+                foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotFile(strtAnnotPath))
                 {
                     string gfTxt = gf.ToString();
                     nc += gfTxt.Length;

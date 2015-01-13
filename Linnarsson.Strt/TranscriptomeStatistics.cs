@@ -792,7 +792,7 @@ namespace Linnarsson.Strt
         private void WriteSettings(StreamWriter xmlFile, ResultDescription resultDescr)
         {
             xmlFile.WriteLine("  <settings>");
-            xmlFile.WriteLine("    <BowtieIndexVersion>{0}</BowtieIndexVersion>", resultDescr.bowtieIndexVersion);
+            xmlFile.WriteLine("    <AlignerIndexVersion>{0}</AlignerIndexVersion>", resultDescr.splcIndexVersion);
             xmlFile.WriteLine("    <DirectionalReads>{0}</DirectionalReads>", Props.props.DirectionalReads);
             xmlFile.WriteLine("    <UseRPKM>{0}</UseRPKM>", Props.props.UseRPKM);
             xmlFile.WriteLine("    <MaxFeatureLength>{0}</MaxFeatureLength>", Props.props.MaxFeatureLength);

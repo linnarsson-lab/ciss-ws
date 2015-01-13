@@ -101,7 +101,7 @@ namespace SilverBullet
                 Background.RunAsync(() =>
                 {
                     Background.Message("Mapping...");
-                    mapper.Map(projectFolder, gd.Genome.GetBowtieMainIndexName(), gvd.AnalyzeAllGeneVariants, StrtGenome.DefaultAnnotationSource);
+                    mapper.Map(projectFolder, gd.Genome.GetMainIndexName(), gvd.AnalyzeAllGeneVariants, StrtGenome.DefaultAnnotationSource);
                     Background.Message("Ready");
                     Console.WriteLine("Done.");
                 });
@@ -133,7 +133,7 @@ namespace SilverBullet
                     try
                     {
                         gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
-                        mapper.MapAndAnnotate(projectFolder, gd.Genome.GetBowtieMainIndexName(), gvd.AnalyzeAllGeneVariants, 
+                        mapper.MapAndAnnotate(projectFolder, gd.Genome.GetMainIndexName(), gvd.AnalyzeAllGeneVariants, 
                                               StrtGenome.DefaultAnnotationSource, "", null);
                     }
                     catch (Exception exp)
@@ -277,7 +277,7 @@ namespace SilverBullet
             gd.ShowDialog();
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.Title = "Locate errors file in an Annotation folder for build "
-                         + gd.Genome.GetBowtieMainIndexName();
+                         + gd.Genome.GetMainIndexName();
             if (ofd.ShowDialog() == DialogResult.OK)
             {
                 Background.RunAsync(() =>

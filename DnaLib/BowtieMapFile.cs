@@ -229,9 +229,11 @@ namespace Linnarsson.Dna
         {
             using (StreamReader reader = new StreamReader(file))
             {
-                string line;
-                while ((line = reader.ReadLine()).StartsWith("@"))
+                string line = reader.ReadLine();
+                while (line != null && line.StartsWith("@"))
                     line = reader.ReadLine();
+                if (line == null)
+                    yield break;
                 string[] fields = line.Split('\t');
                 string combinedReadId = fields[0];
                 char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
@@ -258,8 +260,8 @@ namespace Linnarsson.Dna
         {
             using (StreamReader reader = new StreamReader(file))
             {
-                string line;
-                while ((line = reader.ReadLine()).StartsWith("@"))
+                string line = reader.ReadLine();
+                while (line != null && line.StartsWith("@"))
                     line = reader.ReadLine();
                 while (line != null)
                 {

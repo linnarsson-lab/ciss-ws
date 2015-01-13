@@ -25,6 +25,7 @@ namespace CmdSilverBullet
         public string projectFolder;
         public int[] specificBcIdxs = null;
         public int totalSpikeMols = Props.props.TotalNumberOfAddedSpikeMolecules;
+        public string Aligner = Props.props.Aligner;
 
         public QXMAOptions(string[] args)
         {
@@ -78,6 +79,12 @@ namespace CmdSilverBullet
                             break;
                         case "multimap":
                             useMost5PrimeExonMapping = false;
+                            break;
+                        case "-STAR":
+                            Aligner = "STAR";
+                            break;
+                        case "-bowtie":
+                            Aligner = "bowtie";
                             break;
                         case "-LTotalReads":
                             extractionReadLimitType = ReadLimitType.TotalReads;

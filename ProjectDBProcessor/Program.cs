@@ -286,7 +286,7 @@ namespace ProjectDBProcessor
             sb.Append("<br />\nExtraction version: " + projDescr.extractionVersion);
             sb.Append("<br />\nAnnotation version: " + projDescr.annotationVersion + "<br />");
             foreach (ResultDescription rd in projDescr.resultDescriptions)
-                sb.Append("<br />\nBowtie index: " + rd.bowtieIndexVersion + " - Results: " + rd.resultFolder);
+                sb.Append("<br />\nAligner index: " + rd.splcIndexVersion + " - Results: " + rd.resultFolder);
             sb.Append("\n</code>\n</html>");
             toEmails = toEmails.Replace(';', ','); // C# requires email addresses separated by ','
             string body = sb.ToString();

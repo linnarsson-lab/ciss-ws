@@ -21,8 +21,6 @@ namespace Linnarsson.Strt
         private Props props;
         private Barcodes barcodes;
 
-        private string tempBowtieStartMsg;
-
         public StrtReadMapper(Props props)
         {
             this.props = props;
@@ -45,7 +43,7 @@ namespace Linnarsson.Strt
         public void UpdateSilverBulletGenes(StrtGenome genome, string errorsPath, string annotationFile)
         {
             Console.WriteLine("*** Updating annotation file {0} for {1} using {2} ***",
-                              annotationFile, genome.GetBowtieMainIndexName(), Path.GetFileName(errorsPath));
+                              annotationFile, genome.GetMainIndexName(), Path.GetFileName(errorsPath));
             Background.Message("Updating annotations...");
             AnnotationBuilder builder = new AnnotationBuilder(props, AnnotationReader.GetAnnotationReader(genome, annotationFile));
             builder.UpdateSilverBulletGenes(genome, errorsPath);
@@ -58,34 +56,22 @@ namespace Linnarsson.Strt
         /// Construct the repeat-masked genome, artificial splice junction chromosome and transcript annotation file.
         /// </summary>
         /// <param name="genome"></param>
-        public void BuildJunctions(StrtGenome genome, string annotationFile)
+        public void BuildJunctions(StrtGenome genome, string annotFilename)
         {
-            AssertStrtGenomeFolder(genome);
+            genome.AnnotationDate = DateTime.Now.ToString("yyMMdd");
+            string strtAnnotFolder = genome.GetStrtAnnotFolder();
+            if (!Directory.Exists(strtAnnotFolder))
+                Directory.CreateDirectory(strtAnnotFolder);
             DateTime startTime = DateTime.Now;
-            annotationFile = AnnotationReader.GetAnnotationFile(genome, annotationFile);
+            annotFilename = AnnotationReader.GetAnnotationFilename(genome, annotFilename);
             Console.WriteLine("*** Build of spliced exon junctions for {0} from {1} started at {2} ***",
-                genome.GetBowtieMainIndexName(), annotationFile, DateTime.Now);
-            AnnotationBuilder builder = new AnnotationBuilder(props, AnnotationReader.GetAnnotationReader(genome, annotationFile));
+                genome.GetMainIndexName(), annotFilename, DateTime.Now);
+            AnnotationBuilder builder = new AnnotationBuilder(props, AnnotationReader.GetAnnotationReader(genome, annotFilename));
             builder.BuildExonSplices(genome);
         }
 
-        public void AssertStrtGenomeFolder(StrtGenome genome)
-        {
-            string strtDir = genome.GetStrtGenomesFolder();
-            if (Directory.Exists(strtDir))
-                return;
-            Directory.CreateDirectory(strtDir);
-        }
-
-        public void MakeMaskedStrtChromosomes(StrtGenome genome)
-        {
-            string strtDir = genome.GetStrtGenomesFolder();
-            NonExonRepeatMasker nerm = new NonExonRepeatMasker();
-            nerm.Mask(genome, strtDir);
-        }
-
         /// <summary>
-        /// Construct the artificial splice chromosome, the transcript annotation file, and build the Bowtie index.
+        /// Construct the artificial splice chromosome, the transcript annotation file, and build the aligner index.
         /// </summary>
         /// <param name="genome"></param>
         public void BuildJunctionsAndIndex(StrtGenome genome)
@@ -94,53 +80,24 @@ namespace Linnarsson.Strt
         }
 		public void BuildJunctionsAndIndex(StrtGenome genome, string annotationFile)
 		{
-            string btIdxFolder = PathHandler.GetBowtieIndicesFolder();
-            if (!Directory.Exists(btIdxFolder))
-                throw new IOException("The Bowtie index folder cannot be found. Please set the BowtieIndexFolder property.");
+            Aligner aligner = Aligner.GetAligner(genome);
             if (genome.GeneVariants == false)
             {
                 genome.GeneVariants = false;
                 BuildJunctions(genome, annotationFile);
-                MakeMaskedStrtChromosomes(genome);
-                BuildIndex(genome);
+                NonExonRepeatMasker nerm = new NonExonRepeatMasker();
+                nerm.Mask(genome, genome.GetStrtAnnotFolder());
+                aligner.BuildIndex();
             }
             genome.GeneVariants = true;
             BuildJunctions(genome, annotationFile);
-            BuildIndex(genome);
+            aligner.BuildIndex();
         }
 
-        private void BuildIndex(StrtGenome genome)
+        public void BuildIndex(StrtGenome genome)
         {
-            DateTime startTime = DateTime.Now;
-            string newIndexName = genome.GetBowtieMainIndexName();
-            string chrFilesArg = string.Join(",", genome.GetMaskedChrPaths());
-            string outfileHead = Path.Combine(PathHandler.GetBowtieIndicesFolder(), newIndexName);
-            string arguments = String.Format("{0} {1}", chrFilesArg, outfileHead);
-            string cmd = "bowtie-build";
-            if (Directory.GetFiles(PathHandler.GetBowtieIndicesFolder(), newIndexName + ".*.ebwt").Length >= 4)
-                Console.WriteLine("NOTE: Main index {0} already exists. Delete index files and rerun to force rebuild.", newIndexName);
-            else
-            {
-                Console.WriteLine("*** Build of main Bowtie index {0} started at {1} ***", newIndexName, DateTime.Now);
-                Console.WriteLine("{0} {1}", cmd, arguments);
-                int exitCode = CmdCaller.Run(cmd, arguments);
-                if (exitCode != 0)
-                    Console.Error.WriteLine("Failed to run bowtie-build. ExitCode={0}", exitCode);
-            }
-            string spliceChrFile = genome.MakeJunctionChrPath();
-            if (spliceChrFile != null)
-            {
-                string spliceIndexName = genome.MakeBowtieSplcIndexName();
-                Console.WriteLine("*** Build of Bowtie splice index {0} started at {1} ***", spliceIndexName, DateTime.Now);
-                outfileHead = Path.Combine(PathHandler.GetBowtieIndicesFolder(), spliceIndexName);
-                arguments = String.Format("{0} {1}", spliceChrFile, outfileHead);
-                Console.WriteLine("{0} {1}", cmd, arguments);
-                int exitCode = CmdCaller.Run(cmd, arguments);
-                if (exitCode != 0)
-                    Console.Error.WriteLine("Failed to run bowtie-build. ExitCode={0}", exitCode);
-            }
-            else
-                Console.Error.WriteLine("WARNING: No splice chromosome found for {0}. Indexing skipped.", genome.GetBowtieMainIndexName());
+            Aligner aligner = Aligner.GetAligner(genome);
+            aligner.BuildIndex();
         }
 
         /// <summary>
@@ -219,16 +176,16 @@ namespace Linnarsson.Strt
             {
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, projDescr.analyzeVariants, projDescr.defaultBuild, true);
                 int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-                genome.ReadLen = GetAverageReadLen(projDescr.laneInfos);
-                SetAvailableBowtieIndexVersion(projDescr, genome);
-                logWriter.WriteLine("{0} Mapping to {1}...", DateTime.Now, genome.GetBowtieSplcIndexName()); logWriter.Flush();
-                CreateBowtieMaps(genome, projDescr.laneInfos, genomeBcIndexes);
+                genome.SplcIndexReadLen = GetAverageReadLen(projDescr.laneInfos);
+                SetAvailableSplcIndexVersion(projDescr, genome);
+                logWriter.WriteLine("{0} Aligning to {1}...", DateTime.Now, genome.BuildVarAnnot); logWriter.Flush();
+                CreateAlignments(genome, projDescr.laneInfos, genomeBcIndexes);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(projDescr.laneInfos);
                 props.UseRPKM = projDescr.rpkm;
                 props.DirectionalReads = projDescr.DirectionalReads;
                 props.SenseStrandIsSequenced = projDescr.SenseStrandIsSequenced;
                 projDescr.SetGenomeData(genome);
-                logWriter.WriteLine("{0} Annotating {1} map files...", DateTime.Now, mapFiles.Count);
+                logWriter.WriteLine("{0} Annotating {1} alignment files...", DateTime.Now, mapFiles.Count);
                 logWriter.WriteLine("{0} setting: AllTrVariants={1} Gene5'Extensions={4} #SpikeMols={5} DirectionalReads={2} RPKM={3}",
                                     DateTime.Now, projDescr.analyzeVariants, props.DirectionalReads, props.UseRPKM,
                                     props.GeneFeature5PrimeExtension, props.TotalNumberOfAddedSpikeMolecules);
@@ -246,17 +203,17 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Tries to locate a bowtie index useful for the genome and current read length. If none exists,
+        /// Tries to locate an aligner index useful for the genome and current read length. If none exists,
         /// instead tries to change to the DefaultAnnotationSource (usually UCSC)
         /// </summary>
         /// <param name="projDescr"></param>
         /// <param name="genome"></param>
-        private static void SetAvailableBowtieIndexVersion(ProjectDescription projDescr, StrtGenome genome)
+        private static void SetAvailableSplcIndexVersion(ProjectDescription projDescr, StrtGenome genome)
         {
-            string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
-            if (bowtieIndexVersion == "" && genome.Annotation != StrtGenome.DefaultAnnotationSource)
+            string splcIndexName = Aligner.GetAligner(genome).FindASplcIndexName();
+            if (splcIndexName == "" && genome.Annotation != StrtGenome.DefaultAnnotationSource)
             {
-                Console.WriteLine("Could not find a Bowtie index for {0} - trying {2} instead for {1}",
+                Console.WriteLine("Could not find an aligner index for {0} - trying {2} instead for {1}",
                                   genome.Annotation, projDescr.plateId, StrtGenome.DefaultAnnotationSource);
                 genome.Annotation = StrtGenome.DefaultAnnotationSource;
             }
@@ -299,70 +256,17 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Try to find a proper Bowtie index and align the lanes defined by laneInfo
+        /// Try to find a proper aligner index and align the lanes defined by laneInfo
         /// </summary>
         /// <param name="genome"></param>
         /// <param name="laneInfos"></param>
         /// <param name="genomeBcIndexes">optionally only process specific barcodes</param>
-        private void CreateBowtieMaps(StrtGenome genome, List<LaneInfo> laneInfos, int[] genomeBcIndexes)
+        private void CreateAlignments(StrtGenome genome, List<LaneInfo> laneInfos, int[] genomeBcIndexes)
         {
-            string splcIndexVersion = GetSplcIndexVersion(genome, true);
-            string splcIndexName = genome.GetBowtieSplcIndexName();
-            if (splcIndexName == "")
-                throw new Exception("Can not find a Bowtie index corresponding to " + genome.Build + "/" + genome.Annotation);
-            string maxAlt = (props.UseMaxAltMappings)?
-                               string.Format(" and limiting alternative mappings to max {0}.", props.MaxAlternativeMappings) : "";
-            tempBowtieStartMsg = string.Format("Using bowtie index {0}{1}", splcIndexVersion, maxAlt);
+            Aligner aligner = AssertASplcIndex(genome);
+            Console.WriteLine("{0} aligning {1} lanes against {2}...", props.Aligner, laneInfos.Count, genome.GetSplcIndexName());
             foreach (LaneInfo laneInfo in laneInfos)
-                CreateBowtieMaps(genome, laneInfo, splcIndexVersion, splcIndexName, genomeBcIndexes);
-        }
-
-        /// <summary>
-        /// Create any missing .map files needed for given genome and wells defined by barcodes/species.
-        /// </summary>
-        /// <param name="genome"></param>
-        /// <param name="laneInfo">Paths to all needed map files will be stored in laneInfo.mappedFilePaths</param>
-        /// <param name="splcIndexVersion"></param>
-        /// <param name="splcIndexName"></param>
-        /// <param name="genomeBcIndexes">only these barcodes will be processed</param>
-        private void CreateBowtieMaps(StrtGenome genome, LaneInfo laneInfo, string splcIndexVersion, string splcIndexName, int[] genomeBcIndexes)
-        {
-            laneInfo.SetMappedFileFolder(splcIndexVersion);
-            string mapFolder = laneInfo.mappedFileFolder;
-            if (!Directory.Exists(mapFolder))
-                Directory.CreateDirectory(mapFolder);
-            laneInfo.bowtieLogFilePath = Path.Combine(mapFolder, "bowtie_output.txt");
-            List<string> mapFiles = new List<string>();
-            foreach (string fqPath in laneInfo.extractedFilePaths)
-            {
-                int bcIdx = int.Parse(Path.GetFileNameWithoutExtension(fqPath));
-                if (Array.IndexOf(genomeBcIndexes, bcIdx) == -1)
-                    continue;
-                string mainIndex = genome.GetBowtieMainIndexName();
-                string fqUnmappedReadsPath = Path.Combine(mapFolder, string.Format("{0}.fq-{1}", bcIdx, mainIndex));
-                string outputMainPath = Path.Combine(mapFolder, string.Format("{0}_{1}.map", bcIdx, mainIndex));
-                if (!File.Exists(outputMainPath))
-                    CreateBowtieOutputFile(mainIndex, fqPath, outputMainPath, fqUnmappedReadsPath, laneInfo.bowtieLogFilePath);
-                mapFiles.Add(outputMainPath);
-                string outputSplcFilename = string.Format("{0}_{1}.map", bcIdx, splcIndexVersion);
-                string outputSplcPath = Path.Combine(mapFolder, outputSplcFilename);
-                string splcFilePat = PathHandler.StarOutReadLenInSplcMapFile(outputSplcFilename);
-                string[] existingSplcMapFiles = Directory.GetFiles(mapFolder, splcFilePat);
-                if (existingSplcMapFiles.Length >= 1)
-                    outputSplcPath = Path.Combine(mapFolder, existingSplcMapFiles[0]);
-                else
-                {
-                    if (!File.Exists(fqUnmappedReadsPath))
-                        CreateBowtieOutputFile(mainIndex, fqPath, outputMainPath, fqUnmappedReadsPath, laneInfo.bowtieLogFilePath);
-                    string remainUnmappedPath = props.SaveNonMappedReads ? Path.Combine(mapFolder, bcIdx + ".fq-nonmapped") : "";
-                    if (File.Exists(fqUnmappedReadsPath)) // Have to check - all reads may have mapped directly
-                        CreateBowtieOutputFile(splcIndexName, fqUnmappedReadsPath, outputSplcPath, remainUnmappedPath, laneInfo.bowtieLogFilePath);
-                }
-                mapFiles.Add(outputSplcPath);
-                // Don't delete the fqUnmappedReadsPath - it is needed if rerun with changing all/single annotation versions
-                if (Background.CancellationPending) break;
-            }
-            laneInfo.mappedFilePaths = mapFiles.ToArray();
+                aligner.CreateAlignments(laneInfo, genomeBcIndexes);
         }
 
         /// <summary>
@@ -371,72 +275,27 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="genome"></param>
         /// <returns></returns>
-        private string GetSplcIndexVersion(StrtGenome genome, bool tryBuildIfAbsent)
+        private Aligner AssertASplcIndex(StrtGenome genome)
         {
-            string splcIndexVersion = PathHandler.GetSpliceIndexVersion(genome); // The current version including date
-            if (splcIndexVersion == "" && tryBuildIfAbsent)
+            Aligner aligner = Aligner.GetAligner(genome);
+            string splcIndexName = aligner.FindASplcIndexName();
+            if (splcIndexName == "")
             {
-                int actualReadLen = genome.ReadLen;
-                genome.ReadLen = genome.ReadLen - (genome.ReadLen % 4);
-                Console.WriteLine("Can not find a proper splice index - trying to build one with ReadLen=" + genome.ReadLen);
+                int actualReadLen = genome.SplcIndexReadLen;
+                genome.SplcIndexReadLen = genome.SplcIndexReadLen - (genome.SplcIndexReadLen % 4);
+                Console.WriteLine("Can not find a proper splice index - trying to build one with ReadLen=" + genome.SplcIndexReadLen);
                 BuildJunctionsAndIndex(genome);
-                splcIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
-                if (splcIndexVersion == "")
-                    throw new Exception("Could not build the needed splice index with ReadLen between " + genome.ReadLen +
+                splcIndexName = aligner.FindASplcIndexName();
+                if (splcIndexName == "")
+                    throw new Exception("Could not build the needed splice index with ReadLen between " + genome.SplcIndexReadLen +
                                         " and " + actualReadLen + " for " + genome.Build + " and " + genome.Annotation);
-                genome.ReadLen = actualReadLen;
+                genome.SplcIndexReadLen = actualReadLen;
             }
-            return splcIndexVersion;
+            return aligner;
         }
 
         /// <summary>
-        /// Run bowtie to produce a .map file.
-        /// </summary>
-        /// <param name="bowtieIndex"></param>
-        /// <param name="inputFqReadPath"></param>
-        /// <param name="outputPath"></param>
-        /// <param name="outputFqUnmappedReadPath"></param>
-        /// <param name="bowtieLogFile"></param>
-        /// <returns>true if Bowtie returned ExitCode 0</returns>
-        private bool CreateBowtieOutputFile(string bowtieIndex, string inputFqReadPath, string outputPath,
-                                   string outputFqUnmappedReadPath, string bowtieLogFile)
-        {
-            if (tempBowtieStartMsg != null)
-                Console.WriteLine(tempBowtieStartMsg);
-            tempBowtieStartMsg = null;
-            string indexWPath = Path.Combine(PathHandler.GetBowtieIndicesFolder(), bowtieIndex);
-            int nThreads = props.NumberOfAlignmentThreadsDefault;
-            string threadArg = (nThreads == 1) ? "" : string.Format("-p {0}", nThreads);
-            string unmappedArg = "";
-            if (outputFqUnmappedReadPath != "")
-            {
-                string crapMaxPath = Path.Combine(Path.GetDirectoryName(outputFqUnmappedReadPath), "bowtie_maxM_reads_map.temp");
-                unmappedArg = string.Format(" --un {0} --max {1}", outputFqUnmappedReadPath, crapMaxPath);
-            }
-            if (!File.Exists(inputFqReadPath) && File.Exists(inputFqReadPath + ".gz"))
-                CmdCaller.Run("gunzip", inputFqReadPath + ".gz");
-            string opts = props.BowtieOptionPattern.Replace("MaxAlignmentMismatches", 
-                        props.MaxAlignmentMismatches.ToString());
-            opts = opts.Replace("QualityScoreBase", props.QualityScoreBase.ToString());
-            opts = opts.Replace("MaxAlternativeMappings", props.MaxAlternativeMappings.ToString());
-            string arguments = String.Format("{0} {1} {2} {3} \"{4}\" \"{5}\"", opts, threadArg,
-                                                unmappedArg, indexWPath, inputFqReadPath, outputPath);
-            StreamWriter logWriter = new StreamWriter(bowtieLogFile, true);
-            logWriter.WriteLine("--- bowtie {0} ---", arguments); logWriter.Flush();
-            CmdCaller cc = new CmdCaller("bowtie", arguments);
-            logWriter.WriteLine(cc.StdError);
-            logWriter.Close();
-            if (cc.ExitCode != 0)
-            {
-                Console.Error.WriteLine("bowtie {0}\nFailed to run Bowtie on {1}. ExitCode={2}. Check logFile.", arguments, inputFqReadPath, cc.ExitCode);
-                if (File.Exists(outputPath)) File.Delete(outputPath);
-                return false;
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// Run Bowtie on reads in a specific Extraction folder, or on all reads in the last Extraction folder of a project.
+        /// Run the aligner on reads in a specific Extraction folder, or on all reads in the last Extraction folder of a project.
         /// </summary>
         /// <param name="projectOrExtractedFolderOrName"></param>
         /// <param name="speciesArg"></param>
@@ -447,10 +306,9 @@ namespace Linnarsson.Strt
             string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolderOrName);
             List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder, barcodes.Count);
             StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, false);
-            genome.ReadLen = GetAverageReadLen(laneInfos);
+            genome.SplcIndexReadLen = GetAverageReadLen(laneInfos);
             int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-            Console.WriteLine("Mapping reads in {0} against {1}", extractedFolder, genome.GetBowtieSplcIndexName());
-            CreateBowtieMaps(genome, laneInfos, genomeBcIndexes);
+            CreateAlignments(genome, laneInfos, genomeBcIndexes);
         }
 
         public static readonly string ANNOTATION_VERSION = "45";
@@ -485,19 +343,17 @@ namespace Linnarsson.Strt
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, true);
                 int[] genomeSelectedBcIdxs = barcodes.GenomeAndEmptyBarcodeIndexes(genome).Where(i =>
                                                         (selectedBcIdxs == null || selectedBcIdxs.Contains(i))).ToArray();
-                genome.ReadLen = GetAverageReadLen(laneInfos);
+                genome.SplcIndexReadLen = GetAverageReadLen(laneInfos);
                 string spResultFolderName = resultFolderName;
                 if (resultFolderName == "" || resultFolderName == null)
                     spResultFolderName = MakeDefaultResultFolderName(genome, projectFolder, projectName);
                 string readDir = !props.DirectionalReads ? "No" : props.SenseStrandIsSequenced ? "Sense" : "Antisense";
-                Console.WriteLine("Mapping and annotating {0} lanes of {1} against {2}.\nDirectionalReads={3} RPKM={4} SelectedMappingType={5}...", 
-                              laneInfos.Count, projectName, genome.GetBowtieSplcIndexName(),
-                              readDir, props.UseRPKM, props.SelectedMappingType);
-                CreateBowtieMaps(genome, laneInfos, genomeSelectedBcIdxs);
+                CreateAlignments(genome, laneInfos, genomeSelectedBcIdxs);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(laneInfos);
+                Console.WriteLine("Annotating {0} map files from {1}\nDirectionalReads={2} RPKM={3} SelectedMappingType={4}...",
+                                  mapFiles.Count, projectName, readDir, props.UseRPKM, props.SelectedMappingType);
                 ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, spResultFolderName, mapFiles);
-                Console.WriteLine("...annotated {0} map files from {1} to {2} with output in {3}", mapFiles.Count, projectName,
-                                  resultDescr.bowtieIndexVersion, resultDescr.resultFolder);
+                Console.WriteLine("...output in {0}", resultDescr.resultFolder);
                 if (resultDescr.resultFolder != null) resultSubFolders.Add(resultDescr.resultFolder);
             }
             return resultSubFolders;
@@ -548,7 +404,7 @@ namespace Linnarsson.Strt
 
         private string MakeDefaultResultFolderName(StrtGenome genome, string projectFolder, string projectName)
         {
-            return string.Format("{0}_{1}_{2}_{3}", projectName, barcodes.Name, genome.GetBowtieMainIndexName(), DateTime.Now.ToPathSafeString());
+            return string.Format("{0}_{1}_{2}_{3}", projectName, barcodes.Name, genome.GetMainIndexName(), DateTime.Now.ToPathSafeString());
         }
 
         /// <summary>
@@ -571,7 +427,7 @@ namespace Linnarsson.Strt
             ReadCounter readCounter = ReadExtractionSummaryFiles(mapFilePaths);
             int averageReadLen = readCounter.AverageReadLen;
             MappedTagItem.AverageReadLen = averageReadLen;
-            genome.ReadLen = averageReadLen;
+            genome.SplcIndexReadLen = averageReadLen;
             UpdateGenesToPaintProp(projectFolder);
             GenomeAnnotations annotations = new GenomeAnnotations(props, genome);
             annotations.Load();
@@ -586,8 +442,7 @@ namespace Linnarsson.Strt
                               ts.GetNumMappedReads(), annotations.GetNumExpressedTranscripts(), annotations.GetNumExpressedRepeats());
             Directory.CreateDirectory(resultFolder);
             Console.WriteLine("Saving to {0}...", resultFolder);
-            string bowtieIndexVersion = PathHandler.GetSpliceIndexVersion(genome);
-            ResultDescription resultDescr = new ResultDescription(mapFilePaths, bowtieIndexVersion, resultFolder);
+            ResultDescription resultDescr = new ResultDescription(mapFilePaths, genome, resultFolder);
             ts.SaveResult(readCounter, resultDescr);
             System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(props.GetType());
             using (StreamWriter writer = new StreamWriter(Path.Combine(resultFolder, "SilverBulletConfig.xml")))
@@ -619,7 +474,7 @@ namespace Linnarsson.Strt
                     C1DB c1db = new C1DB();
                     c1db.InsertExpressions(annotations.IterC1DBExpressions(cellIdByPlateWell));
                     string parString = MakeParameterString();
-                    c1db.InsertAnalysisSetup(projectId, resultDescr.bowtieIndexVersion, resultDescr.resultFolder, parString);
+                    c1db.InsertAnalysisSetup(projectId, resultDescr.splcIndexVersion, resultDescr.resultFolder, parString);
                     c1db.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByPlateWell));
                 }
                 catch (Exception e)
@@ -692,7 +547,7 @@ namespace Linnarsson.Strt
         public void DumpTranscripts(Barcodes barcodes, StrtGenome genome, int readLen, int step, int maxPerGene, string outFile,
                                     bool outputFastq, bool makeSplices, int minOverhang, int maxSkip, int flankLength)
         {
-            if (readLen > 0) genome.ReadLen = readLen;
+            if (readLen > 0) genome.SplcIndexReadLen = readLen;
             bool variantGenes = genome.GeneVariants;
             if (makeSplices)
                 Console.WriteLine("Making all splices that have >= {0} bases overhang and max {1} exons excised.", minOverhang, maxSkip);

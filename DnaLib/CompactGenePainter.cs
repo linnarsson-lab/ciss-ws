@@ -199,7 +199,6 @@ namespace Linnarsson.Dna
                     trPos += 1;
                     if (coverageAtPos > 0)
                     {
-                        if (gf.Name == "Hmgb1") Console.WriteLine("chrPos=" + chrPos + " trPos=" + trPos + " coverageAtPos=" + coverageAtPos);
                         char nt = chrSeq.GetNucleotide(chrPos);
                         nDNATot += 1;
                         nReadTot += coverageAtPos;

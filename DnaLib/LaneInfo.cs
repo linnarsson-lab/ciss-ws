@@ -47,7 +47,7 @@ namespace Linnarsson.Dna
 
         public string[] mappedFilePaths { get; set; }
         public string mappedFileFolder { get; set; }
-        public string bowtieLogFilePath { get; set; }
+        public string alignerLogFilePath { get; set; }
 
         /// <summary>
         /// Needed for serialization
@@ -144,10 +144,9 @@ namespace Linnarsson.Dna
             return laneInfos;
         }
 
-        public void SetMappedFileFolder(string splcIndexVersion)
+        public void SetMapFolderName(string mapFolderName)
         {
-            string mapFolderName = PathHandler.MakeMapFolder(splcIndexVersion);
-            this.mappedFileFolder = Path.Combine(Path.Combine(extractionFolder, mapFolderName), ExtractedFileFolderName);
+            mappedFileFolder = Path.Combine(Path.Combine(extractionFolder, mapFolderName), ExtractedFileFolderName);
         }
 
         /// <summary>

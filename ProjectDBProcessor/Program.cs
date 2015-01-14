@@ -244,7 +244,9 @@ namespace ProjectDBProcessor
                     logWriter.Flush();
                 }
             }
-            StrtReadMapper mapper = new StrtReadMapper(Props.props);
+            if (projDescr.aligner != "") 
+                Props.props.Aligner = projDescr.aligner;
+            StrtReadMapper mapper = new StrtReadMapper();
             mapper.Process(projDescr, logWriter);
             sw.Stop();
             TimeSpan ts = sw.Elapsed;

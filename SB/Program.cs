@@ -47,7 +47,7 @@ namespace CmdSilverBullet
                             props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
                             props.Aligner = options.Aligner;
                             projectFolder = options.projectFolder;
-                            mapper = new StrtReadMapper(props);
+                            mapper = new StrtReadMapper();
                             List<LaneInfo> extrInfos = mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
                             string extractedFolder = extrInfos[0].extractionFolder;
                             mapper.MapAndAnnotate(extractedFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
@@ -95,14 +95,14 @@ namespace CmdSilverBullet
                             props.ExtractionReadLimitType = options.extractionReadLimitType;
                             props.ExtractionReadLimit = options.extractionReadLimit;
                             projectFolder = options.projectFolder;
-                            mapper = new StrtReadMapper(props);
+                            mapper = new StrtReadMapper();
                             mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
                             break;
 
                         case "bt":
                             options = new QXMAOptions(args);
                             props.Aligner = options.Aligner;
-                            mapper = new StrtReadMapper(props);
+                            mapper = new StrtReadMapper();
                             mapper.Map(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants, options.annotation);
                             break;
 
@@ -114,7 +114,7 @@ namespace CmdSilverBullet
                             props.SenseStrandIsSequenced = options.readSequenceIsSense;
                             props.Aligner = options.Aligner;
                             props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
-                            mapper = new StrtReadMapper(props);
+                            mapper = new StrtReadMapper();
                             mapper.MapAndAnnotate(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
                                                             options.annotation, options.resultFolder, options.specificBcIdxs);
                             break;
@@ -124,7 +124,7 @@ namespace CmdSilverBullet
                             props.DirectionalReads = options.directionalReads;
                             props.UseRPKM = options.useRPKM;
                             genome = StrtGenome.GetGenome(options.speciesAbbrev, options.analyzeAllGeneVariants, options.annotation, false);
-                            GenomeAnnotations annotations = new GenomeAnnotations(props, genome);
+                            GenomeAnnotations annotations = new GenomeAnnotations(genome);
                             annotations.Load();
                             StreamWriter writer = options.projectFolder.OpenWrite();
                             foreach (GeneFeature gf in annotations.IterOrderedGeneFeatures(true, true))
@@ -135,28 +135,36 @@ namespace CmdSilverBullet
                         case "jct":
                         case "idx":
                         case "build":
-                            string annotation;
+                            string annotation = null, annotationDate = null;
                             for (; argOffset < args.Length; argOffset++)
                             {
                                 if (args[argOffset] == "-bowtie") props.Aligner = "bowtie";
                                 else if (args[argOffset] == "-STAR") props.Aligner = "STAR";
                                 else if (int.TryParse(args[argOffset], out readLen))
                                     props.StandardReadLen = readLen;
-                                else if (StrtGenome.AnnotationSources.Contains(args[argOffset]))
-                                    annotation = args[argOffset];
+                                else if (StrtGenome.AnnotationSources.Any(s => args[argOffset].StartsWith(s)))
+                                {
+                                    annotation = args[argOffset].Substring(0, 4);
+                                    if (args[argOffset].Length >= 10)
+                                        annotationDate = args[argOffset].Substring(4);
+                                }
                                 else try
-                                {
-                                    genome = StrtGenome.GetBaseGenome(args[argOffset++]);
-                                }
-                                catch (ArgumentException)
-                                {
-                                    annotationFile = args[argOffset++];
-                                }
+                                    {
+                                        genome = StrtGenome.GetBaseGenome(args[argOffset]);
+                                    }
+                                    catch (ArgumentException)
+                                    {
+                                        annotationFile = args[argOffset];
+                                    }
                             }
                             if (genome == null)
                                 throw new ArgumentException("Can not parse the genome!");
                             genome.SplcIndexReadLen = props.StandardReadLen;
-                            mapper = new StrtReadMapper(props);
+                            if (annotation != null)
+                                genome.Annotation = annotation;
+                            if (annotationDate != null)
+                                genome.AnnotationDate = annotationDate;
+                            mapper = new StrtReadMapper();
                             if (cmd == "jct")
                                 mapper.BuildJunctions(genome, annotationFile);
                             else if (cmd == "build")
@@ -169,7 +177,7 @@ namespace CmdSilverBullet
                             genome = StrtGenome.GetGenome(args[1]);
                             string fastaPath = args[2];
                             int flankLength = (args.Length > 3)? int.Parse(args[3]) : 0;
-                            mapper = new StrtReadMapper(props);
+                            mapper = new StrtReadMapper();
                             mapper.DumpTranscripts(null, genome, 0, 0, 0, fastaPath, false, false, 0, 0, flankLength);
                             break;
 
@@ -198,7 +206,7 @@ namespace CmdSilverBullet
                                 makeSplices = args[6].ToUpper().StartsWith("S");
                             if (args.Length > 7)
                                 barcodes = Barcodes.GetBarcodes(args[7]);
-                            mapper = new StrtReadMapper(props);
+                            mapper = new StrtReadMapper();
                             int maxSkip = props.MaxExonsSkip;
                             mapper.DumpTranscripts(barcodes, genome, readLength, step, maxPerGene, outputPath, true,
                                                    makeSplices, minOverhang, maxSkip, 0);
@@ -235,7 +243,7 @@ namespace CmdSilverBullet
                             if (args.Length > argOffset + 1)
                                 annotationFile = args[argOffset++];
                             string errorsPath = args[argOffset];
-                            mapper = new StrtReadMapper(props);
+                            mapper = new StrtReadMapper();
                             mapper.UpdateSilverBulletGenes(genome, errorsPath, annotationFile);
                             break;
 
@@ -290,7 +298,8 @@ namespace CmdSilverBullet
                 "bt BUILD|IDX all|single PROJECTPATH|EXTRACTEDPATH      run Bowtie on latest/specified extracted data folder.\n" +
                 "download GENUS_SPECIES                                 download latest genome build and annotations, for e.g. 'Mus_musculus'\n" +
                 "mart2refflat IDX [OUTFILE]                             make a refFlat file from mart-style annotations.\n" +
-                "idx READLEN BUILD [-STAR|-bowtie][ANNOT]  [ANNOTFILE]  build annotations and Bowtie index. Specify 'annotfile' to overide default.\n" +
+                "build READLEN BUILD [ALIGNER] [ANNOT] [FILE]           build STRT annotations and alignment index. Specify annotation file to override default.\n" +
+                "idx READLEN BUILD [ALIGNER] ANNOT[yymmdd]              rebuild alignment index. Without date, the latest is rebuilt.\n" +
                 "knowngene2refflat IDX [OUTFILE]                        make a refFlat file from UCSC knownGene.txt annotations.\n" +
                 "upd [READLEN] IDX [ANNOTFILE] ERRORFILE                update 5' end annotations from an 'annot_errors.tab' file. Specify 'annotfile' to overide default.\n" +
                 "synt BC IDX all|single OUTFOLDER                       generate synthetic reads from a genome.\n" +
@@ -302,6 +311,7 @@ namespace CmdSilverBullet
                 "   Make all if MAXPERGENE=0. Linear=never splice out exons. MINOVERHANG limits exonic end size at a junction. Adds barcodes+GGG if BCSET given.\n\n" + 
                 "   BUILD E.g. 'mm10', 'hg19', or 'gg3'\n" +
                 "   ANNOT is 'UCSC', 'GENC', 'UALL', 'VEGA', 'ENSE', or 'RFSQ' (Default: 'UCSC', synonymous with 'RFSQ')\n" +
+                "   ALIGNER is '-bowtie' or '-STAR'\n" +
                 "   IDX   Specific Bowtie index, e.g. 'hg19_sUCSC' or 'mm9_aVEGA'.\n" +
                 "   BC   'C1Plate1', 'C1Plate2', 'TruSeq', 'v4' (48x6-mer w UMIs), 'v4r' (no UMIs), or 'no' for no barcodes.\n" +
                 "   Define other barcode sets in 'Bc.barcodes' files in the barcodes sub-directory of the data folder\n" +

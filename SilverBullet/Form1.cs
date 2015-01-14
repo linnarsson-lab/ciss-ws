@@ -179,7 +179,7 @@ namespace SilverBullet
 		{
             if (barcodeSet != null)
                 Props.props.BarcodesName = barcodeSet;
-            mapper = new StrtReadMapper(Props.props);
+            mapper = new StrtReadMapper();
 		}
 
 		private void peekAtgzFileToolStripMenuItem_Click(object sender, EventArgs e)
@@ -356,7 +356,7 @@ namespace SilverBullet
             gd.ShowDialog();
             GeneVariantsDialog gvd = new GeneVariantsDialog();
             gvd.ShowDialog();
-            mapper = new StrtReadMapper(Props.props);
+            mapper = new StrtReadMapper();
             gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
             Console.WriteLine("Read lengths will be 44bp. All splices are made.");
 			SaveFileDialog ofd = new SaveFileDialog();

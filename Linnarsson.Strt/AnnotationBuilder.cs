@@ -97,7 +97,6 @@ namespace Linnarsson.Strt
     /// </summary>
     public class AnnotationBuilder
     {
-        private Props props;
         private AnnotationReader annotationReader;
         private int minSpuriousSplicesToRemove = 5;
 
@@ -113,14 +112,13 @@ namespace Linnarsson.Strt
         private int MaxExonsSkip { get; set; }
         private int MaxExonsSkipAtOver100Exons { get; set; }
 
-        public AnnotationBuilder(Props props, AnnotationReader annotationReader)
+        public AnnotationBuilder(AnnotationReader annotationReader)
         {
-            ReadLen = props.StandardReadLen;
-            MaxAlignmentMismatches = props.MaxAlignmentMismatches;
-            MaxExonsSkip = props.MaxExonsSkip;
+            ReadLen = Props.props.StandardReadLen;
+            MaxAlignmentMismatches = Props.props.MaxAlignmentMismatches;
+            MaxExonsSkip = Props.props.MaxExonsSkip;
             MaxExonsSkipAtOver100Exons = Math.Min(4, MaxExonsSkip);
             this.annotationReader = annotationReader;
-            this.props = props;
         }
 
         private IEnumerable<ExonCombination> GenerateSplices(GeneFeature gf, DnaSequence chrSeq)
@@ -189,7 +187,7 @@ namespace Linnarsson.Strt
         public void BuildExonSplices(StrtGenome genome)
         {
             ReadLen = genome.SplcIndexReadLen;
-            int smallestReadMatchDistFromEnd = Math.Max(0, props.MinExtractionInsertLength / 2 - props.MaxAlignmentMismatches);
+            int smallestReadMatchDistFromEnd = Math.Max(0, Props.props.MinExtractionInsertLength / 2 - Props.props.MaxAlignmentMismatches);
             Console.WriteLine("Reading genes for genome {0} and annotations {1}...", genome.Annotation, genome.Build);
             int nModels = annotationReader.BuildGeneModelsByChr();
             Console.WriteLine("Preparing CAP-close cleavage site annotator...");

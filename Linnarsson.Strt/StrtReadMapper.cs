@@ -18,18 +18,16 @@ namespace Linnarsson.Strt
     /// </summary>
     public class StrtReadMapper
 	{
-        private Props props;
         private Barcodes barcodes;
 
-        public StrtReadMapper(Props props)
+        public StrtReadMapper()
         {
-            this.props = props;
-            barcodes = props.Barcodes;
+            barcodes = Props.props.Barcodes;
         }
         private void SetBarcodeSet(string barcodesName)
         {
-            props.BarcodesName = barcodesName;
-            barcodes = props.Barcodes;
+            Props.props.BarcodesName = barcodesName;
+            barcodes = Props.props.Barcodes;
         }
 
         /// <summary>
@@ -45,7 +43,7 @@ namespace Linnarsson.Strt
             Console.WriteLine("*** Updating annotation file {0} for {1} using {2} ***",
                               annotationFile, genome.GetMainIndexName(), Path.GetFileName(errorsPath));
             Background.Message("Updating annotations...");
-            AnnotationBuilder builder = new AnnotationBuilder(props, AnnotationReader.GetAnnotationReader(genome, annotationFile));
+            AnnotationBuilder builder = new AnnotationBuilder(AnnotationReader.GetAnnotationReader(genome, annotationFile));
             builder.UpdateSilverBulletGenes(genome, errorsPath);
             Console.WriteLine("Done.");
             Background.Progress(100);
@@ -56,17 +54,19 @@ namespace Linnarsson.Strt
         /// Construct the repeat-masked genome, artificial splice junction chromosome and transcript annotation file.
         /// </summary>
         /// <param name="genome"></param>
-        public void BuildJunctions(StrtGenome genome, string annotFilename)
+        /// <param name="annotationFile">Optional specific annotation filename</param>
+        public void BuildJunctions(StrtGenome genome, string annotationFile)
         {
-            genome.AnnotationDate = DateTime.Now.ToString("yyMMdd");
+            AnnotationReader annotReader = AnnotationReader.GetAnnotationReader(genome, annotationFile);
+            genome.AnnotationDate = annotReader.AnnotationDate; // DateTime.Now.ToString("yyMMdd");
             string strtAnnotFolder = genome.GetStrtAnnotFolder();
             if (!Directory.Exists(strtAnnotFolder))
                 Directory.CreateDirectory(strtAnnotFolder);
             DateTime startTime = DateTime.Now;
-            annotFilename = AnnotationReader.GetAnnotationFilename(genome, annotFilename);
-            Console.WriteLine("*** Build of spliced exon junctions for {0} from {1} started at {2} ***",
-                genome.GetMainIndexName(), annotFilename, DateTime.Now);
-            AnnotationBuilder builder = new AnnotationBuilder(props, AnnotationReader.GetAnnotationReader(genome, annotFilename));
+            annotationFile = AnnotationReader.GetAnnotationFilename(genome, annotationFile);
+            Console.WriteLine("*** Build of {0} junctions into {1} from {2} started {3} ***",
+                genome.GetMainIndexName(), strtAnnotFolder, annotationFile, DateTime.Now);
+            AnnotationBuilder builder = new AnnotationBuilder(annotReader);
             builder.BuildExonSplices(genome);
         }
 
@@ -83,7 +83,6 @@ namespace Linnarsson.Strt
             Aligner aligner = Aligner.GetAligner(genome);
             if (genome.GeneVariants == false)
             {
-                genome.GeneVariants = false;
                 BuildJunctions(genome, annotationFile);
                 NonExonRepeatMasker nerm = new NonExonRepeatMasker();
                 nerm.Mask(genome, genome.GetStrtAnnotFolder());
@@ -164,11 +163,11 @@ namespace Linnarsson.Strt
         {
             Console.WriteLine("StrtReadMapper.Process(" + projDescr.plateId + ")");
             SetBarcodeSet(projDescr.barcodeSet);
-            props.TotalNumberOfAddedSpikeMolecules = projDescr.SpikeMoleculeCount;
+            Props.props.TotalNumberOfAddedSpikeMolecules = projDescr.SpikeMoleculeCount;
             logWriter.WriteLine("{0} Extracting {1} lanes with barcodes {2}...", DateTime.Now, projDescr.runIdsLanes.Length, projDescr.barcodeSet);
             logWriter.Flush();
             if (barcodes.HasUMIs)
-                logWriter.WriteLine("{0} MinPhredScoreInRandomTag={1}", DateTime.Now, props.MinPhredScoreInRandomTag);
+                logWriter.WriteLine("{0} MinPhredScoreInRandomTag={1}", DateTime.Now, Props.props.MinPhredScoreInRandomTag);
             Extract(projDescr);
             string[] speciesArgs = ParsePlateLayout(projDescr.plateId, projDescr.SampleLayoutPath, projDescr.defaultSpecies);
             projDescr.annotationVersion = ANNOTATION_VERSION;
@@ -177,18 +176,17 @@ namespace Linnarsson.Strt
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, projDescr.analyzeVariants, projDescr.defaultBuild, true);
                 int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 genome.SplcIndexReadLen = GetAverageReadLen(projDescr.laneInfos);
-                SetAvailableSplcIndexVersion(projDescr, genome);
                 logWriter.WriteLine("{0} Aligning to {1}...", DateTime.Now, genome.BuildVarAnnot); logWriter.Flush();
                 CreateAlignments(genome, projDescr.laneInfos, genomeBcIndexes);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(projDescr.laneInfos);
-                props.UseRPKM = projDescr.rpkm;
-                props.DirectionalReads = projDescr.DirectionalReads;
-                props.SenseStrandIsSequenced = projDescr.SenseStrandIsSequenced;
+                Props.props.UseRPKM = projDescr.rpkm;
+                Props.props.DirectionalReads = projDescr.DirectionalReads;
+                Props.props.SenseStrandIsSequenced = projDescr.SenseStrandIsSequenced;
                 projDescr.SetGenomeData(genome);
                 logWriter.WriteLine("{0} Annotating {1} alignment files...", DateTime.Now, mapFiles.Count);
                 logWriter.WriteLine("{0} setting: AllTrVariants={1} Gene5'Extensions={4} #SpikeMols={5} DirectionalReads={2} RPKM={3}",
-                                    DateTime.Now, projDescr.analyzeVariants, props.DirectionalReads, props.UseRPKM,
-                                    props.GeneFeature5PrimeExtension, props.TotalNumberOfAddedSpikeMolecules);
+                                    DateTime.Now, projDescr.analyzeVariants, Props.props.DirectionalReads, Props.props.UseRPKM,
+                                    Props.props.GeneFeature5PrimeExtension, Props.props.TotalNumberOfAddedSpikeMolecules);
                 logWriter.Flush();
                 string resultFolderName = MakeDefaultResultFolderName(genome, projDescr.ProjectFolder, projDescr.plateId);
                 ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.plateId, resultFolderName,
@@ -199,23 +197,6 @@ namespace Linnarsson.Strt
                     x.Serialize(writer, projDescr);
                 logWriter.WriteLine("{0} Results stored in {1}.", DateTime.Now, resultDescr.resultFolder);
                 logWriter.Flush();
-            }
-        }
-
-        /// <summary>
-        /// Tries to locate an aligner index useful for the genome and current read length. If none exists,
-        /// instead tries to change to the DefaultAnnotationSource (usually UCSC)
-        /// </summary>
-        /// <param name="projDescr"></param>
-        /// <param name="genome"></param>
-        private static void SetAvailableSplcIndexVersion(ProjectDescription projDescr, StrtGenome genome)
-        {
-            string splcIndexName = Aligner.GetAligner(genome).FindASplcIndexName();
-            if (splcIndexName == "" && genome.Annotation != StrtGenome.DefaultAnnotationSource)
-            {
-                Console.WriteLine("Could not find an aligner index for {0} - trying {2} instead for {1}",
-                                  genome.Annotation, projDescr.plateId, StrtGenome.DefaultAnnotationSource);
-                genome.Annotation = StrtGenome.DefaultAnnotationSource;
             }
         }
 
@@ -256,7 +237,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Try to find a proper aligner index and align the lanes defined by laneInfo
+        /// Find or make a proper aligner index and align the lanes defined by laneInfo
         /// </summary>
         /// <param name="genome"></param>
         /// <param name="laneInfos"></param>
@@ -264,30 +245,27 @@ namespace Linnarsson.Strt
         private void CreateAlignments(StrtGenome genome, List<LaneInfo> laneInfos, int[] genomeBcIndexes)
         {
             Aligner aligner = AssertASplcIndex(genome);
-            Console.WriteLine("{0} aligning {1} lanes against {2}...", props.Aligner, laneInfos.Count, genome.GetSplcIndexName());
+            Console.WriteLine("{0} aligning {1} lanes against {2}...", Props.props.Aligner, laneInfos.Count, genome.GetSplcIndexName());
             foreach (LaneInfo laneInfo in laneInfos)
                 aligner.CreateAlignments(laneInfo, genomeBcIndexes);
         }
 
         /// <summary>
-        /// Gets the current bowtie index version (including date) for genome.
-        /// throws exception if it does not exist
+        /// Returns an aligner for the genome. Builds the STRT genome if needed. Throws exception on failure.
         /// </summary>
         /// <param name="genome"></param>
         /// <returns></returns>
         private Aligner AssertASplcIndex(StrtGenome genome)
         {
             Aligner aligner = Aligner.GetAligner(genome);
-            string splcIndexName = aligner.FindASplcIndexName();
-            if (splcIndexName == "")
+            if (!aligner.FindASplcIndex())
             {
                 int actualReadLen = genome.SplcIndexReadLen;
                 genome.SplcIndexReadLen = genome.SplcIndexReadLen - (genome.SplcIndexReadLen % 4);
-                Console.WriteLine("Can not find a proper splice index - trying to build one with ReadLen=" + genome.SplcIndexReadLen);
+                Console.WriteLine("Cannot find {0} index - building one with ReadLen={1}", Props.props.Aligner, genome.SplcIndexReadLen);
                 BuildJunctionsAndIndex(genome);
-                splcIndexName = aligner.FindASplcIndexName();
-                if (splcIndexName == "")
-                    throw new Exception("Could not build the needed splice index with ReadLen between " + genome.SplcIndexReadLen +
+                if (!aligner.FindASplcIndex())
+                    throw new Exception("Could not build aligner index with ReadLen between " + genome.SplcIndexReadLen +
                                         " and " + actualReadLen + " for " + genome.Build + " and " + genome.Annotation);
                 genome.SplcIndexReadLen = actualReadLen;
             }
@@ -347,11 +325,11 @@ namespace Linnarsson.Strt
                 string spResultFolderName = resultFolderName;
                 if (resultFolderName == "" || resultFolderName == null)
                     spResultFolderName = MakeDefaultResultFolderName(genome, projectFolder, projectName);
-                string readDir = !props.DirectionalReads ? "No" : props.SenseStrandIsSequenced ? "Sense" : "Antisense";
+                string readDir = !Props.props.DirectionalReads ? "No" : Props.props.SenseStrandIsSequenced ? "Sense" : "Antisense";
                 CreateAlignments(genome, laneInfos, genomeSelectedBcIdxs);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(laneInfos);
                 Console.WriteLine("Annotating {0} map files from {1}\nDirectionalReads={2} RPKM={3} SelectedMappingType={4}...",
-                                  mapFiles.Count, projectName, readDir, props.UseRPKM, props.SelectedMappingType);
+                                  mapFiles.Count, projectName, readDir, Props.props.UseRPKM, Props.props.SelectedMappingType);
                 ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, spResultFolderName, mapFiles);
                 Console.WriteLine("...output in {0}", resultDescr.resultFolder);
                 if (resultDescr.resultFolder != null) resultSubFolders.Add(resultDescr.resultFolder);
@@ -429,9 +407,9 @@ namespace Linnarsson.Strt
             MappedTagItem.AverageReadLen = averageReadLen;
             genome.SplcIndexReadLen = averageReadLen;
             UpdateGenesToPaintProp(projectFolder);
-            GenomeAnnotations annotations = new GenomeAnnotations(props, genome);
+            GenomeAnnotations annotations = new GenomeAnnotations(genome);
             annotations.Load();
-            TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, props, resultFolder, projectId);
+            TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, Props.props, resultFolder, projectId);
             string syntLevelFile = PathHandler.GetSyntLevelFilePath(projectFolder, barcodes.HasUMIs);
             if (syntLevelFile != "")
                 ts.SetSyntReadReporter(syntLevelFile);
@@ -444,9 +422,9 @@ namespace Linnarsson.Strt
             Console.WriteLine("Saving to {0}...", resultFolder);
             ResultDescription resultDescr = new ResultDescription(mapFilePaths, genome, resultFolder);
             ts.SaveResult(readCounter, resultDescr);
-            System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(props.GetType());
+            System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(Props.props.GetType());
             using (StreamWriter writer = new StreamWriter(Path.Combine(resultFolder, "SilverBulletConfig.xml")))
-                x.Serialize(writer, props);
+                x.Serialize(writer, Props.props);
             if (Props.props.InsertCells10Data)
                 InsertCells10kData(projectId, annotations, resultDescr);
             return resultDescr;
@@ -531,7 +509,7 @@ namespace Linnarsson.Strt
                     Console.WriteLine("{0} genes to paint defined by file {1}", genesToPaint.Length, paintPath);
                     for (int i = 0; i < genesToPaint.Length; i++)
                         genesToPaint[i] = genesToPaint[i].Trim();
-                    props.GenesToPaint = genesToPaint;
+                    Props.props.GenesToPaint = genesToPaint;
                 }
             }
         }
@@ -551,8 +529,8 @@ namespace Linnarsson.Strt
             bool variantGenes = genome.GeneVariants;
             if (makeSplices)
                 Console.WriteLine("Making all splices that have >= {0} bases overhang and max {1} exons excised.", minOverhang, maxSkip);
-            props.AnalyzeSeqUpstreamTSSite = true; // To force chr sequence reading
-            GenomeAnnotations annotations = new GenomeAnnotations(props, genome);
+            Props.props.AnalyzeSeqUpstreamTSSite = true; // To force chr sequence reading
+            GenomeAnnotations annotations = new GenomeAnnotations(genome);
             annotations.SetupChromsomes();
             annotations.SetupGenes();
             using (StreamWriter outWriter = new StreamWriter(outFile))

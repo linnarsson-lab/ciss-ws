@@ -71,7 +71,8 @@ namespace Linnarsson.Dna
         public AnnotationReader(StrtGenome genome, string annotationFile)
         {
             this.genome = genome;
-            this.annotationFile = annotationFile;
+            annotationPath = MakeFullAnnotationPath(annotationFile, true);
+            AnnotationDate = new FileInfo(annotationPath).LastWriteTime.ToString("yyMMdd");
         }
 
         /// <summary>
@@ -97,7 +98,8 @@ namespace Linnarsson.Dna
         private Dictionary<string, string> kgXRefTrIdToType;
 
         protected StrtGenome genome;
-        protected string annotationFile { get; private set; }
+        protected string annotationPath { get; private set; }
+        public string AnnotationDate { get; private set; }
 
         protected Dictionary<string, List<GeneFeature>> locNameToGenes; // "name_p" / "name_loc" => genes. Used for all variant building
         protected Dictionary<string, GeneFeature> nameToGene; // "name_pN" / "name_locN" => gene. Used for main variant building
@@ -261,18 +263,18 @@ namespace Linnarsson.Dna
         }
  
         /// <summary>
-        /// Make a full annotation file path inot original genome folder, and assert the file exists
+        /// Make a full annotation file path in original genome folder, and assert the file exists
         /// </summary>
-        /// <param name="annotationFilename"></param>
+        /// <param name="annotationFile"></param>
         /// <param name="checkExists"></param>
         /// <returns></returns>
-        protected string MakeFullAnnotationPath(string annotationFilename, bool checkExists)
+        protected string MakeFullAnnotationPath(string annotationFile, bool checkExists)
         {
             string genomeFolder = genome.GetOriginalGenomeFolder();
-            string annotationPath = Path.Combine(genomeFolder, annotationFilename);
+            string annotationPath = Path.Combine(genomeFolder, annotationFile);
             annotationPath = PathHandler.ExistsOrGz(annotationPath);
             if (checkExists && annotationPath == null)
-                throw new FileNotFoundException(string.Format("Could not find {0} in {1}", annotationFilename, genomeFolder));
+                throw new FileNotFoundException(string.Format("Could not find {0} in {1}", annotationFile, genomeFolder));
             return annotationPath;
         }
 

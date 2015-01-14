@@ -12,6 +12,7 @@ namespace Linnarsson.Strt
     public abstract class Aligner
     {
         protected StrtGenome genome;
+        protected string indexFolder;
         protected readonly string alignerLogFilename = "aligner_output.txt";
         protected string outFileExtension; // Including the '.', e.g. '.sam'
         protected string indexTestPattern; // Regex pattern. '(.+)' indicates location of splcIndexName (incl readLen)
@@ -37,21 +38,25 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Find a splice index with read length matching or slightly less than genome.ReadLen. Return "" on failure
+        /// Find a splice index with read length matching or slightly less than genome.ReadLen.
+        /// Remember the selected index folder. Return "" on failure.
         /// </summary>
-        /// <returns>Empty string if none found</returns>
-        public string FindASplcIndexName()
+        /// <returns></returns>
+        public bool FindASplcIndex()
         {
-            string pathPattern = Path.Combine(GetIndexFolder(), indexTestPattern.Replace("(.+)", genome.GetSplcIndexName("#")));
-            string indexName = Path.GetFileName(genome.FindABpVersion(pathPattern));
-            if (indexName != "")
-                indexName = Regex.Match(indexName, indexTestPattern).Groups[1].Value;
-            return indexName;
+            indexFolder = genome.FindStrtIndexFolder();
+            if (indexFolder == "")
+                return false;
+            string pathPattern = Path.Combine(indexFolder, indexTestPattern.Replace("(.+)", genome.GetSplcIndexName("#")));            
+            return (genome.FindABpVersion(pathPattern) != "");
         }
 
         public void BuildIndex()
         {
-            string indexFolder = GetIndexFolder();
+            string strtAnnotFolder = genome.GetStrtAnnotFolder();
+            if (strtAnnotFolder == null)
+                throw new Exception("Can not find a strt genome folder to index for " + genome.BuildVarAnnot);
+            string indexFolder = Path.Combine(strtAnnotFolder, Props.props.Aligner);
             if (!Directory.Exists(indexFolder))
                 Directory.CreateDirectory(indexFolder);
             DateTime startTime = DateTime.Now;
@@ -65,7 +70,7 @@ namespace Linnarsson.Strt
                 MakeIndex(chrFileList, mainIndexPath);
             }
             string junctionChrPath = genome.GetJunctionChrPath();
-            if (junctionChrPath != null)
+            if (!File.Exists(junctionChrPath))
             {
                 string splcIndexName = genome.GetSplcIndexName();
                 string splcIndexPath = Path.Combine(indexFolder, splcIndexName);
@@ -153,7 +158,7 @@ namespace Linnarsson.Strt
 
         protected bool Align(string args, string indexName, string fqPath, string outPath, string alignerLogFile)
         {
-            string indexPath = Path.Combine(GetIndexFolder(), indexName);
+            string indexPath = Path.Combine(indexFolder, indexName);
             args = args.Replace("$MaxAlignmentMismatches", Props.props.MaxAlignmentMismatches.ToString());
             args = args.Replace("$QualityScoreBase", Props.props.QualityScoreBase.ToString());
             args = args.Replace("$MaxAlternativeMappings", Props.props.MaxAlternativeMappings.ToString());
@@ -179,18 +184,6 @@ namespace Linnarsson.Strt
             }
             return true;
         }
-
-        /// <summary>
-        /// Get/Make path to aligner indexes, e.g. GenomeFolder/strt/UCSC141125/bowtie".
-        /// If genome had no AnnotationDate and no strt annotation folder exists, return null.
-        /// </summary>
-        /// <returns></returns>
-        public string GetIndexFolder()
-        {
-            string strtAnnotFolder = genome.GetStrtAnnotFolder();
-            return (strtAnnotFolder != null) ? Path.Combine(strtAnnotFolder, Props.props.Aligner) : null;
-        }
-
     }
 
     public class BowtieAligner : Aligner
@@ -249,7 +242,12 @@ namespace Linnarsson.Strt
         protected override void Cleanup()
         {
             if (Props.props.StarAlignArgs.Contains("--genomeLoad LoadAndKeep"))
-                new CmdCaller(alignCmd, "--genomeLoad Remove");
+            {
+                string mainIndexPath = Path.Combine(indexFolder, genome.GetMainIndexName());
+                new CmdCaller(alignCmd, "--genomeLoad Remove --genomeDir " + mainIndexPath);
+                string splcIndexPath = Path.Combine(indexFolder, genome.GetSplcIndexName());
+                new CmdCaller(alignCmd, "--genomeLoad Remove --genomeDir " + splcIndexPath);
+            }
         }
 
         protected override void CreateAlignmentOutputFile(string indexName, string fqPath, string outPath,

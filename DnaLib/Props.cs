@@ -104,7 +104,7 @@ namespace Linnarsson.Dna
         public string BowtieIndexArgs = "$FastaPaths $IndexPath";
         public string BowtieAlignArgs = "-p $NThreads --phred$QualityScoreBase-quals -k $MaxAlternativeMappings -v $MaxAlignmentMismatches --best --strata $IndexPath $FqPath $OutPath";
         public string StarIndexArgs = "--runMode genomeGenerate --runThreadN $NThreads --outFileNamePrefix $IndexDir/ --genomeDir $IndexDir --genomeFastaFiles $FastaPaths";
-        public string StarAlignArgs = "--runMode alignReads --outFilterMultimapNmax $MaxAlternativeMappings --alignIntronMax 1 --outFilterMismatchNmax $MaxAlignmentMismatches --outReadsUnmapped Fastq --outFileNamePrefix $OutFolder/ --runThreadN $NThreads --genomeDir $IndexPath --readFilesIn $FqPath";
+        public string StarAlignArgs = "--runMode alignReads --outFilterMultimapNmax $MaxAlternativeMappings --alignIntronMax 1 --outFilterMismatchNmax $MaxAlignmentMismatches --outFileNamePrefix $OutFolder/ --runThreadN $NThreads --genomeDir $IndexPath --readFilesIn $FqPath";
         public double SyntheticReadsRandomMutationProb = 0.0; // Used only in synthetic data construction
         public double SyntheticReadsBackgroundFreq = 0.0; // Frequency of random background reads in synthetic data
         public bool SynthesizeReadsFromGeneVariants = false; // Used only in synthetic data construction

@@ -17,27 +17,25 @@ namespace Linnarsson.Dna
 
         protected override int ReadGenes()
         {
-            string gencodePath = MakeFullAnnotationPath(annotationFile, true);
             SetupAttrsData();
-            VisitedAnnotationPaths = gencodePath;
+            VisitedAnnotationPaths = annotationPath;
             int nRead = 0, nCreated = 0;
-            foreach (GeneFeature gf in IterGencodeFile(gencodePath))
+            foreach (GeneFeature gf in IterGencodeFile(annotationPath))
             {
                 {
                     if (AddGeneModel(gf)) nCreated++;
                     nRead++;
                 }
             }
-            Console.WriteLine("Read {0} genes and variants from {1}", nRead, gencodePath);
+            Console.WriteLine("Read {0} genes and variants from {1}", nRead, annotationPath);
             Console.WriteLine("...constructed {0} {1} gene models.", nCreated, (genome.GeneVariants ? "variant" : "main"));
             return nCreated;
         }
 
         private void SetupAttrsData()
         {
-            string attrsFile = annotationFile.Replace("Comp", "Attrs");
-            string attrsPath = MakeFullAnnotationPath(attrsFile, true);
-            if (attrsPath == null)
+            string attrsPath = annotationPath.Replace("Comp", "Attrs");
+            if (!File.Exists(attrsPath))
                 return;
             using (StreamReader reader = attrsPath.OpenRead())
             {

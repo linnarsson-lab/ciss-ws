@@ -74,9 +74,9 @@ namespace Linnarsson.Strt
         protected bool needChromosomeLengths;
         public bool noGeneVariants;
 
-        public GenomeAnnotations(Props props, StrtGenome genome)
+        public GenomeAnnotations(StrtGenome genome)
 		{
-            this.props = props;
+            this.props = Props.props;
             this.genome = genome;
             this.barcodes = props.Barcodes;
             needChromosomeSequences = props.DetermineMotifs || props.AnalyzeSeqUpstreamTSSite || props.AnalyzeGCContent;

@@ -59,6 +59,7 @@ namespace Linnarsson.Dna
         public string build { get; set; }
         public string annotation { get; set; }
         public string variant { get; set; }
+        public string aligner { get; set; }
         public int gene5PrimeExtension { get; set; }
         public List<LaneInfo> laneInfos { get; set; }
         public string analysisId { get; set; }
@@ -124,7 +125,8 @@ namespace Linnarsson.Dna
         /// Constructor when starting analysis of projects in database
         /// </summary>
         public ProjectDescription(string plateId, string barcodesName, string defaultSpecies, List<string> laneInfos,
-                          string layoutFile, string status, string emails, string defaultBuild, string variants, string analysisId,
+                          string layoutFile, string status, string emails,
+                          string defaultBuild, string variants, string aligner, string analysisId,
                           bool rpkm, int spikeMoleculeCount, int readdir)
         {
             this.plateId = plateId;
@@ -137,6 +139,7 @@ namespace Linnarsson.Dna
             this.managerEmails = emails;
             this.defaultBuild = defaultBuild;
             this.analyzeVariants = (variants == "all");
+            this.aligner = aligner;
             this.rpkm = rpkm;
             this.readDirection = readdir;
             this.SpikeMoleculeCount = spikeMoleculeCount;
@@ -183,8 +186,8 @@ namespace Linnarsson.Dna
 
         public override string ToString()
         {
-            return string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\n", plateId, string.Join("|", runIdsLanes.ToArray()), barcodeSet, 
-                                  defaultSpecies, ProjectFolder, layoutFile, status, managerEmails);
+            return string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\n", plateId, string.Join("|", runIdsLanes.ToArray()),
+                                 barcodeSet, defaultSpecies, ProjectFolder, layoutFile, status, managerEmails);
         }
         public int LaneCount
         {
@@ -322,7 +325,7 @@ namespace Linnarsson.Dna
             MySqlConnection conn = new MySqlConnection(connectionString);
             List<ProjectDescription> pds = new List<ProjectDescription>();
             string sql = "SELECT a.id, a.genome, a.transcript_db_version, a.transcript_variant, a.rpkm, a.readdir, a.emails, " +
-                         " p.plateid, p.barcodeset, p.spikemolecules, p.species, p.layoutfile, a.status, " +
+                         " p.plateid, p.barcodeset, p.spikemolecules, p.species, p.layoutfile, a.status, a.aligner, " +
                          " r.illuminarunid AS runid, GROUP_CONCAT(l.laneno ORDER BY l.laneno) AS lanenos " +
                          "FROM jos_aaaanalysis a " + 
                          "LEFT JOIN jos_aaaproject p ON a.jos_aaaprojectid = p.id " +
@@ -336,7 +339,7 @@ namespace Linnarsson.Dna
             MySqlDataReader rdr = cmd.ExecuteReader();
             List<string> laneInfos = new List<string>();
             string currAnalysisId = "", plateId = "", bcSet = "", defaultSpecies = "", layoutFile = "", plateStatus = "",
-                    emails = "", defaultBuild = "", variant = "";
+                    emails = "", defaultBuild = "", variant = "", aligner = "";
             bool rpkm = false;
             int readdir = 1;
             int spikeMolecules = Props.props.TotalNumberOfAddedSpikeMolecules;
@@ -345,8 +348,8 @@ namespace Linnarsson.Dna
                 string analysisId = rdr["id"].ToString();
                 if (currAnalysisId != "" && analysisId != currAnalysisId)
                 {
-                    pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
-                                                    emails, defaultBuild, variant, currAnalysisId, rpkm, spikeMolecules, readdir));
+                    pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus, emails,
+                                                   defaultBuild, variant, aligner, currAnalysisId, rpkm, spikeMolecules, readdir));
                     laneInfos = new List<string>();
                 }
                 currAnalysisId = analysisId;
@@ -357,6 +360,7 @@ namespace Linnarsson.Dna
                 defaultSpecies = rdr["species"].ToString();
                 layoutFile = rdr["layoutfile"].ToString();
                 plateStatus = rdr["status"].ToString();
+                aligner = rdr["aligner"].ToString();
                 emails = rdr["emails"].ToString();
                 defaultBuild = rdr["transcript_db_version"].ToString();
                 variant = rdr["transcript_variant"].ToString();
@@ -364,8 +368,9 @@ namespace Linnarsson.Dna
                 rpkm = (rdr["rpkm"].ToString() == "True");
                 readdir = rdr.GetInt32("readdir");
             }
-            if (currAnalysisId != "") pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus,
-                                                             emails, defaultBuild, variant, currAnalysisId, rpkm, spikeMolecules, readdir));
+            if (currAnalysisId != "") pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies,
+                                                 laneInfos, layoutFile, plateStatus, emails,
+                                                 defaultBuild, variant, aligner, currAnalysisId, rpkm, spikeMolecules, readdir));
             rdr.Close();
             conn.Close();
             return pds;

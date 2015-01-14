@@ -94,6 +94,10 @@ namespace Linnarsson.Dna
             return chrId;
         }
 
+        /// <summary>
+        /// Return path to strt subfolder, e.g. GenomesFolder/mm10/strt
+        /// </summary>
+        /// <returns></returns>
         public string GetGenomeStrtFolder()
         {
             return GetGenomeStrtFolder(Build);
@@ -104,8 +108,8 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Get/Make the path of a STRT annotations/chr folder, e.g. "GenomesFolder/mm10/strt/UCSC141211".
-        /// If AnnotationDate was null, set AnnotationDate to that of, and return the latest folder.
+        /// Get/Construct the path of a STRT annotations/chr folder, e.g. "GenomesFolder/mm10/strt/UCSC141211".
+        /// If AnnotationDate was null, return path of the last existing matching folder and set AnnotationDate.
         /// Return null if AnnotationDate was null and no folder exists.
         /// </summary>
         /// <returns></returns>
@@ -124,6 +128,32 @@ namespace Linnarsson.Dna
             return Path.Combine(strtFolder, Annotation + AnnotationDate);
         }
 
+        /// <summary>
+        /// Find path of the, last or specified AnnotationDate, aligner index folder that match with the genome settings.
+        /// Return "" on failure.
+        /// </summary>
+        /// <returns></returns>
+        public string FindStrtIndexFolder()
+        {
+            string strtFolder = GetGenomeStrtFolder();
+            string annotPattern = (AnnotationDate == null)? Annotation + "??????" : Annotation + AnnotationDate;
+            string[] annotFolders = Directory.GetDirectories(strtFolder, annotPattern);
+            Array.Sort(annotFolders);
+            Array.Reverse(annotFolders);
+            foreach (string annotFolder in annotFolders)
+            {
+                string indexFolder = Path.Combine(annotFolder, Props.props.Aligner);
+                if (Directory.Exists(indexFolder))
+                {
+                    AnnotationDate = Path.GetFileName(annotFolder).Substring(Annotation.Length);
+                    return indexFolder;
+                }
+            }
+            return "";
+        }
+
+
+        
         public string MakeMaskedChrFileName(string chrId)
         {
             return "chr" + chrId + "_" + Annotation + "Masked.fa";
@@ -153,7 +183,7 @@ namespace Linnarsson.Dna
 
         public string GetJunctionChrPath()
         {
-            return Path.Combine(GetGenomeStrtFolder(), GetJunctionChrFileName());
+            return Path.Combine(GetStrtAnnotFolder(), GetJunctionChrFileName());
         }
         public string GetJunctionChrFileName()
         {

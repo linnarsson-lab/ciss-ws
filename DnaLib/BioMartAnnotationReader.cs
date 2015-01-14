@@ -16,17 +16,16 @@ namespace Linnarsson.Dna
 
         protected override int ReadGenes()
         {
-            string martPath = MakeFullAnnotationPath(annotationFile, true);
-            VisitedAnnotationPaths = martPath;
+            VisitedAnnotationPaths = annotationPath;
             int nRead = 0, nCreated = 0;
-            foreach (GeneFeature gf in IterMartFile(martPath))
+            foreach (GeneFeature gf in IterMartFile(annotationPath))
             {
                 {
                     if (AddGeneModel(gf)) nCreated++;
                     nRead++;
                 }
             }
-            Console.WriteLine("Read {0} genes and variants from {1}", nRead, martPath);
+            Console.WriteLine("Read {0} genes and variants from {1}", nRead, annotationPath);
             Console.WriteLine("...constructed {0} {1} gene models.", nCreated, (genome.GeneVariants ? "variant" : "main"));
             return nCreated;
         }

@@ -135,11 +135,13 @@ namespace CmdSilverBullet
                         case "jct":
                         case "idx":
                         case "build":
-                            string annotation = null, annotationDate = null;
+                            string annotation = null, annotationDate = null, var = null;
                             for (; argOffset < args.Length; argOffset++)
                             {
                                 if (args[argOffset] == "-bowtie") props.Aligner = "bowtie";
                                 else if (args[argOffset] == "-STAR") props.Aligner = "STAR";
+                                else if (args[argOffset] == "single") var = "single";
+                                else if (args[argOffset] == "all") var = "all";
                                 else if (int.TryParse(args[argOffset], out readLen))
                                     props.StandardReadLen = readLen;
                                 else if (StrtGenome.AnnotationSources.Any(s => args[argOffset].StartsWith(s)))
@@ -164,6 +166,8 @@ namespace CmdSilverBullet
                                 genome.Annotation = annotation;
                             if (annotationDate != null)
                                 genome.AnnotationDate = annotationDate;
+                            if (var != null)
+                                genome.GeneVariants = (var == "all");
                             mapper = new StrtReadMapper();
                             if (cmd == "jct")
                                 mapper.BuildJunctions(genome, annotationFile);

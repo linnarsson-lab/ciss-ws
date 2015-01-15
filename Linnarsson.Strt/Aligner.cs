@@ -63,21 +63,22 @@ namespace Linnarsson.Strt
             string chrFileList = string.Join(indexChrsDelimiter, genome.GetMaskedChrPaths());
             string mainIndexName = genome.GetMainIndexName();
             string mainIndexPath = Path.Combine(indexFolder, mainIndexName);
-            if (File.Exists(Path.Combine(indexFolder, string.Format(indexTestPattern, mainIndexName))))
+            string testPath = Path.Combine(indexFolder, indexTestPattern.Replace("(.+)", mainIndexName));
+            if (File.Exists(testPath) || Directory.Exists(testPath))
                 Console.WriteLine("NOTE: Main index {0} already exists. Delete index and rerun if you want to rebuild.", mainIndexPath);
             else
             {
                 MakeIndex(chrFileList, mainIndexPath);
             }
             string junctionChrPath = genome.GetJunctionChrPath();
-            if (!File.Exists(junctionChrPath))
+            if (File.Exists(junctionChrPath))
             {
                 string splcIndexName = genome.GetSplcIndexName();
                 string splcIndexPath = Path.Combine(indexFolder, splcIndexName);
                 MakeIndex(junctionChrPath, splcIndexPath);
             }
             else
-                Console.Error.WriteLine("NOTE: No splice chromosome found for {0}. Indexing skipped.", mainIndexName);
+                Console.WriteLine("NOTE: No splice chromosome found for {0}. Indexing skipped.", mainIndexName);
         }
 
         private void MakeIndex(string chrFileList, string indexPath)
@@ -94,7 +95,7 @@ namespace Linnarsson.Strt
             Console.WriteLine("{0} {1}", indexCmd, args);
             int exitCode = CmdCaller.Run(indexCmd, args);
             if (exitCode != 0)
-                Console.Error.WriteLine("Failed to build aligner index. ExitCode={0}", exitCode);
+                Console.WriteLine("Failed to build aligner index. ExitCode={0}", exitCode);
         }
 
         /// <summary>
@@ -176,7 +177,7 @@ namespace Linnarsson.Strt
             logWriter.Close();
             if (cc.ExitCode != 0)
             {
-                Console.Error.WriteLine("{0} {1}\nFailed to run on {2}. ExitCode={3}. Check logFile.",
+                Console.WriteLine("{0} {1}\nFailed to run on {2}. ExitCode={3}. Check logFile.",
                                         Props.props.Aligner, args, fqPath, cc.ExitCode);
                 if (File.Exists(outPath))
                     File.Delete(outPath);

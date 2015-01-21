@@ -443,7 +443,15 @@ namespace Linnarsson.Dna
                         g.GeneVariants = (annotation[0] == 's') ? false : true;
                         annotation = annotation.Substring(1);
                     }
-                    if (annotation.Length > 0) g.Annotation = annotation;
+                    if (annotation.Length > 0)
+                    {
+                        if (Regex.IsMatch(annotation, ".+[0-9][0-9][0-9][0-9][0-9][0-9]$"))
+                        {
+                            g.AnnotationDate = annotation.Substring(annotation.Length - 6);
+                            annotation = annotation.Substring(0, annotation.Length - 6);
+                        }
+                        g.Annotation = annotation;
+                    }
                     return g;
                 }
             }

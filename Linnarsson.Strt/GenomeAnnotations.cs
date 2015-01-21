@@ -154,9 +154,12 @@ namespace Linnarsson.Strt
         public void SetupGenes()
         {
             string strtAnnotPath = genome.AssertAStrtAnnotPath();
-            bool genesSetupFromC1DB = (props.InsertCells10Data && SetupGenesFromC1DB(strtAnnotPath));
-            if (!genesSetupFromC1DB)
+            GenesSetupFromC1DB = SetupGenesFromC1DB(strtAnnotPath);
+            if (!GenesSetupFromC1DB)
+            {
                 SetupGenesFromStrtAnnotFile(strtAnnotPath);
+                Props.props.InsertCells10Data = false;
+            }
             int trLen = geneFeatures.Sum(gf => gf.Value.GetTranscriptLength());
             Console.WriteLine("Total length of all transcript models (including overlaps): {0} bp.", trLen);
         }

@@ -30,6 +30,7 @@ namespace Linnarsson.Dna
             int r = 0;
             if (!int.TryParse(items[2], out r)) throw new InvalidDataException("Run folder does not seem to have a valid run ID");
             string runId = items[2];
+            if (items.Length < 4) throw new InvalidDataException("Run folder does not seem to have a valid flowcell ID");
             string flowcellId = items[3];
 
             string bcFolder = Path.Combine(runFolder, "Data");

@@ -255,12 +255,12 @@ namespace C1
             conn.Close();
         }
 
-        public void InsertAnalysisSetup(string plate, string bowtieIndex, string resultFolder, string parameters)
+        public void InsertAnalysisSetup(string projectId, string bowtieIndex, string resultFolder, string parameters)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             string sql = string.Format("REPLACE INTO AnalysisSetup (Plate, Path, Genome, Parameters) VALUES ('{0}','{1}','{2}','{3}')",
-                                       plate, resultFolder, bowtieIndex, parameters);
+                                       projectId, resultFolder, bowtieIndex, parameters);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             if (test)
                 Console.WriteLine(sql);
@@ -273,6 +273,7 @@ namespace C1
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
+            int n = 0, maxId = 0, minId = int.MaxValue;
             string sqlPat = "REPLACE INTO ExprBlob (CellID, TranscriptomeID, Data) VALUES ('{0}',{1}, ?BLOBDATA)";
             foreach (ExprBlob exprBlob in exprBlobIterator)
             {
@@ -284,7 +285,11 @@ namespace C1
                     Console.WriteLine(sql);
                 else
                     cmd.ExecuteNonQuery();
+                n += 1;
+                maxId = Math.Max(int.Parse(exprBlob.CellID), maxId);
+                minId = Math.Min(int.Parse(exprBlob.CellID), minId);
             }
+            Console.WriteLine("{0}nserted {1} ExprBlobs with CellIDs {2} - {3}", (test? "Test-i" : "I"), n, minId, maxId);
             conn.Close();
         }
 

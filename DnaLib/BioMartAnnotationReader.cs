@@ -10,8 +10,8 @@ namespace Linnarsson.Dna
 {
     public class BioMartAnnotationReader : AnnotationReader
     {
-        public BioMartAnnotationReader(StrtGenome genome, string annotationFile)
-            : base(genome, annotationFile)
+        public BioMartAnnotationReader(StrtGenome genome, string annotFilePath)
+            : base(genome, annotFilePath)
         { }
 
         protected override int ReadGenes()

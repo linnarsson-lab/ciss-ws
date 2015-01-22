@@ -27,53 +27,54 @@ namespace Linnarsson.Dna
                                                             "RNase P RNA", "small cytoplasmic RNA", "small nuclear RNA",
                                                             "small nucleolar RNA", "telomerase RNA", "transfer RNA", "non-coding RNA", "mRNA"};
 
-        public static AnnotationReader GetAnnotationReader(StrtGenome genome)
-        {
-            return GetAnnotationReader(genome, "");
-        }
         /// <summary>
-        /// If annotationFile is empty, replace with default filename for genome
+        /// Get path to default annotation file for genome
         /// </summary>
         /// <param name="genome"></param>
         /// <param name="annotationFile"></param>
         /// <returns></returns>
-        public static string GetAnnotationFilename(StrtGenome genome, string annotationFile)
+        public static string GetDefaultAnnotFilePath(StrtGenome genome)
         {
-            if (annotationFile != null && annotationFile != "")
-                return annotationFile;
-            if (genome.Annotation == "UCSC" || genome.Annotation == "RFSQ")
-                return "refFlat.txt";
+            string fname = genome.Annotation + "_mart_export.txt";
+            switch (genome.Annotation)
+            {
+                case "UCSC":
+                case "RFSQ":
+                    fname = "refFlat.txt";
+                    break;
+                case "UALL":
+                    fname = "knownGene.txt";
+                    break;
+                case "GENC":
+                    fname = Path.GetFileName(Directory.GetFiles(genome.GetOriginalGenomeFolder(), "wgEncodeGencodeCompV*")[0]);
+                    break;
+            }
+            return Path.Combine(genome.GetOriginalGenomeFolder(), fname);
+        }
+
+        /// <summary>
+        /// Return an AnnotationReader for genome. Uses .../genome/annotationfile if annotFilePath == "".
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <param name="annotFilePath"></param>
+        /// <returns></returns>
+        public static AnnotationReader GetAnnotationReader(StrtGenome genome, string annotFilePath)
+        {
+            if (annotFilePath == null || annotFilePath == "")
+                annotFilePath = GetDefaultAnnotFilePath(genome);
+            if (genome.Annotation == "UCSC")
+                return new UCSCAnnotationReader(genome, annotFilePath);
             if (genome.Annotation == "UALL")
-                return "knownGene.txt";
+                return new KnownGeneAnnotationReader(genome, annotFilePath);
             if (genome.Annotation == "GENC")
-                return Path.GetFileName(Directory.GetFiles(genome.GetOriginalGenomeFolder(), "wgEncodeGencodeCompV*")[0]);
-            return genome.Annotation + "_mart_export.txt";
+                return new GencodeAnnotationReader(genome, annotFilePath);
+            return new BioMartAnnotationReader(genome, annotFilePath);
         }
 
-        /// <summary>
-        /// Returns a proper AnnotationReader for the annotationFile by parsing its name. If it is empty,
-        /// uses the default annotationFile of the genome
-        /// </summary>
-        /// <param name="genome"></param>
-        /// <param name="annotationFile"></param>
-        /// <returns></returns>
-        public static AnnotationReader GetAnnotationReader(StrtGenome genome, string annotationFile)
-        {
-            annotationFile = GetAnnotationFilename(genome, annotationFile);
-            if (annotationFile.Contains("refFlat"))
-                return new RefFlatAnnotationReader(genome, annotationFile);
-            if (annotationFile.Contains("knownGene"))
-                return new KnownGeneAnnotationReader(genome, annotationFile);
-            if (annotationFile.Contains("wgEncodeGencodeCompV"))
-                return new GencodeAnnotationReader(genome, annotationFile);
-            return new BioMartAnnotationReader(genome, annotationFile);
-        }
-
-        public AnnotationReader(StrtGenome genome, string annotationFile)
+        public AnnotationReader(StrtGenome genome, string annotFilePath)
         {
             this.genome = genome;
-            annotationPath = MakeFullAnnotationPath(annotationFile, true);
-            AnnotationDate = new FileInfo(annotationPath).LastWriteTime.ToString("yyMMdd");
+            annotationPath = annotFilePath;
         }
 
         /// <summary>
@@ -100,7 +101,6 @@ namespace Linnarsson.Dna
 
         protected StrtGenome genome;
         protected string annotationPath { get; private set; }
-        public string AnnotationDate { get; private set; }
 
         protected Dictionary<string, List<GeneFeature>> locNameToGenes; // "name_p" / "name_loc" => genes. Used for all variant building
         protected Dictionary<string, GeneFeature> nameToGene; // "name_pN" / "name_locN" => gene. Used for main variant building
@@ -108,16 +108,19 @@ namespace Linnarsson.Dna
         protected int pseudogeneCount = 0;
 
         private string m_VisitedAnnotationPaths = "";
-        public string VisitedAnnotationPaths { get; private set; }
+        public string VisitedAnnotationPaths { get { return m_VisitedAnnotationPaths; } }
         public void AddVisitedAnnotationPaths(string path)
         {
             FileInfo fi = new FileInfo(path);
             long fileSize = fi.Length;
             string createDate = fi.CreationTime.ToString("yyMMdd");
-            string md5 = new MD5CryptoServiceProvider().ComputeHash(new FileStream(path, FileMode.Open)).ToString();
+            FileStream fs = new FileStream(path, FileMode.Open);
+            byte[] md5 = new MD5CryptoServiceProvider().ComputeHash(fs);
+            fs.Close();
+            string md5String = string.Join("", Array.ConvertAll(md5, v => String.Format("{0:X2}", v)));
             if (m_VisitedAnnotationPaths != "")
                 m_VisitedAnnotationPaths += ";";
-            string pathId = string.Format("{0}[Created:{1},Size:{2},MD5:{3}]", path, createDate, fileSize, md5);
+            string pathId = string.Format("{0}[Created:{1},Size:{2},MD5:{3}]", path, createDate, fileSize, md5String);
             m_VisitedAnnotationPaths += pathId;
         }
 
@@ -221,7 +224,7 @@ namespace Linnarsson.Dna
             string refFlatPath = MakeFullAnnotationPath("refFlat.txt", false);
             if (File.Exists(refFlatPath))
             {
-                VisitedAnnotationPaths += ";" + refFlatPath;
+                AddVisitedAnnotationPaths(refFlatPath);
                 foreach (GeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
                 {
                     SetTranscriptType(gf);
@@ -493,7 +496,7 @@ namespace Linnarsson.Dna
             if (File.Exists(genesPath))
             {
                 int nAddedGenes = 0;
-                VisitedAnnotationPaths += ";" + genesPath;
+                AddVisitedAnnotationPaths(genesPath);
                 foreach (GeneFeature gf in AnnotationReader.IterRefFlatFile(genesPath))
                     if (AddGeneModel(gf)) nAddedGenes++;
                 Console.WriteLine("Added {0} genes from {1}.", nAddedGenes, genesPath);

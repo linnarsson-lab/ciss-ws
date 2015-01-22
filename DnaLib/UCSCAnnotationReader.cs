@@ -10,10 +10,10 @@ namespace Linnarsson.Dna
     /// <summary>
     /// Parser for UCSC refFlat.txt files
     /// </summary>
-    public class RefFlatAnnotationReader : AnnotationReader
+    public class UCSCAnnotationReader : AnnotationReader
     {
-        public RefFlatAnnotationReader(StrtGenome genome, string annotationFile)
-            : base(genome, annotationFile)
+        public UCSCAnnotationReader(StrtGenome genome, string annotFilePath)
+            : base(genome, annotFilePath)
         {
         }
 
@@ -21,7 +21,7 @@ namespace Linnarsson.Dna
         {
             AddVisitedAnnotationPaths(annotationPath);
             int n = 0, nCreated = 0;
-            foreach (GeneFeature gf in AnnotationReader.IterRefFlatFile(annotationPath))
+            foreach (GeneFeature gf in IterRefFlatFile(annotationPath))
             {
                 SetTranscriptType(gf);
                 bool newModel = AddGeneModel(gf);

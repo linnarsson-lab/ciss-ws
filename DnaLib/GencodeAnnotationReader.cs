@@ -9,8 +9,8 @@ namespace Linnarsson.Dna
 {
     class GencodeAnnotationReader : AnnotationReader
     {
-        public GencodeAnnotationReader(StrtGenome genome, string annotationFile)
-            : base(genome, annotationFile)
+        public GencodeAnnotationReader(StrtGenome genome, string annotFilePath)
+            : base(genome, annotFilePath)
         { }
 
         private Dictionary<string, string[]> attrsData = new Dictionary<string, string[]>();

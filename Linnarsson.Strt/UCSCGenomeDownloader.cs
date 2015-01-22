@@ -15,13 +15,6 @@ namespace Linnarsson.Strt
 {
     public class UCSCGenomeDownloader
     {
-        private static int CompareGenomeIds(string a, string b)
-        {
-            if (a.Length > b.Length) return 1;
-            if (a.Length < b.Length) return -1;
-            return a.CompareTo(b);
-        }
-
         string goldenPathGenomes = "ftp://hgdownload.cse.ucsc.edu/goldenPath";
         string loginName = "anonymous";
         string password = Props.props.FailureReportAndAnonDownloadEmail;
@@ -36,25 +29,9 @@ namespace Linnarsson.Strt
         {
             string abbrev, threeName;
             ParseSpecies(latinSpeciesName, out threeName, out abbrev);
-            List<string> goldenPathMatches = new List<string>();
-            List<string> allSpecies = ListFiles(goldenPathGenomes);
-            if (threeName != "")
-                foreach (string speciesSubdir in allSpecies)
-                    if (speciesSubdir.StartsWith(threeName))
-                        goldenPathMatches.Add(speciesSubdir);
-            if (goldenPathMatches.Count == 0)
-                foreach (string speciesSubdir in allSpecies)
-                    if (speciesSubdir.Length <= 5 & speciesSubdir.StartsWith(abbrev))
-                        goldenPathMatches.Add(speciesSubdir);
-            if (goldenPathMatches.Count == 0)
-                throw new FileNotFoundException("Could not find a genome for " + abbrev + "/" + threeName + " at UCSC.");
-            goldenPathMatches.Sort(new Comparison<string> (CompareGenomeIds));
-            goldenPathMatches.Reverse();
+            List<string> goldenPathMatches = GetMatchingGoldenPathDirs(abbrev, threeName);
             foreach (string buildName in goldenPathMatches)
             {
-                string subDir = buildName;
-                if (buildName.Length > 5)
-                    subDir = buildName.Substring(0, 1) + buildName.Substring(3, 1).ToLower() + buildName.Substring(6);
                 string speciesURL = goldenPathGenomes + "/" + buildName;
                 string destDir = Path.Combine(Path.Combine(Props.props.GenomesFolder, buildName), "genome");
                 if (!Directory.Exists(destDir))
@@ -63,30 +40,57 @@ namespace Linnarsson.Strt
                 {
                     DownloadMartAnnotations(abbrev, destDir);
                     DownloadSpeciesGenome(speciesURL, buildName, destDir);
-                    Console.WriteLine("Downloaded build " + buildName + " from UCSC to " + destDir);
+                    Console.WriteLine("Downloaded {0} from {1} to {2}", buildName, goldenPathGenomes, destDir);
                     return;
                 }
-                catch (Exception e) {
-                    Console.WriteLine("Error: " + e);
-                    Console.WriteLine("- Looking for an older build.");
+                catch (Exception e)
+                {
+                    Console.WriteLine("***Error: " + e);
+                    Console.WriteLine("*** Looking for an older build ***");
                 }
             }
-            Console.WriteLine("ERROR: Could not find a build at UCSC with data for " + abbrev + "!");
+            Console.WriteLine("ERROR: Could not find a build at {0} for {1} {2}!", goldenPathGenomes, abbrev, threeName);
         }
 
-        public void ParseSpecies(string latinSpeciesName, out string threeName, out string abbrev)
+        private List<string> GetMatchingGoldenPathDirs(string abbrev, string threeName)
         {
-            abbrev = latinSpeciesName.ToLower();
-            threeName = "";
-            int spaceIdx = latinSpeciesName.IndexOf(" ");
-            if (spaceIdx == -1)
-                spaceIdx = latinSpeciesName.IndexOf("_");
-            if (spaceIdx > 0)
+            List<string> allSpecies = ListFiles(goldenPathGenomes);
+            List<string> goldenPathMatches = new List<string>();
+            foreach (string speciesSubdir in allSpecies)
             {
-                threeName = abbrev.Substring(0, 3) + abbrev.Substring(spaceIdx + 1, 1).ToUpper() + abbrev.Substring(spaceIdx + 2, 2);
-                abbrev = abbrev.Substring(0, 1) + abbrev.Substring(spaceIdx + 1, 1);
+                string dir = speciesSubdir.ToLower();
+                if (dir == threeName || dir == abbrev)
+                {
+                    goldenPathMatches.Add(speciesSubdir);
+                    break;
+                }
+                if (Regex.IsMatch(dir, "^" + abbrev + "[0-9]+$") || Regex.IsMatch(dir, "^" + threeName + "[0-9]+$"))
+                    goldenPathMatches.Add(speciesSubdir);
             }
-            if (abbrev.StartsWith("hs")) abbrev = "hg" + abbrev.Substring(2);
+            if (goldenPathMatches.Count == 0)
+                throw new FileNotFoundException("No genome for " + abbrev + " " + threeName + " at " + goldenPathGenomes + ".");
+            goldenPathMatches.Sort();
+            goldenPathMatches.Reverse();
+            return goldenPathMatches;
+        }
+
+        public void ParseSpecies(string name, out string threeName, out string abbrev)
+        {
+            abbrev = threeName = "";
+            Match m = Regex.Match(name, "^[A-Z][A-a-z][0-9]+$");
+            if (m.Success)
+                abbrev = name;
+            m = Regex.Match(name, "^[A-Za-z]{6}[0-9]+$");
+            if (m.Success)
+                threeName = name;
+            m = Regex.Match(name, "^([A-Za-z]+)[_ ]([A-Za-z]+)$");
+            if (m.Success)
+            {
+                abbrev = m.Groups[1].Value.Substring(0, 1) + m.Groups[2].Value.Substring(0, 1);
+                threeName = m.Groups[1].Value.Substring(0, 3) + m.Groups[2].Value.Substring(0, 3);
+            }
+            abbrev = abbrev.ToLower();
+            threeName = threeName.ToLower();
         }
 
         private void DownloadSpeciesGenome(string speciesURL, string buildName, string destDir)

@@ -50,7 +50,8 @@ namespace C1SeqPlateLoader
         {
             List<Cell> cells = pdb.GetCellsOfChip(chip);
             if (cells.Count == 0)
-                throw new Exception(string.Format("ERROR: No cells for chip {0} in DB. Register/reload the chip(s) on Sanger DB web page.", chip));
+                throw new Exception(string.Format("ERROR: No cells for chip {0} in DB. Make sure the chip folder is in {1}. You can 'C1Copier.exe -u' to fake cells.",
+                                    chip, C1Props.props.C1RunsFolder));
             foreach (Cell cell in cells)
             {
                 cell.platewell = cell.chipwell;

@@ -13,8 +13,8 @@ namespace Linnarsson.Dna
     /// </summary>
     class KnownGeneAnnotationReader : AnnotationReader
     {
-        public KnownGeneAnnotationReader(StrtGenome genome, string annotationFile)
-            : base(genome, annotationFile)
+        public KnownGeneAnnotationReader(StrtGenome genome, string annotFilePath)
+            : base(genome, annotFilePath)
         { }
 
         private Dictionary<string, string[]> xrefData = new Dictionary<string, string[]>();

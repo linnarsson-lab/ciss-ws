@@ -43,8 +43,8 @@ namespace Linnarsson.Strt
             Console.WriteLine("*** Updating annotation file {0} for {1} using {2} ***",
                               annotationFile, genome.GetMainIndexName(), Path.GetFileName(errorsPath));
             Background.Message("Updating annotations...");
-            AnnotationBuilder builder = new AnnotationBuilder(AnnotationReader.GetAnnotationReader(genome, annotationFile));
-            builder.UpdateSilverBulletGenes(genome, errorsPath);
+            AnnotationBuilder builder = new AnnotationBuilder(genome);
+            builder.UpdateSilverBulletGenes(errorsPath);
             Console.WriteLine("Done.");
             Background.Progress(100);
             Background.Message("Ready");
@@ -54,20 +54,13 @@ namespace Linnarsson.Strt
         /// Construct the repeat-masked genome, artificial splice junction chromosome and transcript annotation file.
         /// </summary>
         /// <param name="genome"></param>
-        /// <param name="annotationFile">Optional specific annotation filename</param>
-        public void BuildJunctions(StrtGenome genome, string annotationFile)
+        /// <param name="optionalAnnotationPath">Optional path of non-standard annotation file</param>
+        public void BuildJunctions(StrtGenome genome, string optionalAnnotationPath)
         {
-            AnnotationReader annotReader = AnnotationReader.GetAnnotationReader(genome, annotationFile);
-            genome.AnnotationDate = annotReader.AnnotationDate; // DateTime.Now.ToString("yyMMdd");
-            string strtAnnotFolder = genome.GetStrtAnnotFolder();
-            if (!Directory.Exists(strtAnnotFolder))
-                Directory.CreateDirectory(strtAnnotFolder);
+            AnnotationBuilder builder = new AnnotationBuilder(genome);
             DateTime startTime = DateTime.Now;
-            annotationFile = AnnotationReader.GetAnnotationFilename(genome, annotationFile);
-            Console.WriteLine("*** Build of {0} junctions into {1} from {2} started {3} ***",
-                genome.GetMainIndexName(), strtAnnotFolder, annotationFile, DateTime.Now);
-            AnnotationBuilder builder = new AnnotationBuilder(annotReader);
-            builder.BuildExonSplices(genome);
+            Console.WriteLine("*** Build of {0} junctions starting {1} ***", genome.GetMainIndexName(), DateTime.Now);
+            builder.BuildExonSplices(optionalAnnotationPath);
         }
 
         /// <summary>

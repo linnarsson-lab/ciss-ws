@@ -416,7 +416,7 @@ namespace Linnarsson.Dna
 
         /// <summary>
         /// Returns the StrtGenome corresponding to argument.
-        /// Arg examples: "Mm", "Mm_a", "Hs_s", "hs_VEGA", "mm9_sVEGA", "mouse", "mm9"
+        /// Arg examples: "Mm", "Mm_a", "Hs_s", "hs_VEGA", "mm9_sVEGA141204", "mouse", "mm9"
         /// if arg contains "_", what follows specifies whether all/single gene variants should be analysed
         /// if the first letter is "a"/"s", and/or defines an annotation source (by the letters after "a"/"s").
         /// The other versions allow to specify defaults for a/s and the annotation source.

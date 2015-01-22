@@ -70,12 +70,12 @@ namespace CmdSilverBullet
                             string outfile = Path.Combine(genome.GetOriginalGenomeFolder(), genome.BuildVarAnnot + "_refFlat.txt");
                             if (args.Length > 2)
                                 outfile = args[2];
-                            AnnotationReader ar = AnnotationReader.GetAnnotationReader(genome);
+                            AnnotationReader annotationReader = AnnotationReader.GetAnnotationReader(genome, "");
                             Props.props.AddRefFlatToNonRefSeqBuilds = false;
-                            int nModels = ar.BuildGeneModelsByChr();
+                            int nModels = annotationReader.BuildGeneModelsByChr();
                             using (StreamWriter mw = outfile.OpenWrite())
                             {
-                                foreach (GeneFeature gf in ar.IterChrSortedGeneModels())
+                                foreach (GeneFeature gf in annotationReader.IterChrSortedGeneModels())
                                 {
                                     gf.Name = gf.Name.Split('_')[0];
                                     mw.WriteLine(gf.ToRefFlatString());
@@ -316,7 +316,7 @@ namespace CmdSilverBullet
                 "   BUILD E.g. 'mm10', 'hg19', or 'gg3'\n" +
                 "   ANNOT is 'UCSC', 'GENC', 'UALL', 'VEGA', 'ENSE', or 'RFSQ' (Default: 'UCSC', synonymous with 'RFSQ')\n" +
                 "   ALIGNER is '-bowtie' or '-STAR'\n" +
-                "   IDX   Specific Bowtie index, e.g. 'hg19_sUCSC' or 'mm9_aVEGA'.\n" +
+                "   IDX   Specific Bowtie index, e.g. 'hg19_sUCSC' or 'mm9_aVEGA141125'.\n" +
                 "   BC   'C1Plate1', 'C1Plate2', 'TruSeq', 'v4' (48x6-mer w UMIs), 'v4r' (no UMIs), or 'no' for no barcodes.\n" +
                 "   Define other barcode sets in 'Bc.barcodes' files in the barcodes sub-directory of the data folder\n" +
                 "   READLEN Seq len after barcode and GGG. The Bowtie index that is 0-5 below actual read len is used during annotation.\n" +

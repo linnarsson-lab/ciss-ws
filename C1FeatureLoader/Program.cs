@@ -31,14 +31,14 @@ namespace C1
             StrtGenome genome = StrtGenome.GetGenome(args[0]);
             string doInsert = "";
             int updateTomeID = -1;
-            string annotationFile = "";
+            string annotFilePath = "";
             int i = 1;
             while (i < args.Length)
             {
                 if (args[i] == "-i")
                     doInsert = "i";
                 else if (args[i] == "-f")
-                    annotationFile = args[++i];
+                    annotFilePath = args[++i];
                 else if (args[i] == "-u")
                 {
                     doInsert = "u";
@@ -47,9 +47,10 @@ namespace C1
                 i++;
             }
             Props.props.DirectionalReads = true;
-            AnnotationReader annotationReader = AnnotationReader.GetAnnotationReader(genome, annotationFile);
-            genome.AnnotationDate = annotationReader.AnnotationDate;
-            Console.WriteLine("Building transcript models from " + annotationFile + "...");
+            string strtAnnotFolder = genome.GetStrtAnnotFolder();
+            string annotFileCopyPath = Path.Combine(strtAnnotFolder, Path.GetFileName(annotFilePath));
+            AnnotationReader annotationReader = AnnotationReader.GetAnnotationReader(genome, annotFileCopyPath);
+            Console.WriteLine("Building transcript models from " + annotFilePath + "...");
             int nModels = annotationReader.BuildGeneModelsByChr();
             Console.WriteLine("...{0} models constructed.", nModels);
             if (Props.props.GeneFeature5PrimeExtension > 0)

@@ -18,7 +18,7 @@ namespace Linnarsson.Dna
         protected override int ReadGenes()
         {
             SetupAttrsData();
-            VisitedAnnotationPaths = annotationPath;
+            AddVisitedAnnotationPaths(annotationPath);
             int nRead = 0, nCreated = 0;
             foreach (GeneFeature gf in IterGencodeFile(annotationPath))
             {

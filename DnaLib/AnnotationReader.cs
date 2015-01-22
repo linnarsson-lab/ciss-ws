@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.IO;
+using System.Security.Cryptography;
 using Linnarsson.Mathematics;
 using Linnarsson.Dna;
 using Linnarsson.Utilities;
@@ -106,7 +107,20 @@ namespace Linnarsson.Dna
         protected Dictionary<string, List<GeneFeature>> genesByChr;
         protected int pseudogeneCount = 0;
 
-        public string VisitedAnnotationPaths = "";
+        private string m_VisitedAnnotationPaths = "";
+        public string VisitedAnnotationPaths { get; private set; }
+        public void AddVisitedAnnotationPaths(string path)
+        {
+            FileInfo fi = new FileInfo(path);
+            long fileSize = fi.Length;
+            string createDate = fi.CreationTime.ToString("yyMMdd");
+            string md5 = new MD5CryptoServiceProvider().ComputeHash(new FileStream(path, FileMode.Open)).ToString();
+            if (m_VisitedAnnotationPaths != "")
+                m_VisitedAnnotationPaths += ";";
+            string pathId = string.Format("{0}[Created:{1},Size:{2},MD5:{3}]", path, createDate, fileSize, md5);
+            m_VisitedAnnotationPaths += pathId;
+        }
+
         public int PseudogeneCount { get { return pseudogeneCount; } }
         public int ChrCount { get { return genesByChr.Count; } }
         public List<string> ChrNames { get { return genesByChr.Keys.ToList(); } }

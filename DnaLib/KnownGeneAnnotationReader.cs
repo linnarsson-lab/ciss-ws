@@ -22,7 +22,7 @@ namespace Linnarsson.Dna
         protected override int ReadGenes()
         {
             SetupXrefData();
-            VisitedAnnotationPaths = annotationPath;
+            AddVisitedAnnotationPaths(annotationPath);
             int nRead = 0, nCreated = 0;
             foreach (GeneFeature gf in IterKnownGeneFile(annotationPath))
             {

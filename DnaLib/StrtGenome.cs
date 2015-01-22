@@ -59,6 +59,14 @@ namespace Linnarsson.Dna
         }
 
         public string AnnotationDate { get; set; }
+        public DateTime AnnotationDateTime {
+            get
+            {
+                return new DateTime(int.Parse(AnnotationDate.Substring(0, 2)),
+                                    int.Parse(AnnotationDate.Substring(2, 4)),
+                                    int.Parse(AnnotationDate.Substring(4, 6)));
+            }
+        }
         public bool GeneVariants { get; set; }
         public string GeneVariantsChar { get { return GeneVariants ? "a" : "s"; } }
         public string VarAnnot { get { return GeneVariantsChar + Annotation; } }

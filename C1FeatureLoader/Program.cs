@@ -48,6 +48,7 @@ namespace C1
             }
             Props.props.DirectionalReads = true;
             AnnotationReader annotationReader = AnnotationReader.GetAnnotationReader(genome, annotationFile);
+            genome.AnnotationDate = annotationReader.AnnotationDate;
             Console.WriteLine("Building transcript models from " + annotationFile + "...");
             int nModels = annotationReader.BuildGeneModelsByChr();
             Console.WriteLine("...{0} models constructed.", nModels);
@@ -74,7 +75,7 @@ namespace C1
             Console.WriteLine("Inserting transcriptome metadata into database...");
             Transcriptome tt = new Transcriptome(null, genome.BuildVarAnnot, genome.Abbrev, genome.Annotation,
                                                  annotationReader.VisitedAnnotationPaths,
-                                                 "", DateTime.Now, "1", DateTime.MinValue, null);
+                                                 "", genome.AnnotationDateTime, "1", DateTime.MinValue, null);
             db.InsertTranscriptome(tt);
             return tt.TranscriptomeID.Value;
         }

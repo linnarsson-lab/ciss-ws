@@ -86,9 +86,6 @@ namespace Linnarsson.Dna
         {
             ClearGenes();
             int nCreated = ReadGenes();
-            if (Props.props.AddRefFlatToNonRefSeqBuilds)
-                nCreated += AddRefFlatGenes();
-            //FuseNearIdenticalMainGenes();
             return nCreated;
         }
         /// <summary>
@@ -212,36 +209,6 @@ namespace Linnarsson.Dna
                     gf.GeneType = "gene";
 
             }
-        }
-
-        /// <summary>
-        /// Add gene models defined in the refFlat.txt file of the original genome folder
-        /// </summary>
-        /// <returns></returns>
-        protected int AddRefFlatGenes()
-        {
-            int nTotal = 0, nMerged = 0, nCreated = 0, nRandom = 0, nUpdated = 0;
-            string refFlatPath = MakeFullAnnotationPath("refFlat.txt", false);
-            if (File.Exists(refFlatPath))
-            {
-                AddVisitedAnnotationPaths(refFlatPath);
-                foreach (GeneFeature gf in AnnotationReader.IterRefFlatFile(refFlatPath))
-                {
-                    SetTranscriptType(gf);
-                    nTotal++;
-                    if (FusedWithOverlapping(gf))
-                        nMerged++;
-                    else
-                    {
-                        if (AddGeneModel(gf)) nCreated++;
-                        else nUpdated++;
-                    }
-                }
-                Console.WriteLine("Read {0} genes and variants from {1}", nTotal, refFlatPath);
-                Console.WriteLine("...skipped {0} that are not properly mapped ('random' chromosomes)", nRandom);
-                Console.WriteLine("...added {0} new genes, merged {1} and silently updated exons of {2}.", nCreated, nMerged, nUpdated);
-            }
-            return nCreated;
         }
 
         /// <summary>

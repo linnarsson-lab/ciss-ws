@@ -480,9 +480,10 @@ namespace Linnarsson.Strt
             }
             catch (Exception e)
             {
-                Console.WriteLine(" someAnnotHit=" + someAnnotationHit);
+                Console.WriteLine("Error in TranscriptomeStatistics.Annotate(TagItem item): " + e);
+                Console.WriteLine("\nsomeAnnotHit=" + someAnnotationHit);
                 Console.WriteLine(" someExonHit=" + someExonHit);
-                Console.WriteLine(e + "\nBc=" + item.bcIdx);
+                Console.WriteLine(" Bc=" + item.bcIdx);
                 Console.WriteLine(" Chr=" + item.chr);
                 Console.WriteLine(" MidPos=" + item.HitMidPos);
                 Console.WriteLine(" hitStartPos=" + item.hitStartPos);
@@ -501,7 +502,6 @@ namespace Linnarsson.Strt
                 Console.WriteLine(" spliceChrId=" + spliceChrId);
                 Console.WriteLine(" TotalTrMolsByBc=" + TotalTranscriptMolsByBarcode);
                 Console.WriteLine(" totalHitCounter=" + totalHitCounter);
-
             }
         }
 

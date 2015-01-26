@@ -420,61 +420,89 @@ namespace Linnarsson.Strt
 
         public void Annotate(MappedTagItem item)
         {
-            int molCount = item.MolCount;
-            nMappingsByBarcode[currentBcIdx] += molCount;
+            MarkStatus markStatus;
             bool someAnnotationHit = false;
             bool someExonHit = false;
-            MarkStatus markStatus;
-            exonHitFeatures.Clear();
-            foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.SequencedStrand, item.HitMidPos))
+            try
             {
-                someExonHit = someAnnotationHit = true;
-                markStatus = (IterTranscriptMatchers.HasVariants || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
-                if (!exonHitFeatures.Contains(trMatch.Feature))
-                { // If a gene is hit multiple times (happens if two diff. splices have same seq.), we should annotate it only once
-                    exonHitFeatures.Add(trMatch.Feature);
-                    item.splcToRealChrOffset = 0;
-                    int annotType = trMatch.Mark(item, trMatch.ExtraData, markStatus);
-                    totalHitCounter.Add(annotType, item);
-                    item.SetTypeOfAnnotation(annotType);
-                }
-            }
-            if (someExonHit)
-            {
-                TotalTranscriptMolsByBarcode[currentBcIdx] += molCount;
-                if (geneExpressionSummary != null)
-                    geneExpressionSummary.Summarize(item, exonHitFeatures);
-                if (upstreamAnalyzer != null)
-                    upstreamAnalyzer.CheckSeqUpstreamTSSite(item, currentBcIdx);
-                if (exonHitFeatures.Count > 1)
-                    RegisterOverlappingGeneFeatures(molCount);
-                if (occupiedUMICounter != null)
-                    occupiedUMICounter.Check(item, exonHitFeatures);
-            }
-            else if (item.chr != spliceChrId)
-            { // Annotate all features of molecules that do not map to any transcript
-                foreach (FtInterval nonTrMatch in Annotations.IterNonTrMatches(item.chr, item.SequencedStrand, item.HitMidPos))
+                int molCount = item.MolCount;
+                nMappingsByBarcode[currentBcIdx] += molCount;
+                exonHitFeatures.Clear();
+                foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.SequencedStrand, item.HitMidPos))
                 {
-                    someAnnotationHit = true;
-                    int annotType = nonTrMatch.Mark(item, nonTrMatch.ExtraData, MarkStatus.NONEXONIC_MAPPING);
-                    totalHitCounter.Add(annotType, item);
-                    item.SetTypeOfAnnotation(annotType);
+                    someExonHit = someAnnotationHit = true;
+                    markStatus = (IterTranscriptMatchers.HasVariants || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
+                    if (!exonHitFeatures.Contains(trMatch.Feature))
+                    { // If a gene is hit multiple times (happens if two diff. splices have same seq.), we should annotate it only once
+                        exonHitFeatures.Add(trMatch.Feature);
+                        item.splcToRealChrOffset = 0;
+                        int annotType = trMatch.Mark(item, trMatch.ExtraData, markStatus);
+                        totalHitCounter.Add(annotType, item);
+                        item.SetTypeOfAnnotation(annotType);
+                    }
                 }
+                if (someExonHit)
+                {
+                    TotalTranscriptMolsByBarcode[currentBcIdx] += molCount;
+                    if (geneExpressionSummary != null)
+                        geneExpressionSummary.Summarize(item, exonHitFeatures);
+                    if (upstreamAnalyzer != null)
+                        upstreamAnalyzer.CheckSeqUpstreamTSSite(item, currentBcIdx);
+                    if (exonHitFeatures.Count > 1)
+                        RegisterOverlappingGeneFeatures(molCount);
+                    if (occupiedUMICounter != null)
+                        occupiedUMICounter.Check(item, exonHitFeatures);
+                }
+                else if (item.chr != spliceChrId)
+                { // Annotate all features of molecules that do not map to any transcript
+                    foreach (FtInterval nonTrMatch in Annotations.IterNonTrMatches(item.chr, item.SequencedStrand, item.HitMidPos))
+                    {
+                        someAnnotationHit = true;
+                        int annotType = nonTrMatch.Mark(item, nonTrMatch.ExtraData, MarkStatus.NONEXONIC_MAPPING);
+                        totalHitCounter.Add(annotType, item);
+                        item.SetTypeOfAnnotation(annotType);
+                    }
+                }
+                if (someAnnotationHit)
+                {
+                    nAnnotatedMappings += molCount;
+                    if (DetermineMotifs && item.chr != spliceChrId && !item.hasAltMappings && Annotations.HasChrSeq(item.chr))
+                        motifs[currentBcIdx].Add(Annotations.GetChrSeq(item.chr), item.hitStartPos - 20 - 1, item.DetectedStrand);
+                }
+                else
+                {
+                    nNonAnnotatedItemsByBc[currentBcIdx]++;
+                    nNonAnnotatedMolsByBc[currentBcIdx] += molCount;
+                }
+                int t = nMappingsByBarcode[currentBcIdx] - trSampleDepth;
+                if (t > 0 && t <= molCount) // Sample if we just passed the sampling point with current MappedTagItem
+                    sampledExpressedTranscripts.Add(Annotations.GetNumExpressedTranscripts(currentBcIdx));
             }
-            if (someAnnotationHit)
+            catch (Exception e)
             {
-                nAnnotatedMappings += molCount;
-                if (DetermineMotifs && item.chr != spliceChrId && !item.hasAltMappings && Annotations.HasChrSeq(item.chr))
-                    motifs[currentBcIdx].Add(Annotations.GetChrSeq(item.chr), item.hitStartPos - 20 - 1, item.DetectedStrand);
+                Console.WriteLine(" someAnnotHit=" + someAnnotationHit);
+                Console.WriteLine(" someExonHit=" + someExonHit);
+                Console.WriteLine(e + "\nBc=" + item.bcIdx);
+                Console.WriteLine(" Chr=" + item.chr);
+                Console.WriteLine(" MidPos=" + item.HitMidPos);
+                Console.WriteLine(" hitStartPos=" + item.hitStartPos);
+                Console.WriteLine(" DetextedStrand=" + item.DetectedStrand);
+                Console.WriteLine(" HasAltMappings=" + item.hasAltMappings);
+                Console.WriteLine(" SequencedStrand=" + item.SequencedStrand);
+                Console.WriteLine(" MolCount=" + item.MolCount);
+                Console.WriteLine(" spliceToRealChrOffset=" + item.splcToRealChrOffset);
+                Console.WriteLine(" exonHitFeatres=" + exonHitFeatures);
+                Console.WriteLine(" sampledExpreseedTrs=" + sampledExpressedTranscripts);
+                Console.WriteLine(" nMappingsByBarcode=" + nMappingsByBarcode);
+                Console.WriteLine(" nNonAnnotationedItemsByBc=" + nNonAnnotatedItemsByBc);
+                Console.WriteLine(" nNonAnnotMolsByBC=" + nNonAnnotatedMolsByBc);
+                Console.WriteLine(" Annotations=" + Annotations);
+                Console.WriteLine(" DetermineMotifs=" + DetermineMotifs);
+                Console.WriteLine(" spliceChrId=" + spliceChrId);
+                Console.WriteLine(" TotalTrMolsByBc=" + TotalTranscriptMolsByBarcode);
+                Console.WriteLine(" totalHitCounter=" + totalHitCounter);
+
             }
-            else
-            {
-                nNonAnnotatedItemsByBc[currentBcIdx]++;
-                nNonAnnotatedMolsByBc[currentBcIdx] += molCount;
-            }
-            int t = nMappingsByBarcode[currentBcIdx] - trSampleDepth;
-            if (t > 0 && t <= molCount) // Sample if we just passed the sampling point with current MappedTagItem
-                sampledExpressedTranscripts.Add(Annotations.GetNumExpressedTranscripts(currentBcIdx));
         }
 
         /// <summary>

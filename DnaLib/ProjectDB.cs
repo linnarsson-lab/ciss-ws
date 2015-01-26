@@ -308,11 +308,11 @@ namespace Linnarsson.Dna
         {
             nextInQueue = 0;
         }
-        public ProjectDescription GetNextProjectInQueue()
+        public ProjectDescription GetNextProjectInQueue(bool reverseSort)
         {
             ProjectDescription pd = null;
             List<ProjectDescription> queue = GetProjectDescriptions("WHERE a.status=\"" + ProjectDescription.STATUS_INQUEUE + "\"" +
-                " AND p.id NOT IN (SELECT p1.id FROM jos_aaaproject p1 JOIN jos_aaaanalysis a1 ON a1.jos_aaaprojectid=p1.id AND a1.status=\"processing\")");
+                " AND p.id NOT IN (SELECT p1.id FROM jos_aaaproject p1 JOIN jos_aaaanalysis a1 ON a1.jos_aaaprojectid=p1.id AND a1.status=\"processing\")", reverseSort);
             if (nextInQueue < queue.Count)
             {
                 pd = queue[nextInQueue++];
@@ -320,8 +320,9 @@ namespace Linnarsson.Dna
             return pd;
         }
 
-        private List<ProjectDescription> GetProjectDescriptions(string whereClause)
+        private List<ProjectDescription> GetProjectDescriptions(string whereClause, bool reverseSort)
         {
+            string sortStr = reverseSort ? " DESC" : "";
             MySqlConnection conn = new MySqlConnection(connectionString);
             List<ProjectDescription> pds = new List<ProjectDescription>();
             string sql = "SELECT a.id, a.genome, a.transcript_db_version, a.transcript_variant, a.rpkm, a.readdir, a.emails, " +
@@ -333,7 +334,7 @@ namespace Linnarsson.Dna
                          "LEFT JOIN jos_aaalane l ON al.jos_aaalaneid = l.id " +
                          "LEFT JOIN jos_aaailluminarun r ON l.jos_aaailluminarunid = r.id " +
                          whereClause + 
-                         " GROUP BY a.id, runid ORDER BY a.id, p.plateid, runid;";
+                         " GROUP BY a.id, runid ORDER BY a.id" + sortStr + ", p.plateid, runid;";
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
@@ -548,7 +549,7 @@ namespace Linnarsson.Dna
         {
             List<string> waitingFiles = new List<string>();
             MySqlConnection conn = new MySqlConnection(connectionString);
-            string sql = "SELECT path FROM jos_aaabackupqueue WHERE status='inqueue' ORDER BY priority, id";
+            string sql = "SELECT path FROM jos_aaabackupqueue WHERE status='inqueue' OR status='missing' ORDER BY priority, id";
             try
             {
                 conn.Open();
@@ -806,9 +807,11 @@ namespace Linnarsson.Dna
             Dictionary<int, Chip> chipsById = GetChipsById(plateCells);
             foreach (Cell cell in plateCells)
             {
+                string plateWell = cell.platewell;
+                if (plateWell == "")
+                    continue;
                 Chip chip = chipsById[cell.jos_aaachipid];
                 string[] wellAnn = new string[annotationIndexes.Count];
-                string plateWell = cell.platewell;
                 i = 0;
                 wellAnn[i++] = chip.chipid;
                 wellAnn[i++] = cell.chipwell;
@@ -840,6 +843,8 @@ namespace Linnarsson.Dna
             while (rdr.Read())
             {
                 string plateWell = rdr.GetString(0);
+                if (plateWell == "")
+                    continue;
                 string name = rdr.GetString(1);
                 string value = rdr.GetString(2);
                 annotations[plateWell][annotationIndexes[name]] = value;

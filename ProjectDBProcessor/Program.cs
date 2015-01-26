@@ -17,6 +17,7 @@ namespace ProjectDBProcessor
         private static StreamWriter logWriter;
         private static ProjectDB projectDB;
         private static Dictionary<string, string> lastMsgByProject = new Dictionary<string, string>();
+        private static bool reverseSortProjects = false;
 
         static void Main(string[] args)
         {
@@ -46,6 +47,8 @@ namespace ProjectDBProcessor
                         logFile = args[++i];
                     else if (arg.StartsWith("-l"))
                         logFile = arg.Substring(2);
+                    else if (arg == "-r")
+                        reverseSortProjects = true;
                     else throw new ArgumentException();
                 }
             }
@@ -57,6 +60,7 @@ namespace ProjectDBProcessor
                 Console.WriteLine("         -i=[True|False] switch on/off data insertion into cells10k DB for C1-samples. [default={0}]",
                                   Props.props.InsertCells10Data);
                 Console.WriteLine("         -l F   log to file F instead of default logfile.");
+                Console.WriteLine("         -r     reverse sort projects, i.e. start with the most recent project in database.");
                 return;
             }
             if (!File.Exists(logFile))
@@ -140,7 +144,7 @@ namespace ProjectDBProcessor
         private static void ScanDB()
         {
             projectDB.ResetQueue();
-            ProjectDescription pd = projectDB.GetNextProjectInQueue();
+            ProjectDescription pd = projectDB.GetNextProjectInQueue(reverseSortProjects);
             while (pd != null)
             {
                 if (CheckAllReadsCollected(ref pd))
@@ -148,7 +152,7 @@ namespace ProjectDBProcessor
                     if (HandleDBTask(pd))
                         projectDB.ResetQueue();
                 }
-                pd = projectDB.GetNextProjectInQueue();
+                pd = projectDB.GetNextProjectInQueue(reverseSortProjects);
             }
         }
 
@@ -202,6 +206,8 @@ namespace ProjectDBProcessor
             projDescr.managerEmails += ";" + Props.props.FailureReportAndAnonDownloadEmail;
             logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.plateId + " ***\n" + e);
             logWriter.Flush();
+            Console.WriteLine("\n===============" + projDescr.plateId + " finished with errors: ==============\n" + e + 
+                            "\n=============== check details in " + logFile  + " ================\n");
             string errorMsg = e.Message;
             projDescr.status = recoverable ? ProjectDescription.STATUS_INQUEUE : ProjectDescription.STATUS_FAILED;
             if (lastMsgByProject.ContainsKey(projDescr.plateId) && lastMsgByProject[projDescr.plateId].Equals(errorMsg))

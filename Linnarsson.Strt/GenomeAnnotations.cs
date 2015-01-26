@@ -1031,7 +1031,7 @@ namespace Linnarsson.Strt
 
         private void WriteQlucoreTable(string fileNameBase)
         {
-            string fileName = fileNameBase + MakeRPFileType() + ".gedata";
+            string fileName = fileNameBase + "_" + MakeRPFileType() + ".gedata";
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             Dictionary<GeneFeature, double[]> normalizedData = GetNormalizedData(speciesBcIndexes);
             int nSamples = speciesBcIndexes.Length;

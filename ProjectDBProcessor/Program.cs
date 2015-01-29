@@ -50,6 +50,7 @@ namespace ProjectDBProcessor
                     else if (arg == "-r")
                         reverseSortProjects = true;
                     else throw new ArgumentException();
+                    i++;
                 }
             }
             catch (Exception)

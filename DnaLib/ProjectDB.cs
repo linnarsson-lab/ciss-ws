@@ -742,7 +742,8 @@ namespace Linnarsson.Dna
         {
             Dictionary<string, int> cellIdByPlateWell = new Dictionary<string, int>();
             string sql = string.Format("SELECT platewell, c.id FROM jos_aaacell c LEFT JOIN jos_aaachip h ON c.jos_aaachipid=h.id " +
-                                 "JOIN jos_aaaproject p ON h.jos_aaaprojectid=p.id WHERE plateid='{0}' ORDER BY platewell", projectId);
+                     "JOIN jos_aaaproject p ON h.jos_aaaprojectid=p.id WHERE plateid='{0}' AND platewell != '' ORDER BY platewell",
+                     projectId);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);

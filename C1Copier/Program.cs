@@ -183,6 +183,11 @@ namespace C1
             }
         }
 
+        /// <summary>
+        /// Convert 'XXXX-XXX-XXX' to 'XXXXXXX-XXX'
+        /// </summary>
+        /// <param name="chipDir"></param>
+        /// <returns></returns>
         private static string GetChipIdFromChipDir(string chipDir)
         {
             Match m = Regex.Match(Path.GetFileName(chipDir), "^([0-9][0-9][0-9][0-9])-([0-9][0-9][0-9]-[0-9][0-9][0-9])$");
@@ -196,7 +201,7 @@ namespace C1
         /// </summary>
         /// <param name="folder"></param>
         /// <param name="filePattern"></param>
-        /// <returns></returns>
+        /// <returns>null if no matching file is found</returns>
         private static string GetLastMatchingFile(string folder, string filePattern)
         {
             string[] matching = Directory.GetFiles(folder, filePattern);
@@ -207,20 +212,29 @@ namespace C1
             return matching[matching.Length - 1];
         }
         /// <summary>
-        /// Sort matching files in folder and return the last by string comparison
+        /// Return the last by string comparison matching subfolders in folder. '*' in filePattern is taken as '[0-9]+'
         /// </summary>
         /// <param name="folder"></param>
         /// <param name="filePattern"></param>
-        /// <returns></returns>
+        /// <returns>null if no matching folder is found</returns>
         private static string GetLastMatchingFolder(string folder, string filePattern)
         {
             string[] matching = Directory.GetDirectories(folder, filePattern);
+            string rePat = filePattern;
+            if (filePattern.EndsWith("*")) rePat = filePattern.Replace("*", "[0-9]+$");
+            if (filePattern.Contains("*")) rePat = filePattern.Replace("*", "[0-9]+");
+            matching = Array.FindAll(matching, m => Regex.IsMatch(folder, rePat));
             if (matching.Length == 0)
                 return null;
             Array.Sort(matching);
             return matching[matching.Length - 1];
         }
 
+        /// <summary>
+        /// true if the "capture*txt" file in last "BF_*" folder or the "wells_to_exclude.txt" files have been updated
+        /// </summary>
+        /// <param name="chipDir"></param>
+        /// <returns></returns>
         private static bool HasChanged(string chipDir)
         {
             string bf = GetLastMatchingFolder(chipDir, C1Props.props.C1BFImageSubfoldernamePattern);
@@ -232,6 +246,14 @@ namespace C1
             return (cfNew || xfNew);
         }
 
+        /// <summary>
+        /// get full path to chip folder, path to last "BF_* folder", and path to the corresponding "capture*txt" file
+        /// </summary>
+        /// <param name="chipDir"></param>
+        /// <param name="chipFolder"></param>
+        /// <param name="BFFolder"></param>
+        /// <param name="lastCapPath"></param>
+        /// <returns>false if some file is missing</returns>
         private static bool GetCellPaths(string chipDir, out string chipFolder, out string BFFolder, out string lastCapPath)
         {
             lastCapPath = null;

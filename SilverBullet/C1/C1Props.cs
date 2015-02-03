@@ -28,6 +28,7 @@ namespace C1
         public string C1RunsFolder = "/data2/c1-runs";
         public string C1CaptureFilenamePattern = "capture_rep*.txt";
         public string GeneOntologySubPath = "gene_ontology/go-basic.obo";
+        // The star last in these patterns is understood as [0-9]+$ on a RegEx basis
         public string C1BFImageSubfoldernamePattern = "BF_*";
         public string[] C1AllImageSubfoldernamePatterns = new string[] { "BF_*", "filter3_red_*", "green_filter1_*", "filter1_green_*",
                                                                          "pcr_green_*", "green_*" };

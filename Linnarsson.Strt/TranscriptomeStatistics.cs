@@ -910,11 +910,10 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </readspertrmolhistogram>");
         }
 
-        private void WriteAccuMoleculesByBc(StreamWriter xmlFile, string tag, string title, Dictionary<int, List<int>> data, int start, int stop)
+        private void WriteAccuMoleculesByBc(StreamWriter xmlFile, string tag, string title,
+                                            Dictionary<int, List<int>> data, int start, int stop)
         {
-            xmlFile.WriteLine("  <{0}>", tag);
-            xmlFile.WriteLine("    <title>{0}</title>", title);
-            xmlFile.WriteLine("    <xtitle>Millions of mapped reads</xtitle>");
+            bool anyData = false;
             int[] bcIndices = data.Keys.ToArray();
             Array.Sort(bcIndices);
             for (int bII = start; bII < stop; bII++)
@@ -923,6 +922,13 @@ namespace Linnarsson.Strt
                 List<int> curve = data[bcIdx];
                 if (curve.Count < 2)
                     continue;
+                if (!anyData)
+                {
+                    xmlFile.WriteLine("  <{0}>", tag);
+                    xmlFile.WriteLine("    <title>{0}</title>", title);
+                    xmlFile.WriteLine("    <xtitle>Millions of mapped reads</xtitle>");
+                    anyData = true;
+                }
                 string legend = string.Format("{0}[{1}]", barcodes.Seqs[bcIdx], barcodes.GetWellId(bcIdx));
                 xmlFile.WriteLine("      <curve legend=\"{0}\" color=\"#{1:x2}{2:x2}{3:x2}\">",
                                   legend, (bcIdx * 47) % 255, (bcIdx * 21) % 255, (255 - (60 * bcIdx % 255)));
@@ -937,7 +943,8 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", nReads / 1.0E6d, curve[i]);
                 xmlFile.WriteLine("    </curve>");
             }
-            xmlFile.WriteLine("  </{0}>", tag);
+            if (anyData)
+                xmlFile.WriteLine("  </{0}>", tag);
         }
 
         private void WritePerLaneStats(StreamWriter xmlFile)

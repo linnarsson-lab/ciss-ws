@@ -169,6 +169,8 @@ namespace BkgBackuper
                             }
                             else
                             {
+                                if (cmd.StdError.Contains("Network is unreachable"))
+                                    throw new Exception(cmd.StdError + " - Will try again.");
                                 new ProjectDB().SetBackupStatus(readFile, "failed");
                                 logWriter.WriteLine("{0} ERROR: scp {1} failed - Exit code: {2} {3}", 
                                                     DateTime.Now.ToString(), cmdArg, cmd.ExitCode, cmd.StdError);
@@ -178,7 +180,7 @@ namespace BkgBackuper
                         catch (Exception exp)
                         {
                             new ProjectDB().SetBackupStatus(readFile, "inqueue");
-                            logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: Exception in BkgBackuper: ***\n" + exp);
+                            logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: " + exp);
                             logWriter.Flush();
                             nExceptions++;
                         }

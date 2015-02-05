@@ -221,9 +221,9 @@ namespace C1
         {
             string[] matching = Directory.GetDirectories(folder, filePattern);
             string rePat = filePattern;
-            if (filePattern.EndsWith("*")) rePat = filePattern.Replace("*", "[0-9]+$");
-            if (filePattern.Contains("*")) rePat = filePattern.Replace("*", "[0-9]+");
-            matching = Array.FindAll(matching, m => Regex.IsMatch(folder, rePat));
+            if (rePat.EndsWith("*")) rePat = rePat.Replace("*", "[0-9]+$");
+            if (rePat.Contains("*")) rePat = rePat.Replace("*", "[0-9]+");
+            matching = Array.FindAll(matching, m => Regex.IsMatch(m, rePat));
             if (matching.Length == 0)
                 return null;
             Array.Sort(matching);

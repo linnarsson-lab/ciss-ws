@@ -87,6 +87,7 @@
     <Compile Include="GencodeAnnotationReader.cs" />
     <Compile Include="MappedTagItem.cs" />
     <Compile Include="ProjectDB.cs" />
+    <Compile Include="ProjectDBDescriptions.cs" />
     <Compile Include="UMIMutationFilters.cs" />
     <Compile Include="UMIProfileCounters.cs" />
     <Compile Include="ZeroOneMoreTagItem.cs" />

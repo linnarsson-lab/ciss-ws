@@ -224,37 +224,6 @@ namespace C1
             }
         }
 
-        public void InsertExpressions(IEnumerable<Expression> exprIterator)
-        {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            string sqlPat = "REPLACE INTO Expression (CellID, TranscriptID, Molecules) VALUES ('{0}',{1}, {2})";
-            foreach (Expression e in exprIterator)
-            {
-                string sql = string.Format(sqlPat, e.CellID, e.TranscriptID, e.Molecules);
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                if (test)
-                    Console.WriteLine(sql);
-                else
-                    cmd.ExecuteNonQuery();
-            }
-            conn.Close();
-        }
-
-        public IEnumerable<Expression> IterExpressions(string cellId, int transcriptomeId)
-        {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            string sql = string.Format("SELECT TranscriptID, Molecules FROM Expression WHERE CellID={0} AND " +
-                "TranscriptID IN (SELECT TranscriptID FROM Transcript WHERE TranscriptomeID={1}) ORDER BY TranscriptID", cellId, transcriptomeId);
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-                yield return new Expression(cellId, rdr.GetInt32(0), 0, 0, 0, rdr.GetInt32(1));
-            rdr.Close();
-            conn.Close();
-        }
-
         public void InsertAnalysisSetup(string projectId, string bowtieIndex, string resultFolder, string parameters)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
@@ -292,23 +261,5 @@ namespace C1
             Console.WriteLine("{0}nserted {1} ExprBlobs with CellIDs {2} - {3}", (test? "Test-i" : "I"), n, minId, maxId);
             conn.Close();
         }
-
-        public void InsertExprBlob(ExprBlob exprBlob, bool blobIsZeroStoreNULL)
-        {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            string sqlPat = "REPLACE INTO ExprBlob (CellID, TranscriptomeID, Data) VALUES ('{0}',{1}, {2})";
-            string sql = string.Format(sqlPat, exprBlob.CellID, exprBlob.TranscriptomeID, blobIsZeroStoreNULL? "NULL" : "?BLOBDATA");
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            cmd.CommandText = sql;
-            if (!blobIsZeroStoreNULL)
-                cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
-            if (test)
-                Console.WriteLine(sql);
-            else
-                cmd.ExecuteNonQuery();
-            conn.Close();
-        }
-
     }
 }

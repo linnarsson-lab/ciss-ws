@@ -231,7 +231,8 @@ namespace C1
         }
 
         /// <summary>
-        /// true if the "capture*txt" file in last "BF_*" folder or the "wells_to_exclude.txt" files have been updated
+        /// true if the "capture*txt" in last "BF_*" folder, "wells_to_exclude.txt", or
+        /// any of the "wells_positive_COLOR.txt" files have been updated
         /// </summary>
         /// <param name="chipDir"></param>
         /// <returns></returns>
@@ -240,10 +241,16 @@ namespace C1
             string bf = GetLastMatchingFolder(chipDir, C1Props.props.C1BFImageSubfoldernamePattern);
             if (bf == null) return false;
             string cf = GetLastMatchingFile(bf, C1Props.props.C1CaptureFilenamePattern);
-            string xf = GetLastMatchingFile(chipDir, C1Props.props.WellExcludeFilePattern);
             bool cfNew = cf != null && (new FileInfo(cf).LastWriteTime > lastCopyTime || new FileInfo(cf).CreationTime > lastCopyTime);
+            string xf = GetLastMatchingFile(chipDir, C1Props.props.WellExcludeFilePattern);
             bool xfNew = xf != null && (new FileInfo(xf).LastWriteTime > lastCopyTime || new FileInfo(xf).CreationTime > lastCopyTime);
-            return (cfNew || xfNew);
+            string rm = GetLastMatchingFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "red"));
+            bool rmNew = rm != null && (new FileInfo(rm).LastWriteTime > lastCopyTime || new FileInfo(rm).CreationTime > lastCopyTime);
+            string gm = GetLastMatchingFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "green"));
+            bool gmNew = rm != null && (new FileInfo(gm).LastWriteTime > lastCopyTime || new FileInfo(gm).CreationTime > lastCopyTime);
+            string bm = GetLastMatchingFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "blue"));
+            bool bmNew = rm != null && (new FileInfo(bm).LastWriteTime > lastCopyTime || new FileInfo(bm).CreationTime > lastCopyTime);
+            return (cfNew || xfNew || rmNew || gmNew || bmNew);
         }
 
         /// <summary>

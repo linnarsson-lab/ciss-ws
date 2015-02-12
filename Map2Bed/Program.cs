@@ -61,6 +61,7 @@ namespace Map2Pclu
     {
         static void Main(string[] args)
         {
+            Map2PcluSettings settings = new Map2PcluSettings(args);
             if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
             {
                 Console.WriteLine("Usage:\nmono Map2Pclu.exe [OPTIONS] -o OUTPUT MAPFILE [MAPFILE2...]\n\n" +
@@ -69,21 +70,22 @@ namespace Map2Pclu
                                   "If OUTPUT ends with '.gz' it is taken as a filename pattern. Any '*' is replaced by the barcode index.\n" +
                                   "Otherwise it is taken as an output folder, and filenames are constructed automatically.\n" +
                                   "Options:\n" +
-                                  "--bybarcode      Process all barcodes (0...95) - all MAPFILE names have to start with 'N_' where N is a barcode index\n" +
-                                  "--reads          Output read counts.\n" +
-                                  "--nosingletons   Output molecule counts after removal of singeltons.\n" +
-                                  "--estimatetrue   Compensate molecular counts for UMI collisions.\n" +
-                                  "--multireads=N   Count also multireads with up to N mappings. A random mapping will be selected.\n" +
-                                  "--UMIs=N         Analyze N different UMIs. Set N=0 to skip molecule counting.\n" +
+                                  "--bybarcode        Process files for all barcodes (0-95). Filenames have to match 'N_*' where N is 0-95.\n" +
+                                  "                      As mapfile(s) you specify the file(s) with N=0: '0_xxxxxx.map'.\n" +
+                                  "                      Output is merged by barcode if several mapfiles are given.\n" +
+                                  "--reads            Output read counts.\n" +
+                                  "--nosingletons     Output molecule counts after removal of singeltons.\n" +
+                                  "--estimatetrue     Compensate molecular counts for UMI collisions.\n" +
+                                  "--multireads=N     Count multireads with <=N mappings [Default=" + settings.maxMultiReadMappings + "]. A random mapping will be selected.\n" +
+                                  "--UMIs=N           Analyze N different UMIs [Default=" + settings.nUMIs+ "]. Set N=0 to skip molecule counting.\n" +
                                   "--analyzebcleakage Analyze bc-to-bc leakage frequencies.\n" +
-                                  "--prefix=TXT     Prefix output filenames with some text (only valid with OUTPUT not ending '.gz').\n" +
+                                  "--prefix=TXT       Prefix output filenames with some text (only valid with OUTPUT not ending '.gz').\n" +
                                   "--readspermol=FILE Write reads per molecule profiles (one per map file) to specific file.\n" +
-                                  "--mergestrands   Reads are non-directional, all reads will be put on the '+' strand.");
+                                  "--mergestrands     Reads are non-directional, all reads will be put on the '+' strand.");
 
             }
             else
             {
-                Map2PcluSettings settings = new Map2PcluSettings(args);
                 if (!settings.HasUMIs && settings.IsCountingMols)
                 {
                     Console.WriteLine("ERROR: You can not count molecules with no UMIs! Counting reads instead...");

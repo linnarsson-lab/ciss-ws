@@ -80,7 +80,7 @@ namespace Map2Pclu
                     continue;
                 string outfilePath = outfilePat.Replace("*", bcIdx.ToString());
                 nHits = WriteOutput(outfilePath, settings.countType);
-                Console.WriteLine("...wrote {0} hits from {1} reads at {2} mapped positions. {3} multireads were skipped.",
+                Console.WriteLine("...{0} hits from {1} reads at {2} mapped positions. {3} multireads skipped.",
                                   nHits, nReads, nMappedPositions, nTooMultiMappingReads);
                 nTotMols += nHits;
                 nTotReads += nReads;

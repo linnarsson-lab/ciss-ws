@@ -247,9 +247,9 @@ namespace C1
             string rm = GetLastMatchingFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "red"));
             bool rmNew = rm != null && (new FileInfo(rm).LastWriteTime > lastCopyTime || new FileInfo(rm).CreationTime > lastCopyTime);
             string gm = GetLastMatchingFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "green"));
-            bool gmNew = rm != null && (new FileInfo(gm).LastWriteTime > lastCopyTime || new FileInfo(gm).CreationTime > lastCopyTime);
+            bool gmNew = gm != null && (new FileInfo(gm).LastWriteTime > lastCopyTime || new FileInfo(gm).CreationTime > lastCopyTime);
             string bm = GetLastMatchingFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "blue"));
-            bool bmNew = rm != null && (new FileInfo(bm).LastWriteTime > lastCopyTime || new FileInfo(bm).CreationTime > lastCopyTime);
+            bool bmNew = bm != null && (new FileInfo(bm).LastWriteTime > lastCopyTime || new FileInfo(bm).CreationTime > lastCopyTime);
             return (cfNew || xfNew || rmNew || gmNew || bmNew);
         }
 

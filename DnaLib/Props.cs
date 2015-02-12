@@ -149,6 +149,7 @@ namespace Linnarsson.Dna
         public bool AddRefFlatToNonRefSeqBuilds = false;
         public double CriticalOccupiedUMIFraction = 0.80;
         public string Aligner = "bowtie";
+        public string DBPrefix = "jos_";
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

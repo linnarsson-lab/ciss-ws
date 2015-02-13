@@ -160,7 +160,13 @@ namespace Map2Pclu
                         if (settings.AnalyzeReadsPerMol)
                         {
                             foreach (int nReads in ((UMIReadCountProfile)chrCounters[pos]).IterReadsPerMol())
+                            {
+                                while (nReads > readsPerMolDistro.Length)
+                                {
+                                    Array.Resize(ref readsPerMolDistro, readsPerMolDistro.Length * 2);
+                                }
                                 readsPerMolDistro[nReads]++;
+                            }
                         }
                     }
                 }

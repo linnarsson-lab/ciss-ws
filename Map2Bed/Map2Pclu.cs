@@ -26,11 +26,45 @@ namespace Map2Pclu
         }
     }
 
+    class ReadsPerMolCounter
+    {
+        private int[] readsPerMolDistro;
+
+        public ReadsPerMolCounter()
+        {
+            readsPerMolDistro = new int[10000];
+        }
+
+        public void Add(int nReads)
+        {
+            while (nReads > readsPerMolDistro.Length)
+            {
+                Array.Resize(ref readsPerMolDistro, readsPerMolDistro.Length * 2);
+            }
+            readsPerMolDistro[nReads]++;
+        }
+
+        public string GetHeader()
+        {
+            return "Barcode\t#Cases-1read/mol\t#Cases-2reads/mol...";
+        }
+
+        public string GetReadsPerMolDistroLine(string categoryName)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(categoryName);
+            foreach (int nCases in readsPerMolDistro)
+                sb.Append("\t" + nCases);
+            return sb.ToString();
+        }
+    }
+
     class Map2Pclu
     {
         private Dictionary<string, Dictionary<int, IUMIProfile>> counters;
         private Map2PcluSettings settings;
         private UMIProfileFactory counterFactory;
+        private ReadsPerMolCounter summaryRpmCounter;
 
         private int nTotReads = 0, nTotMols = 0;
         private int nTooMultiMappingReads, nMappedPositions;
@@ -44,11 +78,19 @@ namespace Map2Pclu
             nMaxMappings = settings.maxMultiReadMappings;
             rnd = new Random(System.DateTime.Now.Millisecond);
             counterFactory = new UMIProfileFactory(settings);
+            if (settings.AnalyzeReadsPerMol)
+            {
+                summaryRpmCounter = new ReadsPerMolCounter();
+                using (StreamWriter distroWriter = new StreamWriter(settings.readsPerMolFile))
+                {
+                    distroWriter.WriteLine(summaryRpmCounter.GetHeader());
+                }
+            }
         }
 
         public void Convert()
         {
-            string bcPrefix = settings.iterateBarcodes ? "*_" : "";
+            string bcPrefix = settings.BarcodePrefix;
             string fType = (settings.countType == UMICountType.Reads) ? "reads" : (settings.countType == UMICountType.AllMolecules) ? "mols" : "nonSingletonMols";
             string outfilePat = settings.outputFolderOrFilename;
             if (!outfilePat.EndsWith(".gz"))
@@ -57,24 +99,26 @@ namespace Map2Pclu
                     Directory.CreateDirectory(settings.outputFolderOrFilename);
                 outfilePat = Path.Combine(settings.outputFolderOrFilename, settings.filenamePrefix + bcPrefix + fType + ".pclu.gz");
             }
-            int maxBcIdx = settings.iterateBarcodes ? settings.maxBarcodeIdx : 0;
+            int maxBcIdx = settings.MaxBarcodeIdx;
             for (int bcIdx = 0; bcIdx <= maxBcIdx; bcIdx++)
             {
                 counters = new Dictionary<string, Dictionary<int, IUMIProfile>>();
                 int nReads = 0, nHits = 0;
                 nTooMultiMappingReads = nMappedPositions = 0;
-                foreach (string mapFile in settings.inputFiles)
+                foreach (string mapFilePath in settings.inputFiles)
                 {
-                    string file = mapFile;
+                    string filePath = mapFilePath;
                     if (settings.iterateBarcodes)
                     {
-                        string dir = Path.GetDirectoryName(mapFile);
-                        file = settings.ReplaceBarcode(Path.GetFileName(mapFile), bcIdx);
-                        file = Path.Combine(dir, file);
-                        if (file == null || !File.Exists(file)) continue;
+                        string dir = Path.GetDirectoryName(mapFilePath);
+                        filePath = settings.ReplaceBarcode(Path.GetFileName(mapFilePath), bcIdx);
+                        filePath = Path.Combine(dir, filePath);
+                        if (filePath == null || !File.Exists(filePath)) continue;
                     }
-                    Console.WriteLine("{0}...", file);
-                    nReads += ReadMapFile(file);
+                    else if (settings.sortMapFilesByBarcode && !Path.GetFileName(filePath).StartsWith(bcIdx.ToString() + "_"))
+                            continue;
+                    Console.WriteLine("{0}...", filePath);
+                    nReads += ReadMapFile(filePath);
                 }
                 if (counters.Count == 0)
                     continue;
@@ -86,6 +130,9 @@ namespace Map2Pclu
                 nTotReads += nReads;
             }
             string totMolTxt = settings.HasUMIs ? string.Format(" and {0} molecules", nTotMols) : "";
+            if (settings.AnalyzeReadsPerMol)
+                using (StreamWriter distroWriter = new StreamWriter(settings.readsPerMolFile))
+                    distroWriter.WriteLine(summaryRpmCounter.GetReadsPerMolDistroLine("Total"));
             if (settings.iterateBarcodes)
                 Console.WriteLine("Totally in {0} barcodes were {1} reads{2} processed.", maxBcIdx + 1, nTotReads, totMolTxt);
             Console.WriteLine("...output is found in " + outfilePat);
@@ -131,7 +178,7 @@ namespace Map2Pclu
 
         int WriteOutput(string outfilePath, UMICountType ct)
         {
-            int[] readsPerMolDistro = new int[10000];
+            ReadsPerMolCounter rpmCounter = new ReadsPerMolCounter();
             int nTotal = 0;
             using (StreamWriter writer = outfilePath.OpenWrite())
             {
@@ -161,31 +208,17 @@ namespace Map2Pclu
                         {
                             foreach (int nReads in ((UMIReadCountProfile)chrCounters[pos]).IterReadsPerMol())
                             {
-                                while (nReads > readsPerMolDistro.Length)
-                                {
-                                    Array.Resize(ref readsPerMolDistro, readsPerMolDistro.Length * 2);
-                                }
-                                readsPerMolDistro[nReads]++;
+                                rpmCounter.Add(nReads);
+                                summaryRpmCounter.Add(nReads);
                             }
                         }
                     }
                 }
             }
             if (settings.AnalyzeReadsPerMol)
-                WriteReadsPerMolDistroLine(outfilePath, readsPerMolDistro);
+                using (StreamWriter distroWriter = new StreamWriter(settings.readsPerMolFile))
+                    distroWriter.WriteLine(rpmCounter.GetReadsPerMolDistroLine(outfilePath));
             return nTotal;
-        }
-
-        private void WriteReadsPerMolDistroLine(string outfilePath, int[] readsPerMolDistro)
-        {
-            using (StreamWriter distroWriter = new StreamWriter(settings.readsPerMolFile, true))
-            {
-                distroWriter.Write(outfilePath);
-                foreach (int nCases in readsPerMolDistro)
-                    distroWriter.Write("\t" + nCases);
-                distroWriter.WriteLine();
-                distroWriter.Flush();
-            }
         }
 
         public int EstimateTrueCount(int nMols)

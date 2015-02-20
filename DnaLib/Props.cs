@@ -136,7 +136,7 @@ namespace Linnarsson.Dna
         public int SampleDistPerBcForAccuStats = 100000; // Statistics as fn. of #reads processed will be collected every this # of reads
         public bool SampleAccuFilteredExonMols = false; // Sample #EXON Mols after mutation filter as fn. of processed reads (slow)
         public string[] CAPCloseSiteSearchCutters = new string[] { "PvuI" };
-        public bool InsertCells10Data = true; // Insert results into DB if 1) project is "C1-" 2) genes read from DB 3) using ProjDBProcessor
+        public bool InsertCellDBData = true; // Insert results into DB if 1) project is "C1-" 2) genes read from DB 3) using ProjDBProcessor 4) using props.CellDBAligner
         public bool AnalyzeGCContent = false; // Analyze the GC content of transcript mapping reads
         public bool LogMode = false;
         public bool SenseStrandIsSequenced = true; // Exon/splice reads come from the sense strand (meaningful for DirectionalReads)
@@ -148,8 +148,9 @@ namespace Linnarsson.Dna
         public string[] CommonChrIds = new string[] { "CTRL", "EXTRA" };
         public bool AddRefFlatToNonRefSeqBuilds = false;
         public double CriticalOccupiedUMIFraction = 0.80;
-        public string Aligner = "bowtie";
-        public string DBPrefix = "jos_";
+        public string Aligner = "bowtie"; // Default aligner
+        public string CellDBAligner = "bowtie"; // The aligner used when data is inserted into CellDB
+        public string DBPrefix = "jos_"; // Table prefix use in CellDB
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

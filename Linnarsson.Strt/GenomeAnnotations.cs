@@ -158,7 +158,7 @@ namespace Linnarsson.Strt
             if (!GenesSetupFromC1DB)
             {
                 SetupGenesFromStrtAnnotFile(strtAnnotPath);
-                Props.props.InsertCells10Data = false;
+                Props.props.InsertCellDBData = false;
             }
             int trLen = geneFeatures.Sum(gf => gf.Value.GetTranscriptLength());
             Console.WriteLine("Total length of all transcript models (including overlaps): {0} bp.", trLen);
@@ -238,7 +238,7 @@ namespace Linnarsson.Strt
         private void SetupRepeats()
         {
             Dictionary<string, int> repeatToTrIdMap = new Dictionary<string, int>();
-            if (props.InsertCells10Data)
+            if (props.InsertCellDBData)
                 repeatToTrIdMap = new C1DB().GetRepeatNamesToTranscriptIdsMap(genome.BuildVarAnnot);
             string[] rmskFiles = PathHandler.GetRepeatMaskFiles(genome);
             Console.Write("Reading {0} masking files..", rmskFiles.Length);

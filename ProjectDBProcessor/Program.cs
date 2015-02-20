@@ -23,7 +23,7 @@ namespace ProjectDBProcessor
         {
             int minutesWait = 10; // Time between scans to wait for new data to appear in queue.
             int maxExceptions = 200; // Max number of exceptions before giving up.
-            Props.props.InsertCells10Data = true; // Update cells10k data by default
+            Props.props.InsertCellDBData = true; // Update cells10k data by default
             logFile = new FileInfo("PDBP_" + Process.GetCurrentProcess().Id + ".log").FullName;
             try
             {
@@ -40,9 +40,9 @@ namespace ProjectDBProcessor
                     else if (arg.StartsWith("-e"))
                         maxExceptions = int.Parse(arg.Substring(2));
                     else if (arg.StartsWith("-i=T"))
-                        Props.props.InsertCells10Data = true;
+                        Props.props.InsertCellDBData = true;
                     else if (arg.StartsWith("-i=F"))
-                        Props.props.InsertCells10Data = false;
+                        Props.props.InsertCellDBData = false;
                     else if (arg == "-l")
                         logFile = args[++i];
                     else if (arg.StartsWith("-l"))
@@ -59,7 +59,7 @@ namespace ProjectDBProcessor
                 Console.WriteLine("Options: -t N   scan for new data every N  minutes. [default={0}]", minutesWait);
                 Console.WriteLine("         -e N   exit if more than N exceptions occured. [default={0}]", maxExceptions);
                 Console.WriteLine("         -i=[True|False] switch on/off data insertion into cells10k DB for C1-samples. [default={0}]",
-                                  Props.props.InsertCells10Data);
+                                  Props.props.InsertCellDBData);
                 Console.WriteLine("         -l F   log to file F instead of default logfile.");
                 Console.WriteLine("         -r     reverse sort projects, i.e. start with the most recent project in database.");
                 return;

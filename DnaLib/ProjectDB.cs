@@ -162,7 +162,7 @@ namespace Linnarsson.Dna
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
-            string sql = string.Format("SELECT {0}aaaprojectid, lanecount, comment, emails, user FROM {0}aaaanalysis WHERE id=\"{0}\";",
+            string sql = string.Format("SELECT {0}aaaprojectid, lanecount, comment, emails, user FROM {0}aaaanalysis WHERE id=\"{1}\";",
                                         Props.props.DBPrefix, projDescr.analysisId);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
@@ -615,7 +615,7 @@ namespace Linnarsson.Dna
                 annotations[plateWell] = wellAnn;
             }
             string sqlPat = "SELECT c.platewell, name, value FROM {0}aaacellannotation a LEFT JOIN {0}aaacell c ON a.{0}aaacellid=c.id " +
-                    string.Format("WHERE a.{0}aaacellid IN (SELECT {0}aaacell.id FROM {0}aaacell {1})", chipOrProjectWhereSql);
+                            "WHERE a.{0}aaacellid IN (SELECT {0}aaacell.id FROM {0}aaacell {1})";
             string sql = string.Format(sqlPat, Props.props.DBPrefix, chipOrProjectWhereSql);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();

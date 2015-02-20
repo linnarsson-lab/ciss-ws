@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 using Linnarsson.Dna;
 
 namespace Map2Pclu
@@ -9,8 +10,6 @@ namespace Map2Pclu
     class Map2PcluSettings
     {
         public bool iterateBarcodes = false;
-        public int maxBarcodeIdx = 95;
-        public string barcodePattern = "0_";
         public string filenamePrefix = "";
         public UMICountType countType = UMICountType.AllMolecules;
         public int nUMIs = 4096;
@@ -22,9 +21,17 @@ namespace Map2Pclu
         public bool estimateTrueMolCounts = false;
         public bool analyzeBcLeakage = false;
         public string readsPerMolFile = "";
+        public bool sortMapFilesByBarcode = false;
         public bool AnalyzeReadsPerMol { get { return readsPerMolFile != ""; } }
         public bool IsCountingMols { get { return countType == UMICountType.AllMolecules || countType == UMICountType.NonSingeltonMolecules; } }
 
+        private int m_MaxBarcodeIdx = 95;
+        public int MaxBarcodeIdx { get { return (iterateBarcodes || sortMapFilesByBarcode) ? m_MaxBarcodeIdx : 0; } }
+
+        private string barcodePattern = "0_";
+        private string m_BarcodePrefix = "*_";
+        public string BarcodePrefix { get { return (iterateBarcodes || sortMapFilesByBarcode) ? m_BarcodePrefix : ""; } }
+        
         public Map2PcluSettings()
         { }
         public Map2PcluSettings(string[] args)
@@ -39,10 +46,24 @@ namespace Map2Pclu
                 else if (args[argIdx] == "--estimatetrue") estimateTrueMolCounts = true;
                 else if (args[argIdx] == "--mergestrands") AllAsPlusStrand = true;
                 else if (args[argIdx] == "--bybarcode") iterateBarcodes = true;
+                else if (args[argIdx] == "--sortbybc") sortMapFilesByBarcode = true;
                 else if (args[argIdx] == "--analyzebcleakage") analyzeBcLeakage = true;
                 else if (args[argIdx].StartsWith("--prefix=")) filenamePrefix = args[argIdx].Substring(9);
                 else if (args[argIdx].StartsWith("--readspermol=")) readsPerMolFile = args[argIdx].Substring(14);
                 else if (args[argIdx] == "-o") outputFolderOrFilename = args[++argIdx];
+                else if (args[argIdx] == "-i")
+                {
+                    using (StreamReader reader = new StreamReader(args[++argIdx]))
+                    {
+                        string line = reader.ReadLine();
+                        while (line != null)
+                        {
+                            inputFiles.Add(line.Trim());
+                            line = reader.ReadLine();
+                        }
+                    }
+                    Console.WriteLine("Read " + inputFiles.Count + " input map files from " + args[argIdx]);
+                }
                 else inputFiles.Add(args[argIdx]);
             }
         }
@@ -64,12 +85,14 @@ namespace Map2Pclu
             Map2PcluSettings settings = new Map2PcluSettings(args);
             if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
             {
-                Console.WriteLine("Usage:\nmono Map2Pclu.exe [OPTIONS] -o OUTPUT MAPFILE [MAPFILE2...]\n\n" +
+                Console.WriteLine("Usage:\nmono Map2Pclu.exe [OPTIONS] -o OUTPUT [-i FILELISTFILE] MAPFILE [MAPFILE2...]\n\n" +
                                   "N.B.: Output is in paraclu peak format: chr TAB strand TAB pos TAB count\n" +
                                   "      pos is where the read 5' end maps, i.e. if strand='-', pos is max of the aligned positions\n" +
                                   "If OUTPUT ends with '.gz' it is taken as a filename pattern. Any '*' is replaced by the barcode index.\n" +
                                   "Otherwise it is taken as an output folder, and filenames are constructed automatically.\n" +
                                   "Options:\n" +
+                                  "-i                 Read (additional) mapfile paths from FILELISTFILE, one per line.\n" +
+                                  "--sortbybc         Combine data from MAPFILES that have same barcode. Filenames have to start with bcIdx + '_'.\n" +
                                   "--bybarcode        Process files for all barcodes (0-95). Filenames have to match 'N_*' where N is 0-95.\n" +
                                   "                      As mapfile(s) you specify the file(s) with N=0: '0_xxxxxx.map'.\n" +
                                   "                      Output is merged by barcode if several mapfiles are given.\n" +

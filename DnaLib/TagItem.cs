@@ -43,7 +43,7 @@ namespace Linnarsson.Dna
         /// Counts number of reads in barcode irrespective of UMI
         /// </summary>
         protected int bcNumReads;
-        protected int totNumReads;
+        protected int totNumReads = 0;
 
         /// <summary>
         /// Number of non-empty UMIs, after mutation filtering, or read count if no UMIs are used. -1 indicates not calculated yet.

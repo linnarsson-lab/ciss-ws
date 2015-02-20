@@ -375,7 +375,8 @@ namespace Linnarsson.Strt
 
         private string MakeDefaultResultFolderName(StrtGenome genome, string projectFolder, string projectName)
         {
-            return string.Format("{0}_{1}_{2}_{3}", projectName, barcodes.Name, genome.GetMainIndexName(), DateTime.Now.ToPathSafeString());
+            return string.Format("{0}_{1}_{2}_{3}_{4}", projectName, barcodes.Name, genome.GetMainIndexName(),
+                                                        Props.props.Aligner.ToUpper()[0], DateTime.Now.ToPathSafeString());
         }
 
         /// <summary>
@@ -416,9 +417,10 @@ namespace Linnarsson.Strt
             ResultDescription resultDescr = new ResultDescription(mapFilePaths, genome, resultFolder);
             ts.SaveResult(readCounter, resultDescr);
             System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(Props.props.GetType());
-            using (StreamWriter writer = new StreamWriter(Path.Combine(resultFolder, "SilverBulletConfig.xml")))
+            using (StreamWriter writer = new StreamWriter(Path.Combine(resultFolder, Props.configFilename)))
                 x.Serialize(writer, Props.props);
-            if (Props.props.InsertCells10Data && projectId.StartsWith(C1Props.C1ProjectPrefix) && annotations.GenesSetupFromC1DB)
+            if (Props.props.InsertCellDBData && projectId.StartsWith(C1Props.C1ProjectPrefix)
+                && annotations.GenesSetupFromC1DB && Props.props.Aligner == Props.props.CellDBAligner)
                 InsertCells10kData(projectId, annotations, resultDescr);
             return resultDescr;
         }
@@ -434,21 +436,20 @@ namespace Linnarsson.Strt
             Dictionary<string, int> cellIdByPlateWell = new ProjectDB().GetCellIdByPlateWell(projectId);
             if (cellIdByPlateWell.Count == 0)
             {
-                Console.WriteLine("Warning: No mapping from C1-chip to Seq-plate wells exists in DB. No expression data is inserted.");
+                Console.WriteLine("WARNING: C1Chip->SeqPlate well mappings missing in database. No expression data is inserted.");
                 return;
             }
-            Console.WriteLine("Saving results to cells10k database...");
+            Console.WriteLine("Saving expression BLOB:s to database...");
             try
             {
                 C1DB c1db = new C1DB();
-                //c1db.InsertExpressions(annotations.IterC1DBExpressions(cellIdByPlateWell));
                 string parString = MakeParameterString();
                 c1db.InsertAnalysisSetup(projectId, resultDescr.splcIndexVersion, resultDescr.resultFolder, parString);
                 c1db.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByPlateWell));
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error inserting data to cells10k: {0}", e);
+                Console.WriteLine("Error inserting expression BLOB:s to database: {0}", e);
             }
         }
 
@@ -457,6 +458,7 @@ namespace Linnarsson.Strt
             List<string> parameters = new List<string>();
             parameters.Add(string.Format("UMIFilter={0}/{1}", Props.props.RndTagMutationFilter, Props.props.RndTagMutationFilterParam));
             parameters.Add("UseMost5PrimeExonMapping=" + Props.props.UseMost5PrimeExonMapping);
+            parameters.Add("Aligner=" + Props.props.Aligner);
             parameters.Add("MaxAlignmentMismatches=" + Props.props.MaxAlignmentMismatches);
             parameters.Add("MaxAlternativeMappings=" + Props.props.MaxAlternativeMappings);
             string parString = string.Join(",", parameters.ToArray());

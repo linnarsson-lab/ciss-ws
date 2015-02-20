@@ -49,7 +49,7 @@ namespace CmdSilverBullet
                             Props.props.RndTagMutationFilterParam = (opt == "compact-no-filter")? 0 : 1;
                             break;
                         case "insertc1data":
-                            Props.props.InsertCells10Data = true;
+                            Props.props.InsertCellDBData = true;
                             break;
                         case "rpkm":
                             useRPKM = true;

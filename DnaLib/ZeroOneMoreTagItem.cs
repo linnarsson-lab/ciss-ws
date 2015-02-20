@@ -66,6 +66,7 @@ namespace Linnarsson.Dna
         public override bool Add(int UMIIdx)
         {
             bcNumReads++;
+            totNumReads++;
             if (detectedUMIs == null)
             {
                 detectedUMIs = new BitArray(nUMIs);

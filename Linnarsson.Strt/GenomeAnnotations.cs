@@ -656,35 +656,40 @@ namespace Linnarsson.Strt
 
         private void WriteExpressedAntisenseGenes(string fileNameBase)
         {
-            using (StreamWriter file = new StreamWriter(fileNameBase + "_expressed_antisense.tab"))
+            StringBuilder sb = new StringBuilder();
+            int nPairs = 0;
+            foreach (KeyValuePair<string, int> gfPair in antisensePairExons)
             {
-                file.WriteLine("Expressed gene pairs transcribed in opposite direction that have overlapping exons. " +
-                               "Numbers of overlapping exons and the expression from the non-overlapping exons is shown.");
-                file.WriteLine("Chr\tGeneA\tGeneB\t#OverlappingExons\tCountA\tCountB\t" +
-                               "OverlappingExonsA\tNonoverlappingCountA\tOverlappingExonsB\tNonoverlappingCountB");
-                int nPairs = 0;
-                foreach (KeyValuePair<string, int> gfPair in antisensePairExons)
+                string[] names = gfPair.Key.Split('#');
+                GeneFeature gfA = geneFeatures[names[0]];
+                GeneFeature gfB = geneFeatures[names[1]];
+                if (gfA.Chr != gfB.Chr || gfA.Strand == gfB.Strand)
+                    throw new Exception("Internal error in sense-antisense genes: " + names[0] + "-" + names[1]);
+                int aHits = gfA.GetTranscriptHits();
+                int bHits = gfB.GetTranscriptHits();
+                if (aHits > 0 && bHits > 0)
                 {
-                    string[] names = gfPair.Key.Split('#');
-                    GeneFeature gfA = geneFeatures[names[0]];
-                    GeneFeature gfB = geneFeatures[names[1]];
-                    if (gfA.Chr != gfB.Chr || gfA.Strand == gfB.Strand)
-                        throw new Exception("Internal error in sense-antisense genes: " + names[0] + "-" + names[1]);
-                    int aHits = gfA.GetTranscriptHits();
-                    int bHits = gfB.GetTranscriptHits();
-                    if (aHits > 0 && bHits > 0)
-                    {
-                        List<int> freeExonsA = GetNonOverlappingExons(gfA, gfB);
-                        int freeHitsA = gfA.GetExpressionFromExons(freeExonsA);
-                        List<int> freeExonsB = GetNonOverlappingExons(gfB, gfA);
-                        int freeHitsB = gfB.GetExpressionFromExons(freeExonsB);
-                        int nCommonExons = gfPair.Value;
-                        string freeExonsAList = MakeExonNumbersAsCommaSepString(freeExonsA);
-                        string freeExonsBList = MakeExonNumbersAsCommaSepString(freeExonsB);
-                        file.WriteLine("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}", gfA.Chr, names[0], names[1], nCommonExons,
-                                       aHits, bHits, freeExonsAList, freeHitsA, freeExonsBList, freeHitsB);
-                        nPairs++;
-                    }
+                    List<int> freeExonsA = GetNonOverlappingExons(gfA, gfB);
+                    int freeHitsA = gfA.GetExpressionFromExons(freeExonsA);
+                    List<int> freeExonsB = GetNonOverlappingExons(gfB, gfA);
+                    int freeHitsB = gfB.GetExpressionFromExons(freeExonsB);
+                    int nCommonExons = gfPair.Value;
+                    string freeExonsAList = MakeExonNumbersAsCommaSepString(freeExonsA);
+                    string freeExonsBList = MakeExonNumbersAsCommaSepString(freeExonsB);
+                    sb.AppendFormat("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\n", gfA.Chr, names[0], names[1], nCommonExons,
+                                    aHits, bHits, freeExonsAList, freeHitsA, freeExonsBList, freeHitsB);
+                    nPairs++;
+                }
+            }
+            if (nPairs > 0)
+            {
+                using (StreamWriter file = new StreamWriter(fileNameBase + "_expressed_antisense.tab"))
+                {
+                    file.WriteLine("Expressed gene pairs transcribed in opposite direction that have overlapping exons. " +
+                                   "Numbers of overlapping exons and the expression from the non-overlapping exons is shown.");
+                    file.WriteLine("Chr\tGeneA\tGeneB\t#OverlappingExons\tCountA\tCountB\t" +
+                                   "OverlappingExonsA\tNonoverlappingCountA\tOverlappingExonsB\tNonoverlappingCountB");
+                    file.Write(sb.ToString());
                 }
             }
         }
@@ -1270,24 +1275,29 @@ namespace Linnarsson.Strt
 
         private void WriteSharedGenes(string fileNameBase)
         {
-            using (StreamWriter trShareFile = new StreamWriter(fileNameBase + "_sharing_genes.tab"))
+            StringBuilder sb = new StringBuilder();
+            foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
             {
-                trShareFile.WriteLine("Transcripts/variants competing for reads (# shared reads within parenthesis)");
-                trShareFile.WriteLine("Feature\t#Assigned Reads\tCompetes with genes...");
-                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
+                if (gf.sharingGenes == null)
+                    continue;
+                List<string> sGfGroup = new List<string>();
+                foreach (KeyValuePair<IFeature, int> pair in gf.sharingGenes)
                 {
-                    if (gf.sharingGenes == null)
-                        continue;
-                    List<string> sGfGroup = new List<string>();
-                    foreach (KeyValuePair<IFeature, int> pair in gf.sharingGenes)
-                    {
-                        string sGfName = pair.Key.Name;
-                        if (!sGfGroup.Contains(sGfName) && sGfName != gf.Name)
-                            sGfGroup.Add(string.Format("{0}({1})", sGfName, pair.Value));
-                    }
-                    sGfGroup.Sort();
-                    if (sGfGroup.Count > 0)
-                        trShareFile.WriteLine("{0}\t{1}\t{2}", gf.Name, gf.TrReadsByBc.Sum(), string.Join("\t", sGfGroup.ToArray()));
+                    string sGfName = pair.Key.Name;
+                    if (!sGfGroup.Contains(sGfName) && sGfName != gf.Name)
+                        sGfGroup.Add(string.Format("{0}({1})", sGfName, pair.Value));
+                }
+                sGfGroup.Sort();
+                if (sGfGroup.Count > 0)
+                    sb.AppendFormat("{0}\t{1}\t{2}\n", gf.Name, gf.TrReadsByBc.Sum(), string.Join("\t", sGfGroup.ToArray()));
+            }
+            if (sb.Length > 0)
+            {
+                using (StreamWriter trShareFile = new StreamWriter(fileNameBase + "_sharing_genes.tab"))
+                {
+                    trShareFile.WriteLine("Transcripts/variants competing for reads (# shared reads within parenthesis)");
+                    trShareFile.WriteLine("Feature\t#Assigned Reads\tCompetes with genes...");
+                    trShareFile.Write(sb.ToString());
                 }
             }
         }

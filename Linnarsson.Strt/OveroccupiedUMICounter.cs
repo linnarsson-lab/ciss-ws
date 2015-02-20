@@ -38,6 +38,8 @@ namespace Linnarsson.Strt
 
         public void WriteOutput(string outputPathbase)
         {
+            if (gfsByBcIdx.Count == 0)
+                return;
             using (StreamWriter writer = new StreamWriter(outputPathbase + "_overoccupied_UMI_warnings.tab"))
             {
                 writer.WriteLine("The following wells have more than " + UMICountLimit +

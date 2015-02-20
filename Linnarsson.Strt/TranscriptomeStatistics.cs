@@ -687,7 +687,8 @@ namespace Linnarsson.Strt
             WriteASExonDistributionHistogram();
             if (barcodes.HasUMIs)
             {
-                WriteReadCountDistroByUMICount();
+                if (TagItem.CountsReadsPerUMI)
+                    WriteReadCountDistroByUMICount();
                 if (readsPerMoleculeHistogramGenes != null)
                     WriteGeneReadsPerMoleculeHistograms();
             }

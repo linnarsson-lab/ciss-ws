@@ -344,6 +344,8 @@ namespace Linnarsson.Strt
             if (int.Parse(extractionVersion) < 28)
                 throw new Exception("Extractions of versions < 28 can not be processed anymore. Please redo extraction!");
             string barcodeSet = PathHandler.ParseBarcodeSet(extractedFolder);
+            if (barcodeSet == null)
+                throw new Exception("Can not parse barcode set name from " + extractedFolder + ". Please redo extraction!");
             SetBarcodeSet(barcodeSet);
             return extractedFolder;
         }

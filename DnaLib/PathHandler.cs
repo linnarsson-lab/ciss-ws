@@ -286,13 +286,11 @@ namespace Linnarsson.Dna
         /// Extract the barcode set name from the path name of an Extracted reads folder
         /// </summary>
         /// <param name="extractedFolder"></param>
-        /// <returns>The DefaultBarcodeSet if path is not parsable</returns>
+        /// <returns>null if path is not parsable</returns>
         public static string ParseBarcodeSet(string extractedFolder)
         {
             Match m = Regex.Match(extractedFolder, extractionFolderMatchPattern);
-            if (m != null)
-                return m.Groups[2].Value;
-            return Props.props.DefaultBarcodeSet;
+            return (m != null) ? m.Groups[2].Value : null;
         }
 
         /// <summary>

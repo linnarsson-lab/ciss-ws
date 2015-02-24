@@ -59,7 +59,6 @@ namespace Linnarsson.Dna
         public string ResultDownloadScpPort = "0";
         public string FailureReportAndAnonDownloadEmail = "silver.bullet@my.server";
         public string OutgoingMailSender = "silver.bullet@my.server";
-        public string BowtieIndexFolder = "\\\\127.0.0.1\\sequtils\\bowtie-0.12.7\\indexes";
         public string OutputDocFile = "\\\\127.0.0.1\\data\\strt\\STRTOutputManual.pdf";
         public int BkgBackuperStartHour = 17;
         public int BkgBackuperStopHour = 8;
@@ -90,7 +89,6 @@ namespace Linnarsson.Dna
         public bool AnalyzeAllGeneVariants = true; // Analyze all alternative splice sites in exons etc.
         public bool DirectionalReads = true; // STRT are always directional reads
         public bool UseRPKM = false; // Give RPKM instead of RPM in output files for non-STRT samples
-        public string DefaultBarcodeSet = "v4"; // This is the default barcode set
         public int LocusFlankLength = 1000; // Maximum length of UPSTREAM and DOWNSTREAM regions to analyse
         public int StandardReadLen = 50; // Better not use actual reads that are longer - otherwise some junction hits may be missed
         public int MaxExonsSkip = 12; // Max number of exons to consider for splice out in junction chromosome
@@ -104,7 +102,7 @@ namespace Linnarsson.Dna
         public string BowtieIndexArgs = "$FastaPaths $IndexPath";
         public string BowtieAlignArgs = "-p $NThreads --phred$QualityScoreBase-quals -k $MaxAlternativeMappings -v $MaxAlignmentMismatches --best --strata $IndexPath $FqPath $OutPath";
         public string StarIndexArgs = "--runMode genomeGenerate --runThreadN $NThreads --outFileNamePrefix $IndexDir/ --genomeDir $IndexDir --genomeFastaFiles $FastaPaths";
-        public string StarAlignArgs = "--runMode alignReads --outFilterMultimapNmax $MaxAlternativeMappings --alignIntronMax 1 --outFilterMismatchNmax $MaxAlignmentMismatches --outFileNamePrefix $OutFolder/ --runThreadN $NThreads --genomeDir $IndexPath --readFilesIn $FqPath";
+        public string StarAlignArgs = "--runMode alignReads --genomeLoad LoadAndKeep --outFilterMultimapNmax $MaxAlternativeMappings --alignIntronMax 1 --outFilterMismatchNmax $MaxAlignmentMismatches --outFileNamePrefix $OutFolder/ --runThreadN $NThreads --genomeDir $IndexPath --readFilesIn $FqPath";
         public double SyntheticReadsRandomMutationProb = 0.0; // Used only in synthetic data construction
         public double SyntheticReadsBackgroundFreq = 0.0; // Frequency of random background reads in synthetic data
         public bool SynthesizeReadsFromGeneVariants = false; // Used only in synthetic data construction
@@ -161,7 +159,7 @@ namespace Linnarsson.Dna
 
         public string BarcodesName
         {
-            get { if (m_BarcodesName == null) m_BarcodesName = DefaultBarcodeSet; return m_BarcodesName; }
+            get { return m_BarcodesName; }
             set { m_BarcodesName = value; m_Barcodes = null; }
         }
         

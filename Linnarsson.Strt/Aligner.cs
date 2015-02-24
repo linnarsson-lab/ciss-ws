@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 using System.IO;
 using Linnarsson.Dna;
 using Linnarsson.Utilities;
@@ -245,8 +246,10 @@ namespace Linnarsson.Strt
             if (Props.props.StarAlignArgs.Contains("--genomeLoad LoadAndKeep"))
             {
                 string mainIndexPath = Path.Combine(indexFolder, genome.GetMainIndexName());
-                new CmdCaller(alignCmd, "--genomeLoad Remove --genomeDir " + mainIndexPath);
                 string splcIndexPath = Path.Combine(indexFolder, genome.GetSplcIndexName());
+                if (Process.GetProcessesByName("STAR").Length > 0)
+                    return; // Don't clean up shared genome if some STAR process is already running
+                new CmdCaller(alignCmd, "--genomeLoad Remove --genomeDir " + mainIndexPath);
                 new CmdCaller(alignCmd, "--genomeLoad Remove --genomeDir " + splcIndexPath);
             }
         }

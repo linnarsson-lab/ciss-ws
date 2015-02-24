@@ -87,6 +87,8 @@ namespace Linnarsson.Strt
             if (status != ReadStatus.VALID) return status;
             status = TestDinucleotideRepeats(rSeq, insertStart, insertLength);
             if (status != ReadStatus.VALID) return status;
+            if (rec.Header[rec.Header.Length - 2] == '/')
+                rec.Header = rec.Header.Replace('/', ':'); // Fix to prevent STAR aligner from stripping readIds at last '/' (GA2X reads)
             rec.Header = string.Format("{0}_{1}{2}", rec.Header, headerUMISection, barcodes.Seqs[bcIdx]);
             rec.Trim(insertStart, insertLength);
             return status;

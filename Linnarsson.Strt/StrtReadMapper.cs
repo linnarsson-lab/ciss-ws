@@ -22,7 +22,7 @@ namespace Linnarsson.Strt
 
         public StrtReadMapper()
         {
-            barcodes = Props.props.Barcodes;
+            //barcodes = Props.props.Barcodes;
         }
         private void SetBarcodeSet(string barcodesName)
         {

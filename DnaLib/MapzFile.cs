@@ -108,7 +108,7 @@ namespace Linnarsson.Dna
                 throw new FormatException("Can not compress sequences > 127 nts");
             writer.Write((byte)(qDirBit | mrms.SeqLen));
             writer.Write(mrms.QualityString);
-            writer.Write((short)mrms.AltMappings);
+            writer.Write((short)(mrms.NMappings - 1));
             foreach (MultiReadMapping mrm in mrms.IterMappings())
             {
                 int chrCode = ChrCodes.ToCode(mrm.Chr);

@@ -243,7 +243,7 @@ namespace Linnarsson.Dna
                     fields = line.Split('\t');
                     if (!line.StartsWith(combinedReadId))
                     {
-                        mrm.AltMappings = mrm.NMappings + 1;
+                        mrm.InferAltMappings();
                         yield return mrm;
                         combinedReadId = fields[0];
                         strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
@@ -428,9 +428,21 @@ namespace Linnarsson.Dna
             if (relPosInAlignment < 0 || relPosInAlignment >= QualityString.Length) return '!';
             return QualityString[relPosInAlignment];
         }
-        public int AltMappings;
-        public bool HasAltMappings { get { return AltMappings >= 1 || NMappings > 1; } }
-        public int NMappings;
+
+        private int NAltMappings; // Value from 2nd last column of map file, or "XM:i" field in sam/bam file.
+        /// <summary>
+        /// true if multiple mappings are available, or if the mapping file indicated that alternative mappings existed
+        /// </summary>
+        public bool HasAltMappings { get { return NAltMappings >= 1 || NMappings > 1; } }
+        /// <summary>
+        /// When total # of alternative mappings was not available in mapping file, set it to NMappings-1
+        /// </summary>
+        public void InferAltMappings()
+        {
+            NAltMappings = NMappings - 1;
+        }
+
+        public int NMappings; // Used as index to next free in Mappings array.
         private MultiReadMapping[] Mappings;
 
         public MultiReadMappings(int maxNMappings, Barcodes barcodes)
@@ -462,7 +474,7 @@ namespace Linnarsson.Dna
                 sb.Append(m.Position + "\t");
                 sb.Append(Sequence + "\t");
                 sb.Append(QualityString + "\t");
-                sb.Append(AltMappings + "\t");
+                sb.Append(NAltMappings + "\t");
                 sb.Append(m.Mismatches + "\n");
             }
             return sb.ToString();
@@ -474,7 +486,7 @@ namespace Linnarsson.Dna
             ReadId = Barcodes.StripBcAndUMIFromReadId(combinedReadId, out BcIdx, out UMIIdx);
             Sequence = seq;
             SeqLen = seq.Length;
-            AltMappings = altMappings;
+            NAltMappings = altMappings;
             NMappings = 0;
             this.QualityDir = qualityDirection;
             this.QualityString = qualityString;
@@ -484,7 +496,7 @@ namespace Linnarsson.Dna
             CombinedReadId = combinedReadId;
             ReadId = Barcodes.StripBcAndUMIFromReadId(combinedReadId, out BcIdx, out UMIIdx);
             SeqLen = seqLen;
-            AltMappings = altMappings;
+            NAltMappings = altMappings;
             NMappings = 0;
             this.QualityDir = qualityDirection;
             this.QualityString = qualityString;

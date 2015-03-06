@@ -503,7 +503,7 @@ namespace Linnarsson.Dna
             List<Cell> cells = new List<Cell>();
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
-            string sql = "SELECT c.id, {0}aaachipid, chipwell, platewell, diameter, area, red, green, blue, valid FROM {0}aaacell c {1}";
+            string sql = "SELECT c.id, {0}aaachipid, chipwell, platewell, diameter, area, red, green, blue, c.valid FROM {0}aaacell c {1}";
             sql = string.Format(sql, Props.props.DBPrefix, whereClause);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();

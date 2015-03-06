@@ -338,8 +338,6 @@ namespace Linnarsson.Strt
                 GenerateReadsPerUMIRelatedData();
             randomTagFilter.FinishBarcode();
             labelingEfficiencyEstimator.FinishBarcode(currentBcIdx);
-
-            Console.WriteLine("HMX1 TranscriptHits now=" + Annotations.geneFeatures["HMX1"].GetTranscriptHits());
         }
 
         private void AddReadMappingsToTagItems(string mapFilePath)
@@ -436,11 +434,6 @@ namespace Linnarsson.Strt
                 {
                     someExonHit = someAnnotationHit = true;
                     markStatus = (IterTranscriptMatchers.HasVariants || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
-                    if (trMatch.Feature.Name == "HMX1")
-                    {
-                        Console.WriteLine(currentBcIdx + "\t" + item.chr + "\t" + item.SequencedStrand + "\t" + item.hitStartPos + "\t" + 
-                                          item.ReadCount + "\t" + item.MolCount + "\t" + item.ObservedMolCount);
-                    }
                     if (!exonHitFeatures.Contains(trMatch.Feature))
                     { // If a gene is hit multiple times (happens if two diff. splices have same seq.), we should annotate it only once
                         exonHitFeatures.Add(trMatch.Feature);

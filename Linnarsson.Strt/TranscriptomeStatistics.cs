@@ -1439,7 +1439,7 @@ namespace Linnarsson.Strt
                 WriteFeaturesByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, TotalRealTrMolsByBarcode,
                                     "TRNSR_DETECTING_" + molT.ToUpper(),
-                                    Annotations.Genome.Name + " transcript detecting " + molT + " by barcode", Annotations.Genome.Name + "tr. detecting " + molT);
+                                    Annotations.Genome.Name + " transcript detecting " + molT + " by barcode", Annotations.Genome.Name + " tr. detecting " + molT);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, TotalSpikeMolsByBarcode,
                                     "SPIKE_DETECTING_" + molT.ToUpper(), "Spike detecting " + molT + " by barcode", "spike detecting " + molT);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, Annotations.GetByBcNumExpressedTranscripts(),

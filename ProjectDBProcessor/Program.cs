@@ -168,7 +168,7 @@ namespace ProjectDBProcessor
             bool success = false;
             bool notifyManager = true;
             projDescr.status = ProjectDescription.STATUS_PROCESSING;
-            int nRowsAffected = projectDB.UpdateAnalysisStatus(projDescr, ProjectDescription.STATUS_INQUEUE);
+            int nRowsAffected = projectDB.SecureStartAnalysis(projDescr);
             if (nRowsAffected == 0) return false;
             List<string> messages = new List<string>();
             try

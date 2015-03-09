@@ -68,18 +68,19 @@ namespace BkgFastQCopier
                     string callFolder = Path.Combine(runFolder, PathHandler.MakeRunDataSubPath());
                     if (File.Exists(readyFilePath) && Directory.Exists(callFolder))
                     {
-                        string status = "copied";
-                        projectDB.UpdateRunStatus(runId, "copying", runNo, runDate);
-                        try
+                        if (projectDB.SecureStartRunCopy(runId, runNo, runDate))
                         {
-                            Copy(runNo, runId, runFolder, outputReadsFolder, 1, 8);
+                            try
+                            {
+                                Copy(runNo, runId, runFolder, outputReadsFolder, 1, 8);
+                            }
+                            catch (Exception e)
+                            {
+                                projectDB.UpdateRunStatus(runId, "copyfail", runNo);
+                                throw (e);
+                            }
+                            projectDB.UpdateRunStatus(runId, "copied", runNo);
                         }
-                        catch (Exception e)
-                        {
-                            projectDB.UpdateRunStatus(runId, "copyfail", runNo, runDate);
-                            throw (e);
-                        }
-                        projectDB.UpdateRunStatus(runId, status, runNo, runDate);
                     }
                 }
             }

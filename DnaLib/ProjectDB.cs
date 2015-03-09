@@ -148,13 +148,16 @@ namespace Linnarsson.Dna
 
         public int UpdateAnalysisStatus(ProjectDescription projDescr)
         {
-            return UpdateAnalysisStatus(projDescr, "");
+            string sql = string.Format("UPDATE {0}aaaanalysis SET status=\"{1}\", time=NOW() WHERE id=\"{2}\";",
+                                       Props.props.DBPrefix, projDescr.status, projDescr.analysisId);
+            return IssueNonQuery(sql);
         }
-        public int UpdateAnalysisStatus(ProjectDescription projDescr, string reqPreviousStatus)
+
+        public int SecureStartAnalysis(ProjectDescription projDescr)
         {
-            string reqSql = (reqPreviousStatus == "")? "": string.Format(" AND status=\"{0}\"", reqPreviousStatus);
-            string sql = string.Format("UPDATE {0}aaaanalysis SET status=\"{1}\", time=NOW() WHERE id=\"{2}\" {3};",
-                                       Props.props.DBPrefix, projDescr.status, projDescr.analysisId, reqSql);
+            string sql = string.Format("UPDATE {0}aaaanalysis SET status=\"{1}\", time=NOW() WHERE id=\"{2}\" AND status=\"{3}\" " +
+                "AND {0}aaaprojectid NOT IN (SELECT {0}aaaprojectid FROM {0}aaaanalysis a2 WHERE status=\"processing\");",
+                                       Props.props.DBPrefix, projDescr.status, ProjectDescription.STATUS_INQUEUE);
             return IssueNonQuery(sql);
         }
 
@@ -229,19 +232,52 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Sets the bcl copy/collection status of a run.
+        /// Start the bcl copy/collection of a run. Checks that no other process is already copying the run.
         /// </summary>
         /// <param name="runId">Either a run number for the old machine or a cell Id for the new</param>
-        /// <param name="status"></param>
         /// <param name="runNo">A run number to set.</param>
         /// <param name="runDate">Date of the run (extracted from filename)</param>
-        public void UpdateRunStatus(string runId, string status, int runNo, string runDate)
+        /// <returns>true if no other process is copying the run and the status update/insert was successful</returns>
+        public bool SecureStartRunCopy(string runId, int runNo, string runDate)
+        {
+            bool success = false;
+            string sql = string.Format("SELECT * FROM {0}aaailluminarun WHERE illuminarunid='{1}' AND status='copying';",
+                                       Props.props.DBPrefix, runId);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            try
+            {
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                MySqlDataReader rdr = cmd.ExecuteReader();
+                bool alreadyCopying = rdr.HasRows;
+                rdr.Close();
+                if (!alreadyCopying)
+                {
+                    // Below SQL will update with status and runno if user has defined the run, else add a new run as
+                    // well as defining 8 new lanes by side-effect of a MySQL trigger
+                    sql = string.Format("INSERT INTO {0}aaailluminarun (status, runno, illuminarunid, rundate, time, user) " +
+                                        "VALUES ('copying', '{1}', '{2}', '{3}', NOW(), '{4}') " +
+                                        "ON DUPLICATE KEY UPDATE status='{1}', runno='{2}';",
+                                               Props.props.DBPrefix, runNo, runId, runDate, "system");
+                    cmd = new MySqlCommand(sql, conn);
+                    int nRowsAffected = cmd.ExecuteNonQuery();
+                    if (nRowsAffected > 0)
+                        success = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("{0}: {1}", DateTime.Now, ex);
+            }
+            conn.Close();
+            return success;
+        }
+
+        public void UpdateRunStatus(string runId, string status, int runNo)
         { // Below SQL will update with status and runno if user has defined the run, else add a new run as
-          // well as defining 8 new lanes by side-effect of a MySQL trigger
-            string sql = string.Format("INSERT INTO {0}aaailluminarun (status, runno, illuminarunid, rundate, time, user) " +
-                                       "VALUES ('{1}', '{2}', '{3}', '{4}', NOW(), '{5}') " +
-                                       "ON DUPLICATE KEY UPDATE status='{1}', runno='{2}';",
-                                       Props.props.DBPrefix, status, runNo, runId, runDate, "system");
+            // well as defining 8 new lanes by side-effect of a MySQL trigger
+            string sql = string.Format("UPDATE {0}aaailluminarun SET status='{1}', runno='{2}', time=NOW() WHERE illuminarunid='{3}';",
+                                       Props.props.DBPrefix, status, runNo, runId);
             IssueNonQuery(sql);
         }
 

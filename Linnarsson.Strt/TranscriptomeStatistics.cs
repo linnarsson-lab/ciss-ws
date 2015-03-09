@@ -63,14 +63,16 @@ namespace Linnarsson.Strt
         private string OutputPathbase { get { return Path.Combine(resultFolder, projectId); } }
 
         /// <summary>
-        /// Total number of mapped reads in each barcode
+        /// Total number of species mapped reads in each barcode (excluding spikes)
         /// </summary>
-        int[] nMappedReadsByBarcode;
+        int[] nRealChrMappedReadsByBarcode;
+        int[] nSpikeMappedReadsByBarcode;
 
         /// <summary>
-        /// Total number of mapped reads
+        /// Total number of reads mapped to the species genome (excluding spikes)
         /// </summary>
-        int TotalNMappedReads { get { return nMappedReadsByBarcode.Sum(); } }
+        int TotalNRealChrMappedReads { get { return nRealChrMappedReadsByBarcode.Sum(); } }
+        int TotalNSpikeMappedReads { get { return nSpikeMappedReadsByBarcode.Sum(); } }
 
         /// <summary>
         /// Number of reads that map to some exon/splice
@@ -154,7 +156,8 @@ namespace Linnarsson.Strt
             totalHitCounter = new TotalHitCounter(annotations);
             if (props.AnalyzeAllGeneVariants)
                 geneExpressionSummary = new GeneExpressionSummary(annotations);
-            nMappedReadsByBarcode = new int[barcodes.Count];
+            nRealChrMappedReadsByBarcode = new int[barcodes.Count];
+            nSpikeMappedReadsByBarcode = new int[barcodes.Count];
             nMappingsByBarcode = new int[barcodes.Count];
             exonHitFeatures = new List<IFeature>(100);
             spliceChrId = Annotations.Genome.Annotation;
@@ -343,12 +346,13 @@ namespace Linnarsson.Strt
         private void AddReadMappingsToTagItems(string mapFilePath)
         {
             currentMapFilePath = mapFilePath;
+            int nTotalMappedBcReads = nRealChrMappedReadsByBarcode[currentBcIdx] + nSpikeMappedReadsByBarcode[currentBcIdx];
             MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, barcodes);
             if (mapFileReader == null)
                 throw new Exception("Unknown read map file type : " + mapFilePath);
             int sampleMappedReadsByFileCounter = PerLaneStats.nMappedReadsPerFileAtSample;
             int sampleSpikeReadsPerMolCounter = Props.props.MappingsBySpikeReadsSampleDist;
-            perLaneStats.BeforeFile(currentBcIdx, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx),
+            perLaneStats.BeforeFile(currentBcIdx, nTotalMappedBcReads, mappingAdder.NUniqueReadSignatures(currentBcIdx),
                                     randomTagFilter.GetNumDistinctMappings());
             foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
             {
@@ -358,12 +362,13 @@ namespace Linnarsson.Strt
                     continue;
                 }
                 mrm.BcIdx = currentBcIdx; // Needed because we may use 'Merge' to combine wells into one well
+                bool mapsToCtrl = mrm[0].Chr == Props.props.ChrCTRLId;
                 if (mappingAdder.Add(mrm))
                 {
                     nExonAnnotatedReads++;
                     if (Props.props.AnalyzeGCContent && Annotations.HasChrSeq(mrm[0].Chr))
                         gcAnalyzer.Add(currentBcIdx, Annotations.GetChrSeq(mrm[0].Chr).SubSequence(mrm[0].Position, mrm[0].SeqLen));
-                    if (analyzeMappingsBySpikeReads && mrm[0].Chr == Props.props.ChrCTRLId)
+                    if (analyzeMappingsBySpikeReads && mapsToCtrl)
                     {
                         if (--sampleSpikeReadsPerMolCounter == 0)
                         {
@@ -374,16 +379,21 @@ namespace Linnarsson.Strt
                 }
                 if (snpRndTagVerifier != null)
                     snpRndTagVerifier.Add(mrm);
-                if ((++nMappedReadsByBarcode[currentBcIdx]) % statsSampleDistPerBarcode == 0)
+                nTotalMappedBcReads++;
+                if (mapsToCtrl)
+                    nSpikeMappedReadsByBarcode[currentBcIdx]++;
+                else
+                    nRealChrMappedReadsByBarcode[currentBcIdx]++;
+                if (nTotalMappedBcReads % statsSampleDistPerBarcode == 0)
                     SampleReadStatistics();
-                if ((nMappedReadsByBarcode[currentBcIdx]) == libraryDepthSampleReadCountPerBc)
+                if (nTotalMappedBcReads == libraryDepthSampleReadCountPerBc)
                 {
                     sampledLibraryDepths.Add(randomTagFilter.GetNumDistinctMappings());
                     sampledUniqueMolecules.Add(mappingAdder.NUniqueReadSignatures(currentBcIdx));
                 }
                 if (--sampleMappedReadsByFileCounter == 0)
                 {
-                    perLaneStats.AfterFile(mapFilePath, nMappedReadsByBarcode[currentBcIdx], mappingAdder.NUniqueReadSignatures(currentBcIdx),
+                    perLaneStats.AfterFile(mapFilePath, nTotalMappedBcReads, mappingAdder.NUniqueReadSignatures(currentBcIdx),
                                                         randomTagFilter.GetNumDistinctMappings());
                     sampleMappedReadsByFileCounter = PerLaneStats.nMappedReadsPerFileAtSample;
                 }
@@ -946,7 +956,7 @@ namespace Linnarsson.Strt
                     nReads += statsSampleDistPerBarcode;
                     xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", nReads / 1.0E6d, curve[i]);
                 }
-                nReads = nMappedReadsByBarcode[bcIdx];
+                nReads = nRealChrMappedReadsByBarcode[bcIdx] + nSpikeMappedReadsByBarcode[bcIdx];
                 xmlFile.WriteLine("      <point x=\"{0:0.####}\" y=\"{1:0.####}\" />", nReads / 1.0E6d, curve[i]);
                 xmlFile.WriteLine("    </curve>");
             }
@@ -1025,8 +1035,9 @@ namespace Linnarsson.Strt
                                             spBcCount, validReads / speciesReads, validReads / 1.0E6d);
             }
             else
-                speciesReads = TotalNMappedReads; // Default to nMappedReads if extraction summary files are missing
-            xmlFile.WriteLine("    <point x=\"Mapped [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, TotalNMappedReads / speciesReads, TotalNMappedReads / 1.0E6d);
+                speciesReads = TotalNRealChrMappedReads; // Default to nMappedReads if extraction summary files are missing
+            xmlFile.WriteLine("    <point x=\"Mapped [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, TotalNRealChrMappedReads / speciesReads, TotalNRealChrMappedReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"Spike [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, TotalNSpikeMappedReads / speciesReads, TotalNSpikeMappedReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Multireads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMultiReads / speciesReads, nMultiReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Exon/Splc [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nExonAnnotatedReads / speciesReads, nExonAnnotatedReads / 1.0E6d);
             if (barcodes.HasUMIs)
@@ -1395,6 +1406,7 @@ namespace Linnarsson.Strt
         /// <param name="readCounter"></param>
         private void WriteBarcodeStats(StreamWriter xmlFile, ReadCounter readCounter)
         {
+            string sp = Annotations.Genome.Name;
             int[] onlyGenomeBcIndexes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
             using (StreamWriter barcodeStats = new StreamWriter(OutputPathbase + "_barcode_summary.tab"))
             using (StreamWriter bCodeLines = new StreamWriter(OutputPathbase + "_barcode_oneliners.tab"))
@@ -1419,8 +1431,10 @@ namespace Linnarsson.Strt
                     WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, readCounter.ValidReadsByBarcode.ToArray(),
                                         "VALIDSTRTREADS", "Total valid STRT reads by barcode", "valid STRT reads");
                 }
-                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, nMappedReadsByBarcode,
-                                    "MAPPEDREADS", "Total mapped reads by barcode", "mapped reads");
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, nRealChrMappedReadsByBarcode,
+                                    "MAPPEDREADS", "Total " + sp + " mapped reads by barcode", sp + " mapped reads");
+                WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, nSpikeMappedReadsByBarcode,
+                                    "SPIKEREADS", "Total spike mapped reads by barcode", "spike reads");
                 if (barcodes.HasUMIs)
                     WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, mappingAdder.NDuplicateReadsByBc(),
                                     "DUPLICATE_READS", "Duplicate reads of molecules (same UMI/position/strand) by barcode", "redundant reads (PCR)");
@@ -1438,13 +1452,12 @@ namespace Linnarsson.Strt
                                         "PERCENT_READ_GC_CONTENT", "Percent GC in transcript mapping reads", "transcript reads percent GC");
                 WriteFeaturesByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, TotalRealTrMolsByBarcode,
-                                    "TRNSR_DETECTING_" + molT.ToUpper(),
-                                    Annotations.Genome.Name + " transcript detecting " + molT + " by barcode", Annotations.Genome.Name + " tr. detecting " + molT);
+                                    "TRNSR_DETECTING_" + molT.ToUpper(), sp + " transcript detecting " + molT + " by barcode", sp + " tr. detecting " + molT);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, TotalSpikeMolsByBarcode,
                                     "SPIKE_DETECTING_" + molT.ToUpper(), "Spike detecting " + molT + " by barcode", "spike detecting " + molT);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, Annotations.GetByBcNumExpressedTranscripts(),
-                                    "TRANSCRIPTS", "Detected " + Annotations.Genome.Name + " transcripts by barcode",
-                                    "detected " + Annotations.Genome.Name + " transcripts");
+                                    "TRANSCRIPTS", "Detected " + sp + " transcripts by barcode",
+                                    "detected " + sp + " transcripts");
             }
             if (barcodes.HasUMIs && Props.props.TotalNumberOfAddedSpikeMolecules > 0)
             {

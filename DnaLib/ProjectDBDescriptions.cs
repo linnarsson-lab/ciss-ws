@@ -75,6 +75,9 @@ namespace Linnarsson.Dna
         public string status;
         public static readonly string STATUS_INQUEUE = "inqueue";
         public static readonly string STATUS_PROCESSING = "processing";
+        public static readonly string STATUS_EXTRACTING = "extracting";
+        public static readonly string STATUS_ALIGNING = "aligning";
+        public static readonly string STATUS_ANNOTATING = "annotating";
         public static readonly string STATUS_READY = "ready";
         public static readonly string STATUS_FAILED = "failed";
 

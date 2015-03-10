@@ -503,6 +503,7 @@ namespace Linnarsson.Dna
         {
             using (StreamReader annotReader = new StreamReader(STRTAnnotationsPath))
             {
+                IFeature ft;
                 string line = annotReader.ReadLine();
                 while (line.StartsWith("@") || line.StartsWith("#"))
                     line = annotReader.ReadLine();
@@ -513,14 +514,21 @@ namespace Linnarsson.Dna
                 {
                     if (line != "" && !line.StartsWith("#"))
                     {
-                        IFeature ft = FromSTRTAnnotationsLine(line);
+                        try
+                        {
+                            ft = FromSTRTAnnotationsLine(line);
+                        }
+                        catch (Exception e)
+                        {
+                            throw new AnnotationFileException("Can not parse " + STRTAnnotationsPath + " line: " + line + "\n" + e);
+                        }
                         yield return ft;
                     }
                     line = annotReader.ReadLine();
                 }
             }
         }
-
+        
         private static GeneFeature GeneFeatureFromRefFlatLine(string line)
         {
             string[] record = line.Split('\t');

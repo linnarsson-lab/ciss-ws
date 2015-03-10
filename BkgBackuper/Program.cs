@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
+using System.Globalization;
 using Linnarsson.Strt;
 using Linnarsson.Dna;
 using Linnarsson.Utilities;
@@ -29,6 +30,7 @@ namespace BkgBackuper
 
         static void Main(string[] args)
         {
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             startHour = Props.props.BkgBackuperStartHour;
             stopHour = Props.props.BkgBackuperStopHour;
             string logFile = new FileInfo("BBUP_" + Process.GetCurrentProcess().Id + ".log").FullName;

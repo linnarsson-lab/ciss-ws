@@ -153,12 +153,40 @@ namespace Linnarsson.Dna
             return IssueNonQuery(sql);
         }
 
-        public int SecureStartAnalysis(ProjectDescription projDescr)
+        public bool SecureStartAnalysis(ProjectDescription projDescr)
         {
-            string sql = string.Format("UPDATE {0}aaaanalysis SET status=\"{1}\", time=NOW() WHERE id=\"{2}\" AND status=\"{3}\" " +
-                "AND {0}aaaprojectid NOT IN (SELECT {0}aaaprojectid FROM {0}aaaanalysis a2 WHERE status=\"processing\");",
-                                       Props.props.DBPrefix, projDescr.status, ProjectDescription.STATUS_INQUEUE);
-            return IssueNonQuery(sql);
+            bool success = false;
+            string sql = string.Format("SELECT * FROM {0}aaaanalysis WHERE id=\"{1}\" AND {0}aaaprojectid IN " +
+                                       "(SELECT {0}aaaprojectid FROM {0}aaaanalysis a2 WHERE status IN (\"{2}\",\"{3}\",\"{4}\",\"{5}\") );",
+                         Props.props.DBPrefix, projDescr.analysisId, ProjectDescription.STATUS_PROCESSING,
+                         ProjectDescription.STATUS_EXTRACTING, ProjectDescription.STATUS_ALIGNING, ProjectDescription.STATUS_ANNOTATING);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            try
+            {
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                MySqlDataReader rdr = cmd.ExecuteReader();
+                bool projectAlreadyProcessing = rdr.HasRows;
+                rdr.Close();
+                if (!projectAlreadyProcessing)
+                {
+                    sql = string.Format("UPDATE {0}aaaanalysis SET status=\"{1}\", time=NOW() WHERE id=\"{2}\" AND status=\"{3}\";",
+                     Props.props.DBPrefix, ProjectDescription.STATUS_EXTRACTING, projDescr.analysisId, ProjectDescription.STATUS_INQUEUE);
+                    cmd = new MySqlCommand(sql, conn);
+                    int nRowsAffected = cmd.ExecuteNonQuery();
+                    if (nRowsAffected > 0)
+                    {
+                        success = true;
+                        projDescr.status = ProjectDescription.STATUS_EXTRACTING;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("{0}: {1}", DateTime.Now, ex);
+            }
+            conn.Close();
+            return success;
         }
 
         public void PublishResults(ProjectDescription projDescr)

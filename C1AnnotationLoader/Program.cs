@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +11,7 @@ namespace C1AnnotationLoader
     {
         static void Main(string[] args)
         {
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
             {
                 Console.WriteLine("This program inserts additional cell annotations into the cells10k database from a TAB-delimited file." +

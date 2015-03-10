@@ -98,8 +98,17 @@ namespace Linnarsson.Strt
             wordCounter = new ExtractionWordCounter(Props.props.ExtractionCounterWordLength);
         }
 
+        public int GetAverageReadLen(List<LaneInfo> laneInfos)
+        {
+            foreach (LaneInfo laneInfo in laneInfos)
+            {
+                AddExtractionSummary(laneInfo.summaryFilePath);
+            }
+            return AverageReadLen;
+        }
+
         /// <summary>
-        /// Average read length over the valid extraced reads in all files
+        /// Average read length over the valid extracted reads in all files
         /// </summary>
         public int AverageReadLen
         {

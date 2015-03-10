@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
+using System.Globalization;
 using Linnarsson.Utilities;
 using Linnarsson.Dna;
 using Linnarsson.Strt;
@@ -18,6 +19,7 @@ namespace BkgFastQCopier
 
         static void Main(string[] args)
         {
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             int minutesWait = 15; // Time between scans.
             string illuminaRunsFolder = Props.props.RunsFolder;
             string outputReadsFolder = Props.props.ReadsFolder;

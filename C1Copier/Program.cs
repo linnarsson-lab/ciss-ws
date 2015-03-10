@@ -6,6 +6,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Threading;
+using System.Globalization;
 using Linnarsson.Dna;
 using Linnarsson.Strt;
 using Linnarsson.Mathematics;
@@ -35,6 +36,7 @@ namespace C1
 
         static void Main(string[] args)
         {
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             logFile = new FileInfo("C1C_" + Process.GetCurrentProcess().Id + ".log").FullName;
             try
             {

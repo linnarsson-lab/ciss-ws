@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,6 +15,7 @@ namespace C1
     {
         static void Main(string[] args)
         {
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             if (args.Length == 0 || args[0] == "--help")
             {
                 Console.WriteLine("This program reads gene definition files, builds transcript models, annotates them using various annotation files,");

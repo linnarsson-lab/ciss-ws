@@ -24,7 +24,7 @@ namespace Linnarsson.Strt
         {
             //barcodes = Props.props.Barcodes;
         }
-        private void SetBarcodeSet(string barcodesName)
+        public void SetBarcodeSet(string barcodesName)
         {
             Props.props.BarcodesName = barcodesName;
             barcodes = Props.props.Barcodes;
@@ -113,14 +113,6 @@ namespace Linnarsson.Strt
             return laneInfos;
         }
 
-        private void Extract(ProjectDescription pd)
-        {
-            pd.extractionVersion = EXTRACTION_VERSION;
-            string extractionFolder = PathHandler.MakeExtractionFolderSubPath(pd.ProjectFolder, barcodes.Name, EXTRACTION_VERSION);
-            pd.laneInfos = LaneInfo.LaneInfosFromLaneArgs(pd.runIdsLanes.ToList(), extractionFolder, barcodes.Count);
-            ExtractMissingAndOld(pd.laneInfos, extractionFolder);
-        }
-
         public static readonly string EXTRACTION_VERSION = "34";
 
         /// <summary>
@@ -146,69 +138,6 @@ namespace Linnarsson.Strt
 		}
 
         /// <summary>
-        /// Performs extraction, mapping, and annotation on the lanes, bc, and layout/species defined by projDescr.
-        /// Extraction and mapping are done if no data are available with the current software/index versions.
-        /// Annotation is always performed and data put in a dated result folder.
-        /// </summary>
-        /// <param name="projDescr"></param>
-        /// <param name="logWriter">File for log information</param>
-        public void Process(ProjectDescription projDescr, StreamWriter logWriter)
-        {
-            Console.WriteLine("StrtReadMapper.Process(" + projDescr.plateId + ")");
-            SetBarcodeSet(projDescr.barcodeSet);
-            Props.props.TotalNumberOfAddedSpikeMolecules = projDescr.SpikeMoleculeCount;
-            logWriter.WriteLine("{0} Extracting {1} lanes with barcodes {2}...", DateTime.Now, projDescr.runIdsLanes.Length, projDescr.barcodeSet);
-            logWriter.Flush();
-            if (barcodes.HasUMIs)
-                logWriter.WriteLine("{0} MinPhredScoreInRandomTag={1}", DateTime.Now, Props.props.MinPhredScoreInRandomTag);
-            Extract(projDescr);
-            string[] speciesArgs = ParsePlateLayout(projDescr.plateId, projDescr.SampleLayoutPath, projDescr.defaultSpecies);
-            projDescr.annotationVersion = ANNOTATION_VERSION;
-            foreach (string speciesArg in speciesArgs)
-            {
-                StrtGenome genome = StrtGenome.GetGenome(speciesArg, projDescr.analyzeVariants, projDescr.defaultBuild, true);
-                int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-                genome.SplcIndexReadLen = GetAverageReadLen(projDescr.laneInfos);
-                logWriter.WriteLine("{0} Aligning to {1}...", DateTime.Now, genome.BuildVarAnnot); logWriter.Flush();
-                CreateAlignments(genome, projDescr.laneInfos, genomeBcIndexes);
-                List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(projDescr.laneInfos);
-                Props.props.UseRPKM = projDescr.rpkm;
-                Props.props.DirectionalReads = projDescr.DirectionalReads;
-                Props.props.SenseStrandIsSequenced = projDescr.SenseStrandIsSequenced;
-                projDescr.SetGenomeData(genome);
-                logWriter.WriteLine("{0} Annotating {1} alignment files...", DateTime.Now, mapFiles.Count);
-                logWriter.WriteLine("{0} setting: AllTrVariants={1} Gene5'Extensions={4} #SpikeMols={5} DirectionalReads={2} RPKM={3}",
-                                    DateTime.Now, projDescr.analyzeVariants, Props.props.DirectionalReads, Props.props.UseRPKM,
-                                    Props.props.GeneFeature5PrimeExtension, Props.props.TotalNumberOfAddedSpikeMolecules);
-                logWriter.Flush();
-                string resultFolderName = MakeDefaultResultFolderName(genome, projDescr.ProjectFolder, projDescr.plateId);
-                ResultDescription resultDescr = ProcessAnnotation(genome, projDescr.ProjectFolder, projDescr.plateId, resultFolderName,
-                                                                  mapFiles);
-                projDescr.resultDescriptions.Add(resultDescr);
-                System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(projDescr.GetType());
-                using (StreamWriter writer = new StreamWriter(Path.Combine(resultDescr.resultFolder, "ProjectConfig.xml")))
-                    x.Serialize(writer, projDescr);
-                logWriter.WriteLine("{0} Results stored in {1}.", DateTime.Now, resultDescr.resultFolder);
-                logWriter.Flush();
-            }
-        }
-
-        /// <summary>
-        /// Calculates the average read length of all valid extracted reads
-        /// </summary>
-        /// <param name="laneInfos"></param>
-        /// <returns></returns>
-        private int GetAverageReadLen(List<LaneInfo> laneInfos)
-        {
-            ReadCounter rc = new ReadCounter(barcodes);
-            foreach (LaneInfo laneInfo in laneInfos)
-            {
-                rc.AddExtractionSummary(laneInfo.summaryFilePath);
-            }
-            return rc.AverageReadLen;
-        }
-
-        /// <summary>
         /// If sampleLayoutPath is parsable, the species/build name(s) to use are extracted from that file,
         /// and the layout it read into Barcodes object. Otherwise the defaultSpeciesArg is simply returned.
         /// </summary>
@@ -216,7 +145,7 @@ namespace Linnarsson.Strt
         /// <param name="sampleLayoutPath"></param>
         /// <param name="defaultSpeciesArg"></param>
         /// <returns>Ids of all the species/builds that are on the plate</returns>
-        private string[] ParsePlateLayout(string projectName, string sampleLayoutPath, string defaultSpeciesArg)
+        public string[] ParsePlateLayout(string projectName, string sampleLayoutPath, string defaultSpeciesArg)
         {
             string[] speciesArgs = new string[] { defaultSpeciesArg };
             PlateLayout sampleLayout = PlateLayout.GetPlateLayout(projectName, sampleLayoutPath);
@@ -235,8 +164,12 @@ namespace Linnarsson.Strt
         /// <param name="genome"></param>
         /// <param name="laneInfos"></param>
         /// <param name="genomeBcIndexes">optionally only process specific barcodes</param>
-        private void CreateAlignments(StrtGenome genome, List<LaneInfo> laneInfos, int[] genomeBcIndexes)
+        public void CreateAlignments(StrtGenome genome, List<LaneInfo> laneInfos, int[] selectedBcIdxs)
         {
+            int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            if (selectedBcIdxs != null)
+                genomeBcIndexes = genomeBcIndexes.Where(i => selectedBcIdxs.Contains(i)).ToArray();
+            genome.SplcIndexReadLen = new ReadCounter(barcodes).GetAverageReadLen(laneInfos);
             Aligner aligner = AssertASplcIndex(genome);
             Console.WriteLine("{0} aligning {1} lanes against {2}...", Props.props.Aligner, laneInfos.Count, genome.GetSplcIndexName());
             foreach (LaneInfo laneInfo in laneInfos)
@@ -277,9 +210,7 @@ namespace Linnarsson.Strt
             string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolderOrName);
             List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder, barcodes.Count);
             StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, false);
-            genome.SplcIndexReadLen = GetAverageReadLen(laneInfos);
-            int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-            CreateAlignments(genome, laneInfos, genomeBcIndexes);
+            CreateAlignments(genome, laneInfos, null);
         }
 
         public static readonly string ANNOTATION_VERSION = "45";
@@ -312,18 +243,12 @@ namespace Linnarsson.Strt
             foreach (string speciesArg in speciesArgs)
             {
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, true);
-                int[] genomeSelectedBcIdxs = barcodes.GenomeAndEmptyBarcodeIndexes(genome).Where(i =>
-                                                        (selectedBcIdxs == null || selectedBcIdxs.Contains(i))).ToArray();
-                genome.SplcIndexReadLen = GetAverageReadLen(laneInfos);
-                string spResultFolderName = resultFolderName;
-                if (resultFolderName == "" || resultFolderName == null)
-                    spResultFolderName = MakeDefaultResultFolderName(genome, projectFolder, projectName);
-                string readDir = !Props.props.DirectionalReads ? "No" : Props.props.SenseStrandIsSequenced ? "Sense" : "Antisense";
-                CreateAlignments(genome, laneInfos, genomeSelectedBcIdxs);
+                CreateAlignments(genome, laneInfos, selectedBcIdxs);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(laneInfos);
+                string readDir = !Props.props.DirectionalReads ? "No" : Props.props.SenseStrandIsSequenced ? "Sense" : "Antisense";
                 Console.WriteLine("Annotating {0} map files from {1}\nDirectionalReads={2} RPKM={3} SelectedMappingType={4}...",
                                   mapFiles.Count, projectName, readDir, Props.props.UseRPKM, Props.props.SelectedMappingType);
-                ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, spResultFolderName, mapFiles);
+                ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, resultFolderName, mapFiles);
                 Console.WriteLine("...output in {0}", resultDescr.resultFolder);
                 if (resultDescr.resultFolder != null) resultSubFolders.Add(resultDescr.resultFolder);
             }
@@ -375,10 +300,14 @@ namespace Linnarsson.Strt
             return readCounter;
         }
 
-        private string MakeDefaultResultFolderName(StrtGenome genome, string projectFolder, string projectName)
+        public string GetResultFolder(StrtGenome genome, string projectFolder, string projectName)
         {
-            return string.Format("{0}_{1}_{2}_{3}_{4}", projectName, barcodes.Name, genome.GetMainIndexName(),
+            string resultFolderName = string.Format("{0}_{1}_{2}_{3}_{4}", projectName, barcodes.Name, genome.GetMainIndexName(),
                                                         Props.props.Aligner.ToUpper()[0], DateTime.Now.ToPathSafeString());
+            string resultFolder = Path.Combine(projectFolder, resultFolderName);
+            if (Directory.Exists(resultFolder))
+                resultFolder += "_" + DateTime.Now.ToPathSafeString();
+            return resultFolder;
         }
 
         /// <summary>
@@ -387,17 +316,16 @@ namespace Linnarsson.Strt
         /// <param name="genome"></param>
         /// <param name="projectFolder"></param>
         /// <param name="projectId"></param>
-        /// <param name="resultFolderName"></param>
+        /// <param name="resultFolder">if null, the default result folder will be constructed</param>
         /// <param name="mapFilePaths"></param>
         /// <returns></returns>
-        private ResultDescription ProcessAnnotation(StrtGenome genome, string projectFolder, string projectId, 
-                                                    string resultFolderName, List<string> mapFilePaths)
+        public ResultDescription ProcessAnnotation(StrtGenome genome, string projectFolder, string projectId, 
+                                                    string resultFolder, List<string> mapFilePaths)
         {
             if (mapFilePaths.Count == 0)
                 return null;
-            string resultFolder = Path.Combine(projectFolder, resultFolderName);
-            if (Directory.Exists(resultFolder))
-                resultFolder += "_" + DateTime.Now.ToPathSafeString();
+            if (resultFolder == "" || resultFolder == null)
+                resultFolder = GetResultFolder(genome, projectFolder, projectId);
             ReadCounter readCounter = ReadExtractionSummaryFiles(mapFilePaths);
             int averageReadLen = readCounter.AverageReadLen;
             MappedTagItem.AverageReadLen = averageReadLen;

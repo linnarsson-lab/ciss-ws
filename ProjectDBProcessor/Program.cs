@@ -4,6 +4,7 @@ using System.Linq;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Globalization;
 using System.Diagnostics;
 using Linnarsson.Dna;
 using Linnarsson.Strt;
@@ -21,6 +22,8 @@ namespace ProjectDBProcessor
 
         static void Main(string[] args)
         {
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
+            //Console.WriteLine("Testing decimal point: " + (1.0d / 4.0d).ToString());
             int minutesWait = 10; // Time between scans to wait for new data to appear in queue.
             int maxExceptions = 200; // Max number of exceptions before giving up.
             Props.props.InsertCellDBData = true; // Update cells10k data by default
@@ -161,44 +164,47 @@ namespace ProjectDBProcessor
         /// Will return false if an error occured that may be solved by trying again later, in which
         /// case status is reset to 'inqueue'
         /// </summary>
-        /// <param name="projDescr"></param>
+        /// <param name="pd"></param>
         /// <returns></returns>
-        private static bool HandleDBTask(ProjectDescription projDescr)
+        private static bool HandleDBTask(ProjectDescription pd)
         {
             bool success = false;
             bool notifyManager = true;
-            projDescr.status = ProjectDescription.STATUS_PROCESSING;
-            int nRowsAffected = projectDB.SecureStartAnalysis(projDescr);
-            if (nRowsAffected == 0) return false;
+            if (! projectDB.SecureStartAnalysis(pd)) return false;
+            logWriter.WriteLine(DateTime.Now.ToString() + " Processing " + pd.plateId + " - " + pd.LaneCount + " lanes [DBId=" + pd.analysisId + "]...");
+            logWriter.Flush();
             List<string> messages = new List<string>();
             try
             {
-                ProcessItem(projDescr);
-                messages = PublishResultsForDownload(projDescr);
-                projDescr.status = ProjectDescription.STATUS_READY;
-                projectDB.PublishResults(projDescr);
+                if (pd.layoutFile != "")
+                    CopyLayoutFile(pd);
+                if (pd.aligner != "")
+                    Props.props.Aligner = pd.aligner;
+                ProcessSteps(pd);
+                messages = PublishResultsForDownload(pd);
+                pd.status = ProjectDescription.STATUS_READY;
+                projectDB.PublishResults(pd);
                 success = true;
-                logWriter.WriteLine(DateTime.Now.ToString() + " " + projDescr.plateId + "[analysisId=" + projDescr.analysisId +
-                                    "] finished with status " + projDescr.status);
-                logWriter.Flush();
-                lastMsgByProject.Remove(projDescr.plateId);
+                lastMsgByProject.Remove(pd.plateId);
             }
             catch (BarcodeFileException e)
             {
-                notifyManager = HandleError(projDescr, messages, e, false);
+                notifyManager = HandleError(pd, messages, e, false);
             }
             catch (SampleLayoutFileException e)
             {
-                notifyManager = HandleError(projDescr, messages, e, false);
+                notifyManager = HandleError(pd, messages, e, false);
             }
             catch (Exception e)
             {
                 bool recoverable = e.Message.Contains("Sharing violation");
-                notifyManager = HandleError(projDescr, messages, e, recoverable);
+                notifyManager = HandleError(pd, messages, e, recoverable);
             }
             if (notifyManager)
-                NotifyManager(projDescr, messages);
-            projectDB.UpdateAnalysisStatus(projDescr);
+                NotifyManager(pd, messages);
+            projectDB.UpdateAnalysisStatus(pd);
+            logWriter.WriteLine(DateTime.Now.ToString() + " " + pd.plateId + "[DBId=" + pd.analysisId + "] finished with status " + pd.status);
+            logWriter.Flush();
             return success;
         }
 
@@ -218,48 +224,75 @@ namespace ProjectDBProcessor
             return true;
         }
 
-        private static void ProcessItem(ProjectDescription projDescr)
+        private static void CopyLayoutFile(ProjectDescription projDescr)
         {
-            logWriter.WriteLine(DateTime.Now.ToString() + " Processing " + projDescr.plateId + " - " + projDescr.LaneCount + " lanes [DBId=" + projDescr.analysisId + "]...");
-            logWriter.Flush();
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            DateTime d = DateTime.Now;
-            if (projDescr.layoutFile != "")
+            string layoutSrcPath = Path.Combine(Props.props.UploadsFolder, projDescr.layoutFile);
+            if (File.Exists(layoutSrcPath))
             {
-                string layoutSrcPath = Path.Combine(Props.props.UploadsFolder, projDescr.layoutFile);
-                if (File.Exists(layoutSrcPath))
+                string layoutDestPath = projDescr.SampleLayoutPath;
+                try
                 {
-                    string layoutDestPath = projDescr.SampleLayoutPath;
-                    try
-                    {
-                        if (!Directory.Exists(Path.GetDirectoryName(layoutDestPath)))
-                            Directory.CreateDirectory(Path.GetDirectoryName(layoutDestPath));
-                        File.Copy(layoutSrcPath, layoutDestPath, true);
-                        logWriter.WriteLine(DateTime.Now.ToString() + " cp " + layoutSrcPath + " -> " + layoutDestPath); logWriter.Flush();
-                    }
-                    catch (Exception e)
-                    {
-                        logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: Could not copy layout " + layoutSrcPath
-                                                                    + " to " + layoutDestPath + ": " + e.Message);
-                        logWriter.Flush();
-                    }
+                    if (!Directory.Exists(Path.GetDirectoryName(layoutDestPath)))
+                        Directory.CreateDirectory(Path.GetDirectoryName(layoutDestPath));
+                    File.Copy(layoutSrcPath, layoutDestPath, true);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " cp " + layoutSrcPath + " -> " + layoutDestPath); logWriter.Flush();
                 }
-                else
+                catch (Exception e)
                 {
-                    logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: " + projDescr.plateId + " - layout does not exist: " + layoutSrcPath);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: Could not copy layout " + layoutSrcPath
+                                                                + " to " + layoutDestPath + ": " + e.Message);
                     logWriter.Flush();
                 }
             }
-            if (projDescr.aligner != "") 
-                Props.props.Aligner = projDescr.aligner;
-            StrtReadMapper mapper = new StrtReadMapper();
-            mapper.Process(projDescr, logWriter);
-            sw.Stop();
-            TimeSpan ts = sw.Elapsed;
-            logWriter.WriteLine(DateTime.Now.ToString() + " ..." + projDescr.plateId + " done after " + ts + ".");
-            logWriter.Flush();
+            else
+            {
+                logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: " + projDescr.plateId + " - layout does not exist: " + layoutSrcPath);
+                logWriter.Flush();
+            }
         }
+
+        public static void ProcessSteps(ProjectDescription pd)
+        {
+            StrtReadMapper mapper = new StrtReadMapper();
+            Console.WriteLine("StrtReadMapper.Process(" + pd.plateId + ")");
+            mapper.SetBarcodeSet(pd.barcodeSet);
+            Props.props.TotalNumberOfAddedSpikeMolecules = pd.SpikeMoleculeCount;
+            logWriter.WriteLine("{0} Extracting {1} lanes with barcodes {2}...", DateTime.Now, pd.runIdsLanes.Length, pd.barcodeSet);
+            logWriter.Flush();
+            pd.extractionVersion = StrtReadMapper.EXTRACTION_VERSION;
+            pd.laneInfos = mapper.Extract(pd.ProjectFolder, pd.runIdsLanes.ToList(), null);
+            Props.props.UseRPKM = pd.rpkm;
+            Props.props.DirectionalReads = pd.DirectionalReads;
+            Props.props.SenseStrandIsSequenced = pd.SenseStrandIsSequenced;
+            pd.annotationVersion = StrtReadMapper.ANNOTATION_VERSION;
+            string[] speciesArgs = mapper.ParsePlateLayout(pd.plateId, pd.SampleLayoutPath, pd.defaultSpecies);
+            foreach (string speciesArg in speciesArgs)
+            {
+                StrtGenome genome = StrtGenome.GetGenome(speciesArg, pd.analyzeVariants, pd.defaultBuild, true);
+                logWriter.WriteLine("{0} Aligning to {1}...", DateTime.Now, genome.BuildVarAnnot); logWriter.Flush();
+                logWriter.Flush();
+                pd.status = ProjectDescription.STATUS_ALIGNING;
+                projectDB.UpdateAnalysisStatus(pd);
+                mapper.CreateAlignments(genome, pd.laneInfos, null);
+                List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(pd.laneInfos);
+                pd.SetGenomeData(genome);
+                logWriter.WriteLine("{0} Annotating {1} alignment files...", DateTime.Now, mapFiles.Count);
+                logWriter.WriteLine("{0} setting: AllTrVariants={1} Gene5'Extensions={4} #SpikeMols={5} DirectionalReads={2} RPKM={3}",
+                                    DateTime.Now, pd.analyzeVariants, Props.props.DirectionalReads, Props.props.UseRPKM,
+                                    Props.props.GeneFeature5PrimeExtension, Props.props.TotalNumberOfAddedSpikeMolecules);
+                logWriter.Flush();
+                pd.status = ProjectDescription.STATUS_ANNOTATING;
+                projectDB.UpdateAnalysisStatus(pd);
+                ResultDescription resultDescr = mapper.ProcessAnnotation(genome, pd.ProjectFolder, pd.plateId, null, mapFiles);
+                pd.resultDescriptions.Add(resultDescr);
+                System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(pd.GetType());
+                using (StreamWriter writer = new StreamWriter(Path.Combine(resultDescr.resultFolder, "ProjectConfig.xml")))
+                    x.Serialize(writer, pd);
+                logWriter.WriteLine("{0} Results stored in {1}.", DateTime.Now, resultDescr.resultFolder);
+                logWriter.Flush();
+            }
+        }
+
 
         private static void NotifyManager(ProjectDescription projDescr, List<string> results)
         {

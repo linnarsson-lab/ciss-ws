@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,6 +23,7 @@ namespace CmdSilverBullet
 
         static void Main(string[] args)
         {
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             if (args.Length >= 1 + 0)
             {
                 bool analyzeAllGeneVariants = Props.props.AnalyzeAllGeneVariants;

@@ -41,33 +41,36 @@ namespace Linnarsson.Dna
 
         /// <summary>
         /// Get all projects for every barcode set that have been queued for analysis in given lane.
+        /// Also set status of the analyses to 'extracting'
         /// </summary>
         /// <param name="runNo"></param>
         /// <param name="lane"></param>
         /// <returns>dictonary from each barcodeset to the its projects</returns>
-        public List<Pair<string, string>> GetBarcodeSetsAndProjects(int runNo, int lane)
+        public List<ExtractionTask> InitiateExtractionOfLaneAnalyses(int runNo, int lane)
         {
-            string sql = "SELECT p.plateid, barcodeset FROM {0}aaaproject p " +
+            List<ExtractionTask> tasks = new List<ExtractionTask>();
+            string sql = "SELECT a.id AS analysisid, p.plateid, barcodeset FROM {0}aaaproject p " +
                          " LEFT JOIN {0}aaaanalysis a ON a.{0}aaaprojectid = p.id " +
                          " LEFT JOIN {0}aaaanalysislane al ON al.{0}aaaanalysisid = a.id " +
                          " LEFT JOIN {0}aaalane l ON l.id = al.{0}aaalaneid " +
                          " LEFT JOIN {0}aaailluminarun r ON r.id = l.{0}aaailluminarunid " +
-                         " WHERE r.runno = {1} AND laneno = {2}";
-            sql = string.Format(sql, Props.props.DBPrefix, runNo, lane);
-            List<Pair<string, string>> projectsByBc = new List<Pair<string,string>>();
+                         " WHERE r.runno = {1} AND laneno = {2} AND a.status='{3}'";
+            sql = string.Format(sql, Props.props.DBPrefix, runNo, lane, ProjectDescription.STATUS_INQUEUE);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             while (rdr.Read())
             {
+                string analysisId = rdr["analysisid"].ToString();
                 string projectId = rdr["plateid"].ToString();
                 string barcodeSetName = rdr["barcodeset"].ToString();
-                projectsByBc.Add(new Pair<string, string>(barcodeSetName, projectId));
+                tasks.Add(new ExtractionTask(analysisId, projectId, barcodeSetName));
+                UpdateAnalysisStatus(analysisId, ProjectDescription.STATUS_EXTRACTING);
             }
             rdr.Close();
             conn.Close();
-            return projectsByBc;
+            return tasks;
         }
 
         private int nextInQueue = 0;
@@ -146,10 +149,10 @@ namespace Linnarsson.Dna
             return pds;
         }
 
-        public int UpdateAnalysisStatus(ProjectDescription projDescr)
+        public int UpdateAnalysisStatus(string analysisId, string status)
         {
             string sql = string.Format("UPDATE {0}aaaanalysis SET status=\"{1}\", time=NOW() WHERE id=\"{2}\";",
-                                       Props.props.DBPrefix, projDescr.status, projDescr.analysisId);
+                                       Props.props.DBPrefix, status, analysisId);
             return IssueNonQuery(sql);
         }
 
@@ -285,7 +288,7 @@ namespace Linnarsson.Dna
                     // well as defining 8 new lanes by side-effect of a MySQL trigger
                     sql = string.Format("INSERT INTO {0}aaailluminarun (status, runno, illuminarunid, rundate, time, user) " +
                                         "VALUES ('copying', '{1}', '{2}', '{3}', NOW(), '{4}') " +
-                                        "ON DUPLICATE KEY UPDATE status='{1}', runno='{2}';",
+                                        "ON DUPLICATE KEY UPDATE status='copying', runno='{1}';",
                                                Props.props.DBPrefix, runNo, runId, runDate, "system");
                     cmd = new MySqlCommand(sql, conn);
                     int nRowsAffected = cmd.ExecuteNonQuery();
@@ -523,7 +526,6 @@ namespace Linnarsson.Dna
             string chipids = string.Join("','", chips.ConvertAll(c => c.chipid).ToArray());
             string sql = string.Format("UPDATE {0}aaachip SET {0}aaaprojectid={1} WHERE chipid IN ('{2}')", 
                 Props.props.DBPrefix, dbProjId, chipids);
-            Console.WriteLine(sql);
             IssueNonQuery(sql);
         }
 
@@ -551,14 +553,14 @@ namespace Linnarsson.Dna
 
         public Cell GetCellFromChipWell(string chipid, string chipwell)
         {
-            string whereClause = string.Format("LEFT JOIN {0}aaachip h ON h.id={0}aaachipid WHERE h.chipid='{1}' AND chipwell='{2}'",
+            string whereClause = string.Format("LEFT JOIN {0}aaachip h ON h.id=c.{0}aaachipid WHERE h.chipid='{1}' AND c.chipwell='{2}'",
                                                Props.props.DBPrefix, chipid, chipwell);
             List<Cell> cells = GetCells(whereClause);
             return (cells.Count == 1)? cells[0] : null;
         }
         public List<Cell> GetCellsOfChip(string chipid)
         {
-            string whereClause = string.Format("LEFT JOIN {0}aaachip h ON h.id={0}aaachipid WHERE h.chipid='{1}' ORDER BY chipwell",
+            string whereClause = string.Format("LEFT JOIN {0}aaachip h ON h.id=c.{0}aaachipid WHERE h.chipid='{1}' ORDER BY c.chipwell",
                 Props.props.DBPrefix, chipid);
             return GetCells(whereClause);
         }
@@ -567,7 +569,7 @@ namespace Linnarsson.Dna
             List<Cell> cells = new List<Cell>();
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
-            string sql = "SELECT c.id, {0}aaachipid, chipwell, platewell, diameter, area, red, green, blue, c.valid FROM {0}aaacell c {1}";
+            string sql = "SELECT c.id, c.{0}aaachipid, c.chipwell, c.platewell, diameter, area, red, green, blue, c.valid FROM {0}aaacell c {1}";
             sql = string.Format(sql, Props.props.DBPrefix, whereClause);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
@@ -585,7 +587,7 @@ namespace Linnarsson.Dna
         public Dictionary<string, int> GetCellIdByPlateWell(string projectId)
         {
             Dictionary<string, int> cellIdByPlateWell = new Dictionary<string, int>();
-            string sql = string.Format("SELECT platewell, c.id FROM {0}aaacell c LEFT JOIN {0}aaachip h ON c.{0}aaachipid=h.id " +
+            string sql = string.Format("SELECT c.platewell, c.id FROM {0}aaacell c LEFT JOIN {0}aaachip h ON c.{0}aaachipid=h.id " +
                      "JOIN {0}aaaproject p ON h.{0}aaaprojectid=p.id WHERE plateid='{1}' AND platewell != '' ORDER BY platewell",
                      Props.props.DBPrefix, projectId);
             MySqlConnection conn = new MySqlConnection(connectionString);
@@ -611,14 +613,14 @@ namespace Linnarsson.Dna
         public void GetCellAnnotationsByPlate(string projectId,
             out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
-            GetCellAnnotations(string.Format("LEFT JOIN {0}aaachip h ON {0}aaachipid=h.id " +
-                        "LEFT JOIN {0}aaaproject p ON h.{0}aaaprojectid=p.id WHERE p.plateid='{1}' ORDER BY platewell", Props.props.DBPrefix, projectId),
+            GetCellAnnotations(string.Format("LEFT JOIN {0}aaachip h ON c.{0}aaachipid=h.id " +
+                        "LEFT JOIN {0}aaaproject p ON h.{0}aaaprojectid=p.id WHERE p.plateid='{1}' ORDER BY c.platewell", Props.props.DBPrefix, projectId),
                 out annotations, out annotationIndexes);
         }
         public void GetCellAnnotationsByChip(string chipId,
             out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
-            GetCellAnnotations(string.Format("WHERE {0}aaachipid='{1}' ORDER BY chipwell", Props.props.DBPrefix, chipId),
+            GetCellAnnotations(string.Format("WHERE c.{0}aaachipid='{1}' ORDER BY c.chipwell", Props.props.DBPrefix, chipId),
                 out annotations, out annotationIndexes);
         }
         public void GetCellAnnotations(string chipOrProjectWhereSql,
@@ -678,8 +680,8 @@ namespace Linnarsson.Dna
                 wellAnn[i++] = chip.comments;
                 annotations[plateWell] = wellAnn;
             }
-            string sqlPat = "SELECT c.platewell, name, value FROM {0}aaacellannotation a LEFT JOIN {0}aaacell c ON a.{0}aaacellid=c.id " +
-                            "WHERE a.{0}aaacellid IN (SELECT {0}aaacell.id FROM {0}aaacell {1})";
+            string sqlPat = "SELECT c2.platewell, name, value FROM {0}aaacellannotation a LEFT JOIN {0}aaacell c2 ON a.{0}aaacellid=c2.id " +
+                            "WHERE a.{0}aaacellid IN (SELECT c.id FROM {0}aaacell c {1})";
             string sql = string.Format(sqlPat, Props.props.DBPrefix, chipOrProjectWhereSql);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
@@ -700,7 +702,7 @@ namespace Linnarsson.Dna
 
         private static List<string> GetCellAnnotationNames(string chipOrProjectWhereSql)
         {
-            string sql = "SELECT DISTINCT(name) FROM {0}aaacellannotation WHERE {0}aaacellid IN (SELECT {0}aaacell.id FROM {0}aaacell {1})";
+            string sql = "SELECT DISTINCT(ca.name) FROM {0}aaacellannotation ca WHERE {0}aaacellid IN (SELECT c.id FROM {0}aaacell c {1})";
             sql = string.Format(sql, Props.props.DBPrefix, chipOrProjectWhereSql);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();

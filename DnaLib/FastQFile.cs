@@ -227,7 +227,8 @@ namespace Linnarsson.Dna
 			{
 				var temp = qs[i] - qualityScoreBase;
                 quals[i] = (byte)temp;
-                if (temp < 0 || temp > 63) throw new InvalidDataException("Phred quality score outside expected range (0 - 63): " + temp + " in " + qs);
+                if (temp < 0 || temp > 63) throw new InvalidDataException("Phred quality score outside expected range (0 - 63): "
+                                                                          + temp + " at pos " + i + " in " + qs);
 			}
 			return quals;
 		}
@@ -238,7 +239,8 @@ namespace Linnarsson.Dna
             {
                 var temp = qs[i] - qualityScoreBase;
                 quals[i] = (byte)temp;
-                if (temp < 0 || temp > 63) throw new InvalidDataException("Phred quality score outside expected range (0 - 63): " + temp + " in " + qs);
+                if (temp < 0 || temp > 63) throw new InvalidDataException("Phred quality score outside expected range (0 - 63): "
+                                                                          + temp + " at pos " + i + " in " + qs);
             }
             return quals;
         }

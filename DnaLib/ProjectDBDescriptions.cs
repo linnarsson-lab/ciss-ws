@@ -7,6 +7,21 @@ using System.Xml.Serialization;
 
 namespace Linnarsson.Dna
 {
+    public class ExtractionTask
+    {
+        public string analysisId;
+        public string projectName;
+        public string barcodeSet;
+
+        public ExtractionTask(string analysisId, string projectName, string barcodeSet)
+        {
+            this.analysisId = analysisId;
+            this.projectName = projectName;
+            this.barcodeSet = barcodeSet;
+        }
+    }
+
+
     [Serializable()]
     public class ResultDescription
     {

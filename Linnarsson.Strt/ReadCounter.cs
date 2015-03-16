@@ -336,7 +336,7 @@ namespace Linnarsson.Strt
                 int bcReads = 0;
                 if (File.Exists(fqFile))
                 {
-                    foreach (FastQRecord rec in FastQFile.Stream(fqFile, 64))
+                    foreach (FastQRecord rec in FastQFile.Stream(fqFile, Props.props.QualityScoreBase))
                     {
                         bcReads++;
                         totValidReadsLen += rec.Sequence.Length;

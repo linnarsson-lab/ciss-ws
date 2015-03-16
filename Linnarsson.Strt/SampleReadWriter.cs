@@ -51,7 +51,7 @@ namespace Linnarsson.Strt
             prefixRead2 = Math.Min(prefixRead2, read2Len);
             prefixRead3 = Math.Min(prefixRead3, read3Len);
             seqLen = prefixRead2 + prefixRead3 + read1Len;
-            Console.WriteLine("Setup: read1Len=" + read1Len, " read2Len=" + read2Len + " read3en=" + read3Len);
+            //Console.WriteLine("SampleReadWriter.Setup(): read1Len=" + read1Len, " read2Len=" + read2Len + " read3Len=" + read3Len);
         }
 
         public void Process(string hdrStart, string hdrEnd, char[][] readSeqs, char[][] readQuals, bool passedFilter)
@@ -143,6 +143,7 @@ namespace Linnarsson.Strt
         private StreamWriter[] OpenStreamWriters(string[] extractedFilePaths)
         {
             StreamWriter[] sws_barcoded = new StreamWriter[extractedFilePaths.Length];
+            //Console.WriteLine("SampleReadWriter.OpenStreamWriters() " + extractedFilePaths[0] + "...");
             for (int i = 0; i < extractedFilePaths.Length; i++)
                 sws_barcoded[i] = new StreamWriter(extractedFilePaths[i]);
             return sws_barcoded;

@@ -117,6 +117,7 @@ namespace Linnarsson.Strt
             string splcIndexName = genome.GetSplcIndexName();
             foreach (string fqPath in laneInfo.extractedFilePaths)
             {
+                if (!File.Exists(fqPath)) continue;
                 int bcIdx = int.Parse(Path.GetFileNameWithoutExtension(fqPath));
                 if (Array.IndexOf(genomeBcIndexes, bcIdx) == -1)
                     continue;

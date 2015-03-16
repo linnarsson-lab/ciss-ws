@@ -55,7 +55,7 @@ namespace Linnarsson.Strt
                              };
             int firstCycle = readConfig.Min(v => v.FirstCycle);
             int lastCycle = readConfig.Max(v => v.LastCycle);
-            Console.WriteLine("lastCycle=" + lastCycle);
+            //Console.WriteLine("lastCycle=" + lastCycle);
             Dictionary<string, byte[]> filters = new Dictionary<string, byte[]>();
             var filterFiles = Directory.GetFiles(laneFolder, "s_" + lane + "_*.filter");
             foreach (var f in filterFiles)
@@ -102,9 +102,9 @@ namespace Linnarsson.Strt
                 foreach (SampleReadWriter srw in sampleReadWriters)
                     srw.Setup(readSeqs[0].Length, (readSeqs[1] != null) ? readSeqs[1].Length : 0, (readSeqs[2] != null) ? readSeqs[2].Length : 0);
                 string hdrStart = string.Format("Run{0}_{1}_L{2}_R", runId, flowcellId, lane);
-                string hdrEnd = string.Format("_T{0}_C", tile.Split('_')[2]);
                 for (int ix = 0; ix < bclData[0].Length; ix++) // ix is an index into the clusters (i.e. it is a read)
                 {
+                    string hdrEnd = string.Format("_T{0}_C{1}", tile.Split('_')[2], ix);
                     bool passedFilter = filters[tile][ix + 8] == 1;
                     foreach (var rc in readConfig)
                     {
@@ -117,6 +117,7 @@ namespace Linnarsson.Strt
                             readQuals[readIdx][seqIdx] = (char)(((bclData[cycleIdx][ix] & 252) >> 2) + Props.props.QualityScoreBase);
                             seqIdx++;
                         }
+                        //Console.WriteLine(readIdx + " : " + new string(readSeqs[readIdx]) + " - " + new string(readQuals[readIdx]));
                         laneReadWriters[readIdx].Write(hdrStart, hdrEnd, readSeqs[readIdx], readQuals[readIdx], passedFilter);
                     }
                     foreach (SampleReadWriter sre in sampleReadWriters)

@@ -80,9 +80,9 @@ namespace Linnarsson.Strt
             nReads++;
             StreamWriter writer = passedFilter ? PFWriter : nonPFWriter;
             writer.WriteLine("@" + headerBeforeReadChar + read + headerAfterReadChar + Environment.NewLine +
-                                readSeq + Environment.NewLine +
+                                new string(readSeq) + Environment.NewLine +
                                 "+" + Environment.NewLine +
-                                quals);
+                                new string(quals));
             if (passedFilter) nPFReads++;
         }
 

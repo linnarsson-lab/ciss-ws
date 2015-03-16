@@ -202,7 +202,7 @@ namespace ProjectDBProcessor
             }
             if (notifyManager)
                 NotifyManager(pd, messages);
-            projectDB.UpdateAnalysisStatus(pd);
+            projectDB.UpdateAnalysisStatus(pd.analysisId, pd.status);
             logWriter.WriteLine(DateTime.Now.ToString() + " " + pd.plateId + "[DBId=" + pd.analysisId + "] finished with status " + pd.status);
             logWriter.Flush();
             return success;
@@ -272,7 +272,7 @@ namespace ProjectDBProcessor
                 logWriter.WriteLine("{0} Aligning to {1}...", DateTime.Now, genome.BuildVarAnnot); logWriter.Flush();
                 logWriter.Flush();
                 pd.status = ProjectDescription.STATUS_ALIGNING;
-                projectDB.UpdateAnalysisStatus(pd);
+                projectDB.UpdateAnalysisStatus(pd.analysisId, pd.status);
                 mapper.CreateAlignments(genome, pd.laneInfos, null);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(pd.laneInfos);
                 pd.SetGenomeData(genome);
@@ -282,7 +282,7 @@ namespace ProjectDBProcessor
                                     Props.props.GeneFeature5PrimeExtension, Props.props.TotalNumberOfAddedSpikeMolecules);
                 logWriter.Flush();
                 pd.status = ProjectDescription.STATUS_ANNOTATING;
-                projectDB.UpdateAnalysisStatus(pd);
+                projectDB.UpdateAnalysisStatus(pd.analysisId, pd.status);
                 ResultDescription resultDescr = mapper.ProcessAnnotation(genome, pd.ProjectFolder, pd.plateId, null, mapFiles);
                 pd.resultDescriptions.Add(resultDescr);
                 System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(pd.GetType());

@@ -161,10 +161,9 @@ namespace BkgFastQCopier
             for (int lane = laneFrom; lane <= laneTo; lane++)
             {
                 string readyFilePath = Path.Combine(runFolder, "Basecalling_Netcopy_complete.txt");
-                string statsFilePath = PathHandler.GetReadStatsFilePath(readsFolder, runFolderName, runNo, lane, 1);
-                if (File.Exists(readyFilePath) && !File.Exists(statsFilePath))
+                if (File.Exists(readyFilePath) && !LaneReadWriter.DataExists(readsFolder, runNo, lane, 1, runFolderName))
                 {
-                    Console.WriteLine("Processing " + statsFilePath);
+                    Console.WriteLine("Processing run " + runId + "(" + runNo + ") lane " + lane);
                     List<LaneReadWriter> lrws = new List<LaneReadWriter>();
                     lrws.Add(new LaneReadWriter(readsFolder, runFolderName, runNo, lane, 1));
                     if (File.Exists(Path.Combine(runFolder, "Basecalling_Netcopy_complete_Read2.txt")))
@@ -172,10 +171,15 @@ namespace BkgFastQCopier
                     if (File.Exists(Path.Combine(runFolder, "Basecalling_Netcopy_complete_Read3.txt")))
                         lrws.Add(new LaneReadWriter(readsFolder, runFolderName, runNo, lane, 3));
                     List<SampleReadWriter> srws = new List<SampleReadWriter>();
-                    foreach (Pair<string, string> bcAndProj in projectDB.GetBarcodeSetsAndProjects(runNo, lane))
+                    List<ExtractionTask> tasks = projectDB.InitiateExtractionOfLaneAnalyses(runNo, lane);
+                    string projIds = string.Join(",", tasks.ConvertAll(v => v.projectName));
+                    logWriter.Write(DateTime.Now.ToString() + " Copying Run{0}:L{1} and extracting {2}...", runNo, lane, projIds);
+                    logWriter.Flush();
+                    foreach (ExtractionTask task in tasks)
                     {
-                        string extractionFolder = PathHandler.MakeExtractionFolderSubPath(bcAndProj.Second, bcAndProj.First, StrtReadMapper.EXTRACTION_VERSION);
-                        Barcodes barcodes = Barcodes.GetBarcodes(bcAndProj.First);
+                        string projectFolder = PathHandler.GetRooted(task.projectName);
+                        string extractionFolder = PathHandler.MakeExtractionFolderSubPath(projectFolder, task.barcodeSet, StrtReadMapper.EXTRACTION_VERSION);
+                        Barcodes barcodes = Barcodes.GetBarcodes(task.barcodeSet);
                         LaneInfo laneInfo = new LaneInfo(lrws[0].PFFilePath, runFolderName, lane.ToString()[0], extractionFolder, barcodes.Count, "");
                         if (barcodes.IncludeNonPF)
                             laneInfo.nonPFReadFilePath = lrws[0].nonPFFilePath;
@@ -193,6 +197,8 @@ namespace BkgFastQCopier
                     projectDB.UpdateRunCycles(runFolderName, cycles[0], cycles[1], cycles[2]);
                     foreach (SampleReadWriter srw in srws)
                         srw.CloseAndWriteSummary();
+                    foreach (ExtractionTask task in tasks)
+                        projectDB.UpdateAnalysisStatus(task.analysisId, ProjectDescription.STATUS_INQUEUE);
                 }
             }
             return readFileResults;

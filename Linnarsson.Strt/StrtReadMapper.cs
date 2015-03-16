@@ -149,7 +149,6 @@ namespace Linnarsson.Strt
         {
             string[] speciesArgs = new string[] { defaultSpeciesArg };
             PlateLayout sampleLayout = PlateLayout.GetPlateLayout(projectName, sampleLayoutPath);
-            Console.WriteLine(projectName + " " + sampleLayoutPath);
             if (sampleLayout != null)
             {
                 barcodes.SetSampleLayout(sampleLayout);

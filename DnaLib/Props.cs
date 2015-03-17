@@ -156,13 +156,14 @@ namespace Linnarsson.Dna
         }
         [NonSerialized]
         private string m_BarcodesName;
-
         public string BarcodesName
         {
             get { return m_BarcodesName; }
             set { m_BarcodesName = value; m_Barcodes = null; }
         }
-        
+
+        public bool AnalyzeLoci = false; // For nuclear RNA, will consider each gene as the whole locus, and not exons.
+
         public MultiReadMappingType SelectedMappingType { get { return (DirectionalReads && UseMost5PrimeExonMapping) ? MultiReadMappingType.Most5Prime : DefaultExonMapping; } }
 
         public bool UseMaxAltMappings { get { return props.BowtieAlignArgs.Contains("MaxAlternativeMappings"); } }

@@ -49,6 +49,7 @@ namespace CmdSilverBullet
                             props.BarcodesName = options.barcodesName;
                             props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
                             props.Aligner = options.Aligner;
+                            props.AnalyzeLoci = options.analyzeLoci;
                             projectFolder = options.projectFolder;
                             mapper = new StrtReadMapper();
                             List<LaneInfo> extrInfos = mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
@@ -117,6 +118,7 @@ namespace CmdSilverBullet
                             props.SenseStrandIsSequenced = options.readSequenceIsSense;
                             props.Aligner = options.Aligner;
                             props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
+                            props.AnalyzeLoci = options.analyzeLoci;
                             mapper = new StrtReadMapper();
                             mapper.MapAndAnnotate(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
                                                             options.annotation, options.resultFolder, options.specificBcIdxs);
@@ -290,6 +292,7 @@ namespace CmdSilverBullet
                 "                Regexps are allowed for idx read matching, e.g. AG?TTG.\n" +
                 "   -oNAME       Use a non-standard output folder\n" +
                 "   -cN          Specify total # of spike molecules.\n" +
+                "   -loci        Consider the whole locus as one gene exon. (For use in nuclear RNA analysis)\n" +
                 "                Individual fractions are taken from 2nd column of " + PathHandler.GetCTRLConcPath() + "\n" +
                 "   -BcIndexes M,N[,...] Only process the specified barcodes indexes, even if the barcode set contains more indexes.\n" +
                 "   ANNOTATIONOPTION can be (default values first):\n" +

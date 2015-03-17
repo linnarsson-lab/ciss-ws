@@ -186,14 +186,17 @@ namespace Linnarsson.Strt
             }
             Console.WriteLine("Read {0} transcript models totalling {1} exons from database {2}.", nModels, nExons, dbTranscriptome.Name);
             ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
-            foreach (LocusFeature spliceGf in AnnotationReader.IterSTRTAnnotFile(STRTAnnotPath))
-                if (spliceGf.Chr == genome.Annotation)
-                {
-                    int nParts = RegisterGeneFeature(spliceGf);
-                    if (nParts > 0) { nModels++; nExons += nParts; }
-                    else nSpliceModels -= nParts;
-                }
-            Console.WriteLine("Added splice junctions for {0} transcript models from {1}.", nSpliceModels, STRTAnnotPath);
+            if (!props.AnalyzeLoci)
+            {
+                foreach (LocusFeature spliceGf in AnnotationReader.IterSTRTAnnotFile(STRTAnnotPath))
+                    if (spliceGf.Chr == genome.Annotation)
+                    {
+                        int nParts = RegisterGeneFeature(spliceGf);
+                        if (nParts > 0) { nModels++; nExons += nParts; }
+                        else nSpliceModels -= nParts;
+                    }
+                Console.WriteLine("Added splice junctions for {0} transcript models from {1}.", nSpliceModels, STRTAnnotPath);
+            }
             return true;
         }
 
@@ -202,6 +205,7 @@ namespace Linnarsson.Strt
             int nModels = 0, nSpliceModels = 0, nExons = 0;
             foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotFile(STRTAnnotPath))
             {
+                if (props.AnalyzeLoci && gf.Chr == genome.Annotation) continue; // No splices analyzed in nuclei
                 int nParts = RegisterGeneFeature(gf);
                 if (nParts > 0) { nModels++; nExons += nParts; }
                 else nSpliceModels -= nParts;

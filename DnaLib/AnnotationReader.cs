@@ -568,14 +568,39 @@ namespace Linnarsson.Dna
             string chr = record[2].Trim();
             char strand = record[3].Trim()[0];
             int nExons = int.Parse(record[8]);
-            int[] exonStarts = SplitField(record[9], 0);
-            int[] exonEnds = SplitExonEndsField(record[10]); // Convert to inclusive ends
+            int[] exonStarts = GetExonStarts(record[9]);
+            int[] exonEnds = GetExonEnds(record[10]);
             if (record.Length == 11)
                 return new GeneFeature(name, chr, strand, exonStarts, exonEnds, geneType, geneMetadata);
             int[] offsets = SplitField(record[11], 0);
             int[] realExonIds = SplitField(record[12], 0);
             string[] exonsStrings = record[13].Split(',');
             return new SplicedGeneFeature(name, chr, strand, exonStarts, exonEnds, offsets, realExonIds, exonsStrings);
+        }
+
+        public static GeneFeature GeneFeatureFromDBTranscript(Transcript tt)
+        {
+            int[] exonStarts = GetExonStarts(tt.ExonStarts);
+            int[] exonEnds = GetExonEnds(tt.ExonEnds);
+            string metadata = tt.Name + GeneFeature.metadataDelim + tt.StartToCloseCutSites;
+            return new GeneFeature(tt.UniqueGeneName, tt.Chromosome, tt.Strand, exonStarts, exonEnds,
+                                   tt.Type, metadata, tt.TranscriptID.Value, tt.ExprBlobIdx);
+        }
+
+        private static int[] GetExonStarts(string exonStartsString)
+        {
+            int[] exonStarts = SplitField(exonStartsString, 0); // 0-based
+            if (Props.props.AnalyzeLoci)
+                exonStarts = new int[] { exonStarts[0] };
+            return exonStarts;
+        }
+
+        private static int[] GetExonEnds(string exonEndsString)
+        {
+            int[] exonEnds = SplitExonEndsField(exonEndsString); // Convert to 0-based inclusive ends
+            if (Props.props.AnalyzeLoci)
+                exonEnds = new int[] { exonEnds[exonEnds.Length - 1] };
+            return exonEnds;
         }
 
         public static int[] SplitExonEndsField(string exonEnds)
@@ -590,15 +615,6 @@ namespace Linnarsson.Dna
             for (int i = 0; i < nParts; i++)
                 parts[i] = int.Parse(items[i]) + offset;
             return parts;
-        }
-
-        public static GeneFeature GeneFeatureFromDBTranscript(Transcript tt)
-        {
-            int[] exonStarts = SplitField(tt.ExonStarts, 0); // 0-based
-            int[] exonEnds = SplitExonEndsField(tt.ExonEnds); // Convert to 0-based inclusive ends
-            string metadata = tt.Name + GeneFeature.metadataDelim + tt.StartToCloseCutSites;
-            return new GeneFeature(tt.UniqueGeneName, tt.Chromosome, tt.Strand, exonStarts, exonEnds,
-                                   tt.Type, metadata, tt.TranscriptID.Value, tt.ExprBlobIdx);
         }
 
         public static Transcript CreateNewTranscriptFromGeneFeature(GeneFeature gf)

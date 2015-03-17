@@ -17,6 +17,7 @@ namespace CmdSilverBullet
         public ReadLimitType extractionReadLimitType = ReadLimitType.None;
         public int extractionReadLimit = 0;
         public bool useMost5PrimeExonMapping = true;
+        public bool analyzeLoci = false;
         public string speciesAbbrev = "";
         public string geneVariantsChar = Props.props.AnalyzeAllGeneVariants? "a" : "s";
         public bool analyzeAllGeneVariants { get { return geneVariantsChar == "a"; } }
@@ -85,6 +86,9 @@ namespace CmdSilverBullet
                             break;
                         case "-bowtie":
                             Aligner = "bowtie";
+                            break;
+                        case "-loci":
+                            analyzeLoci = true;
                             break;
                         case "-LTotalReads":
                             extractionReadLimitType = ReadLimitType.TotalReads;

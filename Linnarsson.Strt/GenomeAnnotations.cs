@@ -616,7 +616,7 @@ namespace Linnarsson.Strt
                 WriteReadsTable(fileNameBase);
                 WriteMaxOccupiedUMIsByEXONTable(fileNameBase);
             }
-            string expressionFile = WriteExpressionTable(fileNameBase);
+            WriteExpressionTable(fileNameBase);
             WriteMinExpressionTable(fileNameBase);
             WriteExportTables(fileNameBase);
             string rpmFile = WriteNormalizedExpression(fileNameBase);
@@ -918,17 +918,19 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="fileNameBase"></param>
         /// <returns>Path to output file</returns>
-        private string WriteExpressionTable(string fileNameBase)
+        private void WriteExpressionTable(string fileNameBase)
         {
             string exprPath = fileNameBase + "_expression.tab";
-            return WriteExtendedDataTable(exprPath, true, GeneFeature.IterTrMaxHits);
+            WriteExtendedDataTable(exprPath, true, GeneFeature.IterTrMaxHits);
+            string cefPath = fileNameBase + "_expression.cef";
+            WriteCEFDataTable(cefPath, true, GeneFeature.IterTrMaxHits);
         }
-        private string WriteMinExpressionTable(string fileNameBase)
+        private void WriteMinExpressionTable(string fileNameBase)
         {
             string exprPath = fileNameBase + "_expression_singlereads.tab";
-            return WriteExtendedDataTable(exprPath, false, GeneFeature.IterTrNCHits);
+            WriteExtendedDataTable(exprPath, false, GeneFeature.IterTrNCHits);
         }
-        private string WriteExtendedDataTable(string fileName, bool withMultireads, HitIterator hitIterator)
+        private void WriteExtendedDataTable(string fileName, bool withMultireads, HitIterator hitIterator)
         {
             using (StreamWriter writer = new StreamWriter(fileName))
             {
@@ -960,7 +962,46 @@ namespace Linnarsson.Strt
                     writer.WriteLine();
                 }
             }
-            return fileName;
+        }
+
+        private void WriteCEFDataTable(string CEFFileName, bool multireads, HitIterator hitIterator)
+        {
+            using (StreamWriter writer = new StreamWriter(CEFFileName, false, Encoding.UTF8))
+            {
+                int nHeaders = 1;
+                int nRowAttrs = 8;
+                int nColAttrs = GetNSampleAnnotationLines();
+                int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+                int nCols = speciesBcIndexes.Length;
+                int nRows = 0;
+                int nFields = nRowAttrs + nCols + 1;
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true)) nRows++;
+                writer.WriteLine("CEF\t{0}\t{1}\t{2}\t{3}\t{4}\t0{5}", nHeaders, nRowAttrs, nColAttrs, nRows, nCols, new string('\t', nFields - 7));
+                string h1 = MakeFirstHeader(multireads, "#{0} {1} {2} counts for transcripts, and sense+antisense {2} counts for repeat types.{3}");
+                writer.WriteLine("Description\t{0}{1}", h1, new string('\t', nFields - 2));
+                WriteSampleAnnotationLines(writer, nRowAttrs, false, speciesBcIndexes);
+                writer.WriteLine("Feature\tType\tTrNames\tChr\tPos\tStrand\tTrLen\tClose{0}",
+                                 string.Join("/", props.CAPCloseSiteSearchCutters));
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
+                {
+                    string[] fields = (gf.GeneMetadata + GeneFeature.metadataDelim).Split(GeneFeature.metadataDelim);
+                    string trName = fields[0];
+                    string cutSites = fields[1];
+                    string safeName = ExcelRescueGeneName(gf.Name);
+                    writer.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}",
+                               safeName, gf.GeneType, trName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), cutSites);
+                    foreach (int c in hitIterator(gf, speciesBcIndexes))
+                        writer.Write("\t{0}", c);
+                    writer.WriteLine();
+                }
+                foreach (RepeatFeature rf in repeatFeatures.Values)
+                {
+                    writer.Write("{0}\trepeat\t\t\t\t\t{1}\t", rf.Name, rf.GetLocusLength());
+                    foreach (int bcIdx in speciesBcIndexes)
+                        writer.Write("\t{0}", rf.Hits(bcIdx));
+                    writer.WriteLine();
+                }
+            }
         }
 
         /// <summary>

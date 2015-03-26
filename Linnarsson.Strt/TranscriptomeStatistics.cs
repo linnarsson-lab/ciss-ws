@@ -672,31 +672,31 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-		///  Save all the statistics to a set of files
+		///  Write all output files
 		/// </summary>
         /// <param name="readCounter">Holder of types of reads in input</param>
         /// <param name="resultDescr"></param>
 		public void SaveResult(ReadCounter readCounter, ResultDescription resultDescr)
 		{
-            if (occupiedUMICounter != null)
-                occupiedUMICounter.WriteOutput(OutputPathbase);
+            Annotations.SaveResult(OutputPathbase, MappedTagItem.AverageReadLen);
+            WriteSummary(readCounter, resultDescr);
+            WriteWiggleAndBed();
+            if (Props.props.OutputLevel <= 1) return;
+
             if (geneExpressionSummary != null)
                 geneExpressionSummary.WriteOutput(OutputPathbase);
+            if (Props.props.OutputLevel <= 2) return;
+
+            if (Props.props.WriteHotspots)
+                WriteHotspots();
+            if (occupiedUMICounter != null)
+                occupiedUMICounter.WriteOutput(OutputPathbase);
             PaintReadIntervals();
             if (upstreamAnalyzer != null)
                 upstreamAnalyzer.WriteUpstreamStats(OutputPathbase);
             if (TestReporter != null)
                 TestReporter.Summarize(Annotations.geneFeatures);
             WriteRedundantExonHits();
-            WriteSummary(readCounter, resultDescr);
-            int averageReadLen = MappedTagItem.AverageReadLen;
-            Annotations.SaveResult(OutputPathbase, averageReadLen);
-            if (Props.props.GenerateWiggle)
-            {
-                WriteWiggleAndBed();
-                if (Props.props.WriteHotspots)
-                    WriteHotspots();
-            }
             WriteMappingsBySpikeReads();
             WriteSpikeEfficiencies();
             WriteHitProfilesByBarcode();
@@ -1832,6 +1832,7 @@ namespace Linnarsson.Strt
 
         private void WriteWiggleStrand(char strand, string outputFolder, bool allBarcodes)
         {
+            bool makeBed = Props.props.GenerateBed && Props.props.OutputLevel >= 2;
             string projwell = projectId + (allBarcodes ? "" : ("_" + barcodes.GetWellId(currentBcIdx)));
             string fileNameHead = projwell + "_" + ((strand == '+') ? "fw" : "rev");
             string filePathHead = Path.Combine(outputFolder, fileNameHead);
@@ -1846,8 +1847,8 @@ namespace Linnarsson.Strt
                 if (writerByMol != null)
                     writerByMol.WriteLine("track type=wiggle_0 name=\"{0}{2}\" description=\"{1} {3} ({2})\" visibility=full alwaysZero=on",
                                           projwell + "M", fileNameHead + "_Mol", strand, DateTime.Now.ToString("yyMMdd"));
-                StreamWriter bedWriterByRead = Props.props.GenerateBed ? (filePathHead + "_byread.bed.gz").OpenWrite() : null;
-                StreamWriter bedWriterByMol = (Props.props.GenerateBed && barcodes.HasUMIs) ? (filePathHead + "_bymol.bed.gz").OpenWrite() : null;
+                StreamWriter bedWriterByRead = makeBed ? (filePathHead + "_byread.bed.gz").OpenWrite() : null;
+                StreamWriter bedWriterByMol = (makeBed && barcodes.HasUMIs) ? (filePathHead + "_bymol.bed.gz").OpenWrite() : null;
                 foreach (KeyValuePair<string, ChrTagData> tagDataPair in randomTagFilter.chrTagDatas)
                 {
                     string chr = tagDataPair.Key;

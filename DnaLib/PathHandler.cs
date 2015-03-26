@@ -268,8 +268,7 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static string MakeBarcodeFilePath(string barcodeSetName)
         {
-            string bcPath = Path.Combine(Props.props.ProjectsFolder, "barcodes");
-            return Path.Combine(bcPath, barcodeSetName + ".barcodes");
+            return Path.Combine(Props.props.BarcodesFolder, barcodeSetName + ".barcodes");
         }
 
         /// <summary>
@@ -278,7 +277,7 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static string[] GetAllCustomBarcodeSetNames()
         {
-            string[] bcFiles = Directory.GetFiles(Path.Combine(Props.props.ProjectsFolder, "barcodes"), "*.barcodes");
+            string[] bcFiles = Directory.GetFiles(Props.props.BarcodesFolder, "*.barcodes");
             return Array.ConvertAll(bcFiles, f => Path.GetFileNameWithoutExtension(f).ToLower());
         }
 

@@ -610,16 +610,17 @@ namespace Linnarsson.Strt
         public void SaveResult(string fileNameBase, int averageReadLen)
         {
             ProjectName = Path.GetDirectoryName(fileNameBase);
-            if (barcodes.HasUMIs)
-            {
-                WriteTrueMolsTable(fileNameBase);
-                WriteReadsTable(fileNameBase);
-                WriteMaxOccupiedUMIsByEXONTable(fileNameBase);
-            }
-            WriteExpressionTable(fileNameBase);
-            WriteMinExpressionTable(fileNameBase);
-            WriteExportTables(fileNameBase);
-            string rpmFile = WriteNormalizedExpression(fileNameBase);
+            WriteExpressionToCEF(fileNameBase);
+            WriteReadsToCEF(fileNameBase);
+            if (props.UseRPKM) WriteNormalizedExpression(fileNameBase);
+            if (props.OutputLevel <= 1) return;
+
+            WriteTrueMolsToCEF(fileNameBase);
+            WriteMinExpressionToCEF(fileNameBase);
+            WriteMatlabTables(fileNameBase, GeneFeature.IterTrMaxHits);
+            WriteRTable(fileNameBase, GeneFeature.IterTrMaxHits);
+            if (props.OutputLevel <= 2) return;
+            WriteMaxOccupiedUMIsByEXONTable(fileNameBase);
             if (props.ShowTranscriptSharingGenes)
                 WriteSharedGenes(fileNameBase);
             WriteIntronCounts(fileNameBase);
@@ -656,6 +657,7 @@ namespace Linnarsson.Strt
             WritePotentialErronousAnnotations(fileNameBase);
             WriteElongationEfficiency(fileNameBase, averageReadLen);
             WriteSpikeProfilesByBc(fileNameBase);
+            WriteQlucoreTable(fileNameBase);
         }
 
         private void WriteExpressedAntisenseGenes(string fileNameBase)
@@ -837,6 +839,7 @@ namespace Linnarsson.Strt
 
         private void WriteReadsTable(string fileNameBase)
         {
+            if (!barcodes.HasUMIs) return;
             string readFile = fileNameBase + "_reads.tab";
             string header = MakeFirstHeader(true, "#{0} {1} unfiltered read counts and sense+antisense reads counts for repeat types.{3}");
             WriteBasicDataTable(readFile, header, GeneFeature.IterTrReads);
@@ -858,12 +861,14 @@ namespace Linnarsson.Strt
 
         private void WriteMaxOccupiedUMIsByEXONTable(string fileNameBase)
         {
+            if (!barcodes.HasUMIs) return;
             string header = "#Maximal occupied UMIs (after mutated UMI filtering) in each barcode of each transcript.";
             WriteBasicDataTable(fileNameBase + "_EXON_UMI_usage.tab", header, GeneFeature.IterMaxOccupiedUMIsByEXON);
         }
 
         private void WriteTrueMolsTable(string fileNameBase)
         {
+            if (!barcodes.HasUMIs) return;
             string header = MakeFirstHeader(true, "#{0} {1} estimated true molecule counts.{3}");
             WriteBasicDataTable(fileNameBase + "_true_counts.tab", header, GeneFeature.IterTrEstTrueMolCounts);
         }
@@ -913,6 +918,36 @@ namespace Linnarsson.Strt
             return firstHeader;
         }
 
+        private void WriteExpressionToCEF(string fileNameBase)
+        {
+            string cefPath = fileNameBase + "_expression.cef";
+            string h = MakeFirstHeader(true, "#{0} {1} {2} counts for transcripts, and sense+antisense {2} counts for repeat types.{3}");
+            WriteCEFDataTable(cefPath, h, GeneFeature.IterTrMaxHits);
+        }
+
+        private void WriteReadsToCEF(string fileNameBase)
+        {
+            if (!barcodes.HasUMIs) return;
+            string cefPath = fileNameBase + "_reads.cef";
+            string h = MakeFirstHeader(true, "#{0} {1} read counts for transcripts, and sense+antisense read counts for repeat types.{3}");
+            WriteCEFDataTable(cefPath, h, GeneFeature.IterTrReads);
+        }
+
+        private void WriteTrueMolsToCEF(string fileNameBase)
+        {
+            if (!barcodes.HasUMIs) return;
+            string cefPath = fileNameBase + "_true_counts.cef";
+            string h = MakeFirstHeader(true, "#{0} {1} estimated true molecule counts.{3}");
+            WriteCEFDataTable(cefPath, h, GeneFeature.IterTrEstTrueMolCounts);
+        }
+
+        private void WriteMinExpressionToCEF(string fileNameBase)
+        {
+            string cefPath = fileNameBase + "_expression_singlereads.cef";
+            string h = MakeFirstHeader(false, "#{0} {1} {2} counts for transcripts, and sense+antisense {2} counts for repeat types.{3}");
+            WriteCEFDataTable(cefPath, h, GeneFeature.IterTrNCHits);
+        }
+
         /// <summary>
         /// For each feature, write the total (for genes, transcript) hit count for every barcode
         /// </summary>
@@ -922,8 +957,6 @@ namespace Linnarsson.Strt
         {
             string exprPath = fileNameBase + "_expression.tab";
             WriteExtendedDataTable(exprPath, true, GeneFeature.IterTrMaxHits);
-            string cefPath = fileNameBase + "_expression.cef";
-            WriteCEFDataTable(cefPath, true, GeneFeature.IterTrMaxHits);
         }
         private void WriteMinExpressionTable(string fileNameBase)
         {
@@ -964,7 +997,7 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void WriteCEFDataTable(string CEFFileName, bool multireads, HitIterator hitIterator)
+        private void WriteCEFDataTable(string CEFFileName, string header1, HitIterator hitIterator)
         {
             using (StreamWriter writer = new StreamWriter(CEFFileName, false, Encoding.UTF8))
             {
@@ -977,8 +1010,7 @@ namespace Linnarsson.Strt
                 int nFields = nRowAttrs + nCols + 1;
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true)) nRows++;
                 writer.WriteLine("CEF\t{0}\t{1}\t{2}\t{3}\t{4}\t0{5}", nHeaders, nRowAttrs, nColAttrs, nRows, nCols, new string('\t', nFields - 7));
-                string h1 = MakeFirstHeader(multireads, "#{0} {1} {2} counts for transcripts, and sense+antisense {2} counts for repeat types.{3}");
-                writer.WriteLine("Description\t{0}{1}", h1, new string('\t', nFields - 2));
+                writer.WriteLine("Description\t{0}{1}", header1, new string('\t', nFields - 2));
                 WriteSampleAnnotationLines(writer, nRowAttrs, false, speciesBcIndexes);
                 writer.WriteLine("Feature\tType\tTrNames\tChr\tPos\tStrand\tTrLen\tClose{0}",
                                  string.Join("/", props.CAPCloseSiteSearchCutters));
@@ -1022,13 +1054,6 @@ namespace Linnarsson.Strt
         }
 
         private delegate IEnumerable<int> HitIterator(GeneFeature gf, int[] bcIndexes);
-
-        private void WriteExportTables(string fileNameBase)
-        {
-            WriteMatlabTables(fileNameBase, GeneFeature.IterTrMaxHits);
-            WriteRTable(fileNameBase, GeneFeature.IterTrMaxHits);
-            WriteQlucoreTable(fileNameBase);
-        }
 
         private void WriteRTable(string fileNameBase, HitIterator hitIterator)
         {
@@ -1136,12 +1161,11 @@ namespace Linnarsson.Strt
             return ROrM + (props.UseRPKM ? "PerKBases" : "") + (barcodes.HasUMIs ? "Normalized" : "PerMillion");
         }
 
-        private string WriteNormalizedExpression(string fileNameBase)
+        private void WriteNormalizedExpression(string fileNameBase)
         {
             string exprFile = fileNameBase + "_" + MakeRPFileType() + ".tab";
             bool molCounts = barcodes.HasUMIs;
             using (StreamWriter exprWriter = new StreamWriter(exprFile))
-            using (StreamWriter simpleWriter = new StreamWriter(fileNameBase + "_" + MakeRPFileType() + "_simple.txt"))
             {
                 string rpDescr = (molCounts ? "molecules " : "reads ") + (props.UseRPKM ? "per kilobase transcript and " : "") +
                                  (molCounts ? "normalized to the average across all samples" : "million");
@@ -1158,27 +1182,19 @@ namespace Linnarsson.Strt
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 WriteSampleAnnotationLines(exprWriter, (props.DirectionalReads ? 9 : 7), true, speciesBcIndexes);
                 exprWriter.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\t{0}Average\tCV", (props.DirectionalReads ? "P=0.01\tP=0.001\t" : ""));
-                WriteNormalizedExprSection(exprWriter, true, null);
+                WriteNormalizedExprSection(exprWriter, true);
                 exprWriter.WriteLine();
-                foreach (int idx in speciesBcIndexes)
-                    simpleWriter.Write("\t{0}", barcodes.GetWellId(idx));
-                simpleWriter.WriteLine();
-                WriteNormalizedExprSection(exprWriter, false, simpleWriter);
+                WriteNormalizedExprSection(exprWriter, false);
             }
-            return exprFile;
         }
 
-        private void WriteNormalizedExprSection(StreamWriter exprWriter, bool selectSpikes, StreamWriter simpleWriter)
+        private void WriteNormalizedExprSection(StreamWriter exprWriter, bool selectSpikes)
         {
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             int[] totalByBarcode = GetTotalTranscriptCountsByBarcode(selectSpikes);
-            int totCount = totalByBarcode.Sum();
             double[] normFactors = CalcNormalizationFactors(totalByBarcode);
-            double RPkbM99, RPkbM999;
-            GetDetectionThresholds(selectSpikes, totCount, out RPkbM99, out RPkbM999);
             string normName = (props.UseRPKM) ? "Normalizer" : (barcodes.HasUMIs) ? "SingleMol" : "SingleRead";
             exprWriter.Write("{0}\t\t\t\t\t\t\t", normName);
-            if (props.DirectionalReads) exprWriter.Write("\t\t");
             foreach (int idx in speciesBcIndexes)
                 exprWriter.Write("\t{0:G6}", normFactors[idx]);
             exprWriter.WriteLine();
@@ -1189,12 +1205,6 @@ namespace Linnarsson.Strt
                 string safeName = ExcelRescueGeneName(gf.Name);
                 exprWriter.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
                                  safeName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), gf.GetTranscriptHits());
-                if (props.DirectionalReads)
-                {
-                    string RPkbMThres01 = string.Format("{0:G6}", RPkbM99 * gf.GetNonMaskedTranscriptLength() / trLenFactor);
-                    string RPkbMThres001 = string.Format("{0:G6}", RPkbM999 * gf.GetNonMaskedTranscriptLength() / trLenFactor);
-                    exprWriter.Write("\t{0}\t{1}", RPkbMThres01, RPkbMThres001);
-                }
                 StringBuilder sb = new StringBuilder();
                 DescriptiveStatistics ds = new DescriptiveStatistics();
                 foreach (int bcIdx in speciesBcIndexes)
@@ -1207,27 +1217,6 @@ namespace Linnarsson.Strt
                 if (ds.Count > 2 && gf.GetTranscriptHits() > 0)
                     CV = string.Format("{0:G6}", (ds.StandardDeviation() / ds.Mean()));
                 exprWriter.WriteLine("\t{0:G6}\t{1}{2}", ds.Mean(), CV, sb.ToString());
-                if (simpleWriter != null)
-                    simpleWriter.WriteLine(gf.Name + sb.ToString());
-            }
-        }
-
-        private void GetDetectionThresholds(bool selectSpikes, int totCount, out double RPkbM99, out double RPkbM999)
-        {
-            List<double> allASReadsPerBase = new List<double>();
-            foreach (GeneFeature gf in IterOrderedGeneFeatures(true, false))
-            {
-                int antiHits = gf.NonMaskedHitsByAnnotType[AnnotType.AEXON];
-                double ASReadsPerBase = antiHits / (double)gf.GetNonMaskedTranscriptLength();
-                allASReadsPerBase.Add(ASReadsPerBase);
-            }
-            RPkbM999 = Double.NaN;
-            RPkbM99 = Double.NaN;
-            if (!selectSpikes && totCount > 0 && allASReadsPerBase.Count > 0)
-            {
-                allASReadsPerBase.Sort();
-                RPkbM99 = 1000 * 1.0E+6 * allASReadsPerBase[(int)Math.Floor(allASReadsPerBase.Count * 0.99)] / (double)totCount;
-                RPkbM999 = 1000 * 1.0E+6 * allASReadsPerBase[(int)Math.Floor(allASReadsPerBase.Count * 0.999)] / (double)totCount;
             }
         }
 

@@ -32,7 +32,8 @@ namespace C1
         static DateTime lastCopyTime = new DateTime(2012, 1, 1);
         static bool runOnce = false;
         static string specificChipDir = "";
-        static List<string> testedChipIds = new List<string>();
+        static List<string> testedChipDirs = new List<string>();
+        static string layoutFilePattern = Props.props.SampleLayoutFileFormat.Replace("{0}", "*");
 
         static void Main(string[] args)
         {
@@ -121,7 +122,6 @@ namespace C1
             string[] availableChipDirs = Directory.GetDirectories(C1Props.props.C1RunsFolder, "*-*-*");
             foreach (string chipDir in availableChipDirs)
             {
-                string chipId = GetChipIdFromChipDir(chipDir);
                 if (HasChanged(chipDir))
                 {
                     string msg = Copy(chipDir);
@@ -131,14 +131,14 @@ namespace C1
                         logWriter.WriteLine("{0} {1}: {2}", DateTime.Now.ToString(), chipDir, msg);
                         logWriter.Flush();
                     }
-                    else if (!testedChipIds.Contains(chipId))
+                    else if (!testedChipDirs.Contains(chipDir))
                     {
                         logWriter.WriteLine(DateTime.Now.ToString() + " " + msg);
                         logWriter.Flush();
                         if (msg.StartsWith("ERROR"))
                             NotifyManager(chipDir, msg);
                     }
-                    testedChipIds.Add(chipId);
+                    testedChipDirs.Add(chipDir);
                 }
             }
             return someCopyDone;
@@ -155,9 +155,9 @@ namespace C1
         {
             try
             {
-                string chipId = GetChipIdFromChipDir(chipDir);
                 HashSet<string> emptyWells = ReadWellFile(chipDir, C1Props.props.WellExcludeFilePattern);
-                List<Cell> celldata = ReadCellData(chipDir, emptyWells);
+                List<Cell> celldata = ReadCellDataFromC1Files(chipDir, emptyWells);
+                if (celldata == null) celldata = ReadCellDataFromLayoutFile(chipDir, emptyWells);
                 if (celldata == null)
                 {
                     if (specificChipDir == "")
@@ -165,8 +165,8 @@ namespace C1
                     Console.WriteLine(DateTime.Now.ToString() + " " + chipDir + ": No celldata - faking 96 cells");
                     celldata = FakeCellData(emptyWells);
                 }
-                InsertCells(celldata, chipId);
-                return "OK: Loaded.";
+                string chipId = GetChipIdFromChipDir(chipDir);
+                return InsertCells(celldata, chipId);
             }
             catch (Exception e)
             {
@@ -174,28 +174,33 @@ namespace C1
             }
         }
 
-        private static void InsertCells(List<Cell> cells, string chipId)
+        private static string InsertCells(List<Cell> cells, string chipId)
         {
             ProjectDB pdb = new ProjectDB();
-            int jos_aaachipid = pdb.GetChipByChipId(chipId).id.Value;
+            int jos_aaachipid = pdb.GetIdOfChip(chipId);
+            if (jos_aaachipid == -1)
+                return "NOTICE: Chip " + chipId + " has not yet been registered in database.";
             foreach (Cell cell in cells)
             {
                 cell.jos_aaachipid = jos_aaachipid;
                 pdb.InsertOrUpdateCell(cell);
             }
+            return "OK: Loaded.";
         }
 
         /// <summary>
-        /// Convert 'XXXX-XXX-XXX' to 'XXXXXXX-XXX'
+        /// Convert 'XXXX-XXX-XXX' to 'XXXXXXX-XXX' if C1Prop ConvertChipIds==true
         /// </summary>
         /// <param name="chipDir"></param>
         /// <returns></returns>
         private static string GetChipIdFromChipDir(string chipDir)
         {
-            Match m = Regex.Match(Path.GetFileName(chipDir), "^([0-9][0-9][0-9][0-9])-([0-9][0-9][0-9]-[0-9][0-9][0-9])$");
+            string chipId = Path.GetFileName(chipDir);
+            if (!C1Props.props.ConvertChipIds) return chipId;
+            Match m = Regex.Match(chipId, "^([0-9][0-9][0-9][0-9])-([0-9][0-9][0-9]-[0-9][0-9][0-9])$");
             if (m.Success)
                 return m.Groups[1].Value + m.Groups[2].Value;
-            return chipDir;
+            return chipId;
         }
 
         /// <summary>
@@ -252,7 +257,9 @@ namespace C1
             bool gmNew = gm != null && (new FileInfo(gm).LastWriteTime > lastCopyTime || new FileInfo(gm).CreationTime > lastCopyTime);
             string bm = GetLastMatchingFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "blue"));
             bool bmNew = bm != null && (new FileInfo(bm).LastWriteTime > lastCopyTime || new FileInfo(bm).CreationTime > lastCopyTime);
-            return (cfNew || xfNew || rmNew || gmNew || bmNew);
+            string lf = GetLastMatchingFile(chipDir, layoutFilePattern);
+            bool lfNew = lf != null && (new FileInfo(lf).LastWriteTime > lastCopyTime || new FileInfo(lf).CreationTime > lastCopyTime);
+            return (cfNew || xfNew || rmNew || gmNew || bmNew || lfNew);
         }
 
         /// <summary>
@@ -279,7 +286,7 @@ namespace C1
         /// </summary>
         /// <param name="chipDir"></param>
         /// <param name="filenamePat"></param>
-        /// <returns>null if no file was found, otherwise the set of wells listed in the file</returns>
+        /// <returns>null if no file was found, otherwise the set of wells listed in the file formatted like 'A01'</returns>
         private static HashSet<string> ReadWellFile(string chipDir, string filenamePat)
         {
             HashSet<string> wells = null;
@@ -333,12 +340,12 @@ namespace C1
             return status;
         }
 
-        private static List<Cell> ReadCellData(string chipDir, HashSet<string> emptyWells)
+        private static List<Cell> ReadCellDataFromC1Files(string chipDir, HashSet<string> emptyWells)
         {
-            List<Cell> cells = new List<Cell>();
             string chipFolder, BFFolder, lastCapPath;
             if (!GetCellPaths(chipDir, out chipFolder, out BFFolder, out lastCapPath))
                 return null;
+            List<Cell> cells = new List<Cell>();
             HashSet<string> redWells = ReadWellFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "red"));
             HashSet<string> greenWells = ReadWellFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "green"));
             HashSet<string> blueWells = ReadWellFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "blue"));
@@ -383,6 +390,65 @@ namespace C1
                         cellImages.Add(new CellImage(null, null, reporter, imgFolderName, Detection.Unknown, imgPath));
                     }
                     newCell.cellImages = cellImages;
+                    cells.Add(newCell);
+                }
+            }
+            return cells;
+        }
+
+        private static string GetValueFromLayoutFile(string key, Dictionary<string, int> field2idx, string[] fields)
+        {
+            return field2idx.ContainsKey(key) ? fields[field2idx[key]] : null;
+        }
+
+        private static int ParseColor(string value)
+        {
+            if (value == null) return Detection.Unknown;
+            if (value == "yes" || value == "y" || value == "1" || value == "x")
+                return Detection.Yes;
+            return Detection.No;
+        }
+
+        private static List<Cell> ReadCellDataFromLayoutFile(string chipDir, HashSet<string> emptyWells)
+        {
+            string[] cellfields = new string[] { "red", "green", "blue", "area", "diameter" };
+            string layoutPath = GetLastMatchingFile(chipDir, layoutFilePattern);
+            if (layoutPath == null) return null;
+            List<Cell> cells = new List<Cell>();
+            using (StreamReader r = new StreamReader(layoutPath))
+            {
+                string header = r.ReadLine().ToLower();
+                string[] hfields = header.Split('\t');
+                if (hfields.Length < 2 || hfields[0] != "well" || hfields[1] != "species")
+                {
+                    logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: layout file header has wrong format: " + layoutPath + "...");
+                    logWriter.Flush();
+                    return null;
+                }
+                Dictionary<string, int> field2idx = new Dictionary<string,int>();
+                for (int i = 1; i < hfields.Length; i++)
+                    field2idx[hfields[i]] = i;
+                string line;
+                while ((line = r.ReadLine()) != null)
+                {
+                    if ((line = line.Trim()).Length == 0)
+                        continue;
+                    string[] fields = line.Split('\t');
+                    string well = fields[0];
+                    string species = fields[1].ToLower();
+                    bool valid = (species != "empty") && ((emptyWells == null) || !emptyWells.Contains(well));
+                    double area, diameter;
+                    double.TryParse(GetValueFromLayoutFile("area", field2idx, fields), out area);
+                    double.TryParse(GetValueFromLayoutFile("red", field2idx, fields), out diameter);
+                    int red = ParseColor(GetValueFromLayoutFile("red", field2idx, fields));
+                    int green = ParseColor(GetValueFromLayoutFile("green", field2idx, fields));
+                    int blue = ParseColor(GetValueFromLayoutFile("blue", field2idx, fields));
+                    Cell newCell = new Cell(null, 0, well, "", diameter, area, red, green, blue, valid);
+                    foreach (KeyValuePair<string, int> p in field2idx)
+                    {
+                        if (Array.IndexOf(cellfields, p.Key) == -1)
+                            newCell.cellAnnotations.Add(new CellAnnotation(null, 0, p.Key, fields[p.Value]));
+                    }
                     cells.Add(newCell);
                 }
             }

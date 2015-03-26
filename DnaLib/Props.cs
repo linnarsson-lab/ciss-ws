@@ -54,6 +54,7 @@ namespace Linnarsson.Dna
         public string ReadsFolder = "\\\\127.0.0.1\\data\\reads"; // Where FastQ files of concatenated reads for each lane are gathered
         public string ProjectsFolder = "\\\\127.0.0.1\\data\\strt";
         public string UploadsFolder = "\\\\127.0.0.1\\uploads";
+        public string BarcodesFolder = "\\\\127.0.0.1\\data\\strt\barcodes";
         public string ResultDownloadUrl = "strtserver@127.0.0.1:/html/strt/";
         public string ResultDownloadFolderHttp = "http://127.0.0.1/html/strt/";
         public string ResultDownloadScpPort = "0";
@@ -149,6 +150,7 @@ namespace Linnarsson.Dna
         public string Aligner = "bowtie"; // Default aligner
         public string CellDBAligner = "bowtie"; // The aligner used when data is inserted into CellDB
         public string DBPrefix = "jos_"; // Table prefix use in CellDB
+        public int OutputLevel = 2; // Controls how much data will be output
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

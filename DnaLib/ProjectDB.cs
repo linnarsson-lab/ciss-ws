@@ -763,15 +763,29 @@ namespace Linnarsson.Dna
             return loadedChips;
         }
 
-        public Chip GetChipByChipId(string chipid)
+        public int GetIdOfChip(string chipid)
         {
-            return GetChip("WHERE chipid='" + chipid + "'");
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            string sql = string.Format("SELECT id FROM {0}aaachip WHERE chipid='{1}'", Props.props.DBPrefix, chipid);
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            int result = -1;
+            if (rdr.HasRows)
+            {
+                rdr.Read();
+                result = rdr.GetInt32(0);
+            }
+            rdr.Close();
+            conn.Close();
+            return result;
         }
+
         public Chip GetChipById(int id)
         {
             return GetChip("WHERE id='" + id + "'");
         }
-        public Chip GetChip(string whereClause)
+        private Chip GetChip(string whereClause)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();

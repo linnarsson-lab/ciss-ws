@@ -783,17 +783,13 @@ namespace Linnarsson.Dna
 
         public Chip GetChipById(int id)
         {
-            return GetChip("WHERE id='" + id + "'");
-        }
-        private Chip GetChip(string whereClause)
-        {
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             string sql = "SELECT id, chipid, strtprotocol, datedissected, datecollected," +
                          " species, strain, donorid, age, sex, weight," +
                          " tissue, treatment, spikemolecules, {0}aaaprojectid, " +
-                         " {0}aaaclientid, {0}aaacontactid, {0}aaamanagerid, comments FROM {0}aaachip {1};";
-            sql = string.Format(sql, Props.props.DBPrefix, whereClause);
+                         " {0}aaaclientid, {0}aaacontactid, {0}aaamanagerid, comments FROM {0}aaachip WHERE id='{1}';";
+            sql = string.Format(sql, Props.props.DBPrefix, id);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             Chip chip = null;

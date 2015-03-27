@@ -796,7 +796,7 @@ namespace Linnarsson.Strt
                     exprHolder.UniqueMolecules = gf.TrNCHits(bcIdx);
                     exprHolder.Molecules = gf.TrHits(bcIdx);
                     exprHolder.UniqueReads = gf.NonConflictingTrReadsByBc[bcIdx];
-                    exprHolder.Reads = gf.TrReadsByBc[bcIdx];
+                    exprHolder.Reads = gf.TrReads(bcIdx);
                     yield return exprHolder;
                 }
                 foreach (RepeatFeature rf in repeatFeatures.Values)
@@ -817,8 +817,9 @@ namespace Linnarsson.Strt
         /// Note that the ExprBlob object is re-used at each cycle.
         /// </summary>
         /// <param name="cellIdByPlateWell"></param>
+        /// <param name="useMols">Take molecules instead of reads, if UMIs are used</param>
         /// <returns></returns>
-        public IEnumerable<ExprBlob> IterC1DBExprBlobs(Dictionary<string, int> cellIdByPlateWell)
+        public IEnumerable<ExprBlob> IterC1DBExprBlobs(Dictionary<string, int> cellIdByPlateWell, bool useMols)
         {
             int nValues = 0;
             foreach (GeneFeature gf in geneFeatures.Values)
@@ -831,7 +832,7 @@ namespace Linnarsson.Strt
                 exprBlob.CellID = cellIdByPlateWell[barcodes.GetWellId(bcIdx)].ToString();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
-                    exprBlob.SetBlobValue(gf.ExprBlobIdx, gf.TrHits(bcIdx));
+                    exprBlob.SetBlobValue(gf.ExprBlobIdx, gf.TrHits(bcIdx, useMols));
                 }
                 yield return exprBlob;
             }
@@ -1323,7 +1324,7 @@ namespace Linnarsson.Strt
                 }
                 sGfGroup.Sort();
                 if (sGfGroup.Count > 0)
-                    sb.AppendFormat("{0}\t{1}\t{2}\n", gf.Name, gf.TrReadsByBc.Sum(), string.Join("\t", sGfGroup.ToArray()));
+                    sb.AppendFormat("{0}\t{1}\t{2}\n", gf.Name, gf.TrReadSum(), string.Join("\t", sGfGroup.ToArray()));
             }
             if (sb.Length > 0)
             {

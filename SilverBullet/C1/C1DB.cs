@@ -238,12 +238,13 @@ namespace C1
             conn.Close();
         }
 
-        public void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator)
+        public void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator, bool mols)
         {
+            string table = mols ? "Expr" : "Read";
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             int n = 0, maxId = 0, minId = int.MaxValue;
-            string sqlPat = "REPLACE INTO ExprBlob (CellID, TranscriptomeID, Data) VALUES ('{0}',{1}, ?BLOBDATA)";
+            string sqlPat = "REPLACE INTO " + table + "Blob (CellID, TranscriptomeID, Data) VALUES ('{0}',{1}, ?BLOBDATA)";
             foreach (ExprBlob exprBlob in exprBlobIterator)
             {
                 string sql = string.Format(sqlPat, exprBlob.CellID, exprBlob.TranscriptomeID);

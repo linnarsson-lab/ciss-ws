@@ -146,11 +146,20 @@ namespace Linnarsson.Dna
         /// <summary>
         /// Always total reads per barcode
         /// </summary>
-        public int[] TrReadsByBc;
+        private int[] TrReadsByBc;
         /// <summary>
         /// Unique reads per barcode
         /// </summary>
         public int[] NonConflictingTrReadsByBc;
+
+        public int TrReads(int bcIdx)
+        {
+            return TrReadsByBc[bcIdx];
+        }
+        public int TrReadSum()
+        {
+            return TrReadsByBc.Sum();
+        }
 
         /// <summary>
         /// Molecules per barcode after UMI mutation filtering
@@ -172,6 +181,16 @@ namespace Linnarsson.Dna
         public int TrHitSum()
         {
             return (TrMolsByBc != null) ? TrMolsByBc.Sum(v => (int)v) : TrReadsByBc.Sum();
+        }
+        /// <summary>
+        /// Return molecule count if useMols == true and UMIs are use, else read count
+        /// </summary>
+        /// <param name="bcIdx"></param>
+        /// <param name="useMols"></param>
+        /// <returns></returns>
+        public int TrHits(int bcIdx, bool useMols)
+        {
+            return (useMols && TrMolsByBc != null) ? TrMolsByBc[bcIdx] : TrReadsByBc[bcIdx];
         }
 
         /// <summary>

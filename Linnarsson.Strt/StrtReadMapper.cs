@@ -362,19 +362,22 @@ namespace Linnarsson.Strt
         /// <param name="resultDescr"></param>
         private static void InsertCells10kData(string projectId, GenomeAnnotations annotations, ResultDescription resultDescr)
         {
-            Dictionary<string, int> cellIdByPlateWell = new ProjectDB().GetCellIdByPlateWell(projectId);
+            ProjectDB pdb = new ProjectDB();
+            Dictionary<string, int> cellIdByPlateWell = pdb.GetCellIdByPlateWell(projectId);
             if (cellIdByPlateWell.Count == 0)
             {
-                Console.WriteLine("WARNING: C1Chip->SeqPlate well mappings missing in database. No expression data is inserted.");
-                return;
+                Console.WriteLine("WARNING: chip->SeqPlate well mappings missing in DB. Setting platewells = chipwells.");
+                pdb.SetPlateWellToChipWell(projectId);
+                cellIdByPlateWell = pdb.GetCellIdByPlateWell(projectId);
             }
-            Console.WriteLine("Saving expression BLOB:s to database...");
+            Console.WriteLine("Saving expression BLOB:s to cells10k database...");
             try
             {
                 C1DB c1db = new C1DB();
                 string parString = MakeParameterString();
                 c1db.InsertAnalysisSetup(projectId, resultDescr.splcIndexVersion, resultDescr.resultFolder, parString);
-                c1db.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByPlateWell));
+                c1db.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByPlateWell, true), true);
+                c1db.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByPlateWell, false), false);
             }
             catch (Exception e)
             {

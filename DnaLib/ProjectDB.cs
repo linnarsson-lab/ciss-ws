@@ -414,143 +414,6 @@ namespace Linnarsson.Dna
             return waitingFiles;
         }
 
-        /// <summary>
-        /// Obtain a list of string values from a single column of a table
-        /// </summary>
-        /// <param name="sql"></param>
-        /// <returns></returns>
-        private List<string> GetStrings(string sql)
-        {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            List<string> result = new List<string>();
-            while (rdr.Read())
-                result.Add(rdr.GetString(0));
-            rdr.Close();
-            conn.Close();
-            return result;
-        }
-
-        /// <summary>
-        /// Find selected column from project table where some (other) column matches an SQL "LIKE" pattern.
-        /// </summary>
-        /// <param name="likeCol">The column to match</param>
-        /// <param name="likeFilter">The LIKE-style filter</param>
-        /// <param name="resultCol">The column to return</param>
-        /// <returns></returns>
-        public List<string> GetProjectColumn(string likeCol, string likeFilter, string resultCol)
-        {
-            string sql = string.Format("SELECT {1} FROM {0}aaaproject WHERE {2} LIKE '{3}' AND status!='cancelled'",
-                Props.props.DBPrefix, resultCol, likeCol, likeFilter);
-            return GetStrings(sql);
-        }
-
-        public string TryGetPrimerId(string primername)
-        {
-            string result = "NULL";
-            if (primername == null || primername == "")
-                return result;
-            string sql = string.Format("SELECT id FROM {0}aaasequencingprimer WHERE primername='{1}'", Props.props.DBPrefix, primername);
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            if (rdr.HasRows)
-            {
-                rdr.Read();
-                result = rdr.GetInt32(0).ToString();
-            }
-            rdr.Close();
-            conn.Close();
-            return result;
-        }
-
-        public void InsertOrUpdateProject(ProjectDescription pd)
-        {
-            if (pd.SpikeMoleculeCount == 0)
-                pd.SpikeMoleculeCount = Props.props.TotalNumberOfAddedSpikeMolecules;
-            CultureInfo cult = new CultureInfo("sv-SE");
-            string checkSql = "SELECT count(distinct(p.plateid)) AS nprojects, count(a.id) AS nresults FROM {0}aaaproject p " +
-                              "LEFT JOIN {0}aaaanalysis a ON a.{0}aaaprojectid=p.id WHERE p.plateid='{1}'";
-            string sql = string.Format(checkSql, Props.props.DBPrefix, pd.plateId);
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            rdr.Read();
-            bool projectExists = rdr.GetInt32(0) > 0;
-            bool hasResults = rdr.GetInt32(1) > 0;
-            rdr.Close();
-            conn.Close();
-            string seqPrimerId = TryGetPrimerId(pd.seqPrimer);
-            string idxPrimerId = TryGetPrimerId(pd.idxPrimer);
-            string pairedPrimerId = TryGetPrimerId(pd.pairedPrimer);
-            if (hasResults || projectExists) // MAYBE HAS TO BE MORE CAREFUL IF THERE ARE RESULTS?
-                sql = "UPDATE {29}aaaproject SET {29}aaacontactid='{0}', {29}aaamanagerid='{1}', {29}aaaclientid='{2}', " +
-                "title='{3}', productiondate='{4}', platereference='{6}', species='{7}', tissue='{8}', " +
-                "sampletype='{9}', collectionmethod='{10}', description='{14}', " +
-                "protocol='{15}', barcodeset='{16}', labbookpage='{17}', " +
-                "layoutfile='{18}', comment='{20}', user='{21}', spikemolecules='{22}', time=NOW(), " +
-                "plannedseqcycles='{23}', plannedidxcycles='{24}', plannedpairedcycles='{25}', " +
-                "seqprimerid={26}, idxprimerid={27}, pairedprimerid={28} " +
-                "WHERE plateid='{5}'";
-            else
-                sql = "INSERT INTO {29}aaaproject ({29}aaacontactid, {29}aaamanagerid, {29}aaaclientid, " +
-                "title, productiondate, plateid, platereference, species, tissue, sampletype, " +
-                "collectionmethod, weightconcentration, fragmentlength, molarconcentration, description, " +
-                "protocol, barcodeset, labbookpage, layoutfile, status, comment, user, spikemolecules, time, " +
-                "plannedseqcycles, plannedidxcycles, plannedpairedcycles, seqprimerid, idxprimerid, pairedprimerid" +
-                ") VALUES('{0}','{1}','{2}', " +
-                         "'{3}','{4}','{5}','{6}','{7}','{8}','{9}'," +
-                         "'{10}','{11}','{12}','{13}','{14}', " +
-                         "'{15}','{16}','{17}','{18}','{19}','{20}','{21}','{22}', NOW(), " +
-                         "'{23}','{24}','{25}', {26}, {27}, {28})";
-            sql = string.Format(sql, pd.jos_aaacontactid, pd.jos_aaamanagerid, pd.jos_aaaclientid,
-                 pd.title, pd.productionDate.ToString(cult), pd.plateId, pd.plateReference, pd.defaultSpecies, pd.tissue, pd.sampleType,
-                 pd.collectionMethod, 0, 0, 0, pd.description,
-                 pd.protocol, pd.barcodeSet, pd.labBookPage, pd.layoutFile, pd.status, pd.comment, Environment.UserName, pd.SpikeMoleculeCount,
-                 pd.nSeqCycles, pd.nIdxCycles, pd.nPairedCycles, seqPrimerId, idxPrimerId, pairedPrimerId, Props.props.DBPrefix);
-            IssueNonQuery(sql);
-        }
-
-        /// <summary>
-        /// Set the DB projectid of the chip (chips if it is a mix plate) of a sequencing plate
-        /// </summary>
-        /// <param name="plateid">The plate identifier ("Lxxx" or "C1-xxxxxxx-xxx")</param>
-        /// <param name="chips">THe (combined) chip id(s) (xxxxxxx-xxx)</param>
-        public void SetChipsProjectId(string plateid, List<Chip> chips)
-        {
-            int dbProjId = GetPlateInsertId(plateid);
-            string chipids = string.Join("','", chips.ConvertAll(c => c.chipid).ToArray());
-            string sql = string.Format("UPDATE {0}aaachip SET {0}aaaprojectid={1} WHERE chipid IN ('{2}')", 
-                Props.props.DBPrefix, dbProjId, chipids);
-            IssueNonQuery(sql);
-        }
-
-        /// <summary>
-        /// Get the DB id of a textual plate identifier
-        /// </summary>
-        /// <param name="plateId">"Lxxx" or "C1-xxxxxxx-xxx"</param>
-        /// <returns></returns>
-        public int GetPlateInsertId(string plateId)
-        {
-            return GetInsertId(string.Format("SELECT id FROM {0}aaaproject WHERE plateid='{1}'", Props.props.DBPrefix, plateId));
-        }
-        private int GetInsertId(string sql)
-        {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            rdr.Read();
-            int insertId = rdr.GetInt32(0);
-            rdr.Close();
-            conn.Close();
-            return insertId;
-        }
-
         public Cell GetCellFromChipWell(string chipid, string chipwell)
         {
             string whereClause = string.Format("LEFT JOIN {0}aaachip h ON h.id=c.{0}aaachipid WHERE h.chipid='{1}' AND c.chipwell='{2}'",
@@ -564,7 +427,7 @@ namespace Linnarsson.Dna
                 Props.props.DBPrefix, chipid);
             return GetCells(whereClause);
         }
-        public List<Cell> GetCells(string whereClause)
+        private List<Cell> GetCells(string whereClause)
         {
             List<Cell> cells = new List<Cell>();
             MySqlConnection conn = new MySqlConnection(connectionString);
@@ -600,14 +463,12 @@ namespace Linnarsson.Dna
             return cellIdByPlateWell;
         }
 
-        public void UpdatePlateWellOfCells(List<Cell> plateOrderedCells)
+        public void SetPlateWellToChipWell(string projectId)
         {
-            string sqlPat = "UPDATE {0}aaacell SET platewell='{1}' WHERE id='{2}'";
-            foreach (Cell c in plateOrderedCells)
-            {
-                string sql = string.Format(sqlPat, Props.props.DBPrefix, c.platewell, c.id);
-                IssueNonQuery(sql);
-            }
+            string sql = string.Format("UPDATE {0}aaachip h " +
+                         " JOIN {0}aaaproject p ON h.{0}aaaprojectid=p.id JOIN {0}aaacell c ON c.{0}_aaachipid=h.id " +
+                         " SET c.platewell=c.chipwell WHERE p.plateid='{1}'", Props.props.DBPrefix, projectId);
+            IssueNonQuery(sql);
         }
 
         public void GetCellAnnotationsByPlate(string projectId,
@@ -623,7 +484,7 @@ namespace Linnarsson.Dna
             GetCellAnnotations(string.Format("WHERE c.{0}aaachipid='{1}' ORDER BY c.chipwell", Props.props.DBPrefix, chipId),
                 out annotations, out annotationIndexes);
         }
-        public void GetCellAnnotations(string chipOrProjectWhereSql,
+        private void GetCellAnnotations(string chipOrProjectWhereSql,
             out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
             annotationIndexes = new Dictionary<string, int>();
@@ -1048,12 +909,13 @@ namespace Linnarsson.Dna
             conn.Close();
         }
 
-        public void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator)
+        public void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator, bool mols)
         {
+            string table = mols ? "expr" : "read";
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             int n = 0, maxId = 0, minId = int.MaxValue;
-            string sqlPat = "REPLACE INTO {0}aaaexprblob ({0}aaacellid, {0}aaatranscriptomeid, data) VALUES ('{1}',{2}, ?BLOBDATA)";
+            string sqlPat = "REPLACE INTO {0}aaa" + table + "blob ({0}aaacellid, {0}aaatranscriptomeid, data) VALUES ('{1}',{2}, ?BLOBDATA)";
             foreach (ExprBlob exprBlob in exprBlobIterator)
             {
                 string sql = string.Format(sqlPat, Props.props.DBPrefix, exprBlob.CellID, exprBlob.TranscriptomeID);
@@ -1065,7 +927,7 @@ namespace Linnarsson.Dna
                 maxId = Math.Max(int.Parse(exprBlob.CellID), maxId);
                 minId = Math.Min(int.Parse(exprBlob.CellID), minId);
             }
-            Console.WriteLine("Inserted {0} ExprBlobs with CellIDs {1} - {2}", n, minId, maxId);
+            Console.WriteLine("Inserted {0} ExprBlobs with cellid {1} - {2}", n, minId, maxId);
             conn.Close();
         }
 

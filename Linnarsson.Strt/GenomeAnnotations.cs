@@ -922,7 +922,7 @@ namespace Linnarsson.Strt
         private void WriteExpressionToCEF(string fileNameBase)
         {
             string cefPath = fileNameBase + "_expression.cef";
-            string h = MakeFirstHeader(true, "#{0} {1} {2} counts for transcripts, and sense+antisense {2} counts for repeat types.{3}");
+            string h = MakeFirstHeader(true, "#{0} {1} {2} counts for transcripts.{3}");
             WriteCEFDataTable(cefPath, h, GeneFeature.IterTrMaxHits);
         }
 
@@ -930,7 +930,7 @@ namespace Linnarsson.Strt
         {
             if (!barcodes.HasUMIs) return;
             string cefPath = fileNameBase + "_reads.cef";
-            string h = MakeFirstHeader(true, "#{0} {1} read counts for transcripts, and sense+antisense read counts for repeat types.{3}");
+            string h = MakeFirstHeader(true, "#{0} {1} read counts for transcripts.{3}");
             WriteCEFDataTable(cefPath, h, GeneFeature.IterTrReads);
         }
 
@@ -945,7 +945,7 @@ namespace Linnarsson.Strt
         private void WriteMinExpressionToCEF(string fileNameBase)
         {
             string cefPath = fileNameBase + "_expression_singlereads.cef";
-            string h = MakeFirstHeader(false, "#{0} {1} {2} counts for transcripts, and sense+antisense {2} counts for repeat types.{3}");
+            string h = MakeFirstHeader(false, "#{0} {1} {2} counts for transcripts.{3}");
             WriteCEFDataTable(cefPath, h, GeneFeature.IterTrNCHits);
         }
 
@@ -1013,8 +1013,8 @@ namespace Linnarsson.Strt
                 writer.WriteLine("CEF\t{0}\t{1}\t{2}\t{3}\t{4}\t0{5}", nHeaders, nRowAttrs, nColAttrs, nRows, nCols, new string('\t', nFields - 7));
                 writer.WriteLine("Description\t{0}{1}", header1, new string('\t', nFields - 2));
                 WriteSampleAnnotationLines(writer, nRowAttrs, false, speciesBcIndexes);
-                writer.WriteLine("Feature\tType\tTrNames\tChr\tPos\tStrand\tTrLen\tClose{0}",
-                                 string.Join("/", props.CAPCloseSiteSearchCutters));
+                writer.WriteLine("Feature\tType\tTrNames\tChr\tPos\tStrand\tTrLen\tClose{0}{1}",
+                                 string.Join("/", props.CAPCloseSiteSearchCutters), new string('\t', nFields - 8));
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     string[] fields = (gf.GeneMetadata + GeneFeature.metadataDelim).Split(GeneFeature.metadataDelim);
@@ -1025,13 +1025,6 @@ namespace Linnarsson.Strt
                                safeName, gf.GeneType, trName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), cutSites);
                     foreach (int c in hitIterator(gf, speciesBcIndexes))
                         writer.Write("\t{0}", c);
-                    writer.WriteLine();
-                }
-                foreach (RepeatFeature rf in repeatFeatures.Values)
-                {
-                    writer.Write("{0}\trepeat\t\t\t\t\t{1}\t", rf.Name, rf.GetLocusLength());
-                    foreach (int bcIdx in speciesBcIndexes)
-                        writer.Write("\t{0}", rf.Hits(bcIdx));
                     writer.WriteLine();
                 }
             }

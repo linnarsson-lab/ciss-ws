@@ -129,7 +129,21 @@ namespace ESCAF_BclToFq
                     if (c.ExitCode != 0) throw new Exception(c.StdError);
                 }
                 ReadCopier readCopier = new ReadCopier(logWriter);
-                readFileResults = readCopier.SingleUseCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8);
+                // Non-parallell:
+                //readFileResults = readCopier.SingleUseCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8);
+                // :end non-parallell
+                // Start parallell:
+                CopierStart start1 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 1, 4);
+                Thread thread1 = new Thread(readCopier.CopyRun);
+                thread1.Start(start1);
+                CopierStart start2 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 5, 8);
+                Thread thread2 = new Thread(readCopier.CopyRun);
+                thread2.Start(start2);
+                thread1.Join();
+                thread2.Join();
+                readFileResults.AddRange(start1.readFileResults);
+                readFileResults.AddRange(start2.readFileResults);
+                // :end parallell
                 foreach (ReadFileResult r in readFileResults)
                 {
                     foreach (string scpDest in ESCAFProps.props.scpDestinations)

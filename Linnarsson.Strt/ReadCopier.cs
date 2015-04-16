@@ -288,5 +288,29 @@ namespace Linnarsson.Strt
             return readFileResults;
         }
 
+
+        public void CopyRun(object startObj)
+        {
+            CopierStart cs = (CopierStart)startObj;
+            cs.readFileResults = SingleUseCopy(cs.runFolder, cs.readsFolder, cs.laneFrom, cs.laneTo);
+        }
+
+    }
+
+    public class CopierStart
+    {
+        public string runFolder;
+        public string readsFolder;
+        public int laneFrom;
+        public int laneTo;
+        public List<ReadFileResult> readFileResults = new List<ReadFileResult>();
+
+        public CopierStart(string runFolder, string readsFolder, int laneFrom, int laneTo)
+        {
+            this.runFolder = runFolder;
+            this.readsFolder = readsFolder;
+            this.laneFrom = laneFrom;
+            this.laneTo = laneTo;
+        }
     }
 }

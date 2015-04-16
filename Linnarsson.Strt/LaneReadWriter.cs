@@ -13,7 +13,9 @@ namespace Linnarsson.Strt
     /// </summary>
     public class ReadFileResult
     {
-        public string readFile { get; private set; }
+        public string PFPath { get; private set; }
+        public string nonPFPath { get; private set; }
+        public string statsPath { get; private set; }
         public int lane { get; private set; }
         public char read { get; private set; }
         public uint nPFReads { get; private set; }
@@ -21,9 +23,12 @@ namespace Linnarsson.Strt
         public uint readLen { get; private set; }
         public uint nReads { get { return nPFReads + nNonPFReads; } }
 
-        public ReadFileResult(string readFile, int lane, char read, uint nPFReads, uint nNonPFReads, uint readLen)
+        public ReadFileResult(string PFPath, string nonPFPath, string summaryPath,
+                              int lane, char read, uint nPFReads, uint nNonPFReads, uint readLen)
         {
-            this.readFile = readFile;
+            this.PFPath = PFPath;
+            this.nonPFPath = nonPFPath;
+            this.statsPath = summaryPath;
             this.lane = lane;
             this.read = read;
             this.nPFReads = nPFReads;
@@ -38,10 +43,10 @@ namespace Linnarsson.Strt
         int lane;
         char read;
         public string PFFilePath { get; private set; }
-        public StreamWriter PFWriter { get; private set; }
+        private StreamWriter PFWriter;
         public string nonPFFilePath { get; private set; }
-        public StreamWriter nonPFWriter { get; private set; }
-        string statsFilePath;
+        private StreamWriter nonPFWriter;
+        private string statsFilePath;
         uint nReads = 0;
         uint nPFReads = 0;
         int readLen = 0;
@@ -100,7 +105,7 @@ namespace Linnarsson.Strt
                 statsFile.WriteLine("PassedFilterReadsAverageLength\t{0:0.##}", readLen);
                 statsFile.WriteLine("NonPassedFilterReadsAverageLength\t{0:0.##}", readLen);
             }
-            return new ReadFileResult(PFFilePath, lane, read, nPFReads, nReads - nPFReads, (uint)readLen);
+            return new ReadFileResult(PFFilePath, nonPFFilePath, statsFilePath, lane, read, nPFReads, nReads - nPFReads, (uint)readLen);
         }
 
     }

@@ -41,9 +41,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "C1FillExprBlobs", "C1FillEx
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bc2BcLeakageAnalyzer", "..\Bc2BcLeakageAnalyzer\Bc2BcLeakageAnalyzer.csproj", "{37B0C6FE-CCF3-4630-8835-2FDDF6F5AB5F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ESCAF_BclToFq", "..\ESCAF_BclToFq\ESCAF_BclToFq.csproj", "{A573FF93-F257-498B-BE86-99B66CEFA2AF}"
+EndProject
 Global
 	GlobalSection(SourceCodeControl) = preSolution
-		SccNumberOfProjects = 21
+		SccNumberOfProjects = 22
 		SccProjectName0 = Perforce\u0020Project
 		SccLocalPath0 = ..
 		SccProvider0 = MSSCCI:Perforce\u0020SCM
@@ -108,6 +110,9 @@ Global
 		SccProjectUniqueName20 = ..\\Bc2BcLeakageAnalyzer\\Bc2BcLeakageAnalyzer.csproj
 		SccLocalPath20 = ..
 		SccProjectFilePathRelativizedFromConnection20 = Bc2BcLeakageAnalyzer\\
+		SccProjectUniqueName21 = ..\\ESCAF_BclToFq\\ESCAF_BclToFq.csproj
+		SccLocalPath21 = ..
+		SccProjectFilePathRelativizedFromConnection21 = ESCAF_BclToFq\\
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -421,6 +426,21 @@ Global
 		{37B0C6FE-CCF3-4630-8835-2FDDF6F5AB5F}.TestRelease|Mixed Platforms.Build.0 = Release|x86
 		{37B0C6FE-CCF3-4630-8835-2FDDF6F5AB5F}.TestRelease|x86.ActiveCfg = Release|x86
 		{37B0C6FE-CCF3-4630-8835-2FDDF6F5AB5F}.TestRelease|x86.Build.0 = Release|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.Debug|x86.ActiveCfg = Debug|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.Debug|x86.Build.0 = Debug|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.Release|Any CPU.ActiveCfg = Release|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.Release|Mixed Platforms.Build.0 = Release|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.Release|x86.ActiveCfg = Release|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.Release|x86.Build.0 = Release|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.TestRelease|Any CPU.ActiveCfg = Release|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.TestRelease|Mixed Platforms.ActiveCfg = Release|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.TestRelease|Mixed Platforms.Build.0 = Release|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.TestRelease|x86.ActiveCfg = Release|x86
+		{A573FF93-F257-498B-BE86-99B66CEFA2AF}.TestRelease|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

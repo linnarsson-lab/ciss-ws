@@ -65,6 +65,7 @@
     <Compile Include="OveroccupiedUMICounter.cs" />
     <Compile Include="PerLaneStats.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ReadCopier.cs" />
     <Compile Include="ReadCounter.cs" />
     <Compile Include="ReadExtractor.cs" />
     <Compile Include="ReadFragGenerator.cs" />

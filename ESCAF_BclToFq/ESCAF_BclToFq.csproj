@@ -5,15 +5,14 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{4872C995-385F-494D-B395-A1A9E4D73681}</ProjectGuid>
+    <ProjectGuid>{A573FF93-F257-498B-BE86-99B66CEFA2AF}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>BkgFastQCopier</RootNamespace>
-    <AssemblyName>BkgFastQCopier</AssemblyName>
+    <RootNamespace>ESCAF_BclToFq</RootNamespace>
+    <AssemblyName>ESCAF_BclToFq</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
     <SccProjectName>SAK</SccProjectName>
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
@@ -51,28 +50,17 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DnaLib\Linnarsson.Dna.csproj">
-      <Project>{70EA71CD-073B-4195-B04F-36A7F6B1D4E7}</Project>
-      <Name>Linnarsson.Dna</Name>
-    </ProjectReference>
+    <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Linnarsson.Strt\Linnarsson.Strt.csproj">
       <Project>{426B865C-ED32-4ACD-BB8F-8101899AB14B}</Project>
       <Name>Linnarsson.Strt</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MathLib\Linnarsson.Mathematics.csproj">
-      <Project>{CA6815A6-BA36-47A6-A177-FE6C44099FC2}</Project>
-      <Name>Linnarsson.Mathematics</Name>
     </ProjectReference>
     <ProjectReference Include="..\UtilitiesLib\Linnarsson.Utilities.csproj">
       <Project>{EE3E20A0-525F-408B-96F7-44D586F8E0B9}</Project>
       <Name>Linnarsson.Utilities</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="LICENSE.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

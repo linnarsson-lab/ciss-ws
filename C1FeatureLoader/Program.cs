@@ -19,7 +19,7 @@ namespace C1
             if (args.Length == 0 || args[0] == "--help")
             {
                 Console.WriteLine("This program reads gene definition files, builds transcript models, annotates them using various annotation files,");
-                Console.WriteLine("and inserts the transcript models together with CTRL spike data and repeat type annotations into the cells10k database.");
+                Console.WriteLine("and inserts the transcript models together with CTRL spike data and repeat type annotations into the database.");
                 Console.WriteLine("The raw gene models are read from 'refFlat.txt' (for UCSC) or 'XXXX_mart_export.txt' (for ENSE/VEGA) files in the genome folders.");
                 Console.WriteLine("5' ends are extended according to SilverBulletConfig property 'GeneFeature5PrimeExtension' before inserting.");
                 Console.WriteLine("Note that during analysis these extensions are made on-the-fly to the transcripts read from annotation files for non-C1 samples,");

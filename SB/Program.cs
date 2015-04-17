@@ -26,7 +26,6 @@ namespace CmdSilverBullet
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             if (args.Length >= 1 + 0)
             {
-                bool analyzeAllGeneVariants = Props.props.AnalyzeAllGeneVariants;
                 StrtGenome genome = null;
                 Props props = Props.props;
                 StrtReadMapper mapper;

@@ -225,20 +225,25 @@ namespace Linnarsson.Strt
         /// <param name="analyzeAllGeneVariants">true to analyze all transcript splice variants defined in annoatation file</param>
         /// <param name="defaultAnnotation">Annotation source to use if layout file is missing</param>
         /// <param name="resultFolderName">Will make a standard subfolder if "".</param>
-        /// <returns>The subpaths to result folder (one per species) under project folder</returns>
         /// <summary>
-        public List<string> MapAndAnnotate(string projectOrExtractedFolderOrName, string defaultSpeciesArg, 
-                                     bool defaultGeneVariants, string defaultAnnotation, string resultFolderName, int[] selectedBcIdxs)
+        public void MapAndAnnotate(string projectOrExtractedFolderOrName, string defaultSpeciesArg, 
+                                     bool defaultGeneVariants, string defaultAnnotation, string resultFolder, int[] selectedBcIdxs)
         {
             string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolderOrName);
             List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder, barcodes.Count);
             string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
             string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
-            string[] speciesArgs = new string[] { defaultSpeciesArg };
+            MapAndAnnotate(defaultSpeciesArg, defaultGeneVariants, defaultAnnotation, resultFolder,
+                            selectedBcIdxs, laneInfos, projectFolder, sampleLayoutPath);
+        }
+
+        public void MapAndAnnotate(string defaultSpeciesArg, bool defaultGeneVariants, string defaultAnnotation, string resultFolder,
+                                    int[] selectedBcIdxs, List<LaneInfo> laneInfos, string projectFolder, string sampleLayoutPath)
+        {
             string projectName = Path.GetFileName(projectFolder);
-            if (defaultSpeciesArg == "" && File.Exists(sampleLayoutPath))
+            string[] speciesArgs = new string[] { defaultSpeciesArg };
+            if (defaultSpeciesArg == "") // && File.Exists(sampleLayoutPath) allow read C1 layout from DB even if file does not exist
                 speciesArgs = ParsePlateLayout(projectName, sampleLayoutPath, defaultSpeciesArg);
-            List<string> resultSubFolders = new List<string>();
             foreach (string speciesArg in speciesArgs)
             {
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, true);
@@ -247,11 +252,9 @@ namespace Linnarsson.Strt
                 string readDir = !Props.props.DirectionalReads ? "No" : Props.props.SenseStrandIsSequenced ? "Sense" : "Antisense";
                 Console.WriteLine("Annotating {0} map files from {1}\nDirectionalReads={2} RPKM={3} SelectedMappingType={4}...",
                                   mapFiles.Count, projectName, readDir, Props.props.UseRPKM, Props.props.SelectedMappingType);
-                ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, resultFolderName, mapFiles);
+                ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, resultFolder, mapFiles);
                 Console.WriteLine("...output in {0}", resultDescr.resultFolder);
-                if (resultDescr.resultFolder != null) resultSubFolders.Add(resultDescr.resultFolder);
             }
-            return resultSubFolders;
         }
 
         /// <summary>
@@ -299,6 +302,13 @@ namespace Linnarsson.Strt
             return readCounter;
         }
 
+        /// <summary>
+        /// Make a result folder name located under projectFolder
+        /// </summary>
+        /// <param name="genome"></param>
+        /// <param name="projectFolder"></param>
+        /// <param name="projectName"></param>
+        /// <returns>full path to result folder</returns>
         public string GetResultFolder(StrtGenome genome, string projectFolder, string projectName)
         {
             string resultFolderName = string.Format("{0}_{1}_{2}_{3}_{4}", projectName, barcodes.Name, genome.GetMainIndexName(),

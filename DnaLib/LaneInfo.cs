@@ -195,20 +195,5 @@ namespace Linnarsson.Dna
             return mapFiles;
         }
 
-        public override string ToString()
-        {
-            string s = "LaneInfo: illuminaRunId=" + illuminaRunId + " laneNo=" + laneNo + "\n" +
-                       "readFilePath=" + PFReadFilePath + " nReads=" + nReads + "\n" +
-                       "extrTopF= " + extractionFolder + "\n" +
-                       ((extractedFilePaths != null && extractedFilePaths.Length > 0) ? "extrFilePaths[0]=" + extractedFilePaths[0] + "\n" : "") +
-                       "extractedFileFolder=" + laneExtractionFolder + "\n" +
-                       " N=" + ((extractedFilePaths == null) ? "0" : extractedFilePaths.Length.ToString()) + "\n" +
-                       "slaskWBcFilePath=" + slaskWBcFilePath + "\n" +
-                       "slaskNoBcFilePath=" + slaskNoBcFilePath + "\n" +
-                       "summaryFilePath= " + summaryFilePath + "\n" +
-                       "mappedFileFolder= " + mappedFileFolder +
-                       " N=" + ((mappedFilePaths == null) ? "0" : mappedFilePaths.Length.ToString());
-            return s;
-        }
     }
 }

@@ -64,7 +64,7 @@ namespace Linnarsson.Dna
         public static PlateLayout GetPlateLayout(string projectName, string sampleLayoutPath)
         {
             PlateLayout sampleLayout = null;
-            if (projectName.StartsWith(C1Props.C1ProjectPrefix))
+            if (Props.props.InsertCellDBData && projectName.StartsWith(C1Props.C1ProjectPrefix))
             {
                 try
                 {

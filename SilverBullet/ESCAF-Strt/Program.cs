@@ -18,7 +18,7 @@ namespace ESCAF_Strt
         public string build = "mm10";
         public string annotation =  "UCSC";
         public bool variants = Props.props.AnalyzeAllGeneVariants;
-        public string plateId;
+        public string plateId = "";
         public int outputLevel = Props.props.OutputLevel;
         public int spikeMols = Props.props.TotalNumberOfAddedSpikeMolecules;
         public string aligner = Props.props.Aligner;
@@ -27,7 +27,7 @@ namespace ESCAF_Strt
         public bool senseReads = true;
         public bool useRPKM = false;
 
-        public string plateFolder { get { return string.Format("strt/{0}", plateId); } }
+        public string plateFolder { get { return Path.Combine(Props.props.ProjectsFolder, plateId); } }
         public string extractionFolder { get { return Path.Combine(plateFolder, "tmp"); } }
         public string layoutPath { get { return Path.Combine(plateFolder, "layout.txt"); } }
 
@@ -52,7 +52,7 @@ namespace ESCAF_Strt
                 else if (args[argIdx] == "--bowtie") aligner = "bowtie";
                 else if (args[argIdx].ToLower() == "--star") aligner = "star";
                 else if (args[argIdx] == "--help") Console.WriteLine(
-                    "Arguments:\n" +
+                    "Arguments for ESCAF-Strt.exe:\n" +
                     "-p PLATEID            plateId\n" +
                     "-1 PATH1,PATH2...     paths to first read fq.gz files\n" +
                     "-2 PATH1,PATH2...     paths to index read fq.gz files\n" +
@@ -73,9 +73,9 @@ namespace ESCAF_Strt
         public bool IsValid()
         {
             List<string> errors = new List<string>();
-            if (read1Files == null) errors.Add("Argument missing in ESCAFStrt.exe: You need to specify the input fq file(s) with -1 option.");
-            if (barcodesName == "") errors.Add("Argument missing in ESCAFStrt.exe: You need to specify barcode set with -b option.");
-            if (plateFolder == "") errors.Add("Argument missing in ESCAFStrt.exe: You need to specify plate folder with -p option.");
+            if (read1Files == null) errors.Add("Argument missing in ESCAF-Strt.exe: You need to specify the input fq file(s) with -1 option.");
+            if (barcodesName == "") errors.Add("Argument missing in ESCAF-Strt.exe: You need to specify barcode set with -b option.");
+            if (plateId == "") errors.Add("Argument missing in ESCAF-Strt.exe: You need to specify plateId with -p option.");
             if (errors.Count > 0)
             {
                 Console.WriteLine(string.Join("\n", errors.ToArray()));
@@ -93,7 +93,7 @@ namespace ESCAF_Strt
             ESCAFStrtSettings settings = new ESCAFStrtSettings(args);
             if (!settings.IsValid())
                 return 1;
-
+            Process(settings);
             return 0;
         }
 
@@ -108,17 +108,17 @@ namespace ESCAF_Strt
             Props.props.Aligner = options.aligner;
             Props.props.AnalyzeLoci = false;
             string plateId = options.plateFolder;
-            StrtReadMapper mapper = new StrtReadMapper();
             List<LaneInfo> laneInfos = new List<LaneInfo>();
             foreach (string readFile in options.read1Files)
-            {
                 laneInfos.Add(new LaneInfo(readFile, "", '0', options.extractionFolder, Props.props.Barcodes.Count, ""));
-            }
             foreach (LaneInfo laneInfo in laneInfos)
             {
-                    SampleReadWriter srw = new SampleReadWriter(Props.props.Barcodes, laneInfo);
+                Console.WriteLine("Extracting {0} using {1}...", laneInfo.PFReadFilePath, options.barcodesName);
+                SampleReadWriter srw = new SampleReadWriter(Props.props.Barcodes, laneInfo);
                     srw.ProcessLane();
             }
+            Console.WriteLine("Mapping using {0} and annotating...", options.aligner);
+            StrtReadMapper mapper = new StrtReadMapper();
             mapper.MapAndAnnotate(options.build, options.variants, options.annotation, options.resultFolder, null, 
                                   laneInfos, options.plateFolder, options.layoutPath);
         }

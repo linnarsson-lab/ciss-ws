@@ -18,16 +18,8 @@ namespace Linnarsson.Strt
     /// </summary>
     public class StrtReadMapper
 	{
-        private Barcodes barcodes;
-
         public StrtReadMapper()
         {
-            //barcodes = Props.props.Barcodes;
-        }
-        public void SetBarcodeSet(string barcodesName)
-        {
-            Props.props.BarcodesName = barcodesName;
-            barcodes = Props.props.Barcodes;
         }
 
         /// <summary>
@@ -105,8 +97,8 @@ namespace Linnarsson.Strt
 		{
             projectOrReadFileFolder = PathHandler.GetRootedProjectFolder(projectOrReadFileFolder);
             string resultProjectFolder = (resultProject != null) ? PathHandler.GetRooted(resultProject) : projectOrReadFileFolder;
-            string extractionFolder = PathHandler.MakeExtractionFolderSubPath(resultProjectFolder, barcodes.Name, EXTRACTION_VERSION);
-            List<LaneInfo> laneInfos = LaneInfo.LaneInfosFromLaneArgs(laneArgs, extractionFolder, barcodes.Count);
+            string extractionFolder = PathHandler.MakeExtractionFolderSubPath(resultProjectFolder, Props.props.Barcodes.Name, EXTRACTION_VERSION);
+            List<LaneInfo> laneInfos = LaneInfo.LaneInfosFromLaneArgs(laneArgs, extractionFolder);
             if (laneInfos.Count == 0)
                 Console.WriteLine("Warning: No read files found corresponding to {0}", string.Join("/", laneArgs.ToArray()));
             ExtractMissingAndOld(laneInfos, extractionFolder);
@@ -130,7 +122,7 @@ namespace Linnarsson.Strt
                                        DateTime.Compare(new FileInfo(laneInfo.PFReadFilePath).LastWriteTime, new FileInfo(laneInfo.summaryFilePath).LastWriteTime) > 0;
                 if (someExtractionMissing || readFileIsNewer)
                 {
-                    SampleReadWriter srw = new SampleReadWriter(barcodes, laneInfo);
+                    SampleReadWriter srw = new SampleReadWriter(Props.props.Barcodes, laneInfo);
                     srw.ProcessLane();
                 }
                 if (Background.CancellationPending) break;
@@ -151,7 +143,7 @@ namespace Linnarsson.Strt
             PlateLayout sampleLayout = PlateLayout.GetPlateLayout(projectName, sampleLayoutPath);
             if (sampleLayout != null)
             {
-                barcodes.SetSampleLayout(sampleLayout);
+                Props.props.Barcodes.SetSampleLayout(sampleLayout);
                 speciesArgs = sampleLayout.BuildIds;
             }
             return speciesArgs;
@@ -165,10 +157,10 @@ namespace Linnarsson.Strt
         /// <param name="genomeBcIndexes">optionally only process specific barcodes</param>
         public void CreateAlignments(StrtGenome genome, List<LaneInfo> laneInfos, int[] selectedBcIdxs)
         {
-            int[] genomeBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            int[] genomeBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             if (selectedBcIdxs != null)
                 genomeBcIndexes = genomeBcIndexes.Where(i => selectedBcIdxs.Contains(i)).ToArray();
-            genome.SplcIndexReadLen = new ReadCounter(barcodes).GetAverageReadLen(laneInfos);
+            genome.SplcIndexReadLen = new ReadCounter(Props.props.Barcodes).GetAverageReadLen(laneInfos);
             Aligner aligner = AssertASplcIndex(genome);
             Console.WriteLine("{0} aligning {1} lanes against {2}...", Props.props.Aligner, laneInfos.Count, genome.GetSplcIndexName());
             foreach (LaneInfo laneInfo in laneInfos)
@@ -207,7 +199,7 @@ namespace Linnarsson.Strt
         public void Map(string projectOrExtractedFolderOrName, string speciesArg, bool defaultGeneVariants, string defaultAnnotation)
         {
             string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolderOrName);
-            List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder, barcodes.Count);
+            List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder);
             StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, false);
             CreateAlignments(genome, laneInfos, null);
         }
@@ -230,7 +222,7 @@ namespace Linnarsson.Strt
                                      bool defaultGeneVariants, string defaultAnnotation, string resultFolder, int[] selectedBcIdxs)
         {
             string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolderOrName);
-            List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder, barcodes.Count);
+            List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder);
             string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
             string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
             MapAndAnnotate(defaultSpeciesArg, defaultGeneVariants, defaultAnnotation, resultFolder,
@@ -273,7 +265,7 @@ namespace Linnarsson.Strt
             string barcodeSet = PathHandler.ParseBarcodeSet(extractedFolder);
             if (barcodeSet == null)
                 throw new Exception("Can not parse barcode set name from " + extractedFolder + ". Please redo extraction!");
-            SetBarcodeSet(barcodeSet);
+            Props.props.BarcodesName = barcodeSet;
             return extractedFolder;
         }
 
@@ -284,7 +276,7 @@ namespace Linnarsson.Strt
         /// <returns></returns>
         private ReadCounter ReadExtractionSummaryFiles(List<string> mapFilePaths)
         {
-            ReadCounter readCounter = new ReadCounter(barcodes);
+            ReadCounter readCounter = new ReadCounter(Props.props.Barcodes);
             Dictionary<string, object> summaryPaths = new Dictionary<string, object>();
             foreach (string mapFilePath in mapFilePaths)
             {
@@ -311,7 +303,7 @@ namespace Linnarsson.Strt
         /// <returns>full path to result folder</returns>
         public string GetResultFolder(StrtGenome genome, string projectFolder, string projectName)
         {
-            string resultFolderName = string.Format("{0}_{1}_{2}_{3}_{4}", projectName, barcodes.Name, genome.GetMainIndexName(),
+            string resultFolderName = string.Format("{0}_{1}_{2}_{3}_{4}", projectName, Props.props.Barcodes.Name, genome.GetMainIndexName(),
                                                         Props.props.Aligner.ToUpper()[0], DateTime.Now.ToPathSafeString());
             string resultFolder = Path.Combine(projectFolder, resultFolderName);
             if (Directory.Exists(resultFolder))
@@ -343,7 +335,7 @@ namespace Linnarsson.Strt
             GenomeAnnotations annotations = new GenomeAnnotations(genome);
             annotations.Load();
             TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, Props.props, resultFolder, projectId);
-            string syntLevelFile = PathHandler.GetSyntLevelFilePath(projectFolder, barcodes.HasUMIs);
+            string syntLevelFile = PathHandler.GetSyntLevelFilePath(projectFolder, Props.props.Barcodes.HasUMIs);
             if (syntLevelFile != "")
                 ts.SetSyntReadReporter(syntLevelFile);
             ts.ProcessMapFiles(mapFilePaths, averageReadLen);
@@ -414,7 +406,7 @@ namespace Linnarsson.Strt
         /// <returns></returns>
         private int EstimateReadLengthFromMapFiles(List<string> mapFilePaths)
         {
-            MapFile mapFileReader = MapFile.GetMapFile(mapFilePaths[0], barcodes);
+            MapFile mapFileReader = MapFile.GetMapFile(mapFilePaths[0], Props.props.Barcodes);
             int n = 0;
             long totalReadLength = 0;
             foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePaths[0]))

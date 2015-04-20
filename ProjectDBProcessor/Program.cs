@@ -255,7 +255,7 @@ namespace ProjectDBProcessor
         {
             StrtReadMapper mapper = new StrtReadMapper();
             Console.WriteLine("StrtReadMapper.Process(" + pd.plateId + ")");
-            mapper.SetBarcodeSet(pd.barcodeSet);
+            Props.props.BarcodesName = pd.barcodeSet;
             Props.props.TotalNumberOfAddedSpikeMolecules = pd.SpikeMoleculeCount;
             logWriter.WriteLine("{0} Extracting {1} lanes with barcodes {2}...", DateTime.Now, pd.runIdsLanes.Length, pd.barcodeSet);
             logWriter.Flush();

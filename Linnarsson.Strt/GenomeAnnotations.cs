@@ -1002,7 +1002,8 @@ namespace Linnarsson.Strt
 
         private void WriteCEFDataTable(string CEFFileName, string header1, HitIterator hitIterator)
         {
-            using (StreamWriter writer = new StreamWriter(CEFFileName, false, Encoding.UTF8))
+            Encoding utf8WithoutBom = new System.Text.UTF8Encoding(false);
+            using (StreamWriter writer = new StreamWriter(CEFFileName, false, utf8WithoutBom))
             {
                 int nHeaders = 1;
                 int nRowAttrs = 8;
@@ -1023,7 +1024,7 @@ namespace Linnarsson.Strt
                     string trName = fields[0];
                     string cutSites = fields[1];
                     string safeName = ExcelRescueGeneName(gf.Name);
-                    writer.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}",
+                    writer.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t",
                                safeName, gf.GeneType, trName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), cutSites);
                     foreach (int c in hitIterator(gf, speciesBcIndexes))
                         writer.Write("\t{0}", c);

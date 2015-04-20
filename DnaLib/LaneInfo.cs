@@ -131,8 +131,9 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="extractionFolder"></param>
         /// <returns></returns>
-        public static List<LaneInfo> SetupLaneInfosFromExistingExtraction(string extractionFolder, int nBarcodes)
+        public static List<LaneInfo> SetupLaneInfosFromExistingExtraction(string extractionFolder)
         {
+            int nBarcodes = Props.props.Barcodes.Count;
             List<LaneInfo> laneInfos = new List<LaneInfo>();
             foreach (string laneExtractionFolder in GetLaneExtractionFolders(extractionFolder))
             {
@@ -158,8 +159,9 @@ namespace Linnarsson.Dna
         /// <param name="extractionFolder"></param>
         /// <param name="nBarcodes"></param>
         /// <returns></returns>
-        public static List<LaneInfo> LaneInfosFromLaneArgs(List<string> laneArgs, string extractionFolder, int nBarcodes)
+        public static List<LaneInfo> LaneInfosFromLaneArgs(List<string> laneArgs, string extractionFolder)
         {
+            int nBarcodes = Props.props.Barcodes.Count;
             List<LaneInfo> laneInfos = new List<LaneInfo>();
             foreach (string laneArg in laneArgs)
             {

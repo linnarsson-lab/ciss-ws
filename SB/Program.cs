@@ -48,6 +48,8 @@ namespace CmdSilverBullet
                             props.BarcodesName = options.barcodesName;
                             props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
                             props.Aligner = options.Aligner;
+                            props.UseMost5PrimeExonMapping = options.useMost5PrimeExonMapping;
+                            props.DefaultExonMapping = options.multiReadMappingType;
                             props.AnalyzeLoci = options.analyzeLoci;
                             projectFolder = options.projectFolder;
                             mapper = new StrtReadMapper();
@@ -115,8 +117,10 @@ namespace CmdSilverBullet
                             props.DirectionalReads = options.directionalReads;
                             props.UseRPKM = options.useRPKM;
                             props.SenseStrandIsSequenced = options.readSequenceIsSense;
-                            props.Aligner = options.Aligner;
                             props.TotalNumberOfAddedSpikeMolecules = options.totalSpikeMols;
+                            props.Aligner = options.Aligner;
+                            props.UseMost5PrimeExonMapping = options.useMost5PrimeExonMapping;
+                            props.DefaultExonMapping = options.multiReadMappingType;
                             props.AnalyzeLoci = options.analyzeLoci;
                             mapper = new StrtReadMapper();
                             mapper.MapAndAnnotate(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
@@ -300,8 +304,8 @@ namespace CmdSilverBullet
                 "     single/all              select between one per-gene summarizing value or separate values for all known transcript variants.\n" +
                 "     rpm/rpkm                specify rpkm to calculate rpkm values instead of rpm, for e.g. TruSeq samples.\n" +
                 "     sense/antisense/nondir  specify sequence direction of reads\n" +
-                "     5primemap/multimap      annotate reads/molecules to (one of) the transcript(s) they match closest to the 5' end of,\n" +
-                "                             or multi-annotate to every alternative transcript they match.\n" +
+                "     5primemap/multimap/     annotate reads/molecules to (one of) the transcript(s) they match closest to the 5' end of,\n" +
+                "     /randommap              , randomly to one of, or multi-annotate to every alternative transcript they match.\n" +
                 "     insertc1data            insert data into the Sanger cells10k database when this is a C1 sample.\n" +
                 "   If BUILD/IDX is left out, these are taken from the xxx_SampleLayout.txt file in the project folder.\n" +
                 "bt BUILD|IDX all|single PROJECTPATH|EXTRACTEDPATH      run Bowtie on latest/specified extracted data folder.\n" +

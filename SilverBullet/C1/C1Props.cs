@@ -21,8 +21,6 @@ namespace C1
         public static readonly string C1ProjectPrefix = "C1-"; // Prefix used for cells10k plates in ProjectDB.
         // ConnectionString is now imported from the "SB.exe.config" file, where it is encrypted, see below.
         public string MySQlConnectionString = "server=127.0.0.1;uid=user;pwd=password;database=c1db;Connect Timeout=300;Charset=utf8;";
-        public string C1SeqPlatesFolder = "/data2/c1-seqplates";
-        public string C1SeqPlateFilenamePattern = "*.txt";
         public string C1DonorDataFilenamePattern = "mice_metadata_*.txt";
         public string C1MetadataFilenamePattern = "C1_metadata*.txt";
         public string C1RunsFolder = "/data2/c1-runs";

@@ -114,7 +114,7 @@ namespace Linnarsson.Dna
         public string SampleLayoutFileFolder = ""; // If empty, the PlateLayout file is looked for in the project folder
         public string SampleLayoutFileFormat = "{0}_SampleLayout.txt"; // Formatter for sample layout filenames. Arg0 is project name
         public int TotalNumberOfAddedSpikeMolecules = 6975;
-        public bool UseMost5PrimeExonMapping = true; // if true, exonic multireads get only one single hit at the transcript with closest 5' end
+        public bool UseMost5PrimeExonMapping = true; // true: directional exonic multireads get one single hit at the transcript with closest 5' end
         public MultiReadMappingType DefaultExonMapping = MultiReadMappingType.Random; // Decides non-directional multiread mapping method
         public bool ShowTranscriptSharingGenes = true;
         public bool SaveNonMappedReads = false; // Non-mapped reads from Bowtie may be stored in separate files
@@ -151,6 +151,7 @@ namespace Linnarsson.Dna
         public string CellDBAligner = "bowtie"; // The aligner used when data is inserted into CellDB
         public string DBPrefix = "jos_"; // Table prefix use in CellDB
         public int OutputLevel = 2; // Controls how much data will be output
+        public bool AnalyzeLoci = false; // For nuclear RNA, will consider each gene as the whole locus, and not exons.
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {
@@ -164,9 +165,8 @@ namespace Linnarsson.Dna
             set { m_BarcodesName = value; m_Barcodes = null; }
         }
 
-        public bool AnalyzeLoci = false; // For nuclear RNA, will consider each gene as the whole locus, and not exons.
-
-        public MultiReadMappingType SelectedMappingType { get { return (DirectionalReads && UseMost5PrimeExonMapping) ? MultiReadMappingType.Most5Prime : DefaultExonMapping; } }
+        public bool Apply5PrimeMapping { get { return DirectionalReads && UseMost5PrimeExonMapping; } }
+        public MultiReadMappingType MultireadMappingMode { get { return Apply5PrimeMapping ? MultiReadMappingType.Most5Prime : DefaultExonMapping; } }
 
         public bool UseMaxAltMappings { get { return props.BowtieAlignArgs.Contains("MaxAlternativeMappings"); } }
 

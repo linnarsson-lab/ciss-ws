@@ -28,7 +28,7 @@ namespace Linnarsson.Strt
         }
         public IterTranscriptMatcher GetMatcher()
         {
-            if (Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping)
+            if (Props.props.Apply5PrimeMapping)
                 return IterMost5PrimeTranscriptMatch;
             else
                 return IterAllTranscriptMatches;

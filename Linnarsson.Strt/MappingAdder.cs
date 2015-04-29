@@ -87,18 +87,18 @@ namespace Linnarsson.Strt
             if (Props.props.ShowTranscriptSharingGenes)
             {
                 sharingRealFeatures = new Dictionary<IFeature, object>(Props.props.MaxAlternativeMappings * 2);
-                if (Props.props.SelectedMappingType == MultiReadMappingType.Most5Prime)
+                if (Props.props.MultireadMappingMode == MultiReadMappingType.Most5Prime)
                     addMappingToTranscripts = AddToMost5PrimeExonMappingWSharedGenes;
-                else if (Props.props.SelectedMappingType == MultiReadMappingType.All)
+                else if (Props.props.MultireadMappingMode == MultiReadMappingType.All)
                     addMappingToTranscripts = AddToAllExonMappingsWSharedGenes;
                 else
                     addMappingToTranscripts = AddToARandomExonMappingsWSharedGenes;
             }
             else
             {
-                if (Props.props.SelectedMappingType == MultiReadMappingType.Most5Prime)
+                if (Props.props.MultireadMappingMode == MultiReadMappingType.Most5Prime)
                     addMappingToTranscripts = AddToMost5PrimeExonMapping;
-                else if (Props.props.SelectedMappingType == MultiReadMappingType.All)
+                else if (Props.props.MultireadMappingMode == MultiReadMappingType.All)
                     addMappingToTranscripts = AddToAllExonMappings;
                 else
                     addMappingToTranscripts = AddToARandomExonMapping;

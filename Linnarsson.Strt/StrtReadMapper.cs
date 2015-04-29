@@ -243,7 +243,7 @@ namespace Linnarsson.Strt
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(laneInfos);
                 string readDir = !Props.props.DirectionalReads ? "No" : Props.props.SenseStrandIsSequenced ? "Sense" : "Antisense";
                 Console.WriteLine("Annotating {0} map files from {1}\nDirectionalReads={2} RPKM={3} SelectedMappingType={4}...",
-                                  mapFiles.Count, projectName, readDir, Props.props.UseRPKM, Props.props.SelectedMappingType);
+                                  mapFiles.Count, projectName, readDir, Props.props.UseRPKM, Props.props.MultireadMappingMode);
                 ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, resultFolder, mapFiles);
                 Console.WriteLine("...output in {0}", resultDescr.resultFolder);
             }
@@ -391,7 +391,7 @@ namespace Linnarsson.Strt
         {
             List<string> parameters = new List<string>();
             parameters.Add(string.Format("UMIFilter={0}/{1}", Props.props.RndTagMutationFilter, Props.props.RndTagMutationFilterParam));
-            parameters.Add("UseMost5PrimeExonMapping=" + Props.props.UseMost5PrimeExonMapping);
+            parameters.Add("MultireadMappingMode=" + Props.props.MultireadMappingMode);
             parameters.Add("Aligner=" + Props.props.Aligner);
             parameters.Add("MaxAlignmentMismatches=" + Props.props.MaxAlignmentMismatches);
             parameters.Add("MaxAlternativeMappings=" + Props.props.MaxAlternativeMappings);

@@ -16,7 +16,8 @@ namespace CmdSilverBullet
         public bool readSequenceIsSense = true;
         public ReadLimitType extractionReadLimitType = ReadLimitType.None;
         public int extractionReadLimit = 0;
-        public bool useMost5PrimeExonMapping = true;
+        public bool useMost5PrimeExonMapping = Props.props.UseMost5PrimeExonMapping;
+        public MultiReadMappingType multiReadMappingType = Props.props.DefaultExonMapping;
         public bool analyzeLoci = false;
         public string speciesAbbrev = "";
         public string geneVariantsChar = Props.props.AnalyzeAllGeneVariants? "a" : "s";
@@ -77,9 +78,15 @@ namespace CmdSilverBullet
                             break;
                         case "5primemap":
                             useMost5PrimeExonMapping = true;
+                            multiReadMappingType = MultiReadMappingType.Most5Prime;
                             break;
                         case "multimap":
                             useMost5PrimeExonMapping = false;
+                            multiReadMappingType = MultiReadMappingType.All;
+                            break;
+                        case "randommap":
+                            useMost5PrimeExonMapping = false;
+                            multiReadMappingType = MultiReadMappingType.Random;
                             break;
                         case "-STAR":
                             Aligner = "STAR";

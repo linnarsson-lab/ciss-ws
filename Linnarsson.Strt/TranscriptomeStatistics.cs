@@ -843,7 +843,7 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("    <MaxFeatureLength>{0}</MaxFeatureLength>", Props.props.MaxFeatureLength);
             xmlFile.WriteLine("    <GeneFeature5PrimeExtension>{0}</GeneFeature5PrimeExtension>", Props.props.GeneFeature5PrimeExtension);
             xmlFile.WriteLine("    <LocusFlankLength>{0}</LocusFlankLength>", Props.props.LocusFlankLength);
-            xmlFile.WriteLine("    <UseMost5PrimeExonMapping>{0}</UseMost5PrimeExonMapping>", Props.props.UseMost5PrimeExonMapping);
+            xmlFile.WriteLine("    <MultireadMappingMode>{0}</MultireadMappingMode>", Props.props.MultireadMappingMode);
             if (Props.props.AnalyzeSNPs && barcodes.HasUMIs)
                 xmlFile.WriteLine("    <MinMoleculesToTestSnp>{0}</MinMoleculesToTestSnp>", Props.props.MinMoleculesToTestSnp);
             if (Props.props.AnalyzeSNPs && !barcodes.HasUMIs)
@@ -1049,8 +1049,9 @@ namespace Linnarsson.Strt
             double dividend = nAllHits;
             double reducer = 1.0E6d;
             string mr = "Multireads" + (Props.props.UseMaxAltMappings? string.Format(" (&lt; {0}-fold)", Props.props.MaxAlternativeMappings) : "");
-            string mrHead = mr + ((Props.props.DirectionalReads && Props.props.UseMost5PrimeExonMapping) ?
-                            " are assigned only to their most 5' transcript" : " are assigned to all their transcript hits");
+            string mrMode = (Props.props.MultireadMappingMode == MultiReadMappingType.Random) ? "one random mapping":
+                (Props.props.MultireadMappingMode == MultiReadMappingType.Most5Prime) ? " their most 5' transcript mapping" : " multiply to every transcript mapping";
+            string mrHead = mr + " are assigned to " + mrMode;
             if (barcodes.HasUMIs)
             {
                 dividend = nMappings;

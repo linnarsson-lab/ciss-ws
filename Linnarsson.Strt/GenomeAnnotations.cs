@@ -916,7 +916,8 @@ namespace Linnarsson.Strt
             string multireadTxt = "";
             if (!withMultireads)
                 multireadTxt = " Multireads have been assigned " +
-                    (props.UseMost5PrimeExonMapping ? "to their most 5' mapping." : "multiply to all their alternative mappings.");
+                    ((props.MultireadMappingMode == MultiReadMappingType.Random) ? "randomly to one mapping." :
+                    (props.MultireadMappingMode == MultiReadMappingType.Most5Prime) ? "to their most 5' mapping." : "multiply to every alternative mapping.");
             string firstHeader = string.Format(pattern, dataType, dirType, valueType, multireadTxt);
             return firstHeader;
         }
@@ -1246,31 +1247,6 @@ namespace Linnarsson.Strt
                     foreach (int idx in speciesBcIndexes)
                         matrixFile.Write("\t{0}", gf.CAPRegionHitsByBc[idx]);
                     matrixFile.WriteLine();
-                }
-            }
-        }
-
-        /// <summary>
-        /// For each barcode and locus, write the total hit count
-        /// </summary>
-        /// <param name="fileNameBase"></param>
-        private void WriteExpressionList(string fileNameBase)
-        {
-            // Create a normal-form table of hit counts
-            using (StreamWriter tableFile = new StreamWriter(fileNameBase + "_expression_list.tab"))
-            {
-                string exonHitType = (props.UseMost5PrimeExonMapping && props.DirectionalReads) ? "ExonHits" : "MaxExonHits";
-                tableFile.WriteLine("Barcode\tFeature\t{0}", exonHitType);
-                tableFile.WriteLine();
-                int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
-                {
-                    foreach (int bcIdx in speciesBcIndexes)
-                    {
-                        tableFile.Write("{0}\t", barcodes.Seqs[bcIdx]);
-                        tableFile.Write("{0}\t", gf.Name);
-                        tableFile.WriteLine(gf.TrHits(bcIdx));
-                    }
                 }
             }
         }

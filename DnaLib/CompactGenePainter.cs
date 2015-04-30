@@ -73,7 +73,7 @@ namespace Linnarsson.Dna
             {
                 rowIncr = 0; // Add all barcoded data to a total in row 0
                 trImgData = new ushort[trLen, 1];
-                bcodeSortOrder = new int[Barcodes.MaxCount];
+                bcodeSortOrder = new int[Props.props.Barcodes.Count];
                 for (int idx = 0; idx < bcodeSortOrder.Length; idx++)
                     bcodeSortOrder[idx] = idx;
             }
@@ -119,7 +119,7 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         private static ushort[,] GetLocusProfilesByBarcode(int[] hits, int nSlots, int length, char strand, int weight)
         {
-            ushort[,] imgData = new ushort[nSlots, Barcodes.MaxCount];
+            ushort[,] imgData = new ushort[nSlots, Props.props.Barcodes.Count];
             double scaler = (double)nSlots / (double)length;
             int s = GeneFeature.GetStrandAsInt(strand);
             foreach (int hit in hits)

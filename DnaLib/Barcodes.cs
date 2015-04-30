@@ -50,7 +50,6 @@ namespace Linnarsson.Dna
         protected string[] m_WellIds = null;
         protected string[] m_SpeciesByWell = null;
         public string[] SpeciesByWell { get { return m_SpeciesByWell; } }
-        public static int MaxCount { get { return 96; } }
         public string[] WellIds { get { return m_WellIds; } }
 
         private Dictionary<string, string[]> AnnotationsByWell = new Dictionary<string, string[]>();

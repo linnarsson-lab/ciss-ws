@@ -69,8 +69,8 @@ namespace Linnarsson.Dna
             Length = 0;
             TotalHits = 0;
             if (Props.props.Barcodes.HasUMIs)
-                TotalMolsByBc = new int[Barcodes.MaxCount];
-            TotalReadsByBc = new int[Barcodes.MaxCount];
+                TotalMolsByBc = new int[Props.props.Barcodes.Count];
+            TotalReadsByBc = new int[Props.props.Barcodes.Count];
             C1DBTranscriptID = -1;
         }
 

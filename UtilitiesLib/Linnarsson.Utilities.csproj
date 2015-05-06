@@ -75,6 +75,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LogTimer.cs" />
     <Compile Include="Tty.cs" />
     <Compile Include="ObjectExtensions.cs" />
     <Compile Include="RemoteFile.cs" />

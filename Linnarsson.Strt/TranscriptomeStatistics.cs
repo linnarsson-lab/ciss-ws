@@ -135,6 +135,8 @@ namespace Linnarsson.Strt
         private static int nMaxMappings;
         private List<GeneFeature> gfsForUMIProfile = new List<GeneFeature>();
 
+        private LogTimer logTimer;
+
         public TranscriptomeStatistics(GenomeAnnotations annotations, Props props, string resultFolder, string projectId)
 		{
             this.resultFolder = resultFolder;
@@ -327,20 +329,35 @@ namespace Linnarsson.Strt
         private void ProcessBarcodeMapFiles(Pair<int, List<string>> bcIdxAndMapFilePaths)
         {
             currentBcIdx = bcIdxAndMapFilePaths.First;
+            if (Props.props.LogMode)
+            {
+                Console.WriteLine("LOG Processing bc{0} - {1} files...", currentBcIdx, bcIdxAndMapFilePaths.Second.Count);
+                logTimer = new LogTimer();
+            }
             foreach (string mapFilePath in bcIdxAndMapFilePaths.Second)
             {
-                Console.Write(".");
+                if (!Props.props.LogMode) Console.Write(".");
                 if (File.Exists(mapFilePath))
                     AddReadMappingsToTagItems(mapFilePath);
             }
+            if (Props.props.LogMode) Console.WriteLine("LOG AddReadMappingsToTagItems: {0} s", logTimer.Seconds());
             SampleReadStatistics();
+            if (Props.props.LogMode) Console.WriteLine("LOG SampleReadStatistics: {0} s", logTimer.Seconds());
             AnnotateFeaturesFromTagItems();
+            if (Props.props.LogMode) Console.WriteLine("LOG AnnotateFeaturesFromTagItems: {0} s", logTimer.Seconds());
             if (Props.props.GenerateBarcodedWiggle)
+            {
                 WriteCurrentBcWiggle();
+                if (Props.props.LogMode) Console.WriteLine("LOG WriteCurrentBcWiggle: {0} s", logTimer.Seconds());
+            }
             if (barcodes.HasUMIs && TagItem.CountsReadsPerUMI)
+            {
                 GenerateReadsPerUMIRelatedData();
+                if (Props.props.LogMode) Console.WriteLine("LOG GenerateReadsPerUMIRelatedData: {0} s", logTimer.Seconds());
+            }
             randomTagFilter.FinishBarcode();
             labelingEfficiencyEstimator.FinishBarcode(currentBcIdx);
+            if (Props.props.LogMode) Console.WriteLine("LOG FinishBarcode: {0} s", logTimer.Seconds());
         }
 
         private void AddReadMappingsToTagItems(string mapFilePath)
@@ -352,8 +369,11 @@ namespace Linnarsson.Strt
                 throw new Exception("Unknown read map file type : " + mapFilePath);
             int sampleMappedReadsByFileCounter = PerLaneStats.nMappedReadsPerFileAtSample;
             int sampleSpikeReadsPerMolCounter = Props.props.MappingsBySpikeReadsSampleDist;
+            LogTimer lt2 = null;
+            if (Props.props.LogMode) lt2 = new LogTimer();
             perLaneStats.BeforeFile(currentBcIdx, nTotalMappedBcReads, mappingAdder.NUniqueReadSignatures(currentBcIdx),
                                     randomTagFilter.GetNumDistinctMappings());
+            if (Props.props.LogMode) Console.WriteLine("LOG  perLaneStats.BeforeFile: {0} s", lt2.Seconds());
             foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
             {
                 if (mrm.NMappings >= nMaxMappings)
@@ -393,8 +413,10 @@ namespace Linnarsson.Strt
                 }
                 if (--sampleMappedReadsByFileCounter == 0)
                 {
+                    if (Props.props.LogMode) lt2.Seconds();
                     perLaneStats.AfterFile(mapFilePath, nTotalMappedBcReads, mappingAdder.NUniqueReadSignatures(currentBcIdx),
                                                         randomTagFilter.GetNumDistinctMappings());
+                    if (Props.props.LogMode) Console.WriteLine("LOG  perLaneStats.AfterFile: {0} s", lt2.Seconds());
                     sampleMappedReadsByFileCounter = PerLaneStats.nMappedReadsPerFileAtSample;
                 }
                 if (mrm.HasAltMappings) nMultiReads++;

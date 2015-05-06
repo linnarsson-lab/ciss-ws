@@ -297,7 +297,7 @@ namespace CmdSilverBullet
                 "   -cN          Specify total # of spike molecules.\n" +
                 "   -loci        Consider the whole locus as one gene exon. (For use in nuclear RNA analysis)\n" +
                 "                Individual fractions are taken from 2nd column of " + PathHandler.GetCTRLConcPath() + "\n" +
-                "   -BcIndexes M,N[,...] Only process the specified barcodes indexes, even if the barcode set contains more indexes.\n" +
+                "   -BcIndexes M,Na-Nz,[,...] Only process the specified barcodes and intervals, even if the barcode set contains more indexes.\n" +
                 "   ANNOTATIONOPTION can be (default values first):\n" +
                 "     -bowtie/-STAR             select a specific aligner. (Aligner options are set in config file.)\n" +
                 "     compact / compact-no-filter - use memory-saving UMI counting with filtering of singleton reads / no reads \n" +

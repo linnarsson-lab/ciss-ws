@@ -114,7 +114,20 @@ namespace CmdSilverBullet
                             extractionReadLimit = int.Parse(args[++argOffset]);
                             break;
                         case "-BcIndexes":
-                            specificBcIdxs = Array.ConvertAll(args[++argOffset].Split(','), v => int.Parse(v));
+                            HashSet<int> idxs = new HashSet<int>();
+                            string[] items = args[++argOffset].Split(',');
+                            foreach (string item in items)
+                            {
+                                if (item.Contains('-'))
+                                {
+                                    string[] f = item.Split('-');
+                                    for (int i = int.Parse(f[0]); i <= int.Parse(f[1]); i++)
+                                        idxs.Add(i);
+                                }
+                                else
+                                    idxs.Add(int.Parse(item));
+                            }
+                            specificBcIdxs = idxs.ToArray();
                             break;
                         default:
                             if (opt.StartsWith("-o"))

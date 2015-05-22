@@ -33,9 +33,11 @@ namespace Linnarsson.Dna
         {
             return Path.Combine(readsFolder, CreateReadFilename(runFolderName, runNo, lane, read) + ".fq.gz");
         }
-        public static string GetNonPFFilePath(string readsFolder, string runFolderName, int runNo, int lane, int read)
+        public static string ConvertToNonPFFilePath(string PFFilePath)
         {
-            return Path.Combine(readsFolder, Path.Combine(nonPFReadsSubFolder, CreateReadFilename(runFolderName, runNo, lane, read) + "_nonPF.fq.gz"));
+            string nonPFFilename = Path.GetFileName(PFFilePath).Replace(".fq", "_nonPF.fq");
+            string nonPFDir = Path.Combine(Path.GetDirectoryName(PFFilePath), nonPFReadsSubFolder);
+            return Path.Combine(nonPFDir, nonPFFilename);
         }
         public static string GetReadStatsFilePath(string readsFolder, string runFolderName, int runNo, int lane, int read)
         {

@@ -26,6 +26,7 @@ namespace ESCAF_Strt
         public bool directionalReads = true;
         public bool senseReads = true;
         public bool useRPKM = false;
+        public bool skipExtraction = false;
 
         public string plateFolder { get { return Path.Combine(Props.props.ProjectsFolder, plateId); } }
         public string extractionFolder { get { return Path.Combine(plateFolder, "tmp"); } }
@@ -43,6 +44,7 @@ namespace ESCAF_Strt
                 else if (args[argIdx] == "-b") barcodesName = args[++argIdx];
                 else if (args[argIdx] == "-g") build = args[++argIdx];
                 else if (args[argIdx] == "-a") annotation = args[++argIdx];
+                else if (args[argIdx] == "-m") skipExtraction = true;
                 else if (args[argIdx] == "--all") variants = true;
                 else if (args[argIdx] == "--single") variants = false;
                 else if (args[argIdx] == "-p") plateId = args[++argIdx];
@@ -60,6 +62,7 @@ namespace ESCAF_Strt
                     "--bowtie              use bowtie for alignments\n" +
                     "--star                use STAR for alignments\n" +
                     "-g GENOMEBUILD        build, e.g. 'mm10'\n" +
+                    "-m                    go directly to mapping, extraction is done already\n" + 
                     "-a ANNOTATION         annotation source, e.g. 'UCSC'\n" +
                     "--single              summarize all transcript models per gene\n" +
                     "--all                 analyze all transcript models of each gene\n" +
@@ -111,11 +114,14 @@ namespace ESCAF_Strt
             List<LaneInfo> laneInfos = new List<LaneInfo>();
             foreach (string readFile in options.read1Files)
                 laneInfos.Add(new LaneInfo(readFile, "", '0', options.extractionFolder, Props.props.Barcodes.Count, ""));
-            foreach (LaneInfo laneInfo in laneInfos)
+            if (!options.skipExtraction)
             {
-                Console.WriteLine("Extracting {0} using {1}...", laneInfo.PFReadFilePath, options.barcodesName);
-                SampleReadWriter srw = new SampleReadWriter(Props.props.Barcodes, laneInfo);
+                foreach (LaneInfo laneInfo in laneInfos)
+                {
+                    Console.WriteLine("Extracting {0} using {1}...", laneInfo.PFReadFilePath, options.barcodesName);
+                    SampleReadWriter srw = new SampleReadWriter(Props.props.Barcodes, laneInfo);
                     srw.ProcessLane();
+                }
             }
             Console.WriteLine("Mapping using {0} and annotating...", options.aligner);
             StrtReadMapper mapper = new StrtReadMapper();

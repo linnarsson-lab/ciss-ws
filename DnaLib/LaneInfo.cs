@@ -74,6 +74,7 @@ namespace Linnarsson.Dna
         public LaneInfo(string readFilePath, string runId, char laneNo, string extractionFolder, int nBarcodes, string idxSeqFilter)
         {
             this.PFReadFilePath = readFilePath;
+            this.nonPFReadFilePath = PathHandler.ConvertToNonPFFilePath(readFilePath);
             this.illuminaRunId = runId;
             this.laneNo = laneNo.ToString();
             this.idxSeqFilter = idxSeqFilter;

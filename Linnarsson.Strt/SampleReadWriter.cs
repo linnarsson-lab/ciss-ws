@@ -107,12 +107,8 @@ namespace Linnarsson.Strt
                 if (!Process(fastQRecord)) break;
             if (barcodes.IncludeNonPF)
             {
-                string nonPFFilename = Path.GetFileName(laneInfo.PFReadFilePath).Replace(".fq", "_nonPF.fq");
-                string nonPFDir = Path.Combine(Path.GetDirectoryName(laneInfo.PFReadFilePath), "nonPF");
-                string nonPFPath = Path.Combine(nonPFDir, nonPFFilename);
-                laneInfo.nonPFReadFilePath = nonPFPath;
                 foreach (FastQRecord fastQRecord in
-                         BarcodedReadStream.Stream(barcodes, nonPFPath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
+                         BarcodedReadStream.Stream(barcodes, laneInfo.nonPFReadFilePath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
                 {
                     fastQRecord.PassedFilter = false;
                     if (!Process(fastQRecord)) break;

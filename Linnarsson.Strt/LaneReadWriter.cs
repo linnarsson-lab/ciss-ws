@@ -58,7 +58,7 @@ namespace Linnarsson.Strt
             this.read = read.ToString()[0];
             PFFilePath = PathHandler.GetPFFilePath(readsFolder, runFolderName, runNo, lane, read);
             PFWriter = PFFilePath.OpenWrite();
-            nonPFFilePath = PathHandler.GetNonPFFilePath(readsFolder, runFolderName, runNo, lane, read);
+            nonPFFilePath = PathHandler.ConvertToNonPFFilePath(PFFilePath);
             nonPFWriter = nonPFFilePath.OpenWrite();
             statsFilePath = PathHandler.GetReadStatsFilePath(readsFolder, runFolderName, runNo, lane, read);
         }

@@ -192,37 +192,44 @@ namespace Linnarsson.Dna
 
         private static void SetConnectionStrings(Props props)
         {
-            string appDir = AppDomain.CurrentDomain.BaseDirectory;
-            string exeFilePath = Path.Combine(appDir, "SB.exe"); // The application that holds ConnectionString config
-            Configuration config = ConfigurationManager.OpenExeConfiguration(exeFilePath);
-            ConnectionStringsSection section = config.GetSection("connectionStrings") as ConnectionStringsSection;
-            if (!section.SectionInformation.IsProtected)
+            try
             {
-                section.SectionInformation.ProtectSection("RsaProtectedConfigurationProvider");
-                config.Save(ConfigurationSaveMode.Full, true);
-            } 
-            section.SectionInformation.UnprotectSection();
-            ConnectionStringSettings settings = section.ConnectionStrings["SB.Properties.Settings.MainDBConnString"];
-            if (settings != null)
-                props.MySqlServerConnectionString = settings.ConnectionString;
-            settings = section.ConnectionStrings["SB.Properties.Settings.EmailConnString"];
-            if (settings != null)
-            {
-                foreach (string part in settings.ConnectionString.Split(';'))
+                string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                string exeFilePath = Path.Combine(appDir, "SB.exe"); // The application that holds ConnectionString config
+                Configuration config = ConfigurationManager.OpenExeConfiguration(exeFilePath);
+                ConnectionStringsSection section = config.GetSection("connectionStrings") as ConnectionStringsSection;
+                if (!section.SectionInformation.IsProtected)
                 {
-                    string[] fields = part.Split('=');
-                    if (fields.Length == 2)
+                    section.SectionInformation.ProtectSection("RsaProtectedConfigurationProvider");
+                    config.Save(ConfigurationSaveMode.Full, true);
+                }
+                section.SectionInformation.UnprotectSection();
+                ConnectionStringSettings settings = section.ConnectionStrings["SB.Properties.Settings.MainDBConnString"];
+                if (settings != null)
+                    props.MySqlServerConnectionString = settings.ConnectionString;
+                settings = section.ConnectionStrings["SB.Properties.Settings.EmailConnString"];
+                if (settings != null)
+                {
+                    foreach (string part in settings.ConnectionString.Split(';'))
                     {
-                        if (fields[0] == "server")
-                            props.OutgoingMailServer = fields[1];
-                        else if (fields[0] == "uid")
-                            props.OutgoingMailUser = fields[1];
-                        else if (fields[0] == "pwd")
-                            props.OutgoingMailPassword = fields[1];
-                        else if (fields[0] == "port")
-                            props.OutgoingMailPort = int.Parse(fields[1]);
+                        string[] fields = part.Split('=');
+                        if (fields.Length == 2)
+                        {
+                            if (fields[0] == "server")
+                                props.OutgoingMailServer = fields[1];
+                            else if (fields[0] == "uid")
+                                props.OutgoingMailUser = fields[1];
+                            else if (fields[0] == "pwd")
+                                props.OutgoingMailPassword = fields[1];
+                            else if (fields[0] == "port")
+                                props.OutgoingMailPort = int.Parse(fields[1]);
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Warning: Could not load encrypted DB connection setup");
             }
         }
 

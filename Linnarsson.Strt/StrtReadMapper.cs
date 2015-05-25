@@ -283,8 +283,7 @@ namespace Linnarsson.Strt
                 string laneMapFolder = Path.GetDirectoryName(mapFilePath);
                 string laneFolderName = Path.GetFileName(laneMapFolder);
                 string extractionFolder = Path.GetDirectoryName(Path.GetDirectoryName(laneMapFolder));
-                string laneExtractionFolder = Path.Combine(LaneInfo.GetFqSubFolder(extractionFolder), laneFolderName);
-                string summaryPath = LaneInfo.GetSummaryPath(laneExtractionFolder);
+                string summaryPath = LaneInfo.GetSummaryPath(extractionFolder, laneFolderName);
                 if (!summaryPaths.ContainsKey(summaryPath))
                 {
                     summaryPaths[summaryPath] = null;

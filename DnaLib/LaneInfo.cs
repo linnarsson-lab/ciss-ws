@@ -13,20 +13,20 @@ namespace Linnarsson.Dna
         /// <summary>
         /// Unique Illumina 9-char run/plate Id
         /// </summary>
-        public string illuminaRunId { get; set; }
+        public string illuminaRunId { get; private set; }
         /// <summary>
         /// Number of the lane (0-7)
         /// </summary>
-        public string laneNo { get; set; }
+        public string laneNo { get; private set; }
         /// <summary>
         /// Optionally filter the reads to keep only those starting the index (2nd) read with the given sequence.
         /// </summary>
-        public string idxSeqFilter { get; set; }
+        public string idxSeqFilter { get; private set; }
 
-        public string extractionFolder { get; set; }
+        public string extractionFolder { get; private set; }
 
-        public string PFReadFilePath { get; set; }
-        public string nonPFReadFilePath { get; set; }
+        public string PFReadFilePath { get; private set; }
+        public string nonPFReadFilePath { get; private set; }
 
         /// <summary>
         /// Number of reads in fastQ file
@@ -41,13 +41,17 @@ namespace Linnarsson.Dna
         public string slaskWBcFilePath { get; private set; }
         public string slaskNoBcFilePath { get; private set; }
         public string summaryFilePath { get; private set; }
-        public string[] extractedFilePaths { get; set; }
-        public string laneExtractionFolder { get; set; }
-        public string ExtractedFileFolderName { get { return Path.GetFileName(laneExtractionFolder); } }
+        public string[] extractedFilePaths { get; private set; }
+        public string laneExtractionFolder { get; private set; }
 
         public string[] mappedFilePaths { get; set; }
-        public string mappedFileFolder { get; set; }
-        public string alignerLogFilePath { get; set; }
+
+        private string mappedFileFolder { get; set; }
+        public string GetMappedFileFolder(string mapFolderName)
+        {
+            mappedFileFolder = Path.Combine(Path.Combine(extractionFolder, mapFolderName), Path.GetFileName(laneExtractionFolder));
+            return mappedFileFolder;
+        }
 
         /// <summary>
         /// Needed for serialization
@@ -80,25 +84,31 @@ namespace Linnarsson.Dna
             this.idxSeqFilter = idxSeqFilter;
             Match m = Regex.Match(readFilePath, PathHandler.readFileAndLaneFolderMatchPat);
             int readNo = int.Parse(m.Groups[1].Value);
-            string laneExtractionName = string.Format(PathHandler.readFileAndLaneFolderCreatePattern,
+            string laneFolderName = string.Format(PathHandler.readFileAndLaneFolderCreatePattern,
                                                       readNo, m.Groups[2].Value, m.Groups[3].Value, m.Groups[4].Value);
-            laneExtractionFolder = Path.Combine(GetFqSubFolder(extractionFolder), laneExtractionName);
+            laneExtractionFolder = GetLaneExtractionFolder(extractionFolder, laneFolderName);
             if (!Directory.Exists(laneExtractionFolder))
                 Directory.CreateDirectory(laneExtractionFolder);
             SetExtractionFilePaths(extractionFolder, laneExtractionFolder, nBarcodes);
         }
 
-        public static string GetFqSubFolder(string extractionFolder)
+        private static string GetLaneExtractionFolder(string extractionFolder, string laneFolderName)
+        {
+            return Path.Combine(GetFqSubFolder(extractionFolder), laneFolderName);
+        }
+
+        private static string GetFqSubFolder(string extractionFolder)
         {
             return Path.Combine(extractionFolder, "fq");
         }
 
-        public static string[] GetLaneExtractionFolders(string extractionFolder)
+        public static string GetSummaryPath(string extractionFolder, string laneFolderName)
         {
-            return Directory.GetDirectories(GetFqSubFolder(extractionFolder));
+            string laneExtractionFolder = GetLaneExtractionFolder(extractionFolder, laneFolderName);
+            return GetSummaryPath(laneExtractionFolder);
         }
 
-        public static string GetSummaryPath(string laneExtractionFolder)
+        private static string GetSummaryPath(string laneExtractionFolder)
         {
             return Path.Combine(laneExtractionFolder, PathHandler.extractionSummaryFilename);
         }
@@ -136,7 +146,8 @@ namespace Linnarsson.Dna
         {
             int nBarcodes = Props.props.Barcodes.Count;
             List<LaneInfo> laneInfos = new List<LaneInfo>();
-            foreach (string laneExtractionFolder in GetLaneExtractionFolders(extractionFolder))
+            string[] laneExtractionFolders = Directory.GetDirectories(GetFqSubFolder(extractionFolder));
+            foreach (string laneExtractionFolder in laneExtractionFolders)
             {
                 Match m = Regex.Match(Path.GetFileName(laneExtractionFolder), PathHandler.readFileAndLaneFolderMatchPat);
                 if (!m.Success) continue;
@@ -144,11 +155,6 @@ namespace Linnarsson.Dna
                 laneInfos.Add(laneInfo);
             }
             return laneInfos;
-        }
-
-        public void SetMapFolderName(string mapFolderName)
-        {
-            mappedFileFolder = Path.Combine(Path.Combine(extractionFolder, mapFolderName), ExtractedFileFolderName);
         }
 
         /// <summary>

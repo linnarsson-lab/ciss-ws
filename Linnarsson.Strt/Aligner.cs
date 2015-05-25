@@ -107,11 +107,10 @@ namespace Linnarsson.Strt
         /// <param name="genomeBcIndexes">only these barcodes will be processed</param>
         public void CreateAlignments(LaneInfo laneInfo, int[] genomeBcIndexes)
         {
-            laneInfo.SetMapFolderName(MakeMapFolderName());
-            string mapFolder = laneInfo.mappedFileFolder;
+            string mapFolder = laneInfo.GetMappedFileFolder(MakeMapFolderName());
             if (!Directory.Exists(mapFolder))
                 Directory.CreateDirectory(mapFolder);
-            laneInfo.alignerLogFilePath = Path.Combine(mapFolder, alignerLogFilename);
+            string alignerLogFilePath = Path.Combine(mapFolder, alignerLogFilename);
             List<string> outPaths = new List<string>();
             string mainIndexName = genome.GetMainIndexName();
             string splcIndexName = genome.GetSplcIndexName();
@@ -124,7 +123,7 @@ namespace Linnarsson.Strt
                 string outUnmappedPath = Path.Combine(mapFolder, string.Format("{0}.fq-{1}", bcIdx, mainIndexName));
                 string outMainPath = Path.Combine(mapFolder, string.Format("{0}_{1}{2}", bcIdx, mainIndexName, outFileExtension));
                 if (!File.Exists(outMainPath))
-                    CreateAlignmentOutputFile(mainIndexName, fqPath, outMainPath, outUnmappedPath, laneInfo.alignerLogFilePath);
+                    CreateAlignmentOutputFile(mainIndexName, fqPath, outMainPath, outUnmappedPath, alignerLogFilePath);
                 outPaths.Add(outMainPath);
                 string outSplcFilename = string.Format("{0}_{1}{2}", bcIdx, splcIndexName, outFileExtension);
                 string splcFilePat = string.Format("{0}_{1}{2}", bcIdx, genome.GetSplcIndexNamePattern(), outFileExtension);
@@ -135,10 +134,10 @@ namespace Linnarsson.Strt
                 else
                 {
                     if (!File.Exists(outUnmappedPath))
-                        CreateAlignmentOutputFile(mainIndexName, fqPath, outMainPath, outUnmappedPath, laneInfo.alignerLogFilePath);
+                        CreateAlignmentOutputFile(mainIndexName, fqPath, outMainPath, outUnmappedPath, alignerLogFilePath);
                     string remainUnmappedPath = Props.props.SaveNonMappedReads ? Path.Combine(mapFolder, bcIdx + ".fq-nonmapped") : "";
                     if (File.Exists(outUnmappedPath)) // Have to check - all reads may have mapped directly
-                        CreateAlignmentOutputFile(splcIndexName, outUnmappedPath, outSplcPath, remainUnmappedPath, laneInfo.alignerLogFilePath);
+                        CreateAlignmentOutputFile(splcIndexName, outUnmappedPath, outSplcPath, remainUnmappedPath, alignerLogFilePath);
                 }
                 outPaths.Add(outSplcPath);
                 // Don't delete the fqUnmappedReadsPath - it is needed if rerun with changing all/single annotation versions

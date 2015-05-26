@@ -90,19 +90,22 @@ namespace Linnarsson.Dna
                 {
                     fields = line.Split('\t');
                     if (fields.Length < 8)
-                        throw new FormatException("Too few columns in bowtie map file " + file + ". Is the file truncated?");
-                    char strand = fields[1][0];
-                    if (!line.StartsWith(combinedReadId))
+                        Console.WriteLine("Too few columns in {0} at line:\n{1} ", file, line);
+                    else
                     {
-                        yield return mrm;
-                        combinedReadId = fields[0];
-                        if (!int.TryParse(fields[6], out tmp))
-                            Console.WriteLine("Error parsing int in field 6 of {0}:\n{1}", file, line);
-                        mrm.Init(combinedReadId, fields[4], fields[5], strand, tmp);
+                        char strand = fields[1][0];
+                        if (!line.StartsWith(combinedReadId))
+                        {
+                            yield return mrm;
+                            combinedReadId = fields[0];
+                            if (!int.TryParse(fields[6], out tmp))
+                                Console.WriteLine("Error parsing int in field 6 of {0}:\n{1}", file, line);
+                            mrm.Init(combinedReadId, fields[4], fields[5], strand, tmp);
+                        }
+                        if (!int.TryParse(fields[3], out tmp))
+                            Console.WriteLine("Error parsing int in field 3 of {0}:\n{1}", file, line);
+                        mrm.AddMapping(fields[2], strand, tmp, fields[7]);
                     }
-                    if (!int.TryParse(fields[3], out tmp))
-                        Console.WriteLine("Error parsing int in field 3 of {0}:\n{1}", file, line);
-                    mrm.AddMapping(fields[2], strand, tmp, fields[7]);
                     try
                     {
                         line = reader.ReadLine();

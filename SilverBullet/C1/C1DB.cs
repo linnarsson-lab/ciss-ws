@@ -85,9 +85,9 @@ namespace C1
                                                       rdr.GetString("AnnotationVersion"));
                 conn.Close();
             }
-            catch (MySqlException e)
+            catch (MySqlException)
             {
-                Console.WriteLine("{0}: {1}", DateTime.Now, e);
+                Console.WriteLine("Warning: No MySQL Database available - reading transcripts from file.");
             }
             return t;
         }

@@ -78,6 +78,7 @@ namespace Linnarsson.Dna
         {
             using (StreamReader reader = file.OpenRead())
             {
+                int tmp;
                 string line = reader.ReadLine();
                 if (line == null) yield break;
                 string[] fields = line.Split('\t');
@@ -95,9 +96,13 @@ namespace Linnarsson.Dna
                     {
                         yield return mrm;
                         combinedReadId = fields[0];
-                        mrm.Init(combinedReadId, fields[4], fields[5], strand, int.Parse(fields[6]));
+                        if (!int.TryParse(fields[6], out tmp))
+                            Console.WriteLine("Error parsing int in field 6 of {0}:\n{1}", file, line);
+                        mrm.Init(combinedReadId, fields[4], fields[5], strand, tmp);
                     }
-                    mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);
+                    if (!int.TryParse(fields[3], out tmp))
+                        Console.WriteLine("Error parsing int in field 3 of {0}:\n{1}", file, line);
+                    mrm.AddMapping(fields[2], strand, tmp, fields[7]);
                     try
                     {
                         line = reader.ReadLine();

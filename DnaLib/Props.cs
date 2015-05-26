@@ -227,9 +227,9 @@ namespace Linnarsson.Dna
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine("Warning: Could not load encrypted DB connection setup");
+                Console.WriteLine("Warning: Props could not load encrypted DB connection setup");
             }
         }
 

@@ -65,19 +65,26 @@ namespace C1
 
         private static void SetConnectionStrings(C1Props props)
         {
-            string appDir = AppDomain.CurrentDomain.BaseDirectory;
-            string exeFilePath = Path.Combine(appDir, "SB.exe"); // The application that holds ConnectionString config
-            Configuration config = ConfigurationManager.OpenExeConfiguration(exeFilePath);
-            ConnectionStringsSection section = config.GetSection("connectionStrings") as ConnectionStringsSection;
-            if (!section.SectionInformation.IsProtected)
+            try
             {
-                section.SectionInformation.ProtectSection("RsaProtectedConfigurationProvider");
-                config.Save(ConfigurationSaveMode.Full, true);
+                string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                string exeFilePath = Path.Combine(appDir, "SB.exe"); // The application that holds ConnectionString config
+                Configuration config = ConfigurationManager.OpenExeConfiguration(exeFilePath);
+                ConnectionStringsSection section = config.GetSection("connectionStrings") as ConnectionStringsSection;
+                if (!section.SectionInformation.IsProtected)
+                {
+                    section.SectionInformation.ProtectSection("RsaProtectedConfigurationProvider");
+                    config.Save(ConfigurationSaveMode.Full, true);
+                }
+                section.SectionInformation.UnprotectSection();
+                ConnectionStringSettings settings = section.ConnectionStrings["SB.Properties.Settings.C1DBConnString"];
+                if (settings != null)
+                    props.MySQlConnectionString = settings.ConnectionString;
             }
-            section.SectionInformation.UnprotectSection();
-            ConnectionStringSettings settings = section.ConnectionStrings["SB.Properties.Settings.C1DBConnString"];
-            if (settings != null)
-                props.MySQlConnectionString = settings.ConnectionString;
+            catch (Exception)
+            {
+                Console.WriteLine("Warning: C1Props could not load encrypted DB connection setup");
+            }
         }
 
         // Singleton stuff below

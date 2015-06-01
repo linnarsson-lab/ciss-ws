@@ -63,7 +63,7 @@ namespace Linnarsson.Strt
                     string callFolder = Path.Combine(runFolder, PathHandler.MakeRunDataSubPath());
                     bool readyFileExists = File.Exists(readyFilePath);
                     bool callFolderExists = Directory.Exists(callFolder);
-                    Console.WriteLine("{0} exists = {1}, {2} exists = {3}", readyFilePath, readyFileExists, callFolder, callFolderExists);
+                    //Console.WriteLine("{0} exists = {1}, {2} exists = {3}", readyFilePath, readyFileExists, callFolder, callFolderExists);
                     if (readyFileExists && callFolderExists)
                     {
                         if (projectDB.SecureStartRunCopy(runId, runNo, runDate))
@@ -110,7 +110,11 @@ namespace Linnarsson.Strt
 				{
                     string readyFileName = string.Format("Basecalling_Netcopy_complete_Read{0}.txt", read);
                     string readyFilePath = Path.Combine(runFolder, readyFileName);
-                    if (File.Exists(readyFilePath) && !LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runFolderName))
+                    bool readyFileExists = File.Exists(readyFilePath);
+                    //Console.WriteLine("{0} exists = {1}", readyFilePath, readyFileExists);
+                    bool read1AlreadyCopied = LaneReadWriter.DataExists(readsFolder, runNo, lane, 1, runFolderName);
+                    //Console.WriteLine("read1AlreadyCopied = {0}", read1AlreadyCopied);
+                    if (readyFileExists && !read1AlreadyCopied)
                     {
                         ReadFileResult r;
                         r = CopyBclLaneRead(runNo, readsFolder, runFolder, runFolderName, lane, read);
@@ -159,7 +163,11 @@ namespace Linnarsson.Strt
             for (int lane = laneFrom; lane <= laneTo; lane++)
             {
                 string readyFilePath = Path.Combine(runFolder, "Basecalling_Netcopy_complete.txt");
-                if (File.Exists(readyFilePath) && !LaneReadWriter.DataExists(readsFolder, runNo, lane, 1, runFolderName))
+                bool readyFileExists = File.Exists(readyFilePath);
+                Console.WriteLine("{0} exists = {1}", readyFilePath, readyFileExists);
+                bool read1AlreadyCopied = LaneReadWriter.DataExists(readsFolder, runNo, lane, 1, runFolderName);
+                Console.WriteLine("read1AlreadyCopied = {0}", read1AlreadyCopied);
+                if (readyFileExists && !read1AlreadyCopied)
                 {
                     Console.WriteLine("Processing run " + runId + "(" + runNo + ") lane " + lane);
                     List<LaneReadWriter> lrws = new List<LaneReadWriter>();

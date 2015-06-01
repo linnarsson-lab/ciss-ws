@@ -118,7 +118,6 @@
     <Compile Include="IFeature.cs" />
     <Compile Include="KnownGeneAnnotationReader.cs" />
     <Compile Include="LabelingEfficiencyEstimator.cs" />
-    <Compile Include="MapzFile.cs" />
     <Compile Include="MarkResult.cs" />
     <Compile Include="PathHandler.cs" />
     <Compile Include="PhrapAceFile.cs" />

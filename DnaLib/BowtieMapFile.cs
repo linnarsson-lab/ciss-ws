@@ -350,14 +350,6 @@ namespace Linnarsson.Dna
         {
             this.parent = parent;
         }
-        public void Copy(MultiReadMapping other)
-        {
-            Chr = other.Chr;
-            Strand = other.Strand;
-            Position = other.Position;
-            Mismatches = other.Mismatches;
-            parent = other.parent;
-        }
 
         public override string ToString()
         {
@@ -365,24 +357,6 @@ namespace Linnarsson.Dna
         }
 
         public int NMismatches { get { return Mismatches.Split(',').Length; } }
-        public byte[] CodedMismatches
-        {
-            get
-            {
-                string[] snps = Mismatches.Split(',');
-                byte[] codedMismatches = new byte[snps.Length * 2];
-                for (int i = 0; i < snps.Length; i++)
-                {
-                    int p = snps[i].IndexOf(':');
-                    byte relPosInReadDir = byte.Parse(snps[i].Substring(0, p));
-                    byte codedRefNt = IupacEncoding.FromIupac(snps[i][p + 1]);
-                    byte codedNt = IupacEncoding.FromIupac(snps[i][p + 3]);
-                    codedMismatches[i * 2] = relPosInReadDir;
-                    codedMismatches[i * 2 + 1] = (byte)((codedRefNt << 4) | codedNt);
-                }
-                return codedMismatches;
-            }
-        }
 
         public IEnumerable<Mismatch> IterMismatches(int minPhredAsciiVal)
         {
@@ -454,7 +428,7 @@ namespace Linnarsson.Dna
         /// <summary>
         /// true if multiple mappings are available, or if the mapping file indicated that alternative mappings existed
         /// </summary>
-        public bool HasMultipleMappings { get { return NMappings >= 1 || MappingsIdx > 1; } }
+        public bool HasMultipleMappings { get { return m_NMultiMappings > 1 || MappingsIdx > 1; } }
 
         /// <summary>
         /// Used as index to next free in Mappings array
@@ -516,16 +490,6 @@ namespace Linnarsson.Dna
             this.QualityString = qualityString;
             MappingsIdx = 0;
         }
-        public void Init(string combinedReadId, int seqLen, string qualityString, char qualityDirection, int nMappings)
-        {
-            CombinedReadId = combinedReadId;
-            ReadId = Barcodes.StripBcAndUMIFromReadId(combinedReadId, out BcIdx, out UMIIdx);
-            SeqLen = seqLen;
-            m_NMultiMappings = nMappings;
-            this.QualityDir = qualityDirection;
-            this.QualityString = qualityString;
-            MappingsIdx = 0;
-        }
 
         public void AddMapping(string chr, char strand, int pos, string mismatches)
         {
@@ -537,19 +501,6 @@ namespace Linnarsson.Dna
                 Mappings[idx].Position = pos;
                 Mappings[idx].Mismatches = mismatches;
                 MappingsIdx++;
-            }
-        }
-        internal void AddMapping(string chrId, char strand, int pos, byte[] codedMismatches)
-        {
-            if (MappingsIdx < Mappings.Length)
-            {
-                int idx = MappingsIdx;
-                Mappings[idx].Chr = chrId;
-                Mappings[idx].Strand = strand;
-                Mappings[idx].Position = pos;
-                Mappings[idx].Mismatches = "";
-                MappingsIdx++;
-                throw new NotImplementedException("Need to parse coded mismatches in MultiReadMappings.AddMapping()");
             }
         }
 

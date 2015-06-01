@@ -42,7 +42,7 @@ namespace Bc2BcLeakageAnalyzer
             foreach (MultiReadMappings mrm in new BowtieMapFile(100, bcs).MultiMappings(mapFile))
             {
                 nReads++;
-                if (mrm.NMappings > 1)
+                if (mrm.MappingsIdx > 1)
                     continue;
                 MultiReadMapping m = mrm[0];
                 string chr = m.Chr + m.Strand;

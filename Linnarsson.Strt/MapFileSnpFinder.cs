@@ -123,7 +123,7 @@ namespace Linnarsson.Strt
                 foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
                 {
                     numReadInFile++;
-                    if (mrm.HasAltMappings)
+                    if (mrm.HasMultipleMappings)
                         continue;
                     nValidReads++;
                     int hitStartPos = mrm[0].Position;

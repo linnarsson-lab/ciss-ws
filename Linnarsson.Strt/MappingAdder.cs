@@ -114,7 +114,7 @@ namespace Linnarsson.Strt
         {
             hasSomeTrMapping = false;
             hasSomeNewMapping = false;
-            if (mrm.NMappings > 1)
+            if (mrm.MappingsIdx > 1)
             { // If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
                 foreach (MultiReadMapping m in mrm.IterMappings())
                     if (Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
@@ -146,7 +146,7 @@ namespace Linnarsson.Strt
             foreach (MultiReadMapping m in mrm.IterMappings())
             {
                 // New: If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
-                if (mrm.NMappings > 1 && Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
+                if (mrm.MappingsIdx > 1 && Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
                     return m;
                 // End new
                 foreach (FtInterval ivl in Annotations.IterExonAnnotations(m.Chr, m.Strand, m.HitMidPos))
@@ -177,7 +177,7 @@ namespace Linnarsson.Strt
         {
             hasSomeTrMapping = false;
             hasSomeNewMapping = false;
-            if (mrm.NMappings > 1)
+            if (mrm.MappingsIdx > 1)
             { // If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
                 foreach (MultiReadMapping m in mrm.IterMappings())
                     if (Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
@@ -222,7 +222,7 @@ namespace Linnarsson.Strt
             foreach (MultiReadMapping m in mrm.IterMappings())
             {
                 // If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
-                if (mrm.NMappings > 1 && Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
+                if (mrm.MappingsIdx > 1 && Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
                     return m;
                 foreach (FtInterval ivl in Annotations.IterExonAnnotations(m.Chr, m.Strand, m.HitMidPos))
                 {
@@ -255,7 +255,7 @@ namespace Linnarsson.Strt
         {
             hasSomeTrMapping = false;
             hasSomeNewMapping = false;
-            if (mrm.NMappings > 1)
+            if (mrm.MappingsIdx > 1)
             { // If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
                 foreach (MultiReadMapping m in mrm.IterMappings())
                     if (Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))
@@ -287,7 +287,7 @@ namespace Linnarsson.Strt
         {
             hasSomeTrMapping = false;
             hasSomeNewMapping = false;
-            if (mrm.NMappings > 1)
+            if (mrm.MappingsIdx > 1)
             { // If any repeat mapping of a multiread is not a transcript, we do not want to annotate exons
                 foreach (MultiReadMapping m in mrm.IterMappings())
                     if (Annotations.IsARepeat(m.Chr, m.HitMidPos) && !Annotations.IsTranscript(m.Chr, m.Strand, m.HitMidPos))

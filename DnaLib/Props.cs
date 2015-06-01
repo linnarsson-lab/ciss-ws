@@ -98,10 +98,10 @@ namespace Linnarsson.Dna
 		public int MinExtractionInsertNonAs = 5; // Min number of C/G/T in an acceptable read
         public int LargestPossibleReadLength = 300; // Used for dimensioning extraction quality calculators
         public int MaxAlignmentMismatches = 3;  // Should be the value used in bowtie calls
-        public int MaxAlternativeMappings = 25; // Experimental for new version handling of unique repeat positions
+        public int MaxAlternativeMappings = 25; // Max number of alignments allowed for a multiread. Multireads with more will not be processed
         public byte QualityScoreBase = 64; // For ASCII-encoding of phred scores
         public string BowtieIndexArgs = "$FastaPaths $IndexPath";
-        public string BowtieAlignArgs = "-p $NThreads --phred$QualityScoreBase-quals -k $MaxAlternativeMappings -v $MaxAlignmentMismatches --best --strata $IndexPath $FqPath $OutPath";
+        public string BowtieAlignArgs = "-p $NThreads --phred$QualityScoreBase-quals -M $MaxAlternativeMappings -k $MaxAlternativeMappings -v $MaxAlignmentMismatches --best --strata $IndexPath $FqPath $OutPath";
         public string StarIndexArgs = "--runMode genomeGenerate --runThreadN $NThreads --outFileNamePrefix $IndexDir/ --genomeDir $IndexDir --genomeFastaFiles $FastaPaths";
         public string StarAlignArgs = "--runMode alignReads --genomeLoad LoadAndKeep --outFilterMultimapNmax $MaxAlternativeMappings --alignIntronMax 1 --outFilterMismatchNmax $MaxAlignmentMismatches --outFileNamePrefix $OutFolder/ --runThreadN $NThreads --genomeDir $IndexPath --readFilesIn $FqPath";
         public double SyntheticReadsRandomMutationProb = 0.0; // Used only in synthetic data construction

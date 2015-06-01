@@ -88,17 +88,17 @@ namespace Linnarsson.Strt
             TagItem item;
             if (!tagItems.TryGetValue(posStrand, out item))
             {
-                item = TagItem.CreateTagItem(m.HasAltMappings, isTranscript);
+                item = TagItem.CreateTagItem(m.HasMultipleMappings, isTranscript);
                 tagItems[posStrand] = item;
             }
-            else if (item.hasAltMappings && !m.HasAltMappings && !m.HasMismatches && item.GetBcNumReads() == 1)
+            else if (item.hasAltMappings && !m.HasMultipleMappings && !m.HasMismatches && item.GetBcNumReads() == 1)
             { // When the first mapped read contained mismatches and was a multiread, but the second is a perfect match singleread,
               // rethink the TagItem to consist of singlereads. Increases the chance of detecting true exon signals.
                 item.hasAltMappings = false;
             }
             if (isTranscript) // Needed when (an emptied) item already exists from previous bc, or from SNP setup
                 item.typeOfAnnotation = (short)AnnotType.EXON;
-            if (Props.props.AnalyzeSNPs && !m.HasAltMappings && item.HasSNPs)
+            if (Props.props.AnalyzeSNPs && !m.HasMultipleMappings && item.HasSNPs)
             {
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {
@@ -122,12 +122,12 @@ namespace Linnarsson.Strt
             TagItem item;
             if (!tagItems.TryGetValue(posStrand, out item))
             {
-                item = TagItem.CreateTagItem(m.HasAltMappings, isTranscript);
+                item = TagItem.CreateTagItem(m.HasMultipleMappings, isTranscript);
                 tagItems[posStrand] = item;
             }
             if (isTranscript) // Needed when (an emptied) item already exists from previous bc, or from SNP setup
                 item.typeOfAnnotation = (short)AnnotType.EXON;
-            if (Props.props.AnalyzeSNPs && !m.HasAltMappings && item.HasSNPs)
+            if (Props.props.AnalyzeSNPs && !m.HasMultipleMappings && item.HasSNPs)
             {
                 foreach (Mismatch mm in m.IterMismatches(0))
                 {

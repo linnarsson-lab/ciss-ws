@@ -145,12 +145,12 @@ namespace Map2Pclu
             foreach (MultiReadMappings mrm in new BowtieMapFile(100, bcs).MultiMappings(mapFile))
             {
                 nReads++;
-                if (mrm.NMappings > nMaxMappings)
+                if (mrm.MappingsIdx > nMaxMappings)
                 {
                     nTooMultiMappingReads++;
                     continue;
                 }
-                int selectedMapping = rnd.Next(mrm.NMappings);
+                int selectedMapping = rnd.Next(mrm.MappingsIdx);
                 MultiReadMapping m = mrm[selectedMapping];
                 string chr = settings.AllAsPlusStrand ? m.Chr : m.Chr + m.Strand;
                 int posOf5Prime = (settings.AllAsPlusStrand || m.Strand == '+') ? m.Position : m.Position + mrm.SeqLen - 1;

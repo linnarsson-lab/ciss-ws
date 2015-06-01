@@ -316,7 +316,7 @@ namespace Linnarsson.Strt
                         }
                         catch (ReadFileEmptyException)
                         {
-                            Console.WriteLine("WARNING: Skipping empty readfile:\n" + line);
+                            Console.WriteLine("WARNING: No read statistics found for (empty?) readfile:\n" + line);
                             break;
                         }
                     }

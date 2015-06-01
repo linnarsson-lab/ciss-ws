@@ -10,7 +10,10 @@ namespace Linnarsson.Dna
     public abstract class MapFile
     {
         public static readonly int SortedAnalysisWindowSize = 10000000;
-        public static int MaxNMappings = 500;
+        /// <summary>
+        /// Maximum number of mappings that will be kept for a multiread
+        /// </summary>
+        public static readonly int MaxNStoredMappings = 500;
 
         protected MultiReadMappings mrm;
 
@@ -22,13 +25,13 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static MapFile GetMapFile(string file, Barcodes barcodes)
         {
-            MaxNMappings = Math.Max(MaxNMappings, Props.props.MaxAlternativeMappings);
+            int maxNMappings = Math.Max(MaxNStoredMappings, Props.props.MaxAlternativeMappings);
             if (file.EndsWith(".map"))
-                return new BowtieMapFile(MaxNMappings, barcodes);
+                return new BowtieMapFile(maxNMappings, barcodes);
             if (file.EndsWith(".bam") || file.EndsWith(".sbam"))
                 return new BamMapFile(barcodes, SortedAnalysisWindowSize);
             if (file.EndsWith(".sam"))
-                return new SamMapFile(MaxNMappings, barcodes);
+                return new SamMapFile(maxNMappings, barcodes);
             return null;
         }
 
@@ -50,6 +53,19 @@ namespace Linnarsson.Dna
                 result[i] = (char)(temp - 33 + 64);
             }
             return result.ToString();
+        }
+
+        /// <summary>
+        /// Return number of multiread mappings from the "XM:n" field of a sam/bam file, or 0 if field not found
+        /// </summary>
+        /// <param name="fields"></param>
+        /// <returns></returns>
+        protected static int ParseXMField(string[] fields)
+        {
+            for (int i = 11; i < fields.Length; i++)
+                if (fields[i].StartsWith("XM:i:"))
+                    return int.Parse(fields[i].Substring(5));
+            return 0;
         }
 
         /// <summary>
@@ -78,14 +94,15 @@ namespace Linnarsson.Dna
         {
             using (StreamReader reader = file.OpenRead())
             {
-                int tmp;
+                int pos, nOtherMappings;
                 string line = reader.ReadLine();
                 if (line == null) yield break;
                 string[] fields = line.Split('\t');
                 if (fields.Length < 8)
                     throw new FormatException("Too few columns in first line of " + file);
                 string combinedReadId = fields[0];
-                mrm.Init(combinedReadId, fields[4], fields[5], fields[1][0], int.Parse(fields[6]));
+                nOtherMappings = int.Parse(fields[6]);
+                mrm.Init(combinedReadId, fields[4], fields[5], fields[1][0], nOtherMappings + 1);
                 while (line != null)
                 {
                     fields = line.Split('\t');
@@ -98,13 +115,13 @@ namespace Linnarsson.Dna
                         {
                             yield return mrm;
                             combinedReadId = fields[0];
-                            if (!int.TryParse(fields[6], out tmp))
-                                Console.WriteLine("Error parsing int in field 6 of {0}:\n{1}", file, line);
-                            mrm.Init(combinedReadId, fields[4], fields[5], strand, tmp);
+                            if (!int.TryParse(fields[6], out nOtherMappings))
+                                Console.WriteLine("Error parsing int in field 6 (AltMappings) of {0}:\n{1}", file, line);
+                            mrm.Init(combinedReadId, fields[4], fields[5], strand, nOtherMappings + 1);
                         }
-                        if (!int.TryParse(fields[3], out tmp))
-                            Console.WriteLine("Error parsing int in field 3 of {0}:\n{1}", file, line);
-                        mrm.AddMapping(fields[2], strand, tmp, fields[7]);
+                        if (!int.TryParse(fields[3], out pos))
+                            Console.WriteLine("Error parsing int in field 3 (Position) of {0}:\n{1}", file, line);
+                        mrm.AddMapping(fields[2], strand, pos, fields[7]);
                     }
                     try
                     {
@@ -135,7 +152,8 @@ namespace Linnarsson.Dna
                     if (fields.Length < 8)
                         throw new FormatException("Too few columns in bowtie map file " + file + ". Is the file truncated?");
                     char strand = fields[1][0];
-                    mrm.Init(fields[0], fields[4], fields[5], strand, int.Parse(fields[6]));
+                    int nOtherMappings = int.Parse(fields[6]);
+                    mrm.Init(fields[0], fields[4], fields[5], strand, nOtherMappings + 1);
                     mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), fields[7]);
                     yield return mrm;
                     try
@@ -179,6 +197,15 @@ namespace Linnarsson.Dna
             }
         }
 
+        public static void ParseFileItem(BamAlignedRead a, ref MultiReadMappings mrm)
+        {
+            string chr = (a.Chromosome.StartsWith("chr")) ? a.Chromosome.Substring(3) : a.Chromosome;
+            char strand = (a.Strand == DnaStrand.Forward) ? '+' : '-';
+            int nMappings = ParseXMField(a.ExtraFields);
+            mrm.Init(a.QueryName, a.QuerySequence.ToString(), a.QueryQuality, strand, nMappings);
+            mrm.AddMapping(chr, strand, a.Position - 1, "");
+        }
+
         public override IEnumerable<MultiReadMappings> SingleMappings(string file)
         {
             BamFile bamf = new BamFile(file);
@@ -189,39 +216,15 @@ namespace Linnarsson.Dna
                     foreach (string line in bamf.IterLines(chrName, windowStart, windowStart + bamFileWindowSize))
                     {
                         string[] fields = line.Split('\t');
-                        int altMappings = 0;
-                        for (int i = 11; i < fields.Length; i++)
-                        {
-                            if (fields[i].StartsWith("XM:i:"))
-                            {
-                                altMappings = int.Parse(fields[i].Substring(5));
-                                break;
-                            }
-                        }
+                        int nMappings = ParseXMField(fields);
                         char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
-                        mrm.Init(fields[0], fields[9], fields[10], strand, altMappings);
+                        mrm.Init(fields[0], fields[9], fields[10], strand, nMappings);
                         mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
                         yield return mrm;
                     }
                 }
             }
             yield break;
-        }
-
-        public static void ParseFileItem(BamAlignedRead a, ref MultiReadMappings mrm)
-        {
-            string chr = (a.Chromosome.StartsWith("chr")) ? a.Chromosome.Substring(3) : a.Chromosome;
-            char strand = (a.Strand == DnaStrand.Forward) ? '+' : '-';
-            mrm.Init(a.QueryName, a.QuerySequence.ToString(), a.QueryQuality, strand, 0);
-            mrm.AddMapping(chr, strand, a.Position - 1, "");
-        }
-
-        private static int ParseAltMappings(string[] extraFields)
-        {
-            foreach (string x in extraFields)
-                if (x.StartsWith("XM:i:"))
-                    return int.Parse(x.Substring(5));
-            return 0;
         }
 
     }
@@ -245,17 +248,18 @@ namespace Linnarsson.Dna
                 string[] fields = line.Split('\t');
                 string combinedReadId = fields[0];
                 char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
-                mrm.Init(fields[0], fields[9], fields[10], strand, 0);
+                int nMappings = ParseXMField(fields);
+                mrm.Init(fields[0], fields[9], fields[10], strand, nMappings);
                 while (line != null)
                 {
                     fields = line.Split('\t');
                     if (!line.StartsWith(combinedReadId))
                     {
-                        mrm.InferAltMappings();
                         yield return mrm;
                         combinedReadId = fields[0];
                         strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
-                        mrm.Init(fields[0], fields[9], fields[10], strand, 0);
+                        nMappings = ParseXMField(fields);
+                        mrm.Init(fields[0], fields[9], fields[10], strand, nMappings);
                     }
                     mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
                     line = reader.ReadLine();
@@ -275,7 +279,8 @@ namespace Linnarsson.Dna
                 {
                     string[] fields = line.Split('\t');
                     char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
-                    mrm.Init(fields[0], fields[9], fields[10], strand, 0);
+                    int nMappings = ParseXMField(fields);
+                    mrm.Init(fields[0], fields[9], fields[10], strand, nMappings);
                     mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
                     yield return mrm;
                     line = reader.ReadLine();
@@ -338,7 +343,7 @@ namespace Linnarsson.Dna
         public int BcIdx { get { return parent.BcIdx; } }
         public int UMIIdx { get { return parent.UMIIdx; } }
         public int SeqLen { get { return parent.SeqLen; } }
-        public bool HasAltMappings { get { return parent.HasAltMappings; } }
+        public bool HasMultipleMappings { get { return parent.HasMultipleMappings; } }
         public bool HasMismatches { get { return Mismatches != ""; } }
 
         public MultiReadMapping(MultiReadMappings parent)
@@ -437,20 +442,24 @@ namespace Linnarsson.Dna
             return QualityString[relPosInAlignment];
         }
 
-        private int NAltMappings; // Value from 2nd last column of map file, or "XM:i" field in sam/bam file.
+        /// <summary>
+        /// 1+value from 2nd last column of map file, or "XM:i" value in sam/bam file, or 0 if these vaules are unavailable
+        /// </summary>
+        private int m_NMultiMappings;
+        /// <summary>
+        /// Number of different mappings the read has (or, for extreme multireads, the maximum number analyzed during alignment)
+        /// </summary>
+        public int NMappings { get { return (m_NMultiMappings > 0) ? m_NMultiMappings : MappingsIdx; } }
+
         /// <summary>
         /// true if multiple mappings are available, or if the mapping file indicated that alternative mappings existed
         /// </summary>
-        public bool HasAltMappings { get { return NAltMappings >= 1 || NMappings > 1; } }
-        /// <summary>
-        /// When total # of alternative mappings was not available in mapping file, set it to NMappings-1
-        /// </summary>
-        public void InferAltMappings()
-        {
-            NAltMappings = NMappings - 1;
-        }
+        public bool HasMultipleMappings { get { return NMappings >= 1 || MappingsIdx > 1; } }
 
-        public int NMappings; // Used as index to next free in Mappings array.
+        /// <summary>
+        /// Used as index to next free in Mappings array
+        /// </summary>
+        public int MappingsIdx;
         private MultiReadMapping[] Mappings;
 
         public MultiReadMappings(int maxNMappings, Barcodes barcodes)
@@ -465,7 +474,7 @@ namespace Linnarsson.Dna
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("MultiReadMappings: ReadID=" + ReadId + " BcIdx=" + BcIdx + " UMIIdx=" + UMIIdx);
-            sb.Append("\n      Mappings.Length=" + Mappings.Length + " NMappings=" + NMappings + " HasAltMappings=" + HasAltMappings);
+            sb.Append("\n      Mappings.Length=" + Mappings.Length + " MappingsIdx=" + MappingsIdx + " HasAltMappings=" + HasMultipleMappings);
             foreach (MultiReadMapping m in IterMappings())
                 sb.Append("\n    " + m.ToString());
             return sb.ToString();
@@ -482,68 +491,76 @@ namespace Linnarsson.Dna
                 sb.Append(m.Position + "\t");
                 sb.Append(Sequence + "\t");
                 sb.Append(QualityString + "\t");
-                sb.Append(NAltMappings + "\t");
+                sb.Append((NMappings - 1) + "\t");
                 sb.Append(m.Mismatches + "\n");
             }
             return sb.ToString();
         }
 
-        public void Init(string combinedReadId, string seq, string qualityString, char qualityDirection, int altMappings)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="combinedReadId"></param>
+        /// <param name="seq"></param>
+        /// <param name="qualityString"></param>
+        /// <param name="qualityDirection"></param>
+        /// <param name="nMappings">Number of mappings found for a multiread, or 1+maximum allowed during alignment when more than that</param>
+        public void Init(string combinedReadId, string seq, string qualityString, char qualityDirection, int nMappings)
         {
             CombinedReadId = combinedReadId;
             ReadId = Barcodes.StripBcAndUMIFromReadId(combinedReadId, out BcIdx, out UMIIdx);
             Sequence = seq;
             SeqLen = seq.Length;
-            NAltMappings = altMappings;
-            NMappings = 0;
+            m_NMultiMappings = nMappings;
             this.QualityDir = qualityDirection;
             this.QualityString = qualityString;
+            MappingsIdx = 0;
         }
-        public void Init(string combinedReadId, int seqLen, string qualityString, char qualityDirection, int altMappings)
+        public void Init(string combinedReadId, int seqLen, string qualityString, char qualityDirection, int nMappings)
         {
             CombinedReadId = combinedReadId;
             ReadId = Barcodes.StripBcAndUMIFromReadId(combinedReadId, out BcIdx, out UMIIdx);
             SeqLen = seqLen;
-            NAltMappings = altMappings;
-            NMappings = 0;
+            m_NMultiMappings = nMappings;
             this.QualityDir = qualityDirection;
             this.QualityString = qualityString;
+            MappingsIdx = 0;
         }
 
         public void AddMapping(string chr, char strand, int pos, string mismatches)
         {
-            if (NMappings < Mappings.Length)
+            if (MappingsIdx < Mappings.Length)
             { 
-                int idx = NMappings;
+                int idx = MappingsIdx;
                 Mappings[idx].Chr = chr.StartsWith("chr") ? chr.Substring(3) : chr;
                 Mappings[idx].Strand = strand;
                 Mappings[idx].Position = pos;
                 Mappings[idx].Mismatches = mismatches;
-                NMappings++;
+                MappingsIdx++;
             }
         }
         internal void AddMapping(string chrId, char strand, int pos, byte[] codedMismatches)
         {
-            if (NMappings < Mappings.Length)
+            if (MappingsIdx < Mappings.Length)
             {
-                int idx = NMappings;
+                int idx = MappingsIdx;
                 Mappings[idx].Chr = chrId;
                 Mappings[idx].Strand = strand;
                 Mappings[idx].Position = pos;
                 Mappings[idx].Mismatches = "";
-                NMappings++;
+                MappingsIdx++;
                 throw new NotImplementedException("Need to parse coded mismatches in MultiReadMappings.AddMapping()");
             }
         }
 
         public MultiReadMapping this[int idx]
         {
-            get { return (idx < NMappings)? Mappings[idx] : null; }
+            get { return (idx < MappingsIdx)? Mappings[idx] : null; }
         }
 
         public IEnumerable<MultiReadMapping> IterMappings()
         {
-            for (int idx = 0; idx < NMappings; idx++)
+            for (int idx = 0; idx < MappingsIdx; idx++)
                 yield return Mappings[idx];
         }
 

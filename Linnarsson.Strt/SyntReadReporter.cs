@@ -408,10 +408,10 @@ namespace Linnarsson.Strt
             {
                 descr = "---- No hit to annotated exon: ----";
                 nNoHitToGene++;
-                if (recs.NMappings >= maxNumMappings)
+                if (recs.MappingsIdx >= maxNumMappings)
                 {
                     AddToRedundant(recs);
-                    descr = "---- No hit: Redundant: Many mappings to genome (" + recs.NMappings + "): ----";
+                    descr = "---- No hit: Redundant: Many mappings to genome (" + recs.MappingsIdx + "): ----";
                 }
             }
             else if (exonHitGeneNames.Count == 1)
@@ -424,10 +424,10 @@ namespace Linnarsson.Strt
                 }
                 nHitToWrongGene++;
                 descr = "---- Got a wrong hit to " + actualHitGene + ": ----";
-                if (recs.NMappings >= maxNumMappings)
+                if (recs.MappingsIdx >= maxNumMappings)
                 {
                     AddToRedundant(recs);
-                    descr = "---- Wrong hit to " + actualHitGene + ": Redundant: Many mappings to genome (" + recs.NMappings + "): ----";
+                    descr = "---- Wrong hit to " + actualHitGene + ": Redundant: Many mappings to genome (" + recs.MappingsIdx + "): ----";
                 }
             }
             if (descr != "")

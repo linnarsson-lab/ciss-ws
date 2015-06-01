@@ -296,7 +296,7 @@ namespace Linnarsson.Strt
         /// <param name="mrm"></param>
         public void Add(MultiReadMappings mrm)
         {
-            if (!mrm.HasAltMappings && dataByChr.ContainsKey(mrm[0].Chr))
+            if (!mrm.HasMultipleMappings && dataByChr.ContainsKey(mrm[0].Chr))
                 dataByChr[mrm[0].Chr].Add(mrm);
         }
 

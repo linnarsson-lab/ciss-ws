@@ -281,7 +281,7 @@ namespace Linnarsson.Strt
             {
                 ProcessBarcodeMapFiles(bcIdxAndMapFilePaths);
             }
-            Console.WriteLine("\nIgnored {0} reads with > {1} alternative mappings.", nTooMultiMappingReads, Props.props.MaxAlternativeMappings);
+            Console.WriteLine("\nIgnored {0} reads with >= {1} alternative mappings.", nTooMultiMappingReads, Props.props.MaxAlternativeMappings);
 
             if (Props.props.DebugAnnotation)
             {
@@ -376,7 +376,7 @@ namespace Linnarsson.Strt
             if (Props.props.LogMode) Console.WriteLine("LOG  perLaneStats.BeforeFile: {0} s", lt2.Seconds());
             foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
             {
-                if (mrm.NMappings >= nMaxMappings)
+                if (mrm.NMappings > nMaxMappings)
                 {
                     nTooMultiMappingReads++;
                     continue;
@@ -419,7 +419,7 @@ namespace Linnarsson.Strt
                     if (Props.props.LogMode) Console.WriteLine("LOG  perLaneStats.AfterFile: {0} s", lt2.Seconds());
                     sampleMappedReadsByFileCounter = PerLaneStats.nMappedReadsPerFileAtSample;
                 }
-                if (mrm.HasAltMappings) nMultiReads++;
+                if (mrm.HasMultipleMappings) nMultiReads++;
             }
         }
 

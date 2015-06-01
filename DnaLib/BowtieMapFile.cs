@@ -59,10 +59,11 @@ namespace Linnarsson.Dna
         /// Return number of multiread mappings from the "XM:n" field of a sam/bam file, or 0 if field not found
         /// </summary>
         /// <param name="fields"></param>
+        /// <param name="startField"></param>
         /// <returns></returns>
-        protected static int ParseXMField(string[] fields)
+        protected static int ParseXMField(string[] fields, int startField)
         {
-            for (int i = 11; i < fields.Length; i++)
+            for (int i = startField; i < fields.Length; i++)
                 if (fields[i].StartsWith("XM:i:"))
                     return int.Parse(fields[i].Substring(5));
             return 0;
@@ -99,7 +100,7 @@ namespace Linnarsson.Dna
                 if (line == null) yield break;
                 string[] fields = line.Split('\t');
                 if (fields.Length < 8)
-                    throw new FormatException("Too few columns in first line of " + file);
+                    throw new FormatException("Too few columns in first line of map(?) file " + file);
                 string combinedReadId = fields[0];
                 nOtherMappings = int.Parse(fields[6]);
                 mrm.Init(combinedReadId, fields[4], fields[5], fields[1][0], nOtherMappings + 1);
@@ -107,7 +108,7 @@ namespace Linnarsson.Dna
                 {
                     fields = line.Split('\t');
                     if (fields.Length < 8)
-                        Console.WriteLine("Error: Too few columns in {0} at line:\n{1} ", file, line);
+                        Console.WriteLine("Error: Too few columns (Is the file truncated?) in {0} at line:\n{1} ", file, line);
                     else
                     {
                         char strand = fields[1][0];
@@ -145,12 +146,12 @@ namespace Linnarsson.Dna
                 if (line == null) yield break;
                 string[] fields = line.Split('\t');
                 if (fields.Length < 8)
-                    throw new FormatException("Too few columns in input bowtie map file");
+                    throw new FormatException("Too few columns in first line of map file " + file);
                 while (line != null)
                 {
                     fields = line.Split('\t');
                     if (fields.Length < 8)
-                        throw new FormatException("Too few columns in bowtie map file " + file + ". Is the file truncated?");
+                        throw new FormatException("Too few columns (Is the file truncated?) in " + file + " at line:\n" + line);
                     char strand = fields[1][0];
                     int nOtherMappings = int.Parse(fields[6]);
                     mrm.Init(fields[0], fields[4], fields[5], strand, nOtherMappings + 1);
@@ -201,7 +202,7 @@ namespace Linnarsson.Dna
         {
             string chr = (a.Chromosome.StartsWith("chr")) ? a.Chromosome.Substring(3) : a.Chromosome;
             char strand = (a.Strand == DnaStrand.Forward) ? '+' : '-';
-            int nMappings = ParseXMField(a.ExtraFields);
+            int nMappings = ParseXMField(a.ExtraFields, 0);
             mrm.Init(a.QueryName, a.QuerySequence.ToString(), a.QueryQuality, strand, nMappings);
             mrm.AddMapping(chr, strand, a.Position - 1, "");
         }
@@ -216,7 +217,7 @@ namespace Linnarsson.Dna
                     foreach (string line in bamf.IterLines(chrName, windowStart, windowStart + bamFileWindowSize))
                     {
                         string[] fields = line.Split('\t');
-                        int nMappings = ParseXMField(fields);
+                        int nMappings = ParseXMField(fields, 11);
                         char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
                         mrm.Init(fields[0], fields[9], fields[10], strand, nMappings);
                         mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
@@ -248,7 +249,7 @@ namespace Linnarsson.Dna
                 string[] fields = line.Split('\t');
                 string combinedReadId = fields[0];
                 char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
-                int nMappings = ParseXMField(fields);
+                int nMappings = ParseXMField(fields, 11);
                 mrm.Init(fields[0], fields[9], fields[10], strand, nMappings);
                 while (line != null)
                 {
@@ -258,7 +259,7 @@ namespace Linnarsson.Dna
                         yield return mrm;
                         combinedReadId = fields[0];
                         strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
-                        nMappings = ParseXMField(fields);
+                        nMappings = ParseXMField(fields, 11);
                         mrm.Init(fields[0], fields[9], fields[10], strand, nMappings);
                     }
                     mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
@@ -279,7 +280,7 @@ namespace Linnarsson.Dna
                 {
                     string[] fields = line.Split('\t');
                     char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
-                    int nMappings = ParseXMField(fields);
+                    int nMappings = ParseXMField(fields, 11);
                     mrm.Init(fields[0], fields[9], fields[10], strand, nMappings);
                     mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
                     yield return mrm;

@@ -83,14 +83,14 @@ namespace Linnarsson.Dna
                 if (line == null) yield break;
                 string[] fields = line.Split('\t');
                 if (fields.Length < 8)
-                    throw new FormatException("Too few columns in input bowtie map file");
+                    throw new FormatException("Too few columns in first line of " + file);
                 string combinedReadId = fields[0];
                 mrm.Init(combinedReadId, fields[4], fields[5], fields[1][0], int.Parse(fields[6]));
                 while (line != null)
                 {
                     fields = line.Split('\t');
                     if (fields.Length < 8)
-                        Console.WriteLine("Too few columns in {0} at line:\n{1} ", file, line);
+                        Console.WriteLine("Error: Too few columns in {0} at line:\n{1} ", file, line);
                     else
                     {
                         char strand = fields[1][0];

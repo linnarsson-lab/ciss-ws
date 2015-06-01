@@ -63,6 +63,15 @@ namespace Linnarsson.Strt
             statsFilePath = PathHandler.GetReadStatsFilePath(readsFolder, runFolderName, runNo, lane, read);
         }
 
+        /// <summary>
+        /// Return true if both the PF and statistics output files exist
+        /// </summary>
+        /// <param name="readsFolder"></param>
+        /// <param name="runId"></param>
+        /// <param name="lane"></param>
+        /// <param name="read"></param>
+        /// <param name="runFolderName"></param>
+        /// <returns></returns>
         public static bool DataExists(string readsFolder, int runId, int lane, int read, string runFolderName)
         {
             string PFPath = PathHandler.GetPFFilePath(readsFolder, runFolderName, runId, lane, read);

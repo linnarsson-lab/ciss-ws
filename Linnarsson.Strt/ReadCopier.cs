@@ -61,7 +61,10 @@ namespace Linnarsson.Strt
                     string runDate = m.Groups[1].Value;
                     runDate = "20" + runDate.Substring(0, 2) + "-" + runDate.Substring(2, 2) + "-" + runDate.Substring(4);
                     string callFolder = Path.Combine(runFolder, PathHandler.MakeRunDataSubPath());
-                    if (File.Exists(readyFilePath) && Directory.Exists(callFolder))
+                    bool readyFileExists = File.Exists(readyFilePath);
+                    bool callFolderExists = Directory.Exists(callFolder);
+                    Console.WriteLine("{0} exists = {1}, {2} exists = {3}", readyFilePath, readyFileExists, callFolder, callFolderExists);
+                    if (readyFileExists && callFolderExists)
                     {
                         if (projectDB.SecureStartRunCopy(runId, runNo, runDate))
                         {
@@ -271,17 +274,34 @@ namespace Linnarsson.Strt
                     {
                         string readyFileName = string.Format("Basecalling_Netcopy_complete_Read{0}.txt", read);
                         string readyFilePath = Path.Combine(runFolder, readyFileName);
-                        if (File.Exists(readyFilePath) && !LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runName))
+                        bool readyFileExists = File.Exists(readyFilePath);
+                        if (!readyFileExists)
+                        {
+                            Console.WriteLine("WARNING: Skipping lane {0} run {1}: {2} is missing.", lane, read, readyFileName);
+                            continue;
+                        }
+                        if (LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runName))
+                        {
+                            Console.WriteLine("WARNING: Skipping lane {0} run {1}: Output PF and statistics files already exist.", lane, read);
+                            continue;
+                        }
+                        else 
                         {
                             ReadFileResult r;
                             r = CopyBclLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
                             if (r == null)
                                 r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
-                            if (r != null)
+                            if (r == null)
+                                Console.WriteLine("WARNING: Could not find any .bcl or .qseq files for lane {0} run {1}.", lane, read);
+                            else
                                 readFileResults.Add(r);
                         }
                     }
                 }
+            }
+            else
+            {
+                Console.WriteLine("ERROR: Can not parse run number from folder name " + runFolder);
             }
             return readFileResults;
         }

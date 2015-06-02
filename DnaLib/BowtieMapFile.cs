@@ -146,7 +146,7 @@ namespace Linnarsson.Dna
                 if (line == null) yield break;
                 string[] fields = line.Split('\t');
                 if (fields.Length < 8)
-                    throw new FormatException("Too few columns in first line of map file " + file);
+                    throw new FormatException("Too few columns in first line of map(?) file " + file);
                 while (line != null)
                 {
                     fields = line.Split('\t');
@@ -204,7 +204,8 @@ namespace Linnarsson.Dna
             char strand = (a.Strand == DnaStrand.Forward) ? '+' : '-';
             int nMappings = ParseXMField(a.ExtraFields, 0);
             mrm.Init(a.QueryName, a.QuerySequence.ToString(), a.QueryQuality, strand, nMappings);
-            mrm.AddMapping(chr, strand, a.Position - 1, "");
+            if (a.Position > 0) // 0 in SAM file indicates no alignment
+                mrm.AddMapping(chr, strand, a.Position - 1, "");
         }
 
         public override IEnumerable<MultiReadMappings> SingleMappings(string file)
@@ -220,8 +221,12 @@ namespace Linnarsson.Dna
                         int nMappings = ParseXMField(fields, 11);
                         char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
                         mrm.Init(fields[0], fields[9], fields[10], strand, nMappings);
-                        mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
-                        yield return mrm;
+                        int pos = int.Parse(fields[3]);
+                        if (pos > 0) // 0 in SAM file indicates no alignment
+                        {
+                            mrm.AddMapping(fields[2], strand, pos - 1, "");
+                            yield return mrm;
+                        }
                     }
                 }
             }
@@ -247,6 +252,8 @@ namespace Linnarsson.Dna
                 if (line == null)
                     yield break;
                 string[] fields = line.Split('\t');
+                if (fields.Length < 11)
+                    throw new FormatException("Too few columns in first alignment line of sam(?) file " + file);
                 string combinedReadId = fields[0];
                 char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
                 int nMappings = ParseXMField(fields, 11);
@@ -262,7 +269,9 @@ namespace Linnarsson.Dna
                         nMappings = ParseXMField(fields, 11);
                         mrm.Init(fields[0], fields[9], fields[10], strand, nMappings);
                     }
-                    mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
+                    int pos = int.Parse(fields[3]);
+                    if (pos > 0) // 0 in SAM file indicates no alignment
+                        mrm.AddMapping(fields[2], strand, pos - 1, "");
                     line = reader.ReadLine();
                 }
                 yield return mrm;
@@ -282,8 +291,12 @@ namespace Linnarsson.Dna
                     char strand = ((BamFlags)int.Parse(fields[1]) & BamFlags.QueryStrand) == 0 ? '+' : '-';
                     int nMappings = ParseXMField(fields, 11);
                     mrm.Init(fields[0], fields[9], fields[10], strand, nMappings);
-                    mrm.AddMapping(fields[2], strand, int.Parse(fields[3]), "");
-                    yield return mrm;
+                    int pos = int.Parse(fields[3]);
+                    if (pos > 0) // 0 in SAM file indicates no alignment
+                    {
+                        mrm.AddMapping(fields[2], strand, pos - 1, "");
+                        yield return mrm;
+                    }
                     line = reader.ReadLine();
                 }
             }
@@ -492,6 +505,13 @@ namespace Linnarsson.Dna
             MappingsIdx = 0;
         }
 
+        /// <summary>
+        /// Add one (alternative) alignment for the (multi)read
+        /// </summary>
+        /// <param name="chr"></param>
+        /// <param name="strand"></param>
+        /// <param name="pos">0-based positions</param>
+        /// <param name="mismatches"></param>
         public void AddMapping(string chr, char strand, int pos, string mismatches)
         {
             if (MappingsIdx < Mappings.Length)

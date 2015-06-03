@@ -219,7 +219,7 @@ namespace C1
             return matching[matching.Length - 1];
         }
         /// <summary>
-        /// Return the last by string comparison matching subfolders in folder. '*' in filePattern is taken as '[0-9]+'
+        /// Return the last by string comparison matching subfolders in folder. '*' in filePattern is taken as '[\-_0-9]*'
         /// </summary>
         /// <param name="folder"></param>
         /// <param name="filePattern"></param>
@@ -228,8 +228,8 @@ namespace C1
         {
             string[] matching = Directory.GetDirectories(folder, filePattern);
             string rePat = filePattern;
-            if (rePat.EndsWith("*")) rePat = rePat.Replace("*", "[0-9]+$");
-            if (rePat.Contains("*")) rePat = rePat.Replace("*", "[0-9]+");
+            if (rePat.EndsWith("*")) rePat = rePat.Replace("*", "[\\-_0-9]*$");
+            if (rePat.Contains("*")) rePat = rePat.Replace("*", "[\\-_0-9]*");
             matching = Array.FindAll(matching, m => Regex.IsMatch(m, rePat));
             if (matching.Length == 0)
                 return null;
@@ -238,7 +238,7 @@ namespace C1
         }
 
         /// <summary>
-        /// true if the "capture*txt" in last "BF_*" folder, "wells_to_exclude.txt", or
+        /// true if the "capture*txt" in last "BF*" folder, "wells_to_exclude.txt", or
         /// any of the "wells_positive_COLOR.txt" files have been updated
         /// </summary>
         /// <param name="chipDir"></param>
@@ -263,7 +263,7 @@ namespace C1
         }
 
         /// <summary>
-        /// get full path to chip folder, path to last "BF_* folder", and path to the corresponding "capture*txt" file
+        /// get full path to chip folder, path to last "BF* folder", and path to the corresponding "capture*txt" file
         /// </summary>
         /// <param name="chipDir"></param>
         /// <param name="chipFolder"></param>

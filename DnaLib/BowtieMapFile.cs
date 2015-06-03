@@ -462,7 +462,7 @@ namespace Linnarsson.Dna
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("MultiReadMappings: ReadID=" + ReadId + " BcIdx=" + BcIdx + " UMIIdx=" + UMIIdx);
-            sb.Append("\n      Mappings.Length=" + Mappings.Length + " MappingsIdx=" + MappingsIdx + " HasAltMappings=" + HasMultipleMappings);
+            sb.Append("\n      Mappings.Length=" + Mappings.Length + " MappingsIdx=" + MappingsIdx + " HasMultipleMappings=" + HasMultipleMappings);
             foreach (MultiReadMapping m in IterMappings())
                 sb.Append("\n    " + m.ToString());
             return sb.ToString();

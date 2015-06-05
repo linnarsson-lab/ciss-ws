@@ -228,8 +228,8 @@ namespace C1
         {
             string[] matching = Directory.GetDirectories(folder, filePattern);
             string rePat = filePattern;
-            if (rePat.EndsWith("*")) rePat = rePat.Replace("*", "[\\-_0-9]*$");
             if (rePat.Contains("*")) rePat = rePat.Replace("*", "[\\-_0-9]*");
+            if (!rePat.EndsWith("$")) rePat += "$";
             matching = Array.FindAll(matching, m => Regex.IsMatch(m, rePat));
             if (matching.Length == 0)
                 return null;

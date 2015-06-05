@@ -50,7 +50,10 @@ namespace Linnarsson.Dna
                     string trId = fields[4].Trim();
                     string trName = fields[5].Trim();
                     string trType = fields[6].Trim();
-                    attrsData[trId] = new string[] { trName, trId, trType };
+                    if (Props.props.AnalyzeAllGeneVariants)
+                        attrsData[trId] = new string[] { trName, trId, trType };
+                    else
+                        attrsData[trId] = new string[] { geneName, trId, trType };
 
                 }
             }

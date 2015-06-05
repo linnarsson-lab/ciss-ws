@@ -84,6 +84,7 @@ namespace Linnarsson.Dna
         /// <returns>Number of gene models constructed</returns>
         public virtual int BuildGeneModelsByChr()
         {
+            Props.props.BarcodesName = "no";
             ClearGenes();
             int nCreated = ReadGenes();
             return nCreated;

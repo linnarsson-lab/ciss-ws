@@ -160,7 +160,7 @@ namespace Linnarsson.Strt
                 SetupGenesFromStrtAnnotFile(strtAnnotPath);
                 Props.props.InsertCellDBData = false;
             }
-            int trLen = geneFeatures.Sum(gf => gf.Value.GetTranscriptLength());
+            long trLen = geneFeatures.Sum(gf => (long)gf.Value.GetTranscriptLength());
             Console.WriteLine("Total length of all transcript models (including overlaps): {0} bp.", trLen);
         }
 

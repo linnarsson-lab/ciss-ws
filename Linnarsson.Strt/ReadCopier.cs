@@ -112,9 +112,9 @@ namespace Linnarsson.Strt
                     string readyFilePath = Path.Combine(runFolder, readyFileName);
                     bool readyFileExists = File.Exists(readyFilePath);
                     //Console.WriteLine("{0} exists = {1}", readyFilePath, readyFileExists);
-                    bool read1AlreadyCopied = LaneReadWriter.DataExists(readsFolder, runNo, lane, 1, runFolderName);
-                    //Console.WriteLine("read1AlreadyCopied = {0}", read1AlreadyCopied);
-                    if (readyFileExists && !read1AlreadyCopied)
+                    bool readAlreadyCopied = LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runFolderName);
+                    //Console.WriteLine("readAlreadyCopied = {0}", readAlreadyCopied);
+                    if (readyFileExists && !readAlreadyCopied)
                     {
                         ReadFileResult r;
                         r = CopyBclLaneRead(runNo, readsFolder, runFolder, runFolderName, lane, read);

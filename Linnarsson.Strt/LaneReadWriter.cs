@@ -76,7 +76,7 @@ namespace Linnarsson.Strt
         {
             string PFPath = PathHandler.GetPFFilePath(readsFolder, runFolderName, runId, lane, read);
             string statsPath = PathHandler.GetReadStatsFilePath(readsFolder, runFolderName, runId, lane, read);
-            return (File.Exists(PFPath) && File.Exists(PFPath));
+            return (File.Exists(PFPath) && File.Exists(statsPath));
         }
 
         public void Write(FastQRecord rec)

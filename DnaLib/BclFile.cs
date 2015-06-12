@@ -75,6 +75,7 @@ namespace Linnarsson.Dna
             {
                 // Load all the cycles for this read & tile into memory
                 List<byte[]> bclData = new List<byte[]>();
+                int nClustersInTile = -1;
                 for (int cycle = readDescriptor.FirstCycle; cycle <= readDescriptor.LastCycle; cycle++)
                 {
                     // Find the cycle folder. Find the "C<cycle>.<y>" folder with the highest <y> (due to rerun cycles)
@@ -99,14 +100,34 @@ namespace Linnarsson.Dna
                         Console.Error.WriteLine("BCL file not found: " + bclFile);
                         continue;
                     }
-                    bclData.Add(File.ReadAllBytes(bclFile));
+                    byte[] bclBytes = File.ReadAllBytes(bclFile);
+                    if (nClustersInTile != bclBytes.Length)
+                    {
+                        if (nClustersInTile > -1)
+                            Console.WriteLine("WARNING: Missing bytes (clusters) in {0} of tile {1}: {2} ({3} in previous .bcl) - will replace missing bases with 'A'/qual='B'",
+                                bclFile, tile, nClustersInTile, bclBytes.Length);
+                        nClustersInTile = Math.Max(bclBytes.Length, nClustersInTile);
+                    }
+                    bclData.Add(bclBytes);
                 }
-
+                for (int cix = 0; cix < bclData.Count; cix++)
+                { // Adjust length of any truncated bcl arrays to the max number of clusters in tile by adding uncalled 'B' quality 'A' bases
+                    int nClustersInBcl = bclData[cix].Length;
+                    if (nClustersInBcl < nClustersInTile)
+                    {
+                        byte[] newBclBytes = new byte[nClustersInTile];
+                        Array.Copy(bclData[cix], newBclBytes, nClustersInBcl);
+                        for (int i = nClustersInBcl; i < nClustersInTile; i++)
+                            newBclBytes[i] = (2 << 2) | 0; // Set the missing data to base 'A' with quality 'B'
+                        bclData[cix] = newBclBytes;
+                    }
+                }
                 char[] readSeq = new char[bclData.Count];
                 byte[] quals = new byte[bclData.Count];
                 StringBuilder sb = new StringBuilder();
+                int maxWarnings = 3;
                 // Write out the tile data to the output file
-                for (int ix = 0; ix < bclData[0].Length; ix++) // ix is an index into the clusters (i.e. it is a read)
+                for (int ix = 0; ix < nClustersInTile; ix++) // ix is an index into the clusters (i.e. it is a read)
                 {
                     // make a header for the read
                     // Run0002_D0CYAAABXX_L1_R1_T1102_C34124 (run, lane, read, tile, cluster)
@@ -132,7 +153,19 @@ namespace Linnarsson.Dna
                         readSeq[c] = "ACGT"[nt];
                         quals[c] = (byte)((bclData[c][ix] & 252) >> 2);
                     }
-                    bool pf = filters[tile][ix + 8] == 1;
+                    bool pf = false;
+                    try
+                    {
+                        pf = filters[tile][ix + 8] == 1;
+                    }
+                    catch (IndexOutOfRangeException)
+                    {
+                        maxWarnings--;
+                        if (maxWarnings > 0)
+                            Console.WriteLine("WARNING: Filter data missing for tile {0} at cluster {1}. Defaulting to nonPF.", tile, ix);
+                        else if (maxWarnings == 0)
+                            Console.WriteLine("(omitted additional warnings for this tile. #clusters in tile={0} ...)", nClustersInTile);
+                    }
                     yield return new FastQRecord(hdr, new string(readSeq), quals, pf);
                 }
             }

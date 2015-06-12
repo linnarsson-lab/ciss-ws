@@ -63,7 +63,6 @@ namespace Linnarsson.Strt
                     string callFolder = Path.Combine(runFolder, PathHandler.MakeRunDataSubPath());
                     bool readyFileExists = File.Exists(readyFilePath);
                     bool callFolderExists = Directory.Exists(callFolder);
-                    //Console.WriteLine("{0} exists = {1}, {2} exists = {3}", readyFilePath, readyFileExists, callFolder, callFolderExists);
                     if (readyFileExists && callFolderExists)
                     {
                         if (projectDB.SecureStartRunCopy(runId, runNo, runDate))
@@ -84,65 +83,69 @@ namespace Linnarsson.Strt
             }
         }
 
-        public List<ReadFileResult> Copy(int runNo, string runId, string runFolder, string readsFolder, int laneFrom, int laneTo)
+        public void Copy(int runNo, string runId, string runFolder, string readsFolder, int laneFrom, int laneTo)
         {
             string callFolder = Path.Combine(runFolder, PathHandler.MakeRunDataSubPath());
-            if (!Directory.Exists(callFolder))
+            if (Directory.Exists(callFolder))
+                CopyRunFqData(runNo, runId, runFolder, readsFolder, laneFrom, laneTo);
+            else
             {
                 logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: BaseCalls folder does not exist: {0}", callFolder);
                 logWriter.Flush();
-                return new List<ReadFileResult>();
             }
-            List<ReadFileResult> readFileResults = CopyRunFqData(runNo, runId, runFolder, readsFolder, laneFrom, laneTo);
-            //List<ReadFileResult> readFileResults = NewCopyRunFqData(runNo, runId, runFolder, readsFolder, laneFrom, laneTo);
-            return readFileResults;
         }
 
-        private List<ReadFileResult> CopyRunFqData(int runNo, string runId, string runFolder, string readsFolder, int laneFrom, int laneTo)
+        private void CopyRunFqData(int runNo, string runId, string runFolder, string readsFolder, int laneFrom, int laneTo)
         {
             string runFolderName = Path.GetFileName(runFolder);
-            List<ReadFileResult> readFileResults = new List<ReadFileResult>();
+            bool someError = false;
             for (int lane = laneFrom; lane <= laneTo; lane++)
 		    {
                 int[] cycles = new int[4];
                 cycles[1] = cycles[2] = cycles[3] = -1;
                 for (int read = 1; read <= 3; read++)
 				{
-                    string readyFileName = string.Format("Basecalling_Netcopy_complete_Read{0}.txt", read);
-                    string readyFilePath = Path.Combine(runFolder, readyFileName);
-                    bool readyFileExists = File.Exists(readyFilePath);
-                    //Console.WriteLine("{0} exists = {1}", readyFilePath, readyFileExists);
-                    bool readAlreadyCopied = LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runFolderName);
-                    //Console.WriteLine("readAlreadyCopied = {0}", readAlreadyCopied);
-                    if (readyFileExists && !readAlreadyCopied)
+                    try
                     {
-                        ReadFileResult r;
-                        r = CopyBclLaneRead(runNo, readsFolder, runFolder, runFolderName, lane, read);
-                        if (r == null)
-                            r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runFolderName, lane, read);
-                        if (r == null)
+                        string readyFileName = string.Format("Basecalling_Netcopy_complete_Read{0}.txt", read);
+                        string readyFilePath = Path.Combine(runFolder, readyFileName);
+                        bool readyFileExists = File.Exists(readyFilePath);
+                        bool readAlreadyCopied = LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runFolderName);
+                        if (readyFileExists && !readAlreadyCopied)
                         {
-                            logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find any bcl or qseq files in run " + runId +
-                                                                            " lane " + lane.ToString() + " read " + read.ToString());
-                            logWriter.Flush();
-                        }
-                        else
-                        {
-                            readFileResults.Add(r);
-                            cycles[read] = (int)r.readLen;
-                            if (projectDB != null)
+                            ReadFileResult r;
+                            r = CopyBclLaneRead(runNo, readsFolder, runFolder, runFolderName, lane, read);
+                            if (r == null)
+                                r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runFolderName, lane, read);
+                            if (r == null)
                             {
-                                projectDB.AddToBackupQueue(r.PFPath, 10);
-                                if (r.read == '1')
-                                    projectDB.SetIlluminaYield(runId, r.nReads, r.nPFReads, r.lane);
+                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find any bcl or qseq files in run " + runId +
+                                                                                " lane " + lane.ToString() + " read " + read.ToString());
+                                logWriter.Flush();
+                            }
+                            else
+                            {
+                                cycles[read] = (int)r.readLen;
+                                if (projectDB != null)
+                                {
+                                    projectDB.AddToBackupQueue(r.PFPath, 10);
+                                    if (r.read == '1')
+                                        projectDB.SetIlluminaYield(runId, r.nReads, r.nPFReads, r.lane);
+                                }
                             }
                         }
                     }
+                    catch (Exception e)
+                    {
+                        logWriter.WriteLine(DateTime.Now.ToString() + " ERROR while copying Run{0}_L{1}_{2}: {3}", runNo, lane, read, e);
+                        someError = true;
+                    }
                 }
-                if (projectDB != null)
+                if (projectDB != null && cycles[1] != -1)
                     projectDB.UpdateRunCycles(runId, cycles[1], cycles[2], cycles[3]);
-            };
-            return readFileResults;
+            }
+            if (someError)
+                throw new Exception("Some error(s) occured during copying of Run" + runNo);
         }
 
         /// <summary>
@@ -267,8 +270,9 @@ namespace Linnarsson.Strt
         /// <param name="readsFolder"></param>
         /// <param name="laneFrom"></param>
         /// <param name="laneTo"></param>
+        /// <param name="forceOverwrite">if true will overwrite any existing fastq files</param>
         /// <returns></returns>
-        public List<ReadFileResult> SingleUseCopy(string runFolder, string readsFolder, int laneFrom, int laneTo)
+        public List<ReadFileResult> SingleUseCopy(string runFolder, string readsFolder, int laneFrom, int laneTo, bool forceOverwrite)
         {
             List<ReadFileResult> readFileResults = new List<ReadFileResult>();
             Match m = MatchRunFolderName(runFolder);
@@ -288,7 +292,7 @@ namespace Linnarsson.Strt
                             Console.WriteLine("WARNING: Skipping lane {0} run {1}: {2} is missing.", lane, read, readyFileName);
                             continue;
                         }
-                        if (LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runName))
+                        if (LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runName) && !forceOverwrite)
                         {
                             Console.WriteLine("WARNING: Skipping lane {0} run {1}: Output PF and statistics files already exist.", lane, read);
                             continue;
@@ -314,11 +318,14 @@ namespace Linnarsson.Strt
             return readFileResults;
         }
 
-
+        /// <summary>
+        /// Used when starting parallell copying of several runs
+        /// </summary>
+        /// <param name="startObj"></param>
         public void CopyRun(object startObj)
         {
             CopierStart cs = (CopierStart)startObj;
-            cs.readFileResults = SingleUseCopy(cs.runFolder, cs.readsFolder, cs.laneFrom, cs.laneTo);
+            cs.readFileResults = SingleUseCopy(cs.runFolder, cs.readsFolder, cs.laneFrom, cs.laneTo, cs.forceOverwrite);
         }
 
     }
@@ -329,6 +336,7 @@ namespace Linnarsson.Strt
         public string readsFolder;
         public int laneFrom;
         public int laneTo;
+        public bool forceOverwrite = false;
         public List<ReadFileResult> readFileResults = new List<ReadFileResult>();
 
         public CopierStart(string runFolder, string readsFolder, int laneFrom, int laneTo)

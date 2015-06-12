@@ -22,8 +22,8 @@ namespace ESCAF_BclToFq
 
         public string LogFile = "ESCAF_BclToFq.log"; // Log output file
         public int scanInterval = 5; // Minutes between scans for new data
-        public string RunsFolder = "rundata"; // Where Illumina run folders (or tarballs) are deposited
-        public string ReadsFolder = "reads"; // Where .fq files for each lane are put
+        public string RunsFolder = "/home/data/runs"; // Where Illumina run folders (or tarballs) are deposited
+        public string ReadsFolder = "/home/data/reads"; // Where .fq files for each lane are put
         public string[] scpDestinations = new string[] 
         { "sten@milou.uppnex.uu.se:reads", "hiseq@130.237.117.141:/data/reads" };
         // scp destinations of resulting .fq files. The directory structure will be PF in top folder, and nonPF/ and statistics/ subfolders
@@ -72,7 +72,9 @@ namespace ESCAF_BclToFq
         {
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
                 Console.WriteLine("This program scans for Illumina output folders (or tar balls) in RunsFolder, and\n" +
-                                  "extracts the reads from .bcl files into per-lane .fq files in the directory given by ReadsFolder.\n" +
+                                  "extracts the reads from .bcl files into per-lane/read .fq files in the directory given by ReadsFolder.\n" +
+                                  "On success, the .fq files are copied using scp into scpDestinations, and if clearData is true,\n" +
+                                  "the intermediate files in ReadsFolder are deleted.\n" +
                                   "Setup configuration in " + ESCAFProps.configFilename + ".\n" +
                                   "Start using nohup and put in crontab for activation at each reboot.");
             if (!File.Exists(ESCAFProps.props.LogFile))

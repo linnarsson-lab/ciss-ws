@@ -27,6 +27,7 @@ namespace BkgFastQCopier
             outputReadsFolder = Props.props.ReadsFolder;
             logFile = new FileInfo("BFQC_" + Process.GetCurrentProcess().Id + ".log").FullName;
             string specificRunFolder = null;
+            bool forceOverwrite = false;
 
             try 
             {
@@ -52,6 +53,8 @@ namespace BkgFastQCopier
                         minutesWait = int.Parse(arg.Substring(2));
                     else if (arg == "--run")
                         specificRunFolder = args[++i];
+                    else if (arg == "-f")
+                        forceOverwrite = true;
                     else throw new ArgumentException();
                     i++;
                 }
@@ -69,7 +72,8 @@ namespace BkgFastQCopier
                                   "-o <file>               - specify a non-standard reads output folder (default=" + outputReadsFolder + ")\n" +
                                   "-l <file>               - specify a non-standard log file\n" +
                                   "-t <N>                  - specify a non-standard interval for scans in minutes (default=" + minutesWait + ")\n" +
-                                  "--run <folder>[:lane]   - copy only specified [lane of] run folder and then quit\n" +
+                                  "--run <folder>[:lane]   - copy only specified [lane(s) of, as 'n', or 'n-n'] run folder and then quit\n" +
+                                  "-f                      - used with --run forces overwrite also of existing fastq files\n" +
                                   "Start using nohup and put in crontab for activation at each reboot.");
                     return;
             }
@@ -86,26 +90,38 @@ namespace BkgFastQCopier
                 Console.WriteLine("BkgFastQCopier started at " + now + " and logging to " + logFile);
                 ReadCopier readCopier = new ReadCopier(logWriter);
                 if (specificRunFolder != null)
-                    specificRunFolder = CopyOneRun(specificRunFolder, readCopier);
+                    specificRunFolder = CopyOneRun(specificRunFolder, readCopier, forceOverwrite);
                 else
                     KeepScanning(readCopier);
                 logWriter.WriteLine("BkgFastQCopier quit at " + DateTime.Now.ToPathSafeString());
             }
         }
 
-        private static string CopyOneRun(string specificRunFolder, ReadCopier readCopier)
+        private static string CopyOneRun(string specificRunFolder, ReadCopier readCopier, bool forceOverwrite)
         {
             int laneFrom = 1, laneTo = 8;
             string laneTxt = "";
             if (specificRunFolder.Contains(':'))
             {
                 int colonIdx = specificRunFolder.IndexOf(':');
-                laneFrom = laneTo = int.Parse(specificRunFolder.Substring(colonIdx + 1));
+                string laneRange = specificRunFolder.Substring(colonIdx + 1);
+                int hyphenIdx = laneRange.IndexOf('-');
+                if (hyphenIdx == -1)
+                    laneFrom = laneTo = int.Parse(laneRange);
+                else if (hyphenIdx == 0)
+                    laneTo = int.Parse(laneRange);
+                else if (hyphenIdx == laneRange.Length - 1)
+                    laneFrom = int.Parse(laneRange);
+                else
+                {
+                    laneFrom = int.Parse(laneRange.Substring(0, hyphenIdx));
+                    laneTo = int.Parse(laneRange.Substring(hyphenIdx + 1));
+                }
                 specificRunFolder = specificRunFolder.Substring(0, colonIdx);
-                laneTxt = "lane " + laneFrom.ToString() + " of ";
+                laneTxt = string.Format("lane {0}-{1} of ", laneFrom, laneTo);
             }
             Console.WriteLine("Copying data from " + laneTxt + specificRunFolder + " to " + outputReadsFolder);
-            int nFilesCopied = readCopier.SingleUseCopy(specificRunFolder, outputReadsFolder, laneFrom, laneTo).Count;
+            int nFilesCopied = readCopier.SingleUseCopy(specificRunFolder, outputReadsFolder, laneFrom, laneTo, forceOverwrite).Count;
             Console.WriteLine("Created totally " + nFilesCopied.ToString() + " output fq files."); return specificRunFolder;
         }
 

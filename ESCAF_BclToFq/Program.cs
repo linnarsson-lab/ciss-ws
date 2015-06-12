@@ -23,11 +23,14 @@ namespace ESCAF_BclToFq
         public string LogFile = "ESCAF_BclToFq.log"; // Log output file
         public int scanInterval = 5; // Minutes between scans for new data
         public string RunsFolder = "/home/data/runs"; // Where Illumina run folders (or tarballs) are deposited
+        public string RunFolderMatchPattern = "[0-9][0-9][0-9][0-9][0-9][0-9]_.+XX"; // Pattern that HiSeq run folders in RunsFolder should match
+        public int minLastAccessMinutes = 10; // Min time in minutes since last access of a run folder before starting to process
         public string ReadsFolder = "/home/data/reads"; // Where .fq files for each lane are put
         public string[] scpDestinations = new string[] 
         { "sten@milou.uppnex.uu.se:reads", "hiseq@130.237.117.141:/data/reads" };
         // scp destinations of resulting .fq files. The directory structure will be PF in top folder, and nonPF/ and statistics/ subfolders
         public bool clearData = true; // Remove all run data and local .fq files after successful processing and scp:ing
+        public bool multiThreaded = false; // Use parallell threads for quick processing
 
         private static ESCAFProps Read()
         {
@@ -71,9 +74,12 @@ namespace ESCAF_BclToFq
         static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
-                Console.WriteLine("This program scans for Illumina output folders (or tar balls) in RunsFolder, and\n" +
-                                  "extracts the reads from .bcl files into per-lane/read .fq files in the directory given by ReadsFolder.\n" +
-                                  "On success, the .fq files are copied using scp into scpDestinations, and if clearData is true,\n" +
+                Console.WriteLine("This program scans for Illumina output folders (or tar balls) in Config.RunsFolder (" + 
+                                     ESCAFProps.props.RunsFolder + "), and\n" +
+                                  "extracts the reads from .bcl files into per-lane/read .fq files in the directory given by Config.ReadsFolder. (" +
+                                     ESCAFProps.props.ReadsFolder + ")\n" +
+                                  "On success, the .fq files are copied using scp into Config.scpDestinations, and if Config.clearData (" + 
+                                     ESCAFProps.props.clearData + ") is true,\n" +
                                   "the intermediate files in ReadsFolder are deleted.\n" +
                                   "Setup configuration in " + ESCAFProps.configFilename + ".\n" +
                                   "Start using nohup and put in crontab for activation at each reboot.");
@@ -93,23 +99,35 @@ namespace ESCAF_BclToFq
 
         private static void Scan()
         {
+            List<string> copiedRunDirs = new List<string>();
             int nExceptions = 0;
             while (nExceptions < 5)
             {
                 try
                 {
-                    string[] files = Directory.GetFiles(ESCAFProps.props.RunsFolder);
-                    if (files.Length > 0)
+                    string[] runDirs = Directory.GetDirectories(ESCAFProps.props.RunsFolder);
+                    //Console.WriteLine("#runDirs={0}", runDirs.Length);
+                    foreach (string runDir in runDirs)
                     {
-                        logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Processing " + files[0]);
-                        ProcessRun(files[0]);
-                        logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Ready");
+                        if (copiedRunDirs.Contains(runDir) ||  !Regex.IsMatch(runDir, ESCAFProps.props.RunFolderMatchPattern))
+                            continue;
+                        TimeSpan ts = DateTime.Now - Directory.GetLastAccessTime(runDir);
+                        Console.WriteLine("{0}: TimeSinceAccess={1}", runDir, ts);
+                        if (ts >= new TimeSpan(0, ESCAFProps.props.minLastAccessMinutes, 0))
+                        {
+                            logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Processing " + runDir);
+                            logWriter.Flush();
+                            ProcessRun(runDir);
+                            logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Ready");
+                            logWriter.Flush();
+                            copiedRunDirs.Add(runDir);
+                        }
                     }
                 }
-                catch (Exception exp)
+                catch (Exception e)
                 {
                     nExceptions++;
-                    logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Exception in ESCAF_BclToFq:\n" + exp);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Unhandled exception in ESCAF_BclToFq:\n" + e);
                     logWriter.Flush();
                 }
                 Thread.Sleep(1000 * 60 * ESCAFProps.props.scanInterval);
@@ -131,21 +149,23 @@ namespace ESCAF_BclToFq
                     if (c.ExitCode != 0) throw new Exception(c.StdError);
                 }
                 ReadCopier readCopier = new ReadCopier(logWriter);
-                // Non-parallell:
-                //readFileResults = readCopier.SingleUseCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8);
-                // :end non-parallell
-                // Start parallell:
-                CopierStart start1 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 1, 4);
-                Thread thread1 = new Thread(readCopier.CopyRun);
-                thread1.Start(start1);
-                CopierStart start2 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 5, 8);
-                Thread thread2 = new Thread(readCopier.CopyRun);
-                thread2.Start(start2);
-                thread1.Join();
-                thread2.Join();
-                readFileResults.AddRange(start1.readFileResults);
-                readFileResults.AddRange(start2.readFileResults);
-                // :end parallell
+                if (!ESCAFProps.props.multiThreaded)
+                {
+                    readFileResults = readCopier.SingleUseCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, false);
+                }
+                else
+                {
+                    CopierStart start1 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 1, 4);
+                    Thread thread1 = new Thread(readCopier.CopyRun);
+                    thread1.Start(start1);
+                    CopierStart start2 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 5, 8);
+                    Thread thread2 = new Thread(readCopier.CopyRun);
+                    thread2.Start(start2);
+                    thread1.Join();
+                    thread2.Join();
+                    readFileResults.AddRange(start1.readFileResults);
+                    readFileResults.AddRange(start2.readFileResults);
+                }
                 foreach (ReadFileResult r in readFileResults)
                 {
                     foreach (string scpDest in ESCAFProps.props.scpDestinations)
@@ -159,9 +179,14 @@ namespace ESCAF_BclToFq
                     }
                 }
             }
+            catch (Exception e)
+            {
+                logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Exception in ESCAF_BclToFq:\n" + e);
+                logWriter.Flush();
+            }
             finally
             {
-                if (ESCAFProps.props.clearData)
+                if (ESCAFProps.props.scpDestinations.Length > 0 && ESCAFProps.props.clearData)
                 {
                     foreach (ReadFileResult r in readFileResults)
                     {

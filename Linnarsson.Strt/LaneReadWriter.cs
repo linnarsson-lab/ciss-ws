@@ -57,10 +57,16 @@ namespace Linnarsson.Strt
             this.lane = lane;
             this.read = read.ToString()[0];
             PFFilePath = PathHandler.GetPFFilePath(readsFolder, runFolderName, runNo, lane, read);
+            if (!Directory.Exists(Path.GetDirectoryName(PFFilePath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(PFFilePath));
             PFWriter = PFFilePath.OpenWrite();
             nonPFFilePath = PathHandler.ConvertToNonPFFilePath(PFFilePath);
+            if (!Directory.Exists(Path.GetDirectoryName(nonPFFilePath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(nonPFFilePath));
             nonPFWriter = nonPFFilePath.OpenWrite();
             statsFilePath = PathHandler.GetReadStatsFilePath(readsFolder, runFolderName, runNo, lane, read);
+            if (!Directory.Exists(Path.GetDirectoryName(statsFilePath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(statsFilePath));
         }
 
         /// <summary>

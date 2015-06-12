@@ -112,7 +112,7 @@ namespace ESCAF_BclToFq
                         if (copiedRunDirs.Contains(runDir) ||  !Regex.IsMatch(runDir, ESCAFProps.props.RunFolderMatchPattern))
                             continue;
                         TimeSpan ts = DateTime.Now - Directory.GetLastAccessTime(runDir);
-                        Console.WriteLine("{0}: TimeSinceAccess={1}", runDir, ts);
+                        //Console.WriteLine("{0}: TimeSinceAccess={1}", runDir, ts);
                         if (ts >= new TimeSpan(0, ESCAFProps.props.minLastAccessMinutes, 0))
                         {
                             logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Processing " + runDir);

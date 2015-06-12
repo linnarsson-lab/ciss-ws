@@ -90,7 +90,7 @@ namespace Linnarsson.Strt
                 CopyRunFqData(runNo, runId, runFolder, readsFolder, laneFrom, laneTo);
             else
             {
-                logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: BaseCalls folder does not exist: {0}", callFolder);
+                logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: BaseCalls folder does not exist: {0}", callFolder);
                 logWriter.Flush();
             }
         }
@@ -137,7 +137,7 @@ namespace Linnarsson.Strt
                     }
                     catch (Exception e)
                     {
-                        logWriter.WriteLine(DateTime.Now.ToString() + " ERROR while copying Run{0}_L{1}_{2}: {3}", runNo, lane, read, e);
+                        logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Copying Run{0}_L{1}_{2}: {3}", runNo, lane, read, e);
                         someError = true;
                     }
                 }
@@ -172,7 +172,6 @@ namespace Linnarsson.Strt
                 Console.WriteLine("read1AlreadyCopied = {0}", read1AlreadyCopied);
                 if (readyFileExists && !read1AlreadyCopied)
                 {
-                    Console.WriteLine("Processing run " + runId + "(" + runNo + ") lane " + lane);
                     List<LaneReadWriter> lrws = new List<LaneReadWriter>();
                     lrws.Add(new LaneReadWriter(readsFolder, runFolderName, runNo, lane, 1));
                     if (File.Exists(Path.Combine(runFolder, "Basecalling_Netcopy_complete_Read2.txt")))
@@ -183,7 +182,7 @@ namespace Linnarsson.Strt
                     List<ExtractionTask> tasks = projectDB.InitiateExtractionOfLaneAnalyses(runNo, lane);
                     string[] projNames = tasks.ConvertAll(t => t.projectName).ToArray();
                     string projIds = string.Join(",", projNames);
-                    logWriter.Write(DateTime.Now.ToString() + " Copying Run{0}:L{1} and extracting {2}...", runNo, lane, projIds);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Copying Run{0}:L{1} and extracting {2}...", runNo, lane, projIds);
                     logWriter.Flush();
                     foreach (ExtractionTask task in tasks)
                     {
@@ -220,7 +219,7 @@ namespace Linnarsson.Strt
             {
                 if (readWriter == null)
                 {
-                    logWriter.Write(DateTime.Now.ToString() + " Copying lane {0} read {1} from run {2}...", lane, read, runNo);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Copying lane {0} read {1} from run {2}...", lane, read, runNo);
                     logWriter.Flush();
                     readWriter = new LaneReadWriter(readsFolder, runFolderName, runNo, lane, read);
                 }
@@ -229,7 +228,7 @@ namespace Linnarsson.Strt
             if (readWriter == null)
                 return null;
             ReadFileResult r = readWriter.CloseAndSummarize();
-            logWriter.WriteLine(r.PFPath + " done. (" + r.nPFReads + " PFReads, " + r.readLen + " cycles)");
+            logWriter.WriteLine(DateTime.Now.ToString() + " INFO: " + r.PFPath + " done. (" + r.nPFReads + " PFReads, " + r.readLen + " cycles)");
             logWriter.Flush();
             return r;
         }
@@ -239,7 +238,7 @@ namespace Linnarsson.Strt
             string[] qseqFiles = Directory.GetFiles(runFolder, string.Format("s_{0}_{1}_*_qseq.txt", lane, read));
             if (qseqFiles.Length == 0)
                 return null;
-            logWriter.Write(DateTime.Now.ToString() + " Copying lane {0} read {1} from run {2}...", lane, read, runNo);
+            logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Copying lane {0} read {1} from run {2}...", lane, read, runNo);
             logWriter.Flush();
             LaneReadWriter readWriter = new LaneReadWriter(readsFolder, runFolderName, runNo, lane, read);
             foreach (string qseqFile in qseqFiles)
@@ -248,7 +247,7 @@ namespace Linnarsson.Strt
                     readWriter.Write(rec);
             }
             ReadFileResult r = readWriter.CloseAndSummarize();
-            logWriter.WriteLine(r.PFPath + " done. (" + r.nPFReads + " PFReads, " + r.readLen + " cycles)");
+            logWriter.WriteLine(DateTime.Now.ToString() + " INFO: " + r.PFPath + " done. (" + r.nPFReads + " PFReads, " + r.readLen + " cycles)");
             logWriter.Flush();
             return r;
         }
@@ -289,12 +288,12 @@ namespace Linnarsson.Strt
                         bool readyFileExists = File.Exists(readyFilePath);
                         if (!readyFileExists)
                         {
-                            Console.WriteLine("WARNING: Skipping lane {0} run {1}: {2} is missing.", lane, read, readyFileName);
+                            logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping lane {0} run {1}: {2} is missing.", lane, read, readyFileName);
                             continue;
                         }
                         if (LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runName) && !forceOverwrite)
                         {
-                            Console.WriteLine("WARNING: Skipping lane {0} run {1}: Output PF and statistics files already exist.", lane, read);
+                            logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping lane {0} run {1}: Output PF and statistics files already exist.", lane, read);
                             continue;
                         }
                         else 
@@ -304,7 +303,7 @@ namespace Linnarsson.Strt
                             if (r == null)
                                 r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
                             if (r == null)
-                                Console.WriteLine("WARNING: Could not find any .bcl or .qseq files for lane {0} run {1}.", lane, read);
+                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find any .bcl or .qseq files for lane {0} run {1}.", lane, read);
                             else
                                 readFileResults.Add(r);
                         }
@@ -313,7 +312,7 @@ namespace Linnarsson.Strt
             }
             else
             {
-                Console.WriteLine("ERROR: Can not parse run number from folder name " + runFolder);
+                logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Can not parse run number from folder name " + runFolder);
             }
             return readFileResults;
         }

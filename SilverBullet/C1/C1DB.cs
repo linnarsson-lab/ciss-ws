@@ -74,7 +74,7 @@ namespace C1
             Transcriptome t = null;
             try
             {
-                string sql = string.Format("SELECT * FROM Transcriptome WHERE Name ='{0}' ORDER BY BuildDate DESC LIMIT 1", buildVarAnnot);
+                string sql = string.Format("SELECT * FROM Transcriptome WHERE Name='{0}' ORDER BY BuildDate DESC LIMIT 1", buildVarAnnot);
                 MySqlConnection conn = new MySqlConnection(connectionString);
                 conn.Open();
                 MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -238,16 +238,16 @@ namespace C1
             conn.Close();
         }
 
-        public void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator, bool mols)
+        public void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator, bool mols, string aligner)
         {
             string table = mols ? "Expr" : "Read";
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             int n = 0, maxId = 0, minId = int.MaxValue;
-            string sqlPat = "REPLACE INTO " + table + "Blob (CellID, TranscriptomeID, Data) VALUES ('{0}',{1}, ?BLOBDATA)";
+            string sqlPat = "REPLACE INTO " + table + "Blob (CellID, TranscriptomeID, Aligner, Data) VALUES ('{0}',{1},'{2}', ?BLOBDATA)";
             foreach (ExprBlob exprBlob in exprBlobIterator)
             {
-                string sql = string.Format(sqlPat, exprBlob.CellID, exprBlob.TranscriptomeID);
+                string sql = string.Format(sqlPat, exprBlob.CellID, exprBlob.TranscriptomeID, aligner);
                 MySqlCommand cmd = new MySqlCommand(sql, conn);
                 cmd.CommandText = sql;
                 cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);

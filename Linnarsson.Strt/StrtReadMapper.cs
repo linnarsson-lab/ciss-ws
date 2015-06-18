@@ -241,6 +241,8 @@ namespace Linnarsson.Strt
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, true);
                 CreateAlignments(genome, laneInfos, selectedBcIdxs);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(laneInfos);
+                if (mapFiles.Count == 0)
+                    throw new Exception("Both alignment (map/sam) files and extracted fq files to align are missing! You have to (re-)run the extraction first.");
                 string readDir = !Props.props.DirectionalReads ? "No" : Props.props.SenseStrandIsSequenced ? "Sense" : "Antisense";
                 Console.WriteLine("Annotating {0} map files from {1}\nDirectionalReads={2} RPKM={3} SelectedMappingType={4}...",
                                   mapFiles.Count, projectName, readDir, Props.props.UseRPKM, Props.props.MultireadMappingMode);
@@ -349,8 +351,7 @@ namespace Linnarsson.Strt
             System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(Props.props.GetType());
             using (StreamWriter writer = new StreamWriter(Path.Combine(resultFolder, Props.configFilename)))
                 x.Serialize(writer, Props.props);
-            if (Props.props.InsertCellDBData && projectId.StartsWith(C1Props.C1ProjectPrefix)
-                && annotations.GenesSetupFromC1DB && Props.props.Aligner == Props.props.CellDBAligner)
+            if (Props.props.InsertCellDBData && projectId.StartsWith(C1Props.C1ProjectPrefix) && annotations.GenesSetupFromC1DB)
                 InsertCells10kData(projectId, annotations, resultDescr);
             return resultDescr;
         }
@@ -377,8 +378,8 @@ namespace Linnarsson.Strt
                 C1DB c1db = new C1DB();
                 string parString = MakeParameterString();
                 c1db.InsertAnalysisSetup(projectId, resultDescr.splcIndexVersion, resultDescr.resultFolder, parString);
-                c1db.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByPlateWell, true), true);
-                c1db.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByPlateWell, false), false);
+                c1db.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByPlateWell, true), true, Props.props.Aligner);
+                c1db.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByPlateWell, false), false, Props.props.Aligner);
             }
             catch (Exception e)
             {

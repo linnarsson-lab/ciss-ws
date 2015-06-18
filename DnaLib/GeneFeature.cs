@@ -655,6 +655,8 @@ namespace Linnarsson.Dna
 
         public int MarkExonHit(MappedTagItem item, int exonIdx, MarkStatus markType)
         {
+            if (Name == "Crx")
+                Console.WriteLine("Crx at " + item.ToString());
             MarkSNPs(item);
             int annotType = (item.DetectedStrand == Strand) ? AnnotType.EXON : AnnotType.AEXON;
             if (markType == MarkStatus.NONEXONIC_MAPPING)

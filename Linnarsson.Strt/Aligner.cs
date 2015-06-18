@@ -116,14 +116,16 @@ namespace Linnarsson.Strt
             string splcIndexName = genome.GetSplcIndexName();
             foreach (string fqPath in laneInfo.extractedFilePaths)
             {
-                if (!File.Exists(fqPath)) continue;
                 int bcIdx = int.Parse(Path.GetFileNameWithoutExtension(fqPath));
                 if (Array.IndexOf(genomeBcIndexes, bcIdx) == -1)
                     continue;
                 string outUnmappedPath = Path.Combine(mapFolder, string.Format("{0}.fq-{1}", bcIdx, mainIndexName));
                 string outMainPath = Path.Combine(mapFolder, string.Format("{0}_{1}{2}", bcIdx, mainIndexName, outFileExtension));
                 if (!File.Exists(outMainPath))
+                {
+                    if (!File.Exists(fqPath)) continue;
                     CreateAlignmentOutputFile(mainIndexName, fqPath, outMainPath, outUnmappedPath, alignerLogFilePath);
+                }
                 outPaths.Add(outMainPath);
                 string outSplcFilename = string.Format("{0}_{1}{2}", bcIdx, splcIndexName, outFileExtension);
                 string splcFilePat = string.Format("{0}_{1}{2}", bcIdx, genome.GetSplcIndexNamePattern(), outFileExtension);

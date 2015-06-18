@@ -350,9 +350,20 @@ namespace ProjectDBProcessor
                 string resultTarName = Path.GetFileName(resultDescr.resultFolder) + ".tar.gz";
                 string tempTarGzPath = Path.Combine(Path.GetTempPath(), resultTarName);
                 CompressResult(resultDescr.resultFolder, tempTarGzPath);
-                string cmdArg = string.Format("-P {0} {1} {2}", Props.props.ResultDownloadScpPort, tempTarGzPath, Props.props.ResultDownloadUrl);
-                Console.WriteLine("scp " + cmdArg);
-                int cmdResult = CmdCaller.Run("scp", cmdArg);
+            string cpCmd, cmdArg;
+            if (Props.props.ResultUrlIsMounted)
+            {
+                cpCmd = "cp";
+                string destPath = Path.Combine(Props.props.ResultDownloadUrl, resultTarName);
+                cmdArg = tempTarGzPath + " " + destPath;
+            }
+            else
+            {
+                cpCmd = "scp";
+                cmdArg = string.Format("-P {0} {1} {2}", Props.props.ResultDownloadScpPort, tempTarGzPath, Props.props.ResultDownloadUrl);
+            }
+                Console.WriteLine(cpCmd + " " + cmdArg);
+                int cmdResult = CmdCaller.Run(cpCmd, cmdArg);
                 if (cmdResult == 0)
                 {
                     string resultLink = Props.props.ResultDownloadFolderHttp + resultTarName;
@@ -363,7 +374,8 @@ namespace ProjectDBProcessor
                 {
                     resultLinks.Add(Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server - contact administrator!");
                     logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: " + 
-                                         Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server");
+                                         Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server:\n" + 
+                                         cpCmd + " " + cmdArg);
                     logWriter.Flush();
                 }
             }

@@ -94,8 +94,17 @@ namespace BkgFastQMailer
                 destFilename += ".gz";
             }
             string destPath = Path.Combine(Props.props.ResultDownloadUrl, destFilename);
-            string cpCmd = "rsync";
-            string cpCmdArg = string.Format("--ignore-existing -e 'ssh -p {0}' {1} {2}", Props.props.ResultDownloadScpPort, gzReadsPath, destPath);
+            string cpCmd, cpCmdArg;
+            if (Props.props.ResultUrlIsMounted)
+            {
+                cpCmd = "cp";
+                cpCmdArg = gzReadsPath + " " + destPath;
+            }
+            else
+            {
+                cpCmd = "rsync";
+                cpCmdArg = string.Format("--ignore-existing -e 'ssh -p {0}' {1} {2}", Props.props.ResultDownloadScpPort, gzReadsPath, destPath);
+            }
             Console.WriteLine(DateTime.Now.ToString() + ": " + cpCmd + " " + cpCmdArg);
             CmdCaller cpCmdCaller = new CmdCaller(cpCmd, cpCmdArg);
             if (cpCmdCaller.ExitCode != 0)

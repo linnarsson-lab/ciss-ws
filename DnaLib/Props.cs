@@ -56,6 +56,7 @@ namespace Linnarsson.Dna
         public string UploadsFolder = "\\\\127.0.0.1\\uploads";
         public string BarcodesFolder = "\\\\127.0.0.1\\data\\strt\barcodes";
         public string ResultDownloadUrl = "strtserver@127.0.0.1:/html/strt/";
+        public bool ResultUrlIsMounted = true;
         public string ResultDownloadFolderHttp = "http://127.0.0.1/html/strt/";
         public string ResultDownloadScpPort = "0";
         public string FailureReportAndAnonDownloadEmail = "silver.bullet@my.server";

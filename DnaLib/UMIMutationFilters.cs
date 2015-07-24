@@ -5,6 +5,9 @@ using System.Text;
 
 namespace Linnarsson.Dna
 {
+    /// <summary>
+    /// Not used by ZeroOneMoreTagItem, which has its' own simplified singleton filter
+    /// </summary>
     public class UMIMutationFilters
     {
         public delegate int MutationThresholder(TagItem tagItem);
@@ -24,15 +27,29 @@ namespace Linnarsson.Dna
 
         public static void SetUMIMutationFilter()
         {
+            UMIMutationFilterParameter = Props.props.RndTagMutationFilterParam;
             if (Props.props.RndTagMutationFilter == RndTagMutationFilterMethod.FractionOfMax)
                 filter = FractionOfMaxThresholder;
             else if (Props.props.RndTagMutationFilter == RndTagMutationFilterMethod.FractionOfMean)
                 filter = FractionOfMeanThresholder;
             else if (Props.props.RndTagMutationFilter == RndTagMutationFilterMethod.Singleton)
+            {
                 filter = SingletonThresholder;
+                if (UMIMutationFilterParameter == 0)
+                    Console.WriteLine("Singletons are filtered away.");
+                else
+                    Console.WriteLine("Singletons at each genomic position are filtered away if some UMI at that position has > " + UMIMutationFilterParameter + " reads.");
+            }
             else
+            {
                 filter = LowPassThresholder;
-            UMIMutationFilterParameter = Props.props.RndTagMutationFilterParam;
+                if (UMIMutationFilterParameter <= 0)
+                    Console.WriteLine("Singletons are counted as molecules.");
+                else if (UMIMutationFilterParameter == 1)
+                    Console.WriteLine("Singletons are filtered away.");
+                else
+                    Console.WriteLine("Molecules are only counted when detected by > " + UMIMutationFilterParameter + " reads.");
+            }
         }
 
         /// <summary>

@@ -8,7 +8,13 @@ namespace Linnarsson.Dna
 {
     class ZeroOneMoreTagItem : TagItem
     {
+        /// <summary>
+        /// Set to true the first time the UMI is detected
+        /// </summary>
         private BitArray detectedUMIs;
+        /// <summary>
+        /// Set to true the second time the UMI is detected, i.e. the molecule is represented by > 1 read
+        /// </summary>
         private BitArray multitonUMIs;
 
         /// <summary>
@@ -35,7 +41,8 @@ namespace Linnarsson.Dna
                      method == RndTagMutationFilterMethod.Singleton && param == 0)
                 filterSingletons = true;
             else
-                throw new Exception("You can not use the specified RndTagMutationFilter with DenseUMICounter!");
+                throw new Exception("You can not use the specified RndTagMutationFilter and Param with DenseUMICounter!");
+            Console.WriteLine("Using compact TagItems with filterSingletons=" + filterSingletons);
         }
 
         private static List<SNPCounter> noSNPCounts = new List<SNPCounter>(0);

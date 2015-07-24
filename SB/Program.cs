@@ -300,7 +300,7 @@ namespace CmdSilverBullet
                 "   -BcIndexes M,Na-Nz,[,...] Only process the specified barcodes and intervals, even if the barcode set contains more indexes.\n" +
                 "   ANNOTATIONOPTION can be (default values first):\n" +
                 "     -bowtie/-STAR             select a specific aligner. (Aligner options are set in config file.)\n" +
-                "     compact / compact-no-filter - use memory-saving UMI counting with filtering of singleton reads / no reads \n" +
+                "     compact / compact-no-filter - use memory-saving UMI counting. Filter away molecules from singleton reads / No filtering \n" +
                 "     single/all              select between one per-gene summarizing value or separate values for all known transcript variants.\n" +
                 "     rpm/rpkm                specify rpkm to calculate rpkm values instead of rpm, for e.g. TruSeq samples.\n" +
                 "     sense/antisense/nondir  specify sequence direction of reads\n" +

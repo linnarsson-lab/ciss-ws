@@ -29,9 +29,9 @@ namespace Linnarsson.Dna
         public static void InitTagItemType()
         {
             if (Props.props.DenseUMICounter)
-                UShortTagItem.Init();
-            else
                 ZeroOneMoreTagItem.Init();
+            else
+                UShortTagItem.Init();
         }
 
         /// <summary>

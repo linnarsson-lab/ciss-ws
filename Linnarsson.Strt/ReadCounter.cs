@@ -316,7 +316,8 @@ namespace Linnarsson.Strt
                         }
                         catch (ReadFileEmptyException)
                         {
-                            Console.WriteLine("WARNING: No read statistics found for (empty?) readfile:\n" + line);
+                            if (!line.Contains(PathHandler.nonPFReadsSubFolder))
+                                Console.WriteLine("WARNING: No read statistics found for (empty?) readfile:\n" + line);
                             break;
                         }
                     }

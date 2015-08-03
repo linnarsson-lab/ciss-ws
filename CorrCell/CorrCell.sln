@@ -8,17 +8,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Linnarsson.Utilities", "..\UtilitiesLib\Linnarsson.Utilities.csproj", "{EE3E20A0-525F-408B-96F7-44D586F8E0B9}"
 EndProject
 Global
-	GlobalSection(SourceCodeControl) = preSolution
-		SccNumberOfProjects = 4
-		SccLocalPath0 = .
-		SccProjectUniqueName1 = CorrCell\\CorrCell.csproj
-		SccLocalPath1 = .
-		SccProjectFilePathRelativizedFromConnection1 = CorrCell\\
-		SccProjectUniqueName2 = ..\\MathLib\\Linnarsson.Mathematics.csproj
-		SccLocalPath2 = ..\\MathLib
-		SccProjectUniqueName3 = ..\\UtilitiesLib\\Linnarsson.Utilities.csproj
-		SccLocalPath3 = ..\\UtilitiesLib
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Crick Release|Any CPU = Crick Release|Any CPU
 		Crick Release|Mixed Platforms = Crick Release|Mixed Platforms

@@ -23,7 +23,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BkgBackuper", "..\BkgBackup
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "C1Copier", "..\C1Copier\C1Copier.csproj", "{8EFE6CAC-AE6F-4EAF-AFE2-6FBBA9D1C030}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Linnarsson.C1Model", "C1\Linnarsson.C1Model.csproj", "{3A772E57-EC5B-4A18-B2CD-A9F9812C22FA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Linnarsson.C1", "..\C1Lib\Linnarsson.C1.csproj", "{3A772E57-EC5B-4A18-B2CD-A9F9812C22FA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "C1FeatureLoader", "..\C1FeatureLoader\C1FeatureLoader.csproj", "{09BEC673-7F68-4F50-9CFB-F8C284A67D4B}"
 EndProject
@@ -37,13 +37,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UpdateSampleAnnotations", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FilterMapFilesXBarcodes", "..\FilterMapFilesXBarcodes\FilterMapFilesXBarcodes.csproj", "{A9029BB6-4F9C-4B5F-ACD1-EDC158066EB3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "C1FillExprBlobs", "C1FillExprBlobs\C1FillExprBlobs.csproj", "{AD10DA40-214E-4F28-BA9D-B3011476D0B2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "C1FillExprBlobs", "..\C1FillExprBlobs\C1FillExprBlobs.csproj", "{AD10DA40-214E-4F28-BA9D-B3011476D0B2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bc2BcLeakageAnalyzer", "..\Bc2BcLeakageAnalyzer\Bc2BcLeakageAnalyzer.csproj", "{37B0C6FE-CCF3-4630-8835-2FDDF6F5AB5F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ESCAF_BclToFq", "..\ESCAF_BclToFq\ESCAF_BclToFq.csproj", "{A573FF93-F257-498B-BE86-99B66CEFA2AF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ESCAF-Strt", "ESCAF-Strt\ESCAF-Strt.csproj", "{E0CA6891-45DD-495D-82EB-68CB49201F53}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ESCAF-Strt", "..\ESCAF-Strt\ESCAF-Strt.csproj", "{E0CA6891-45DD-495D-82EB-68CB49201F53}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

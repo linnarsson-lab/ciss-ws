@@ -12,10 +12,14 @@
     <AssemblyName>C1AnnotationLoader</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
+    <SccProjectName>
+    </SccProjectName>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccAuxPath>
+    </SccAuxPath>
+    <SccProvider>
+    </SccProvider>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -50,13 +54,13 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\C1Lib\Linnarsson.C1.csproj">
+      <Project>{3A772E57-EC5B-4A18-B2CD-A9F9812C22FA}</Project>
+      <Name>Linnarsson.C1</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DnaLib\Linnarsson.Dna.csproj">
       <Project>{70EA71CD-073B-4195-B04F-36A7F6B1D4E7}</Project>
       <Name>Linnarsson.Dna</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SilverBullet\C1\Linnarsson.C1Model.csproj">
-      <Project>{EE95A2B0-0DD1-4D0A-B3D8-FA201FB34EF7}</Project>
-      <Name>Linnarsson.C1Model</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

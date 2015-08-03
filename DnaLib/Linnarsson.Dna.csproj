@@ -12,10 +12,14 @@
     <AssemblyName>Linnarsson.Dna</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
+    <SccProjectName>
+    </SccProjectName>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccAuxPath>
+    </SccAuxPath>
+    <SccProvider>
+    </SccProvider>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
     <OldToolsVersion>4.0</OldToolsVersion>
@@ -154,13 +158,13 @@
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\C1Lib\Linnarsson.C1.csproj">
+      <Project>{3A772E57-EC5B-4A18-B2CD-A9F9812C22FA}</Project>
+      <Name>Linnarsson.C1</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MathLib\Linnarsson.Mathematics.csproj">
       <Project>{CA6815A6-BA36-47A6-A177-FE6C44099FC2}</Project>
       <Name>Linnarsson.Mathematics</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\SilverBullet\C1\Linnarsson.C1Model.csproj">
-      <Project>{3A772E57-EC5B-4A18-B2CD-A9F9812C22FA}</Project>
-      <Name>Linnarsson.C1Model</Name>
     </ProjectReference>
     <ProjectReference Include="..\UtilitiesLib\Linnarsson.Utilities.csproj">
       <Project>{EE3E20A0-525F-408B-96F7-44D586F8E0B9}</Project>

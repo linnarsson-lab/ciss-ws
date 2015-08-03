@@ -11,7 +11,7 @@ using Linnarsson.Dna;
 using Linnarsson.Strt;
 using Linnarsson.Mathematics;
 
-namespace C1
+namespace Linnarsson.C1
 {
     /// <summary>
     /// Parser of C1 Cell metadata, that reads info from text files in C1Props.props.C1RunsFolder, and

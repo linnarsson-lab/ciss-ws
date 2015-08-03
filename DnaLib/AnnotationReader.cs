@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 using Linnarsson.Mathematics;
 using Linnarsson.Dna;
 using Linnarsson.Utilities;
-using C1;
+using Linnarsson.C1;
 
 namespace Linnarsson.Dna
 {

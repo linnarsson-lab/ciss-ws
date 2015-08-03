@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using Linnarsson.Dna;
-using C1;
+using Linnarsson.C1;
 
 namespace Linnarsson.Strt
 {

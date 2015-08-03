@@ -9,9 +9,9 @@ using Linnarsson.Dna.GeneOntology;
 using Linnarsson.Utilities;
 using Linnarsson.Mathematics;
 using Linnarsson.Strt;
-using C1;
+using Linnarsson.C1;
 
-namespace C1
+namespace Linnarsson.C1
 {
     public delegate void AnnotationChain(ref Transcript t);
 

@@ -9,7 +9,7 @@ using System.Drawing.Imaging;
 using Linnarsson.Utilities;
 using Linnarsson.Mathematics;
 using Linnarsson.Dna;
-using C1;
+using Linnarsson.C1;
 
 namespace Linnarsson.Strt
 {

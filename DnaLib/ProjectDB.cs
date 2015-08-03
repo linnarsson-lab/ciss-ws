@@ -8,7 +8,7 @@ using Linnarsson.Utilities;
 using Linnarsson.Mathematics;
 using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
-using C1;
+using Linnarsson.C1;
 
 namespace Linnarsson.Dna
 {

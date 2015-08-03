@@ -9,7 +9,7 @@ using Linnarsson.Utilities;
 using Linnarsson.Mathematics;
 using Linnarsson.Mathematics.SortSearch;
 using System.Text.RegularExpressions;
-using C1;
+using Linnarsson.C1;
 
 namespace Linnarsson.Strt
 {

@@ -9,7 +9,7 @@ using Linnarsson.Dna;
 using Linnarsson.Strt;
 using Linnarsson.Utilities;
 
-namespace C1
+namespace Linnarsson.C1
 {
     class C1FeatureLoader
     {

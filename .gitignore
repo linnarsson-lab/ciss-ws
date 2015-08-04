@@ -37,6 +37,7 @@
 *.lib
 *.sbr
 *.sdf
+*.pdb
 ipch/
 obj/
 [Bb]in
@@ -65,4 +66,6 @@ _ReSharper*/
 #
 ~$*
  
+*/C1.dll
+
 # End of File

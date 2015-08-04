@@ -80,7 +80,6 @@
     <Compile Include="SampleReadWriter.cs" />
     <Compile Include="SilverBulletSummary.cs" />
     <Compile Include="SnpRndTagVerifier.cs" />
-    <Compile Include="StrtExceptions.cs" />
     <Compile Include="StrtReadMapper.cs" />
     <Compile Include="StrtReport.cs" />
     <Compile Include="SyntReadReporter.cs" />
@@ -89,7 +88,6 @@
     <Compile Include="TranscriptomeStatistics.cs" />
     <Compile Include="UCSCGenomeDownloader.cs" />
     <Compile Include="UpstreamAnalyzer.cs" />
-    <Compile Include="XMLReportCreator.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\C1Lib\Linnarsson.C1.csproj">

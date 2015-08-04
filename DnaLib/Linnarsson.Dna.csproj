@@ -132,8 +132,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Props.cs" />
     <Compile Include="PslParser.cs" />
-    <Compile Include="QueueHandler.cs" />
-    <Compile Include="QueueRecord.cs" />
     <Compile Include="QuickAnnotationMap.cs" />
     <Compile Include="GeneFeature.cs" />
     <Compile Include="LaneInfo.cs" />

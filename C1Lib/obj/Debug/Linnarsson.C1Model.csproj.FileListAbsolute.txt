@@ -1,7 +1,0 @@
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.2_1666\SilverBullet\C1\bin\Debug\C1.dll
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.2_1666\SilverBullet\C1\bin\Debug\C1.pdb
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.2_1666\SilverBullet\C1\bin\Debug\Linnarsson.Utilities.dll
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.2_1666\SilverBullet\C1\bin\Debug\Linnarsson.Utilities.pdb
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.2_1666\SilverBullet\C1\obj\Debug\Linnarsson.C1Model.csprojResolveAssemblyReference.cache
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.2_1666\SilverBullet\C1\obj\Debug\C1.dll
-C:\Users\Peter Lonnerberg\Perforce\192.168.1.2_1666\SilverBullet\C1\obj\Debug\C1.pdb

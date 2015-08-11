@@ -27,7 +27,7 @@ namespace ESCAF_BclToFq
         public int minLastAccessMinutes = 10; // Min time in minutes since last access of a run folder before starting to process
         public string ReadsFolder = "/home/data/reads"; // Where .fq files for each lane are put
         public string[] scpDestinations = new string[] 
-        { "sten@milou.uppnex.uu.se:reads", "hiseq@130.237.117.141:/data/reads" };
+        { "sten@milou.uppmax.uu.se:reads", "hiseq@130.237.117.141:/data/reads" };
         // scp destinations of resulting .fq files. The directory structure will be PF in top folder, and nonPF/ and statistics/ subfolders
         public bool clearData = true; // Remove all run data and local .fq files after successful processing and scp:ing
         public bool multiThreaded = false; // Use parallell threads for quick processing
@@ -170,12 +170,15 @@ namespace ESCAF_BclToFq
                 {
                     foreach (string scpDest in ESCAFProps.props.scpDestinations)
                     {
-                        c = new CmdCaller("scp", string.Format("-p {0} {1}/{2}", r.PFPath, scpDest, Path.GetFileName(r.PFPath)));
-                        if (c.ExitCode != 0) throw new Exception(c.StdError);
-                        c = new CmdCaller("scp", string.Format("-p {0} {1}/nonPF/{2}", r.nonPFPath, scpDest, Path.GetFileName(r.nonPFPath)));
-                        if (c.ExitCode != 0) throw new Exception(c.StdError);
-                        c = new CmdCaller("scp", string.Format("-p {0} {1}/statistics/{2}", r.statsPath, scpDest, Path.GetFileName(r.statsPath)));
-                        if (c.ExitCode != 0) throw new Exception(c.StdError);
+                        string scpArg = string.Format("-p {0} {1}/{2}", r.PFPath, scpDest, Path.GetFileName(r.PFPath));
+                        c = new CmdCaller("scp", scpArg);
+                        if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
+                        scpArg = string.Format("-p {0} {1}/nonPF/{2}", r.nonPFPath, scpDest, Path.GetFileName(r.nonPFPath));
+                        c = new CmdCaller("scp", scpArg);
+                        if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
+                        scpArg = string.Format("-p {0} {1}/statistics/{2}", r.statsPath, scpDest, Path.GetFileName(r.statsPath));
+                        c = new CmdCaller("scp", scpArg);
+                        if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
                     }
                 }
             }

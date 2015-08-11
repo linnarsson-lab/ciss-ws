@@ -288,12 +288,13 @@ namespace Linnarsson.Strt
                         bool readyFileExists = File.Exists(readyFilePath);
                         if (!readyFileExists)
                         {
-                            logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping lane {0} run {1}: {2} is missing.", lane, read, readyFileName);
+                            if (read < 3)
+                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping lane {0} read {1}: {2} is missing.", lane, read, readyFileName);
                             continue;
                         }
                         if (LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runName) && !forceOverwrite)
                         {
-                            logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping lane {0} run {1}: Output PF and statistics files already exist.", lane, read);
+                            logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping lane {0} read {1}: Output PF and statistics files already exist.", lane, read);
                             continue;
                         }
                         else 
@@ -303,7 +304,7 @@ namespace Linnarsson.Strt
                             if (r == null)
                                 r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
                             if (r == null)
-                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find any .bcl or .qseq files for lane {0} run {1}.", lane, read);
+                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find any .bcl or .qseq files for lane {0} read {1}.", lane, read);
                             else
                                 readFileResults.Add(r);
                         }

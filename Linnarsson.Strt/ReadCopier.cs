@@ -339,12 +339,13 @@ namespace Linnarsson.Strt
         public bool forceOverwrite = false;
         public List<ReadFileResult> readFileResults = new List<ReadFileResult>();
 
-        public CopierStart(string runFolder, string readsFolder, int laneFrom, int laneTo)
+        public CopierStart(string runFolder, string readsFolder, int laneFrom, int laneTo, bool forceOverwrite)
         {
             this.runFolder = runFolder;
             this.readsFolder = readsFolder;
             this.laneFrom = laneFrom;
             this.laneTo = laneTo;
+            this.forceOverwrite = forceOverwrite;
         }
     }
 }

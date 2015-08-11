@@ -151,14 +151,14 @@ namespace ESCAF_BclToFq
                 ReadCopier readCopier = new ReadCopier(logWriter);
                 if (!ESCAFProps.props.multiThreaded)
                 {
-                    readFileResults = readCopier.SingleUseCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, false);
+                    readFileResults = readCopier.SingleUseCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, true);
                 }
                 else
                 {
-                    CopierStart start1 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 1, 4);
+                    CopierStart start1 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 1, 4, true);
                     Thread thread1 = new Thread(readCopier.CopyRun);
                     thread1.Start(start1);
-                    CopierStart start2 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 5, 8);
+                    CopierStart start2 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 5, 8, true);
                     Thread thread2 = new Thread(readCopier.CopyRun);
                     thread2.Start(start2);
                     thread1.Join();

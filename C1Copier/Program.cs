@@ -30,6 +30,7 @@ namespace Linnarsson.C1
         static int nExceptions = 0;
         static int maxNExceptions = 10;
         static DateTime lastCopyTime = new DateTime(2012, 1, 1);
+        static List<string> copiedChipDirs = new List<string>();
         static bool runOnce = false;
         static string specificChipDir = "";
         static List<string> testedChipDirs = new List<string>();
@@ -122,12 +123,13 @@ namespace Linnarsson.C1
             string[] availableChipDirs = Directory.GetDirectories(C1Props.props.C1RunsFolder, "*-*-*");
             foreach (string chipDir in availableChipDirs)
             {
-                if (HasChanged(chipDir))
+                if (HasChanged(chipDir) || !copiedChipDirs.Contains(chipDir))
                 {
                     string msg = Copy(chipDir);
                     if (msg.StartsWith("OK"))
                     {
                         someCopyDone = true;
+                        copiedChipDirs.Add(chipDir);
                         logWriter.WriteLine("{0} {1}: {2}", DateTime.Now.ToString(), chipDir, msg);
                         logWriter.Flush();
                     }

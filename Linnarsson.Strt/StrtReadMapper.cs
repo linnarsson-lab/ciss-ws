@@ -101,7 +101,7 @@ namespace Linnarsson.Strt
             List<LaneInfo> laneInfos = LaneInfo.LaneInfosFromLaneArgs(laneArgs, extractionFolder);
             if (laneInfos.Count == 0)
                 Console.WriteLine("Warning: No read files found corresponding to {0}", string.Join("/", laneArgs.ToArray()));
-            ExtractMissingAndOld(laneInfos, extractionFolder);
+            ExtractIfNeeded(laneInfos, extractionFolder);
             return laneInfos;
         }
 
@@ -113,7 +113,7 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="laneInfos"></param>
         /// <param name="extractionFolder"></param>
-        private void ExtractMissingAndOld(List<LaneInfo> laneInfos, string extractionFolder)
+        private void ExtractIfNeeded(List<LaneInfo> laneInfos, string extractionFolder)
         {
             foreach (LaneInfo laneInfo in laneInfos)
 			{

@@ -148,7 +148,7 @@ namespace Linnarsson.Strt
                 throw new Exception("Some error(s) occured during copying of Run" + runNo);
         }
 
-        /// <summary>
+/*        /// <summary>
         /// This is a speed-up version that does Extraction of data into projectFolders at the same time as copying.
         /// Not used yet, and needs bug fixing!
         /// </summary>
@@ -210,7 +210,7 @@ namespace Linnarsson.Strt
             }
             return readFileResults;
         }
-
+*/
 
         private ReadFileResult CopyBclLaneRead(int runNo, string readsFolder, string runFolder, string runFolderName, int lane, int read)
         {

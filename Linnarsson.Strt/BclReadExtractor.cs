@@ -10,6 +10,9 @@ using Linnarsson.Utilities;
 
 namespace Linnarsson.Strt
 {
+    /// <summary>
+    /// An experimental for quicker parallell fq copying & read extraction class - not yet in use
+    /// </summary>
     public class BclReadExtractor
     {
         private List<LaneReadWriter> laneReadWriters;

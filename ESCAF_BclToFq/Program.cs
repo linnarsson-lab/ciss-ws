@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Configuration;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Threading;
 using System.Globalization;
-using System.Configuration;
 using System.Diagnostics;
 using System.Xml.Serialization;
 using Linnarsson.Strt;
@@ -21,7 +21,7 @@ namespace ESCAF_BclToFq
         [NonSerialized]
         public static string configFilename = "ESCAF_BclToFq.xml";
         [NonSerialized]
-        public string ConnectionString = "server=127.0.0.1;uid=cuser;pwd=5lqsym;database=joomla;Connect Timeout=300;Charset=utf8;";
+        public string ConnectionString = "server=127.0.0.1;uid=user;pwd=password;database=joomla;Connect Timeout=300;Charset=utf8;";
 
         public string DBPrefix = "sccf_"; // Table prefix use in CellDB
         public string LogFile = "ESCAF_BclToFq.log"; // Log output file
@@ -57,7 +57,32 @@ namespace ESCAF_BclToFq
                 xs.Serialize(sw, props);
                 sw.Close();
             }
+            SetConnectionStrings(props);
             return props;
+        }
+
+        private static void SetConnectionStrings(ESCAFProps props)
+        {
+            try
+            {
+                string appDir = AppDomain.CurrentDomain.BaseDirectory;
+                string exeFilePath = Path.Combine(appDir, "SB.exe"); // The application that holds ConnectionString config
+                Configuration config = ConfigurationManager.OpenExeConfiguration(exeFilePath);
+                ConnectionStringsSection section = config.GetSection("connectionStrings") as ConnectionStringsSection;
+                if (!section.SectionInformation.IsProtected)
+                {
+                    section.SectionInformation.ProtectSection("RsaProtectedConfigurationProvider");
+                    config.Save(ConfigurationSaveMode.Full, true);
+                }
+                section.SectionInformation.UnprotectSection();
+                ConnectionStringSettings settings = section.ConnectionStrings["SB.Properties.Settings.ESCGConnString"];
+                if (settings != null)
+                    props.ConnectionString = settings.ConnectionString;
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Warning: Props could not load encrypted DB connection setup");
+            }
         }
 
         ESCAFProps() { }

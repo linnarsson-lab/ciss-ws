@@ -60,13 +60,16 @@ _ReSharper*/
 #Subversion files
 #
 .svn
- 
+
 #
 # Microsoft Office Temp Files
 #
 ~$*
  
 */C1.dll
+
+SB/app.config
+ESCAF_BclToFq/app.config
 
 # End of File
 *.pdb

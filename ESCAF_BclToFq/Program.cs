@@ -66,7 +66,7 @@ namespace ESCAF_BclToFq
             try
             {
                 string appDir = AppDomain.CurrentDomain.BaseDirectory;
-                string exeFilePath = Path.Combine(appDir, "SB.exe"); // The application that holds ConnectionString config
+                string exeFilePath = Path.Combine(appDir, "ESCAF_BclToFq.exe"); // The application that holds ConnectionString config
                 Configuration config = ConfigurationManager.OpenExeConfiguration(exeFilePath);
                 ConnectionStringsSection section = config.GetSection("connectionStrings") as ConnectionStringsSection;
                 if (!section.SectionInformation.IsProtected)

@@ -68,8 +68,8 @@ _ReSharper*/
  
 */C1.dll
 
-SB/app.config
-ESCAF_BclToFq/app.config
+*/SB/app.config
+*/ESCAF_BclToFq/app.config
 
 # End of File
 *.pdb

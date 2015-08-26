@@ -112,8 +112,8 @@ namespace Linnarsson.Dna
         public int MaxFeatureLength = 2500000; // Longer features (loci) are excluded from analysis
         public int NumberOfAlignmentThreadsDefault = 16; // Bowtie multi-processor alignment
         public int ExtractionCounterWordLength = 12; // Used for over-representation analysis by ExtractionWordCounter
-        public string SampleLayoutFileFolder = ""; // If empty, the PlateLayout file is looked for in the project folder
-        public string SampleLayoutFileFormat = "{0}_SampleLayout.txt"; // Formatter for sample layout filenames. Arg0 is project name
+        public string LayoutFile = ""; // If "", the plate layout file is looked for in the project folder with default filename format
+        public string SampleLayoutFileFormat = "{0}_SampleLayout.txt"; // Default filename format for plate layout filenames. Arg0 is project name
         public int TotalNumberOfAddedSpikeMolecules = 6975;
         public bool UseMost5PrimeExonMapping = true; // true: directional exonic multireads get one single hit at the transcript with closest 5' end
         public MultiReadMappingType DefaultExonMapping = MultiReadMappingType.Random; // Decides non-directional multiread mapping method

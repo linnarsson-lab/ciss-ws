@@ -224,14 +224,14 @@ namespace Linnarsson.Strt
             string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolderOrName);
             List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder);
             string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
-            string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
             MapAndAnnotate(defaultSpeciesArg, defaultGeneVariants, defaultAnnotation, resultFolder,
-                            selectedBcIdxs, laneInfos, projectFolder, sampleLayoutPath);
+                            selectedBcIdxs, laneInfos, projectFolder);
         }
 
         public void MapAndAnnotate(string defaultSpeciesArg, bool defaultGeneVariants, string defaultAnnotation, string resultFolder,
-                                    int[] selectedBcIdxs, List<LaneInfo> laneInfos, string projectFolder, string sampleLayoutPath)
+                                    int[] selectedBcIdxs, List<LaneInfo> laneInfos, string projectFolder)
         {
+            string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
             string projectName = Path.GetFileName(projectFolder);
             string[] speciesArgs = new string[] { defaultSpeciesArg };
             if (defaultSpeciesArg == "") // && File.Exists(sampleLayoutPath) allow read C1 layout from DB even if file does not exist

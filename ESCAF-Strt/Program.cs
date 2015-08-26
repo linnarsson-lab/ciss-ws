@@ -27,10 +27,11 @@ namespace ESCAF_Strt
         public bool senseReads = true;
         public bool useRPKM = false;
         public bool skipExtraction = false;
+        public string specialLayoutFile = null;
 
         public string plateFolder { get { return Path.Combine(Props.props.ProjectsFolder, plateId); } }
         public string extractionFolder { get { return Path.Combine(plateFolder, "tmp"); } }
-        public string layoutPath { get { return Path.Combine(plateFolder, "layout.txt"); } }
+        public string layoutPath { get { return (specialLayoutFile != "")? specialLayoutFile : Path.Combine(plateFolder, "layout.txt"); } }
 
         public ESCAFStrtSettings()
         { }
@@ -48,6 +49,7 @@ namespace ESCAF_Strt
                 else if (args[argIdx] == "--all") variants = true;
                 else if (args[argIdx] == "--single") variants = false;
                 else if (args[argIdx] == "-p") plateId = args[++argIdx];
+                else if (args[argIdx] == "-w") specialLayoutFile = args[++argIdx];
                 else if (args[argIdx] == "-l") outputLevel = int.Parse(args[++argIdx]);
                 else if (args[argIdx] == "-o") resultFolder = args[++argIdx];
                 else if (args[argIdx] == "-s") spikeMols = int.Parse(args[++argIdx]);
@@ -68,6 +70,7 @@ namespace ESCAF_Strt
                     "--all                 analyze all transcript models of each gene\n" +
                     "-s SPIKEMOLECULES     number of spike molcules per well\n" +
                     "-l OUTPUTLEVEL        file richness of result folder, e.g. '3'\n" +
+                    "-w LAYOUTFILE         specify non-standard plate layout file location\n" +
                     "-o RESULTFOLDER       non-standard result folder\n");
 
             }
@@ -110,6 +113,7 @@ namespace ESCAF_Strt
             Props.props.TotalNumberOfAddedSpikeMolecules = options.spikeMols;
             Props.props.Aligner = options.aligner;
             Props.props.AnalyzeLoci = false;
+            Props.props.LayoutFile = options.layoutPath;
             string plateId = options.plateFolder;
             List<LaneInfo> laneInfos = new List<LaneInfo>();
             foreach (string readFile in options.read1Files)
@@ -126,7 +130,7 @@ namespace ESCAF_Strt
             Console.WriteLine("Mapping using {0} and annotating...", options.aligner);
             StrtReadMapper mapper = new StrtReadMapper();
             mapper.MapAndAnnotate(options.build, options.variants, options.annotation, options.resultFolder, null, 
-                                  laneInfos, options.plateFolder, options.layoutPath);
+                                  laneInfos, options.plateFolder);
         }
     }
 }

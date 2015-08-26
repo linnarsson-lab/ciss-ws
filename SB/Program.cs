@@ -52,6 +52,7 @@ namespace CmdSilverBullet
                             props.DefaultExonMapping = options.multiReadMappingType;
                             props.AnalyzeLoci = options.analyzeLoci;
                             props.QualityScoreBase = options.qualityScoreBase;
+                            props.LayoutFile = options.layoutFile;
                             projectFolder = options.projectFolder;
                             mapper = new StrtReadMapper();
                             List<LaneInfo> extrInfos = mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
@@ -126,6 +127,7 @@ namespace CmdSilverBullet
                             props.DefaultExonMapping = options.multiReadMappingType;
                             props.AnalyzeLoci = options.analyzeLoci;
                             props.QualityScoreBase = options.qualityScoreBase;
+                            props.LayoutFile = options.layoutFile;
                             mapper = new StrtReadMapper();
                             mapper.MapAndAnnotate(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
                                                             options.annotation, options.resultFolder, options.specificBcIdxs);
@@ -299,6 +301,7 @@ namespace CmdSilverBullet
                 "                Regexps are allowed for idx read matching, e.g. AG?TTG.\n" +
                 "   -oNAME       Use a non-standard output folder\n" +
                 "   -cN          Specify total # of spike molecules.\n" +
+                "   -layout FILE Specify a non-standard layout file location.\n" +
                 "   -loci        Consider the whole locus as one gene exon. (For use in nuclear RNA analysis)\n" +
                 "                Individual fractions are taken from 2nd column of " + PathHandler.GetCTRLConcPath() + "\n" +
                 "   -BcIndexes M,Na-Nz,[,...] Only process the specified barcodes and intervals, even if the barcode set contains more indexes.\n" +

@@ -29,6 +29,7 @@ namespace CmdSilverBullet
         public int totalSpikeMols = Props.props.TotalNumberOfAddedSpikeMolecules;
         public string Aligner = Props.props.Aligner;
         public byte qualityScoreBase = Props.props.QualityScoreBase;
+        public string layoutFile = "";
 
         public QXMAOptions(string[] args)
         {
@@ -97,6 +98,9 @@ namespace CmdSilverBullet
                             break;
                         case "-loci":
                             analyzeLoci = true;
+                            break;
+                        case "-layout":
+                            layoutFile = args[++argOffset];
                             break;
                         case "-LTotalReads":
                             extractionReadLimitType = ReadLimitType.TotalReads;

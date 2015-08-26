@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Xml.Serialization;
 using Linnarsson.Strt;
 using Linnarsson.Utilities;
+using MySql.Data.MySqlClient;
 
 namespace ESCAF_BclToFq
 {
@@ -19,7 +20,10 @@ namespace ESCAF_BclToFq
     {
         [NonSerialized]
         public static string configFilename = "ESCAF_BclToFq.xml";
+        [NonSerialized]
+        public string ConnectionString = "server=127.0.0.1;uid=cuser;pwd=5lqsym;database=joomla;Connect Timeout=300;Charset=utf8;";
 
+        public string DBPrefix = "sccf_"; // Table prefix use in CellDB
         public string LogFile = "ESCAF_BclToFq.log"; // Log output file
         public string FinishedRunFoldersFile = "processed_run_folder_names.txt"; // List of ready processed and transferred run folders
         public int scanInterval = 5; // Minutes between scans for new data
@@ -107,13 +111,11 @@ namespace ESCAF_BclToFq
                 try
                 {
                     string[] runDirs = Directory.GetDirectories(ESCAFProps.props.RunsFolder);
-                    //Console.WriteLine("#runDirs={0}", runDirs.Length);
                     foreach (string runDir in runDirs)
                     {
                         if (copiedRunDirs.Contains(runDir) ||  !Regex.IsMatch(runDir, ESCAFProps.props.RunFolderMatchPattern))
                             continue;
                         TimeSpan ts = DateTime.Now - Directory.GetLastAccessTime(runDir);
-                        //Console.WriteLine("{0}: TimeSinceAccess={1}", runDir, ts);
                         if (ts >= new TimeSpan(0, ESCAFProps.props.minLastAccessMinutes, 0))
                         {
                             logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Processing " + runDir);
@@ -152,6 +154,7 @@ namespace ESCAF_BclToFq
                     if (c.ExitCode != 0) throw new Exception(c.StdError);
                 }
                 ReadCopier readCopier = new ReadCopier(logWriter);
+                string runid = DBInsertIlluminaRun(runFolder);
                 if (!ESCAFProps.props.multiThreaded)
                 {
                     readFileResults = readCopier.SingleUseCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, true);
@@ -169,7 +172,7 @@ namespace ESCAF_BclToFq
                     readFileResults.AddRange(start1.readFileResults);
                     readFileResults.AddRange(start2.readFileResults);
                 }
-                if (readFileResults.Count < 8)
+                if (readFileResults.Count < 3 * 8)
                     throw new Exception("Less than 8 lanes were extracted from " + run + ".");
                 foreach (ReadFileResult r in readFileResults)
                 {
@@ -185,6 +188,7 @@ namespace ESCAF_BclToFq
                         c = new CmdCaller("scp", scpArg);
                         if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
                     }
+                    DBUpdateLaneYield(runid, r);
                 }
             }
             catch (Exception e)
@@ -205,6 +209,56 @@ namespace ESCAF_BclToFq
                     if (runFolder != run) Directory.Delete(runFolder, true); // If tarball, delete unpacked
                 }
             }
+        }
+
+        private static string DBInsertIlluminaRun(string runFolder)
+        {
+            Match m = Regex.Match(runFolder, ESCAFProps.props.RunFolderMatchPattern);
+            string rundate = m.Groups[0].Value;
+            int runno = int.Parse(m.Groups[1].Value);
+            string runid = m.Groups[2].Value;
+            string sql = string.Format("INSERT INTO #__aaailluminarun (status, runno, illuminarunid, rundate, time, user) " +
+                                "VALUES ('copying', '{0}', '{1}', '{2}', NOW(), '{3}') " +
+                                "ON DUPLICATE KEY UPDATE status='copying', runno='{0}', rundate={2}",
+                                        runno, runid, rundate, "system");
+            IssueNonQuery(sql);
+            return runid;
+        }
+
+        private void DBUpdateRunStatus(string runid, string status)
+        {
+            string sql = string.Format("UPDATE #__aaailluminarun SET status='{0}', time=NOW() WHERE illuminarunid='{1}'",
+                                       status, runid);
+            IssueNonQuery(sql);
+        }
+
+        private static void DBUpdateLaneYield(string runid, ReadFileResult r)
+        {
+            if (r.read == 1)
+            {
+                uint nReads = r.nPFReads + r.nNonPFReads;
+                string sql = string.Format(string.Format("UPDATE #__aaalane SET yield=\"{0}\", pfyield=\"{1}\" " +
+                              "WHERE laneno=\"{2}\" AND #__aaailluminarunid= (SELECT id FROM #__aaailluminarun WHERE illuminarunid=\"{3}\") ",
+                                 nReads, r.nPFReads, r.lane, runid));
+                IssueNonQuery(sql);
+            }
+            if (r.lane == 1 && r.readLen >= 0)
+            {
+                string c = new string[] { "cycles", "indexcycles", "pairedcycles" }[r.read - 1];
+                string sql = string.Format("UPDATE #__aaailluminarun SET {0}='{1} WHERE illuminarunid='{2}'",
+                                           c, r.readLen, runid);
+                IssueNonQuery(sql);
+            }
+        }
+
+        private static void IssueNonQuery(string sql)
+        {
+            sql = sql.Replace("#__", ESCAFProps.props.DBPrefix);
+            MySqlConnection conn = new MySqlConnection(ESCAFProps.props.ConnectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            cmd.ExecuteNonQuery();
+            conn.Close();
         }
 
     }

@@ -274,46 +274,43 @@ namespace Linnarsson.Strt
         public List<ReadFileResult> SingleUseCopy(string runFolder, string readsFolder, int laneFrom, int laneTo, bool forceOverwrite)
         {
             List<ReadFileResult> readFileResults = new List<ReadFileResult>();
+            int runNo = 0;
             Match m = MatchRunFolderName(runFolder);
             if (m.Success)
+                runNo = int.Parse(m.Groups[2].Value);
+            else
+                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Can not parse runNo from " + runFolder + " setting to 0.");
+            string runName = Path.GetFileName(runFolder);
+            for (int lane = laneFrom; lane <= laneTo; lane++)
             {
-                int runNo = int.Parse(m.Groups[2].Value);
-                string runName = Path.GetFileName(runFolder);
-                for (int lane = laneFrom; lane <= laneTo; lane++)
+                for (int read = 1; read <= 3; read++)
                 {
-                    for (int read = 1; read <= 3; read++)
+                    string readyFileName = string.Format("Basecalling_Netcopy_complete_Read{0}.txt", read);
+                    string readyFilePath = Path.Combine(runFolder, readyFileName);
+                    bool readyFileExists = File.Exists(readyFilePath);
+                    if (!readyFileExists)
                     {
-                        string readyFileName = string.Format("Basecalling_Netcopy_complete_Read{0}.txt", read);
-                        string readyFilePath = Path.Combine(runFolder, readyFileName);
-                        bool readyFileExists = File.Exists(readyFilePath);
-                        if (!readyFileExists)
-                        {
-                            if (read < 3)
-                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping lane {0} read {1}: {2} is missing.", lane, read, readyFileName);
-                            continue;
-                        }
-                        if (LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runName) && !forceOverwrite)
-                        {
-                            logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping lane {0} read {1}: Output PF and statistics files already exist.", lane, read);
-                            continue;
-                        }
-                        else 
-                        {
-                            ReadFileResult r;
-                            r = CopyBclLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
-                            if (r == null)
-                                r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
-                            if (r == null)
-                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find any .bcl or .qseq files for lane {0} read {1}.", lane, read);
-                            else
-                                readFileResults.Add(r);
-                        }
+                        if (read < 3)
+                            logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping lane {0} read {1}: {2} is missing.", lane, read, readyFileName);
+                        continue;
+                    }
+                    if (LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runName) && !forceOverwrite)
+                    {
+                        logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping lane {0} read {1}: Output PF and statistics files already exist.", lane, read);
+                        continue;
+                    }
+                    else 
+                    {
+                        ReadFileResult r;
+                        r = CopyBclLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
+                        if (r == null)
+                            r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
+                        if (r == null)
+                            logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find any .bcl or .qseq files for lane {0} read {1}.", lane, read);
+                        else
+                            readFileResults.Add(r);
                     }
                 }
-            }
-            else
-            {
-                logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Can not parse run number from folder name " + runFolder);
             }
             return readFileResults;
         }

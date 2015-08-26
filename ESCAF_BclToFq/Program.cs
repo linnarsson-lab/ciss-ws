@@ -21,6 +21,7 @@ namespace ESCAF_BclToFq
         public static string configFilename = "ESCAF_BclToFq.xml";
 
         public string LogFile = "ESCAF_BclToFq.log"; // Log output file
+        public string FinishedRunFoldersFile = "processed_run_folder_names.txt"; // List of ready processed and transferred run folders
         public int scanInterval = 5; // Minutes between scans for new data
         public string RunsFolder = "/home/data/runs"; // Where Illumina run folders (or tarballs) are deposited
         public string RunFolderMatchPattern = "[0-9][0-9][0-9][0-9][0-9][0-9]_.+XX"; // Pattern that HiSeq run folders in RunsFolder should match
@@ -121,6 +122,8 @@ namespace ESCAF_BclToFq
                             logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Ready");
                             logWriter.Flush();
                             copiedRunDirs.Add(runDir);
+                            string readRunLine = Path.GetFileName(runDir) + "\n";
+                            File.AppendAllText(ESCAFProps.props.FinishedRunFoldersFile, readRunLine);
                         }
                     }
                 }
@@ -166,6 +169,8 @@ namespace ESCAF_BclToFq
                     readFileResults.AddRange(start1.readFileResults);
                     readFileResults.AddRange(start2.readFileResults);
                 }
+                if (readFileResults.Count < 8)
+                    throw new Exception("Less than 8 lanes were extracted from " + run + ".");
                 foreach (ReadFileResult r in readFileResults)
                 {
                     foreach (string scpDest in ESCAFProps.props.scpDestinations)

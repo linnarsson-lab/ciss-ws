@@ -51,6 +51,7 @@ namespace CmdSilverBullet
                             props.UseMost5PrimeExonMapping = options.useMost5PrimeExonMapping;
                             props.DefaultExonMapping = options.multiReadMappingType;
                             props.AnalyzeLoci = options.analyzeLoci;
+                            props.QualityScoreBase = options.qualityScoreBase;
                             projectFolder = options.projectFolder;
                             mapper = new StrtReadMapper();
                             List<LaneInfo> extrInfos = mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
@@ -99,6 +100,7 @@ namespace CmdSilverBullet
                             props.BarcodesName = options.barcodesName;
                             props.ExtractionReadLimitType = options.extractionReadLimitType;
                             props.ExtractionReadLimit = options.extractionReadLimit;
+                            props.QualityScoreBase = options.qualityScoreBase;
                             projectFolder = options.projectFolder;
                             mapper = new StrtReadMapper();
                             mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
@@ -107,6 +109,7 @@ namespace CmdSilverBullet
                         case "bt":
                             options = new QXMAOptions(args);
                             props.Aligner = options.Aligner;
+                            props.QualityScoreBase = options.qualityScoreBase;
                             mapper = new StrtReadMapper();
                             mapper.Map(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants, options.annotation);
                             break;
@@ -122,6 +125,7 @@ namespace CmdSilverBullet
                             props.UseMost5PrimeExonMapping = options.useMost5PrimeExonMapping;
                             props.DefaultExonMapping = options.multiReadMappingType;
                             props.AnalyzeLoci = options.analyzeLoci;
+                            props.QualityScoreBase = options.qualityScoreBase;
                             mapper = new StrtReadMapper();
                             mapper.MapAndAnnotate(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
                                                             options.annotation, options.resultFolder, options.specificBcIdxs);
@@ -285,11 +289,11 @@ namespace CmdSilverBullet
                 }
             }
             Console.WriteLine("\nValid commands (mono SB.exe command options...):\n\n" +
-                "x [RUNLANESPEC]+ BC [-Lt N] PROJECTPATH              extract data from the reads folder.\n" +
+                "x [RUNLANESPEC]+ BC [-Lt N] [OPTIONS] PROJECTPATH              extract data from the reads folder.\n" +
                 "   -Lt N     limit number of reads used to N. t is one of TotalReads, ValidReads, TotalReadsPerBc, ValidReadsPerBc\n" +
-                "q [RUNLANESPEC]+ BC [ANNOTATIONOPTION]* [-cN] [-BcIndexes...] [BUILD|IDX] PROJECTPATH\n" +
+                "q [RUNLANESPEC]+ BC [OPTION]* [-cN] [-BcIndexes...] [BUILD|IDX] PROJECTPATH\n" +
                 "   extract data, align, and annotate in one sweep using default parameters.\n" +
-                "ab [-oNAME] [ANNOTATIONOPTION]* [-cN] [-BcIndexes...] [BUILD|IDX] PROJECTPATH|EXTRACTEDPATH\n" +
+                "ab [-oNAME] [OPTION]* [-cN] [-BcIndexes...] [BUILD|IDX] PROJECTPATH|EXTRACTEDPATH\n" +
                 "   annotate extracted reads in latest/specified Extracted folder. Will start by aligning if mapping files are missing.\n" +
                 "   RUNLANESPEC  E.g. '17:235[:,,AGCTTG]', i.e. lanes 2,3,5 of run 17 [and only idx read AGCTTG of lane 5].\n" +
                 "                Regexps are allowed for idx read matching, e.g. AG?TTG.\n" +
@@ -307,6 +311,7 @@ namespace CmdSilverBullet
                 "     5primemap/multimap/     annotate reads/molecules to (one of) the transcript(s) they match closest to the 5' end of,\n" +
                 "     /randommap              , randomly to one of, or multi-annotate to every alternative transcript they match.\n" +
                 "     insertc1data            insert data into the Sanger cells10k database when this is a C1 sample.\n" +
+                "    -scoreBase N             Adjust base for phred score qualities (33 or 64, default=" + Props.props.QualityScoreBase + ").\n" +
                 "   If BUILD/IDX is left out, these are taken from the xxx_SampleLayout.txt file in the project folder.\n" +
                 "bt BUILD|IDX all|single PROJECTPATH|EXTRACTEDPATH      run Bowtie on latest/specified extracted data folder.\n" +
                 "download GENUS_SPECIES                                 download latest genome build and annotations, for e.g. 'Mus_musculus'\n" +

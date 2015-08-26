@@ -28,6 +28,7 @@ namespace CmdSilverBullet
         public int[] specificBcIdxs = null;
         public int totalSpikeMols = Props.props.TotalNumberOfAddedSpikeMolecules;
         public string Aligner = Props.props.Aligner;
+        public byte qualityScoreBase = Props.props.QualityScoreBase;
 
         public QXMAOptions(string[] args)
         {
@@ -112,6 +113,9 @@ namespace CmdSilverBullet
                         case "-LValidReadsPerBc":
                             extractionReadLimitType = ReadLimitType.TotalValidReadsPerBarcode;
                             extractionReadLimit = int.Parse(args[++argOffset]);
+                            break;
+                        case "-scoreBase":
+                            qualityScoreBase = byte.Parse(args[++argOffset]);
                             break;
                         case "-BcIndexes":
                             HashSet<int> idxs = new HashSet<int>();

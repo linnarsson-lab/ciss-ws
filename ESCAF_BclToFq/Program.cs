@@ -28,7 +28,7 @@ namespace ESCAF_BclToFq
         public string FinishedRunFoldersFile = "processed_run_folder_names.txt"; // List of ready processed and transferred run folders
         public int scanInterval = 5; // Minutes between scans for new data
         public string RunsFolder = "/home/data/runs"; // Where Illumina run folders (or tarballs) are deposited
-        public string RunFolderMatchPattern = "([0-9][0-9][0-9][0-9][0-9][0-9])_.+_([0-9]+)_(.+XX)$";
+        public string RunFolderMatchPattern = "([0-9][0-9][0-9][0-9][0-9][0-9])_.+_([0-9]+)_[AB](.+XX)$";
         // Pattern that HiSeq run folders in RunsFolder should match. Groups: (date) (runno) (runid)
         public int minLastAccessMinutes = 10; // Min time in minutes since last access of a run folder before starting to process
         public string ReadsFolder = "/home/data/reads"; // Where .fq files for each lane are put
@@ -198,8 +198,6 @@ namespace ESCAF_BclToFq
                     readFileResults.AddRange(start1.readFileResults);
                     readFileResults.AddRange(start2.readFileResults);
                 }
-                if (readFileResults.Count < 3 * 8)
-                    throw new Exception("Less than 8 lanes were extracted from " + run + ".");
                 foreach (ReadFileResult r in readFileResults)
                 {
                     foreach (string scpDest in ESCAFProps.props.scpDestinations)
@@ -240,12 +238,12 @@ namespace ESCAF_BclToFq
         private static string DBInsertIlluminaRun(string runFolder)
         {
             Match m = Regex.Match(runFolder, ESCAFProps.props.RunFolderMatchPattern);
-            string rundate = m.Groups[0].Value;
-            int runno = int.Parse(m.Groups[1].Value);
-            string runid = m.Groups[2].Value;
+            string rundate = m.Groups[1].Value;
+            int runno = int.Parse(m.Groups[2].Value);
+            string runid = m.Groups[3].Value;
             string sql = string.Format("INSERT INTO #__aaailluminarun (status, runno, illuminarunid, rundate, time, user) " +
                                 "VALUES ('copying', '{0}', '{1}', '{2}', NOW(), '{3}') " +
-                                "ON DUPLICATE KEY UPDATE status='copying', runno='{0}', rundate={2}",
+                                "ON DUPLICATE KEY UPDATE status='copying', runno='{0}', rundate='{2}'",
                                         runno, runid, rundate, "system");
             IssueNonQuery(sql);
             return runid;
@@ -263,8 +261,8 @@ namespace ESCAF_BclToFq
             if (r.read == 1)
             {
                 uint nReads = r.nPFReads + r.nNonPFReads;
-                string sql = string.Format(string.Format("UPDATE #__aaalane SET yield=\"{0}\", pfyield=\"{1}\" " +
-                              "WHERE laneno=\"{2}\" AND #__aaailluminarunid= (SELECT id FROM #__aaailluminarun WHERE illuminarunid=\"{3}\") ",
+                string sql = string.Format(string.Format("UPDATE #__aaalane SET yield='{0}', pfyield='{1}' WHERE laneno='{2}'" +
+                              " AND #__aaailluminarunid= (SELECT id FROM #__aaailluminarun WHERE illuminarunid='{3}') ",
                                  nReads, r.nPFReads, r.lane, runid));
                 IssueNonQuery(sql);
             }

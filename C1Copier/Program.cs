@@ -199,7 +199,7 @@ namespace Linnarsson.C1
         {
             string chipId = Path.GetFileName(chipDir);
             if (!C1Props.props.ConvertChipIds) return chipId;
-            Match m = Regex.Match(chipId, "^([0-9][0-9][0-9][0-9])-([0-9][0-9][0-9]-[0-9][0-9][0-9])$");
+            Match m = Regex.Match(chipId, "^([0-9][0-9][0-9][0-9])-([0-9][0-9][0-9]-[0-9][0-9][0-9])[-_]?[a-zA-Z]*$");
             if (m.Success)
                 return m.Groups[1].Value + m.Groups[2].Value;
             return chipId;
@@ -302,7 +302,7 @@ namespace Linnarsson.C1
                     string line;
                     while ((line = reader.ReadLine()) != null)
                     {
-                        if (line == "" || line.StartsWith("#") || line.Contains("row"))
+                        if (line == "" || line.StartsWith("#") || line.Contains("ow") || line.Contains("ol"))
                             continue;
                         line = line.Trim();
                         char row = line[0];

@@ -28,7 +28,8 @@ namespace ESCAF_BclToFq
         public string FinishedRunFoldersFile = "processed_run_folder_names.txt"; // List of ready processed and transferred run folders
         public int scanInterval = 5; // Minutes between scans for new data
         public string RunsFolder = "/home/data/runs"; // Where Illumina run folders (or tarballs) are deposited
-        public string RunFolderMatchPattern = "[0-9][0-9][0-9][0-9][0-9][0-9]_.+XX"; // Pattern that HiSeq run folders in RunsFolder should match
+        public string RunFolderMatchPattern = "([0-9][0-9][0-9][0-9][0-9][0-9])_.+_([0-9]+)_(.+XX)$";
+        // Pattern that HiSeq run folders in RunsFolder should match. Groups: (date) (runno) (runid)
         public int minLastAccessMinutes = 10; // Min time in minutes since last access of a run folder before starting to process
         public string ReadsFolder = "/home/data/reads"; // Where .fq files for each lane are put
         public string[] scpDestinations = new string[] 
@@ -66,7 +67,7 @@ namespace ESCAF_BclToFq
             try
             {
                 string appDir = AppDomain.CurrentDomain.BaseDirectory;
-                string exeFilePath = Path.Combine(appDir, "ESCAF_BclToFq.exe"); // The application that holds ConnectionString config
+                string exeFilePath = Path.Combine(appDir, "SB.exe"); // The application that holds ConnectionString config
                 Configuration config = ConfigurationManager.OpenExeConfiguration(exeFilePath);
                 ConnectionStringsSection section = config.GetSection("connectionStrings") as ConnectionStringsSection;
                 if (!section.SectionInformation.IsProtected)
@@ -75,7 +76,7 @@ namespace ESCAF_BclToFq
                     config.Save(ConfigurationSaveMode.Full, true);
                 }
                 section.SectionInformation.UnprotectSection();
-                ConnectionStringSettings settings = section.ConnectionStrings["SB.Properties.Settings.ESCGConnString"];
+                ConnectionStringSettings settings = section.ConnectionStrings["SB.Properties.Settings.MainDBConnString"];
                 if (settings != null)
                     props.ConnectionString = settings.ConnectionString;
             }

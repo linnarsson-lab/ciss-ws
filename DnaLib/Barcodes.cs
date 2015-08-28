@@ -192,7 +192,7 @@ namespace Linnarsson.Dna
         /// Extract the barcode from the read, check that a required TS-'GGG' is there, and
         /// remove any trailing 'G':s, when applicable
         /// </summary>
-        /// <param name="read">the full read</param>
+        /// <param name="read">the full read (may be prefixed with index and/or PE read as specified by barcode set</param>
         /// <param name="maxTrimExtraGs">max extra 'G':s to remove</param>
         /// <param name="bcIdx">the detected barcode index, or -1 on failure</param>
         /// <param name="actualInsertPos">the position of the actual insert, after any GGG...</param>

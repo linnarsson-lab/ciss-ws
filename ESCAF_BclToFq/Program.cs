@@ -101,6 +101,7 @@ namespace ESCAF_BclToFq
     public class Program
     {
         private static StreamWriter logWriter;
+        private static readonly string[] cyclecolnames = new string[] { "", "cycles", "indexcycles", "pairedcycles" };
 
         static void Main(string[] args)
         {
@@ -179,18 +180,30 @@ namespace ESCAF_BclToFq
                     c = new CmdCaller("tar", "zxf " + run, true);
                     if (c.ExitCode != 0) throw new Exception(c.StdError);
                 }
+            }
+            catch (Exception e)
+            {
+                logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Exception in ESCAF_BclToFq:\n" + e);
+                logWriter.Flush();
+            }
+            Match mr = Regex.Match(runFolder, ESCAFProps.props.RunFolderMatchPattern);
+            string rundate = mr.Groups[1].Value;
+            string runno = mr.Groups[2].Value;
+            string runid = mr.Groups[3].Value;
+            try 
+            {
+                DBInsertIlluminaRun(runid, runno, rundate);
                 ReadCopier readCopier = new ReadCopier(logWriter);
-                string runid = DBInsertIlluminaRun(runFolder);
                 if (!ESCAFProps.props.multiThreaded)
                 {
-                    readFileResults = readCopier.SingleUseCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, true);
+                    readFileResults = readCopier.SingleUseCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, false);
                 }
                 else
                 {
-                    CopierStart start1 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 1, 4, true);
+                    CopierStart start1 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 1, 4, false);
                     Thread thread1 = new Thread(readCopier.CopyRun);
                     thread1.Start(start1);
-                    CopierStart start2 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 5, 8, true);
+                    CopierStart start2 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 5, 8, false);
                     Thread thread2 = new Thread(readCopier.CopyRun);
                     thread2.Start(start2);
                     thread1.Join();
@@ -213,12 +226,15 @@ namespace ESCAF_BclToFq
                         if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
                     }
                     DBUpdateLaneYield(runid, r);
+                    DBUpdateRunStatus(runid, "copied");
                 }
             }
             catch (Exception e)
             {
                 logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Exception in ESCAF_BclToFq:\n" + e);
                 logWriter.Flush();
+                DBUpdateRunStatus(runid, "copyfail");
+
             }
             finally
             {
@@ -235,24 +251,22 @@ namespace ESCAF_BclToFq
             }
         }
 
-        private static string DBInsertIlluminaRun(string runFolder)
+        private static string DBInsertIlluminaRun(string runid, string runno, string rundate)
         {
-            Match m = Regex.Match(runFolder, ESCAFProps.props.RunFolderMatchPattern);
-            string rundate = m.Groups[1].Value;
-            int runno = int.Parse(m.Groups[2].Value);
-            string runid = m.Groups[3].Value;
             string sql = string.Format("INSERT INTO #__aaailluminarun (status, runno, illuminarunid, rundate, time, user) " +
                                 "VALUES ('copying', '{0}', '{1}', '{2}', NOW(), '{3}') " +
                                 "ON DUPLICATE KEY UPDATE status='copying', runno='{0}', rundate='{2}'",
                                         runno, runid, rundate, "system");
+            logWriter.WriteLine(sql);
             IssueNonQuery(sql);
             return runid;
         }
 
-        private void DBUpdateRunStatus(string runid, string status)
+        private static void DBUpdateRunStatus(string runid, string status)
         {
             string sql = string.Format("UPDATE #__aaailluminarun SET status='{0}', time=NOW() WHERE illuminarunid='{1}'",
                                        status, runid);
+            logWriter.WriteLine(sql);
             IssueNonQuery(sql);
         }
 
@@ -262,15 +276,16 @@ namespace ESCAF_BclToFq
             {
                 uint nReads = r.nPFReads + r.nNonPFReads;
                 string sql = string.Format(string.Format("UPDATE #__aaalane SET yield='{0}', pfyield='{1}' WHERE laneno='{2}'" +
-                              " AND #__aaailluminarunid= (SELECT id FROM #__aaailluminarun WHERE illuminarunid='{3}') ",
+                              " AND #__aaailluminarunid=(SELECT id FROM #__aaailluminarun WHERE illuminarunid='{3}') ",
                                  nReads, r.nPFReads, r.lane, runid));
+                logWriter.WriteLine(sql);
                 IssueNonQuery(sql);
             }
             if (r.lane == 1 && r.readLen >= 0)
             {
-                string c = new string[] { "cycles", "indexcycles", "pairedcycles" }[r.read - 1];
-                string sql = string.Format("UPDATE #__aaailluminarun SET {0}='{1} WHERE illuminarunid='{2}'",
-                                           c, r.readLen, runid);
+                string c = cyclecolnames[r.read];
+                string sql = string.Format("UPDATE #__aaailluminarun SET {0}='{1}' WHERE illuminarunid='{2}'", c, r.readLen, runid);
+                logWriter.WriteLine(sql);
                 IssueNonQuery(sql);
             }
         }
@@ -280,6 +295,7 @@ namespace ESCAF_BclToFq
             sql = sql.Replace("#__", ESCAFProps.props.DBPrefix);
             MySqlConnection conn = new MySqlConnection(ESCAFProps.props.ConnectionString);
             conn.Open();
+            Console.WriteLine(sql);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             cmd.ExecuteNonQuery();
             conn.Close();

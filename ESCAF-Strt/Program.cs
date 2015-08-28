@@ -18,7 +18,7 @@ namespace ESCAF_Strt
         public string build = "mm10";
         public string annotation =  "UCSC";
         public bool variants = Props.props.AnalyzeAllGeneVariants;
-        public string plateId = "";
+        public string plateFolder = "";
         public int outputLevel = Props.props.OutputLevel;
         public int spikeMols = Props.props.TotalNumberOfAddedSpikeMolecules;
         public string aligner = Props.props.Aligner;
@@ -29,7 +29,6 @@ namespace ESCAF_Strt
         public bool skipExtraction = false;
         public string specialLayoutFile = null;
 
-        public string plateFolder { get { return Path.Combine(Props.props.ProjectsFolder, plateId); } }
         public string extractionFolder { get { return Path.Combine(plateFolder, "tmp"); } }
         public string layoutPath { get { return (specialLayoutFile != "")? specialLayoutFile : Path.Combine(plateFolder, "layout.txt"); } }
 
@@ -48,7 +47,7 @@ namespace ESCAF_Strt
                 else if (args[argIdx] == "-m") skipExtraction = true;
                 else if (args[argIdx] == "--all") variants = true;
                 else if (args[argIdx] == "--single") variants = false;
-                else if (args[argIdx] == "-p") plateId = args[++argIdx];
+                else if (args[argIdx] == "-p") plateFolder = args[++argIdx];
                 else if (args[argIdx] == "-w") specialLayoutFile = args[++argIdx];
                 else if (args[argIdx] == "-l") outputLevel = int.Parse(args[++argIdx]);
                 else if (args[argIdx] == "-o") resultFolder = args[++argIdx];
@@ -57,7 +56,7 @@ namespace ESCAF_Strt
                 else if (args[argIdx].ToLower() == "--star") aligner = "star";
                 else if (args[argIdx] == "--help") Console.WriteLine(
                     "Arguments for ESCAF-Strt.exe:\n" +
-                    "-p PLATEID            plateId\n" +
+                    "-p PLATEFOLDER        output folder for extraction, layout etc.\n" +
                     "-1 PATH1,PATH2...     paths to first read fq.gz files\n" +
                     "-2 PATH1,PATH2...     paths to index read fq.gz files\n" +
                     "-b BARCODESNAME       name of barcode set, e.g. 'C1Plate1'\n" +
@@ -71,7 +70,7 @@ namespace ESCAF_Strt
                     "-s SPIKEMOLECULES     number of spike molcules per well\n" +
                     "-l OUTPUTLEVEL        file richness of result folder, e.g. '3'\n" +
                     "-w LAYOUTFILE         specify non-standard plate layout file location\n" +
-                    "-o RESULTFOLDER       non-standard result folder\n");
+                    "-o RESULTFOLDER       non-standard result output folder\n");
 
             }
         }
@@ -81,7 +80,7 @@ namespace ESCAF_Strt
             List<string> errors = new List<string>();
             if (read1Files == null) errors.Add("Argument missing in ESCAF-Strt.exe: You need to specify the input fq file(s) with -1 option.");
             if (barcodesName == "") errors.Add("Argument missing in ESCAF-Strt.exe: You need to specify barcode set with -b option.");
-            if (plateId == "") errors.Add("Argument missing in ESCAF-Strt.exe: You need to specify plateId with -p option.");
+            if (plateFolder == "") errors.Add("Argument missing in ESCAF-Strt.exe: You need to specify plateId with -p option.");
             if (errors.Count > 0)
             {
                 Console.WriteLine(string.Join("\n", errors.ToArray()));
@@ -114,7 +113,6 @@ namespace ESCAF_Strt
             Props.props.Aligner = options.aligner;
             Props.props.AnalyzeLoci = false;
             Props.props.LayoutFile = options.layoutPath;
-            string plateId = options.plateFolder;
             List<LaneInfo> laneInfos = new List<LaneInfo>();
             foreach (string readFile in options.read1Files)
                 laneInfos.Add(new LaneInfo(readFile, "", '0', options.extractionFolder, Props.props.Barcodes.Count, ""));

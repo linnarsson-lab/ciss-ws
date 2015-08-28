@@ -31,6 +31,7 @@ namespace Linnarsson.Strt
         /// <param name="sampleReadWriters">One for each sample that should be extracted from the lane</param>
         public BclReadExtractor(List<LaneReadWriter> laneReadWriters, List<SampleReadWriter> sampleReadWriters)
         {
+            throw new NotImplementedException();
             this.laneReadWriters = laneReadWriters;
             this.sampleReadWriters = sampleReadWriters;
         }

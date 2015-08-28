@@ -54,8 +54,17 @@ namespace Linnarsson.Strt
             //Console.WriteLine("SampleReadWriter.Setup(): read1Len=" + read1Len, " read2Len=" + read2Len + " read3Len=" + read3Len);
         }
 
+        /// <summary>
+        /// Experimental for parallell extraction to all samples in lane. Not yet in use
+        /// </summary>
+        /// <param name="hdrStart"></param>
+        /// <param name="hdrEnd"></param>
+        /// <param name="readSeqs"></param>
+        /// <param name="readQuals"></param>
+        /// <param name="passedFilter"></param>
         public void Process(string hdrStart, string hdrEnd, char[][] readSeqs, char[][] readQuals, bool passedFilter)
         {
+            throw new NotImplementedException();
             char[] seqChars = new char[seqLen];
             char[] qualChars = new char[seqLen];
             if (prefixRead2 > 0)

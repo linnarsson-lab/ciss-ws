@@ -153,6 +153,7 @@ namespace Linnarsson.Dna
         public string DBPrefix = "jos_"; // Table prefix use in CellDB
         public int OutputLevel = 2; // Controls how much data will be output
         public bool AnalyzeLoci = false; // For nuclear RNA, will consider each gene as the whole locus, and not exons.
+        public bool WritePlateReadFile = false; // If true, extractor writes fq.gz file(s) with non-filtered reads having current bc
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

@@ -129,7 +129,7 @@ namespace Linnarsson.Strt
                                 if (projectDB != null)
                                 {
                                     projectDB.AddToBackupQueue(r.PFPath, 10);
-                                    if (r.read == '1')
+                                    if (r.read == 1)
                                         projectDB.SetIlluminaYield(runId, r.nReads, r.nPFReads, r.lane);
                                 }
                             }

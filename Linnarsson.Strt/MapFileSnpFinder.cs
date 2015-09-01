@@ -116,7 +116,7 @@ namespace Linnarsson.Strt
             {
                 if (!File.Exists(mapFilePath))
                     continue;
-                MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, barcodes);
+                MapFile mapFileReader = MapFile.GetMapFile(mapFilePath);
                 if (mapFileReader == null)
                     Console.WriteLine("\n  Skipping {0} - unknown read map file type.", mapFilePath);
                 Console.Write(".");

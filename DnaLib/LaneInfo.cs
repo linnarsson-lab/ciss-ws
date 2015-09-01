@@ -40,6 +40,9 @@ namespace Linnarsson.Dna
 
         public string slaskWBcFilePath { get; private set; }
         public string slaskNoBcFilePath { get; private set; }
+        public string plateRead1FilePath { get; private set; }
+        public string plateRead2FilePath { get; private set; }
+        public string plateRead3FilePath { get; private set; }
         public string summaryFilePath { get; private set; }
         public string[] extractedFilePaths { get; private set; }
         public string laneExtractionFolder { get; private set; }
@@ -59,11 +62,11 @@ namespace Linnarsson.Dna
         public LaneInfo()
         { }
 
-        public LaneInfo(string extractionFolder, string laneExtractionFolder, string runId, char laneNo, int nBarcodes)
+        public LaneInfo(string extractionFolder, string laneExtractionFolder, string runId, char laneNo, Barcodes barcodes)
         {
             this.illuminaRunId = runId;
             this.laneNo = laneNo.ToString();
-            SetExtractionFilePaths(extractionFolder, laneExtractionFolder, nBarcodes);
+            SetExtractionFilePaths(extractionFolder, laneExtractionFolder, barcodes);
         }
 
         /// <summary>
@@ -75,7 +78,7 @@ namespace Linnarsson.Dna
         /// <param name="laneNo"></param>
         /// <param name="extractionFolder"></param>
         /// <param name="nBarcodes"></param>
-        public LaneInfo(string readFilePath, string runId, char laneNo, string extractionFolder, int nBarcodes, string idxSeqFilter)
+        public LaneInfo(string readFilePath, string runId, char laneNo, string extractionFolder, Barcodes barcodes, string idxSeqFilter)
         {
             this.PFReadFilePath = readFilePath;
             this.nonPFReadFilePath = PathHandler.ConvertToNonPFFilePath(readFilePath);
@@ -89,7 +92,7 @@ namespace Linnarsson.Dna
             laneExtractionFolder = GetLaneExtractionFolder(extractionFolder, laneFolderName);
             if (!Directory.Exists(laneExtractionFolder))
                 Directory.CreateDirectory(laneExtractionFolder);
-            SetExtractionFilePaths(extractionFolder, laneExtractionFolder, nBarcodes);
+            SetExtractionFilePaths(extractionFolder, laneExtractionFolder, barcodes);
         }
 
         private static string GetLaneExtractionFolder(string extractionFolder, string laneFolderName)
@@ -113,28 +116,78 @@ namespace Linnarsson.Dna
             return Path.Combine(laneExtractionFolder, PathHandler.extractionSummaryFilename);
         }
 
-        private void SetExtractionFilePaths(string extractionFolder, string laneExtractionFolder, int nBarcodes)
+        private void SetExtractionFilePaths(string extractionFolder, string laneExtractionFolder, Barcodes barcodes)
         {
             this.extractionFolder = extractionFolder;
             this.laneExtractionFolder = laneExtractionFolder;
-            extractedFilePaths = new string[Math.Max(1, nBarcodes)];
-            for (int i = 0; i < extractedFilePaths.Length; i++)
-                extractedFilePaths[i] = Path.Combine(laneExtractionFolder, i.ToString() + ".fq");
+            SetupExtractedFilePaths(barcodes);
             slaskWBcFilePath = Path.Combine(laneExtractionFolder, "slask_w_bc.fq.gz");
             slaskNoBcFilePath = Path.Combine(laneExtractionFolder, "slask_no_bc.fq.gz");
+            string laneName = Path.GetFileName(laneExtractionFolder);
+            plateRead1FilePath = Path.Combine(extractionFolder, laneName + "_read1_index" + barcodes.Name + ".fq.gz");
+            plateRead2FilePath = Path.Combine(extractionFolder, laneName + "_read2_index" + barcodes.Name + ".fq.gz");
+            plateRead3FilePath = Path.Combine(extractionFolder, laneName + "_read3_index" + barcodes.Name + ".fq.gz");
             summaryFilePath = GetSummaryPath(laneExtractionFolder);
         }
 
+        private void SetupExtractedFilePaths(Barcodes barcodes)
+        {
+            extractedFilePaths = new string[Math.Max(1, barcodes.Count)];
+            for (int bcIdx = 0; bcIdx < extractedFilePaths.Length; bcIdx++)
+            {
+                string extractedFileName = string.Format("{0}_{1}_{2}.fq", bcIdx, barcodes.WellIds[bcIdx], barcodes.Seqs[bcIdx]);
+                extractedFilePaths[bcIdx] = Path.Combine(laneExtractionFolder, extractedFileName);
+            }
+        }
+
         /// <summary>
-        /// Search for a .fq or .fq.gz file for each barcode
+        /// Search for a N_Wxx_BBBBBB.fq file for each barcode. If legacy N.fq files exist, rename it.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>true if all exist or could be made exist by renaming </returns>
         public bool AllExtractedFilesExist()
         {
-            foreach (string path in this.extractedFilePaths)
-                if (!File.Exists(path) && !File.Exists(path + ".gz"))
-                    return false;
+            bool allexist = true;
+            foreach (string extractedFilePath in this.extractedFilePaths)
+                allexist = allexist && ExtractedFileExists(extractedFilePath);
+            return allexist;
+        }
+
+        /// <summary>
+        /// Search for (a N_Wxx_BBBBBB.fq[.gz] ) file. If legacy N.fq[.gz] files exist, rename it.
+        /// </summary>
+        /// <param name="extractedFilePath"></param>
+        /// <returns>true if exists or legacy file existed and was renamed</returns>
+        public bool ExtractedFileExists(string extractedFilePath)
+        {
+            if (!File.Exists(extractedFilePath) && !File.Exists(extractedFilePath + ".gz"))
+            {
+                string legacyfile = LegacyExtractedFilePath(extractedFilePath);
+                if (!File.Exists(legacyfile))
+                {
+                    legacyfile = legacyfile + ".gz";
+                    if (!File.Exists(legacyfile))
+                        return false;
+                    extractedFilePath += ".gz";
+                }
+                File.Move(legacyfile, extractedFilePath);
+            }
             return true;
+        }
+
+        /// <summary>
+        /// Extract the barcode index from file name (legacy or new)
+        /// </summary>
+        /// <param name="extractedFilePath"></param>
+        /// <returns></returns>
+        public int ParseBcIdx(string extractedFilePath)
+        {
+            string filename = Path.GetFileName(extractedFilePath);
+            return int.Parse(Regex.Match(filename, "^[0-9]+").Groups[0].Value);
+        }
+
+        private string LegacyExtractedFilePath(string extractedFilePath)
+        {
+            return Path.Combine(Path.GetDirectoryName(extractedFilePath), Path.GetFileName(extractedFilePath).Split('_')[0] + ".fq");
         }
 
         /// <summary>
@@ -144,14 +197,13 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static List<LaneInfo> SetupLaneInfosFromExistingExtraction(string extractionFolder)
         {
-            int nBarcodes = Props.props.Barcodes.Count;
             List<LaneInfo> laneInfos = new List<LaneInfo>();
             string[] laneExtractionFolders = Directory.GetDirectories(GetFqSubFolder(extractionFolder));
             foreach (string laneExtractionFolder in laneExtractionFolders)
             {
                 Match m = Regex.Match(Path.GetFileName(laneExtractionFolder), PathHandler.readFileAndLaneFolderMatchPat);
                 if (!m.Success) continue;
-                LaneInfo laneInfo = new LaneInfo(extractionFolder, laneExtractionFolder, m.Groups[0].Value, m.Groups[1].Value[0], nBarcodes);
+                LaneInfo laneInfo = new LaneInfo(extractionFolder, laneExtractionFolder, m.Groups[0].Value, m.Groups[1].Value[0], Props.props.Barcodes);
                 laneInfos.Add(laneInfo);
             }
             return laneInfos;
@@ -168,7 +220,6 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static List<LaneInfo> LaneInfosFromLaneArgs(List<string> laneArgs, string extractionFolder)
         {
-            int nBarcodes = Props.props.Barcodes.Count;
             List<LaneInfo> laneInfos = new List<LaneInfo>();
             foreach (string laneArg in laneArgs)
             {
@@ -190,7 +241,7 @@ namespace Linnarsson.Dna
                     if (readFiles.Length == 0)
                         readFiles = Directory.GetFiles(Props.props.ReadsFolder, readFilePat + ".fq");
                     if (readFiles.Length > 0)
-                        laneInfos.Add(new LaneInfo(readFiles[0], runId, laneNo, extractionFolder, nBarcodes, idxSeqFilter[n++]));
+                        laneInfos.Add(new LaneInfo(readFiles[0], runId, laneNo, extractionFolder, Props.props.Barcodes, idxSeqFilter[n++]));
                 }
             }
             return laneInfos;

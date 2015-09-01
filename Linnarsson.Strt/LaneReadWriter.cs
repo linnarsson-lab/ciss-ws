@@ -17,14 +17,14 @@ namespace Linnarsson.Strt
         public string nonPFPath { get; private set; }
         public string statsPath { get; private set; }
         public int lane { get; private set; }
-        public char read { get; private set; }
+        public int read { get; private set; }
         public uint nPFReads { get; private set; }
         public uint nNonPFReads { get; private set; }
         public uint readLen { get; private set; }
         public uint nReads { get { return nPFReads + nNonPFReads; } }
 
         public ReadFileResult(string PFPath, string nonPFPath, string summaryPath,
-                              int lane, char read, uint nPFReads, uint nNonPFReads, uint readLen)
+                              int lane, int read, uint nPFReads, uint nNonPFReads, uint readLen)
         {
             this.PFPath = PFPath;
             this.nonPFPath = nonPFPath;
@@ -41,7 +41,7 @@ namespace Linnarsson.Strt
     {
         string readsFolder;
         int lane;
-        char read;
+        int read;
         public string PFFilePath { get; private set; }
         private StreamWriter PFWriter;
         public string nonPFFilePath { get; private set; }
@@ -55,7 +55,7 @@ namespace Linnarsson.Strt
         {
             this.readsFolder = readsFolder;
             this.lane = lane;
-            this.read = read.ToString()[0];
+            this.read = read;
             PFFilePath = PathHandler.GetPFFilePath(readsFolder, runFolderName, runNo, lane, read);
             if (!Directory.Exists(Path.GetDirectoryName(PFFilePath)))
                 Directory.CreateDirectory(Path.GetDirectoryName(PFFilePath));

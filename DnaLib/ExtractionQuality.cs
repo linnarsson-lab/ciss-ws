@@ -28,16 +28,16 @@ namespace Linnarsson.Dna
 			}
         }
 
-        public void Add(string seq, byte[] qualities)
+        public void Add(FastQRecord rec)
         {
             // Calculate quality profile & color balance
-            for (int i = 0; i < qualities.Length; i++)
+            for (int i = 0; i < rec.Qualities.Length; i++)
             {
-                qprofile[i].Add(FastQRecord.QualityToProbability(qualities[i]));
-                int k = "ACGT".IndexOf(seq[i]);
+                qprofile[i].Add(FastQRecord.QualityToProbability(rec.Qualities[i]));
+                int k = "ACGT".IndexOf(rec.Sequence[i]);
                 if (k >= 0) colorBalance[k, i]++;
             }
-            lengthDistro[0, seq.Length]++;
+            lengthDistro[0, rec.Sequence.Length]++;
         }
 
         public void AddTrimmedLength(int insertLength)

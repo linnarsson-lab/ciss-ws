@@ -114,17 +114,17 @@ namespace Linnarsson.Strt
             List<string> outPaths = new List<string>();
             string mainIndexName = genome.GetMainIndexName();
             string splcIndexName = genome.GetSplcIndexName();
-            foreach (string fqPath in laneInfo.extractedFilePaths)
+            foreach (string extractedFilePath in laneInfo.extractedFilePaths)
             {
-                int bcIdx = int.Parse(Path.GetFileNameWithoutExtension(fqPath));
+                int bcIdx = laneInfo.ParseBcIdx(extractedFilePath);
                 if (Array.IndexOf(genomeBcIndexes, bcIdx) == -1)
                     continue;
                 string outUnmappedPath = Path.Combine(mapFolder, string.Format("{0}.fq-{1}", bcIdx, mainIndexName));
                 string outMainPath = Path.Combine(mapFolder, string.Format("{0}_{1}{2}", bcIdx, mainIndexName, outFileExtension));
                 if (!File.Exists(outMainPath))
                 {
-                    if (!File.Exists(fqPath)) continue;
-                    CreateAlignmentOutputFile(mainIndexName, fqPath, outMainPath, outUnmappedPath, alignerLogFilePath);
+                    if (!laneInfo.ExtractedFileExists(extractedFilePath)) continue;
+                    CreateAlignmentOutputFile(mainIndexName, extractedFilePath, outMainPath, outUnmappedPath, alignerLogFilePath);
                 }
                 outPaths.Add(outMainPath);
                 string outSplcFilename = string.Format("{0}_{1}{2}", bcIdx, splcIndexName, outFileExtension);
@@ -136,7 +136,7 @@ namespace Linnarsson.Strt
                 else
                 {
                     if (!File.Exists(outUnmappedPath))
-                        CreateAlignmentOutputFile(mainIndexName, fqPath, outMainPath, outUnmappedPath, alignerLogFilePath);
+                        CreateAlignmentOutputFile(mainIndexName, extractedFilePath, outMainPath, outUnmappedPath, alignerLogFilePath);
                     string remainUnmappedPath = Props.props.SaveNonMappedReads ? Path.Combine(mapFolder, bcIdx + ".fq-nonmapped") : "";
                     if (File.Exists(outUnmappedPath)) // Have to check - all reads may have mapped directly
                         CreateAlignmentOutputFile(splcIndexName, outUnmappedPath, outSplcPath, remainUnmappedPath, alignerLogFilePath);

@@ -30,6 +30,30 @@ namespace Linnarsson.Dna
         }
         public int Count { get { return m_Seqs.Length; } }
 
+        // New test stuff
+        protected int m_InsertRead = 1;
+        public int InsertRead { get { return m_InsertRead; } protected set { m_InsertRead = value; } }
+        protected int m_BarcodeRead = 2;
+        public int BarcodeRead { get { return m_BarcodeRead; } protected set { m_BarcodeRead = value; } }
+        protected int m_UMIRead = 1;
+        public int UMIRead { get { return m_UMIRead; } protected set { m_UMIRead = value; } }
+        protected bool m_KeepRead1 = false;
+        public bool KeepRead1 { get { return m_KeepRead1; } protected set { m_KeepRead1 = value; } }
+        protected bool m_KeepRead2 = false;
+        public bool KeepRead2 { get { return m_KeepRead2; } protected set { m_KeepRead2 = value; } }
+        protected bool m_KeepRead3 = false;
+        public bool KeepRead3 { get { return m_KeepRead3; } protected set { m_KeepRead3 = value; } }
+        public bool NeedReed(int readno)
+        {
+            if (readno == 1) return (InsertRead == 1 || BarcodeRead == 1 || UMIRead == 1 || KeepRead1);
+            if (readno == 2) return (InsertRead == 2 || BarcodeRead == 2 || UMIRead == 2 || KeepRead2);
+            if (readno == 3) return (InsertRead == 3 || BarcodeRead == 3 || UMIRead == 3 || KeepRead3);
+            return false;
+        }
+
+        protected int BackOffsetToAfterReadId = -1;
+        protected int BackOffsetToUMIEndPos = 0;
+
         protected int m_BarcodePos = 0;
         public int BarcodePos { get { return m_BarcodePos; } }
         private int m_BarcodeLen;
@@ -117,6 +141,9 @@ namespace Linnarsson.Dna
         /// </summary>
         public bool AllowSingleMutations = false;
 
+        /// <summary>
+        /// Maps all barcodes to the numerical index. If single mutations allowed, these keys are also included.
+        /// </summary>
         protected Dictionary<string, int> bcSeqToBcIdxMap;
 
         protected string m_TSSeq = "GGG";
@@ -188,6 +215,28 @@ namespace Linnarsson.Dna
             }
         }
 
+        public int ExtractBcIdx(string barcodeRead)
+        {
+            int bcIdx = 0;
+            if (!UseNoBarcodes)
+                if (!bcSeqToBcIdxMap.TryGetValue(barcodeRead.Substring(BarcodePos, BarcodeLen), out bcIdx))
+                    bcIdx = -1;
+            return bcIdx;
+        }
+
+        public bool VerifyTS(string read, int maxTrimExtraGs, out int actualInsertPos)
+        {
+            actualInsertPos = InsertOrGGGPos + TSSeq.Length;
+            if (read.Substring(InsertOrGGGPos, TSSeq.Length) != TSSeq)
+                return false;
+            while (maxTrimExtraGs > 0 && read.Length > actualInsertPos && read[actualInsertPos] == m_TSTrimNt)
+            {
+                actualInsertPos++;
+                maxTrimExtraGs--;
+            }
+            return true;
+        }
+
         /// <summary>
         /// Extract the barcode from the read, check that a required TS-'GGG' is there, and
         /// remove any trailing 'G':s, when applicable
@@ -220,24 +269,16 @@ namespace Linnarsson.Dna
             return ReadStatus.VALID;
         }
 
-        /// <summary>
-        /// Strip the barcode and UMI from the ReadId
-        /// </summary>
-        /// <param name="readId">ReadId from STRT extracted FastQ file</param>
-        /// <param name="bcIdx">barcode as an index</param>
-        /// <param name="UMIIdx">UMI as an index</param>
-        /// <returns>ReadId stripped from barcode/UMI parts</returns>
-        public virtual string StripBcAndUMIFromReadId(string readId, out int bcIdx, out int UMIIdx)
-        {
-            bcIdx = bcSeqToBcIdxMap[readId.Substring(readId.Length - m_BarcodeLen)];
-            UMIIdx = 0;
-            int p = readId.Length - BarcodeFieldLen;
-            for (int i = 0; i < UMILen; i++)
-            {
-                UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(readId[p++]));
-            }
-            return readId.Substring(0, readId.Length - BarcodeFieldLen - 1);
-        }
+        /*        public virtual string GetUMIAndStripBcFromReadId(string readId, out int UMIIdx)
+                {
+                    int p = (readId[readId.Length - m_BarcodeLen - 1] == '.') ? (readId.Length - BarcodeFieldLen) : (readId.Length - UMILen);
+                    UMIIdx = 0;
+                    for (int i = 0; i < UMILen; i++)
+                    {
+                        UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(readId[p++]));
+                    }
+                    return readId.Substring(0, readId.Length - BarcodeFieldLen - 1);
+                }*/
 
         public string MakeUMISeq(int UMIIdx)
         {
@@ -706,8 +747,6 @@ namespace Linnarsson.Dna
 
     public class NoBarcodes : Barcodes
     {
-        public int BackOffsetToAfterReadId = 0;
-        public int BackOffsetToUMIEndPos = 0;
 
         public NoBarcodes() : base("No", NO_BARCODES)
         {
@@ -722,33 +761,36 @@ namespace Linnarsson.Dna
             bcSeqToBcIdxMap[""] = 0;
         }
 
-        public override string StripBcAndUMIFromReadId(string readId, out int bcIdx0, out int UMIIdx)
+/*        public override string GetUMIAndStripBcFromReadId(string readId, out int UMIIdx)
         {
-            bcIdx0 = 0;
             UMIIdx = 0;
-            if (BackOffsetToAfterReadId == 0)
+            if (BackOffsetToAfterReadId == -1)
             {
-                BackOffsetToAfterReadId = readId.Length - readId.LastIndexOf('_');
-                BackOffsetToUMIEndPos = readId.Length - readId.LastIndexOf('.');
+                int sp = readId.LastIndexOf('_');
+                BackOffsetToAfterReadId = readId.Length - ((sp > -1) ? sp : 0);
+                int dp = readId.LastIndexOf('.');
+                BackOffsetToUMIEndPos = readId.Length - ((dp > -1)? dp : 0);
             }
-            for (int i = readId.Length - BackOffsetToAfterReadId + 1; i < readId.Length - BackOffsetToUMIEndPos; i++)
+            for (int p = readId.Length - BackOffsetToAfterReadId + 1; p < readId.Length - BackOffsetToUMIEndPos; p++)
             {
-                UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(readId[i]));
+                UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(readId[p]));
             }
             return readId.Substring(0, readId.Length - BackOffsetToAfterReadId);
-        }
+        }*/
     }
 
     public class NoUMIsNoBarcodes : NoBarcodes
     {
-        public override string StripBcAndUMIFromReadId(string readId, out int bcIdx0, out int UMIIdx0)
+/*        public override string GetUMIAndStripBcFromReadId(string readId, out int UMIIdx0)
         {
-            bcIdx0 = 0;
             UMIIdx0 = 0;
-            if (BackOffsetToAfterReadId == 0)
-                BackOffsetToAfterReadId = readId.LastIndexOf('_');
-            return readId.Substring(0, BackOffsetToAfterReadId);
-        }
+            if (BackOffsetToAfterReadId == -1)
+            {
+                int sp = readId.LastIndexOf('_');
+                BackOffsetToAfterReadId = readId.Length - ((sp > -1) ? sp : 0);
+            }
+            return readId.Substring(0, readId.Length - BackOffsetToAfterReadId);
+        }*/
     }
 
     public class CustomBarcodes : Barcodes
@@ -768,43 +810,31 @@ namespace Linnarsson.Dna
                     line = line.Trim();
                     if (!line.StartsWith("#")) break;
                     line = line.Replace(" ", "");
-                    if (line.StartsWith("#remove=") && line.Length > 8)
-                        m_TSSeq = line.Substring(8);
-                    else if (line.StartsWith("#trim=") & line.Length > 6)
-                        m_TSTrimNt = line[6];
-                    else if (line.StartsWith("#umipos="))
-                    {
-                        UMIPos = int.Parse(line.Substring(8));
-                    }
-                    else if (line.StartsWith("#umilen="))
-                    {
-                        if (m_UMIMask == null)
-                            UMILen = int.Parse(line.Substring(8));
-                    }
+                    if (line.StartsWith("#remove=") && line.Length > 8) m_TSSeq = line.Substring(8);
+                    else if (line.StartsWith("#trim=") & line.Length > 6) m_TSTrimNt = line[6];
+                    else if (line.StartsWith("#keepread1")) KeepRead1 = true;
+                    else if (line.StartsWith("#keepread2")) KeepRead2 = true;
+                    else if (line.StartsWith("#keepread3")) KeepRead3 = true;
+                    else if (line.StartsWith("#indexread=")) BarcodeRead = int.Parse(line.Substring(11));
+                    else if (line.StartsWith("#indexstart=")) m_BarcodePos = int.Parse(line.Substring(12));
+                    else if (line.StartsWith("#insertread=")) InsertRead = int.Parse(line.Substring(12));
+                    else if (line.StartsWith("#insertstart=")) m_InsertOrGGGPos = int.Parse(line.Substring(13));
+                    else if (line.StartsWith("#umiread=")) UMIRead = int.Parse(line.Substring(9));
+                    else if (line.StartsWith("#umistart=")) UMIPos = int.Parse(line.Substring(10));
+                    else if (line.StartsWith("#umilen=") && m_UMIMask == null) UMILen = int.Parse(line.Substring(8));
                     else if (line.StartsWith("#umimask="))
                     {
                         m_UMIMask = line.Substring(9);
                         m_UMIFieldLen = m_UMIMask.Length;
                         m_UMILen = m_UMIMask.Count(c => c != '-');
                     }
-                    else if (line.StartsWith("#barcodepos="))
-                        m_BarcodePos = int.Parse(line.Substring(12));
-                    else if (line.StartsWith("#insertpos="))
-                        m_InsertOrGGGPos = int.Parse(line.Substring(11));
-                    else if (line.StartsWith("#allowsinglemutations"))
-                        AllowSingleMutations = true;
-                    else if (line.StartsWith("#nobarcode"))
-                        UseNoBarcodes = true;
-                    else if (line.StartsWith("#includenonpf"))
-                        IncludeNonPF = true;
-                    else if (line.StartsWith("#prefixread2="))
-                        m_PrefixRead2 = int.Parse(line.Substring(13));
-                    else if (line.StartsWith("#prefixread3="))
-                        m_PrefixRead3 = int.Parse(line.Substring(13));
-                    else if (line.StartsWith("#truncateat="))
-                    {
-                        m_MaxTotalLen = int.Parse(line.Substring(12));
-                    }
+                    else if (line.StartsWith("#allowsinglemutations")) AllowSingleMutations = true;
+                    else if (line.StartsWith("#nobarcode")) UseNoBarcodes = true;
+                    else if (line.StartsWith("#noindex")) UseNoBarcodes = true;
+                    else if (line.StartsWith("#includenonpf")) IncludeNonPF = true;
+                    else if (line.StartsWith("#prefixread2=")) m_PrefixRead2 = int.Parse(line.Substring(13));
+                    else if (line.StartsWith("#prefixread3=")) m_PrefixRead3 = int.Parse(line.Substring(13));
+                    else if (line.StartsWith("#truncateat=")) m_MaxTotalLen = int.Parse(line.Substring(12));
                 }
                 if (UseNoBarcodes)
                     m_WellIds = new string[] { "Sample" };

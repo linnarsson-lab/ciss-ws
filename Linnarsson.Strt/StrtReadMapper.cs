@@ -105,7 +105,7 @@ namespace Linnarsson.Strt
             return laneInfos;
         }
 
-        public static readonly string EXTRACTION_VERSION = "34";
+        public static readonly string EXTRACTION_VERSION = "35";
 
         /// <summary>
         /// Extract and filter reads for the barcodes where there is no existing extracted file,
@@ -123,7 +123,7 @@ namespace Linnarsson.Strt
                 if (someExtractionMissing || readFileIsNewer)
                 {
                     SampleReadWriter srw = new SampleReadWriter(Props.props.Barcodes, laneInfo);
-                    srw.ProcessLane();
+                    srw.ProcessLaneAsRecSets(); // srw.ProcessLane();
                 }
                 if (Background.CancellationPending) break;
             }
@@ -406,7 +406,8 @@ namespace Linnarsson.Strt
         /// <returns></returns>
         private int EstimateReadLengthFromMapFiles(List<string> mapFilePaths)
         {
-            MapFile mapFileReader = MapFile.GetMapFile(mapFilePaths[0], Props.props.Barcodes);
+            //MapFile mapFileReader = MapFile.GetMapFile(mapFilePaths[0], Props.props.Barcodes);
+            MapFile mapFileReader = MapFile.GetMapFile(mapFilePaths[0]);
             int n = 0;
             long totalReadLength = 0;
             foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePaths[0]))

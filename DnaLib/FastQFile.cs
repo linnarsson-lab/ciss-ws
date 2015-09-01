@@ -10,29 +10,29 @@ namespace Linnarsson.Dna
 	public class FastQFile
 	{
 		/// <summary>
-		/// Attempt to automatically detect if the quality score base is 64 or 33 by examining a number of records
+		/// Attempt to automatically detect if the quality score base is 64 or 33 by examining a number of records.
+        /// Return 0 if both bases are possible.
 		/// Will throw an exception if the file is incompatible with both 33 and 64 base.
 		/// </summary>
 		/// <param name="path">The input file</param>
 		/// <param name="numberOfRecordsToExamine">Maximum number of records to examine before deciding</param>
-		/// <returns></returns>
+		/// <returns>33, 64, or 0 if both bases work</returns>
 		public static byte AutoDetectQualityScoreBase(string path, int numberOfRecordsToExamine)
 		{
+            byte qualBase = 0;
 			int count = 0;
 			try
 			{
 				foreach (var rec in FastQFile.Stream(path, 64)) if (count++ > numberOfRecordsToExamine) break;
-				return 64;
+				qualBase = 64;
 			}
 			catch (InvalidDataException) { }
-
 			try
 			{
 				foreach (var rec in FastQFile.Stream(path, 33)) if (count++ > numberOfRecordsToExamine) break;
-				return 33;
+                return (byte)((qualBase == 64) ? 0 : 33);
 			}
 			catch (InvalidDataException) { }
-
 			throw new InvalidDataException("Failed to autodetect quality score base, trying both 64 and 33");
 		}
 
@@ -196,6 +196,21 @@ namespace Linnarsson.Dna
 			PassedFilter = passedFilter;
 		}
 
+        /// <summary>
+        /// Make a trimmed version of another FastQRecord
+        /// </summary>
+        /// <param name="oldRec"></param>
+        /// <param name="start"></param>
+        /// <param name="len"></param>
+        public FastQRecord(FastQRecord oldRec, int start, int len, string newHeader)
+        {
+            Header = newHeader;
+            Sequence = oldRec.Sequence.Substring(start, len);
+            Qualities = new byte[len];
+            Array.Copy(oldRec.Qualities, start, Qualities, 0, len);
+            PassedFilter = oldRec.PassedFilter;
+        }
+
 		/// <summary>
 		/// Return the ASCII-encoded quality string, using the indicated base
 		/// See http://en.wikipedia.org/wiki/FASTQ_format
@@ -293,6 +308,7 @@ namespace Linnarsson.Dna
            Qualities = newQualities;
            Sequence = Sequence.Substring(start, len);
         }
+
 
         /// <summary>
         /// Insert a sequence and corresponding qualities into the record

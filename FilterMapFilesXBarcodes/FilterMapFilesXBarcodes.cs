@@ -172,13 +172,12 @@ namespace FilterMapFilesXBarcodes
 
         private void AnalyzeFiles()
         {
-            NoBarcodes bcs =  new NoBarcodes();
             foreach (string inputFile in settings.inputFiles)
             {
                 string inputFilename = Path.GetFileName(inputFile);
                 int bcIdx = int.Parse(inputFilename.Substring(0, inputFilename.IndexOf('_')));
                 Console.Write(".");
-                foreach (MultiReadMappings mrm in new BowtieMapFile(100, bcs).MultiMappings(inputFile))
+                foreach (MultiReadMappings mrm in new BowtieMapFile(100).MultiMappings(inputFile))
                 {
                     MultiReadMapping selectedMapping = mrm[0];
                     int pos = int.MaxValue;
@@ -236,7 +235,8 @@ namespace FilterMapFilesXBarcodes
                 string outputFile = inputFile + ".filtered";
                 StreamWriter writer = new StreamWriter(outputFile);
                 int nReads  = 0, nSavedReads = 0;
-                foreach (MultiReadMappings mrm in new BowtieMapFile(100, bcs).MultiMappings(inputFile))
+                //foreach (MultiReadMappings mrm in new BowtieMapFile(100, bcs).MultiMappings(inputFile))
+                foreach (MultiReadMappings mrm in new BowtieMapFile(100).MultiMappings(inputFile))
                 {
                     nReads++;
                     MultiReadMapping selectedMapping = mrm[0];

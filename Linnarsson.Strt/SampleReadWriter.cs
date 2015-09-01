@@ -24,6 +24,7 @@ namespace Linnarsson.Strt
         ReadCounter readCounter;
         StreamWriter[] sws_barcoded;
         StreamWriter sw_slask_w_bc, sw_slask_no_bc;
+        StreamWriter sw_read1, sw_read2, sw_read3;
         ExtractionQuality extrQ;
 
         public SampleReadWriter(Barcodes barcodes, LaneInfo laneInfo)
@@ -42,6 +43,12 @@ namespace Linnarsson.Strt
                 sw_slask_w_bc = laneInfo.slaskWBcFilePath.OpenWrite();
                 sw_slask_no_bc = laneInfo.slaskNoBcFilePath.OpenWrite();
             }
+            if (Props.props.WritePlateReadFile)
+            {
+                sw_read1 = barcodes.NeedReed(1)? laneInfo.plateRead1FilePath.OpenWrite() : null;
+                sw_read2 = barcodes.NeedReed(2) ? laneInfo.plateRead2FilePath.OpenWrite() : null;
+                sw_read3 = barcodes.NeedReed(3) ? laneInfo.plateRead3FilePath.OpenWrite() : null;
+            }
             extrQ = (Props.props.AnalyzeExtractionQualities) ? new ExtractionQuality(Props.props.LargestPossibleReadLength) : null;
         }
 
@@ -51,7 +58,6 @@ namespace Linnarsson.Strt
             prefixRead2 = Math.Min(prefixRead2, read2Len);
             prefixRead3 = Math.Min(prefixRead3, read3Len);
             seqLen = prefixRead2 + prefixRead3 + read1Len;
-            //Console.WriteLine("SampleReadWriter.Setup(): read1Len=" + read1Len, " read2Len=" + read2Len + " read3Len=" + read3Len);
         }
 
         /// <summary>
@@ -93,7 +99,7 @@ namespace Linnarsson.Strt
             bool useThisRead = (readCounter.IsLimitReached(readStatus, bcIdx) == LimitTest.UseThisRead);
             if (useThisRead)
             {
-                if (extrQ != null) extrQ.Add(rec.Sequence, rec.Qualities);
+                if (extrQ != null) extrQ.Add(rec);
                 if (readStatus == ReadStatus.VALID)
                     sws_barcoded[bcIdx].WriteLine(rec.ToString(Props.props.QualityScoreBase));
                 else if (sw_slask_w_bc != null)
@@ -109,31 +115,67 @@ namespace Linnarsson.Strt
             return true;
         }
 
-        public void ProcessLane()
+        public void ProcessLaneAsRecSets()
         {
-            foreach (FastQRecord fastQRecord in
-                     BarcodedReadStream.Stream(barcodes, laneInfo.PFReadFilePath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
-                if (!Process(fastQRecord)) break;
+            foreach (FastQRecSet recSet in
+              BarcodedReadStream.RecSetStream(barcodes, laneInfo.PFReadFilePath, laneInfo.idxSeqFilter, false))
+                if (!ProcessRecSet(recSet)) break;
             if (barcodes.IncludeNonPF)
             {
-                foreach (FastQRecord fastQRecord in
-                         BarcodedReadStream.Stream(barcodes, laneInfo.nonPFReadFilePath, Props.props.QualityScoreBase, laneInfo.idxSeqFilter))
+                foreach (FastQRecSet recSet in
+                  BarcodedReadStream.RecSetStream(barcodes, laneInfo.nonPFReadFilePath, laneInfo.idxSeqFilter, false))
                 {
-                    fastQRecord.PassedFilter = false;
-                    if (!Process(fastQRecord)) break;
+                    recSet.PassedFilter = false;
+                    if (!ProcessRecSet(recSet)) break;
                 }
             }
             CloseAndWriteSummary();
         }
 
+        private void WritePlateReadFiles(FastQRecSet recSet)
+        {
+            if (sw_read1 != null) sw_read1.WriteLine(recSet.read1.ToString(Props.props.QualityScoreBase));
+            if (sw_read2 != null) sw_read2.WriteLine(recSet.read2.ToString(Props.props.QualityScoreBase));
+            if (sw_read3 != null) sw_read3.WriteLine(recSet.read3.ToString(Props.props.QualityScoreBase));
+        }
+
+        private bool ProcessRecSet(FastQRecSet recSet)
+        {
+            int bcIdx;
+            int readStatus = readExtractor.ExtractBcIdx(recSet, out bcIdx);
+            if (bcIdx > -1)
+                WritePlateReadFiles(recSet);
+            FastQRecord insertRead = recSet.InsertRead;
+            bool useThisRead = (readCounter.IsLimitReached(readStatus, bcIdx) == LimitTest.UseThisRead);
+            if (useThisRead)
+            {
+                if (readStatus == ReadStatus.VALID)
+                    readStatus = readExtractor.ExtractRecSet(recSet);
+                //Console.WriteLine(recSet.ToString() + "-> bcIdx=" + bcIdx + "(" + ((bcIdx > -1)? barcodes.Seqs[bcIdx] : "None") + ") readStatus=" + ReadStatus.GetName(readStatus));
+                if (extrQ != null) extrQ.Add(insertRead);
+                if (readStatus == ReadStatus.VALID)
+                    sws_barcoded[bcIdx].WriteLine(recSet.mappable.ToString(Props.props.QualityScoreBase));
+                else if (sw_slask_w_bc != null)
+                {
+                    insertRead.Header += "_" + ReadStatus.GetName(readStatus);
+                    if (ReadStatus.IsBarcodedCategory(readStatus))
+                        sw_slask_w_bc.WriteLine(insertRead.ToString(Props.props.QualityScoreBase));
+                    else
+                        sw_slask_no_bc.WriteLine(insertRead.ToString(Props.props.QualityScoreBase));
+                }
+            }
+            readCounter.AddARead(useThisRead, insertRead, readStatus, bcIdx);
+            return true;
+        }
+
         public void CloseAndWriteSummary()
         {
             CloseStreamWriters(sws_barcoded);
-            if (sw_slask_w_bc != null)
-            {
-                sw_slask_w_bc.Close();
-                sw_slask_no_bc.Close();
-            }
+            if (sw_slask_w_bc != null) sw_slask_w_bc.Close();
+            if (sw_slask_no_bc != null) sw_slask_no_bc.Close();
+            if (sw_read1 != null) sw_read1.Close();
+            if (sw_read2 != null) sw_read2.Close();
+            if (sw_read3 != null) sw_read3.Close();
             using (StreamWriter sw_summary = new StreamWriter(laneInfo.summaryFilePath))
             {
                 FileReads fr = readCounter.FinishLane(laneInfo);

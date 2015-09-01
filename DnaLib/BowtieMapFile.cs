@@ -23,21 +23,21 @@ namespace Linnarsson.Dna
         /// <param name="file"></param>
         /// <param name="barcodes"></param>
         /// <returns></returns>
-        public static MapFile GetMapFile(string file, Barcodes barcodes)
+        public static MapFile GetMapFile(string file)
         {
             int maxNMappings = Math.Max(MaxNStoredMappings, Props.props.MaxAlternativeMappings);
             if (file.EndsWith(".map"))
-                return new BowtieMapFile(maxNMappings, barcodes);
+                return new BowtieMapFile(maxNMappings);
             if (file.EndsWith(".bam") || file.EndsWith(".sbam"))
-                return new BamMapFile(barcodes, SortedAnalysisWindowSize);
+                return new BamMapFile(SortedAnalysisWindowSize);
             if (file.EndsWith(".sam"))
-                return new SamMapFile(maxNMappings, barcodes);
+                return new SamMapFile(maxNMappings);
             return null;
         }
 
-        public MapFile(int maxNMappings, Barcodes barcodes)
+        public MapFile(int maxNMappings)
         {
-            mrm = new MultiReadMappings(maxNMappings, barcodes);
+            mrm = new MultiReadMappings(maxNMappings);
         }
 
         /// <summary>
@@ -87,8 +87,8 @@ namespace Linnarsson.Dna
 
     public class BowtieMapFile : MapFile
 	{
-        public BowtieMapFile(int maxNMappings, Barcodes barcodes)
-            : base(maxNMappings, barcodes)
+        public BowtieMapFile(int maxNMappings)
+            : base(maxNMappings)
         { }
         
         public override IEnumerable<MultiReadMappings> MultiMappings(string file)
@@ -175,8 +175,8 @@ namespace Linnarsson.Dna
     {
         private int bamFileWindowSize;
 
-        public BamMapFile(Barcodes barcodes, int readFetchWindowSize)
-            : base(1, barcodes)
+        public BamMapFile(int readFetchWindowSize)
+            : base(1)
         {
             bamFileWindowSize = readFetchWindowSize;
         }
@@ -237,10 +237,9 @@ namespace Linnarsson.Dna
 
     public class SamMapFile : MapFile
     {
-        public SamMapFile(int maxNMappings, Barcodes barcodes)
-            : base(maxNMappings, barcodes)
-        {
-        }
+        public SamMapFile(int maxNMappings)
+            : base(maxNMappings)
+        { }
 
         public override IEnumerable<MultiReadMappings> MultiMappings(string file)
         {
@@ -357,6 +356,9 @@ namespace Linnarsson.Dna
         public int BcIdx { get { return parent.BcIdx; } }
         public int UMIIdx { get { return parent.UMIIdx; } }
         public int SeqLen { get { return parent.SeqLen; } }
+        /// <summary>
+        /// True if there are more than one alternative mapping available for this read
+        /// </summary>
         public bool HasMultipleMappings { get { return parent.HasMultipleMappings; } }
         public bool HasMismatches { get { return Mismatches != ""; } }
 
@@ -367,7 +369,7 @@ namespace Linnarsson.Dna
 
         public override string ToString()
         {
-            return "MultiReadMapping: Chr=" + Chr + Strand + " Pos=" + Position + " HitMidPos=" + HitMidPos + " Mismatches=" + Mismatches;
+            return "MultiReadMapping: ReadId=" + parent.ReadId + " Chr=" + Chr + Strand + " Pos=" + Position + " HitMidPos=" + HitMidPos + " Mismatches=" + Mismatches + " NMappings=" + parent.NMappings;
         }
 
         public int NMismatches { get { return Mismatches.Split(',').Length; } }
@@ -405,10 +407,19 @@ namespace Linnarsson.Dna
 
     public class MultiReadMappings
     {
-        private Barcodes Barcodes;
+        private int BackOffsetToAfterReadId = -1;
+        private int BackOffsetToUMIEndPos = 0;
 
-        public string CombinedReadId; // Includes Barcode and UMI
+        /// <summary>
+        /// Includes any UMI and/or (deprecated) barcode
+        /// </summary>
+        public string CombinedReadId;
+
         public string ReadId;
+
+        /// <summary>
+        ///  Has to be explicitly set - not copied from read header
+        /// </summary>
         public int BcIdx;
         public int UMIIdx = 0;
         public int SeqLen;
@@ -450,12 +461,11 @@ namespace Linnarsson.Dna
         public int MappingsIdx;
         private MultiReadMapping[] Mappings;
 
-        public MultiReadMappings(int maxNMappings, Barcodes barcodes)
+        public MultiReadMappings(int maxNMappings)
         {
             Mappings = new MultiReadMapping[maxNMappings];
             for (int i = 0; i < maxNMappings; i++)
                 Mappings[i] = new MultiReadMapping(this);
-            Barcodes = barcodes;
         }
 
         public override string ToString()
@@ -486,7 +496,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// 
+        /// Will not set bcIdx - expected to be set from filename instead
         /// </summary>
         /// <param name="combinedReadId"></param>
         /// <param name="seq"></param>
@@ -496,13 +506,36 @@ namespace Linnarsson.Dna
         public void Init(string combinedReadId, string seq, string qualityString, char qualityDirection, int nMappings)
         {
             CombinedReadId = combinedReadId;
-            ReadId = Barcodes.StripBcAndUMIFromReadId(combinedReadId, out BcIdx, out UMIIdx);
+            ReadId = SetUMIAndStripBcFromReadId(combinedReadId, out UMIIdx);
             Sequence = seq;
             SeqLen = seq.Length;
             m_NMultiMappings = nMappings;
             this.QualityDir = qualityDirection;
             this.QualityString = qualityString;
             MappingsIdx = 0;
+        }
+
+        /// <summary>
+        /// Extract UMI and strip any barcode from the ReadId
+        /// </summary>
+        /// <param name="readId">ReadId from STRT extracted FastQ file</param>
+        /// <param name="UMIIdx">UMI as an index</param>
+        /// <returns>ReadId stripped from barcode/UMI parts</returns>
+        private string SetUMIAndStripBcFromReadId(string readId, out int UMIIdx)
+        {
+            UMIIdx = 0;
+            if (BackOffsetToAfterReadId == -1)
+            {
+                int sp = readId.LastIndexOf('_');
+                BackOffsetToAfterReadId = readId.Length - ((sp > -1) ? sp : 0);
+                int dp = readId.LastIndexOf('.');
+                BackOffsetToUMIEndPos = readId.Length - ((dp > -1) ? dp : 0);
+            }
+            for (int p = readId.Length - BackOffsetToAfterReadId + 1; p < readId.Length - BackOffsetToUMIEndPos; p++)
+            {
+                UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(readId[p]));
+            }
+            return readId.Substring(0, readId.Length - BackOffsetToAfterReadId);
         }
 
         /// <summary>

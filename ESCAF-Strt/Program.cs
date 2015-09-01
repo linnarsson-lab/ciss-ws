@@ -115,14 +115,14 @@ namespace ESCAF_Strt
             Props.props.LayoutFile = options.layoutPath;
             List<LaneInfo> laneInfos = new List<LaneInfo>();
             foreach (string readFile in options.read1Files)
-                laneInfos.Add(new LaneInfo(readFile, "", '0', options.extractionFolder, Props.props.Barcodes.Count, ""));
+                laneInfos.Add(new LaneInfo(readFile, "", '0', options.extractionFolder, Props.props.Barcodes, ""));
             if (!options.skipExtraction)
             {
                 foreach (LaneInfo laneInfo in laneInfos)
                 {
                     Console.WriteLine("Extracting {0} using {1}...", laneInfo.PFReadFilePath, options.barcodesName);
                     SampleReadWriter srw = new SampleReadWriter(Props.props.Barcodes, laneInfo);
-                    srw.ProcessLane();
+                    srw.ProcessLaneAsRecSets(); // srw.ProcessLane();
                 }
             }
             Console.WriteLine("Mapping using {0} and annotating...", options.aligner);

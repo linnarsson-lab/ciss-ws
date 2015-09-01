@@ -37,7 +37,7 @@ namespace Linnarsson.Strt
         /// <param name="currentBcIdx"></param>
         public void CheckSeqUpstreamTSSite(MappedTagItem item, int currentBcIdx)
         {
-            if (item.hasAltMappings) return;
+            if (item.HasAltMappings) return;
             CheckSeqUpstreamTSSite(item.chr, item.DetectedStrand, item.hitStartPos, item.HitLen, currentBcIdx, item.MolCount);
         }
         /// <summary>

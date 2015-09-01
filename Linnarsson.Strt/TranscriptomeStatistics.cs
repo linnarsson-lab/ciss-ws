@@ -135,8 +135,6 @@ namespace Linnarsson.Strt
         private static int nMaxMappings;
         private List<GeneFeature> gfsForUMIProfile = new List<GeneFeature>();
 
-        private LogTimer logTimer;
-
         public TranscriptomeStatistics(GenomeAnnotations annotations, Props props, string resultFolder, string projectId)
 		{
             this.resultFolder = resultFolder;
@@ -241,20 +239,6 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Order by the barcodeIndex. Filenames expected to start with barcodeIdx followed by "_"
-        /// </summary>
-        /// <param name="path1"></param>
-        /// <param name="path2"></param>
-        /// <returns>1, 0, or -1</returns>
-        private static int CompareMapFiles(string path1, string path2)
-        {
-            string name1 = Path.GetFileName(path1);
-            string name2 = Path.GetFileName(path2);
-            int bc1 = int.Parse(name1.Substring(0, name1.IndexOf('_')));
-            int bc2 = int.Parse(name2.Substring(0, name2.IndexOf('_')));
-            return bc1.CompareTo(bc2);
-        }
-        /// <summary>
         /// Annotate the complete set of map files from a study.
         /// </summary>
         /// <param name="mapFilePaths"></param>
@@ -329,51 +313,37 @@ namespace Linnarsson.Strt
         private void ProcessBarcodeMapFiles(Pair<int, List<string>> bcIdxAndMapFilePaths)
         {
             currentBcIdx = bcIdxAndMapFilePaths.First;
-            if (Props.props.LogMode)
-            {
-                Console.WriteLine("LOG Processing bc{0} - {1} files...", currentBcIdx, bcIdxAndMapFilePaths.Second.Count);
-                logTimer = new LogTimer();
-            }
             foreach (string mapFilePath in bcIdxAndMapFilePaths.Second)
             {
                 if (!Props.props.LogMode) Console.Write(".");
                 if (File.Exists(mapFilePath))
                     AddReadMappingsToTagItems(mapFilePath);
             }
-            if (Props.props.LogMode) Console.WriteLine("LOG AddReadMappingsToTagItems: {0} s", logTimer.Seconds());
             SampleReadStatistics();
-            if (Props.props.LogMode) Console.WriteLine("LOG SampleReadStatistics: {0} s", logTimer.Seconds());
             AnnotateFeaturesFromTagItems();
-            if (Props.props.LogMode) Console.WriteLine("LOG AnnotateFeaturesFromTagItems: {0} s", logTimer.Seconds());
             if (Props.props.GenerateBarcodedWiggle)
             {
                 WriteCurrentBcWiggle();
-                if (Props.props.LogMode) Console.WriteLine("LOG WriteCurrentBcWiggle: {0} s", logTimer.Seconds());
             }
             if (barcodes.HasUMIs && TagItem.CountsReadsPerUMI)
             {
                 GenerateReadsPerUMIRelatedData();
-                if (Props.props.LogMode) Console.WriteLine("LOG GenerateReadsPerUMIRelatedData: {0} s", logTimer.Seconds());
             }
             randomTagFilter.FinishBarcode();
             labelingEfficiencyEstimator.FinishBarcode(currentBcIdx);
-            if (Props.props.LogMode) Console.WriteLine("LOG FinishBarcode: {0} s", logTimer.Seconds());
         }
 
         private void AddReadMappingsToTagItems(string mapFilePath)
         {
             currentMapFilePath = mapFilePath;
             int nTotalMappedBcReads = nRealChrMappedReadsByBarcode[currentBcIdx] + nSpikeMappedReadsByBarcode[currentBcIdx];
-            MapFile mapFileReader = MapFile.GetMapFile(mapFilePath, barcodes);
+            MapFile mapFileReader = MapFile.GetMapFile(mapFilePath);
             if (mapFileReader == null)
                 throw new Exception("Unknown read map file type : " + mapFilePath);
             int sampleMappedReadsByFileCounter = PerLaneStats.nMappedReadsPerFileAtSample;
             int sampleSpikeReadsPerMolCounter = Props.props.MappingsBySpikeReadsSampleDist;
-            LogTimer lt2 = null;
-            if (Props.props.LogMode) lt2 = new LogTimer();
             perLaneStats.BeforeFile(currentBcIdx, nTotalMappedBcReads, mappingAdder.NUniqueReadSignatures(currentBcIdx),
                                     randomTagFilter.GetNumDistinctMappings());
-            if (Props.props.LogMode) Console.WriteLine("LOG  perLaneStats.BeforeFile: {0} s", lt2.Seconds());
             foreach (MultiReadMappings mrm in mapFileReader.MultiMappings(mapFilePath))
             {
                 if (mrm.NMappings > nMaxMappings)
@@ -381,7 +351,7 @@ namespace Linnarsson.Strt
                     nTooMultiMappingReads++;
                     continue;
                 }
-                mrm.BcIdx = currentBcIdx; // Needed because we may use 'Merge' to combine wells into one well
+                mrm.BcIdx = currentBcIdx; // Needs to be set, and we may use layout 'Merge' column to combine one sample loaded in different barcodes into one well/barcode
                 bool mapsToCtrl = mrm[0].Chr == Props.props.ChrCTRLId;
                 if (mappingAdder.Add(mrm))
                 {
@@ -413,10 +383,8 @@ namespace Linnarsson.Strt
                 }
                 if (--sampleMappedReadsByFileCounter == 0)
                 {
-                    if (Props.props.LogMode) lt2.Seconds();
                     perLaneStats.AfterFile(mapFilePath, nTotalMappedBcReads, mappingAdder.NUniqueReadSignatures(currentBcIdx),
                                                         randomTagFilter.GetNumDistinctMappings());
-                    if (Props.props.LogMode) Console.WriteLine("LOG  perLaneStats.AfterFile: {0} s", lt2.Seconds());
                     sampleMappedReadsByFileCounter = PerLaneStats.nMappedReadsPerFileAtSample;
                 }
                 if (mrm.HasMultipleMappings) nMultiReads++;
@@ -465,7 +433,7 @@ namespace Linnarsson.Strt
                 foreach (FtInterval trMatch in Annotations.IterTranscriptMatches(item.chr, item.SequencedStrand, item.HitMidPos))
                 {
                     someExonHit = someAnnotationHit = true;
-                    markStatus = (IterTranscriptMatchers.HasVariants || item.hasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
+                    markStatus = (IterTranscriptMatchers.HasVariants || item.HasAltMappings) ? MarkStatus.NONUNIQUE_EXON_MAPPING : MarkStatus.UNIQUE_EXON_MAPPING;
                     if (!exonHitFeatures.Contains(trMatch.Feature))
                     { // If a gene is hit multiple times (happens if two diff. splices have same seq.), we should annotate it only once
                         exonHitFeatures.Add(trMatch.Feature);
@@ -503,7 +471,7 @@ namespace Linnarsson.Strt
                 if (someAnnotationHit)
                 {
                     nAnnotatedMappings += molCount;
-                    if (DetermineMotifs && item.chr != spliceChrId && !item.hasAltMappings && Annotations.HasChrSeq(item.chr))
+                    if (DetermineMotifs && item.chr != spliceChrId && !item.HasAltMappings && Annotations.HasChrSeq(item.chr))
                         motifs[currentBcIdx].Add(Annotations.GetChrSeq(item.chr), item.hitStartPos - 20 - 1, item.DetectedStrand);
                 }
                 else
@@ -525,7 +493,7 @@ namespace Linnarsson.Strt
                 Console.WriteLine(" MidPos=" + item.HitMidPos);
                 Console.WriteLine(" hitStartPos=" + item.hitStartPos);
                 Console.WriteLine(" DetextedStrand=" + item.DetectedStrand);
-                Console.WriteLine(" HasAltMappings=" + item.hasAltMappings);
+                Console.WriteLine(" HasAltMappings=" + item.HasAltMappings);
                 Console.WriteLine(" SequencedStrand=" + item.SequencedStrand);
                 Console.WriteLine(" MolCount=" + item.MolCount);
                 Console.WriteLine(" spliceToRealChrOffset=" + item.splcToRealChrOffset);

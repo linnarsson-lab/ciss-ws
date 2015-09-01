@@ -141,8 +141,7 @@ namespace Map2Pclu
         private int ReadMapFile(string mapFile)
         {
             int nReads = 0;
-            NoBarcodes bcs = settings.HasUMIs ? new NoBarcodes() : new NoUMIsNoBarcodes();
-            foreach (MultiReadMappings mrm in new BowtieMapFile(100, bcs).MultiMappings(mapFile))
+            foreach (MultiReadMappings mrm in new BowtieMapFile(100).MultiMappings(mapFile))
             {
                 nReads++;
                 if (mrm.MappingsIdx > nMaxMappings)

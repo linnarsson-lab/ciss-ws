@@ -621,10 +621,10 @@ namespace Linnarsson.Strt
             WriteMinExpressionToCEF(fileNameBase);
             WriteMatlabTables(fileNameBase, GeneFeature.IterTrMaxHits);
             WriteRTable(fileNameBase, GeneFeature.IterTrMaxHits);
-            if (props.OutputLevel <= 2) return;
-            WriteMaxOccupiedUMIsByEXONTable(fileNameBase);
             if (props.ShowTranscriptSharingGenes)
                 WriteSharedGenes(fileNameBase);
+            if (props.OutputLevel <= 2) return;
+            WriteMaxOccupiedUMIsByEXONTable(fileNameBase);
             WriteIntronCounts(fileNameBase);
             if (props.GenerateGeneProfilesByBarcode)
             {
@@ -1282,6 +1282,12 @@ namespace Linnarsson.Strt
 
         private void WriteSharedGenes(string fileNameBase)
         {
+            string outfile = fileNameBase + "_sharing_genes.tab";
+            if (Props.props.DenseUMICounter)
+            {
+                File.AppendAllText("", "Sharing genes can not be counted when using Props.DensUMICounter!");
+                return;
+            }
             StringBuilder sb = new StringBuilder();
             foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
             {
@@ -1300,7 +1306,7 @@ namespace Linnarsson.Strt
             }
             if (sb.Length > 0)
             {
-                using (StreamWriter trShareFile = new StreamWriter(fileNameBase + "_sharing_genes.tab"))
+                using (StreamWriter trShareFile = new StreamWriter(outfile))
                 {
                     trShareFile.WriteLine("Transcripts/variants competing for reads (# shared reads within parenthesis)");
                     trShareFile.WriteLine("Feature\t#Assigned Reads\tCompetes with genes...");

@@ -90,7 +90,7 @@ namespace Linnarsson.Dna
         public char DetectedStrand { get { return Props.props.SenseStrandIsSequenced ? m_Strand : (m_Strand == '+') ? '-' : '+'; } }
 
         public int splcToRealChrOffset = 0;
-        public bool hasAltMappings { get { return m_TagItem.hasAltMappings; } }
+        public bool HasAltMappings { get { return m_TagItem.hasAltMappings; } }
         public int HitLen { get { return AverageReadLen; } }
         public int HitMidPos { get { return hitStartPos + HitLen / 2 + splcToRealChrOffset; } }
 

@@ -37,9 +37,8 @@ namespace Bc2BcLeakageAnalyzer
         {
             int bcIdx = int.Parse(Path.GetFileName(mapFile).Split('_')[0]);
             maxBcIdx = Math.Max(maxBcIdx, bcIdx);
-            NoBarcodes bcs = new NoBarcodes();
             int nReads = 0;
-            foreach (MultiReadMappings mrm in new BowtieMapFile(100, bcs).MultiMappings(mapFile))
+            foreach (MultiReadMappings mrm in new BowtieMapFile(100).MultiMappings(mapFile))
             {
                 nReads++;
                 if (mrm.MappingsIdx > 1)

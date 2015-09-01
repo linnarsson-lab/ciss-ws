@@ -249,8 +249,6 @@ namespace Linnarsson.Mathematics.SortSearch
 		// Uses a branch-and-bound search on the suffix array
 		private int FindBest(byte[] key, long top, long bottom, int d, int mismatches, int maxMismatches, int numHits, int maxHits, List<IntervalHit> result)
 		{
-			//Console.WriteLine(top.ToString() + "\t" + bottom.ToString() + "\t" + d.ToString() + "\t" + mismatches.ToString());
-
 			while(true)
 			{
 				byte k = Sequence[Suffixes[top] + d];

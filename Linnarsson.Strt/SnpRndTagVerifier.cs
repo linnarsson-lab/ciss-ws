@@ -188,16 +188,6 @@ namespace Linnarsson.Strt
             SnpRndTagVerChrPosData posDatas = null;
             if (!dataByPosStrand.TryGetValue(posStrand, out posDatas))
             {
-                // Replaced for speedup:
-                //foreach (int snpPos in snpPosOnChr)
-                //{
-                //    if (mrm[0].Contains(snpPos, SnpRndTagVerifier.snpMargin))
-                //    {
-                //        posDatas = new SnpRndTagVerChrPosData(snpPos, barcodes);
-                //        dataByPosStrand[posStrand] = posDatas;
-                //        break; // We found one SNP, and only one positions is analyzed per position-strand
-                //    }
-                //}
                 int fromidx = snpPosOnChr.BinarySearch(mrm[0].Position + SnpRndTagVerifier.snpMargin);
                 if (fromidx < 0) fromidx = ~fromidx;
                 int toidx = snpPosOnChr.BinarySearch(mrm[0].Position + mrm.SeqLen - SnpRndTagVerifier.snpMargin - 1);

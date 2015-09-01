@@ -122,7 +122,7 @@ namespace ESCAF_Strt
                 {
                     Console.WriteLine("Extracting {0} using {1}...", laneInfo.PFReadFilePath, options.barcodesName);
                     SampleReadWriter srw = new SampleReadWriter(Props.props.Barcodes, laneInfo);
-                    srw.ProcessLaneAsRecSets(); // srw.ProcessLane();
+                    srw.ProcessLaneAsRecSets();
                 }
             }
             Console.WriteLine("Mapping using {0} and annotating...", options.aligner);

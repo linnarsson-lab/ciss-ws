@@ -518,24 +518,28 @@ namespace Linnarsson.Dna
         /// <summary>
         /// Extract UMI and strip any barcode from the ReadId
         /// </summary>
-        /// <param name="readId">ReadId from STRT extracted FastQ file</param>
+        /// <param name="combinedReadId">ReadId from STRT extracted FastQ file</param>
         /// <param name="UMIIdx">UMI as an index</param>
         /// <returns>ReadId stripped from barcode/UMI parts</returns>
-        private string SetUMIAndStripBcFromReadId(string readId, out int UMIIdx)
+        private string SetUMIAndStripBcFromReadId(string combinedReadId, out int UMIIdx)
         {
             UMIIdx = 0;
             if (BackOffsetToAfterReadId == -1)
             {
-                int sp = readId.LastIndexOf('_');
-                BackOffsetToAfterReadId = readId.Length - ((sp > -1) ? sp : 0);
-                int dp = readId.LastIndexOf('.');
-                BackOffsetToUMIEndPos = readId.Length - ((dp > -1) ? dp : 0);
+                int sp = combinedReadId.LastIndexOf('_');
+                BackOffsetToAfterReadId = (sp > -1) ? (combinedReadId.Length - sp) : 0;
+                int dp = combinedReadId.LastIndexOf('.');
+                BackOffsetToUMIEndPos = (dp > -1) ? (combinedReadId.Length - dp) : 0;
+                //Console.WriteLine("BackOffsetToReadId=" + BackOffsetToAfterReadId + " BackOffsetToUMIEndPos=" + BackOffsetToUMIEndPos);
             }
-            for (int p = readId.Length - BackOffsetToAfterReadId + 1; p < readId.Length - BackOffsetToUMIEndPos; p++)
+            for (int p = combinedReadId.Length - BackOffsetToAfterReadId + 1; p < combinedReadId.Length - BackOffsetToUMIEndPos; p++)
             {
-                UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(readId[p]));
+                //Console.Write(combinedReadId[p]);
+                UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(combinedReadId[p]));
             }
-            return readId.Substring(0, readId.Length - BackOffsetToAfterReadId);
+            string readId = combinedReadId.Substring(0, combinedReadId.Length - BackOffsetToAfterReadId);
+            //Console.WriteLine(" ReadId=" + readId);
+            return readId;
         }
 
         /// <summary>

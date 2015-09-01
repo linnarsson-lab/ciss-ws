@@ -164,7 +164,7 @@ namespace Linnarsson.Strt
                         sw_slask_no_bc.WriteLine(insertRead.ToString(Props.props.QualityScoreBase));
                 }
             }
-            readCounter.AddARead(useThisRead, insertRead, readStatus, bcIdx);
+            readCounter.AddARead(useThisRead, recSet.mappable, readStatus, bcIdx);
             return true;
         }
 

@@ -61,7 +61,7 @@ namespace Linnarsson.Strt
             bool useRead3 = barcodes.NeedReed(3);
             IEnumerator<FastQRecord> read1Stream = useRead1? MkStream(read1Path, ref qualBaseFixed, 1) : null;
             IEnumerator<FastQRecord> read2Stream = useRead2 ? MkStream(read1Path, ref qualBaseFixed, 2) : null;
-            IEnumerator<FastQRecord> read3Stream = useRead1 ? MkStream(read1Path, ref qualBaseFixed, 3) : null;
+            IEnumerator<FastQRecord> read3Stream = useRead3 ? MkStream(read1Path, ref qualBaseFixed, 3) : null;
             bool moreRecs1 = false, moreRecs2 = false, moreRecs3 = false;
             while (true) {
                 if (useRead1 && (moreRecs1 = read1Stream.MoveNext())) recSet.read1 = read1Stream.Current;

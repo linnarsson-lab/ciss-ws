@@ -33,10 +33,11 @@ namespace Linnarsson.Dna
 			{
 				foreach (var rec in FastQFile.Stream(path, 33))
                     if (count++ > numberOfRecordsToExamine) break;
-                return (byte)((qualBase == 64) ? 0 : 33);
+                if (qualBase == 64) return 0;
 			}
-			catch (InvalidDataException) { }
-			throw new InvalidDataException("Failed to autodetect quality score base, trying both 64 and 33");
+            catch (InvalidDataException) { }
+            if (qualBase != 0) return qualBase;
+            throw new InvalidDataException("Failed to autodetect quality score base, trying both 64 and 33");
 		}
 
 		public List<FastQRecord> Records { get; private set; }

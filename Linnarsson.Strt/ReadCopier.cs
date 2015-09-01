@@ -141,7 +141,7 @@ namespace Linnarsson.Strt
                         someError = true;
                     }
                 }
-                if (projectDB != null && cycles[1] != -1)
+                if (projectDB != null)
                     projectDB.UpdateRunCycles(runId, cycles[1], cycles[2], cycles[3]);
             }
             if (someError)

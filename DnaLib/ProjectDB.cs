@@ -315,7 +315,6 @@ namespace Linnarsson.Dna
         /// <summary>
         /// Updates the actual cycle numbers for the illumina run.
         /// If a specific reads's cycle value is -1 no update is performed.
-        /// Also sets the planned cycle numbers for matching batches where these values are not set before in DB.
         /// </summary>
         /// <param name="runId"></param>
         /// <param name="cycles">Use -1 to indicate that this value should not be updated</param>

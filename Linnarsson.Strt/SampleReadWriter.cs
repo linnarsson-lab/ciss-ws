@@ -151,6 +151,8 @@ namespace Linnarsson.Strt
             {
                 if (readStatus == ReadStatus.VALID)
                     readStatus = readExtractor.ExtractRecSet(recSet);
+                else 
+                    recSet.mappable = recSet.InsertRead;
                 //Console.WriteLine(recSet.ToString() + "-> bcIdx=" + bcIdx + "(" + ((bcIdx > -1)? barcodes.Seqs[bcIdx] : "None") + ") readStatus=" + ReadStatus.GetName(readStatus));
                 if (extrQ != null) extrQ.Add(insertRead);
                 if (readStatus == ReadStatus.VALID)

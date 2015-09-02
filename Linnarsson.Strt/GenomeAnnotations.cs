@@ -1283,11 +1283,6 @@ namespace Linnarsson.Strt
         private void WriteSharedGenes(string fileNameBase)
         {
             string outfile = fileNameBase + "_sharing_genes.tab";
-            if (Props.props.DenseUMICounter)
-            {
-                File.AppendAllText("", "Sharing genes can not be counted when using Props.DensUMICounter!");
-                return;
-            }
             StringBuilder sb = new StringBuilder();
             foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
             {

@@ -12,6 +12,8 @@ namespace ESCAF_Strt
 {
     class ESCAFStrtSettings
     {
+        public string statusXmlFileFolder = "/home/sten/analysissummary";
+        public string analysisId = "";
         public string[] read1Files;
         public string[] read2Files;
         public string barcodesName = "";
@@ -40,6 +42,7 @@ namespace ESCAF_Strt
             for (; argIdx < args.Length; argIdx++)
             {
                 if (args[argIdx] == "-1") read1Files = args[++argIdx].Split(',');
+                else if (args[argIdx] == "-i") analysisId = args[++argIdx];
                 else if (args[argIdx] == "-2") read2Files = args[++argIdx].Split(',');
                 else if (args[argIdx] == "-b") barcodesName = args[++argIdx];
                 else if (args[argIdx] == "-g") build = args[++argIdx];
@@ -56,6 +59,7 @@ namespace ESCAF_Strt
                 else if (args[argIdx].ToLower() == "--star") aligner = "star";
                 else if (args[argIdx] == "--help") Console.WriteLine(
                     "Arguments for ESCAF-Strt.exe:\n" +
+                    "-i ANALYSISID         optional for use in reporting back to database using xml files.\n" +
                     "-p PLATEFOLDER        output folder for extraction, layout etc.\n" +
                     "-1 PATH1,PATH2...     paths to first read fq.gz files\n" +
                     "-2 PATH1,PATH2...     paths to index read fq.gz files\n" +
@@ -120,15 +124,27 @@ namespace ESCAF_Strt
             {
                 foreach (LaneInfo laneInfo in laneInfos)
                 {
+                    if (!UpdateDBStatus(options, "extracting")) return;
                     Console.WriteLine("Extracting {0} using {1}...", laneInfo.PFReadFilePath, options.barcodesName);
                     SampleReadWriter srw = new SampleReadWriter(Props.props.Barcodes, laneInfo);
                     srw.ProcessLaneAsRecSets();
                 }
             }
+            if (!UpdateDBStatus(options, "annotating")) return;
             Console.WriteLine("Mapping using {0} and annotating...", options.aligner);
             StrtReadMapper mapper = new StrtReadMapper();
             mapper.MapAndAnnotate(options.build, options.variants, options.annotation, options.resultFolder, null, 
                                   laneInfos, options.plateFolder);
+        }
+
+        static bool UpdateDBStatus(ESCAFStrtSettings options, string newStatus)
+        {
+            string filePat = Path.Combine(options.statusXmlFileFolder, options.analysisId + "_#.xml");
+            if (File.Exists(filePat.Replace("#", "cancelled"))) return false;
+            foreach (string oldFile in Directory.GetFiles(options.statusXmlFileFolder, options.analysisId + "*.xml"))
+                File.Delete(oldFile);
+            File.WriteAllText(filePat.Replace("#", newStatus), newStatus);
+            return true;
         }
     }
 }

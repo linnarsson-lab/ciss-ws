@@ -264,7 +264,8 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public string FindABpVersion(string pathPattern)
         {
-            for (int testReadLen = SplcIndexReadLen; testReadLen > SplcIndexReadLen - 8; testReadLen--)
+            int stopLen = SplcIndexReadLen - 7;
+            for (int testReadLen = SplcIndexReadLen; testReadLen >= stopLen; testReadLen--)
             {
                 string path = pathPattern.Replace("#", testReadLen.ToString());
                 if (File.Exists(path) || Directory.Exists(path))
@@ -273,6 +274,7 @@ namespace Linnarsson.Dna
                     return path;
                 }
             }
+            Console.WriteLine("Error: No match for " + pathPattern + " where " + stopLen + " <= '#' <= " + SplcIndexReadLen);
             return "";
         }
 

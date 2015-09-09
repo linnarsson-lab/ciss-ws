@@ -81,9 +81,7 @@ namespace ESCAF_BclToFq
                     props.ConnectionString = settings.ConnectionString;
             }
             catch (Exception)
-            {
-                Console.WriteLine("Warning: Props could not load encrypted DB connection setup");
-            }
+            { }
         }
 
         ESCAFProps() { }
@@ -117,7 +115,6 @@ namespace ESCAF_BclToFq
                                   "Start using nohup and put in crontab for activation at each reboot.");
             if (!File.Exists(ESCAFProps.props.LogFile))
             {
-                Console.WriteLine("Can not find logfile {0}. Creating it.", ESCAFProps.props.LogFile);
                 File.Create(ESCAFProps.props.LogFile).Close();
             }
             using (logWriter = new StreamWriter(File.Open(ESCAFProps.props.LogFile, FileMode.Append)))
@@ -159,37 +156,22 @@ namespace ESCAF_BclToFq
                 catch (Exception e)
                 {
                     nExceptions++;
-                    logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Unhandled exception in ESCAF_BclToFq:\n" + e);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Exception in ESCAF_BclToFq:\n" + e);
                     logWriter.Flush();
                 }
                 Thread.Sleep(1000 * 60 * ESCAFProps.props.scanInterval);
             }
         }
 
-        private static void ProcessRun(string run)
+        private static void ProcessRun(string runFolderOrTgz)
         {
-            List<ReadFileResult> readFileResults = new List<ReadFileResult>();
-            string runFolder = run;
-            CmdCaller c;
-            try
-            {
-                Match m = Regex.Match(run, "(.+)(\\.tar\\.gz|\\.tgz)$");
-                if (m.Success)
-                {
-                    runFolder = m.Groups[1].Value;
-                    c = new CmdCaller("tar", "zxf " + run, true);
-                    if (c.ExitCode != 0) throw new Exception(c.StdError);
-                }
-            }
-            catch (Exception e)
-            {
-                logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Exception in ESCAF_BclToFq:\n" + e);
-                logWriter.Flush();
-            }
+            string runFolder = UnpackIfNeeded(runFolderOrTgz);
             Match mr = Regex.Match(runFolder, ESCAFProps.props.RunFolderMatchPattern);
             string rundate = mr.Groups[1].Value;
             string runno = mr.Groups[2].Value;
             string runid = mr.Groups[3].Value;
+            List<ReadFileResult> readFileResults = new List<ReadFileResult>();
+            CmdCaller c;
             try 
             {
                 DBInsertIlluminaRun(runid, runno, rundate);
@@ -226,15 +208,13 @@ namespace ESCAF_BclToFq
                         if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
                     }
                     DBUpdateLaneYield(runid, r);
-                    DBUpdateRunStatus(runid, "copied");
                 }
+                DBUpdateRunStatus(runid, "copied");
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Exception in ESCAF_BclToFq:\n" + e);
-                logWriter.Flush();
                 DBUpdateRunStatus(runid, "copyfail");
-
+                throw;
             }
             finally
             {
@@ -246,9 +226,22 @@ namespace ESCAF_BclToFq
                         File.Delete(r.nonPFPath);
                         File.Delete(r.statsPath);
                     }
-                    if (runFolder != run) Directory.Delete(runFolder, true); // If tarball, delete unpacked
+                    if (runFolder != runFolderOrTgz) Directory.Delete(runFolder, true); // If tarball, delete unpacked
                 }
             }
+        }
+
+        private static string UnpackIfNeeded(string runFolderOrTgz)
+        {
+            string runFolder = runFolderOrTgz;
+            Match m = Regex.Match(runFolderOrTgz, "(.+)(\\.tar\\.gz|\\.tgz)$");
+            if (m.Success)
+            {
+                runFolder = m.Groups[1].Value;
+                CmdCaller cmdCaller = new CmdCaller("tar", "zxf " + runFolderOrTgz, true);
+                if (cmdCaller.ExitCode != 0) throw new Exception(cmdCaller.StdError);
+            }
+            return runFolder;
         }
 
         private static string DBInsertIlluminaRun(string runid, string runno, string rundate)
@@ -257,7 +250,7 @@ namespace ESCAF_BclToFq
                                 "VALUES ('copying', '{0}', '{1}', '{2}', NOW(), '{3}') " +
                                 "ON DUPLICATE KEY UPDATE status='copying', runno='{0}', rundate='{2}'",
                                         runno, runid, rundate, "system");
-            logWriter.WriteLine(sql);
+            //logWriter.WriteLine(sql);
             IssueNonQuery(sql);
             return runid;
         }
@@ -266,7 +259,7 @@ namespace ESCAF_BclToFq
         {
             string sql = string.Format("UPDATE #__aaailluminarun SET status='{0}', time=NOW() WHERE illuminarunid='{1}'",
                                        status, runid);
-            logWriter.WriteLine(sql);
+            //logWriter.WriteLine(sql);
             IssueNonQuery(sql);
         }
 
@@ -278,14 +271,14 @@ namespace ESCAF_BclToFq
                 string sql = string.Format(string.Format("UPDATE #__aaalane SET yield='{0}', pfyield='{1}' WHERE laneno='{2}'" +
                               " AND #__aaailluminarunid=(SELECT id FROM #__aaailluminarun WHERE illuminarunid='{3}') ",
                                  nReads, r.nPFReads, r.lane, runid));
-                logWriter.WriteLine(sql);
+                //logWriter.WriteLine(sql);
                 IssueNonQuery(sql);
             }
             if (r.lane == 1 && r.readLen >= 0)
             {
                 string c = cyclecolnames[r.read];
                 string sql = string.Format("UPDATE #__aaailluminarun SET {0}='{1}' WHERE illuminarunid='{2}'", c, r.readLen, runid);
-                logWriter.WriteLine(sql);
+                //logWriter.WriteLine(sql);
                 IssueNonQuery(sql);
             }
         }
@@ -295,7 +288,7 @@ namespace ESCAF_BclToFq
             sql = sql.Replace("#__", ESCAFProps.props.DBPrefix);
             MySqlConnection conn = new MySqlConnection(ESCAFProps.props.ConnectionString);
             conn.Open();
-            Console.WriteLine(sql);
+            //Console.WriteLine(sql);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             cmd.ExecuteNonQuery();
             conn.Close();

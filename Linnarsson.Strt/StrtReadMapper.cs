@@ -105,7 +105,7 @@ namespace Linnarsson.Strt
             return laneInfos;
         }
 
-        public static readonly string EXTRACTION_VERSION = "35";
+        public static readonly string EXTRACTION_VERSION = "34";
 
         /// <summary>
         /// Extract and filter reads for the barcodes where there is no existing extracted file,
@@ -179,11 +179,12 @@ namespace Linnarsson.Strt
             {
                 int actualReadLen = genome.SplcIndexReadLen;
                 genome.SplcIndexReadLen = genome.SplcIndexReadLen - (genome.SplcIndexReadLen % 4);
-                Console.WriteLine("Cannot find {0} index - building one with ReadLen={1}", Props.props.Aligner, genome.SplcIndexReadLen);
+                Console.WriteLine("No {0} index to use with averageReadLen={1}. Building one with ReadLen={2}.",
+                    Props.props.Aligner, actualReadLen, genome.SplcIndexReadLen);
                 BuildJunctionsAndIndex(genome);
                 if (!aligner.FindASplcIndex())
-                    throw new Exception("Could not build aligner index with ReadLen between " + genome.SplcIndexReadLen +
-                                        " and " + actualReadLen + " for " + genome.Build + " and " + genome.Annotation);
+                    throw new Exception("Could not build " + Props.props.Aligner + " index with readLen=" + genome.SplcIndexReadLen +
+                        " for averageReadLen=" + actualReadLen +  " with " + genome.Build + " and " + genome.Annotation);
                 genome.SplcIndexReadLen = actualReadLen;
             }
             return aligner;

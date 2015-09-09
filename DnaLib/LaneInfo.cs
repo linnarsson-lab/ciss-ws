@@ -161,15 +161,16 @@ namespace Linnarsson.Dna
         {
             if (!File.Exists(extractedFilePath) && !File.Exists(extractedFilePath + ".gz"))
             {
-                string legacyfile = LegacyExtractedFilePath(extractedFilePath);
-                if (!File.Exists(legacyfile))
+                int bcIdx = ParseBcIdx(extractedFilePath);
+                string legacyFilePath = Path.Combine(Path.GetDirectoryName(extractedFilePath), bcIdx.ToString() + ".fq");
+                if (!File.Exists(legacyFilePath))
                 {
-                    legacyfile = legacyfile + ".gz";
-                    if (!File.Exists(legacyfile))
+                    legacyFilePath = legacyFilePath + ".gz";
+                    if (!File.Exists(legacyFilePath))
                         return false;
                     extractedFilePath += ".gz";
                 }
-                File.Move(legacyfile, extractedFilePath);
+                File.Move(legacyFilePath, extractedFilePath);
             }
             return true;
         }
@@ -183,11 +184,6 @@ namespace Linnarsson.Dna
         {
             string filename = Path.GetFileName(extractedFilePath);
             return int.Parse(Regex.Match(filename, "^[0-9]+").Groups[0].Value);
-        }
-
-        private string LegacyExtractedFilePath(string extractedFilePath)
-        {
-            return Path.Combine(Path.GetDirectoryName(extractedFilePath), Path.GetFileName(extractedFilePath).Split('_')[0] + ".fq");
         }
 
         /// <summary>

@@ -51,14 +51,13 @@ namespace Linnarsson.Dna
             return noSNPCounts;
         }
 
-        public override Dictionary<IFeature, int> SharingGenes { get { return null; } }
-
         public override void RegisterSNP(byte snpOffset)
         { }
         public override void AddSNP(int UMIIdx, Mismatch mm)
         { }
-        public override void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures)
-        { }
+
+        //public override Dictionary<IFeature, int> SharingGenes { get { return null; } }
+        //public override void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures) { }
 
         public override void Clear()
         {

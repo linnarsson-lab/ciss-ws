@@ -86,8 +86,8 @@ namespace Linnarsson.Strt
         {
             if (Props.props.ShowTranscriptSharingGenes)
             {
-                if (Props.props.DenseUMICounter)
-                    Console.WriteLine("NOTE: When Props.DensUMICounter==true, 'sharing_genes.tab' output file can not be produced.");
+                //if (Props.props.DenseUMICounter)
+                //    Console.WriteLine("NOTE: When Props.DensUMICounter==true, 'sharing_genes.tab' output file can not be produced.");
                 sharingRealFeatures = new Dictionary<IFeature, object>(Props.props.MaxAlternativeMappings * 2);
                 if (Props.props.MultireadMappingMode == MultiReadMappingType.Most5Prime)
                     addMappingToTranscripts = AddToMost5PrimeExonMappingWSharedGenes;

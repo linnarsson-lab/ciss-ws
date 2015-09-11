@@ -110,6 +110,8 @@ namespace Linnarsson.Dna
             typeOfAnnotation = (short)AnnotType.NOHIT;
             bcNumReads = 0;
             filteredBcNumMols = -1;
+            if (sharingGenes != null)
+                sharingGenes.Clear();
         }
 
         /// <summary>
@@ -120,7 +122,30 @@ namespace Linnarsson.Dna
             ClearBase();
         }
 
-        public abstract Dictionary<IFeature, int> SharingGenes { get; }
+        /// <summary>
+        /// List of the genes that share this TagItem's counts. (If some reads are SNPed, the sharing genes may be not belong to all reads.)
+        /// </summary>
+        private Dictionary<IFeature, int> sharingGenes = null;
+        public Dictionary<IFeature, int> SharingGenes { get { return sharingGenes; } }
+        /// <summary>
+        /// Record other transcripts that share the count from a multiread
+        /// </summary>
+        /// <param name="sharingRealFeatures"></param>
+        public void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures)
+        {
+            if (sharingRealFeatures.Count == 0) return;
+            if (sharingGenes == null)
+                sharingGenes = new Dictionary<IFeature, int>();
+            foreach (IFeature sGf in sharingRealFeatures.Keys)
+            {
+                if (sharingGenes.ContainsKey(sGf))
+                    sharingGenes[sGf] += 1;
+                else
+                    sharingGenes[sGf] = 1;
+            }
+        }
+        //public abstract Dictionary<IFeature, int> SharingGenes { get; }
+        //public abstract void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures);
 
         /// <summary>
         /// Prepare for analyzing potential SNPs at specified offset within the reads
@@ -145,12 +170,6 @@ namespace Linnarsson.Dna
         /// <param name="UMIIdx"></param>
         /// <returns>True if the UMI is new</returns>
         public abstract bool Add(int UMIIdx);
-
-        /// <summary>
-        /// Record other transcripts that share the count from a multiread
-        /// </summary>
-        /// <param name="sharingRealFeatures"></param>
-        public abstract void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures);
 
         /// <summary>
         /// Get Nt counts at all positions where there is SNP data available
@@ -199,13 +218,26 @@ namespace Linnarsson.Dna
         /// </summary>
         private ushort[] readCountsByUMI;
 
+/*
         /// <summary>
         /// List of the genes that share this TagItem's counts. (If some reads are SNPed, the sharing genes may be not belong to all reads.)
         /// </summary>
         private Dictionary<IFeature, int> sharingGenes;
-
         public override Dictionary<IFeature, int> SharingGenes { get { return sharingGenes; } }
-
+        public override void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures)
+        {
+            if (sharingRealFeatures.Count == 0) return;
+            if (sharingGenes == null)
+                sharingGenes = new Dictionary<IFeature, int>();
+            foreach (IFeature sGf in sharingRealFeatures.Keys)
+            {
+                if (sharingGenes.ContainsKey(sGf))
+                    sharingGenes[sGf] += 1;
+                else
+                    sharingGenes[sGf] = 1;
+            }
+        }
+*/
         /// <summary>
         /// At each offset relative to the 5' pos on chr of the reads' alignment where some SNPs appear,
         /// keep an array by UMI of counts for each SNP nt. 
@@ -247,8 +279,8 @@ namespace Linnarsson.Dna
         {
             ClearBase();
             readCountsByUMI = null;
-            if (sharingGenes != null)
-                sharingGenes.Clear();
+            //if (sharingGenes != null)
+            //    sharingGenes.Clear();
             if (SNPCountsByOffset != null)
                 foreach (SNPCountsByRndTag counts in SNPCountsByOffset.Values)
                     if (counts != null)
@@ -265,20 +297,6 @@ namespace Linnarsson.Dna
             currentCount = readCountsByUMI[UMIIdx];
             readCountsByUMI[UMIIdx] = (ushort)Math.Min(ushort.MaxValue, currentCount + 1);
             return (currentCount == 0);
-        }
-
-        public override void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures)
-        {
-            if (sharingRealFeatures.Count == 0) return;
-            if (sharingGenes == null)
-                sharingGenes = new Dictionary<IFeature, int>();
-            foreach (IFeature sGf in sharingRealFeatures.Keys)
-            {
-                if (sharingGenes.ContainsKey(sGf))
-                    sharingGenes[sGf] += 1;
-                else
-                    sharingGenes[sGf] = 1;
-            }
         }
 
         public override bool HasSNPs { get { return SNPCountsByOffset != null; } }

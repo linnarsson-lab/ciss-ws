@@ -31,9 +31,10 @@ namespace Linnarsson.Dna
             count = 0;
 			try
 			{
-				foreach (var rec in FastQFile.Stream(path, 33))
+                foreach (var rec in FastQFile.Stream(path, 33))
                     if (count++ > numberOfRecordsToExamine) break;
                 if (qualBase == 64) return 0;
+                qualBase = 33;
 			}
             catch (InvalidDataException) { }
             if (qualBase != 0) return qualBase;

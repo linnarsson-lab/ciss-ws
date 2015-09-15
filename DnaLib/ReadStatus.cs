@@ -44,7 +44,7 @@ namespace Linnarsson.Dna
                                               NO_BC_PHIX, NO_BC_RNA45S, NO_BC_OTHER };
 
         private readonly static Dictionary<int, string> categories = new Dictionary<int,string>()
-        { { VALID, "VALID" }, {MIXIN_SAMPLE_BC, "MIXIN_SAMPLE"},
+        { { VALID, "VALID" }, {MIXIN_SAMPLE_BC, "MIXIN_SAMPLE"}, {UNKNOWN_BC, "UNKNOWN_BARCODE"}, 
           {SEQ_QUALITY_ERROR, "SEQ_QUALITY_ERROR"},
           {NO_BC_MANY_A, "NO_BARCODE-A_RICH"}, {NO_BC_MANY_C, "NO_BARCODE-C_RICH"},
           {NO_BC_MANY_G, "NO_BARCODE-G_RICH"}, {NO_BC_MANY_T, "NO_BARCODE-T_RICH"},

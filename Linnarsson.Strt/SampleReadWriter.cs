@@ -102,7 +102,7 @@ namespace Linnarsson.Strt
                 if (extrQ != null) extrQ.Add(rec);
                 if (readStatus == ReadStatus.VALID)
                     sws_barcoded[bcIdx].WriteLine(rec.ToString(Props.props.QualityScoreBase));
-                else if (sw_slask_w_bc != null)
+                else if (readStatus != ReadStatus.MIXIN_SAMPLE_BC && sw_slask_w_bc != null)
                 {
                     rec.Header += "_" + ReadStatus.GetName(readStatus);
                     if (ReadStatus.IsBarcodedCategory(readStatus))
@@ -145,25 +145,22 @@ namespace Linnarsson.Strt
             int readStatus = readExtractor.ExtractBcIdx(recSet, out bcIdx);
             if (bcIdx > -1)
                 WritePlateReadFiles(recSet);
-            FastQRecord insertRead = recSet.InsertRead;
             bool useThisRead = (readCounter.IsLimitReached(readStatus, bcIdx) == LimitTest.UseThisRead);
             if (useThisRead)
             {
+                recSet.mappable = recSet.InsertRead;
                 if (readStatus == ReadStatus.VALID)
                     readStatus = readExtractor.ExtractRecSet(recSet);
-                else 
-                    recSet.mappable = recSet.InsertRead;
-                //Console.WriteLine(recSet.ToString() + "-> bcIdx=" + bcIdx + "(" + ((bcIdx > -1)? barcodes.Seqs[bcIdx] : "None") + ") readStatus=" + ReadStatus.GetName(readStatus));
-                if (extrQ != null) extrQ.Add(insertRead);
+                if (extrQ != null) extrQ.Add(recSet.InsertRead);
                 if (readStatus == ReadStatus.VALID)
                     sws_barcoded[bcIdx].WriteLine(recSet.mappable.ToString(Props.props.QualityScoreBase));
-                else if (sw_slask_w_bc != null)
+                else if (readStatus != ReadStatus.MIXIN_SAMPLE_BC && sw_slask_w_bc != null)
                 {
-                    insertRead.Header += "_" + ReadStatus.GetName(readStatus);
+                    recSet.InsertRead.Header += "_" + ReadStatus.GetName(readStatus);
                     if (ReadStatus.IsBarcodedCategory(readStatus))
-                        sw_slask_w_bc.WriteLine(insertRead.ToString(Props.props.QualityScoreBase));
+                        sw_slask_w_bc.WriteLine(recSet.InsertRead.ToString(Props.props.QualityScoreBase));
                     else
-                        sw_slask_no_bc.WriteLine(insertRead.ToString(Props.props.QualityScoreBase));
+                        sw_slask_no_bc.WriteLine(recSet.InsertRead.ToString(Props.props.QualityScoreBase));
                 }
             }
             readCounter.AddARead(useThisRead, recSet.mappable, readStatus, bcIdx);

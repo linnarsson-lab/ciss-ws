@@ -23,6 +23,7 @@ namespace Linnarsson.Strt
         public FastQRecord UMIRead { get { return (bc.UMIRead == 1)? read1 : (bc.UMIRead == 2)? read2 : read3; } }
         public FastQRecord IndexRead { get { return (bc.BarcodeRead == 1)? read1 : (bc.BarcodeRead == 2)? read2 : read3; } }
         public int BarcodeIdx { get { return bc.ExtractBcIdx(IndexRead.Sequence); } }
+        public string BarcodeSeq { get { return bc.ExtractBcSeq(IndexRead.Sequence); } }
 
         public FastQRecSet(Barcodes bc)
         {

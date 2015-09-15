@@ -14,6 +14,7 @@ namespace Linnarsson.Strt
         private readonly static string tn5Seq = "CTGTCTCTTATACACATCTGACGC";
         private readonly static string tn5SeqStart = tn5Seq.Substring(0, 12);
         private readonly static string p1Seq = "AATGATACGGCGACC";
+        private readonly static int minPolyNStretchLen = 15;
 
         private readonly static int ReadSegmentQualityControlIndicator = 2; // Phred score '2' corresponding to 'B' in fastQ read qualities
         private readonly static int maxExtraTSNts = 6; // Limit # of extra (G) Nts (in addition to min#==3) to remove from template switching
@@ -25,6 +26,7 @@ namespace Linnarsson.Strt
         private string[] diNtPatterns;
         private string[] trailingPrimerSeqs;
         private string[] forbiddenReadInternalSeqs;
+        private HashSet<string> otherBcSeqs;
         private int minPrimerSeqLen = 5;
         char[] UMIChars; // Buffer for accumulated UMI bases
         string headerUMISection = "";
@@ -39,6 +41,31 @@ namespace Linnarsson.Strt
             trailingPrimerSeqs = Props.props.RemoveTrailingReadPrimerSeqs.Split(',').Where(s => s.Length >= minPrimerSeqLen).ToArray();
             forbiddenReadInternalSeqs = Props.props.ForbiddenReadInternalSeqs.Split(',').ToArray();
             UMIChars = new char[barcodes.UMILen];
+            ReadOtherBcSeqs(barcodes);
+        }
+
+        private void ReadOtherBcSeqs(Barcodes barcodes)
+        {
+            otherBcSeqs = new HashSet<string>();
+            foreach (string bcSetName in Props.props.AllMixinBcSets)
+            {
+                if (bcSetName != barcodes.Name)
+                {
+                    string line;
+                    string path = PathHandler.MakeBarcodeFilePath(bcSetName);
+                    if (!File.Exists(path)) continue;
+                    using (StreamReader reader = new StreamReader(path))
+                    {
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            line = line.Trim();
+                            if (line.StartsWith("#")) continue;
+                            string bcSeq = line.Replace(" ", "").Split('\t')[1];
+                            otherBcSeqs.Add(bcSeq);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -62,7 +89,7 @@ namespace Linnarsson.Strt
             int bcStatus = barcodes.VerifyBarcodeAndTS(rSeq, maxExtraTSNts, out bcIdx, out insertStart);
             if (bcStatus == ReadStatus.NO_BC_OTHER)
                 return AnalyzeNonBarcodeRead(rSeq);
-            if (bcStatus == ReadStatus.TSSEQ_MISSING_OTHER)
+            if (bcStatus == ReadStatus.NO_TSSEQ_OTHER)
                 return AnalyzeMissingTSSeqRead(rSeq);
             int lenStatus = ReadStatus.VALID;
             trimmedLength = TrimTrailingNOrPrimerAndCheckAs(rSeq, trimmedLength, out lenStatus);
@@ -98,9 +125,12 @@ namespace Linnarsson.Strt
         public int ExtractBcIdx(FastQRecSet recSet, out int bcIdx)
         {
             bcIdx = recSet.BarcodeIdx;
-            if (bcIdx == -1)
-                return AnalyzeNonBarcodeRead(recSet.InsertRead.Sequence);
-            return ReadStatus.VALID;
+            if (bcIdx >= 0)
+                return ReadStatus.VALID;
+            if (otherBcSeqs.Contains(recSet.BarcodeSeq))
+                return ReadStatus.MIXIN_SAMPLE_BC;
+            return ReadStatus.UNKNOWN_BC;
+            //return AnalyzeNonBarcodeRead(recSet.InsertRead.Sequence);
         }
 
         private int ExtractUMI(FastQRecSet recSet)
@@ -122,6 +152,11 @@ namespace Linnarsson.Strt
             return ReadStatus.VALID;
         }
 
+        /// <summary>
+        /// recSet.mappable will be set to the mRNA insert without any UMI or TS sequence if the read is VALID
+        /// </summary>
+        /// <param name="recSet"></param>
+        /// <returns></returns>
         public int ExtractRecSet(FastQRecSet recSet)
         {
             FastQRecord rec = recSet.InsertRead;
@@ -260,6 +295,37 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
+        /// Count number of A/C/G/T in sequence. If a stretch of >= minPolyNStretchLen is encountered,
+        /// a high number is returned for that nucleotide.
+        /// </summary>
+        /// <param name="seq"></param>
+        /// <returns></returns>
+        private static int[] CountBases(string seq)
+        {
+            int lastIdx = -1;
+            int polyNLen = 1;
+            int[] counts = new int[] {0, 0, 0, 0};
+            foreach (char c in seq)
+            {
+                int idx = "ACGT".IndexOf(c);
+                if (idx >= 0)
+                {
+                    counts[idx]++;
+                    if (idx == lastIdx)
+                    {
+                        if (++polyNLen >= minPolyNStretchLen) counts[idx] = 500;
+                    }
+                    else
+                    {
+                        lastIdx = idx;
+                        polyNLen = 1;
+                    }
+                }
+            }
+            return counts;
+        }
+
+        /// <summary>
         /// Tries to classify reads with out barcode to some common artefact types
         /// </summary>
         /// <param name="seq"></param>
@@ -267,22 +333,29 @@ namespace Linnarsson.Strt
         private static int AnalyzeNonBarcodeRead(string seq)
         {
             if (TestContainsOrEndsWithTn5(seq)) return ReadStatus.NO_BC_TN5;
-            if (seq.StartsWith("CGACTTTTTTTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_CGACT25;
-            if (seq.Contains("TTTTTTTTTTTTTTTTTTTT")) return ReadStatus.NO_BC_INTERNAL_T20;
             if (seq.Contains(p1Seq)) return ReadStatus.NO_BC_P1;
             if (seq.Contains("TAGTCACACAGTCCTTGACG")) return ReadStatus.NO_BC_PHIX;
             if (seq.Contains("ACCTCAGATCAGACGTGGCGACCCGCTGAA")) return ReadStatus.NO_BC_RNA45S;
-            if (seq.Contains("AAAAAAAAAAAAAAAAAAAA")) return ReadStatus.NO_BC_INTERNAL_A20;
+            int[] counts = CountBases(seq);
+            int thres = seq.Length / 2;
+            if (counts[0] > thres) return ReadStatus.NO_BC_MANY_A;
+            if (counts[1] > thres) return ReadStatus.NO_BC_MANY_C;
+            if (counts[2] > thres) return ReadStatus.NO_BC_MANY_G;
+            if (counts[3] > thres) return ReadStatus.NO_BC_MANY_T;
             return ReadStatus.NO_BC_OTHER;
         }
 
         private static int AnalyzeMissingTSSeqRead(string seq)
         {
-            if (TestContainsOrEndsWithTn5(seq)) return ReadStatus.TSSEQ_MISSING_TN5;
-            if (seq.Contains("TTTTTTTTTTTTTTTTTTTT")) return ReadStatus.TSSEQ_MISSING_INTERNAL_T20;
-            if (seq.Contains("AAAAAAAAAAAAAAAAAAAA")) return ReadStatus.TSSEQ_MISSING_INTERNAL_A20;
-            if (seq.Contains(p1Seq)) return ReadStatus.TSSEQ_MISSING_P1;
-            return ReadStatus.TSSEQ_MISSING_OTHER;
+            if (TestContainsOrEndsWithTn5(seq)) return ReadStatus.NO_TSSEQ_TN5;
+            if (seq.Contains(p1Seq)) return ReadStatus.NO_TSSEQ_P1;
+            int[] counts = CountBases(seq);
+            int thres = seq.Length / 2;
+            if (counts[0] > thres) return ReadStatus.NO_TSSEQ_MANY_A;
+            if (counts[1] > thres) return ReadStatus.NO_TSSEQ_MANY_C;
+            if (counts[2] > thres) return ReadStatus.NO_TSSEQ_MANY_G;
+            if (counts[3] > thres) return ReadStatus.NO_TSSEQ_MANY_T;
+            return ReadStatus.NO_TSSEQ_OTHER;
         }
 
         private static bool TestContainsOrEndsWithTn5(string seq)

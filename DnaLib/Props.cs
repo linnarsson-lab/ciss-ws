@@ -154,6 +154,7 @@ namespace Linnarsson.Dna
         public int OutputLevel = 2; // Controls how much data will be output
         public bool AnalyzeLoci = false; // For nuclear RNA, will consider each gene as the whole locus, and not exons.
         public bool WritePlateReadFile = false; // If true, extractor writes fq.gz file(s) with non-filtered reads having current bc
+        public string[] AllMixinBcSets = new string[] { "C1-1", "C1-2", "C1-3", "C1-4" };
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

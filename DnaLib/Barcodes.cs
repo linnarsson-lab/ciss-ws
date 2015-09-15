@@ -215,11 +215,16 @@ namespace Linnarsson.Dna
             }
         }
 
+        public string ExtractBcSeq(string barcodeRead)
+        {
+            return barcodeRead.Substring(BarcodePos, BarcodeLen);
+        }
+
         public int ExtractBcIdx(string barcodeRead)
         {
             int bcIdx = 0;
             if (!UseNoBarcodes)
-                if (!bcSeqToBcIdxMap.TryGetValue(barcodeRead.Substring(BarcodePos, BarcodeLen), out bcIdx))
+                if (!bcSeqToBcIdxMap.TryGetValue(ExtractBcSeq(barcodeRead), out bcIdx))
                     bcIdx = -1;
             return bcIdx;
         }
@@ -260,7 +265,7 @@ namespace Linnarsson.Dna
                 }
             }
             if (read.Substring(InsertOrGGGPos, TSSeq.Length) != TSSeq)
-                return ReadStatus.TSSEQ_MISSING_OTHER;
+                return ReadStatus.NO_TSSEQ_OTHER;
             while (maxTrimExtraGs > 0 && read.Length > actualInsertPos && read[actualInsertPos] == m_TSTrimNt)
             {
                 actualInsertPos++;

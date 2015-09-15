@@ -65,7 +65,8 @@ namespace Linnarsson.Strt
 
     public class ReadCounter
     {
-        private ExtractionWordCounter wordCounter;
+        private ExtractionWordCounter wordCounterValidReads;
+        private ExtractionWordCounter wordCounterNonValidReads;
         private Barcodes barcodes;
 
         private List<FileReads> fileReads = new List<FileReads>();
@@ -95,7 +96,8 @@ namespace Linnarsson.Strt
             totalBarcodeReads = new int[barcodes.Count];
             readLimitType = Props.props.ExtractionReadLimitType;
             readLimit = Props.props.ExtractionReadLimit;
-            wordCounter = new ExtractionWordCounter(Props.props.ExtractionCounterWordLength);
+            wordCounterValidReads = new ExtractionWordCounter(Props.props.ExtractionCounterWordLength);
+            wordCounterNonValidReads = new ExtractionWordCounter(Props.props.ExtractionCounterWordLength);
         }
 
         public int GetAverageReadLen(List<LaneInfo> laneInfos)
@@ -197,7 +199,6 @@ namespace Linnarsson.Strt
                 LimiterExcludedReads++;
             else
             {
-                wordCounter.AddRead(rec.Sequence);
                 TotalAnalyzedReads++;
                 countByStatus[readStatus]++;
                 if (rec.PassedFilter)
@@ -209,7 +210,10 @@ namespace Linnarsson.Strt
                     {
                         fr.AddAValidRead(rec.Sequence.Length);
                         validBarcodeReads[bcIdx]++;
+                        wordCounterValidReads.AddRead(rec.Sequence);
                     }
+                    else
+                        wordCounterNonValidReads.AddRead(rec.Sequence);
                 }
             }
         }
@@ -252,14 +256,16 @@ namespace Linnarsson.Strt
             sb.Append(string.Format(PassedIlluminaFilterID + "\t{0}\t{1}\n", PassedIlluminaFilter, PFFrac));
             for (int statusCat = 0; statusCat < ReadStatus.Count; statusCat++)
             {
-                if (barcodes.HasUMIs || !ReadStatus.IsUMICategory(statusCat))
+                if ((barcodes.HasUMIs || !ReadStatus.IsUMICategory(statusCat)) && ReadCount(statusCat) > 0)
                     sb.Append(string.Format("{0}\t{1}\t{2:0.#%}\n", ReadStatus.GetName(statusCat), ReadCount(statusCat), ReadCountFraction(statusCat)));
             }
             sb.Append("#\tBarcode\tValidSTRTReads\tTotalBarcodedReads\n");
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
                 sb.Append(string.Format(BarcodeReadsID + "\t{0}\t{1}\t{2}\n", barcodes.Seqs[bcIdx], validBarcodeReads[bcIdx], totalBarcodeReads[bcIdx]));
-            sb.Append("\nBelow are the most common words among all reads.\n\n");
-            sb.Append(wordCounter.GroupsToString(200));
+            sb.Append("\nBelow are the most common words among all NON-VALID barcoded reads.\n\n");
+            sb.Append(wordCounterNonValidReads.GroupsToString(100));
+            sb.Append("\n\nBelow are the most common words among all VALID barcoded reads.\n\n");
+            sb.Append(wordCounterValidReads.GroupsToString(100));
             sb.Append("\n");
             return sb.ToString();
         }

@@ -210,6 +210,10 @@ namespace ESCAF_BclToFq
                     DBUpdateLaneYield(runid, r);
                 }
                 DBUpdateRunStatus(runid, "copied");
+                if (runFolder != runFolderOrTgz)
+                    File.Delete(runFolderOrTgz);
+                else
+                    Directory.Delete(runFolderOrTgz, true);
             }
             catch (Exception)
             {

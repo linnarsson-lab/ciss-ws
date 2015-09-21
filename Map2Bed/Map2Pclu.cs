@@ -94,8 +94,8 @@ namespace Map2Pclu
                     for (int idx2 = 0; idx2 < idx1; idx2++)
                     {
                         int codedPair = (idx2 << settings.nUMIBits) | idx1;
-                        double nExpectedPairsFromAll = pEachUMIFromAll[idx1] * pEachUMIFromAll[idx2] * nAllPairs;
-                        double nExpectedPairsFromLonely = pEachUMIFromLonely[idx1] * pEachUMIFromLonely[idx2] * nAllPairs;
+                        double nExpectedPairsFromAll = 2 * pEachUMIFromAll[idx1] * pEachUMIFromAll[idx2] * nAllPairs;
+                        double nExpectedPairsFromLonely = 2 * pEachUMIFromLonely[idx1] * pEachUMIFromLonely[idx2] * nAllPairs;
                         int nActualPairs = molPairsByUMIs[codedPair];
                         int hammingDist = HammingDist(idx1, idx2);
                         nPairsByHammingDist[hammingDist] += nActualPairs;

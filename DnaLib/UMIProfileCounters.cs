@@ -10,10 +10,16 @@ namespace Linnarsson.Dna
 
     public interface IUMIProfile
     {
-        void Add(int UMIIdx);
+        /// <summary>
+        /// Return true if using UMI and the current read is a singleton
+        /// </summary>
+        /// <param name="UMIIdx"></param>
+        /// <returns></returns>
+        bool Add(int UMIIdx);
         int nMols();
         int nNonSingeltonMols();
         int count(UMICountType ct);
+        IEnumerable<int> OccupiedUMIs();
     }
 
     public class UMIReadCountProfile : IUMIProfile
@@ -27,10 +33,16 @@ namespace Linnarsson.Dna
                 detectedUMIs = new ushort[nUMIs];
             }
         }
-        public void Add(int UMIIdx)
+        public bool Add(int UMIIdx)
         {
-            if (detectedUMIs != null)
-                detectedUMIs[UMIIdx]++;
+            if (detectedUMIs == null) return false;
+            detectedUMIs[UMIIdx]++;
+            return detectedUMIs[UMIIdx] == 1;
+        }
+        public IEnumerable<int> OccupiedUMIs()
+        {
+            for (int i = 0; i < detectedUMIs.Length; i++)
+                if (detectedUMIs[i] > 0) yield return i;
         }
         public int nMols()
         {
@@ -71,15 +83,19 @@ namespace Linnarsson.Dna
                 multitonUMIs = new BitArray(nUMIs);
             }
         }
-        public void Add(int UMIIdx)
+        public bool Add(int UMIIdx)
         {
             detectedReads++;
-            if (detectedUMIs != null)
-            {
-                if (detectedUMIs[UMIIdx])
-                    multitonUMIs[UMIIdx] = true;
-                detectedUMIs[UMIIdx] = true;
-            }
+            if (detectedUMIs == null) return false;
+            if (detectedUMIs[UMIIdx])
+                multitonUMIs[UMIIdx] = true;
+            detectedUMIs[UMIIdx] = true;
+            return multitonUMIs[UMIIdx] == false;
+        }
+        public IEnumerable<int> OccupiedUMIs()
+        {
+            for (int i = 0; i < detectedUMIs.Length; i++)
+                if (detectedUMIs[i]) yield return i;
         }
         public int nMols()
         {

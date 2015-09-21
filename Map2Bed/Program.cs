@@ -14,8 +14,10 @@ namespace Map2Pclu
         public bool iterateBarcodes = false;
         public string filenamePrefix = "";
         public UMICountType countType = UMICountType.AllMolecules;
-        public int nUMIs = 4096;
-        public bool HasUMIs { get { return nUMIs > 0; }}
+        public int UMILen = 6;
+        public int nUMIs { get { return 1 << (2 * UMILen); } }
+        public int nUMIBits { get { return 2 * UMILen; } }
+        public bool HasUMIs { get { return UMILen > 0; } }
         public int maxMultiReadMappings = 1;
         public bool AllAsPlusStrand = false;
         public string outputFolderOrFilename = ".";
@@ -23,6 +25,9 @@ namespace Map2Pclu
         public bool estimateTrueMolCounts = false;
         public bool analyzeBcLeakage = false;
         public string readsPerMolFile = "";
+        public string singletonFilenameBase = "";
+        public int singletonSampleInterval = 10000;
+        public bool AnalyzeSingletons { get { return singletonFilenameBase != ""; } }
         public bool sortMapFilesByBarcode = false;
         public bool AnalyzeReadsPerMol { get { return readsPerMolFile != ""; } }
         public bool IsCountingMols { get { return countType == UMICountType.AllMolecules || countType == UMICountType.NonSingeltonMolecules; } }
@@ -43,7 +48,7 @@ namespace Map2Pclu
             {
                 if (args[argIdx] == "--reads") countType = UMICountType.Reads;
                 else if (args[argIdx] == "--nosingletons") countType = UMICountType.NonSingeltonMolecules;
-                else if (args[argIdx].StartsWith("--UMIs=")) nUMIs = int.Parse(args[argIdx].Substring(7));
+                else if (args[argIdx].StartsWith("--UMILen=")) UMILen = int.Parse(args[argIdx].Substring(9));
                 else if (args[argIdx].StartsWith("--multireads=")) maxMultiReadMappings = int.Parse(args[argIdx].Substring(13));
                 else if (args[argIdx] == "--estimatetrue") estimateTrueMolCounts = true;
                 else if (args[argIdx] == "--mergestrands") AllAsPlusStrand = true;
@@ -52,6 +57,8 @@ namespace Map2Pclu
                 else if (args[argIdx] == "--analyzebcleakage") analyzeBcLeakage = true;
                 else if (args[argIdx].StartsWith("--prefix=")) filenamePrefix = args[argIdx].Substring(9);
                 else if (args[argIdx].StartsWith("--readspermol=")) readsPerMolFile = args[argIdx].Substring(14);
+                else if (args[argIdx].StartsWith("--singletonstats=")) singletonFilenameBase = args[argIdx].Substring(17);
+                else if (args[argIdx].StartsWith("--sampleivl=")) singletonSampleInterval = int.Parse(args[argIdx].Substring(12));
                 else if (args[argIdx] == "-o") outputFolderOrFilename = args[++argIdx];
                 else if (args[argIdx] == "-i")
                 {
@@ -67,6 +74,12 @@ namespace Map2Pclu
                     Console.WriteLine("Read " + inputFiles.Count + " input map files from " + args[argIdx]);
                 }
                 else inputFiles.Add(args[argIdx]);
+            }
+            if (singletonFilenameBase != "")
+            {
+                if (maxMultiReadMappings > 1)
+                    Console.WriteLine("WARNING: When using --singletonstats, multimapping reads are always filtered away.");
+                maxMultiReadMappings = 1;
             }
         }
 
@@ -94,20 +107,22 @@ namespace Map2Pclu
                                   "If OUTPUT ends with '.gz' it is taken as a filename pattern. Any '*' is replaced by the barcode index.\n" +
                                   "Otherwise it is taken as an output folder, and filenames are constructed automatically.\n" +
                                   "Options:\n" +
-                                  "-i                 Read (additional) mapfile paths from FILELISTFILE, one per line.\n" +
-                                  "--sortbybc         Combine data from MAPFILES that have same barcode. Filenames have to start with bcIdx + '_'.\n" +
-                                  "--bybarcode        Process files for all barcodes (0-95). Filenames have to match 'N_*' where N is 0-95.\n" +
-                                  "                      As mapfile(s) you specify the file(s) with N=0: '0_xxxxxx.map'.\n" +
-                                  "                      Output is merged by barcode if several mapfiles are given.\n" +
-                                  "--reads            Output read counts.\n" +
-                                  "--nosingletons     Output molecule counts after removal of singeltons.\n" +
-                                  "--estimatetrue     Compensate molecular counts for UMI collisions.\n" +
-                                  "--multireads=N     Count multireads with <=N mappings [Default=" + settings.maxMultiReadMappings + "]. A random mapping will be selected.\n" +
-                                  "--UMIs=N           Analyze N different UMIs [Default=" + settings.nUMIs+ "]. Set N=0 to skip molecule counting.\n" +
-                                  "--analyzebcleakage Analyze bc-to-bc leakage frequencies.\n" +
-                                  "--prefix=TXT       Prefix output filenames with some text (only valid with OUTPUT not ending '.gz').\n" +
-                                  "--readspermol=FILE Write reads per molecule profiles (one per map file) to specific file.\n" +
-                                  "--mergestrands     Reads are non-directional, all reads will be put on the '+' strand.");
+                                  "-i                       Read (additional) mapfile paths from FILELISTFILE, one per line.\n" +
+                                  "--sortbybc               Combine data from MAPFILES that have same barcode. Filenames have to start with bcIdx + '_'.\n" +
+                                  "--bybarcode              Process files for all barcodes (0-95). Filenames have to match 'N_*' where N is 0-95.\n" +
+                                  "                            As mapfile(s) you specify the file(s) with N=0: '0_xxxxxx.map'.\n" +
+                                  "                            Output is merged by barcode if several mapfiles are given.\n" +
+                                  "--reads                  Output read counts.\n" +
+                                  "--nosingletons           Output molecule counts after removal of singeltons.\n" +
+                                  "--estimatetrue           Compensate molecular counts for UMI collisions.\n" +
+                                  "--multireads=N           Count multireads with <=N mappings [Default=" + settings.maxMultiReadMappings + "]. A random mapping will be selected.\n" +
+                                  "--UMILen=N               Analyze UMIs of N length [Default=" + settings.UMILen + "]. Set N=0 to skip molecule counting.\n" +
+                                  "--analyzebcleakage       Analyze bc-to-bc leakage frequencies.\n" +
+                                  "--prefix=TXT             Prefix output filenames with some text (only valid with OUTPUT not ending '.gz').\n" +
+                                  "--readspermol=FILE       Write reads per molecule profiles (one per map file) to specific file.\n" +
+                                  "--singletonstats=PREFIX  Write statistics on singletons to files with this name prefix.\n" +
+                                  "--sampleivl=N            Sample interval for singleton stats. [Default=" + settings.singletonSampleInterval + "]\n" +
+                                  "--mergestrands           Reads are non-directional, all reads will be put on the '+' strand.");
 
             }
             else

@@ -16,6 +16,11 @@ namespace Map2Pclu
         public UMIProfileFactory(Map2PcluSettings settings)
         {
             this.settings = settings;
+            if (settings.countType == UMICountType.NonMutatedSingletonMolecules)
+            {
+                UMIReadCountProfile.SetUMIHammingDistCalculator(new UMIHammingDistCalculator(settings.UMILen), settings.minHammingDist);
+                UMIZeroOneMoreProfile.SetUMIHammingDistCalculator(new UMIHammingDistCalculator(settings.UMILen), settings.minHammingDist);
+            }
         }
         public IUMIProfile GetCounter()
         {
@@ -161,15 +166,19 @@ namespace Map2Pclu
         private ReadsPerMolCounter summaryRpmCounter;
         private UMIDistroCounter umiDistroCounter;
 
-        private int nBcReads = 0, nBcSingletons = 0, nBcNewPosSingletons = 0;
+        private int nBcReads = 0, nBcSingletons = 0, nBcNewPosSingletons = 0, nBcNon1MutatedSingletons = 0, nBcNon2MutatedSingletons = 0;
         private int nTotReads = 0, nTotMols = 0;
         private int nTooMultiMappingReads, nMappedPositions;
 
         private static int nSingletonSampleInterval = 10000;
         private List<int> nSingletonsByDepth;
-        private StreamWriter singletonsByDepthWriter;
+        private Dictionary<int, List<int>> nSingletonsByDepthByBc = new Dictionary<int, List<int>>();
         private List<int> nNewPosSingletonsByDepth;
-        private StreamWriter newPosSingletonsByDepthWriter;
+        private Dictionary<int, List<int>> nNewPosSingletonsByDepthByBc = new Dictionary<int, List<int>>();
+        private List<int> nNon1MutatedSingletonsByDepth;
+        private Dictionary<int, List<int>> nNon1MutatedSingletonsByDepthByBc = new Dictionary<int, List<int>>();
+        private List<int> nNon2MutatedSingletonsByDepth;
+        private Dictionary<int, List<int>> nNon2MutatedSingletonsByDepthByBc = new Dictionary<int, List<int>>();
 
         private int nMaxMappings;
         private Random rnd;
@@ -190,21 +199,38 @@ namespace Map2Pclu
                 }
             }
             if (settings.AnalyzeSingletons)
-            {
-                singletonsByDepthWriter = new StreamWriter(settings.singletonFilenameBase + "_SingletonsByDepth.tab");
-                singletonsByDepthWriter.WriteLine("nReads:\t" + nSingletonSampleInterval + "\t" + (nSingletonSampleInterval * 2)
-                    + "\t" + (nSingletonSampleInterval * 3));
-                newPosSingletonsByDepthWriter = new StreamWriter(settings.singletonFilenameBase + "_SingletonsNewPosByDepth.tab");
-                newPosSingletonsByDepthWriter.WriteLine("nReads:\t" + nSingletonSampleInterval + "\t" + (nSingletonSampleInterval * 2)
-                    + "\t" + (nSingletonSampleInterval * 3));
                 umiDistroCounter = new UMIDistroCounter(settings);
-            }
+        }
+
+        public void WriteSingeltonsByDepth()
+        {
+            StreamWriter writer = new StreamWriter(settings.singletonFilenameBase + "_SingletonsByDepth.tab");
+            writer.Write("nReads:");
+            for (int n = 1; n <= nSingletonsByDepthByBc.Max(p => p.Value.Count); n++)
+                writer.Write("\t" + (n * nSingletonSampleInterval) );
+            writer.WriteLine("\nBcIdx\tCounts...");
+            writer.WriteLine("AllSingletons:");
+            foreach (KeyValuePair<int, List<int>> p in nSingletonsByDepthByBc)
+                writer.WriteLine(p.Key + "\t" + string.Join("\t", p.Value.ConvertAll(v => v.ToString()).ToArray()));
+            writer.WriteLine("NewPosSingletons:");
+            foreach (KeyValuePair<int, List<int>> p in nNewPosSingletonsByDepthByBc)
+                writer.WriteLine(p.Key + "\t" + string.Join("\t", p.Value.ConvertAll(v => v.ToString()).ToArray()));
+            writer.WriteLine("Non1MutatedSingletons:");
+            foreach (KeyValuePair<int, List<int>> p in nNon1MutatedSingletonsByDepthByBc)
+                writer.WriteLine(p.Key + "\t" + string.Join("\t", p.Value.ConvertAll(v => v.ToString()).ToArray()));
+            writer.WriteLine("Non2MutatedSingletons:");
+            foreach (KeyValuePair<int, List<int>> p in nNon2MutatedSingletonsByDepthByBc)
+                writer.WriteLine(p.Key + "\t" + string.Join("\t", p.Value.ConvertAll(v => v.ToString()).ToArray()));
+            writer.WriteLine();
+            writer.Close();
         }
 
         public void Convert()
         {
             string bcPrefix = settings.BarcodePrefix;
-            string fType = (settings.countType == UMICountType.Reads) ? "reads" : (settings.countType == UMICountType.AllMolecules) ? "mols" : "nonSingletonMols";
+            string fType = (settings.countType == UMICountType.Reads) ? "reads"
+                : (settings.countType == UMICountType.AllMolecules) ? "mols"
+                : (settings.countType == UMICountType.NonSingletonMolecules) ? "nonSingletonMols" : "nonMutatedSingletonMols";
             string outfilePat = settings.outputFolderOrFilename;
             if (!outfilePat.EndsWith(".gz"))
             {
@@ -235,9 +261,8 @@ namespace Map2Pclu
                 Console.WriteLine("Totally in {0} barcodes were {1} reads{2} processed.", maxBcIdx + 1, nTotReads, totMolTxt);
             if (settings.AnalyzeSingletons)
             {
-                singletonsByDepthWriter.Close();
-                newPosSingletonsByDepthWriter.Close();
                 umiDistroCounter.OutputResults(settings.singletonFilenameBase);
+                WriteSingeltonsByDepth();
             }
             Console.WriteLine("...output is found in " + outfilePat);
         }
@@ -247,8 +272,12 @@ namespace Map2Pclu
             nBcReads = 0;
             nBcSingletons = 0;
             nBcNewPosSingletons = 0;
+            nBcNon1MutatedSingletons = 0;
+            nBcNon2MutatedSingletons = 0;
             nSingletonsByDepth = new List<int>();
             nNewPosSingletonsByDepth = new List<int>();
+            nNon1MutatedSingletonsByDepth = new List<int>();
+            nNon2MutatedSingletonsByDepth = new List<int>();
             foreach (string mapFilePath in settings.inputFiles)
             {
                 string filePath = mapFilePath;
@@ -264,11 +293,10 @@ namespace Map2Pclu
                 Console.WriteLine("{0}...", filePath);
                 ReadMapFile(filePath);
             }
-            if (settings.AnalyzeSingletons)
-            {
-                singletonsByDepthWriter.WriteLine(bcIdx + "\t" + string.Join("\t", nSingletonsByDepth.ConvertAll(v => v.ToString()).ToArray()));
-                newPosSingletonsByDepthWriter.WriteLine(bcIdx + "\t" + string.Join("\t", nNewPosSingletonsByDepth.ConvertAll(v => v.ToString()).ToArray()));
-            }
+            nSingletonsByDepthByBc.Add(bcIdx, nSingletonsByDepth);
+            nNewPosSingletonsByDepthByBc.Add(bcIdx, nNewPosSingletonsByDepth);
+            nNon1MutatedSingletonsByDepthByBc.Add(bcIdx, nNon1MutatedSingletonsByDepth);
+            nNon2MutatedSingletonsByDepthByBc.Add(bcIdx, nNon2MutatedSingletonsByDepth);
             return nBcReads;
         }
 
@@ -303,13 +331,40 @@ namespace Map2Pclu
                     counters[chr][posOf5Prime] = counter;
                     nMappedPositions++;
                 }
-                bool isSingleton = counter.Add(mrm.UMIIdx);
-                if (isSingleton) nBcSingletons++;
                 nBcReads++;
+                bool isSingleton = counter.Add(mrm.UMIIdx);
+                if (isSingleton)
+                {
+                    nBcSingletons++;
+                    bool tooCloseMut1 = false, tooCloseMut2 = false;
+                    for (int i1 = 0; i1 < settings.nUMIBits; i1 += 2)
+                    {
+                        for (int xorVal = 1; xorVal <= 3; xorVal++)
+                        {
+                            int mut1UMI = mrm.UMIIdx ^ (xorVal << i1);
+                            if (counter.UMIOccupied(mut1UMI))
+                            {
+                                tooCloseMut1 = tooCloseMut2 = true;
+                                break;
+                            }
+                            for (int i2 = 0; i2 < settings.nUMIBits; i2 += 2)
+                            {
+                                if (i1 == i2) continue;
+                                if (counter.UMIOccupied(mut1UMI ^ (1 << i2)) ||
+                                    counter.UMIOccupied(mut1UMI ^ (2 << i2)) ||
+                                    counter.UMIOccupied(mut1UMI ^ (3 << i2))) tooCloseMut2 = true;
+                            }
+                        }
+                    }
+                    if (!tooCloseMut1) nBcNon1MutatedSingletons++;
+                    if (!tooCloseMut2) nBcNon2MutatedSingletons++;
+                }
                 if (nBcReads % nSingletonSampleInterval == 0)
                 {
                     nSingletonsByDepth.Add(nBcSingletons);
                     nNewPosSingletonsByDepth.Add(nBcNewPosSingletons);
+                    nNon1MutatedSingletonsByDepth.Add(nBcNon1MutatedSingletons);
+                    nNon2MutatedSingletonsByDepth.Add(nBcNon2MutatedSingletons);
                 }
             }
         }

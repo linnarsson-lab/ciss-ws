@@ -14,6 +14,7 @@ namespace Map2Pclu
         public bool iterateBarcodes = false;
         public string filenamePrefix = "";
         public UMICountType countType = UMICountType.AllMolecules;
+        public int minHammingDist = 2;
         public int UMILen = 6;
         public int nUMIs { get { return 1 << (2 * UMILen); } }
         public int nUMIBits { get { return 2 * UMILen; } }
@@ -30,7 +31,7 @@ namespace Map2Pclu
         public bool AnalyzeSingletons { get { return singletonFilenameBase != ""; } }
         public bool sortMapFilesByBarcode = false;
         public bool AnalyzeReadsPerMol { get { return readsPerMolFile != ""; } }
-        public bool IsCountingMols { get { return countType == UMICountType.AllMolecules || countType == UMICountType.NonSingeltonMolecules; } }
+        public bool IsCountingMols { get { return countType == UMICountType.AllMolecules || countType == UMICountType.NonSingletonMolecules; } }
 
         private int m_MaxBarcodeIdx = 95;
         public int MaxBarcodeIdx { get { return (iterateBarcodes || sortMapFilesByBarcode) ? m_MaxBarcodeIdx : 0; } }
@@ -47,7 +48,12 @@ namespace Map2Pclu
             for (; argIdx < args.Length; argIdx++)
             {
                 if (args[argIdx] == "--reads") countType = UMICountType.Reads;
-                else if (args[argIdx] == "--nosingletons") countType = UMICountType.NonSingeltonMolecules;
+                else if (args[argIdx] == "--nosingletons") countType = UMICountType.NonSingletonMolecules;
+                else if (args[argIdx].StartsWith("--minsingletondist="))
+                {
+                    countType = UMICountType.NonMutatedSingletonMolecules;
+                    minHammingDist = int.Parse(args[argIdx].Split('=')[1]);
+                }
                 else if (args[argIdx].StartsWith("--UMILen=")) UMILen = int.Parse(args[argIdx].Substring(9));
                 else if (args[argIdx].StartsWith("--multireads=")) maxMultiReadMappings = int.Parse(args[argIdx].Substring(13));
                 else if (args[argIdx] == "--estimatetrue") estimateTrueMolCounts = true;
@@ -114,6 +120,7 @@ namespace Map2Pclu
                                   "                            Output is merged by barcode if several mapfiles are given.\n" +
                                   "--reads                  Output read counts.\n" +
                                   "--nosingletons           Output molecule counts after removal of singeltons.\n" +
+                                  "--minsingletondist=N     Output molecule counts after removal of singeltons with Hamming dist<N to another UMI.\n" +
                                   "--estimatetrue           Compensate molecular counts for UMI collisions.\n" +
                                   "--multireads=N           Count multireads with <=N mappings [Default=" + settings.maxMultiReadMappings + "]. A random mapping will be selected.\n" +
                                   "--UMILen=N               Analyze UMIs of N length [Default=" + settings.UMILen + "]. Set N=0 to skip molecule counting.\n" +

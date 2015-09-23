@@ -135,6 +135,11 @@ namespace Linnarsson.Dna
         protected char m_TSTrimNt = 'G';
         public char TSTrimNt { get { return m_TSTrimNt; } }
 
+        public Barcodes(string bcSetName)
+        {
+            UseNoBarcodes = false;
+            m_Name = bcSetName;
+        }
         public Barcodes(string bcSetName, string[] seqs)
         {
             UseNoBarcodes = false;
@@ -784,7 +789,7 @@ namespace Linnarsson.Dna
 
     public class CustomBarcodes : Barcodes
     {
-        public CustomBarcodes(string barcodeSetName) : base(barcodeSetName, new string[] { NOBARCODE })
+        public CustomBarcodes(string barcodeSetName) : base(barcodeSetName)
         {
             m_TSSeq = "";
             m_TSTrimNt = ' ';

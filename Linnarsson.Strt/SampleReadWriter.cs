@@ -160,7 +160,10 @@ namespace Linnarsson.Strt
                     if (ReadStatus.IsBarcodedCategory(readStatus))
                         sw_slask_w_bc.WriteLine(recSet.InsertRead.ToString(Props.props.QualityScoreBase));
                     else
+                    { // Add the erronous barcode seq after status text
+                        recSet.InsertRead.Header += ":" + recSet.BarcodeSeq;
                         sw_slask_no_bc.WriteLine(recSet.InsertRead.ToString(Props.props.QualityScoreBase));
+                    }
                 }
             }
             readCounter.AddARead(useThisRead, recSet.mappable, readStatus, bcIdx);

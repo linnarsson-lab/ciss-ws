@@ -32,8 +32,11 @@ namespace Linnarsson.Dna
         {
             TagItem.CountsReadsPerUMI = false;
             int param = Props.props.RndTagMutationFilterParam;
-            if (Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter && param == 1)                 
+            if (Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter && param == 1)
+            {
                 Props.props.RndTagMutationFilter = UMIMutationFilter.Singleton;
+                Props.props.RndTagMutationFilterParam = 0;
+            }
             else if (Props.props.RndTagMutationFilter != UMIMutationFilter.Hamming1Singleton
                      && !(Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter && param == 0)
                      && !(Props.props.RndTagMutationFilter == UMIMutationFilter.Singleton && param == 0))

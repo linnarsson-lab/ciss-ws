@@ -305,7 +305,6 @@ namespace Linnarsson.Strt
         {
             hasUMIs = barcodes.HasUMIs;
             nUMIs = barcodes.UMICount;
-            TagItem.nUMIs = nUMIs;
             nReadsByUMI = new int[nUMIs];
             nCasesPerUMICount = new int[nUMIs + 1];
             chrTagDatas = new Dictionary<string, ChrTagData>();
@@ -386,8 +385,7 @@ namespace Linnarsson.Strt
 
         private void AddToReadsPerMolecule(TagItem tagItem, int nUsedUMIs)
         {
-            int threshold = tagItem.GetMutationThreshold();
-            foreach (ushort nReadsInUMI in tagItem.GetReadCountsByUMI().Where(c => c > threshold))
+            foreach (ushort nReadsInUMI in tagItem.IterFilteredReadCounts())
             {
                 int limitedReadCount = Math.Min(MaxValueInReadCountHistogram, nReadsInUMI);
                 readsPerMolHistogram[limitedReadCount]++;

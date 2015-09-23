@@ -21,7 +21,7 @@ namespace Linnarsson.Dna
     /// <summary>
     /// Used in the Props.RndTagMutationFilter to define how molecules due to mutated random labels should be eliminated
     /// </summary>
-    public enum RndTagMutationFilterMethod { FractionOfMax, FractionOfMean, Singleton, LowPassFilter };
+    public enum UMIMutationFilter { FractionOfMax, FractionOfMean, Singleton, LowPassFilter, Hamming1Singleton };
 
     /// <summary>
     /// Defines various configurations used by many classes.
@@ -123,7 +123,7 @@ namespace Linnarsson.Dna
         public bool AnalyzeSpliceHitsByBarcode = false; // If true, will show transcript cross-junction hits per barcode
         public int GeneFeature5PrimeExtension = 0; // Extend all transcript 5' annotations to allow for unknown more upstream start sites.
         public int CapRegionSize = 100; // Defines the size in bp to consider as hits to 5' end for the CAPRegion hit counting
-        public RndTagMutationFilterMethod RndTagMutationFilter = RndTagMutationFilterMethod.FractionOfMax;
+        public UMIMutationFilter RndTagMutationFilter = UMIMutationFilter.FractionOfMax;
         public int RndTagMutationFilterParam = 50;
         public int MinAltNtsReadCountForSNPDetection = 10; // Positions with less reads with the non-ref bases will not be considered for SNP analysis
         public RepeatMaskingType GenomeBuildRepeatMaskingType = RepeatMaskingType.Exon;

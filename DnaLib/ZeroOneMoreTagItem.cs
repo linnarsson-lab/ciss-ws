@@ -28,21 +28,18 @@ namespace Linnarsson.Dna
             this.typeOfAnnotation = isTranscript ? (short)AnnotType.EXON : (short)AnnotType.NOHIT;
         }
 
-        private static bool filterSingletons = true;
-
         public static void Init()
         {
             TagItem.CountsReadsPerUMI = false;
-            RndTagMutationFilterMethod method = Props.props.RndTagMutationFilter;
             int param = Props.props.RndTagMutationFilterParam;
-            if (method == RndTagMutationFilterMethod.LowPassFilter && param == 0)
-                filterSingletons = false;
-            else if (method == RndTagMutationFilterMethod.LowPassFilter && param == 1 ||
-                     method == RndTagMutationFilterMethod.Singleton && param == 0)
-                filterSingletons = true;
-            else
-                throw new Exception("You can not use the specified RndTagMutationFilter and Param with DenseUMICounter!");
-            Console.WriteLine("Using compact TagItems with filterSingletons=" + filterSingletons);
+            if (Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter && param == 1)                 
+                Props.props.RndTagMutationFilter = UMIMutationFilter.Singleton;
+            else if (Props.props.RndTagMutationFilter != UMIMutationFilter.Hamming1Singleton
+                     && !(Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter && param == 0)
+                     && !(Props.props.RndTagMutationFilter == UMIMutationFilter.Singleton && param == 0))
+                throw new Exception("You can not use RndTagMutationFilter=" + Props.props.RndTagMutationFilter.ToString()
+                                    + " and Param=" + param + " with DenseUMICounter!");
+            Console.WriteLine("Using compact TagItems with UMIMutationFilter=" + Props.props.RndTagMutationFilter.ToString());
         }
 
         private static List<SNPCounter> noSNPCounts = new List<SNPCounter>(0);
@@ -55,9 +52,6 @@ namespace Linnarsson.Dna
         { }
         public override void AddSNP(int UMIIdx, Mismatch mm)
         { }
-
-        //public override Dictionary<IFeature, int> SharingGenes { get { return null; } }
-        //public override void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures) { }
 
         public override void Clear()
         {
@@ -98,28 +92,46 @@ namespace Linnarsson.Dna
             if (multitonUMIs == null || bcNumReads == 0)
                 return 0;
             int c = 0;
-            for (int UMIIdx = 0; UMIIdx < multitonUMIs.Length; UMIIdx++)
-                if (multitonUMIs[UMIIdx] ||
-                    (!filterSingletons && detectedUMIs[UMIIdx])) c++;
+            if (Props.props.RndTagMutationFilter == UMIMutationFilter.Singleton)
+            { // Singleton filter
+                for (int UMIIdx = 0; UMIIdx < multitonUMIs.Length; UMIIdx++)
+                    if (multitonUMIs[UMIIdx]) c++;
+            }
+            else if (Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter)
+            { // No filter at all
+                for (int UMIIdx = 0; UMIIdx < multitonUMIs.Length; UMIIdx++)
+                    if (detectedUMIs[UMIIdx]) c++;
+            }
+            else if (Props.props.RndTagMutationFilter == UMIMutationFilter.Hamming1Singleton)
+            { // Singleton with Hamming distance == 1 filter
+                c = CalcHamming1NumMols();
+            }
             return c;
         }
 
-        protected override void CalcFinalBcNumMols()
+        private int CalcHamming1NumMols()
         {
-            if (filteredBcNumMols >= 0)
-                return;
-            if (nUMIs == 1)
-                filteredBcNumMols = bcNumReads;
-            else if (multitonUMIs == null || bcNumReads == 0)
-                filteredBcNumMols = 0;
-            else
+            int n = 0;
+            for (int i = 0; i < detectedUMIs.Length; i++)
             {
-                filteredBcNumMols = 0;
-                for (int UMIIdx = 0; UMIIdx < multitonUMIs.Length; UMIIdx++)
-                    if (multitonUMIs[UMIIdx] ||
-                        (!filterSingletons && detectedUMIs[UMIIdx])) filteredBcNumMols++;
+                if (multitonUMIs[i]) n++;
+                else if (detectedUMIs[i])
+                {
+                    bool tooClose = false;
+                    for (int j = 0; j < detectedUMIs.Length; j++)
+                    {
+                        if (j == i) continue;
+                        bool close = (hDistCalc.Dist(i, j) < 2);
+                        if (close && (multitonUMIs[j] || (detectedUMIs[j] && i > j)))
+                        {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+                    if (!tooClose) n++;
+                }
             }
-            filteredTotNumMols += filteredBcNumMols;
+            return n;
         }
 
         public override int GetNumUsedUMIs()
@@ -135,9 +147,9 @@ namespace Linnarsson.Dna
             return null;
         }
 
-        public override int GetMutationThreshold()
+        public override IEnumerable<ushort> IterFilteredReadCounts()
         {
-            return filterSingletons? 1 : 0;
+            yield break;
         }
     }
 }

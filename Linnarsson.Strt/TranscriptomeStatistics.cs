@@ -161,8 +161,8 @@ namespace Linnarsson.Strt
             nMappingsByBarcode = new int[barcodes.Count];
             exonHitFeatures = new List<IFeature>(100);
             spliceChrId = Annotations.Genome.Annotation;
-            randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
             TagItem.InitTagItemType();
+            randomTagFilter = new RandomTagFilterByBc(barcodes, Annotations.GetChromosomeIds());
             mappingAdder = new MappingAdder(annotations, randomTagFilter, barcodes);
             statsSampleDistPerBarcode = Props.props.SampleDistPerBcForAccuStats;
             if (props.AnalyzeSeqUpstreamTSSite && barcodes.Count > 1)

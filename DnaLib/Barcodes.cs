@@ -24,7 +24,8 @@ namespace Linnarsson.Dna
             get { return m_Seqs; }
             protected set {
                 m_Seqs = value;
-                m_BarcodeLen = m_Seqs[0].Length;
+                if (m_BarcodeLen == 0)
+                    m_BarcodeLen = m_Seqs[0].Length;
                 MakeBcSeqToBcIdxMap();
             }
         }
@@ -56,7 +57,7 @@ namespace Linnarsson.Dna
 
         protected int m_BarcodePos = 0;
         public int BarcodePos { get { return m_BarcodePos; } }
-        private int m_BarcodeLen;
+        protected int m_BarcodeLen = 0;
         public int BarcodeLen { get { return m_BarcodeLen; } }
         public int BarcodeEndPos { get { return m_BarcodePos + m_BarcodeLen; } }
         public bool UseNoBarcodes;
@@ -115,26 +116,9 @@ namespace Linnarsson.Dna
         public char HighestNeededReadNo { get { return (m_PrefixRead3 > 0)? '3' : (m_PrefixRead2 > 0)? '2': '1'; } }
 
         /// <summary>
-        /// Do not read directly - use property InsertStart instead
+        /// InsertStart, may begin with TSS G:s
         /// </summary>
-        protected int m_InsertOrGGGPos = -1;
-        /// <summary>
-        /// Find the position after UMI, barcode, or specified InsertStart, whichever is highest
-        /// </summary>
-        public int InsertOrGGGPos 
-        {
-            get
-            {
-                if (m_InsertOrGGGPos == -1)
-                    m_InsertOrGGGPos = Math.Max(m_BarcodePos + m_BarcodeLen, m_UMIPos + m_UMIFieldLen);
-                return m_InsertOrGGGPos;
-            }
-        }
-
-        /// <summary>
-        /// Length of the part of the ReadID that contains the barcode [and UMI]
-        /// </summary>
-        public int BarcodeFieldLen { get { return (m_UMILen > 0)? (1 + m_UMILen + m_BarcodeLen) : m_BarcodeLen; } }
+        public int InsertOrGGGPos { get; protected set; }
 
         /// <summary>
         /// Set to true to allow extraction step to correct single base substitutions in barcodes.
@@ -822,8 +806,9 @@ namespace Linnarsson.Dna
                     else if (line.StartsWith("#keepread3")) KeepRead3 = true;
                     else if (line.StartsWith("#indexread=")) BarcodeRead = int.Parse(line.Substring(11));
                     else if (line.StartsWith("#indexstart=")) m_BarcodePos = int.Parse(line.Substring(12));
+                    else if (line.StartsWith("#indexlen=")) m_BarcodeLen = int.Parse(line.Substring(10));
                     else if (line.StartsWith("#insertread=")) InsertRead = int.Parse(line.Substring(12));
-                    else if (line.StartsWith("#insertstart=")) m_InsertOrGGGPos = int.Parse(line.Substring(13));
+                    else if (line.StartsWith("#insertstart=")) InsertOrGGGPos = int.Parse(line.Substring(13));
                     else if (line.StartsWith("#umiread=")) UMIRead = int.Parse(line.Substring(9));
                     else if (line.StartsWith("#umistart=")) UMIPos = int.Parse(line.Substring(10));
                     else if (line.StartsWith("#umilen=") && m_UMIMask == null) UMILen = int.Parse(line.Substring(8));

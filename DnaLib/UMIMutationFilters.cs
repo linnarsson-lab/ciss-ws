@@ -28,11 +28,11 @@ namespace Linnarsson.Dna
         public static void SetUMIMutationFilter()
         {
             UMIMutationFilterParameter = Props.props.RndTagMutationFilterParam;
-            if (Props.props.RndTagMutationFilter == RndTagMutationFilterMethod.FractionOfMax)
+            if (Props.props.RndTagMutationFilter == UMIMutationFilter.FractionOfMax)
                 filter = FractionOfMaxThresholder;
-            else if (Props.props.RndTagMutationFilter == RndTagMutationFilterMethod.FractionOfMean)
+            else if (Props.props.RndTagMutationFilter == UMIMutationFilter.FractionOfMean)
                 filter = FractionOfMeanThresholder;
-            else if (Props.props.RndTagMutationFilter == RndTagMutationFilterMethod.Singleton)
+            else if (Props.props.RndTagMutationFilter == UMIMutationFilter.Singleton)
             {
                 filter = SingletonThresholder;
                 if (UMIMutationFilterParameter == 0)

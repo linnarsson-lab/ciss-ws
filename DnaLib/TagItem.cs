@@ -28,16 +28,21 @@ namespace Linnarsson.Dna
 
         public static void InitTagItemType()
         {
+            nUMIs = Props.props.Barcodes.UMICount;
+            if (Props.props.RndTagMutationFilter == UMIMutationFilter.Hamming1Singleton)
+                hDistCalc = new UMIHammingDistCalculator(Props.props.Barcodes.UMILen);
             if (Props.props.DenseUMICounter)
                 ZeroOneMoreTagItem.Init();
             else
                 UShortTagItem.Init();
         }
 
+        public static UMIHammingDistCalculator hDistCalc;
+
         /// <summary>
         /// Mirrors the number of UMIs from Barcodes
         /// </summary>
-        public static int nUMIs;
+        public static int nUMIs { get; private set; }
 
         /// <summary>
         /// Counts number of reads in barcode irrespective of UMI
@@ -96,11 +101,30 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
+        /// Count number of molecules (reads if UMIs not used) at this position-strand.
+        /// Filters away mutated UMIs according to thresholding filter.
+        /// </summary>
+        /// <returns>Number of molecules (mutated UMIs excluded), or number of reads if UMIs are not used.</returns>
+        public abstract int CalcCurrentBcNumMols();
+
+        /// <summary>
         /// Final number of molecules (or reads if UMIs are not used) after mutation filtering. 
         /// Call ONLY after all reads in barcode have been added! Used for speed up of repeated calls.
         /// </summary>
         /// <returns>Number of molecules (mutated UMIs excluded), or number of reads if UMIs are not used.</returns>
-        protected abstract void CalcFinalBcNumMols();
+        protected void CalcFinalBcNumMols()
+        {
+            if (filteredBcNumMols >= 0)
+                return;
+            filteredBcNumMols = CalcCurrentBcNumMols();
+            filteredTotNumMols += filteredBcNumMols;
+        }
+
+        /// <summary>
+        /// Iterate the read count of the UMIs that pass mutation filter
+        /// </summary>
+        /// <returns></returns>
+        public abstract IEnumerable<ushort> IterFilteredReadCounts();
 
         /// <summary>
         /// Should always be called by Clear() implementations
@@ -144,8 +168,6 @@ namespace Linnarsson.Dna
                     sharingGenes[sGf] = 1;
             }
         }
-        //public abstract Dictionary<IFeature, int> SharingGenes { get; }
-        //public abstract void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures);
 
         /// <summary>
         /// Prepare for analyzing potential SNPs at specified offset within the reads
@@ -180,15 +202,6 @@ namespace Linnarsson.Dna
         public abstract List<SNPCounter> GetTotalSNPCounts(int readPosOnChr);
 
         /// <summary>
-        /// Count number of molecules (reads if UMIs not used) at this position-strand.
-        /// Filters away mutated UMIs according to thresholding filter.
-        /// </summary>
-        /// <returns>Number of molecules (mutated UMIs excluded), or number of reads if UMIs are not used.</returns>
-        public abstract int CalcCurrentBcNumMols();
-
-        public abstract int GetMutationThreshold();
-
-        /// <summary>
         /// Count # UMIs with at least one read (no filtering applied)
         /// </summary>
         /// <returns></returns>
@@ -199,6 +212,7 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <returns>null if no reads have been found</returns>
         public abstract ushort[] GetReadCountsByUMI();
+
     }
 
 
@@ -210,6 +224,8 @@ namespace Linnarsson.Dna
         public static void Init()
         {
             TagItem.CountsReadsPerUMI = false;
+            if (Props.props.RndTagMutationFilter == UMIMutationFilter.Hamming1Singleton)
+                throw new Exception("RndTagMutationFilter.Hamming1Singleton is only implemented with DenseUMICounter!");
             UMIMutationFilters.SetUMIMutationFilter();
         }
 
@@ -218,26 +234,6 @@ namespace Linnarsson.Dna
         /// </summary>
         private ushort[] readCountsByUMI;
 
-/*
-        /// <summary>
-        /// List of the genes that share this TagItem's counts. (If some reads are SNPed, the sharing genes may be not belong to all reads.)
-        /// </summary>
-        private Dictionary<IFeature, int> sharingGenes;
-        public override Dictionary<IFeature, int> SharingGenes { get { return sharingGenes; } }
-        public override void AddSharedGenes(Dictionary<IFeature, object> sharingRealFeatures)
-        {
-            if (sharingRealFeatures.Count == 0) return;
-            if (sharingGenes == null)
-                sharingGenes = new Dictionary<IFeature, int>();
-            foreach (IFeature sGf in sharingRealFeatures.Keys)
-            {
-                if (sharingGenes.ContainsKey(sGf))
-                    sharingGenes[sGf] += 1;
-                else
-                    sharingGenes[sGf] = 1;
-            }
-        }
-*/
         /// <summary>
         /// At each offset relative to the 5' pos on chr of the reads' alignment where some SNPs appear,
         /// keep an array by UMI of counts for each SNP nt. 
@@ -279,8 +275,6 @@ namespace Linnarsson.Dna
         {
             ClearBase();
             readCountsByUMI = null;
-            //if (sharingGenes != null)
-            //    sharingGenes.Clear();
             if (SNPCountsByOffset != null)
                 foreach (SNPCountsByRndTag counts in SNPCountsByOffset.Values)
                     if (counts != null)
@@ -347,22 +341,6 @@ namespace Linnarsson.Dna
             return readCountsByUMI.Count(v => v > threshold);
         }
 
-        protected override void CalcFinalBcNumMols()
-        {
-            if (filteredBcNumMols >= 0)
-                return;
-            if (nUMIs == 1)
-                filteredBcNumMols = bcNumReads;
-            else if (readCountsByUMI == null || bcNumReads == 0)
-                filteredBcNumMols = 0;
-            else
-            {
-                int threshold = UMIMutationFilters.filter(this);
-                filteredBcNumMols = readCountsByUMI.Count(v => v > threshold);
-            }
-            filteredTotNumMols += filteredBcNumMols;
-        }
-
         public override int GetNumUsedUMIs()
         {
             return readCountsByUMI.Count(c => c > 0);
@@ -375,9 +353,16 @@ namespace Linnarsson.Dna
             return readCountsByUMI;
         }
 
-        public override int GetMutationThreshold()
+        public override IEnumerable<ushort> IterFilteredReadCounts()
         {
-            return UMIMutationFilters.filter(this);
+            if (nUMIs == 1)
+                yield return (ushort)bcNumReads;
+            else
+            {
+                int threshold = UMIMutationFilters.filter(this);
+                foreach (ushort c in readCountsByUMI.Where(c => c > threshold).ToArray())
+                    yield return c;
+            }
         }
 
     }

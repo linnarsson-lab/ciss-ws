@@ -1010,10 +1010,10 @@ namespace Linnarsson.Strt
                     xmlFile.WriteLine("    <point x=\"Limiter excluded\" y=\"{0}\" />", readCounter.LimiterExcludedReads / 1.0E6d);
                 xmlFile.WriteLine("    <point x=\"Processed reads\" y=\"{0}\" />", allBcReads / 1.0E6d);
                 xmlFile.WriteLine("    <point x=\"PF reads\" y=\"{0}\" />", readCounter.PassedIlluminaFilter / 1.0E6d);
-                xmlFile.WriteLine("    <point x=\"{0} reads [{1}] (100%)\" y=\"{2}\" />",
+                xmlFile.WriteLine("    <point x=\"In {0} wells [{1}] (100%)\" y=\"{2}\" />",
                                              Annotations.Genome.Abbrev, spBcCount, speciesReads / 1.0E6d);
                 int validReads = readCounter.ValidReads(speciesBarcodes);
-                xmlFile.WriteLine("    <point x=\"Valid STRT [{0}] ({1:0%})\" y=\"{2}\" />",
+                xmlFile.WriteLine("    <point x=\"valid STRT [{0}] ({1:0%})\" y=\"{2}\" />",
                                              spBcCount, validReads / speciesReads, validReads / 1.0E6d);
             }
             else if (allBcReads > 0)
@@ -1026,12 +1026,13 @@ namespace Linnarsson.Strt
             }
             else
                 speciesReads = TotalNRealChrMappedReads; // Default to nMappedReads if extraction summary files are missing
-            xmlFile.WriteLine("    <point x=\"Mapped [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, TotalNRealChrMappedReads / speciesReads, TotalNRealChrMappedReads / 1.0E6d);
-            xmlFile.WriteLine("    <point x=\"Spike [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, TotalNSpikeMappedReads / speciesReads, TotalNSpikeMappedReads / 1.0E6d);
+            int mapped = TotalNRealChrMappedReads + TotalNSpikeMappedReads;
+            xmlFile.WriteLine("    <point x=\"mapped total [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, mapped / speciesReads, mapped / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"> transcript [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nExonAnnotatedReads / speciesReads, nExonAnnotatedReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"> spike [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, TotalNSpikeMappedReads / speciesReads, TotalNSpikeMappedReads / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"Multireads [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nMultiReads / speciesReads, nMultiReads / 1.0E6d);
-            xmlFile.WriteLine("    <point x=\"Exon/Splc [{0}] ({1:0%})\" y=\"{2}\" />", spBcCount, nExonAnnotatedReads / speciesReads, nExonAnnotatedReads / 1.0E6d);
             if (barcodes.HasUMIs)
-                xmlFile.WriteLine("    <point x=\"Duplicates [{0}] ({1:0%})\" y=\"{2}\" />", 
+                xmlFile.WriteLine("    <point x=\"PCR amplified [{0}] ({1:0%})\" y=\"{2}\" />", 
                                   spBcCount, mappingAdder.TotalNDuplicateReads / speciesReads, mappingAdder.TotalNDuplicateReads / 1.0E6d);
             xmlFile.WriteLine("  </reads>");
             xmlFile.WriteLine("  <hits>");
@@ -1425,7 +1426,7 @@ namespace Linnarsson.Strt
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, nRealChrMappedReadsByBarcode,
                                     "MAPPEDREADS", "Total " + sp + " mapped reads by barcode", sp + " mapped reads");
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, nSpikeMappedReadsByBarcode,
-                                    "SPIKEREADS", "Total spike mapped reads by barcode", "spike reads");
+                                    "SPIKEREADS", "Total spike mapped reads by barcode", "spike mapped reads");
                 if (barcodes.HasUMIs)
                     WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, mappingAdder.NDuplicateReadsByBc(),
                                     "DUPLICATE_READS", "Duplicate reads of molecules (same UMI/position/strand) by barcode", "redundant reads (PCR)");

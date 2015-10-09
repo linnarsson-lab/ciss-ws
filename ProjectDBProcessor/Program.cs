@@ -283,7 +283,7 @@ namespace ProjectDBProcessor
                 logWriter.Flush();
                 pd.status = ProjectDescription.STATUS_ANNOTATING;
                 projectDB.UpdateAnalysisStatus(pd.analysisId, pd.status);
-                ResultDescription resultDescr = mapper.ProcessAnnotation(genome, pd.ProjectFolder, pd.plateId, null, mapFiles);
+                ResultDescription resultDescr = mapper.ProcessAnnotation(genome, pd.ProjectFolder, pd.plateId, null, null, mapFiles);
                 pd.resultDescriptions.Add(resultDescr);
                 System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(pd.GetType());
                 using (StreamWriter writer = new StreamWriter(Path.Combine(resultDescr.resultFolder, "ProjectConfig.xml")))

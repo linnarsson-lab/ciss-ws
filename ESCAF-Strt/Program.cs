@@ -25,6 +25,7 @@ namespace ESCAF_Strt
         public int spikeMols = Props.props.TotalNumberOfAddedSpikeMolecules;
         public string aligner = Props.props.Aligner;
         public string resultFolder = null;
+        public string resultFileprefix = null;
         public bool directionalReads = true;
         public bool senseReads = true;
         public bool useRPKM = false;
@@ -54,6 +55,7 @@ namespace ESCAF_Strt
                 else if (args[argIdx] == "-w") specialLayoutFile = args[++argIdx];
                 else if (args[argIdx] == "-l") outputLevel = int.Parse(args[++argIdx]);
                 else if (args[argIdx] == "-o") resultFolder = args[++argIdx];
+                else if (args[argIdx] == "-h") resultFileprefix = args[++argIdx];
                 else if (args[argIdx] == "-s") spikeMols = int.Parse(args[++argIdx]);
                 else if (args[argIdx] == "--bowtie") aligner = "bowtie";
                 else if (args[argIdx].ToLower() == "--star") aligner = "star";
@@ -74,7 +76,8 @@ namespace ESCAF_Strt
                     "-s SPIKEMOLECULES     number of spike molcules per well\n" +
                     "-l OUTPUTLEVEL        file richness of result folder, e.g. '3'\n" +
                     "-w LAYOUTFILE         specify non-standard plate layout file location\n" +
-                    "-o RESULTFOLDER       non-standard result output folder\n");
+                    "-h RESULTFILEPREFIX   specify non-standard prefix on result files (default is name of PLATEFOLDER)\n" +
+                    "-o RESULTFOLDER       non-standard result output folder (default is a subfolder of PLATEFOLDER)\n");
 
             }
         }
@@ -133,8 +136,8 @@ namespace ESCAF_Strt
             if (!UpdateDBStatus(options, "annotating")) return;
             Console.WriteLine("Mapping using {0} and annotating...", options.aligner);
             StrtReadMapper mapper = new StrtReadMapper();
-            mapper.MapAndAnnotate(options.build, options.variants, options.annotation, options.resultFolder, null, 
-                                  laneInfos, options.plateFolder);
+            mapper.MapAndAnnotate(options.build, options.variants, options.annotation, options.resultFolder,
+                                  options.resultFileprefix, null, laneInfos, options.plateFolder);
         }
 
         static bool UpdateDBStatus(ESCAFStrtSettings options, string newStatus)

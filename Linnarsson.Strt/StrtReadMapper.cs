@@ -226,11 +226,11 @@ namespace Linnarsson.Strt
             List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder);
             string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
             MapAndAnnotate(defaultSpeciesArg, defaultGeneVariants, defaultAnnotation, resultFolder,
-                            selectedBcIdxs, laneInfos, projectFolder);
+                            null, selectedBcIdxs, laneInfos, projectFolder);
         }
 
         public void MapAndAnnotate(string defaultSpeciesArg, bool defaultGeneVariants, string defaultAnnotation, string resultFolder,
-                                    int[] selectedBcIdxs, List<LaneInfo> laneInfos, string projectFolder)
+                                   string resultFileprefix, int[] selectedBcIdxs, List<LaneInfo> laneInfos, string projectFolder)
         {
             string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
             string projectName = Path.GetFileName(projectFolder);
@@ -247,7 +247,7 @@ namespace Linnarsson.Strt
                 string readDir = !Props.props.DirectionalReads ? "No" : Props.props.SenseStrandIsSequenced ? "Sense" : "Antisense";
                 Console.WriteLine("Annotating {0} map files from {1}\nDirectionalReads={2} RPKM={3} SelectedMappingType={4}...",
                                   mapFiles.Count, projectName, readDir, Props.props.UseRPKM, Props.props.MultireadMappingMode);
-                ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, resultFolder, mapFiles);
+                ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, resultFolder, resultFileprefix, mapFiles);
                 Console.WriteLine("...output in {0}", resultDescr.resultFolder);
             }
         }
@@ -323,7 +323,7 @@ namespace Linnarsson.Strt
         /// <param name="mapFilePaths"></param>
         /// <returns></returns>
         public ResultDescription ProcessAnnotation(StrtGenome genome, string projectFolder, string projectId, 
-                                                    string resultFolder, List<string> mapFilePaths)
+                                                    string resultFolder, string resultFileprefix, List<string> mapFilePaths)
         {
             if (mapFilePaths.Count == 0)
                 return null;
@@ -336,7 +336,7 @@ namespace Linnarsson.Strt
             UpdateGenesToPaintProp(projectFolder);
             GenomeAnnotations annotations = new GenomeAnnotations(genome);
             annotations.Load();
-            TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, Props.props, resultFolder, projectId);
+            TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, Props.props, resultFolder, resultFileprefix, projectId);
             string syntLevelFile = PathHandler.GetSyntLevelFilePath(projectFolder, Props.props.Barcodes.HasUMIs);
             if (syntLevelFile != "")
                 ts.SetSyntReadReporter(syntLevelFile);

@@ -60,7 +60,13 @@ namespace Linnarsson.Strt
         string currentMapFilePath;
         private string resultFolder;
         private string projectId;
-        private string OutputPathbase { get { return Path.Combine(resultFolder, projectId); } }
+        private string m_ResultFileprefix = null;
+        private string ResultFileprefix
+        {
+            get { return (m_ResultFileprefix == null) ? projectId : m_ResultFileprefix; }
+            set { m_ResultFileprefix = value; }
+        }
+        private string OutputPathbase { get { return Path.Combine(resultFolder, ResultFileprefix); } }
 
         /// <summary>
         /// Total number of species mapped reads in each barcode (excluding spikes)
@@ -135,9 +141,10 @@ namespace Linnarsson.Strt
         private static int nMaxMappings;
         private List<GeneFeature> gfsForUMIProfile = new List<GeneFeature>();
 
-        public TranscriptomeStatistics(GenomeAnnotations annotations, Props props, string resultFolder, string projectId)
+        public TranscriptomeStatistics(GenomeAnnotations annotations, Props props, string resultFolder, string resultFileprefix, string projectId)
 		{
             this.resultFolder = resultFolder;
+            this.ResultFileprefix = resultFileprefix;
             this.projectId = projectId;
             SelectedBcWiggleAnnotations = props.SelectedBcWiggleAnnotations;
             if (props.SelectedBcWiggleAnnotations != null && props.SelectedBcWiggleAnnotations.Length == 0)
@@ -756,7 +763,7 @@ namespace Linnarsson.Strt
             using (StreamWriter xmlFile = new StreamWriter(xmlPath))
             {
                 xmlFile.WriteLine("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
-                xmlFile.WriteLine("<strtSummary project=\"{0}\">", projectId);
+                xmlFile.WriteLine("<strtSummary project=\"{0}\">", ResultFileprefix);
                 WriteSettings(xmlFile, resultDescr);
                 WriteReadStats(readCounter, xmlFile);
                 xmlFile.WriteLine("  <librarycomplexity>\n" +

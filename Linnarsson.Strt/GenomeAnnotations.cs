@@ -610,13 +610,12 @@ namespace Linnarsson.Strt
         public void SaveResult(string fileNameBase, int averageReadLen)
         {
             ProjectName = Path.GetDirectoryName(fileNameBase);
-            WriteExpressionTable(fileNameBase);
-            WriteReadsTable(fileNameBase);
             WriteExpressionToCEF(fileNameBase);
             WriteReadsToCEF(fileNameBase);
+            //WriteExpressionTable(fileNameBase);
+            //WriteReadsTable(fileNameBase);
             if (props.UseRPKM) WriteNormalizedExpression(fileNameBase);
             if (props.OutputLevel <= 1) return;
-
             WriteTrueMolsToCEF(fileNameBase);
             WriteMinExpressionToCEF(fileNameBase);
             WriteMatlabTables(fileNameBase, GeneFeature.IterTrMaxHits);

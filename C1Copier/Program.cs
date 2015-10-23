@@ -351,6 +351,7 @@ namespace Linnarsson.C1
             HashSet<string> redWells = ReadWellFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "red"));
             HashSet<string> greenWells = ReadWellFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "green"));
             HashSet<string> blueWells = ReadWellFile(chipDir, C1Props.props.WellMarkerFilePattern.Replace("COLOR", "blue"));
+            string[] colors = new string[] { "yellow", "green", "blue", "orange", "red", "magenta", "cyan", "bf" };
             bool missing = false;
             using (StreamReader r = new StreamReader(lastCapPath))
             {
@@ -370,11 +371,24 @@ namespace Linnarsson.C1
                     bool valid = (emptyWells == null) || !emptyWells.Contains(chipwell);
                     Cell newCell = new Cell(null, 0, chipwell, "", diameter, area, red, green, blue, valid);
                     List<CellImage> cellImages = new List<CellImage>();
+                    HashSet<string> reporters = new HashSet<string>();
                     foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)
                     {
                         string imgFolder = GetLastMatchingFolder(chipFolder, imgSubfolderPat);
                         if (imgFolder == null)
                             continue;
+                        string imgFolderName = Path.GetFileName(imgFolder);
+                        string reporter = imgFolderName.ToLower();
+                        foreach (string color in colors)
+                        {
+                            if (imgFolderName.Contains(color))
+                            {
+                                reporter = color;
+                                break;
+                            }
+                        }
+                        if (reporters.Contains(reporter)) continue;
+                        reporters.Add(reporter);
                         string imgPath = Path.Combine(imgFolder, C1Props.props.C1ImageFilenamePattern.Replace("*", wellShort));
                         if (imgFolder == BFFolder && !File.Exists(imgPath))
                         {
@@ -385,16 +399,6 @@ namespace Linnarsson.C1
                                 logWriter.Flush();
                             }
                             continue;
-                        }
-                        string imgFolderName = Path.GetFileName(imgFolder);
-                        string reporter = imgFolderName.ToLower();
-                        foreach (string color in new string[] { "yellow", "green", "blue", "orange", "red", "magenta", "cyan", "bf" })
-                        {
-                            if (imgFolderName.Contains(color))
-                            {
-                                reporter = color;
-                                break;
-                            }
                         }
                         cellImages.Add(new CellImage(null, null, reporter, imgFolderName, Detection.Unknown, imgPath));
                     }

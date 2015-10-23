@@ -387,8 +387,15 @@ namespace Linnarsson.C1
                             continue;
                         }
                         string imgFolderName = Path.GetFileName(imgFolder);
-                        Match m = Regex.Match(imgFolderName, "^(.+)_ [0-9]+$");
-                        string reporter = m.Success ? m.Groups[1].Value : imgFolderName;
+                        string reporter = imgFolderName.ToLower();
+                        foreach (string color in new string[] { "yellow", "green", "blue", "orange", "red", "magenta", "cyan", "bf" })
+                        {
+                            if (imgFolderName.Contains(color))
+                            {
+                                reporter = color;
+                                break;
+                            }
+                        }
                         cellImages.Add(new CellImage(null, null, reporter, imgFolderName, Detection.Unknown, imgPath));
                     }
                     newCell.cellImages = cellImages;

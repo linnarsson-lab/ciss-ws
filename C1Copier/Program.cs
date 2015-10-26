@@ -381,7 +381,7 @@ namespace Linnarsson.C1
                         string reporter = imgFolderName.ToLower();
                         foreach (string color in colors)
                         {
-                            if (imgFolderName.Contains(color))
+                            if (reporter.Contains(color))
                             {
                                 reporter = color;
                                 break;

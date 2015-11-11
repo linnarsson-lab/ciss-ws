@@ -338,11 +338,12 @@ namespace Linnarsson.Strt
             int totValidReads = 0;
             for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
             {
-                string fqFile = Path.Combine(laneExtractionFolder, bcIdx.ToString() + ".fq");
+                string fqFile = LaneInfo.MakeExtractedFileName(barcodes, bcIdx);
+                string fqPath = Path.Combine(laneExtractionFolder, fqFile);
                 int bcReads = 0;
-                if (File.Exists(fqFile))
+                if (LaneInfo.ExtractedFileExists(fqPath))
                 {
-                    foreach (FastQRecord rec in FastQFile.Stream(fqFile, Props.props.QualityScoreBase))
+                    foreach (FastQRecord rec in FastQFile.Stream(fqPath, Props.props.QualityScoreBase))
                     {
                         bcReads++;
                         totValidReadsLen += rec.Sequence.Length;

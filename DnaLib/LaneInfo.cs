@@ -135,9 +135,15 @@ namespace Linnarsson.Dna
             extractedFilePaths = new string[Math.Max(1, barcodes.Count)];
             for (int bcIdx = 0; bcIdx < extractedFilePaths.Length; bcIdx++)
             {
-                string extractedFileName = string.Format("{0}_{1}_{2}.fq", bcIdx, barcodes.WellIds[bcIdx], barcodes.Seqs[bcIdx]);
+                string extractedFileName = MakeExtractedFileName(barcodes, bcIdx);
                 extractedFilePaths[bcIdx] = Path.Combine(laneExtractionFolder, extractedFileName);
             }
+        }
+
+        public static string MakeExtractedFileName(Barcodes barcodes, int bcIdx)
+        {
+            string extractedFileName = string.Format("{0}_{1}_{2}.fq", bcIdx, barcodes.WellIds[bcIdx], barcodes.Seqs[bcIdx]);
+            return extractedFileName;
         }
 
         /// <summary>
@@ -157,7 +163,7 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="extractedFilePath"></param>
         /// <returns>true if exists or legacy file existed and was renamed</returns>
-        public bool ExtractedFileExists(string extractedFilePath)
+        public static bool ExtractedFileExists(string extractedFilePath)
         {
             if (!File.Exists(extractedFilePath) && !File.Exists(extractedFilePath + ".gz"))
             {
@@ -180,7 +186,7 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="extractedFilePath"></param>
         /// <returns></returns>
-        public int ParseBcIdx(string extractedFilePath)
+        public static int ParseBcIdx(string extractedFilePath)
         {
             string filename = Path.GetFileName(extractedFilePath);
             return int.Parse(Regex.Match(filename, "^[0-9]+").Groups[0].Value);

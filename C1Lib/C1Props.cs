@@ -27,7 +27,7 @@ namespace Linnarsson.C1
         // The star last in these patterns is understood as [0-9]+$ on a RegEx basis
         public string C1BFImageSubfoldernamePattern = "BF*";
         public string[] C1AllImageSubfoldernamePatterns = new string[] { "BF*", "filter3_red*", "green_filter1*", "filter1_green*",
-                                                                         "pcr_green*", "green*" };
+                                                                         "pcr_green*", "green*", "red*" };
         public string C1ImageFilenamePattern = "well_*_center.png";
         public string WellExcludeFilePattern = "wells_to_exclude*.txt";
         public string WellMarkerFilePattern = "wells_pos*tive_COLOR*.txt"; // COLOR is green, red, blue

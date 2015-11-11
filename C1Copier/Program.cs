@@ -265,7 +265,7 @@ namespace Linnarsson.C1
         }
 
         /// <summary>
-        /// get full path to chip folder, path to last "BF* folder", and path to the corresponding "capture*txt" file
+        /// get chip folder path, path to a "BF* folder" containing a capture file, and path to the last "capture*txt" in that folder
         /// </summary>
         /// <param name="chipDir"></param>
         /// <param name="chipFolder"></param>
@@ -276,7 +276,15 @@ namespace Linnarsson.C1
         {
             lastCapPath = null;
             chipFolder = Path.Combine(C1Props.props.C1RunsFolder, chipDir);
-            BFFolder = GetLastMatchingFolder(chipFolder, C1Props.props.C1BFImageSubfoldernamePattern);
+            BFFolder = null;
+            foreach (string bfdir in Directory.GetDirectories(chipFolder, C1Props.props.C1BFImageSubfoldernamePattern))
+            {
+                if (Directory.GetFiles(bfdir, C1Props.props.C1CaptureFilenamePattern).Length > 0)
+                {
+                    BFFolder = bfdir;
+                    break;
+                }
+            }
             if (BFFolder == null)
                 return false;
             lastCapPath = GetLastMatchingFile(BFFolder, C1Props.props.C1CaptureFilenamePattern);

@@ -183,6 +183,8 @@ namespace Linnarsson.Strt
             readStatus = TestDinucleotideRepeats(rSeq, insertStart, insertLength);
             if (readStatus != ReadStatus.VALID) return readStatus;
             string newHeader = string.Format("{0}{1}", rec.Header.Replace('/', ':'), headerUMISection); // Prevent STAR aligner from stripping readIds at last '/' (GA2X reads)
+            int p = newHeader.IndexOf(' ');
+            if (p > 1) newHeader = newHeader.Substring(0, p); // Remove R:N:0:barcode from Cassava processed files
             recSet.mappable = new FastQRecord(rec, insertStart, insertLength, newHeader);
             return readStatus;
         }

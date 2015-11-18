@@ -7,6 +7,7 @@ using System.Xml.Linq;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using System.Windows.Forms;
+using System.IO.Compression;
 
 namespace Linnarsson.Dna
 {
@@ -94,13 +95,37 @@ namespace Linnarsson.Dna
                         continue;
                     }
                     // Get the tile bcl data
+                    byte[] bclBytes = null;
                     string bclFile = Path.Combine(cycleFolder, tile + ".bcl");
-                    if (!File.Exists(bclFile))
+                    if (File.Exists(bclFile))
+                        bclBytes = File.ReadAllBytes(bclFile);
+                    else if (File.Exists(bclFile + ".gz"))
+                    {
+                        using (GZipStream stream = new GZipStream(new FileStream(bclFile + ".gz", FileMode.Open), CompressionMode.Decompress))
+                        {
+                            const int size = 16384;
+                            byte[] buffer = new byte[size];
+                            using (MemoryStream memory = new MemoryStream())
+                            {
+                                int count = 0;
+                                do
+                                {
+                                    count = stream.Read(buffer, 0, size);
+                                    if (count > 0)
+                                    {
+                                        memory.Write(buffer, 0, count);
+                                    }
+                                }
+                                while (count > 0);
+                                bclBytes = memory.ToArray();
+                            }
+                        }
+                    }
+                    else
                     {
                         Console.Error.WriteLine("BCL file not found: " + bclFile);
                         continue;
                     }
-                    byte[] bclBytes = File.ReadAllBytes(bclFile);
                     if (nClustersInTile != bclBytes.Length)
                     {
                         if (nClustersInTile > -1)

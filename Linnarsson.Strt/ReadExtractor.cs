@@ -29,7 +29,6 @@ namespace Linnarsson.Strt
         private HashSet<string> otherBcSeqs;
         private int minPrimerSeqLen = 5;
         char[] UMIChars; // Buffer for accumulated UMI bases
-        string headerUMISection = "";
 
         public ReadExtractor(Barcodes barcodes)
         {
@@ -91,35 +90,26 @@ namespace Linnarsson.Strt
                 return AnalyzeNonBarcodeRead(rSeq);
             if (bcStatus == ReadStatus.NO_TSSEQ_OTHER)
                 return AnalyzeMissingTSSeqRead(rSeq);
-            int lenStatus = ReadStatus.VALID;
-            trimmedLength = TrimTrailingNOrPrimerAndCheckAs(rSeq, trimmedLength, out lenStatus);
+            int readStatus = ReadStatus.VALID;
+            trimmedLength = TrimTrailingNOrPrimerAndCheckAs(rSeq, trimmedLength, out readStatus);
             if (trimmedLength < minTotalReadLength)
-                return lenStatus;
-            string headerUMISection = "";
-            if (barcodes.HasUMIs)
-            {
-                int UMICharsPos = 0;
-                foreach (int i in barcodes.ReadUMIPositions())
-                {
-                    if (rec.Qualities[i] < minQualityInUMI)
-                        return ReadStatus.LOW_QUALITY_IN_UMI;
-                    if (rSeq[i] == 'N')
-                        return ReadStatus.N_IN_UMI;
-                    UMIChars[UMICharsPos++] = rSeq[i];
-                }
-                headerUMISection = new string(UMIChars) + '.';
-            }
+                return readStatus;
+            readStatus = ExtractUMIChars(rec);
+            if (readStatus != ReadStatus.VALID) return readStatus;
             trimmedLength = barcodes.VerifyTotalLen(trimmedLength);
             int insertLength = trimmedLength - insertStart;
-            int status = TestComplexity(rSeq, insertStart, insertLength);
-            if (status != ReadStatus.VALID) return status;
-            status = TestDinucleotideRepeats(rSeq, insertStart, insertLength);
-            if (status != ReadStatus.VALID) return status;
+            readStatus = TestComplexity(rSeq, insertStart, insertLength);
+            if (readStatus != ReadStatus.VALID) return readStatus;
+            readStatus = TestDinucleotideRepeats(rSeq, insertStart, insertLength);
+            if (readStatus != ReadStatus.VALID) return readStatus;
             if (rec.Header[rec.Header.Length - 2] == '/')
                 rec.Header = rec.Header.Replace('/', ':'); // Fix to prevent STAR aligner from stripping readIds at last '/' (GA2X reads)
-            rec.Header = string.Format("{0}_{1}{2}", rec.Header, headerUMISection, barcodes.Seqs[bcIdx]);
+            if (barcodes.HasUMIs)
+                rec.Header = string.Format("{0}_{1}.{2}", rec.Header, new string(UMIChars), barcodes.Seqs[bcIdx]);
+            else
+                rec.Header = string.Format("{0}_{1}", rec.Header, barcodes.Seqs[bcIdx]);
             rec.Trim(insertStart, insertLength);
-            return status;
+            return readStatus;
         }
 
         public int ExtractBcIdx(FastQRecSet recSet, out int bcIdx)
@@ -130,14 +120,12 @@ namespace Linnarsson.Strt
             if (otherBcSeqs.Contains(recSet.BarcodeSeq))
                 return ReadStatus.MIXIN_SAMPLE_BC;
             return ReadStatus.UNKNOWN_BC;
-            //return AnalyzeNonBarcodeRead(recSet.InsertRead.Sequence);
         }
 
-        private int ExtractUMI(FastQRecSet recSet)
+        private int ExtractUMIChars(FastQRecord umiRead)
         {
             if (barcodes.HasUMIs)
             {
-                FastQRecord umiRead = recSet.UMIRead;
                 int UMICharsPos = 0;
                 foreach (int i in barcodes.ReadUMIPositions())
                 {
@@ -147,7 +135,6 @@ namespace Linnarsson.Strt
                         return ReadStatus.N_IN_UMI;
                     UMIChars[UMICharsPos++] = umiRead.Sequence[i];
                 }
-                headerUMISection = "_" + new string(UMIChars);
             }
             return ReadStatus.VALID;
         }
@@ -174,7 +161,7 @@ namespace Linnarsson.Strt
             int readStatus;
             trimmedLength = TrimTrailingNOrPrimerAndCheckAs(rSeq, trimmedLength, out readStatus);
             if (trimmedLength < minTotalReadLength) return readStatus;
-            readStatus = ExtractUMI(recSet);
+            readStatus = ExtractUMIChars(recSet.UMIRead);
             if (readStatus != ReadStatus.VALID) return readStatus;
             trimmedLength = barcodes.VerifyTotalLen(trimmedLength);
             int insertLength = trimmedLength - insertStart;
@@ -185,7 +172,8 @@ namespace Linnarsson.Strt
             string newHeader = rec.Header.Replace('/', ':'); // Prevent STAR aligner from stripping readIds at last '/' (GA2X reads)
             int p = newHeader.IndexOf(' ');
             if (p > 1) newHeader = newHeader.Substring(0, p); // Remove R:N:0:barcode from Cassava processed files
-            newHeader += headerUMISection;
+            if (barcodes.HasUMIs)
+                newHeader += "_" + new string(UMIChars);
             recSet.mappable = new FastQRecord(rec, insertStart, insertLength, newHeader);
             return readStatus;
         }

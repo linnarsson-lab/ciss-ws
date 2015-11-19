@@ -182,16 +182,26 @@ namespace ESCAF_BclToFq
                 }
                 else
                 {
-                    CopierStart start1 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 1, 4, false);
+                    CopierStart start1 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 1, 2, false);
                     Thread thread1 = new Thread(readCopier.CopyRun);
                     thread1.Start(start1);
-                    CopierStart start2 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 5, 8, false);
+                    CopierStart start2 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 3, 4, false);
                     Thread thread2 = new Thread(readCopier.CopyRun);
                     thread2.Start(start2);
+                    CopierStart start3 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 5, 6, false);
+                    Thread thread3 = new Thread(readCopier.CopyRun);
+                    thread2.Start(start3);
+                    CopierStart start4 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 7, 8, false);
+                    Thread thread4 = new Thread(readCopier.CopyRun);
+                    thread2.Start(start4);
                     thread1.Join();
                     thread2.Join();
+                    thread3.Join();
+                    thread4.Join();
                     readFileResults.AddRange(start1.readFileResults);
                     readFileResults.AddRange(start2.readFileResults);
+                    readFileResults.AddRange(start3.readFileResults);
+                    readFileResults.AddRange(start4.readFileResults);
                 }
                 foreach (ReadFileResult r in readFileResults)
                 {
@@ -210,10 +220,6 @@ namespace ESCAF_BclToFq
                     DBUpdateLaneYield(runid, r);
                 }
                 DBUpdateRunStatus(runid, "copied");
-                if (runFolder != runFolderOrTgz)
-                    File.Delete(runFolderOrTgz);
-                else
-                    Directory.Delete(runFolderOrTgz, true);
             }
             catch (Exception)
             {
@@ -230,11 +236,26 @@ namespace ESCAF_BclToFq
                         File.Delete(r.nonPFPath);
                         File.Delete(r.statsPath);
                     }
-                    if (runFolder != runFolderOrTgz) Directory.Delete(runFolder, true); // If tarball, delete unpacked
                 }
+                if (runFolder != runFolderOrTgz) clearDir(runFolder); // If tarball, delete unpacked
             }
         }
 
+        private static void clearDir(string dirname)
+        {
+            DirectoryInfo dir = new DirectoryInfo(dirname);
+            foreach (FileInfo fi in dir.GetFiles())
+            {
+                fi.Delete();
+            }
+
+            foreach (DirectoryInfo di in dir.GetDirectories())
+            {
+                clearDir(di.FullName);
+                di.Delete();
+            }
+        }
+        
         private static string UnpackIfNeeded(string runFolderOrTgz)
         {
             string runFolder = runFolderOrTgz;

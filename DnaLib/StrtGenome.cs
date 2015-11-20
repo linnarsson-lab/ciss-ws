@@ -62,9 +62,9 @@ namespace Linnarsson.Dna
         public DateTime AnnotationDateTime {
             get
             {
-                return new DateTime(int.Parse(AnnotationDate.Substring(0, 2)),
-                                    int.Parse(AnnotationDate.Substring(2, 4)),
-                                    int.Parse(AnnotationDate.Substring(4, 6)));
+                return new DateTime(2000 + int.Parse(AnnotationDate.Substring(0, 2)),
+                                    int.Parse(AnnotationDate.Substring(2, 2)),
+                                    int.Parse(AnnotationDate.Substring(4, 2)));
             }
         }
         public bool GeneVariants { get; set; }

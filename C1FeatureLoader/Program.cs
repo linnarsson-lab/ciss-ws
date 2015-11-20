@@ -50,10 +50,10 @@ namespace Linnarsson.C1
                 i++;
             }
             Props.props.DirectionalReads = true;
-            string strtAnnotFolder = genome.GetStrtAnnotFolder();
-            string annotFileCopyPath = Path.Combine(strtAnnotFolder, Path.GetFileName(annotFilePath));
-            AnnotationReader annotationReader = AnnotationReader.GetAnnotationReader(genome, annotFileCopyPath);
+            if (annotFilePath == "") // Use annot file (e.g. refFlat.txt) copied into the strt (e.g. UCSCxxxxxx) subfolder during build
+                annotFilePath = Path.Combine(genome.GetStrtAnnotFolder(), AnnotationReader.GetDefaultAnnotFilename(genome));
             Console.WriteLine("Building transcript models from " + annotFilePath + "...");
+            AnnotationReader annotationReader = AnnotationReader.GetAnnotationReader(genome, annotFilePath);
             int nModels = annotationReader.BuildGeneModelsByChr();
             Console.WriteLine("...{0} models constructed.", nModels);
             if (Props.props.GeneFeature5PrimeExtension > 0)

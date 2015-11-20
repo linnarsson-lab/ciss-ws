@@ -35,21 +35,22 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static string GetDefaultAnnotFilePath(StrtGenome genome)
         {
-            string fname = genome.Annotation + "_mart_export.txt";
+            return Path.Combine(genome.GetOriginalGenomeFolder(), GetDefaultAnnotFilename(genome));
+        }
+
+        public static string GetDefaultAnnotFilename(StrtGenome genome)
+        {
             switch (genome.Annotation)
             {
                 case "UCSC":
                 case "RFSQ":
-                    fname = "refFlat.txt";
-                    break;
+                    return "refFlat.txt";
                 case "UALL":
-                    fname = "knownGene.txt";
-                    break;
+                    return "knownGene.txt";
                 case "GENC":
-                    fname = Path.GetFileName(Directory.GetFiles(genome.GetOriginalGenomeFolder(), "wgEncodeGencodeCompV*")[0]);
-                    break;
+                    return Path.GetFileName(Directory.GetFiles(genome.GetOriginalGenomeFolder(), "wgEncodeGencodeCompV*")[0]);
             }
-            return Path.Combine(genome.GetOriginalGenomeFolder(), fname);
+            return genome.Annotation + "_mart_export.txt";
         }
 
         /// <summary>
@@ -61,7 +62,7 @@ namespace Linnarsson.Dna
         public static AnnotationReader GetAnnotationReader(StrtGenome genome, string annotFilePath)
         {
             if (annotFilePath == null || annotFilePath == "")
-                annotFilePath = GetDefaultAnnotFilePath(genome);
+                annotFilePath =  GetDefaultAnnotFilePath(genome);
             if (genome.Annotation == "UCSC")
                 return new UCSCAnnotationReader(genome, annotFilePath);
             if (genome.Annotation == "UALL")
@@ -112,7 +113,7 @@ namespace Linnarsson.Dna
             FileInfo fi = new FileInfo(path);
             long fileSize = fi.Length;
             string createDate = fi.CreationTime.ToString("yyMMdd");
-            FileStream fs = new FileStream(path, FileMode.Open);
+            FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read);
             byte[] md5 = new MD5CryptoServiceProvider().ComputeHash(fs);
             fs.Close();
             string md5String = string.Join("", Array.ConvertAll(md5, v => String.Format("{0:X2}", v)));

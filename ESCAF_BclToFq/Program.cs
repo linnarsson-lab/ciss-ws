@@ -190,10 +190,10 @@ namespace ESCAF_BclToFq
                     thread2.Start(start2);
                     CopierStart start3 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 5, 6, false);
                     Thread thread3 = new Thread(readCopier.CopyRun);
-                    thread2.Start(start3);
+                    thread3.Start(start3);
                     CopierStart start4 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 7, 8, false);
                     Thread thread4 = new Thread(readCopier.CopyRun);
-                    thread2.Start(start4);
+                    thread4.Start(start4);
                     thread1.Join();
                     thread2.Join();
                     thread3.Join();

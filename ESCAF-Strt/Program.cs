@@ -136,7 +136,8 @@ namespace ESCAF_Strt
             if (!UpdateDBStatus(options, "annotating")) return;
             Console.WriteLine("Mapping using {0} and annotating...", options.aligner);
             StrtReadMapper mapper = new StrtReadMapper();
-            mapper.MapAndAnnotate(options.build, options.variants, options.annotation, options.resultFolder,
+            string defaultSpeciesArg = (Props.props.LayoutFile == "") ? options.build : "";
+            mapper.MapAndAnnotate(defaultSpeciesArg, options.variants, options.annotation, options.resultFolder,
                                   options.resultFileprefix, null, laneInfos, options.plateFolder);
         }
 

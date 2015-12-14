@@ -79,6 +79,8 @@ namespace Linnarsson.Dna
                 sampleLayout = new FilePlateLayout(sampleLayoutPath);
                 Console.WriteLine("Plate layout was read from " + sampleLayoutPath);
             }
+            else if (sampleLayoutPath != "")
+                Console.WriteLine("WARNING: Can not find layout file " + sampleLayoutPath);
             return sampleLayout;
         }
     }

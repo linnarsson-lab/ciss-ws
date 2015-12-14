@@ -69,12 +69,16 @@ namespace Linnarsson.Dna
                 try
                 {
                     sampleLayout = new C1PlateLayout(projectName);
+                    Console.WriteLine("Plate layout was read from C1 Database.");
                 }
                 catch (SampleLayoutFileException)
                 { }
             }
             else if (File.Exists(sampleLayoutPath))
+            {
                 sampleLayout = new FilePlateLayout(sampleLayoutPath);
+                Console.WriteLine("Plate layout was read from " + sampleLayoutPath);
+            }
             return sampleLayout;
         }
     }

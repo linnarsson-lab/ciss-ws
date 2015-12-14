@@ -293,9 +293,9 @@ namespace CmdSilverBullet
             Console.WriteLine("\nValid commands (mono SB.exe command options...):\n\n" +
                 "x [RUNLANESPEC]+ BC [-Lt N] [OPTIONS] PROJECTPATH              extract data from the reads folder.\n" +
                 "   -Lt N     limit number of reads used to N. t is one of TotalReads, ValidReads, TotalReadsPerBc, ValidReadsPerBc\n" +
-                "q [RUNLANESPEC]+ BC [OPTION]* [-cN] [-BcIndexes...] [BUILD|IDX] PROJECTPATH\n" +
+                "q [RUNLANESPEC]+ BC [OPTION]* [-cN] [-BcIndexes...] [-g BUILD] [-a ANNOT] [BUILD|IDX] PROJECTPATH\n" +
                 "   extract data, align, and annotate in one sweep using default parameters.\n" +
-                "ab [-oNAME] [OPTION]* [-cN] [-BcIndexes...] [BUILD|IDX] PROJECTPATH|EXTRACTEDPATH\n" +
+                "ab [-oNAME] [OPTION]* [-cN] [-BcIndexes...] [-g BUILD] [-a ANNOT] [BUILD|IDX] PROJECTPATH|EXTRACTEDPATH\n" +
                 "   annotate extracted reads in latest/specified Extracted folder. Will start by aligning if mapping files are missing.\n" +
                 "   RUNLANESPEC  E.g. '17:235[:,,AGCTTG]', i.e. lanes 2,3,5 of run 17 [and only idx read AGCTTG of lane 5].\n" +
                 "                Regexps are allowed for idx read matching, e.g. AG?TTG.\n" +
@@ -305,7 +305,7 @@ namespace CmdSilverBullet
                 "   -loci        Consider the whole locus as one gene exon. (For use in nuclear RNA analysis)\n" +
                 "                Individual fractions are taken from 2nd column of " + PathHandler.GetCTRLConcPath() + "\n" +
                 "   -BcIndexes M,Na-Nz,[,...] Only process the specified barcodes and intervals, even if the barcode set contains more indexes.\n" +
-                "   ANNOTATIONOPTION can be (default values first):\n" +
+                "   OPTION can be (default values first):\n" +
                 "     -bowtie/-STAR             select a specific aligner. (Aligner options are set in config file.)\n" +
                 "     compact / compact-no-filter - use memory-saving UMI counting. Filter away molecules from singleton reads / No filtering \n" +
                 "     single/all              select between one per-gene summarizing value or separate values for all known transcript variants.\n" +
@@ -316,7 +316,8 @@ namespace CmdSilverBullet
                 "     insertc1data            insert data into the Sanger cells10k database when this is a C1 sample.\n" +
                 "    -scoreBase N             Adjust base for phred score qualities (33 or 64, default=" + Props.props.QualityScoreBase + ").\n" +
                 "   If BUILD/IDX is left out, these are taken from the xxx_SampleLayout.txt file in the project folder.\n" +
-                "bt BUILD|IDX all|single PROJECTPATH|EXTRACTEDPATH      run Bowtie on latest/specified extracted data folder.\n" +
+                "bt [-g BUILD] [-a ANNOT] [ALIGNER] [BUILD|IDX] all|single PROJECTPATH|EXTRACTEDPATH\n" +
+                "   run Bowtie/STAR on latest/specified extracted data folder.\n" +
                 "download GENUS_SPECIES                                 download latest genome build and annotations, for e.g. 'Mus_musculus'\n" +
                 "mart2refflat IDX [OUTFILE]                             make a refFlat file from mart-style annotations.\n" +
                 "build READLEN BUILD [ALIGNER] [ANNOT] [FILE]           build STRT annotations and alignment index. Specify annotation file to override default.\n" +

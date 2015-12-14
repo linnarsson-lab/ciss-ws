@@ -144,6 +144,12 @@ namespace CmdSilverBullet
                                 totalSpikeMols = int.Parse(opt.Substring(2));
                             else if (opt.StartsWith("--genome="))
                                 speciesAbbrev = opt.Substring(9);
+                            else if (opt == "-g")
+                                speciesAbbrev = args[++argOffset];
+                            else if (opt.StartsWith("--annot="))
+                                annotation = opt.Substring(8);
+                            else if (opt == "-a")
+                                annotation = args[++argOffset];
                             else if (allBcSetNames.Contains(opt.ToLower()))
                                 barcodesName = opt;
                             else if (Regex.Match(opt.ToLower(), "^(hs|hg|mm|gg|ce|cg)[0-9\\.]*$").Success)

@@ -262,6 +262,14 @@ namespace Linnarsson.Strt
             return m;
         }
 
+
+        public List<ReadFileResult> SingleUseCopy(string runFolder, string readsFolder, int laneFrom, int laneTo,
+                                                  bool forceOverwrite)
+        {
+            bool junk;
+            return SingleUseCopy(runFolder, readsFolder, laneFrom, laneTo, forceOverwrite, out junk);
+        }
+
         /// <summary>
         /// Method to call when manually copying (e.g. repairing lost data) some specific lane(s)
         /// </summary>
@@ -271,8 +279,10 @@ namespace Linnarsson.Strt
         /// <param name="laneTo"></param>
         /// <param name="forceOverwrite">if true will overwrite any existing fastq files</param>
         /// <returns></returns>
-        public List<ReadFileResult> SingleUseCopy(string runFolder, string readsFolder, int laneFrom, int laneTo, bool forceOverwrite)
+        public List<ReadFileResult> SingleUseCopy(string runFolder, string readsFolder, int laneFrom, int laneTo,
+                                                  bool forceOverwrite, out bool someReadFailed)
         {
+            someReadFailed = false;
             List<ReadFileResult> readFileResults = new List<ReadFileResult>();
             int runNo = 0;
             Match m = MatchRunFolderName(runFolder);
@@ -291,12 +301,16 @@ namespace Linnarsson.Strt
                     if (!readyFileExists)
                     {
                         if (read < 3)
+                        {
                             logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping lane {0} read {1}: {2} is missing.", lane, read, readyFileName);
+                            someReadFailed = true;
+                        }
                         continue;
                     }
                     if (LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runName) && !forceOverwrite)
                     {
                         logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping lane {0} read {1}: Output PF and statistics files already exist.", lane, read);
+                        someReadFailed = true;
                         continue;
                     }
                     else 
@@ -306,7 +320,10 @@ namespace Linnarsson.Strt
                         if (r == null)
                             r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
                         if (r == null)
+                        {
                             logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find any .bcl or .qseq files for lane {0} read {1}.", lane, read);
+                            someReadFailed = true;
+                        }
                         else
                             readFileResults.Add(r);
                     }
@@ -322,7 +339,7 @@ namespace Linnarsson.Strt
         public void CopyRun(object startObj)
         {
             CopierStart cs = (CopierStart)startObj;
-            cs.readFileResults = SingleUseCopy(cs.runFolder, cs.readsFolder, cs.laneFrom, cs.laneTo, cs.forceOverwrite);
+            cs.readFileResults = SingleUseCopy(cs.runFolder, cs.readsFolder, cs.laneFrom, cs.laneTo, cs.forceOverwrite, out cs.someReadFailed);
         }
 
     }
@@ -334,6 +351,7 @@ namespace Linnarsson.Strt
         public int laneFrom;
         public int laneTo;
         public bool forceOverwrite = false;
+        public bool someReadFailed = false;
         public List<ReadFileResult> readFileResults = new List<ReadFileResult>();
 
         public CopierStart(string runFolder, string readsFolder, int laneFrom, int laneTo, bool forceOverwrite)

@@ -144,7 +144,9 @@ namespace ESCAF_BclToFq
                         {
                             logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Processing " + runDir);
                             logWriter.Flush();
-                            ProcessRun(runDir);
+                            bool allReadsCopied= ProcessRun(runDir);
+                            if (!allReadsCopied)
+                                continue;
                             logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Ready");
                             logWriter.Flush();
                             copiedRunDirs.Add(runDir);
@@ -163,7 +165,7 @@ namespace ESCAF_BclToFq
             }
         }
 
-        private static void ProcessRun(string runFolderOrTgz)
+        private static bool ProcessRun(string runFolderOrTgz)
         {
             string runFolder = UnpackIfNeeded(runFolderOrTgz);
             Match mr = Regex.Match(runFolder, ESCAFProps.props.RunFolderMatchPattern);
@@ -176,9 +178,10 @@ namespace ESCAF_BclToFq
             {
                 DBInsertIlluminaRun(runid, runno, rundate);
                 ReadCopier readCopier = new ReadCopier(logWriter);
+                bool someReadFailed = false;
                 if (!ESCAFProps.props.multiThreaded)
                 {
-                    readFileResults = readCopier.SingleUseCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, false);
+                    readFileResults = readCopier.SingleUseCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, false, out someReadFailed);
                 }
                 else
                 {
@@ -202,6 +205,7 @@ namespace ESCAF_BclToFq
                     readFileResults.AddRange(start2.readFileResults);
                     readFileResults.AddRange(start3.readFileResults);
                     readFileResults.AddRange(start4.readFileResults);
+                    someReadFailed = start1.someReadFailed || start2.someReadFailed || start3.someReadFailed || start4.someReadFailed;
                 }
                 foreach (ReadFileResult r in readFileResults)
                 {
@@ -219,6 +223,8 @@ namespace ESCAF_BclToFq
                     }
                     DBUpdateLaneYield(runid, r);
                 }
+                if (someReadFailed)
+                    return false;
                 DBUpdateRunStatus(runid, "copied");
             }
             catch (Exception)
@@ -239,6 +245,7 @@ namespace ESCAF_BclToFq
                 }
                 if (runFolder != runFolderOrTgz) clearDir(runFolder); // If tarball, delete unpacked
             }
+            return true;
         }
 
         private static void clearDir(string dirname)

@@ -64,22 +64,25 @@ namespace PeakAnnotator
         public PeakAnnotator(PeakAnnotatorSettings settings)
         {
             this.settings = settings;
-            SetupTSSPeaks(settings.genome);
+            SetupTSSPeaks(settings);
         }
 
-        private void SetupTSSPeaks(StrtGenome genome)
+        private void SetupTSSPeaks(PeakAnnotatorSettings settings)
         {
             TSSFwIntervals = new Dictionary<string, IntervalMap<int>>();
             TSSRevIntervals = new Dictionary<string, IntervalMap<int>>();
             RepeatIntervals = new Dictionary<string, IntervalMap<int>>();
             Console.Write("Reading TSS peaks...");
-            int n = LoadTSSPeakFile(Path.Combine(settings.TSSModelFolder, "CTRL_peaks.tab"));
-            Console.WriteLine("...{0} CTRL peaks.", n);
-            if (genome != null)
+            int n;
+            if (settings.includeSpikes)
             {
-                string TSSPeakFile = Path.Combine(settings.TSSModelFolder, string.Format("{0}_peaks.tab", genome.Build));
-                n = LoadTSSPeakFile(TSSPeakFile);
-                Console.WriteLine("...{0} {1} peaks.", n, genome.Build);
+                n = LoadTSSPeakFile(settings.spikePeakPath);
+                Console.WriteLine("...{0} CTRL peaks read from", n, settings.spikePeakPath);
+            }
+            if (settings.TSSPeakPath != null)
+            {
+                n = LoadTSSPeakFile(settings.TSSPeakPath);
+                Console.WriteLine("...{0} peaks read from {1}", n, settings.TSSPeakPath);
                 SetupRepeats();
             }
         }
@@ -156,12 +159,14 @@ namespace PeakAnnotator
 
         private void SetupRepeats()
         {
-            string[] rmskFiles = PathHandler.GetRepeatMaskFiles(settings.genome);
-            Console.Write("Reading {0} masking files..", rmskFiles.Length);
+            string[] rmskFiles = PathHandler.GetRepeatMaskFiles(settings.genomeFolder);
+            if (rmskFiles.Length == 0) return;
             int n = 0;
             foreach (string rmskFile in rmskFiles)
-                n += LoadRepeatMaskFile(rmskFile);
-            Console.WriteLine("{0} repeat regions.", n);
+            {
+                n = LoadRepeatMaskFile(rmskFile);
+                Console.WriteLine("...{0} repeat regions read from", n, rmskFile);
+            }
         }
 
         private int LoadRepeatMaskFile(string rmskPath)

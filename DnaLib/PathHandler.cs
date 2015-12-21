@@ -91,7 +91,10 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public static string[] GetRepeatMaskFiles(StrtGenome genome)
         {
-            string genomeFolder = genome.GetOriginalGenomeFolder();
+            return GetRepeatMaskFiles(genome.GetOriginalGenomeFolder());
+        }
+        public static string[] GetRepeatMaskFiles(string genomeFolder)
+        {
             string[] rmskFiles = Directory.GetFiles(genomeFolder, "*rmsk.txt.gz");
             if (rmskFiles.Length == 0)
                 rmskFiles = Directory.GetFiles(genomeFolder, "*rmsk.txt");

@@ -343,7 +343,7 @@ namespace Linnarsson.Strt
                 int bcReads = 0;
                 if (LaneInfo.ExtractedFileExists(fqPath))
                 {
-                    foreach (FastQRecord rec in FastQFile.Stream(fqPath, Props.props.QualityScoreBase))
+                    foreach (FastQRecord rec in FastQFile.Stream(fqPath))
                     {
                         bcReads++;
                         totValidReadsLen += rec.Sequence.Length;

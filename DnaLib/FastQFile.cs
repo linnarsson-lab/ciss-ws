@@ -48,7 +48,20 @@ namespace Linnarsson.Dna
 			Records = new List<FastQRecord>();
 		}
 
-		/// <summary>
+        /// <summary>
+        /// Stream through a "FASTQ", "qseq.txt", "sequence.txt" or plain "FASTA" file.
+        /// Will only yield reads that passed the Illumina filter (last column = "1").
+        /// For a fastq file, QualityScoreBase is determined by examining first 50 records.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static IEnumerable<FastQRecord> Stream(string path)
+        {
+            byte qualityScoreBase = AutoDetectQualityScoreBase(path, 50);
+            if (qualityScoreBase == 0) qualityScoreBase = Props.props.QualityScoreBase;
+            return Stream(path, qualityScoreBase, false);
+        }
+        /// <summary>
 		/// Stream through a "FASTQ", "qseq.txt", "sequence.txt" or plain "FASTA" file.
 		/// Will only yield reads that passed the Illumina filter (last column = "1").
 		/// An exception is thrown if invalid quality scores are encountered (outside 0 - 40)
@@ -169,15 +182,6 @@ namespace Linnarsson.Dna
 			}
 		}
 
-		public static FastQFile Load(string path, byte qualityScoreBase)
-		{
-			FastQFile result = new FastQFile();
-			foreach (FastQRecord record in Stream(path, qualityScoreBase))
-			{
-				result.Records.Add(record);
-			}
-			return result;
-		}
 	}
 
 	public class FastQRecord

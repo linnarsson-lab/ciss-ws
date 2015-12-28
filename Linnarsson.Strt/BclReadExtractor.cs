@@ -36,6 +36,7 @@ namespace Linnarsson.Strt
             this.sampleReadWriters = sampleReadWriters;
         }
 
+/*
         public void Process(string runFolder, int lane)
         {
             if (lane < 1 || lane > 8) throw new InvalidProgramException("Lane must be a number from 1 to 8");
@@ -129,5 +130,6 @@ namespace Linnarsson.Strt
                 }
             }
         }
+*/
     }
 }

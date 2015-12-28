@@ -31,11 +31,12 @@ namespace Linnarsson.Dna
         }
         public int Count { get { return m_Seqs.Length; } }
 
-        // New test stuff
         protected int m_InsertRead = 1;
         public int InsertRead { get { return m_InsertRead; } protected set { m_InsertRead = value; } }
         protected int m_BarcodeRead = 2;
         public int BarcodeRead { get { return m_BarcodeRead; } protected set { m_BarcodeRead = value; } }
+        protected int m_Barcode2Read = 0;
+        public int Barcode2Read { get { return m_Barcode2Read; } protected set { m_Barcode2Read = value; } }
         protected int m_UMIRead = 1;
         public int UMIRead { get { return m_UMIRead; } protected set { m_UMIRead = value; } }
         protected bool m_KeepRead1 = false;
@@ -46,9 +47,9 @@ namespace Linnarsson.Dna
         public bool KeepRead3 { get { return m_KeepRead3; } protected set { m_KeepRead3 = value; } }
         public bool NeedReed(int readno)
         {
-            if (readno == 1) return (InsertRead == 1 || BarcodeRead == 1 || UMIRead == 1 || KeepRead1);
-            if (readno == 2) return (InsertRead == 2 || BarcodeRead == 2 || UMIRead == 2 || KeepRead2);
-            if (readno == 3) return (InsertRead == 3 || BarcodeRead == 3 || UMIRead == 3 || KeepRead3);
+            if (readno == 1) return (InsertRead == 1 || BarcodeRead == 1 || Barcode2Read == 1 || UMIRead == 1 || KeepRead1);
+            if (readno == 2) return (InsertRead == 2 || BarcodeRead == 2 || Barcode2Read == 2 || UMIRead == 2 || KeepRead2);
+            if (readno == 3) return (InsertRead == 3 || BarcodeRead == 3 || Barcode2Read == 3 || UMIRead == 3 || KeepRead3);
             return false;
         }
 
@@ -59,7 +60,10 @@ namespace Linnarsson.Dna
         public int BarcodePos { get { return m_BarcodePos; } }
         protected int m_BarcodeLen = 0;
         public int BarcodeLen { get { return m_BarcodeLen; } }
-        public int BarcodeEndPos { get { return m_BarcodePos + m_BarcodeLen; } }
+        protected int m_Barcode2Pos = 0;
+        public int Barcode2Pos { get { return m_Barcode2Pos; } }
+        protected int m_Barcode2Len = 0;
+        public int Barcode2Len { get { return m_Barcode2Len; } }
         public bool UseNoBarcodes;
         public bool IncludeNonPF = false;
         public static readonly string NOBARCODE = "NOBAR";
@@ -204,16 +208,17 @@ namespace Linnarsson.Dna
             }
         }
 
-        public string ExtractBcSeq(string barcodeRead)
-        {
-            return barcodeRead.Substring(BarcodePos, BarcodeLen);
-        }
-
-        public int ExtractBcIdx(string barcodeRead)
+        /// <summary>
+        /// Convert a barcode sequence (maybe concat of Idx1 + Idx2) to a numeric barcode index.
+        /// Return -1 on no match, and 0 if barcodes are in use.
+        /// </summary>
+        /// <param name="barcodeSeq"></param>
+        /// <returns></returns>
+        public int ExtractBcIdx(string barcodeSeq)
         {
             int bcIdx = 0;
             if (!UseNoBarcodes)
-                if (!bcSeqToBcIdxMap.TryGetValue(ExtractBcSeq(barcodeRead), out bcIdx))
+                if (!bcSeqToBcIdxMap.TryGetValue(barcodeSeq, out bcIdx))
                     bcIdx = -1;
             return bcIdx;
         }
@@ -263,16 +268,18 @@ namespace Linnarsson.Dna
             return ReadStatus.VALID;
         }
 
-        /*        public virtual string GetUMIAndStripBcFromReadId(string readId, out int UMIIdx)
-                {
-                    int p = (readId[readId.Length - m_BarcodeLen - 1] == '.') ? (readId.Length - BarcodeFieldLen) : (readId.Length - UMILen);
-                    UMIIdx = 0;
-                    for (int i = 0; i < UMILen; i++)
-                    {
-                        UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(readId[p++]));
-                    }
-                    return readId.Substring(0, readId.Length - BarcodeFieldLen - 1);
-                }*/
+/*
+        public virtual string GetUMIAndStripBcFromReadId(string readId, out int UMIIdx)
+        {
+            int p = (readId[readId.Length - m_BarcodeLen - 1] == '.') ? (readId.Length - BarcodeFieldLen) : (readId.Length - UMILen);
+            UMIIdx = 0;
+            for (int i = 0; i < UMILen; i++)
+            {
+                UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(readId[p++]));
+            }
+            return readId.Substring(0, readId.Length - BarcodeFieldLen - 1);
+        }
+*/
 
         public string MakeUMISeq(int UMIIdx)
         {
@@ -812,6 +819,9 @@ namespace Linnarsson.Dna
                     else if (line.StartsWith("#indexread=")) BarcodeRead = int.Parse(line.Substring(11));
                     else if (line.StartsWith("#indexstart=")) m_BarcodePos = int.Parse(line.Substring(12));
                     else if (line.StartsWith("#indexlen=")) m_BarcodeLen = int.Parse(line.Substring(10));
+                    else if (line.StartsWith("#index2read=")) Barcode2Read = int.Parse(line.Substring(12));
+                    else if (line.StartsWith("#index2start=")) m_Barcode2Pos = int.Parse(line.Substring(13));
+                    else if (line.StartsWith("#index2len=")) m_Barcode2Len = int.Parse(line.Substring(11));
                     else if (line.StartsWith("#insertread=")) InsertRead = int.Parse(line.Substring(12));
                     else if (line.StartsWith("#insertstart=")) InsertOrGGGPos = int.Parse(line.Substring(13));
                     else if (line.StartsWith("#umiread=")) UMIRead = int.Parse(line.Substring(9));

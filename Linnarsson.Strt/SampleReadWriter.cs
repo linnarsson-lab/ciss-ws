@@ -59,7 +59,7 @@ namespace Linnarsson.Strt
             prefixRead3 = Math.Min(prefixRead3, read3Len);
             seqLen = prefixRead2 + prefixRead3 + read1Len;
         }
-
+/*
         /// <summary>
         /// Experimental for parallell extraction to all samples in lane. Not yet in use
         /// </summary>
@@ -114,7 +114,7 @@ namespace Linnarsson.Strt
             readCounter.AddARead(useThisRead, rec, readStatus, bcIdx);
             return true;
         }
-
+*/
         public void ProcessLaneAsRecSets()
         {
             foreach (FastQRecSet recSet in

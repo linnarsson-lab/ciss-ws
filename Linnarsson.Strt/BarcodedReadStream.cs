@@ -22,8 +22,18 @@ namespace Linnarsson.Strt
         public FastQRecord InsertRead { get { return (bc.InsertRead == 1) ? read1 : (bc.InsertRead == 2) ? read2 : read3; } }
         public FastQRecord UMIRead { get { return (bc.UMIRead == 1)? read1 : (bc.UMIRead == 2)? read2 : read3; } }
         public FastQRecord IndexRead { get { return (bc.BarcodeRead == 1)? read1 : (bc.BarcodeRead == 2)? read2 : read3; } }
-        public int BarcodeIdx { get { return bc.ExtractBcIdx(IndexRead.Sequence); } }
-        public string BarcodeSeq { get { return bc.ExtractBcSeq(IndexRead.Sequence); } }
+        public FastQRecord Index2Read { get { return (bc.Barcode2Read == 1) ? read1 : (bc.Barcode2Read == 2) ? read2 : read3; } }
+        public int BarcodeIdx { get { return bc.ExtractBcIdx(BarcodeSeq); } }
+        public string BarcodeSeq
+        {
+            get
+            {
+                if (bc.Barcode2Read == 0)
+                    return IndexRead.Sequence.Substring(bc.BarcodePos, bc.BarcodeLen);
+                else
+                    return IndexRead.Sequence.Substring(bc.BarcodePos, bc.BarcodeLen) + Index2Read.Sequence.Substring(bc.Barcode2Pos, bc.Barcode2Len);
+            }
+        }
 
         public FastQRecSet(Barcodes bc)
         {
@@ -94,7 +104,7 @@ namespace Linnarsson.Strt
         /// <param name="qualityScoreBase"></param>
         /// <param name="read2FilterPrefix">If non-empty, only records with index (2nd) reads starting with the given seq will be returned</param>
         /// <returns></returns>
-        public static IEnumerable<FastQRecord> Stream(Barcodes barcodes, string read1FqPath,
+        public static IEnumerable<FastQRecord> DEPRECATEDStream(Barcodes barcodes, string read1FqPath,
                                                       byte qualityScoreBase, string read2FilterPrefix)
         {
             if (!barcodes.NeedRead2Or3 && read2FilterPrefix.Length == 0)

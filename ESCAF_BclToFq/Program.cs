@@ -28,7 +28,7 @@ namespace ESCAF_BclToFq
         public string FinishedRunFoldersFile = "processed_run_folder_names.txt"; // List of ready processed and transferred run folders
         public int scanInterval = 5; // Minutes between scans for new data
         public string RunsFolder = "/home/data/runs"; // Where Illumina run folders (or tarballs) are deposited
-        public string RunFolderMatchPattern = "([0-9][0-9][0-9][0-9][0-9][0-9])_.+_([0-9]+)_[AB](.+XX)$";
+        public string RunFolderMatchPattern = "^([0-9][0-9][0-9][0-9][0-9][0-9])_.+_([0-9]+)_[AB](.+XX)$";
         // Pattern that HiSeq run folders in RunsFolder should match. Groups: (date) (runno) (runid)
         public int minLastAccessMinutes = 10; // Min time in minutes since last access of a run folder before starting to process
         public string ReadsFolder = "/home/data/reads"; // Where .fq files for each lane are put
@@ -137,7 +137,8 @@ namespace ESCAF_BclToFq
                     string[] runDirs = Directory.GetDirectories(ESCAFProps.props.RunsFolder);
                     foreach (string runDir in runDirs)
                     {
-                        if (copiedRunDirs.Contains(runDir) ||  !Regex.IsMatch(runDir, ESCAFProps.props.RunFolderMatchPattern))
+                        string runDirName = Path.GetFileName(runDir);
+                        if (copiedRunDirs.Contains(runDir) || !Regex.IsMatch(runDirName, ESCAFProps.props.RunFolderMatchPattern))
                             continue;
                         TimeSpan ts = DateTime.Now - Directory.GetLastAccessTime(runDir);
                         if (ts >= new TimeSpan(0, ESCAFProps.props.minLastAccessMinutes, 0))

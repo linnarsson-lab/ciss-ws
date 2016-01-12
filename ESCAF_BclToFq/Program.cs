@@ -145,7 +145,7 @@ namespace ESCAF_BclToFq
                         {
                             logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Processing " + runDir);
                             logWriter.Flush();
-                            bool allReadsCopied= ProcessRun(runDir);
+                            bool allReadsCopied = ProcessRun(runDir);
                             if (!allReadsCopied)
                                 continue;
                             logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Ready");
@@ -224,6 +224,8 @@ namespace ESCAF_BclToFq
                     }
                     DBUpdateLaneYield(runid, r);
                 }
+                logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Mirrored " + readFileResults.Count.ToString() 
+                                    + " fq files " + string.Join(" & ", ESCAFProps.props.scpDestinations) + "\n");
                 if (someReadFailed)
                     return false;
                 DBUpdateRunStatus(runid, "copied");

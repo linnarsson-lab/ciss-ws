@@ -141,7 +141,10 @@ namespace ESCAF_BclToFq
                         if (copiedRunDirs.Contains(runDir) || !Regex.IsMatch(runDirName, ESCAFProps.props.RunFolderMatchPattern))
                             continue;
                         TimeSpan ts = DateTime.Now - Directory.GetLastAccessTime(runDir);
-                        if (ts >= new TimeSpan(0, ESCAFProps.props.minLastAccessMinutes, 0))
+                        if (ts < new TimeSpan(0, ESCAFProps.props.minLastAccessMinutes, 0))
+                            continue;
+                        string readyFilePath = Path.Combine(runDir, "Basecalling_Netcopy_complete.txt");
+                        if (runDir.EndsWith("gz") || runDir.EndsWith("zip") || File.Exists(readyFilePath))
                         {
                             logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Processing " + runDir);
                             logWriter.Flush();

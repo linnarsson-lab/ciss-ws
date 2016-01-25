@@ -131,18 +131,23 @@ namespace Linnarsson.Strt
                 string splcFilePat = string.Format("{0}_{1}{2}", bcIdx, genome.GetSplcIndexNamePattern(), outFileExtension);
                 string[] existingSplcFiles = Directory.GetFiles(mapFolder, splcFilePat);
                 string outSplcPath = Path.Combine(mapFolder, outSplcFilename);
-                if (existingSplcFiles.Length >= 1)
+                if (existingSplcFiles.Length >= 1) // If a proper splice index .map file exists we are done
                     outSplcPath = Path.Combine(mapFolder, existingSplcFiles[0]);
                 else
                 {
                     if (!File.Exists(outUnmappedPath))
+                    { // We need to recreate the unmapped fq file of reads not mapping to main index
                         CreateAlignmentOutputFile(mainIndexName, extractedFilePath, outMainPath, outUnmappedPath, alignerLogFilePath);
-                    string remainUnmappedPath = Props.props.SaveNonMappedReads ? Path.Combine(mapFolder, bcIdx + ".fq-nonmapped") : "";
-                    if (File.Exists(outUnmappedPath)) // Have to check - all reads may have mapped directly
+                        if (!File.Exists(outUnmappedPath))
+                            File.Create(outUnmappedPath).Close(); // Even if all reads mapped to main index, create empty unmapped fq file to indicate we did this step
+                    }
+                    if (new FileInfo(outUnmappedPath).Length > 10) // Avoid processing empty unmapped fq files - bowtie will fail on an empty file as input
+                    {
+                        string remainUnmappedPath = Props.props.SaveNonMappedReads ? Path.Combine(mapFolder, bcIdx + ".fq-nonmapped") : "";
                         CreateAlignmentOutputFile(splcIndexName, outUnmappedPath, outSplcPath, remainUnmappedPath, alignerLogFilePath);
+                    }
                 }
                 outPaths.Add(outSplcPath);
-                // Don't delete the fqUnmappedReadsPath - it is needed if rerun with changing all/single annotation versions
                 if (Background.CancellationPending) break;
             }
             laneInfo.mappedFilePaths = outPaths.ToArray();

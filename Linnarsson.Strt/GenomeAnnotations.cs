@@ -546,11 +546,13 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Iterate spikes and/or transcripts ordered by 1) start position, 2) length,
-        /// with common chrs first, then other in alphabetical order
+        /// Iterate spikes and/or transcripts ordered by
+        /// 1) a) CTRLs first (if inclSpikes) b) (if inclNonSpikes) common chrs followed by organism's chrs
+        /// 2) start position
+        /// 3) transcript length
         /// </summary>
-        /// <param name="inclSpikes">include spikes (chrs with CTRL or SPIKE in the name)</param>
-        /// <param name="inclNonSpikes">include the non-spike chromsomes (EXTRA and the rest)</param>
+        /// <param name="inclSpikes">include spikes (chrs in Props.CommonChrIds with CTRL or SPIKE in the name)</param>
+        /// <param name="inclNonSpikes">include the non-spike chromsomes (the remaining defined in Props.CommonChrIds and the organism's chrs)</param>
         /// <returns></returns>
         public IEnumerable<GeneFeature> IterOrderedGeneFeatures(bool inclSpikes, bool inclNonSpikes)
         {
@@ -571,6 +573,17 @@ namespace Linnarsson.Strt
                 foreach (GeneFeature gf in chrGfs)
                     yield return gf;
             }
+        }
+
+        /// <summary>
+        /// Iterate repeat features order by Name
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<RepeatFeature> IterOrderedRepeatFeatures()
+        {
+            List<RepeatFeature> reps = repeatFeatures.Values.ToList();
+            reps.Sort();
+            return reps;
         }
 
         /// <summary>
@@ -780,7 +793,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Iterate expression values for the cells that belong to the genome. Skip wells marked "Empty" by layout file.
+        /// Iterate expression values of non-ordered gfs and repeats for the cells that belong to the genome. Skip wells marked "Empty" by layout file.
         /// Also iterate repeats.
         /// </summary>
         /// <param name="projectId"></param>
@@ -848,7 +861,7 @@ namespace Linnarsson.Strt
             int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             using (StreamWriter outFile = new StreamWriter(readFile, true))
             {
-                foreach (RepeatFeature rf in repeatFeatures.Values)
+                foreach (RepeatFeature rf in IterOrderedRepeatFeatures())
                 {
                     StringBuilder sb = new StringBuilder();
                     foreach (int bcIdx in speciesBcIndexes)
@@ -990,7 +1003,7 @@ namespace Linnarsson.Strt
                         writer.Write("\t{0}", c);
                     writer.WriteLine();
                 }
-                foreach (RepeatFeature rf in repeatFeatures.Values)
+                foreach (RepeatFeature rf in IterOrderedRepeatFeatures())
                 {
                     writer.Write("{0}\trepeat\t\t\t\t\t{1}\t\t{2}\t{2}", rf.Name, rf.GetLocusLength(), rf.Hits());
                     foreach (int bcIdx in speciesBcIndexes)
@@ -1024,6 +1037,8 @@ namespace Linnarsson.Strt
                     string trName = fields[0];
                     string cutSites = fields[1];
                     string safeName = ExcelRescueGeneName(gf.Name);
+                    //Console.WriteLine(gf.Name + " Starts:" + string.Join(",", Array.ConvertAll(gf.ExonStarts, t => t.ToString())) 
+                    //    + " Ends:" + string.Join(",", Array.ConvertAll(gf.ExonEnds, t => t.ToString())));
                     writer.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t",
                                safeName, gf.GeneType, trName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), cutSites);
                     foreach (int c in hitIterator(gf, speciesBcIndexes))
@@ -1059,7 +1074,7 @@ namespace Linnarsson.Strt
             {
                 int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 foreach (int idx in speciesBcIndexes)
-                    writer.Write("\t{0}", barcodes.GetWellId(idx));
+                    writer.Write("\t{0}-{1}", ProjectName, barcodes.GetWellId(idx));
                 writer.WriteLine();
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
@@ -1081,7 +1096,7 @@ namespace Linnarsson.Strt
             {
                 writer.Write("Feature\tChr\tPos\tStrand");
                 foreach (int idx in speciesBcIndexes)
-                    writer.Write("\t{0}", barcodes.GetWellId(idx));
+                    writer.Write("\t{0}-{1}", ProjectName, barcodes.GetWellId(idx));
                 writer.WriteLine();
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
@@ -1090,7 +1105,7 @@ namespace Linnarsson.Strt
                         writer.Write("\t{0}", c);
                     writer.WriteLine();
                 }
-                foreach (RepeatFeature rf in repeatFeatures.Values)
+                foreach (RepeatFeature rf in IterOrderedRepeatFeatures())
                 {
                     writer.Write("{0}\t\t\t", rf.Name);
                     foreach (int bcIdx in speciesBcIndexes)

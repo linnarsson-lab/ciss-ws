@@ -15,7 +15,6 @@ namespace Linnarsson.Strt
     public class SampleReadWriter
     {
         Barcodes barcodes;
-        int read1Len, prefixRead2, prefixRead3, seqLen;
 
         string read2FilterPrefix = null;
         LaneInfo laneInfo;
@@ -30,8 +29,6 @@ namespace Linnarsson.Strt
         public SampleReadWriter(Barcodes barcodes, LaneInfo laneInfo)
         {
             this.barcodes = barcodes;
-            this.prefixRead2 = barcodes.PrefixRead2;
-            this.prefixRead3 = barcodes.PrefixRead3;
             this.laneInfo = laneInfo;
             if (laneInfo.idxSeqFilter.Length > 0)
                 read2FilterPrefix = "^" + laneInfo.idxSeqFilter;
@@ -50,14 +47,6 @@ namespace Linnarsson.Strt
                 sw_read3 = barcodes.NeedReed(3) ? laneInfo.plateRead3FilePath.OpenWrite() : null;
             }
             extrQ = (Props.props.AnalyzeExtractionQualities) ? new ExtractionQuality(Props.props.LargestPossibleReadLength) : null;
-        }
-
-        public void Setup(int read1Len, int read2Len, int read3Len)
-        {
-            this.read1Len = read1Len;
-            prefixRead2 = Math.Min(prefixRead2, read2Len);
-            prefixRead3 = Math.Min(prefixRead3, read3Len);
-            seqLen = prefixRead2 + prefixRead3 + read1Len;
         }
 /*
         /// <summary>

@@ -56,6 +56,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DnaLib\Linnarsson.Dna.csproj">
+      <Project>{70EA71CD-073B-4195-B04F-36A7F6B1D4E7}</Project>
+      <Name>Linnarsson.Dna</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Linnarsson.Strt\Linnarsson.Strt.csproj">
       <Project>{426B865C-ED32-4ACD-BB8F-8101899AB14B}</Project>
       <Name>Linnarsson.Strt</Name>

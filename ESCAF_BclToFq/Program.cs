@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Diagnostics;
 using System.Xml.Serialization;
 using Linnarsson.Strt;
+using Linnarsson.Dna;
 using Linnarsson.Utilities;
 using MySql.Data.MySqlClient;
 
@@ -119,8 +120,8 @@ namespace ESCAF_BclToFq
             }
             using (logWriter = new StreamWriter(File.Open(ESCAFProps.props.LogFile, FileMode.Append)))
             {
+                logWriter.AutoFlush = true;
                 logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Started");
-                logWriter.Flush();
                 Scan();
                 logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Quit");
             }
@@ -147,12 +148,10 @@ namespace ESCAF_BclToFq
                         if (runDir.EndsWith("gz") || runDir.EndsWith("zip") || File.Exists(readyFilePath))
                         {
                             logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Processing " + runDir);
-                            logWriter.Flush();
                             bool allReadsCopied = ProcessRun(runDir);
                             if (!allReadsCopied)
                                 continue;
                             logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Ready");
-                            logWriter.Flush();
                             copiedRunDirs.Add(runDir);
                             string readRunLine = Path.GetFileName(runDir) + "\n";
                             File.AppendAllText(ESCAFProps.props.FinishedRunFoldersFile, readRunLine);
@@ -163,7 +162,6 @@ namespace ESCAF_BclToFq
                 {
                     nExceptions++;
                     logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Exception in ESCAF_BclToFq:\n" + e);
-                    logWriter.Flush();
                 }
                 Thread.Sleep(1000 * 60 * ESCAFProps.props.scanInterval);
             }
@@ -173,44 +171,20 @@ namespace ESCAF_BclToFq
         {
             string runFolder = UnpackIfNeeded(runFolderOrTgz);
             Match mr = Regex.Match(runFolder, ESCAFProps.props.RunFolderMatchPattern);
-            string rundate = mr.Groups[1].Value;
-            string runno = mr.Groups[2].Value;
-            string runid = mr.Groups[3].Value;
+            string runDate = mr.Groups[1].Value;
+            string runNo = mr.Groups[2].Value;
+            string runId = mr.Groups[3].Value;
             List<ReadFileResult> readFileResults = new List<ReadFileResult>();
             CmdCaller c;
             try 
             {
-                DBInsertIlluminaRun(runid, runno, rundate);
+                DBInsertIlluminaRun(runId, runNo, runDate);
                 ReadCopier readCopier = new ReadCopier(logWriter);
                 bool someReadFailed = false;
-                if (!ESCAFProps.props.multiThreaded)
-                {
-                    readFileResults = readCopier.SingleUseCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, false, out someReadFailed);
-                }
+                if (ESCAFProps.props.multiThreaded)
+                    readFileResults = readCopier.ParallelCopy(runFolder, ESCAFProps.props.ReadsFolder, out someReadFailed);
                 else
-                {
-                    CopierStart start1 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 1, 2, false);
-                    Thread thread1 = new Thread(readCopier.CopyRun);
-                    thread1.Start(start1);
-                    CopierStart start2 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 3, 4, false);
-                    Thread thread2 = new Thread(readCopier.CopyRun);
-                    thread2.Start(start2);
-                    CopierStart start3 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 5, 6, false);
-                    Thread thread3 = new Thread(readCopier.CopyRun);
-                    thread3.Start(start3);
-                    CopierStart start4 = new CopierStart(runFolder, ESCAFProps.props.ReadsFolder, 7, 8, false);
-                    Thread thread4 = new Thread(readCopier.CopyRun);
-                    thread4.Start(start4);
-                    thread1.Join();
-                    thread2.Join();
-                    thread3.Join();
-                    thread4.Join();
-                    readFileResults.AddRange(start1.readFileResults);
-                    readFileResults.AddRange(start2.readFileResults);
-                    readFileResults.AddRange(start3.readFileResults);
-                    readFileResults.AddRange(start4.readFileResults);
-                    someReadFailed = start1.someReadFailed || start2.someReadFailed || start3.someReadFailed || start4.someReadFailed;
-                }
+                    readFileResults = readCopier.SerialCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, false, out someReadFailed);
                 foreach (ReadFileResult r in readFileResults)
                 {
                     foreach (string scpDest in ESCAFProps.props.scpDestinations)
@@ -225,17 +199,20 @@ namespace ESCAF_BclToFq
                         c = new CmdCaller("scp", scpArg);
                         if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
                     }
-                    DBUpdateLaneYield(runid, r);
+                    DBUpdateLaneYield(runId, r);
                 }
                 logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Mirrored " + readFileResults.Count.ToString() 
                                     + " fq files " + string.Join(" & ", ESCAFProps.props.scpDestinations) + "\n");
                 if (someReadFailed)
+                {
+                    logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Some read failed - will keep 'copying' status and try again\n");
                     return false;
-                DBUpdateRunStatus(runid, "copied");
+                }
+                DBUpdateRunStatus(runId, "copied");
             }
             catch (Exception)
             {
-                DBUpdateRunStatus(runid, "copyfail");
+                DBUpdateRunStatus(runId, "copyfail");
                 throw;
             }
             finally

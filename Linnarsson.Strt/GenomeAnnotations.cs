@@ -1058,7 +1058,7 @@ namespace Linnarsson.Strt
             if (name.Length < 4) return name;
             if (Regex.IsMatch(name.ToLower(), "^(jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)[0-9]+$"))
                 return "'" + name + "'";
-            if (Regex.IsMatch(name.ToLower(), "^(janu|febr|marc|apri|juni|july|augu|sept|octo|nove|dece)[0-9]+$"))
+            if (Regex.IsMatch(name.ToLower(), "^(janu|febr|marc|mars|apri|juni|july|augu|sept|octo|nove|dece)[0-9]+$"))
                 return "'" + name + "'";
             if (Regex.IsMatch(name.ToLower(), "^(janua|febru|march|april|augus|septe|octob|novem|decem)[0-9]+$"))
                 return "'" + name + "'";

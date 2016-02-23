@@ -156,6 +156,11 @@ namespace Linnarsson.Dna
             return IssueNonQuery(sql);
         }
 
+        /// <summary>
+        /// Check that no parallel process just started the analysis, then change status to 'extracting'
+        /// </summary>
+        /// <param name="projDescr"></param>
+        /// <returns>true if the analysis was successfully 'caught' by this process</returns>
         public bool SecureStartAnalysis(ProjectDescription projDescr)
         {
             bool success = false;
@@ -312,21 +317,24 @@ namespace Linnarsson.Dna
             IssueNonQuery(sql);
         }
 
+        public void ReportReadFileResult(string runId, int read, ReadFileResult r)
+        {
+            AddToBackupQueue(r.PFPath, 10);
+            if (r.read == 1)
+                SetIlluminaYield(runId, r.nReads, r.nPFReads, r.lane);
+            UpdateRunCycles(runId, read, (int)r.readLen);
+        }
         /// <summary>
         /// Updates the actual cycle numbers for the illumina run.
         /// If a specific reads's cycle value is -1 no update is performed.
         /// </summary>
         /// <param name="runId"></param>
         /// <param name="cycles">Use -1 to indicate that this value should not be updated</param>
-        /// <param name="indexCycles">Use -1 to indicate that this value should not be updated</param>
-        /// <param name="pairedCycles">Use -1 to indicate that this value should not be updated</param>
-        public void UpdateRunCycles(string runId, int cycles, int indexCycles, int pairedCycles)
+        public void UpdateRunCycles(string runId, int read, int cycles)
         {
-            string sql = string.Format("UPDATE {0}aaailluminarun SET cycles=IFNULL(cycles, IF('{1}'>=0,'{1}',cycles)), " +
-                                        "indexcycles=IFNULL(indexcycles, IF('{2}'>=0,'{2}',indexcycles)), " +
-                                        "pairedcycles=IFNULL(pairedcycles, IF('{3}'>=0,'{3}',pairedcycles)) " +
-                                       "WHERE illuminarunid='{4}';",
-                                       Props.props.DBPrefix, cycles, indexCycles, pairedCycles, runId);
+            string col = (read == 1) ? "cycles" : ((read == 2) ? "indexcycles" : "pairedcycles");
+            string sql = string.Format("UPDATE {0}aaailluminarun SET {1}=IFNULL({1}, IF('{2}'>=0,'{2}',{1})) WHERE illuminarunid='{3}';",
+                                       Props.props.DBPrefix, col, cycles, runId);
             IssueNonQuery(sql);
         }
 

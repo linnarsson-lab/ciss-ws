@@ -18,13 +18,13 @@ namespace BkgFastQCopier
         private static StreamWriter logWriter;
         private static int minutesWait = 15;
         private static string illuminaRunsFolder;
-        private static string outputReadsFolder;
+        private static string readsFolder;
 
         static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             illuminaRunsFolder = Props.props.RunsFolder;
-            outputReadsFolder = Props.props.ReadsFolder;
+            readsFolder = Props.props.ReadsFolder;
             logFile = new FileInfo("BFQC_" + Process.GetCurrentProcess().Id + ".log").FullName;
             string specificRunFolder = null;
             bool forceOverwrite = false;
@@ -44,9 +44,9 @@ namespace BkgFastQCopier
                     else if (arg.StartsWith("-l"))
                         logFile = arg.Substring(2);
                     else if (arg == "-o")
-                        outputReadsFolder = args[++i];
+                        readsFolder = args[++i];
                     else if (arg.StartsWith("-o"))
-                        outputReadsFolder = arg.Substring(2);
+                        readsFolder = arg.Substring(2);
                     else if (arg == "-t")
                         minutesWait = int.Parse(args[++i]);
                     else if (arg.StartsWith("-o"))
@@ -69,7 +69,7 @@ namespace BkgFastQCopier
                                   "or the output statistics file is missing. To re-extract data, either delete the statistics file, or use option --run. " +
                                   "\nOptions:\n\n" +
                                   "-i <file>               - specify a non-standard Illumina runs folder (default=" + illuminaRunsFolder + ")\n" +
-                                  "-o <file>               - specify a non-standard reads output folder (default=" + outputReadsFolder + ")\n" +
+                                  "-o <file>               - specify a non-standard reads output folder (default=" + readsFolder + ")\n" +
                                   "-l <file>               - specify a non-standard log file\n" +
                                   "-t <N>                  - specify a non-standard interval for scans in minutes (default=" + minutesWait + ")\n" +
                                   "--run <folder>[:lane]   - copy only specified [lane(s) of, as 'n', or 'n-n'] run folder and then quit\n" +
@@ -84,20 +84,20 @@ namespace BkgFastQCopier
             }
             using (logWriter = new StreamWriter(File.Open(logFile, FileMode.Append)))
             {
+                logWriter.AutoFlush = true;
                 string now = DateTime.Now.ToString();
                 logWriter.WriteLine(DateTime.Now.ToString() + " Starting BkgFastQCopier");
-                logWriter.Flush();
                 Console.WriteLine("BkgFastQCopier started at " + now + " and logging to " + logFile);
                 ReadCopier readCopier = new ReadCopier(logWriter);
                 if (specificRunFolder != null)
-                    specificRunFolder = CopyOneRun(specificRunFolder, readCopier, forceOverwrite);
+                    specificRunFolder = CopySpecificRunFolder(specificRunFolder, readCopier, forceOverwrite);
                 else
                     KeepScanning(readCopier);
                 logWriter.WriteLine("BkgFastQCopier quit at " + DateTime.Now.ToPathSafeString());
             }
         }
 
-        private static string CopyOneRun(string specificRunFolder, ReadCopier readCopier, bool forceOverwrite)
+        private static string CopySpecificRunFolder(string specificRunFolder, ReadCopier readCopier, bool forceOverwrite)
         {
             int laneFrom = 1, laneTo = 8;
             string laneTxt = "";
@@ -120,9 +120,11 @@ namespace BkgFastQCopier
                 specificRunFolder = specificRunFolder.Substring(0, colonIdx);
                 laneTxt = string.Format("lane {0}-{1} of ", laneFrom, laneTo);
             }
-            Console.WriteLine("Copying data from " + laneTxt + specificRunFolder + " to " + outputReadsFolder);
-            int nFilesCopied = readCopier.SingleUseCopy(specificRunFolder, outputReadsFolder, laneFrom, laneTo, forceOverwrite).Count;
-            Console.WriteLine("Created totally " + nFilesCopied.ToString() + " output fq files."); return specificRunFolder;
+            Console.WriteLine("Copying data from " + laneTxt + specificRunFolder + " to " + readsFolder);
+            bool someLaneSkipped;
+            int nFilesCopied = readCopier.SerialCopy(specificRunFolder, readsFolder, laneFrom, laneTo, forceOverwrite, out someLaneSkipped).Count;
+            Console.WriteLine("Created totally " + nFilesCopied.ToString() + " output fq files.");
+            return specificRunFolder;
         }
 
         private static void KeepScanning(ReadCopier readCopier)
@@ -133,13 +135,12 @@ namespace BkgFastQCopier
             {
                 try
                 {
-                    readCopier.Scan(illuminaRunsFolder, outputReadsFolder);
+                    readCopier.Scan(illuminaRunsFolder, readsFolder);
                 }
                 catch (Exception exp)
                 {
                     nExceptions++;
                     logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: Exception in BkgFastQCopier: ***\n" + exp);
-                    logWriter.Flush();
                 }
                 Thread.Sleep(1000 * 60 * minutesWait);
             }

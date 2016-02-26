@@ -95,6 +95,7 @@
     <Compile Include="MappedTagItem.cs" />
     <Compile Include="ProjectDB.cs" />
     <Compile Include="ProjectDBDescriptions.cs" />
+    <Compile Include="ReadFileResult.cs" />
     <Compile Include="UMIHammingDistanceCalculator.cs" />
     <Compile Include="UMIMutationFilters.cs" />
     <Compile Include="UMIProfileCounters.cs" />

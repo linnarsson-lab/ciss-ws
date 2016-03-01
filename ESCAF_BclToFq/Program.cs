@@ -189,19 +189,21 @@ namespace ESCAF_BclToFq
                 {
                     foreach (ReadFileResult r in readFileResults)
                     {
+                        DBUpdateLaneYield(runId, r);
+                        List<string> scpErrors = new List<string>();
                         foreach (string scpDest in ESCAFProps.props.scpDestinations)
                         {
                             string scpArg = string.Format("-p {0} {1}/{2}", r.PFPath, scpDest, Path.GetFileName(r.PFPath));
                             c = new CmdCaller("scp", scpArg);
-                            if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
+                            if (c.ExitCode != 0) scpErrors.Add(scpArg + "\n    " + c.StdError);
                             scpArg = string.Format("-p {0} {1}/nonPF/{2}", r.nonPFPath, scpDest, Path.GetFileName(r.nonPFPath));
                             c = new CmdCaller("scp", scpArg);
-                            if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
+                            if (c.ExitCode != 0) scpErrors.Add(scpArg + "\n    " + c.StdError);
                             scpArg = string.Format("-p {0} {1}/statistics/{2}", r.statsPath, scpDest, Path.GetFileName(r.statsPath));
                             c = new CmdCaller("scp", scpArg);
-                            if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
+                            if (c.ExitCode != 0) scpErrors.Add(scpArg + "\n    " + c.StdError);
                         }
-                        DBUpdateLaneYield(runId, r);
+                        if (scpErrors.Count > 0) throw new Exception(string.Join("\n", scpErrors.ToArray()));
                     }
                     logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Mirrored " + readFileResults.Count.ToString()
                                         + " fq files to  " + string.Join(" & ", ESCAFProps.props.scpDestinations) + "\n");

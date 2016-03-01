@@ -1831,7 +1831,7 @@ namespace Linnarsson.Strt
         private void WriteWiggleStrand(char strand, string outputFolder, bool allBarcodes)
         {
             bool makeBed = Props.props.GenerateBed && Props.props.OutputLevel >= 2;
-            string projwell = projectId + (allBarcodes ? "" : ("_" + barcodes.GetWellId(currentBcIdx)));
+            string projwell = ResultFileprefix + (allBarcodes ? "" : ("_" + barcodes.GetWellId(currentBcIdx)));
             string fileNameHead = projwell + "_" + ((strand == '+') ? "fw" : "rev");
             string filePathHead = Path.Combine(outputFolder, fileNameHead);
             string fileByRead = filePathHead + "_byread.wig.gz";

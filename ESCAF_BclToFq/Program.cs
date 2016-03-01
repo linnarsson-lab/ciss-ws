@@ -185,24 +185,27 @@ namespace ESCAF_BclToFq
                     readFileResults = readCopier.ParallelCopy(runFolder, ESCAFProps.props.ReadsFolder, out someReadFailed);
                 else
                     readFileResults = readCopier.SerialCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, false, out someReadFailed);
-                foreach (ReadFileResult r in readFileResults)
+                if (readFileResults.Count > 0)
                 {
-                    foreach (string scpDest in ESCAFProps.props.scpDestinations)
+                    foreach (ReadFileResult r in readFileResults)
                     {
-                        string scpArg = string.Format("-p {0} {1}/{2}", r.PFPath, scpDest, Path.GetFileName(r.PFPath));
-                        c = new CmdCaller("scp", scpArg);
-                        if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
-                        scpArg = string.Format("-p {0} {1}/nonPF/{2}", r.nonPFPath, scpDest, Path.GetFileName(r.nonPFPath));
-                        c = new CmdCaller("scp", scpArg);
-                        if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
-                        scpArg = string.Format("-p {0} {1}/statistics/{2}", r.statsPath, scpDest, Path.GetFileName(r.statsPath));
-                        c = new CmdCaller("scp", scpArg);
-                        if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
+                        foreach (string scpDest in ESCAFProps.props.scpDestinations)
+                        {
+                            string scpArg = string.Format("-p {0} {1}/{2}", r.PFPath, scpDest, Path.GetFileName(r.PFPath));
+                            c = new CmdCaller("scp", scpArg);
+                            if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
+                            scpArg = string.Format("-p {0} {1}/nonPF/{2}", r.nonPFPath, scpDest, Path.GetFileName(r.nonPFPath));
+                            c = new CmdCaller("scp", scpArg);
+                            if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
+                            scpArg = string.Format("-p {0} {1}/statistics/{2}", r.statsPath, scpDest, Path.GetFileName(r.statsPath));
+                            c = new CmdCaller("scp", scpArg);
+                            if (c.ExitCode != 0) throw new Exception(scpArg + "\n" + c.StdError);
+                        }
+                        DBUpdateLaneYield(runId, r);
                     }
-                    DBUpdateLaneYield(runId, r);
+                    logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Mirrored " + readFileResults.Count.ToString()
+                                        + " fq files to  " + string.Join(" & ", ESCAFProps.props.scpDestinations) + "\n");
                 }
-                logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Mirrored " + readFileResults.Count.ToString() 
-                                    + " fq files " + string.Join(" & ", ESCAFProps.props.scpDestinations) + "\n");
                 if (someReadFailed)
                 {
                     logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Some read failed - will keep 'copying' status and try again\n");

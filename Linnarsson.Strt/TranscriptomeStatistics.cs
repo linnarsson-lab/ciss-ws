@@ -986,7 +986,6 @@ namespace Linnarsson.Strt
 
         private void WriteReadStats(ReadCounter readCounter, StreamWriter xmlFile)
         {
-            int allBcCount = barcodes.Count;
             int[] speciesBarcodes = barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
             int spBcCount = speciesBarcodes.Length;
             xmlFile.WriteLine("  <readfiles>");
@@ -1011,13 +1010,15 @@ namespace Linnarsson.Strt
             }
             xmlFile.WriteLine("  <reads>");
             xmlFile.WriteLine("    <title>Read distribution (10^6) [#wells in brackets]</title>");
+            double totalReads = readCounter.TotalReads();
             double speciesReads = readCounter.TotalReads(speciesBarcodes);
             if (speciesReads > 0 && allBcReads > 0)
             {
                 if (readCounter.LimiterExcludedReads > 0)
                     xmlFile.WriteLine("    <point x=\"Limiter excluded\" y=\"{0}\" />", readCounter.LimiterExcludedReads / 1.0E6d);
-                xmlFile.WriteLine("    <point x=\"Processed reads\" y=\"{0}\" />", allBcReads / 1.0E6d);
-                xmlFile.WriteLine("    <point x=\"PF reads\" y=\"{0}\" />", readCounter.PassedIlluminaFilter / 1.0E6d);
+                //xmlFile.WriteLine("    <point x=\"Processed reads\" y=\"{0}\" />", allBcReads / 1.0E6d);
+                //xmlFile.WriteLine("    <point x=\"PF reads\" y=\"{0}\" />", readCounter.PassedIlluminaFilter / 1.0E6d);
+                xmlFile.WriteLine("    <point x=\"Total reads [{0}] \" y=\"{1}\" />", barcodes.Count, totalReads / 1.0E6d);
                 xmlFile.WriteLine("    <point x=\"In {0} wells [{1}] (100%)\" y=\"{2}\" />",
                                              Annotations.Genome.Abbrev, spBcCount, speciesReads / 1.0E6d);
                 int validReads = readCounter.ValidReads(speciesBarcodes);

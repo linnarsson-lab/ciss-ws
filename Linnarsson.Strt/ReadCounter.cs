@@ -151,6 +151,14 @@ namespace Linnarsson.Strt
                 sum += totalBarcodeReads[idx];
             return sum;
         }
+        /// <summary>
+        /// Total read count in selected barcodeset over all files
+        /// </summary>
+        /// <returns></returns>
+        public int TotalReads()
+        {
+            return totalBarcodeReads.Sum();
+        }
 
         private double ReadCountFraction(int readStatus)
         {

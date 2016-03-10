@@ -22,9 +22,21 @@ namespace Linnarsson.Dna
     }
 
 
+
     [Serializable()]
     public class ResultDescription
     {
+        public enum ResultStats { UnknownBc, Tn5, AverageBcMolCount };
+        private Dictionary<ResultStats, double> stats = new Dictionary<ResultStats, double>();
+        public double getStat(ResultStats category)
+        {
+            return stats[category];
+        }
+        public void setStat(ResultStats category, double value)
+        {
+            stats[category] = value;
+        }
+
         public string build { get; set; }
         public string annotAndDate { get; set; }
         public string variants { get; set; }

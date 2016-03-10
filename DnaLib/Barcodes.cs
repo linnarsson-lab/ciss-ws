@@ -453,11 +453,16 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Transfer species and other annotations from layout into the proper slots by barcodeIdx
+        /// Read and set plate layout from DB (for C1 samples) or from sampleLayoutPath.
+        /// Return value is species/build name(s) as defined by layout.
         /// </summary>
-        /// <param name="sampleLayout"></param>
-        public void SetSampleLayout(PlateLayout sampleLayout)
+        /// <param name="projectName"></param>
+        /// <param name="sampleLayoutPath"></param>
+        /// <returns>Ids of all the species/builds that are in the layout</returns>
+        public string[] ParsePlateLayout(string projectName, string sampleLayoutPath)
         {
+            PlateLayout sampleLayout = PlateLayout.GetPlateLayout(projectName, sampleLayoutPath);
+            if (sampleLayout == null) return new string[] {};
             AnnotationsByWell.Clear();
             m_SpeciesByWell = new string[m_WellIds.Length];
             for (int i = 0; i < m_SpeciesByWell.Length; i++)
@@ -480,7 +485,7 @@ namespace Linnarsson.Dna
                 foreach (string annotation in sampleLayout.GetAnnotations())
                     AnnotationsByWell[annotation][wellIdx] = sampleLayout.GetSampleAnnotation(annotation, sampleId);
             }
-            //Console.WriteLine(m_SpeciesByWell.Count(v => v == "empty") + " plate wells are empty.");
+            return sampleLayout.BuildIds;
         }
 
 		#region Paired-end

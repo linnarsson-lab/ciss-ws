@@ -265,7 +265,8 @@ namespace ProjectDBProcessor
             Props.props.DirectionalReads = pd.DirectionalReads;
             Props.props.SenseStrandIsSequenced = pd.SenseStrandIsSequenced;
             pd.annotationVersion = StrtReadMapper.ANNOTATION_VERSION;
-            string[] speciesArgs = mapper.ParsePlateLayout(pd.plateId, pd.SampleLayoutPath, pd.defaultSpecies);
+            string[] speciesArgs = Props.props.Barcodes.ParsePlateLayout(pd.plateId, pd.SampleLayoutPath);
+            if (speciesArgs.Length == 0) speciesArgs = new string[] { pd.defaultSpecies };
             foreach (string speciesArg in speciesArgs)
             {
                 StrtGenome genome = StrtGenome.GetGenome(speciesArg, pd.analyzeVariants, pd.defaultBuild, true);

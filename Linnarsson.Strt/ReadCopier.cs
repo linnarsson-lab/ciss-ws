@@ -67,7 +67,10 @@ namespace Linnarsson.Strt
                         if (projectDB.SecureStartRunCopy(runId, runNo, runDate))
                         {
                             bool someReadFailed;
-                            ParallelCopy(runFolder, readsFolder, out someReadFailed);
+                            if (Props.props.ParallellFastqCopy)
+                                ParallelCopy(runFolder, readsFolder, out someReadFailed);
+                            else
+                                SerialCopy(runFolder, readsFolder, 1, 8, false, out someReadFailed);
                             string runStatus = (someReadFailed) ? "copyfail" : "copied";
                             projectDB.UpdateRunStatus(runId, runStatus, runNo);
                         }

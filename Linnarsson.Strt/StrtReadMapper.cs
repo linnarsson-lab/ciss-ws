@@ -1,15 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.IO;
-using Linnarsson.Dna;
-using Linnarsson.Utilities;
-using Linnarsson.Mathematics;
-using Linnarsson.Mathematics.SortSearch;
 using System.Text.RegularExpressions;
 using Linnarsson.C1;
+using Linnarsson.Dna;
+using Linnarsson.Mathematics;
+using Linnarsson.Mathematics.SortSearch;
+using Linnarsson.Utilities;
 
 namespace Linnarsson.Strt
 {
@@ -130,26 +130,6 @@ namespace Linnarsson.Strt
 		}
 
         /// <summary>
-        /// If sampleLayoutPath is parsable, the species/build name(s) to use are extracted from that file,
-        /// and the layout it read into Barcodes object. Otherwise the defaultSpeciesArg is simply returned.
-        /// </summary>
-        /// <param name="projectName"></param>
-        /// <param name="sampleLayoutPath"></param>
-        /// <param name="defaultSpeciesArg"></param>
-        /// <returns>Ids of all the species/builds that are on the plate</returns>
-        public string[] ParsePlateLayout(string projectName, string sampleLayoutPath, string defaultSpeciesArg)
-        {
-            string[] speciesArgs = new string[] { defaultSpeciesArg };
-            PlateLayout sampleLayout = PlateLayout.GetPlateLayout(projectName, sampleLayoutPath);
-            if (sampleLayout != null)
-            {
-                Props.props.Barcodes.SetSampleLayout(sampleLayout);
-                speciesArgs = sampleLayout.BuildIds;
-            }
-            return speciesArgs;
-        }
-
-        /// <summary>
         /// Find or make a proper aligner index and align the lanes defined by laneInfo
         /// </summary>
         /// <param name="genome"></param>
@@ -214,32 +194,31 @@ namespace Linnarsson.Strt
         /// using the ProjectDB, the layout filename is taken from the database to allow updates with alternatively versioned names.
         /// </summary>
         /// <param name="projectFolderOrName"></param>
-        /// <param name="defaultSpeciesArg">Species to use if no layout file exists in projectFolder</param>
+        /// <param name="speciesArg">If "", species to use will be taken from layout file</param>
         /// <param name="analyzeAllGeneVariants">true to analyze all transcript splice variants defined in annoatation file</param>
         /// <param name="defaultAnnotation">Annotation source to use if layout file is missing</param>
         /// <param name="resultFolderName">Will make a standard subfolder if "".</param>
         /// <summary>
-        public void MapAndAnnotate(string projectOrExtractedFolderOrName, string defaultSpeciesArg, 
+        public void MapAndAnnotate(string projectOrExtractedFolderOrName, string speciesArg, 
                                      bool defaultGeneVariants, string defaultAnnotation, string resultFolder, int[] selectedBcIdxs)
         {
             string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolderOrName);
             List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder);
             string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
-            MapAndAnnotate(defaultSpeciesArg, defaultGeneVariants, defaultAnnotation, resultFolder,
+            MapAndAnnotate(speciesArg, defaultGeneVariants, defaultAnnotation, resultFolder,
                             null, selectedBcIdxs, laneInfos, projectFolder);
         }
 
-        public void MapAndAnnotate(string defaultSpeciesArg, bool defaultGeneVariants, string defaultAnnotation, string resultFolder,
+        public void MapAndAnnotate(string speciesArg, bool defaultGeneVariants, string defaultAnnotation, string resultFolder,
                                    string resultFileprefix, int[] selectedBcIdxs, List<LaneInfo> laneInfos, string projectFolder)
         {
             string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
             string projectName = Path.GetFileName(projectFolder);
-            string[] speciesArgs = new string[] { defaultSpeciesArg };
-            if (defaultSpeciesArg == "") // && File.Exists(sampleLayoutPath) allow read C1 layout from DB even if file does not exist
-                speciesArgs = ParsePlateLayout(projectName, sampleLayoutPath, defaultSpeciesArg);
-            foreach (string speciesArg in speciesArgs)
+            string[] speciesArgs = new string[] { speciesArg };
+            if (speciesArg == "") speciesArgs = Props.props.Barcodes.ParsePlateLayout(projectName, sampleLayoutPath);
+            foreach (string sp in speciesArgs)
             {
-                StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, true);
+                StrtGenome genome = StrtGenome.GetGenome(sp, defaultGeneVariants, defaultAnnotation, true);
                 CreateAlignments(genome, laneInfos, selectedBcIdxs);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(laneInfos);
                 if (mapFiles.Count == 0)

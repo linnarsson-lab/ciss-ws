@@ -1341,7 +1341,7 @@ namespace Linnarsson.Strt
                 foreach (int i in AnnotType.GetGeneTypes())
                 {
                     string annotName = AnnotType.GetName(i);
-                    if (annotName == "EXON") annotName = "EXON+SPLC";
+                    if (i == AnnotType.EXON) annotName = "exon+splice";
                     file.Write("\t#{0}Hits", annotName);
                 }
                 string exonTitle = props.DirectionalReads ? "SExon" : "Exon";

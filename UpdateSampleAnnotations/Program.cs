@@ -52,9 +52,7 @@ namespace UpdateSampleAnnotations
                                         "\n  Has the barcode file (" + barcodesName + ") changed, or is the old annotation file erronous?");
                 selectedBcIndexes[idx] = selIdx;
             }
-            PlateLayout sampleLayout = PlateLayout.GetPlateLayout(projectName, sampleLayoutPath);
-            Console.WriteLine("SampleLayouts from:" + sampleLayout.Filename);
-            barcodes.SetSampleLayout(sampleLayout);
+            barcodes.ParsePlateLayout(projectName, sampleLayoutPath);
             Console.WriteLine("#Annotations:" + barcodes.GetAnnotationTitles().Count);
             string oldAnnotFile = annotFile + ".old";
             try

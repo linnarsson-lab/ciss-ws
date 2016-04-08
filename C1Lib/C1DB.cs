@@ -10,7 +10,7 @@ using MySql.Data;
 
 namespace Linnarsson.C1
 {
-    public class C1DB
+    public class C1DB : Linnarsson.C1.IExpressionDB
     {
         /// <summary>
         /// set to true to run without executing any inserts to database
@@ -157,6 +157,22 @@ namespace Linnarsson.C1
             t.TranscriptomeID = transcriptomeId;
         }
 
+        public void InsertChromosomePos(int transcriptomeID, string chrId, int startPos, int endPos)
+        {
+            string sql = "INSERT INTO WigChrom (TranscriptomeID, Chromosome, GenomeStartPos, GenomeEndPos) " +
+                                 "VALUES ('{0}','{1}','{2}','{3}')";
+            sql = string.Format(sql, transcriptomeID, chrId, startPos, endPos);
+            IssueNonQuery(sql);
+        }
+
+        public void InsertWig(int transcriptomeID, string chrID, int chrPos, int cellID, int count)
+        {
+            string sql = "INSERT INTO Wig (CellID, GenomePos, MolCount) " +
+                         "SELECT {0}, {1} + GenomeStartPos, {2} FROM WigChrom WHERE TranscriptomeID={3} and Chromosome={4}";
+            sql = string.Format(sql, cellID, chrPos, count, transcriptomeID, chrID);
+            IssueNonQuery(sql);
+        }
+
         public void InsertTranscript(Transcript t)
         {
             string description = MySqlHelper.EscapeString(t.Description);
@@ -247,7 +263,7 @@ namespace Linnarsson.C1
             string sqlPat = "REPLACE INTO " + table + "Blob (CellID, TranscriptomeID, Aligner, Data) VALUES ('{0}',{1},'{2}', ?BLOBDATA)";
             foreach (ExprBlob exprBlob in exprBlobIterator)
             {
-                string sql = string.Format(sqlPat, exprBlob.CellID, exprBlob.TranscriptomeID, aligner);
+                string sql = string.Format(sqlPat, exprBlob.jos_aaacellid, exprBlob.TranscriptomeID, aligner);
                 MySqlCommand cmd = new MySqlCommand(sql, conn);
                 cmd.CommandText = sql;
                 cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
@@ -256,8 +272,8 @@ namespace Linnarsson.C1
                 else
                     cmd.ExecuteNonQuery();
                 n += 1;
-                maxId = Math.Max(int.Parse(exprBlob.CellID), maxId);
-                minId = Math.Min(int.Parse(exprBlob.CellID), minId);
+                maxId = Math.Max(int.Parse(exprBlob.jos_aaacellid), maxId);
+                minId = Math.Min(int.Parse(exprBlob.jos_aaacellid), minId);
             }
             Console.WriteLine("{0}nserted {1} ExprBlobs with CellIDs {2} - {3}", (test? "Test-i" : "I"), n, minId, maxId);
             conn.Close();

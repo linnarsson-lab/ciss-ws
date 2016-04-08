@@ -88,16 +88,15 @@ namespace BkgFastQCopier
                 string now = DateTime.Now.ToString();
                 logWriter.WriteLine(DateTime.Now.ToString() + " Starting BkgFastQCopier");
                 Console.WriteLine("BkgFastQCopier started at " + now + " and logging to " + logFile);
-                ReadCopier readCopier = new ReadCopier(logWriter);
                 if (specificRunFolder != null)
-                    specificRunFolder = CopySpecificRunFolder(specificRunFolder, readCopier, forceOverwrite);
+                    specificRunFolder = CopySpecificRunFolder(specificRunFolder, forceOverwrite);
                 else
-                    KeepScanning(readCopier);
+                    KeepScanning();
                 logWriter.WriteLine("BkgFastQCopier quit at " + DateTime.Now.ToPathSafeString());
             }
         }
 
-        private static string CopySpecificRunFolder(string specificRunFolder, ReadCopier readCopier, bool forceOverwrite)
+        private static string CopySpecificRunFolder(string specificRunFolder, bool forceOverwrite)
         {
             int laneFrom = 1, laneTo = 8;
             string laneTxt = "";
@@ -121,13 +120,14 @@ namespace BkgFastQCopier
                 laneTxt = string.Format("lane {0}-{1} of ", laneFrom, laneTo);
             }
             Console.WriteLine("Copying data from " + laneTxt + specificRunFolder + " to " + readsFolder);
-            bool someLaneSkipped;
-            int nFilesCopied = readCopier.SerialCopy(specificRunFolder, readsFolder, laneFrom, laneTo, forceOverwrite, out someLaneSkipped).Count;
+            ReadCopierStatus copyStatus;
+            ReadCopier readCopier = new ReadCopier(logWriter);
+            int nFilesCopied = readCopier.SerialCopy(specificRunFolder, readsFolder, laneFrom, laneTo, forceOverwrite, out copyStatus).Count;
             Console.WriteLine("Created totally " + nFilesCopied.ToString() + " output fq files.");
             return specificRunFolder;
         }
 
-        private static void KeepScanning(ReadCopier readCopier)
+        private static void KeepScanning()
         {
             Console.WriteLine("Scans for new data every {0} minutes. Log output goes to {1}.", minutesWait, logFile);
             int nExceptions = 0;
@@ -135,7 +135,7 @@ namespace BkgFastQCopier
             {
                 try
                 {
-                    readCopier.Scan(illuminaRunsFolder, readsFolder);
+                    Scan(illuminaRunsFolder, readsFolder);
                 }
                 catch (Exception exp)
                 {
@@ -156,6 +156,58 @@ namespace BkgFastQCopier
         }
 
 
+        /// <summary>
+        /// Copies all data in runsFolder for which fq files are missing into fq files in readsFolder.
+        /// </summary>
+        /// <param name="runsFolder"></param>
+        /// <param name="readsFolder"></param>
+        public static void Scan(string runsFolder, string readsFolder)
+        {
+            AssertOutputFolders(readsFolder);
+            IDB projectDB = DBFactory.GetProjectDB();
+            string[] runFolderNames = Directory.GetDirectories(runsFolder);
+            foreach (string runFolder in runFolderNames)
+            {
+                int runNo;
+                string runId, runDate;
+                if (ReadCopier.ParseRunFolderName(runFolder, out runNo, out runId, out runDate))
+                {
+                    string readyFilePath = Path.Combine(runFolder, Props.props.IlluminaRunReadyFilename);
+                    string callFolder = Path.Combine(runFolder, PathHandler.MakeRunDataSubPath());
+                    bool readyFileExists = File.Exists(readyFilePath);
+                    bool callFolderExists = Directory.Exists(callFolder);
+                    if (readyFileExists && callFolderExists)
+                    {
+                        if (projectDB.SecureStartRunCopy(runId, runNo, runDate))
+                        {
+                            ReadCopier readCopier = new ReadCopier(logWriter);
+                            ReadCopierStatus status;
+                            if (Props.props.ParallellFastqCopy)
+                                readCopier.ParallelCopy(runFolder, readsFolder, out status);
+                            else
+                                readCopier.SerialCopy(runFolder, readsFolder, 1, 8, false, out status);
+                            string runStatus = (status == ReadCopierStatus.ALLREADSREADY) ? "copied"
+                                : ((status == ReadCopierStatus.SOMEREADFAILED) ? "copyfail": "copying");
+                            projectDB.UpdateRunStatus(runId, runStatus, runNo);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Make the read, non past filter, and statistics subfolders if they don't exist
+        /// </summary>
+        /// <param name="readsFolder"></param>
+        private static void AssertOutputFolders(string readsFolder)
+        {
+            if (!File.Exists(readsFolder))
+            {
+                Directory.CreateDirectory(readsFolder);
+                Directory.CreateDirectory(Path.Combine(readsFolder, PathHandler.nonPFReadsSubFolder));
+                Directory.CreateDirectory(Path.Combine(readsFolder, PathHandler.readStatsSubFolder));
+            }
+        }
 
     }
 }

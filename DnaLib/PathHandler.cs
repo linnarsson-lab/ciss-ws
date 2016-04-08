@@ -61,7 +61,7 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="projectNameOrFolder"></param>
         /// <returns>Path to project layout file, even if it does not exist.</returns>
-        public static string GetSampleLayoutPath(string projectNameOrFolder)
+        public static string GetLayoutPath(string projectNameOrFolder)
         {
             if (Props.props.LayoutFile != "")
                 return Props.props.LayoutFile;

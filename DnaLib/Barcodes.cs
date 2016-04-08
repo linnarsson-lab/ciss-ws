@@ -453,39 +453,39 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Read and set plate layout from DB (for C1 samples) or from sampleLayoutPath.
+        /// Read plate layout from DB if props.InsertCellDBData == true, else or on failure read from layoutpath.
         /// Return value is species/build name(s) as defined by layout.
         /// </summary>
-        /// <param name="projectName"></param>
-        /// <param name="sampleLayoutPath"></param>
+        /// <param name="plateid"></param>
+        /// <param name="layoutpath"></param>
         /// <returns>Ids of all the species/builds that are in the layout</returns>
-        public string[] ParsePlateLayout(string projectName, string sampleLayoutPath)
+        public string[] ParsePlateLayout(string plateid, string layoutpath)
         {
-            PlateLayout sampleLayout = PlateLayout.GetPlateLayout(projectName, sampleLayoutPath);
-            if (sampleLayout == null) return new string[] {};
+            PlateLayout plateLayout = PlateLayout.GetPlateLayout(plateid, layoutpath);
+            if (plateLayout == null) return new string[] {};
             AnnotationsByWell.Clear();
             m_SpeciesByWell = new string[m_WellIds.Length];
             for (int i = 0; i < m_SpeciesByWell.Length; i++)
                 m_SpeciesByWell[i] = "empty";
-            if (m_WellIds.Length < sampleLayout.Length)
+            if (m_WellIds.Length < plateLayout.Length)
             {
-                string xtra = (sampleLayout.Filename == "C1 database") ? "It may help to reload plate with C1SeqPlateLoader.exe" : "";
-                throw new SampleLayoutFileException("There are more wells in layout " + sampleLayout.Filename + " (" + sampleLayout.Length +
+                string xtra = (plateLayout.Filename == "C1 database") ? "It may help to reload plate with C1SeqPlateLoader.exe" : "";
+                throw new SampleLayoutFileException("There are more wells in layout " + plateLayout.Filename + " (" + plateLayout.Length +
                                                     ") then defined in barcode set " + this.Name + "(" + this.Count + ") " + xtra);
             }
-            foreach (string annotation in sampleLayout.GetAnnotations())
+            foreach (string annotation in plateLayout.GetAnnotations())
                 AnnotationsByWell[annotation] = new string[m_WellIds.Length];
-            foreach (KeyValuePair<string, string> pair in sampleLayout.SpeciesIdBySampleId)
+            foreach (KeyValuePair<string, string> pair in plateLayout.SpeciesIdBySampleId)
             {
                 string sampleId = pair.Key;
                 int wellIdx = Array.FindIndex(m_WellIds, (id) => id == sampleId);
                 if (wellIdx == -1)
-                    throw new SampleLayoutFileException("SampleId " + sampleId + " is not in barcode set " + this.Name + " in file " + sampleLayout.Filename);
+                    throw new SampleLayoutFileException("SampleId " + sampleId + " is not in barcode set " + this.Name + " in file " + plateLayout.Filename);
                 m_SpeciesByWell[wellIdx] = pair.Value;
-                foreach (string annotation in sampleLayout.GetAnnotations())
-                    AnnotationsByWell[annotation][wellIdx] = sampleLayout.GetSampleAnnotation(annotation, sampleId);
+                foreach (string annotation in plateLayout.GetAnnotations())
+                    AnnotationsByWell[annotation][wellIdx] = plateLayout.GetSampleAnnotation(annotation, sampleId);
             }
-            return sampleLayout.BuildIds;
+            return plateLayout.BuildIds;
         }
 
 		#region Paired-end

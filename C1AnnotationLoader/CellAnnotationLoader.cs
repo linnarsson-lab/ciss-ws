@@ -19,7 +19,7 @@ namespace C1AnnotationLoader
         /// <param name="tabFile"></param>
         public void Process(string tabFile)
         {
-            ProjectDB db = new ProjectDB();
+            IDB db = DBFactory.GetProjectDB();
             using (StreamReader reader = new StreamReader(tabFile))
             {
                 string line;

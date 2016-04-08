@@ -156,6 +156,7 @@ namespace Linnarsson.Dna
         public bool WritePlateReadFile = false; // If true, extractor writes fq.gz file(s) with non-filtered reads having current bc
         public string[] AllMixinBcSets = new string[] { "C1-1", "C1-2", "C1-3", "C1-4" };
         public bool ParallellFastqCopy = false;
+        public bool UseNewDbSetup = false;
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

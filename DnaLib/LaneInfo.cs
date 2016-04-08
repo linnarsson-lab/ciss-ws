@@ -146,11 +146,19 @@ namespace Linnarsson.Dna
             return extractedFileName;
         }
 
+        public bool ExtractionNeeded()
+        {
+            bool someExtractionMissing = !AllExtractedFilesExist() || !File.Exists(summaryFilePath);
+            bool readFileIsNewer = (File.Exists(summaryFilePath) && File.Exists(PFReadFilePath)) &&
+                                    DateTime.Compare(new FileInfo(PFReadFilePath).LastWriteTime, new FileInfo(summaryFilePath).LastWriteTime) > 0;
+            return (someExtractionMissing || readFileIsNewer);
+        }
+
         /// <summary>
         /// Search for a N_Wxx_BBBBBB.fq file for each barcode. If legacy N.fq files exist, rename it.
         /// </summary>
         /// <returns>true if all exist or could be made exist by renaming </returns>
-        public bool AllExtractedFilesExist()
+        private bool AllExtractedFilesExist()
         {
             bool allexist = true;
             foreach (string extractedFilePath in this.extractedFilePaths)

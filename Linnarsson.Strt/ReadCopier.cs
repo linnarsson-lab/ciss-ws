@@ -13,6 +13,8 @@ using Linnarsson.Dna;
 
 namespace Linnarsson.Strt
 {
+    public enum ReadCopierStatus { ALLREADSREADY, SOMEREADFAILED, SOMEREADMISSING };
+
     /// <summary>
     /// Methods to copy reads from .bcl or .qseq file into fq files.
     /// Looks for "Basecalling_Netcopy_complete_ReadN.txt" in the Run folder as an indication
@@ -26,57 +28,6 @@ namespace Linnarsson.Strt
         public ReadCopier(StreamWriter logWriter)
         {
             this.logWriter = logWriter;
-        }
-
-        /// <summary>
-        /// Make the read, non past filter, and statistics subfolders if they don't exist
-        /// </summary>
-        /// <param name="readsFolder"></param>
-        private static void AssertOutputFolders(string readsFolder)
-        {
-            if (!File.Exists(readsFolder))
-            {
-                Directory.CreateDirectory(readsFolder);
-                Directory.CreateDirectory(Path.Combine(readsFolder, PathHandler.nonPFReadsSubFolder));
-                Directory.CreateDirectory(Path.Combine(readsFolder, PathHandler.readStatsSubFolder));
-            }
-        }
-
-        /// <summary>
-        /// Copies all data in runsFolder for which fq files are missing into fq files in readsFolder.
-        /// </summary>
-        /// <param name="runsFolder"></param>
-        /// <param name="readsFolder"></param>
-        public void Scan(string runsFolder, string readsFolder)
-        {
-            AssertOutputFolders(readsFolder);
-            projectDB = new ProjectDB();
-            string[] runFolderNames = Directory.GetDirectories(runsFolder);
-            foreach (string runFolder in runFolderNames)
-            {
-                int runNo;
-                string runId, runDate;
-                if (ParseRunFolderName(runFolder, out runNo, out runId, out runDate))
-                {
-                    string readyFilePath = Path.Combine(runFolder, Props.props.IlluminaRunReadyFilename);
-                    string callFolder = Path.Combine(runFolder, PathHandler.MakeRunDataSubPath());
-                    bool readyFileExists = File.Exists(readyFilePath);
-                    bool callFolderExists = Directory.Exists(callFolder);
-                    if (readyFileExists && callFolderExists)
-                    {
-                        if (projectDB.SecureStartRunCopy(runId, runNo, runDate))
-                        {
-                            bool someReadFailed;
-                            if (Props.props.ParallellFastqCopy)
-                                ParallelCopy(runFolder, readsFolder, out someReadFailed);
-                            else
-                                SerialCopy(runFolder, readsFolder, 1, 8, false, out someReadFailed);
-                            string runStatus = (someReadFailed) ? "copyfail" : "copied";
-                            projectDB.UpdateRunStatus(runId, runStatus, runNo);
-                        }
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -127,7 +78,7 @@ namespace Linnarsson.Strt
         /// <param name="someReadFailed">true if some lane/read failed (details written to logFile)</param>
         /// <returns>One ReadFileResult for each successfully written fq file</returns>
         public List<ReadFileResult> SerialCopy(string runFolder, string readsFolder, int laneFrom, int laneTo,
-                                                  bool forceOverwrite, out bool someReadFailed)
+                                                  bool forceOverwrite, out ReadCopierStatus status)
         {
             int maxLaneNo, maxReadNo;
             bool runInfoParsed = ParseRunInfo(runFolder, out maxLaneNo, out maxReadNo);
@@ -138,7 +89,7 @@ namespace Linnarsson.Strt
             if (!ParseRunFolderName(runFolder, out runNo, out runId, out runDate))
                 logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Can not parse runNo from " + runFolder + " - setting to 0.");
             string runName = Path.GetFileName(runFolder);
-            someReadFailed = false;
+            status = ReadCopierStatus.ALLREADSREADY;
             List<ReadFileResult> readFileResults = new List<ReadFileResult>();
             for (int lane = laneFrom; lane <= laneTo; lane++)
             {
@@ -150,13 +101,9 @@ namespace Linnarsson.Strt
                         readReadyFile = Path.Combine(runFolder, readReadyFile);
                         bool readReady = File.Exists(readReadyFile);
                         bool readAlreadyCopied = LaneReadWriter.DataExists(readsFolder, runNo, lane, read, runName);
-                        if (!readReady)
+                        if (!readReady && (runInfoParsed || read <= 2))
                         {
-                            if (runInfoParsed || read <= 2)
-                            {
-                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Skipping Run{0}_L{1}_{2}: {3} is missing.", runNo, lane, read, readReadyFile);
-                                someReadFailed = true;
-                            }
+                            status = ReadCopierStatus.SOMEREADMISSING;
                             continue;
                         }
                         if (readAlreadyCopied && !forceOverwrite)
@@ -169,8 +116,8 @@ namespace Linnarsson.Strt
                                 r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
                             if (r == null)
                             {
-                                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Copying Run{0}_L{1}_{2}: No bcl/qseq files found", runNo, lane, read);
-                                someReadFailed = true;
+                                logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Copying Run{0}_L{1}_{2}: No bcl/qseq files found", runNo, lane, read);
+                                status = ReadCopierStatus.SOMEREADFAILED;
                             }
                             else
                             {
@@ -183,7 +130,7 @@ namespace Linnarsson.Strt
                     catch (Exception e)
                     {
                         logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Copying Run{0}_L{1}_{2}: {3}", runNo, lane, read, e);
-                        someReadFailed = true;
+                        status = ReadCopierStatus.SOMEREADFAILED;
                     }
                 }
             }
@@ -226,7 +173,7 @@ namespace Linnarsson.Strt
             return r;
         }
 
-        private static bool ParseRunFolderName(string runFolder, out int runNo, out string runId, out string runDate)
+        public static bool ParseRunFolderName(string runFolder, out int runNo, out string runId, out string runDate)
         {
             runNo = 0;
             runId = "H" + DateTime.Now.ToString("HH") + "M" + DateTime.Now.ToString("mm") + "XXXX";
@@ -253,7 +200,7 @@ namespace Linnarsson.Strt
         public void CopyRun(object startObj)
         {
             CopierStart cs = (CopierStart)startObj;
-            cs.readFileResults = SerialCopy(cs.runFolder, cs.readsFolder, cs.laneFrom, cs.laneTo, cs.forceOverwrite, out cs.someReadFailed);
+            cs.readFileResults = SerialCopy(cs.runFolder, cs.readsFolder, cs.laneFrom, cs.laneTo, cs.forceOverwrite, out cs.status);
         }
 
         /// <summary>
@@ -262,12 +209,12 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="runFolder"></param>
         /// <param name="readsFolder"></param>
-        /// <param name="someReadFailed">true if some lane/read failed (details written to logFile)</param>
+        /// <param name="status">true if some lane/read failed (details written to logFile)</param>
         /// <returns>One ReadFileResult for each successfully written fq file</returns>
-        public List<ReadFileResult> ParallelCopy(string runFolder, string readsFolder, out bool someReadFailed)
+        public List<ReadFileResult> ParallelCopy(string runFolder, string readsFolder, out ReadCopierStatus status)
         {
+            status = ReadCopierStatus.ALLREADSREADY;
             List<ReadFileResult> readFileResults = new List<ReadFileResult>();
-            someReadFailed = false;
             CopierStart start1 = new CopierStart(runFolder, readsFolder, 1, 2, false);
             Thread thread1 = new Thread(CopyRun);
             thread1.Start(start1);
@@ -288,7 +235,12 @@ namespace Linnarsson.Strt
             readFileResults.AddRange(start2.readFileResults);
             readFileResults.AddRange(start3.readFileResults);
             readFileResults.AddRange(start4.readFileResults);
-            someReadFailed = start1.someReadFailed || start2.someReadFailed || start3.someReadFailed || start4.someReadFailed;
+            if (start1.status == ReadCopierStatus.SOMEREADFAILED || start2.status == ReadCopierStatus.SOMEREADFAILED ||
+                start3.status == ReadCopierStatus.SOMEREADFAILED || start4.status == ReadCopierStatus.SOMEREADFAILED)
+                status = ReadCopierStatus.SOMEREADFAILED;
+            else if (start1.status == ReadCopierStatus.SOMEREADMISSING || start2.status == ReadCopierStatus.SOMEREADMISSING ||
+                start3.status == ReadCopierStatus.SOMEREADMISSING || start4.status == ReadCopierStatus.SOMEREADMISSING)
+                status = ReadCopierStatus.SOMEREADMISSING;
             return readFileResults;
         }
     }
@@ -300,7 +252,7 @@ namespace Linnarsson.Strt
         public int laneFrom;
         public int laneTo;
         public bool forceOverwrite = false;
-        public bool someReadFailed = false;
+        public ReadCopierStatus status = ReadCopierStatus.ALLREADSREADY;
         public List<ReadFileResult> readFileResults = new List<ReadFileResult>();
 
         public CopierStart(string runFolder, string readsFolder, int laneFrom, int laneTo, bool forceOverwrite)

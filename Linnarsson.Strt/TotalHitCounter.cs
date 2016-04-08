@@ -22,7 +22,7 @@ namespace Linnarsson.Strt
 
         public TotalHitCounter(GenomeAnnotations Annotations)
         {
-            nBcs = Annotations.Barcodes.Count;
+            nBcs = Props.props.Barcodes.Count;
             TotalHitsByChrTypeBc = new Dictionary<string, int[,]>(Annotations.GetChromosomeIds().Length);
             foreach (string chr in Annotations.GetChromosomeIds())
                 TotalHitsByChrTypeBc[chr] = new int[AnnotType.Count, nBcs];

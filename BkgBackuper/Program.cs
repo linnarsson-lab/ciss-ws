@@ -126,14 +126,15 @@ namespace BkgBackuper
         private static bool TryCopy(StreamWriter logWriter)
         {
             bool triedSomeCopy = false;
-            List<string> readFiles = new ProjectDB().GetWaitingFilesToBackup();
+            IDB pdb = DBFactory.GetProjectDB();
+            List<string> readFiles = pdb.GetWaitingFilesToBackup();
             if (readFiles.Count > 0)
             {
                 foreach (string readFile in readFiles)
                 {
                     if (!File.Exists(readFile))
                     {
-                        new ProjectDB().SetBackupStatus(readFile, "missing");
+                        DBFactory.GetProjectDB().SetBackupStatus(readFile, "missing");
                         continue;
                     }
                     int hoursLeft = GetHoursLeft();
@@ -148,14 +149,14 @@ namespace BkgBackuper
                         {
                             Stopwatch sw = new Stopwatch();
                             sw.Start();
-                            new ProjectDB().SetBackupStatus(readFile, "copying");
+                            DBFactory.GetProjectDB().SetBackupStatus(readFile, "copying");
                             string cmdArg = string.Format("{0} {1}", readFile, backupDest);
                             logWriter.WriteLine(DateTime.Now.ToString() + " scp " + cmdArg);
                             logWriter.Flush();
                             CmdCaller cmd = new CmdCaller("scp", cmdArg);
                             if (cmd.ExitCode == 0)
                             {
-                                new ProjectDB().SetBackupStatus(readFile, "copied");
+                                DBFactory.GetProjectDB().SetBackupStatus(readFile, "copied");
                                 sw.Stop();
                                 TimeSpan timeTaken = sw.Elapsed;
                                 if (fileLen > 100000)
@@ -173,7 +174,7 @@ namespace BkgBackuper
                             {
                                 if (cmd.StdError.Contains("Network is unreachable"))
                                     throw new Exception(cmd.StdError + " - Will try again.");
-                                new ProjectDB().SetBackupStatus(readFile, "failed");
+                                DBFactory.GetProjectDB().SetBackupStatus(readFile, "failed");
                                 logWriter.WriteLine("{0} ERROR: scp {1} failed - Exit code: {2} {3}", 
                                                     DateTime.Now.ToString(), cmdArg, cmd.ExitCode, cmd.StdError);
                                 logWriter.Flush();
@@ -181,7 +182,7 @@ namespace BkgBackuper
                         }
                         catch (Exception exp)
                         {
-                            new ProjectDB().SetBackupStatus(readFile, "inqueue");
+                            DBFactory.GetProjectDB().SetBackupStatus(readFile, "inqueue");
                             logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: " + exp);
                             logWriter.Flush();
                             nExceptions++;

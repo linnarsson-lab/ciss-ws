@@ -35,13 +35,13 @@ namespace UpdateSampleAnnotations
             bool isFolder = Directory.Exists(resultFolderOrAnnotFile);
             string resultFolder = isFolder ? resultFolderOrAnnotFile : Path.GetDirectoryName(resultFolderOrAnnotFile);
             string projectFolder = Path.GetDirectoryName(resultFolder);
-            string projectName = Path.GetFileName(projectFolder);
-            string annotFile = isFolder ? GetOldAnnotationFile(resultFolderOrAnnotFile, projectName) : resultFolderOrAnnotFile;
+            string plateid = Path.GetFileName(projectFolder);
+            string annotFile = isFolder ? GetOldAnnotationFile(resultFolderOrAnnotFile, plateid) : resultFolderOrAnnotFile;
             string[] selectedWells = GetSelectedWells(annotFile);
             Match m = Regex.Match(resultFolder, resultFolderMatch);
             string barcodesName = m.Groups[1].Value;
             string speciesArg = m.Groups[2].Value;
-            string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
+            string layoutpath = PathHandler.GetLayoutPath(projectFolder);
             Barcodes barcodes = Barcodes.GetBarcodes(barcodesName);
             int[] selectedBcIndexes = new int[selectedWells.Length];
             for (int idx = 0; idx < selectedWells.Length; idx++)
@@ -52,7 +52,7 @@ namespace UpdateSampleAnnotations
                                         "\n  Has the barcode file (" + barcodesName + ") changed, or is the old annotation file erronous?");
                 selectedBcIndexes[idx] = selIdx;
             }
-            barcodes.ParsePlateLayout(projectName, sampleLayoutPath);
+            barcodes.ParsePlateLayout(plateid, layoutpath);
             Console.WriteLine("#Annotations:" + barcodes.GetAnnotationTitles().Count);
             string oldAnnotFile = annotFile + ".old";
             try
@@ -63,7 +63,7 @@ namespace UpdateSampleAnnotations
             { }
             File.Move(annotFile, oldAnnotFile);
             StreamWriter annotWriter = new StreamWriter(annotFile);
-            SampleAnnotationWriter.WriteSampleAnnotationLines(annotWriter, barcodes, projectName, 0, false, selectedBcIndexes);
+            SampleAnnotationWriter.WriteSampleAnnotationLines(annotWriter, barcodes, plateid, 0, false, selectedBcIndexes);
             annotWriter.Close();
         }
 

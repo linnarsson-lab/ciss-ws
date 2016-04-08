@@ -65,17 +65,17 @@ namespace Linnarsson.C1
                 annotationReader.AddCommonGeneModels(commonChrId);
             if (doInsert == "i")
             {
-                int transcriptomeID = InsertTranscriptomeIntoC1Db(genome, annotationReader);
-                InsertGenesIntoC1Db(transcriptomeID, genome, annotationReader);
-                InsertRepeatsIntoC1Db(transcriptomeID, genome);
+                int transcriptomeID = InsertTranscriptomeIntoDb(genome, annotationReader);
+                InsertGenesIntoDb(transcriptomeID, genome, annotationReader);
+                InsertRepeatsIntoDb(transcriptomeID, genome);
             }
             else if (doInsert == "u")
                 UpdateTranscriptAnnotations(updateTomeID, genome, annotationReader);
         }
 
-        private static int InsertTranscriptomeIntoC1Db(StrtGenome genome, AnnotationReader annotationReader)
+        private static int InsertTranscriptomeIntoDb(StrtGenome genome, AnnotationReader annotationReader)
         {
-            C1DB db = new C1DB();
+            IExpressionDB db = DBFactory.GetExpressionDB();
             Console.WriteLine("Inserting transcriptome metadata into database...");
             Transcriptome tt = new Transcriptome(null, genome.BuildVarAnnot, genome.Abbrev, genome.Annotation,
                                                  annotationReader.VisitedAnnotationPaths,
@@ -84,9 +84,9 @@ namespace Linnarsson.C1
             return tt.TranscriptomeID.Value;
         }
 
-        private static void InsertGenesIntoC1Db(int transcriptomeID, StrtGenome genome, AnnotationReader annotationReader)
+        private static void InsertGenesIntoDb(int transcriptomeID, StrtGenome genome, AnnotationReader annotationReader)
         {
-            C1DB db = new C1DB();
+            IExpressionDB db = DBFactory.GetExpressionDB();
             TranscriptAnnotator ta = new TranscriptAnnotator(genome);
             Console.WriteLine("Inserting transcripts into database...");
             int n = 0;
@@ -105,7 +105,7 @@ namespace Linnarsson.C1
 
         private static void UpdateTranscriptAnnotations(int transcriptomeID, StrtGenome genome, AnnotationReader annotationReader)
         {
-            C1DB db = new C1DB();
+            IExpressionDB db = DBFactory.GetExpressionDB();
             TranscriptAnnotator ta = new TranscriptAnnotator(genome);
             Console.WriteLine("Updating transcript annotations for transcriptome " + transcriptomeID + " in database...");
             int n = 0;
@@ -120,15 +120,27 @@ namespace Linnarsson.C1
             Console.WriteLine("...updated annotations for {0} uniquely identified transcript models.", n);
         }
 
+        private static void InsertWigChromsIntoDb(int transcriptomeID, StrtGenome genome)
+        {
+            Console.WriteLine("Inserting chromosome lengths into database...");
+            IExpressionDB db = DBFactory.GetExpressionDB();
+            int genomePos = 0;
+            foreach (KeyValuePair<string, int> p in genome.GetChromosomeLengths())
+            {
+                db.InsertChromosomePos(transcriptomeID, p.Key, genomePos, genomePos + p.Value);
+                genomePos += p.Value;
+            }
+        }
+
         /// <summary>
         /// Repeat names and total lengths are stored in cell10k db, but not the indivudal regions.
         /// These are read directly from the same repeat mask files during analysis.
         /// </summary>
         /// <param name="genome"></param>
-        private static void InsertRepeatsIntoC1Db(int transcriptomeID, StrtGenome genome)
+        private static void InsertRepeatsIntoDb(int transcriptomeID, StrtGenome genome)
         {
             Console.WriteLine("Inserting repeat types into database...");
-            C1DB db = new C1DB();
+            IExpressionDB db = DBFactory.GetExpressionDB();
             Dictionary<string, int> repeatTypeLengths = new Dictionary<string, int>();
             string[] rmskFiles = PathHandler.GetRepeatMaskFiles(genome);
             foreach (string rmskPath in rmskFiles)

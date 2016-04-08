@@ -12,7 +12,7 @@ using Linnarsson.C1;
 
 namespace Linnarsson.Dna
 {
-    public class ProjectDB
+    public class ProjectDB : IDB
     {
         private static string connectionString;
 
@@ -21,56 +21,20 @@ namespace Linnarsson.Dna
             connectionString = Props.props.MySqlServerConnectionString;
         }
 
-        private int IssueNonQuery(string sql)
+        private void IssueNonQuery(string sql)
         {
-            int nRowsAffected = 0;
             MySqlConnection conn = new MySqlConnection(connectionString);
             try
             {
                 conn.Open();
                 MySqlCommand cmd = new MySqlCommand(sql, conn);
-                nRowsAffected = cmd.ExecuteNonQuery();
+                cmd.ExecuteNonQuery();
             }
             catch (Exception ex)
             {
                 Console.WriteLine("{0}: {1}", DateTime.Now, ex);
             }
             conn.Close();
-            return nRowsAffected;
-        }
-
-        /// <summary>
-        /// Get all projects for every barcode set that have been queued for analysis in given lane.
-        /// Also set status of the analyses to 'extracting'
-        /// </summary>
-        /// <param name="runNo"></param>
-        /// <param name="lane"></param>
-        /// <returns>dictonary from each barcodeset to the its projects</returns>
-        public List<ExtractionTask> InitiateExtractionOfLaneAnalyses(int runNo, int lane)
-        {
-            List<ExtractionTask> tasks = new List<ExtractionTask>();
-            string sql = "SELECT a.id AS analysisid, p.plateid, barcodeset FROM {0}aaaproject p " +
-                         " LEFT JOIN {0}aaaanalysis a ON a.{0}aaaprojectid = p.id " +
-                         " LEFT JOIN {0}aaaanalysislane al ON al.{0}aaaanalysisid = a.id " +
-                         " LEFT JOIN {0}aaalane l ON l.id = al.{0}aaalaneid " +
-                         " LEFT JOIN {0}aaailluminarun r ON r.id = l.{0}aaailluminarunid " +
-                         " WHERE r.runno = {1} AND laneno = {2} AND a.status='{3}'";
-            sql = string.Format(sql, Props.props.DBPrefix, runNo, lane, ProjectDescription.STATUS_INQUEUE);
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-            {
-                string analysisId = rdr["analysisid"].ToString();
-                string projectId = rdr["plateid"].ToString();
-                string barcodeSetName = rdr["barcodeset"].ToString();
-                tasks.Add(new ExtractionTask(analysisId, projectId, barcodeSetName));
-                UpdateAnalysisStatus(analysisId, ProjectDescription.STATUS_EXTRACTING);
-            }
-            rdr.Close();
-            conn.Close();
-            return tasks;
         }
 
         private int nextInQueue = 0;
@@ -78,12 +42,10 @@ namespace Linnarsson.Dna
         {
             nextInQueue = 0;
         }
-        public ProjectDescription GetNextProjectInQueue(bool reverseSort)
+        public ProjectDescription GetNextProjectInQueue()
         {
             ProjectDescription pd = null;
-            string subSelect = string.Format("(SELECT p1.id FROM {0}aaaproject p1 JOIN {0}aaaanalysis a1 ON a1.{0}aaaprojectid=p1.id AND a1.status=\"processing\")", Props.props.DBPrefix);
-            List<ProjectDescription> queue = GetProjectDescriptions("WHERE a.status=\"" + ProjectDescription.STATUS_INQUEUE + "\"" +
-                " AND p.id NOT IN " + subSelect, reverseSort);
+            List<ProjectDescription> queue = GetProjectDescriptions();
             if (nextInQueue < queue.Count)
             {
                 pd = queue[nextInQueue++];
@@ -91,69 +53,70 @@ namespace Linnarsson.Dna
             return pd;
         }
 
-        private List<ProjectDescription> GetProjectDescriptions(string whereClause, bool reverseSort)
+        private List<ProjectDescription> GetProjectDescriptions()
         {
-            string sortStr = reverseSort ? " DESC" : "";
-            MySqlConnection conn = new MySqlConnection(connectionString);
             List<ProjectDescription> pds = new List<ProjectDescription>();
             string sql = "SELECT a.id, a.genome, a.transcript_db_version, a.transcript_variant, a.rpkm, a.readdir, a.emails, " +
-                         " p.plateid, p.barcodeset, p.spikemolecules, p.species, p.layoutfile, a.status, a.aligner, " +
+                         " p.plateid, p.barcodeset, p.spikemolecules, p.species, p.layoutfile, a.status, a.aligner, a.comment" +
                          " r.illuminarunid AS runid, GROUP_CONCAT(l.laneno ORDER BY l.laneno) AS lanenos " +
                          "FROM {0}aaaanalysis a " + 
                          "LEFT JOIN {0}aaaproject p ON a.{0}aaaprojectid = p.id " +
                          "RIGHT JOIN {0}aaaanalysislane al ON a.id = al.{0}aaaanalysisid " +
                          "LEFT JOIN {0}aaalane l ON al.{0}aaalaneid = l.id " +
                          "LEFT JOIN {0}aaailluminarun r ON l.{0}aaailluminarunid = r.id " +
-                         whereClause + 
-                         " GROUP BY a.id, runid ORDER BY a.id" + sortStr + ", p.plateid, runid;";
-            sql = string.Format(sql, Props.props.DBPrefix);
+                         "WHERE a.status=\"{1}\" AND p.id NOT IN " +
+                         "(SELECT p1.id FROM {0}aaaproject p1 JOIN {0}aaaanalysis a1 ON a1.{0}aaaprojectid=p1.id AND a1.status=\"{2}\") " +
+                         "GROUP BY a.id, runid ORDER BY a.id DESC, p.plateid, runid;";
+            sql = string.Format(sql, Props.props.DBPrefix, ProjectDescription.STATUS_INQUEUE, ProjectDescription.STATUS_PROCESSING);
+            MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             List<string> laneInfos = new List<string>();
-            string currAnalysisId = "", plateId = "", bcSet = "", defaultSpecies = "", layoutFile = "", plateStatus = "",
-                    emails = "", defaultBuild = "", variant = "", aligner = "";
-            bool rpkm = false;
+            string analysisId = "", plateId = "", barcodeset = "", defaultSpecies = "", layoutfile = "", plateStatus = "",
+                    emails = "", defaultBuild = "", variant = "", aligner = "", rpkm = "", comment = "", user = "";
             int readdir = 1;
-            int spikeMolecules = Props.props.TotalNumberOfAddedSpikeMolecules;
+            int spikemolecules = Props.props.TotalNumberOfAddedSpikeMolecules;
             while (rdr.Read())
             {
-                string analysisId = rdr["id"].ToString();
-                if (currAnalysisId != "" && analysisId != currAnalysisId)
+                string nextAnalysisId = rdr["id"].ToString();
+                if (analysisId != "" && nextAnalysisId != analysisId)
                 {
-                    pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies, laneInfos, layoutFile, plateStatus, emails,
-                                                   defaultBuild, variant, aligner, currAnalysisId, rpkm, spikeMolecules, readdir));
+                    pds.Add(new ProjectDescription(plateId, plateId, null, barcodeset, defaultSpecies, laneInfos, layoutfile, plateStatus, emails,
+                                                   defaultBuild, variant, aligner, analysisId, rpkm, spikemolecules, readdir, comment, user));
                     laneInfos = new List<string>();
                 }
-                currAnalysisId = analysisId;
+                analysisId = nextAnalysisId;
                 string laneInfo = string.Format("{0}:{1}", rdr["runid"], rdr.GetString("lanenos").Replace(",", ""));
                 laneInfos.Add(laneInfo);
                 plateId = rdr["plateid"].ToString();
-                bcSet = rdr["barcodeset"].ToString();
+                barcodeset = rdr["barcodeset"].ToString();
                 defaultSpecies = rdr["species"].ToString();
-                layoutFile = rdr["layoutfile"].ToString();
+                layoutfile = rdr["layoutfile"].ToString();
                 plateStatus = rdr["status"].ToString();
                 aligner = rdr["aligner"].ToString();
                 emails = rdr["emails"].ToString();
                 defaultBuild = rdr["transcript_db_version"].ToString();
                 variant = rdr["transcript_variant"].ToString();
-                spikeMolecules = int.Parse(rdr["spikemolecules"].ToString());
-                rpkm = (rdr["rpkm"].ToString() == "True");
+                spikemolecules = int.Parse(rdr["spikemolecules"].ToString());
+                rpkm = rdr["rpkm"].ToString();
                 readdir = rdr.GetInt32("readdir");
+                comment = rdr.GetString("comment");
+                user = rdr.GetString("user");
             }
-            if (currAnalysisId != "") pds.Add(new ProjectDescription(plateId, bcSet, defaultSpecies,
-                                                 laneInfos, layoutFile, plateStatus, emails,
-                                                 defaultBuild, variant, aligner, currAnalysisId, rpkm, spikeMolecules, readdir));
+            if (analysisId != "")
+                pds.Add(new ProjectDescription(plateId, plateId, null, barcodeset, defaultSpecies, laneInfos, layoutfile, plateStatus, emails,
+                                               defaultBuild, variant, aligner, analysisId, rpkm, spikemolecules, readdir, comment, user));
             rdr.Close();
             conn.Close();
             return pds;
         }
 
-        public int UpdateAnalysisStatus(string analysisId, string status)
+        public void UpdateAnalysisStatus(string analysisId, string status)
         {
             string sql = string.Format("UPDATE {0}aaaanalysis SET status=\"{1}\", time=NOW() WHERE id=\"{2}\";",
                                        Props.props.DBPrefix, status, analysisId);
-            return IssueNonQuery(sql);
+            IssueNonQuery(sql);
         }
 
         /// <summary>
@@ -166,8 +129,9 @@ namespace Linnarsson.Dna
             bool success = false;
             string sql = string.Format("SELECT * FROM {0}aaaanalysis WHERE id=\"{1}\" AND {0}aaaprojectid IN " +
                                        "(SELECT {0}aaaprojectid FROM {0}aaaanalysis a2 WHERE status IN (\"{2}\",\"{3}\",\"{4}\",\"{5}\") );",
-                         Props.props.DBPrefix, projDescr.analysisId, ProjectDescription.STATUS_PROCESSING,
-                         ProjectDescription.STATUS_EXTRACTING, ProjectDescription.STATUS_ALIGNING, ProjectDescription.STATUS_ANNOTATING);
+                         Props.props.DBPrefix, projDescr.analysisid,
+                         ProjectDescription.STATUS_PROCESSING, ProjectDescription.STATUS_EXTRACTING,
+                         ProjectDescription.STATUS_ALIGNING, ProjectDescription.STATUS_ANNOTATING);
             MySqlConnection conn = new MySqlConnection(connectionString);
             try
             {
@@ -179,7 +143,7 @@ namespace Linnarsson.Dna
                 if (!projectAlreadyProcessing)
                 {
                     sql = string.Format("UPDATE {0}aaaanalysis SET status=\"{1}\", time=NOW() WHERE id=\"{2}\" AND status=\"{3}\";",
-                     Props.props.DBPrefix, ProjectDescription.STATUS_EXTRACTING, projDescr.analysisId, ProjectDescription.STATUS_INQUEUE);
+                     Props.props.DBPrefix, ProjectDescription.STATUS_EXTRACTING, projDescr.analysisid, ProjectDescription.STATUS_INQUEUE);
                     cmd = new MySqlCommand(sql, conn);
                     int nRowsAffected = cmd.ExecuteNonQuery();
                     if (nRowsAffected > 0)
@@ -202,7 +166,7 @@ namespace Linnarsson.Dna
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             string sql = string.Format("SELECT {0}aaaprojectid, lanecount, comment, emails, user FROM {0}aaaanalysis WHERE id=\"{1}\";",
-                                        Props.props.DBPrefix, projDescr.analysisId);
+                                        Props.props.DBPrefix, projDescr.analysisid);
             MySqlCommand cmd = new MySqlCommand(sql, conn);
             MySqlDataReader rdr = cmd.ExecuteReader();
             rdr.Read();
@@ -211,7 +175,6 @@ namespace Linnarsson.Dna
             string comment = rdr["comment"].ToString();
             string emails = rdr["emails"].ToString();
             string user = rdr["user"].ToString();
-            string isRpkm = (projDescr.rpkm) ? "1" : "0";
             rdr.Close();
             bool firstResult = true;
             foreach (ResultDescription resultDescr in projDescr.resultDescriptions)
@@ -223,7 +186,7 @@ namespace Linnarsson.Dna
                             "transcript_variant=\"{5}\", resultspath=\"{6}\", status=\"{7}\", time=NOW() WHERE id=\"{8}\" ",
                             Props.props.DBPrefix,
                             projDescr.extractionVersion, projDescr.annotationVersion, resultDescr.build, resultDescr.annotAndDate,
-                            resultDescr.variants, resultDescr.resultFolder, projDescr.status, projDescr.analysisId);
+                            resultDescr.variants, resultDescr.resultFolder, projDescr.status, projDescr.analysisid);
                 }
                 else
                 {
@@ -233,7 +196,7 @@ namespace Linnarsson.Dna
                                "VALUES (\"{1}\", \"{2}\", \"{3}\", \"{4}\", \"{5}\", \"{6}\", \"{7}\", \"{8}\", \"{9}\", \"{10}\", \"{11}\", \"{12}\", \"{13}\", NOW());",
                                Props.props.DBPrefix,
                                projectId, projDescr.extractionVersion, projDescr.annotationVersion, resultDescr.build, comment, emails, user,
-                               resultDescr.annotAndDate, resultDescr.variants, laneCount, resultDescr.resultFolder, projDescr.status, isRpkm);
+                               resultDescr.annotAndDate, resultDescr.variants, laneCount, resultDescr.resultFolder, projDescr.status, projDescr.rpkm);
                 }
                 cmd = new MySqlCommand(sql, conn);
                 cmd.ExecuteNonQuery();
@@ -330,7 +293,7 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="runId"></param>
         /// <param name="cycles">Use -1 to indicate that this value should not be updated</param>
-        public void UpdateRunCycles(string runId, int read, int cycles)
+        private void UpdateRunCycles(string runId, int read, int cycles)
         {
             string col = (read == 1) ? "cycles" : ((read == 2) ? "indexcycles" : "pairedcycles");
             string sql = string.Format("UPDATE {0}aaailluminarun SET {1}=IFNULL({1}, IF('{2}'>=0,'{2}',{1})) WHERE illuminarunid='{3}';",
@@ -389,12 +352,6 @@ namespace Linnarsson.Dna
             IssueNonQuery(sql);
         }
 
-        public void RemoveFileToBackup(string readFile)
-        {
-            string sql = string.Format("DELETE FROM {0}aaabackupqueue WHERE path='{1}'", Props.props.DBPrefix, readFile);
-            IssueNonQuery(sql);
-        }
-
         public List<string> GetWaitingFilesToBackup()
         {
             List<string> waitingFiles = new List<string>();
@@ -428,7 +385,7 @@ namespace Linnarsson.Dna
             List<Cell> cells = GetCells(whereClause);
             return (cells.Count == 1)? cells[0] : null;
         }
-        public List<Cell> GetCellsOfChip(string chipid)
+        private List<Cell> GetCellsOfChip(string chipid)
         {
             string whereClause = string.Format("LEFT JOIN {0}aaachip h ON h.id=c.{0}aaachipid WHERE h.chipid='{1}' ORDER BY c.chipwell",
                 Props.props.DBPrefix, chipid);
@@ -446,7 +403,7 @@ namespace Linnarsson.Dna
             while (rdr.Read())
             {
                 bool valid = (rdr.GetInt32(9) == 1);
-                Cell cell = new Cell(rdr.GetInt32(0), rdr.GetInt32(1), rdr.GetString(2), rdr.GetString(3),
+                Cell cell = new Cell(rdr.GetInt32(0), rdr.GetInt32(1), 0, rdr.GetString(2), rdr.GetString(3),
                                      rdr.GetDouble(4), rdr.GetDouble(5), rdr.GetInt32(6), rdr.GetInt32(7), rdr.GetInt32(8), valid);
                 cells.Add(cell);
             }
@@ -454,12 +411,23 @@ namespace Linnarsson.Dna
             return cells;
         }
 
-        public Dictionary<string, int> GetCellIdByPlateWell(string projectId)
+        public Dictionary<string, int> GetWell2CellIdMapping(string plateid)
+        {
+            Dictionary<string, int> cellIdByPlateWell = GetCellIdByPlateWell(plateid);
+            if (cellIdByPlateWell.Count == 0)
+            {
+                SetPlateWellToChipWell(plateid);
+                cellIdByPlateWell = GetCellIdByPlateWell(plateid);
+            }
+            return cellIdByPlateWell;
+        }
+
+        private Dictionary<string, int> GetCellIdByPlateWell(string plateid)
         {
             Dictionary<string, int> cellIdByPlateWell = new Dictionary<string, int>();
             string sql = string.Format("SELECT c.platewell, c.id FROM {0}aaacell c LEFT JOIN {0}aaachip h ON c.{0}aaachipid=h.id " +
                      "JOIN {0}aaaproject p ON h.{0}aaaprojectid=p.id WHERE plateid='{1}' AND platewell != '' ORDER BY platewell",
-                     Props.props.DBPrefix, projectId);
+                     Props.props.DBPrefix, plateid);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);
@@ -470,7 +438,7 @@ namespace Linnarsson.Dna
             return cellIdByPlateWell;
         }
 
-        public void SetPlateWellToChipWell(string projectId)
+        private void SetPlateWellToChipWell(string projectId)
         {
             string sql = string.Format("UPDATE {0}aaachip h " +
                          " JOIN {0}aaaproject p ON h.{0}aaaprojectid=p.id JOIN {0}aaacell c ON c.{0}_aaachipid=h.id " +
@@ -478,42 +446,45 @@ namespace Linnarsson.Dna
             IssueNonQuery(sql);
         }
 
-        public void GetCellAnnotationsByPlate(string projectId,
+        public void GetCellAnnotations(string plateId,
             out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
-            GetCellAnnotations(string.Format("LEFT JOIN {0}aaachip h ON c.{0}aaachipid=h.id " +
-                        "LEFT JOIN {0}aaaproject p ON h.{0}aaaprojectid=p.id WHERE p.plateid='{1}' ORDER BY c.platewell", Props.props.DBPrefix, projectId),
+            CellAnnotationsCall(string.Format("LEFT JOIN {0}aaachip h ON c.{0}aaachipid=h.id " +
+                        "LEFT JOIN {0}aaaproject p ON h.{0}aaaprojectid=p.id WHERE p.plateid='{1}' ORDER BY c.platewell", Props.props.DBPrefix, plateId),
                 out annotations, out annotationIndexes);
+            if (annotations.Count == 0)
+            {
+                string chipid = plateId.Replace(C1Props.C1ProjectPrefix, "");
+                CellAnnotationsCall(string.Format("WHERE c.chipid='{0}' ORDER BY c.chipwell", chipid),
+                    out annotations, out annotationIndexes);
+                Console.WriteLine("WARNING: Plate " + plateId + " has not been properly loaded. Assuming matching chip->plate wellIds.");
+                throw new SampleLayoutFileException("Can not extract any well/cell annotations for " + plateId + "  from C1 database.");
+            }
         }
-        public void GetCellAnnotationsByChip(string chipId,
-            out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
-        {
-            GetCellAnnotations(string.Format("WHERE c.{0}aaachipid='{1}' ORDER BY c.chipwell", Props.props.DBPrefix, chipId),
-                out annotations, out annotationIndexes);
-        }
-        private void GetCellAnnotations(string chipOrProjectWhereSql,
+
+        private void CellAnnotationsCall(string chipOrProjectWhereSql,
             out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
             annotationIndexes = new Dictionary<string, int>();
             int i = 0;
-            annotationIndexes["Chip"] = i++;
-            annotationIndexes["ChipWell"] = i++;
-            annotationIndexes["Species"] = i++;
-            annotationIndexes["Age"] = i++;
-            annotationIndexes["Sex"] = i++;
-            annotationIndexes["Strain"] = i++;
-            annotationIndexes["Tissue"] = i++;
-            annotationIndexes["Treatment"] = i++;
-            annotationIndexes["DonorID"] = i++;
-            annotationIndexes["Weight"] = i++;
-            annotationIndexes["Diameter"] = i++;
-            annotationIndexes["Area"] = i++;
-            annotationIndexes["Red"] = i++;
-            annotationIndexes["Blue"] = i++;
-            annotationIndexes["Green"] = i++;
-            annotationIndexes["SpikeMolecules"] = i++;
-            annotationIndexes["Valid"] = i++;
-            annotationIndexes["Comments"] = i++;
+            annotationIndexes["chip"] = i++;
+            annotationIndexes["chipwell"] = i++;
+            annotationIndexes["species"] = i++;
+            annotationIndexes["age"] = i++;
+            annotationIndexes["sex"] = i++;
+            annotationIndexes["strain"] = i++;
+            annotationIndexes["tissue"] = i++;
+            annotationIndexes["treatment"] = i++;
+            annotationIndexes["animalid"] = i++;
+            annotationIndexes["weight"] = i++;
+            annotationIndexes["diameter"] = i++;
+            annotationIndexes["area"] = i++;
+            annotationIndexes["red"] = i++;
+            annotationIndexes["blue"] = i++;
+            annotationIndexes["green"] = i++;
+            annotationIndexes["Spikemolecules"] = i++;
+            annotationIndexes["valid"] = i++;
+            annotationIndexes["comments"] = i++;
             List<string> extraAnnotNames = GetCellAnnotationNames(chipOrProjectWhereSql);
             for (i = 0; i < extraAnnotNames.Count; i++)
                 annotationIndexes[extraAnnotNames[i]] = annotationIndexes.Count;
@@ -589,7 +560,7 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="cells">Cells to collect Chip metadata for</param>
         /// <returns></returns>
-        public Dictionary<int, Chip> GetChipsById(List<Cell> cells)
+        private Dictionary<int, Chip> GetChipsById(List<Cell> cells)
         {
             Dictionary<int, Chip> chipsById = new Dictionary<int, Chip>();
             foreach (Cell cell in cells)
@@ -601,34 +572,6 @@ namespace Linnarsson.Dna
                 }
             }
             return chipsById;
-        }
-
-        public List<string> GetCellIds()
-        {
-            List<string> cellIds = new List<string>();
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(string.Format("SELECT id FROM {0}aaacell", Props.props.DBPrefix), conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-                cellIds.Add(rdr.GetString(0));
-            rdr.Close();
-            conn.Close();
-            return cellIds;
-        }
-
-        public List<string> GetLoadedChips()
-        {
-            List<string> loadedChips = new List<string>();
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            string sql = string.Format("SELECT DISTINCT(chipid) FROM {0}aaachip", Props.props.DBPrefix);
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-                loadedChips.Add(rdr.GetString(0));
-            conn.Close();
-            return loadedChips;
         }
 
         public int GetIdOfChip(string chipid)
@@ -649,7 +592,7 @@ namespace Linnarsson.Dna
             return result;
         }
 
-        public Chip GetChipById(int id)
+        private Chip GetChipById(int id)
         {
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
@@ -681,7 +624,7 @@ namespace Linnarsson.Dna
             string sql = "INSERT INTO {0}aaacellimage ({0}aaacellid, reporter, marker, detection, relativepath) " +
                                "VALUES ({1},'{2}','{3}','{4}','{5}') " +
                          "ON DUPLICATE KEY UPDATE marker='{3}',detection='{4}',relativepath='{5}';";
-            sql = string.Format(sql, Props.props.DBPrefix, ci.CellID, ci.Reporter, ci.Marker, detectionValue, ci.RelativePath);
+            sql = string.Format(sql, Props.props.DBPrefix, ci.jos_aaacellid, ci.Reporter, ci.Marker, detectionValue, ci.RelativePath);
             IssueNonQuery(sql);
         }
 
@@ -706,238 +649,23 @@ namespace Linnarsson.Dna
             conn.Close();
             foreach (CellImage ci in c.cellImages)
             {
-                ci.CellID = cellId;
+                ci.jos_aaacellid = cellId;
                 InsertOrUpdateCellImage(ci);
             }
             foreach (CellAnnotation ca in c.cellAnnotations)
             {
-                ca.CellID = cellId;
+                ca.jos_aaacellid = cellId;
                 InsertOrUpdateCellAnnotation(ca);
             }
         }
 
         public void InsertOrUpdateCellAnnotation(CellAnnotation ca)
         {
-            string sql = "INSERT INTO {0}aaacellannotation (id, name, value) " +
-                               "VALUES ({1},'{2}','{3}') " +
+            string sql = "INSERT INTO {0}aaacellannotation (id, name, value) VALUES ({1},'{2}','{3}') " +
                          "ON DUPLICATE KEY UPDATE value='{2}';";
-            sql = string.Format(sql, Props.props.DBPrefix, ca.CellID, ca.Name, ca.Value);
+            sql = string.Format(sql, Props.props.DBPrefix, ca.jos_aaacellid, ca.Name, ca.Value);
             IssueNonQuery(sql);
         }
 
-        #region Stuff from C1DB for use in unified database:
-
-        private int InsertAndGetLastId(string sql, string tableName)
-        {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            cmd.ExecuteNonQuery();
-            string lastIdSql = string.Format("SELECT MAX(id) AS LastId FROM {0}", tableName);
-            cmd = new MySqlCommand(lastIdSql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            rdr.Read();
-            int lastId = int.Parse(rdr["LastId"].ToString());
-            conn.Close();
-            return lastId;
-        }
-
-        /// <summary>
-        /// Returns most up-to-date Transcriptome data for the specified genome data
-        /// </summary>
-        /// <param name="buildVarAnnot">e.g. "mm10_sUCSC"</param>
-        /// <returns>null if no match exists in database, or can not connect</returns>
-        public Transcriptome GetTranscriptome(string buildVarAnnot)
-        {
-            Transcriptome t = null;
-            try
-            {
-                string sql = string.Format("SELECT * FROM {0}aaatranscriptome WHERE name ='{1}' ORDER BY builddate DESC LIMIT 1",
-                    Props.props.DBPrefix, buildVarAnnot);
-                MySqlConnection conn = new MySqlConnection(connectionString);
-                conn.Open();
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                MySqlDataReader rdr = cmd.ExecuteReader();
-                if (rdr.Read()) t = new Transcriptome(rdr.GetInt32("id"), rdr.GetString("name"), rdr.GetString("organism"),
-                                    rdr.GetString("source"), rdr.GetString("genomefolder"), rdr.GetString("description"),
-                                    rdr.GetDateTime("builddate"), rdr.GetString("builderversion"), rdr.GetDateTime("analysisdate"),
-                                    rdr.GetString("annotationversion"));
-                conn.Close();
-            }
-            catch (MySqlException e)
-            {
-                Console.WriteLine("{0}: {1}", DateTime.Now, e);
-            }
-            return t;
-        }
-
-        public IEnumerable<Transcript> IterTranscriptsFromDB(int transcriptomeId)
-        {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            string sql = string.Format("SELECT * FROM {0}aaatranscript WHERE {0}aaatranscriptomeid='{1}' AND chromosome='CTRL' ORDER BY start",
-                Props.props.DBPrefix, transcriptomeId);
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-                yield return MakeTranscriptFromDBReader(rdr);
-            sql = string.Format("SELECT * FROM {0}aaatranscript WHERE {0}aaatranscriptomeid='{1}' AND chromosome!='CTRL' " +
-                                "AND LEFT(genename,2)!='r_' ORDER BY chromosome, start", Props.props.DBPrefix, transcriptomeId);
-            rdr.Close();
-            cmd = new MySqlCommand(sql, conn);
-            rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-                yield return MakeTranscriptFromDBReader(rdr);
-            rdr.Close();
-            conn.Close();
-        }
-
-        public Dictionary<string, int> GetRepeatNamesToTranscriptIdsMap(string buildVarAnnot)
-        {
-            Dictionary<string, int> mapping = new Dictionary<string, int>();
-            Transcriptome c1Trome = GetTranscriptome(buildVarAnnot);
-            if (c1Trome == null)
-                return mapping;
-            string sql = string.Format("SELECT genename, id FROM {0}aaatranscript WHERE {0}aaatranscriptomeid='{1}' AND type='repeat';",
-                                       Props.props.DBPrefix, c1Trome.TranscriptomeID.Value);
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-                mapping[rdr.GetString(0)] = rdr.GetInt32(1);
-            rdr.Close();
-            conn.Close();
-            return mapping;
-        }
-
-        private static Transcript MakeTranscriptFromDBReader(MySqlDataReader rdr)
-        {
-            string uniqueName = rdr.GetString("genename");
-            Match m = Regex.Match(uniqueName, "_v[0-9]+$");
-            string geneName = (m.Success) ? uniqueName.Substring(0, m.Index) : uniqueName;
-            Transcript t = new Transcript(rdr.GetInt32("id"), rdr.GetInt32("{0}aaatranscriptomeid"), rdr.GetInt32("exprblobidx"),
-                                          rdr.GetString("name"), rdr.GetString("type"), geneName, uniqueName,
-                                          rdr.GetString("entrezid"), rdr.GetString("description"),
-                                          rdr.GetString("chromosome"), rdr.GetInt32("start"), rdr.GetInt32("end"),
-                                          rdr.GetInt32("length"), rdr.GetChar("strand"), rdr.GetInt32("extension5prime"),
-                                          rdr.GetString("exonstarts"), rdr.GetString("exonends"), rdr.GetString("starttoclosecutsite"));
-            return t;
-        }
-
-        public void InsertTranscriptome(Transcriptome t)
-        {
-            CultureInfo cult = new CultureInfo("sv-SE");
-            string sql = "INSERT INTO {9}aaatranscriptome (name, organism, source, genomefolder, description, " +
-                                                    "builddate, builderversion, annotationversion, analysisdate) " +
-                                 "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}')";
-            sql = string.Format(sql, t.Name, t.Organism, t.Source, t.GenomeFolder, t.Description,
-                    t.BuildDate.ToString(cult), t.BuilderVersion, t.AnnotationVersion, t.AnalysisDate.ToString(cult), Props.props.DBPrefix);
-            int transcriptomeId = InsertAndGetLastId(sql, Props.props.DBPrefix + "aaatranscriptome");
-            t.TranscriptomeID = transcriptomeId;
-        }
-
-        public void InsertTranscript(Transcript t)
-        {
-            string description = MySqlHelper.EscapeString(t.Description);
-            string sql = "INSERT INTO {16}aaatranscript ({16}aaatranscriptomeid, name, type, genename, entrezid, description, chromosome, " +
-                                    "start, end, length, strand, extension5prime, exonstarts, exonends, " +
-                                    "exprblobidx, starttoclosecutsite) " +
-                                    "VALUES ('{0}','{1}','{2}','{3}','{4}','{5}','{6}'," +
-                                    "'{7}','{8}','{9}','{10}','{11}','{12}','{13}'," +
-                                    "'{14}','{15}')";
-            sql = string.Format(sql, t.TranscriptomeID, t.Name, t.Type, t.UniqueGeneName, t.EntrezID, description, t.Chromosome,
-                                     t.Start, t.End, t.Length, t.Strand, t.Extension5Prime, t.ExonStarts, t.ExonEnds,
-                                     t.ExprBlobIdx, t.StartToCloseCutSites, Props.props.DBPrefix);
-            int newTranscriptId = InsertAndGetLastId(sql, Props.props.DBPrefix + "aaatranscript");
-            t.TranscriptID = newTranscriptId;
-            foreach (TranscriptAnnotation ta in t.TranscriptAnnotations)
-            {
-                ta.TranscriptID = t.TranscriptID.Value;
-                InsertTranscriptAnnotation(ta);
-            }
-        }
-
-        public bool UpdateTranscriptAnnotations(Transcript t)
-        {
-            string sql = "SELECT id FROM {0}aaatranscript WHERE {0}aaatranscriptomeid='{1}' AND type='{2}' " +
-                              "AND genename='{3}' AND entrezid='{4}' AND chromosome='{5}'";
-            sql = string.Format(sql, Props.props.DBPrefix, t.TranscriptomeID, t.Type, t.UniqueGeneName, t.EntrezID, t.Chromosome);
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            int transcriptId = -1;
-            if (rdr.Read())
-            {
-                transcriptId = int.Parse(rdr["id"].ToString());
-                if (rdr.Read())
-                    transcriptId = -1;
-            }
-            conn.Close();
-            if (transcriptId > -1)
-            {
-                IssueNonQuery(string.Format("DELETE FROM transcriptannotation WHERE {0}aaatranscriptid={1}",
-                    Props.props.DBPrefix, transcriptId));
-                foreach (TranscriptAnnotation ta in t.TranscriptAnnotations)
-                {
-                    ta.TranscriptID = transcriptId;
-                    InsertTranscriptAnnotation(ta);
-                }
-            }
-            return (transcriptId > -1);
-        }
-
-        public void InsertTranscriptAnnotation(TranscriptAnnotation ta)
-        {
-            string description = MySqlHelper.EscapeString(ta.Description);
-            string value = MySqlHelper.EscapeString(ta.Value);
-            string sql = "REPLACE INTO {0}aaatranscriptannotation ({0}aaatranscriptid, source, value, description) " +
-                         "VALUES ('{1}','{2}','{3}','{4}')";
-            sql = string.Format(sql, Props.props.DBPrefix, ta.TranscriptID, ta.Source, value, description);
-            try
-            {
-                IssueNonQuery(sql);
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("InsertTranscriptAnnotation ERROR: " + ta.ToString());
-            }
-        }
-
-        public void InsertAnalysisSetup(string projectId, string bowtieIndex, string resultFolder, string parameters)
-        {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            string sql = string.Format("REPLACE INTO {0}aaaanalysissetup (plateid, path, genome, parameters) VALUES ('{1}','{2}','{3}','{4}')",
-                                      Props.props.DBPrefix, projectId, resultFolder, bowtieIndex, parameters);
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            cmd.ExecuteNonQuery();
-            conn.Close();
-        }
-
-        public void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator, bool mols)
-        {
-            string table = mols ? "expr" : "read";
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            int n = 0, maxId = 0, minId = int.MaxValue;
-            string sqlPat = "REPLACE INTO {0}aaa" + table + "blob ({0}aaacellid, {0}aaatranscriptomeid, data) VALUES ('{1}',{2}, ?BLOBDATA)";
-            foreach (ExprBlob exprBlob in exprBlobIterator)
-            {
-                string sql = string.Format(sqlPat, Props.props.DBPrefix, exprBlob.CellID, exprBlob.TranscriptomeID);
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                cmd.CommandText = sql;
-                cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
-                cmd.ExecuteNonQuery();
-                n += 1;
-                maxId = Math.Max(int.Parse(exprBlob.CellID), maxId);
-                minId = Math.Min(int.Parse(exprBlob.CellID), minId);
-            }
-            Console.WriteLine("Inserted {0} ExprBlobs with cellid {1} - {2}", n, minId, maxId);
-            conn.Close();
-        }
-
-        #endregion
     }
 }

@@ -60,6 +60,7 @@ namespace Linnarsson.C1
     {
         public int? id { get; set; }
         public int jos_aaachipid { get; set; }
+        public int jos_aaasampleid { get; set; }
         public string chipwell { get; set; }                // Well on C1 chip, e.g. "A02"
         public string platewell { get; set; }               // Well on sequencing plate, e.g. "B04"
         public double diameter { get; set; }
@@ -71,13 +72,14 @@ namespace Linnarsson.C1
         public List<CellImage> cellImages { get; set; }
         public List<CellAnnotation> cellAnnotations { get; set; }
 
-        public Cell(int? cellId, int jos_aaachipid, string chipWell, string plateWell,
+        public Cell(int? id, int jos_aaachipid, int jos_aaasampleid, string chipwell, string platewell,
                     double diameter, double area, int red, int green, int blue, bool valid)
         {
-            this.id = cellId;
+            this.id = id;
             this.jos_aaachipid = jos_aaachipid;
-            this.chipwell = chipWell;
-            this.platewell = plateWell;
+            this.jos_aaasampleid = jos_aaasampleid;
+            this.chipwell = chipwell;
+            this.platewell = platewell;
             this.diameter = diameter;
             this.area = area;
             this.red = red;
@@ -98,17 +100,17 @@ namespace Linnarsson.C1
 
     public class CellImage
     {
-        public int? CellImageID { get; set; }
-        public int? CellID { get; set; }
+        public int? id { get; set; }
+        public int? jos_aaacellid { get; set; }
         public string Reporter { get; set; }                 // channel used for imaging
         public string Marker { get; set; }                   // "TH-GFP"
         public int Detection { get; set; }             // was this marker detected?
         public string RelativePath { get; set; }             // Location of image file
 
-        public CellImage(int? cellImageId, int? cellId, string reporter, string marker, int detection, string relPath)
+        public CellImage(int? id, int? jos_aaacellid, string reporter, string marker, int detection, string relPath)
         {
-            this.CellImageID = cellImageId;
-            this.CellID = cellId;
+            this.id = id;
+            this.jos_aaacellid = jos_aaacellid;
             this.Reporter = reporter;
             this.Marker = marker;
             this.Detection = detection;
@@ -118,15 +120,15 @@ namespace Linnarsson.C1
 
     public class CellAnnotation
     {
-        public int? CellAnnotationID { get; set; }
-        public int CellID { get; set; }
+        public int? id { get; set; }
+        public int jos_aaacellid { get; set; }
         public string Name { get; set; }
         public string Value { get; set; }
 
-        public CellAnnotation(int? cellAnnotationId, int cellId, string name, string value)
+        public CellAnnotation(int? id, int jos_aaacellid, string name, string value)
         {
-            this.CellAnnotationID = cellAnnotationId;
-            this.CellID = cellId;
+            this.id = id;
+            this.jos_aaacellid = jos_aaacellid;
             this.Name = name;
             this.Value = value;
         }
@@ -134,7 +136,7 @@ namespace Linnarsson.C1
 
     public class ExprBlob
     {
-        public string CellID { get; set; }
+        public string jos_aaacellid { get; set; }
         public int TranscriptomeID { get; set; }
         public byte[] Blob { get; set; }
 
@@ -158,7 +160,7 @@ namespace Linnarsson.C1
 
     public class Expression
     {
-        public string CellID { get; set; }
+        public string jos_aaacellid { get; set; }
         public int TranscriptID { get; set; }
         /// <summary>
         /// Uniquely mapped reads
@@ -179,9 +181,9 @@ namespace Linnarsson.C1
 
         public Expression()
         { }
-        public Expression(string cellId, int transcriptId, int minReads, int minMols, int maxReads, int maxMols)
+        public Expression(string jos_aaacellid, int transcriptId, int minReads, int minMols, int maxReads, int maxMols)
         {
-            this.CellID = cellId;
+            this.jos_aaacellid = jos_aaacellid;
             this.TranscriptID = transcriptId;
             this.UniqueReads = minReads;
             this.UniqueMolecules = minMols;

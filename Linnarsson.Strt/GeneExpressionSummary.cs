@@ -46,7 +46,7 @@ namespace Linnarsson.Strt
             this.annotations = annotations;
             foreach (GeneFeature gf in annotations.IterOrderedGeneFeatures(true, true))
                 if (!data.ContainsKey(gf.NonVariantName))
-                    data[gf.NonVariantName] = new GeneExpression(annotations.Barcodes.Count);
+                    data[gf.NonVariantName] = new GeneExpression(Props.props.Barcodes.Count);
         }
 
         public void Summarize(MappedTagItem item, List<IFeature> exonHitFeatures)
@@ -74,11 +74,11 @@ namespace Linnarsson.Strt
 
         private void WriteGeneSummary(string file, Func<GeneExpression, int[]> valGetter)
         {
-            int[] speciesBcIndexes = annotations.Barcodes.GenomeAndEmptyBarcodeIndexes(annotations.Genome);
+            int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(annotations.Genome);
             using (StreamWriter writer = new StreamWriter(file))
             {
                 foreach (int idx in speciesBcIndexes)
-                    writer.Write("\t{0}_{1}", annotations.ProjectName, annotations.Barcodes.GetWellId(idx));
+                    writer.Write("\t{0}_{1}", annotations.ProjectName, Props.props.Barcodes.GetWellId(idx));
                 writer.WriteLine();
                 foreach (KeyValuePair<string, GeneExpression> p in data)
                 {

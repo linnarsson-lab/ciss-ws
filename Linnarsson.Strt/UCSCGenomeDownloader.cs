@@ -124,7 +124,8 @@ namespace Linnarsson.Strt
             foreach (string file in ListFiles(databaseURL))
             {
                 if (file.Contains("refFlat.txt") || file.Contains("refLink.txt") || file.Contains("kgXref.txt")
-                    || file.Contains("kgSpAlias.txt") || file.Contains("rmsk.txt") || file.Contains("README") || file.Contains("knownGene.txt"))
+                    || file.Contains("chromInfo.txt") || file.Contains("kgSpAlias.txt") || file.Contains("rmsk.txt")
+                    || file.Contains("README") || file.Contains("knownGene.txt"))
                     downloadFilenames.Add(file);
                 if (Regex.Match(file, gencodeMatcher).Success)
                 {

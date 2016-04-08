@@ -23,7 +23,7 @@ namespace BkgFastQMailer
 
         public void Scan()
         {
-            Dictionary<string, List<MailTaskDescription>> mds = new ProjectDB().GetQueuedMailTasksByEmail();
+            Dictionary<string, List<MailTaskDescription>> mds = DBFactory.GetProjectDB().GetQueuedMailTasksByEmail();
             string[] readsFiles = Directory.GetFiles(readsFolder);
             foreach (string email in mds.Keys)
             {
@@ -40,7 +40,7 @@ namespace BkgFastQMailer
                         Match m = Regex.Match(filename, pattern);
                         if (m.Success)
                         {
-                            new ProjectDB().UpdateMailTaskStatus(md.id, "processing");
+                            DBFactory.GetProjectDB().UpdateMailTaskStatus(md.id, "processing");
                             try
                             {
                                 string url = PublishReadsForDownload(readsFile);
@@ -77,7 +77,7 @@ namespace BkgFastQMailer
                 foreach (string id in resultByTaskId.Keys)
                 {
                     string status = (allStatus != "sent")? allStatus : resultByTaskId[id];
-                    new ProjectDB().UpdateMailTaskStatus(id, status);
+                    DBFactory.GetProjectDB().UpdateMailTaskStatus(id, status);
                 }
             }
         }

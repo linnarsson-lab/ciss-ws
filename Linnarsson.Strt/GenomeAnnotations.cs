@@ -65,24 +65,18 @@ namespace Linnarsson.Strt
         public Transcriptome dbTranscriptome;
         protected StrtGenome genome;
         public StrtGenome Genome { get { return genome; } }
-        public bool GenesSetupFromC1DB { get; private set; }
 
-        protected Barcodes barcodes;
-        public Barcodes Barcodes { get { return barcodes; } }
-        protected Props props;
         protected bool needChromosomeSequences;
         protected bool needChromosomeLengths;
         public bool noGeneVariants;
 
         public GenomeAnnotations(StrtGenome genome)
 		{
-            this.props = Props.props;
             this.genome = genome;
-            this.barcodes = props.Barcodes;
-            needChromosomeSequences = props.DetermineMotifs || props.AnalyzeSeqUpstreamTSSite || props.AnalyzeGCContent;
-            needChromosomeLengths = props.GenerateWiggle || props.GenerateBarcodedWiggle || props.GeneFeature5PrimeExtension > 0;
+            needChromosomeSequences = Props.props.DetermineMotifs || Props.props.AnalyzeSeqUpstreamTSSite || Props.props.AnalyzeGCContent;
+            needChromosomeLengths = Props.props.GenerateWiggle || Props.props.GenerateBarcodedWiggle || Props.props.GeneFeature5PrimeExtension > 0;
             noGeneVariants = !genome.GeneVariants;
-            GeneFeature.LocusFlankLength = props.LocusFlankLength;
+            GeneFeature.LocusFlankLength = Props.props.LocusFlankLength;
             ChromosomeSequences = new Dictionary<string, DnaSequence>();
             ChromosomeLengths = new Dictionary<string, int>();
             ExonAnnotations = new Dictionary<string, QuickAnnotationMap>();
@@ -118,7 +112,7 @@ namespace Linnarsson.Strt
 
         private void ReadChromsomeSequences(Dictionary<string, string> chrIdToFileMap)
         {
-            string[] selectedChrIds = props.SeqStatsChrIds;
+            string[] selectedChrIds = Props.props.SeqStatsChrIds;
             if (selectedChrIds == null || selectedChrIds[0] == "")
                 selectedChrIds = chrIdToFileMap.Keys.ToArray();
             Console.Write("Reading {0} chromosomes...", selectedChrIds.Length);
@@ -154,8 +148,7 @@ namespace Linnarsson.Strt
         public void SetupGenes()
         {
             string strtAnnotPath = genome.AssertAStrtAnnotPath();
-            GenesSetupFromC1DB = SetupGenesFromC1DB(strtAnnotPath);
-            if (!GenesSetupFromC1DB)
+            if (!SetupGenesFromC1DB(strtAnnotPath))
             {
                 SetupGenesFromStrtAnnotFile(strtAnnotPath);
                 Props.props.InsertCellDBData = false;
@@ -173,7 +166,7 @@ namespace Linnarsson.Strt
         /// <returns></returns>
         private bool SetupGenesFromC1DB(string STRTAnnotPath)
         {
-            C1DB db = new C1DB();
+            IExpressionDB db = DBFactory.GetExpressionDB();
             dbTranscriptome = db.GetTranscriptome(genome.BuildVarAnnot);
             if (dbTranscriptome == null) return false;
             int nModels = 0, nSpliceModels = 0, nExons = 0;
@@ -186,7 +179,7 @@ namespace Linnarsson.Strt
             }
             Console.WriteLine("Read {0} transcript models totalling {1} exons from database {2}.", nModels, nExons, dbTranscriptome.Name);
             ModifyGeneFeatures(new GeneFeatureOverlapMarkUpModifier());
-            if (!props.AnalyzeLoci)
+            if (!Props.props.AnalyzeLoci)
             {
                 foreach (LocusFeature spliceGf in AnnotationReader.IterSTRTAnnotFile(STRTAnnotPath))
                     if (spliceGf.Chr == genome.Annotation)
@@ -205,7 +198,7 @@ namespace Linnarsson.Strt
             int nModels = 0, nSpliceModels = 0, nExons = 0;
             foreach (LocusFeature gf in AnnotationReader.IterSTRTAnnotFile(STRTAnnotPath))
             {
-                if (props.AnalyzeLoci && gf.Chr == genome.Annotation) continue; // No splices analyzed in nuclei
+                if (Props.props.AnalyzeLoci && gf.Chr == genome.Annotation) continue; // No splices analyzed in nuclei
                 int nParts = RegisterGeneFeature(gf);
                 if (nParts > 0) { nModels++; nExons += nParts; }
                 else nSpliceModels -= nParts;
@@ -242,8 +235,11 @@ namespace Linnarsson.Strt
         private void SetupRepeats()
         {
             Dictionary<string, int> repeatToTrIdMap = new Dictionary<string, int>();
-            if (props.InsertCellDBData)
-                repeatToTrIdMap = new C1DB().GetRepeatNamesToTranscriptIdsMap(genome.BuildVarAnnot);
+            if (Props.props.InsertCellDBData)
+            {
+                IExpressionDB edb = DBFactory.GetExpressionDB();
+                repeatToTrIdMap = edb.GetRepeatNamesToTranscriptIdsMap(genome.BuildVarAnnot);
+            }
             string[] rmskFiles = PathHandler.GetRepeatMaskFiles(genome);
             Console.Write("Reading {0} masking files..", rmskFiles.Length);
             foreach (string rmskFile in rmskFiles)
@@ -534,12 +530,12 @@ namespace Linnarsson.Strt
         /// <returns></returns>
         public int[] GetByBcNumExpressedTranscripts()
         {
-            int[] nBarcodeExpressedGenes = new int[barcodes.Count];
+            int[] nBarcodeExpressedGenes = new int[Props.props.Barcodes.Count];
             foreach (GeneFeature gf in geneFeatures.Values)
             {
                 if (gf.IsSpike())
                     continue;
-                for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                for (int bcIdx = 0; bcIdx < Props.props.Barcodes.Count; bcIdx++)
                     if (gf.IsExpressed(bcIdx)) nBarcodeExpressedGenes[bcIdx]++;
             }
             return nBarcodeExpressedGenes;
@@ -594,7 +590,7 @@ namespace Linnarsson.Strt
         /// <returns>Array of per-barcode total hit counts</returns>
         public int[] GetTotalTranscriptCountsByBarcode(bool selectSpikes)
         {
-            int[] UniqueGeneCountsByBarcode = new int[barcodes.Count];
+            int[] UniqueGeneCountsByBarcode = new int[Props.props.Barcodes.Count];
             foreach (GeneFeature gf in geneFeatures.Values)
                 if (gf.IsSpike() == selectSpikes)
                 {
@@ -627,42 +623,42 @@ namespace Linnarsson.Strt
             WriteReadsToCEF(fileNameBase);
             //WriteExpressionTable(fileNameBase);
             //WriteReadsTable(fileNameBase);
-            if (props.UseRPKM) WriteNormalizedExpression(fileNameBase);
-            if (props.OutputLevel <= 1) return;
+            if (Props.props.UseRPKM) WriteNormalizedExpression(fileNameBase);
+            if (Props.props.OutputLevel <= 1) return;
             WriteTrueMolsToCEF(fileNameBase);
             WriteMinExpressionToCEF(fileNameBase);
             WriteMatlabTables(fileNameBase, GeneFeature.IterTrMaxHits);
             WriteRTable(fileNameBase, GeneFeature.IterTrMaxHits);
-            if (props.ShowTranscriptSharingGenes)
+            if (Props.props.ShowTranscriptSharingGenes)
                 WriteSharedGenes(fileNameBase);
-            if (props.OutputLevel <= 2) return;
+            if (Props.props.OutputLevel <= 2) return;
             WriteMaxOccupiedUMIsByEXONTable(fileNameBase);
             WriteIntronCounts(fileNameBase);
-            if (props.GenerateGeneProfilesByBarcode)
+            if (Props.props.GenerateGeneProfilesByBarcode)
             {
                 WriteExonCountsPerBarcode(fileNameBase);
                 WriteIntronCountsPerBarcode(fileNameBase);
             }
-            if (props.AnalyzeGCContent)
+            if (Props.props.AnalyzeGCContent)
                 WriteGCContentByTranscript(fileNameBase);
-            if (props.GenerateTranscriptProfiles)
+            if (Props.props.GenerateTranscriptProfiles)
             {
                 WriteTranscriptProfiles(fileNameBase);
                 WriteTranscriptHistograms(fileNameBase, averageReadLen);
             }
             WriteSplicesByGeneLocus(fileNameBase);
-            if (props.AnalyzeSpliceHitsByBarcode)
+            if (Props.props.AnalyzeSpliceHitsByBarcode)
                 WriteSplicesByGeneLocusAndBc(fileNameBase);
-            if (props.DirectionalReads)
+            if (Props.props.DirectionalReads)
             {
-                if (props.WriteCAPRegionHits)
+                if (Props.props.WriteCAPRegionHits)
                     WriteCAPRegionHitsTable(fileNameBase);
                 WriteExpressedAntisenseGenes(fileNameBase);
                 WriteUniquehits(fileNameBase);
             }
-            if (props.GenerateGeneLocusProfiles)
+            if (Props.props.GenerateGeneLocusProfiles)
                 WriteLocusHitsByGeneLocus(fileNameBase);
-            if (props.GenesToPaint != null && props.GenesToPaint.Length > 0)
+            if (Props.props.GenesToPaint != null && Props.props.GenesToPaint.Length > 0)
             {
                 PaintSelectedGeneLocusImages(fileNameBase);
                 PaintSelectedGeneTranscriptImages(fileNameBase);
@@ -801,9 +797,9 @@ namespace Linnarsson.Strt
         public IEnumerable<Expression> IterC1DBExpressions(Dictionary<string, int> cellIdByPlateWell)
         {
             Expression exprHolder = new Expression();
-            foreach (int bcIdx in barcodes.GenomeBarcodeIndexes(genome, true))
+            foreach (int bcIdx in Props.props.Barcodes.GenomeBarcodeIndexes(genome, true))
             {
-                exprHolder.CellID = cellIdByPlateWell[barcodes.GetWellId(bcIdx)].ToString();
+                exprHolder.jos_aaacellid = cellIdByPlateWell[Props.props.Barcodes.GetWellId(bcIdx)].ToString();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     exprHolder.TranscriptID = gf.TranscriptID;
@@ -840,10 +836,10 @@ namespace Linnarsson.Strt
                 nValues = Math.Max(nValues, gf.ExprBlobIdx + 1);
             ExprBlob exprBlob = new ExprBlob(nValues);
             exprBlob.TranscriptomeID = dbTranscriptome.TranscriptomeID.Value;
-            foreach (int bcIdx in barcodes.GenomeBarcodeIndexes(genome, true))
+            foreach (int bcIdx in Props.props.Barcodes.GenomeBarcodeIndexes(genome, true))
             {
                 exprBlob.ClearBlob();
-                exprBlob.CellID = cellIdByPlateWell[barcodes.GetWellId(bcIdx)].ToString();
+                exprBlob.jos_aaacellid = cellIdByPlateWell[Props.props.Barcodes.GetWellId(bcIdx)].ToString();
                 foreach (GeneFeature gf in geneFeatures.Values)
                 {
                     exprBlob.SetBlobValue(gf.ExprBlobIdx, gf.TrHits(bcIdx, useMols));
@@ -854,11 +850,11 @@ namespace Linnarsson.Strt
 
         private void WriteReadsTable(string fileNameBase)
         {
-            if (!barcodes.HasUMIs) return;
+            if (!Props.props.Barcodes.HasUMIs) return;
             string readFile = fileNameBase + "_reads.tab";
             string header = MakeFirstHeader(true, "#{0} {1} unfiltered read counts and sense+antisense reads counts for repeat types.{3}");
             WriteBasicDataTable(readFile, header, GeneFeature.IterTrReads);
-            int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             using (StreamWriter outFile = new StreamWriter(readFile, true))
             {
                 foreach (RepeatFeature rf in IterOrderedRepeatFeatures())
@@ -876,21 +872,21 @@ namespace Linnarsson.Strt
 
         private void WriteMaxOccupiedUMIsByEXONTable(string fileNameBase)
         {
-            if (!barcodes.HasUMIs) return;
+            if (!Props.props.Barcodes.HasUMIs) return;
             string header = "#Maximal occupied UMIs (after mutated UMI filtering) in each barcode of each transcript.";
             WriteBasicDataTable(fileNameBase + "_EXON_UMI_usage.tab", header, GeneFeature.IterMaxOccupiedUMIsByEXON);
         }
 
         private void WriteTrueMolsTable(string fileNameBase)
         {
-            if (!barcodes.HasUMIs) return;
+            if (!Props.props.Barcodes.HasUMIs) return;
             string header = MakeFirstHeader(true, "#{0} {1} estimated true molecule counts.{3}");
             WriteBasicDataTable(fileNameBase + "_true_counts.tab", header, GeneFeature.IterTrEstTrueMolCounts);
         }
 
         private void WriteBasicDataTable(string fileName, string header, HitIterator hitIterator)
         {
-            int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             using (StreamWriter outFile = new StreamWriter(fileName))
             {
                 outFile.WriteLine(header);
@@ -921,15 +917,15 @@ namespace Linnarsson.Strt
         /// <returns></returns>
         private string MakeFirstHeader(bool withMultireads, string pattern)
         {
-            string dataType = withMultireads ? string.Format("Max (using also <={0}x mapping multireads)", props.MaxAlternativeMappings)
+            string dataType = withMultireads ? string.Format("Max (using also <={0}x mapping multireads)", Props.props.MaxAlternativeMappings)
                                              : "Min (using only uniquely mapping reads)";
-            string dirType = props.DirectionalReads ? "sense only" : "sense+antisense";
-            string valueType = barcodes.HasUMIs ? "molecule" : "read";
+            string dirType = Props.props.DirectionalReads ? "sense only" : "sense+antisense";
+            string valueType = Props.props.Barcodes.HasUMIs ? "molecule" : "read";
             string multireadTxt = "";
             if (!withMultireads)
                 multireadTxt = " Multireads have been assigned " +
-                    ((props.MultireadMappingMode == MultiReadMappingType.Random) ? "randomly to one mapping." :
-                    (props.MultireadMappingMode == MultiReadMappingType.Most5Prime) ? "to their most 5' mapping." : "multiply to every alternative mapping.");
+                    ((Props.props.MultireadMappingMode == MultiReadMappingType.Random) ? "randomly to one mapping." :
+                    (Props.props.MultireadMappingMode == MultiReadMappingType.Most5Prime) ? "to their most 5' mapping." : "multiply to every alternative mapping.");
             string firstHeader = string.Format(pattern, dataType, dirType, valueType, multireadTxt);
             return firstHeader;
         }
@@ -943,7 +939,7 @@ namespace Linnarsson.Strt
 
         private void WriteReadsToCEF(string fileNameBase)
         {
-            if (!barcodes.HasUMIs) return;
+            if (!Props.props.Barcodes.HasUMIs) return;
             string cefPath = fileNameBase + "_reads.cef";
             string h = MakeFirstHeader(true, "#{0} {1} read counts for transcripts.{3}");
             WriteCEFDataTable(cefPath, h, GeneFeature.IterTrReads);
@@ -951,7 +947,7 @@ namespace Linnarsson.Strt
 
         private void WriteTrueMolsToCEF(string fileNameBase)
         {
-            if (!barcodes.HasUMIs) return;
+            if (!Props.props.Barcodes.HasUMIs) return;
             string cefPath = fileNameBase + "_true_counts.cef";
             string h = MakeFirstHeader(true, "#{0} {1} estimated true molecule counts.{3}");
             WriteCEFDataTable(cefPath, h, GeneFeature.IterTrEstTrueMolCounts);
@@ -986,10 +982,10 @@ namespace Linnarsson.Strt
                 string firstHeader = MakeFirstHeader(withMultireads,
                                        "#{0} {1} {2} counts for transcripts, and sense+antisense {2} counts for repeat types.{3}");
                 writer.WriteLine(firstHeader);
-                int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+                int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 WriteSampleAnnotationLines(writer, 9, true, speciesBcIndexes);
                 writer.WriteLine("Feature\tType\tTrNames\tChr\tPos\tStrand\tTrLen\tClose{0}\tMinExonHits\tExonHits",
-                                 string.Join("/", props.CAPCloseSiteSearchCutters));
+                                 string.Join("/", Props.props.CAPCloseSiteSearchCutters));
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     string[] fields = (gf.GeneMetadata + GeneFeature.metadataDelim).Split(GeneFeature.metadataDelim);
@@ -1021,7 +1017,7 @@ namespace Linnarsson.Strt
                 int nHeaders = 1;
                 int nRowAttrs = 8;
                 int nColAttrs = GetNSampleAnnotationLines();
-                int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+                int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 int nCols = speciesBcIndexes.Length;
                 int nRows = 0;
                 int nFields = nRowAttrs + nCols + 1;
@@ -1030,7 +1026,7 @@ namespace Linnarsson.Strt
                 writer.WriteLine("Description\t{0}{1}", header1, new string('\t', nFields - 2));
                 WriteSampleAnnotationLines(writer, nRowAttrs, false, speciesBcIndexes);
                 writer.WriteLine("Feature\tType\tTrNames\tChr\tPos\tStrand\tTrLen\tClose{0}{1}",
-                                 string.Join("/", props.CAPCloseSiteSearchCutters), new string('\t', nFields - 8));
+                                 string.Join("/", Props.props.CAPCloseSiteSearchCutters), new string('\t', nFields - 8));
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     string[] fields = (gf.GeneMetadata + GeneFeature.metadataDelim).Split(GeneFeature.metadataDelim);
@@ -1072,9 +1068,9 @@ namespace Linnarsson.Strt
             string fileName = fileNameBase + "_expression_for_R.tab";
             using (StreamWriter writer = new StreamWriter(fileName))
             {
-                int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+                int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 foreach (int idx in speciesBcIndexes)
-                    writer.Write("\t{0}-{1}", ProjectName, barcodes.GetWellId(idx));
+                    writer.Write("\t{0}-{1}", ProjectName, Props.props.Barcodes.GetWellId(idx));
                 writer.WriteLine();
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
@@ -1088,7 +1084,7 @@ namespace Linnarsson.Strt
 
         private string WriteMatlabTables(string fileNameBase, HitIterator hitIterator)
         {
-            int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             using (StreamWriter file = new StreamWriter(fileNameBase + "_MATLAB_annotations.tab"))
                 WriteSampleAnnotationLines(file, 0, false, speciesBcIndexes);
             string fileName = fileNameBase + "_MATLAB_expression.tab";
@@ -1096,7 +1092,7 @@ namespace Linnarsson.Strt
             {
                 writer.Write("Feature\tChr\tPos\tStrand");
                 foreach (int idx in speciesBcIndexes)
-                    writer.Write("\t{0}-{1}", ProjectName, barcodes.GetWellId(idx));
+                    writer.Write("\t{0}-{1}", ProjectName, Props.props.Barcodes.GetWellId(idx));
                 writer.WriteLine();
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
@@ -1119,7 +1115,7 @@ namespace Linnarsson.Strt
         private void WriteQlucoreTable(string fileNameBase)
         {
             string fileName = fileNameBase + "_" + MakeRPFileType() + ".gedata";
-            int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             Dictionary<GeneFeature, double[]> normalizedData = GetNormalizedData(speciesBcIndexes);
             int nSamples = speciesBcIndexes.Length;
             int nSampleAttributes = GetNSampleAnnotationLines();
@@ -1147,14 +1143,14 @@ namespace Linnarsson.Strt
         {
             int[] totalByBarcode = GetTotalTranscriptCountsByBarcode(false);
             int grandTotal = totalByBarcode.Sum();
-            double normalizer = barcodes.HasUMIs ? (grandTotal / (double)totalByBarcode.Count(v => v > 0)) : 1.0E+6;
+            double normalizer = Props.props.Barcodes.HasUMIs ? (grandTotal / (double)totalByBarcode.Count(v => v > 0)) : 1.0E+6;
             double[] normFactors = CalcNormalizationFactors(totalByBarcode);
             double trLenFactor = 1.0;
             Dictionary<GeneFeature, double[]> normalizedData = new Dictionary<GeneFeature, double[]>();
             foreach (GeneFeature gf in IterOrderedGeneFeatures(false, true))
             {
                 double[] expr = new double[selectedBcIndexes.Length];
-                if (props.UseRPKM)
+                if (Props.props.UseRPKM)
                     trLenFactor = gf.GetTranscriptLength() / 1000.0;
                 int exprIdx = 0;
                 foreach (int bcIdx in selectedBcIndexes)
@@ -1169,31 +1165,31 @@ namespace Linnarsson.Strt
 
         private string MakeRPFileType()
         {
-            string ROrM = barcodes.HasUMIs ? "Mols" : "Reads";
-            return ROrM + (props.UseRPKM ? "PerKBases" : "") + (barcodes.HasUMIs ? "Normalized" : "PerMillion");
+            string ROrM = Props.props.Barcodes.HasUMIs ? "Mols" : "Reads";
+            return ROrM + (Props.props.UseRPKM ? "PerKBases" : "") + (Props.props.Barcodes.HasUMIs ? "Normalized" : "PerMillion");
         }
 
         private void WriteNormalizedExpression(string fileNameBase)
         {
             string exprFile = fileNameBase + "_" + MakeRPFileType() + ".tab";
-            bool molCounts = barcodes.HasUMIs;
+            bool molCounts = Props.props.Barcodes.HasUMIs;
             using (StreamWriter exprWriter = new StreamWriter(exprFile))
             {
-                string rpDescr = (molCounts ? "molecules " : "reads ") + (props.UseRPKM ? "per kilobase transcript and " : "") +
+                string rpDescr = (molCounts ? "molecules " : "reads ") + (Props.props.UseRPKM ? "per kilobase transcript and " : "") +
                                  (molCounts ? "normalized to the average across all samples" : "million");
                 exprWriter.WriteLine("Values in the table are " + rpDescr);
                 exprWriter.WriteLine("Note that added spikes and transcripts are normalized separately.");
-                if (props.DirectionalReads)
+                if (Props.props.DirectionalReads)
                 {
                     exprWriter.WriteLine("The given estimated detection thresholds ('P') are calculated from 99% and 99.9% of the global distribution ");
                     exprWriter.WriteLine("of AntiSense Exon hits, and the normalized values for main transcripts in each barcode.");
                 }
-                if (!props.UseRPKM)
+                if (!Props.props.UseRPKM)
                     exprWriter.WriteLine("Single{0} is the value (in that barcode and spike or sample section) that corresponds to a single {1}.",
                                          (molCounts ? "Mol" : "Read"), (molCounts ? "molecule" : "read"));
-                int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-                WriteSampleAnnotationLines(exprWriter, (props.DirectionalReads ? 9 : 7), true, speciesBcIndexes);
-                exprWriter.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\t{0}Average\tCV", (props.DirectionalReads ? "P=0.01\tP=0.001\t" : ""));
+                int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+                WriteSampleAnnotationLines(exprWriter, (Props.props.DirectionalReads ? 9 : 7), true, speciesBcIndexes);
+                exprWriter.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tTotExonHits\t{0}Average\tCV", (Props.props.DirectionalReads ? "P=0.01\tP=0.001\t" : ""));
                 WriteNormalizedExprSection(exprWriter, true);
                 exprWriter.WriteLine();
                 WriteNormalizedExprSection(exprWriter, false);
@@ -1202,10 +1198,10 @@ namespace Linnarsson.Strt
 
         private void WriteNormalizedExprSection(StreamWriter exprWriter, bool selectSpikes)
         {
-            int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             int[] totalByBarcode = GetTotalTranscriptCountsByBarcode(selectSpikes);
             double[] normFactors = CalcNormalizationFactors(totalByBarcode);
-            string normName = (props.UseRPKM) ? "Normalizer" : (barcodes.HasUMIs) ? "SingleMol" : "SingleRead";
+            string normName = (Props.props.UseRPKM) ? "Normalizer" : (Props.props.Barcodes.HasUMIs) ? "SingleMol" : "SingleRead";
             exprWriter.Write("{0}\t\t\t\t\t\t\t", normName);
             foreach (int idx in speciesBcIndexes)
                 exprWriter.Write("\t{0:G6}", normFactors[idx]);
@@ -1213,7 +1209,7 @@ namespace Linnarsson.Strt
 
             foreach (GeneFeature gf in IterOrderedGeneFeatures(selectSpikes, !selectSpikes))
             {
-                double trLenFactor = (props.UseRPKM) ? gf.GetTranscriptLength() : 1000.0;
+                double trLenFactor = (Props.props.UseRPKM) ? gf.GetTranscriptLength() : 1000.0;
                 string safeName = ExcelRescueGeneName(gf.Name);
                 exprWriter.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
                                  safeName, gf.Chr, gf.Start, gf.Strand, gf.GetTranscriptLength(), gf.GetTranscriptHits());
@@ -1234,7 +1230,7 @@ namespace Linnarsson.Strt
 
         private double[] CalcNormalizationFactors(int[] totalByBarcode)
         {
-            double normalizer = barcodes.HasUMIs ? (totalByBarcode.Sum() / (double)totalByBarcode.Count(v => v > 0)) : 1.0E+6;
+            double normalizer = Props.props.Barcodes.HasUMIs ? (totalByBarcode.Sum() / (double)totalByBarcode.Count(v => v > 0)) : 1.0E+6;
             double[] normFactors = Array.ConvertAll(totalByBarcode, v => ((v > 0) ? (normalizer / (double)v) : 0.0));
             return normFactors;
         }
@@ -1244,13 +1240,13 @@ namespace Linnarsson.Strt
             string exprPath = fileNameBase + "_CAPRegionHits.tab";
             using (StreamWriter matrixFile = new StreamWriter(exprPath))
             {
-                string hitType = barcodes.HasUMIs ? "molecule" : "read";
+                string hitType = Props.props.Barcodes.HasUMIs ? "molecule" : "read";
                 matrixFile.WriteLine("{0} hits within {1} bases ('CAP Region') downstream of transcript start (moved {2} bases 5' from original annotation).",
-                                     hitType, props.CapRegionSize, props.GeneFeature5PrimeExtension);
-                int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+                                     hitType, Props.props.CapRegionSize, Props.props.GeneFeature5PrimeExtension);
+                int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 matrixFile.Write("Feature\tChr\tCAPPos\tStrand\tAllTrscrHits\tSumCAPHits");
                 foreach (int idx in speciesBcIndexes)
-                    matrixFile.Write("\t{0}", barcodes.GetWellId(idx));
+                    matrixFile.Write("\t{0}", Props.props.Barcodes.GetWellId(idx));
                 matrixFile.WriteLine();
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
@@ -1267,7 +1263,7 @@ namespace Linnarsson.Strt
 
         private int GetNSampleAnnotationLines()
         {
-            return 3 + barcodes.GetAnnotationTitles().Count;
+            return 3 + Props.props.Barcodes.GetAnnotationTitles().Count;
         }
         private void WriteSampleAnnotationLines(StreamWriter matrixFile, int nTabs, bool addColon, int[] selectedBcIndexes)
         {
@@ -1275,21 +1271,21 @@ namespace Linnarsson.Strt
             String tabs = new String('\t', nTabs);
             matrixFile.Write("{0}Sample{1}", tabs, colon);
             foreach (int idx in selectedBcIndexes)
-                matrixFile.Write("\t{0}_{1}", ProjectName, barcodes.GetWellId(idx));
+                matrixFile.Write("\t{0}_{1}", ProjectName, Props.props.Barcodes.GetWellId(idx));
             matrixFile.WriteLine();
             matrixFile.Write("{0}Well{1}", tabs, colon);
             foreach (int idx in selectedBcIndexes)
-                matrixFile.Write("\t{0}", barcodes.GetWellId(idx));
+                matrixFile.Write("\t{0}", Props.props.Barcodes.GetWellId(idx));
             matrixFile.WriteLine();
             matrixFile.Write("{0}Barcode{1}", tabs, colon);
             foreach (int idx in selectedBcIndexes)
-                matrixFile.Write("\t{0}", barcodes.Seqs[idx]);
+                matrixFile.Write("\t{0}", Props.props.Barcodes.Seqs[idx]);
             matrixFile.WriteLine();
-            foreach (string annotation in barcodes.GetAnnotationTitles())
+            foreach (string annotation in Props.props.Barcodes.GetAnnotationTitles())
             {
                 matrixFile.Write("{0}{1}{2}", tabs, annotation, colon);
                 foreach (int idx in selectedBcIndexes)
-                    matrixFile.Write("\t{0}", barcodes.GetAnnotation(annotation, idx));
+                    matrixFile.Write("\t{0}", Props.props.Barcodes.GetAnnotation(annotation, idx));
                 matrixFile.WriteLine();
             }
         }
@@ -1334,7 +1330,7 @@ namespace Linnarsson.Strt
             int nExonsToShow = MaxExonCount();
             using (StreamWriter file = new StreamWriter(fileNameBase + "_exons.tab"))
             {
-                string hitType = barcodes.HasUMIs ? "molecules" : "reads";
+                string hitType = Props.props.Barcodes.HasUMIs ? "molecules" : "reads";
                 file.WriteLine("Hits counts as " + hitType + " sorted by detected type of annotation, direction, and exon number.");
                 file.WriteLine("MixGene shows overlapping genes in the same, ASGene in the opposite orientation.");
                 file.Write("Gene\tChr\tPos\tStrand\tTrLen\tUSTRLen\tLocusLen\tDSTRLen\t#SenseHits\t#AntiHits\tIntronLen\t#Exons\tMixGene\tASGene");
@@ -1344,7 +1340,7 @@ namespace Linnarsson.Strt
                     if (i == AnnotType.EXON) annotName = "exon+splice";
                     file.Write("\t#{0}Hits", annotName);
                 }
-                string exonTitle = props.DirectionalReads ? "SExon" : "Exon";
+                string exonTitle = Props.props.DirectionalReads ? "SExon" : "Exon";
                 for (int exonId = 1; exonId <= nExonsToShow; exonId++)
                     file.Write("\t{0}{1}", exonTitle, exonId);
                 file.WriteLine();
@@ -1367,7 +1363,7 @@ namespace Linnarsson.Strt
                         int nHits = gf.HitsByAnnotType[i];
                         file.Write("\t{0}", nHits);
                     }
-                    int[] counts = CompactGenePainter.GetCountsPerExon(gf, props.DirectionalReads);
+                    int[] counts = CompactGenePainter.GetCountsPerExon(gf, Props.props.DirectionalReads);
                     WriteCountsDirected(file, gf.Strand, counts);
                 }
             }
@@ -1397,7 +1393,7 @@ namespace Linnarsson.Strt
                 {
                     string safeName = ExcelRescueGeneName(gf.Name);
                     file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", safeName, gf.Chr, gf.Strand, gf.LocusStart, gf.GetLocusLength(), gf.LocusEnd);
-                    int[] counts = CompactGenePainter.GetCountsPerIntron(gf, props.DirectionalReads);
+                    int[] counts = CompactGenePainter.GetCountsPerIntron(gf, Props.props.DirectionalReads);
                     if (gf.Strand == '-')
                     {
                         file.Write("\t{0}\t{1}", counts[1], counts[0]);
@@ -1426,10 +1422,10 @@ namespace Linnarsson.Strt
                 for (int intronId = 1; intronId <= nIntronsToShow - 2; intronId++)
                     file.Write("\tIntr{0}", intronId);
                 file.WriteLine();
-                int[,] counts = new int[barcodes.Count, nIntronsToShow];
+                int[,] counts = new int[Props.props.Barcodes.Count, nIntronsToShow];
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
-                    int n = CompactGenePainter.GetCountsPerIntronAndBarcode(gf, props.DirectionalReads, barcodes.Count, ref counts);
+                    int n = CompactGenePainter.GetCountsPerIntronAndBarcode(gf, Props.props.DirectionalReads, Props.props.Barcodes.Count, ref counts);
                     string safeName = ExcelRescueGeneName(gf.Name);
                     string firstCols = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
                                                      safeName, gf.Chr, gf.Strand, gf.LocusStart, gf.GetLocusLength(), gf.LocusEnd);
@@ -1442,9 +1438,9 @@ namespace Linnarsson.Strt
         private void WriteCountsByBarcodeDirected(StreamWriter file, int[,] counts, GeneFeature gf,
                                                     string firstCols, string followingFirstCols, int startAt, int last)
         {
-            for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+            for (int bcIdx = 0; bcIdx < Props.props.Barcodes.Count; bcIdx++)
             {
-                string bc = barcodes.Seqs[bcIdx];
+                string bc = Props.props.Barcodes.Seqs[bcIdx];
                 file.Write("{0}\t{1}", firstCols, bc);
                 if (gf.Strand == '-')
                 {
@@ -1479,10 +1475,10 @@ namespace Linnarsson.Strt
                 for (int exonId = 1; exonId <= nExonsToShow; exonId++)
                     file.Write("\tExon{0}", exonId);
                 file.WriteLine();
-                int[,] counts = new int[barcodes.Count, nExonsToShow];
+                int[,] counts = new int[Props.props.Barcodes.Count, nExonsToShow];
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
-                    int n = CompactGenePainter.GetCountsPerExonAndBarcode(gf, props.DirectionalReads, barcodes.Count, ref counts);
+                    int n = CompactGenePainter.GetCountsPerExonAndBarcode(gf, Props.props.DirectionalReads, Props.props.Barcodes.Count, ref counts);
                     string safeName = ExcelRescueGeneName(gf.Name);
                     string firstCols = string.Format("{0}\t{1}\t{2}\t{3}\t{4}",
                                                      safeName, gf.Chr, gf.Strand, gf.Start, gf.GetTranscriptLength());
@@ -1553,9 +1549,9 @@ namespace Linnarsson.Strt
                     foreach (Pair<string, ushort[]> spliceAndBcCounts in splicesAndBcCounts)
                         matrixFile.Write("\t{0}", spliceAndBcCounts.First);
                     matrixFile.WriteLine();
-                    for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                    for (int bcIdx = 0; bcIdx < Props.props.Barcodes.Count; bcIdx++)
                     {
-                        matrixFile.Write("{0}\t\t\t\t{1}", gf.Name, barcodes.Seqs[bcIdx]);
+                        matrixFile.Write("{0}\t\t\t\t{1}", gf.Name, Props.props.Barcodes.Seqs[bcIdx]);
                         foreach (Pair<string, ushort[]> spliceAndBcCounts in splicesAndBcCounts)
                             matrixFile.Write("\t{0}", spliceAndBcCounts.Second[bcIdx]);
                         matrixFile.WriteLine();
@@ -1575,15 +1571,15 @@ namespace Linnarsson.Strt
                 file.WriteLine("Binned number of hits to transcripts counting from 5' end of transcript");
                 file.Write("Gene\tTrLen\tTotHits\tExonHits\tFrom5'-");
                 for (int i = 0; i < 100; i++)
-                    file.Write("{0}\t", i * props.LocusProfileBinSize);
+                    file.Write("{0}\t", i * Props.props.LocusProfileBinSize);
                 file.WriteLine();
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
                     if (!gf.IsExpressed()) continue;
                     string safeName = ExcelRescueGeneName(gf.Name);
                     file.Write("{0}\t{1}\t{2}\t{3}\t", safeName, gf.GetTranscriptLength(), gf.GetTotalHits(), gf.GetTranscriptHits());
-                    int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, props.LocusProfileBinSize,
-                                                                                         props.DirectionalReads, averageReadLen);
+                    int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, Props.props.LocusProfileBinSize,
+                                                                                         Props.props.DirectionalReads, averageReadLen);
                     foreach (int c in trBinCounts)
                         file.Write("{0}\t", c);
                     file.WriteLine();
@@ -1601,8 +1597,8 @@ namespace Linnarsson.Strt
             {
                 file.WriteLine("Binned number of hits to either strand of gene loci (including flanks) relative to 5' end of gene:");
                 file.Write("Gene\tTrscrDir\tLen\tChrStrand\tTotHits\t5'End->");
-                for (int i = 0; i < 100000 / props.LocusProfileBinSize; i++)
-                    file.Write("{0}bp\t", i * props.LocusProfileBinSize);
+                for (int i = 0; i < 100000 / Props.props.LocusProfileBinSize; i++)
+                    file.Write("{0}bp\t", i * Props.props.LocusProfileBinSize);
                 file.WriteLine();
                 int histoSize = 0;
                 foreach (GeneFeature gf in geneFeatures.Values)
@@ -1661,9 +1657,9 @@ namespace Linnarsson.Strt
         /// <param name="fileNameBase"></param>
         private void PaintSelectedGeneLocusImages(string fileNameBase)
         {
-            if (props.GenesToPaint.Length == 0) return;
+            if (Props.props.GenesToPaint.Length == 0) return;
             string imgDir = Directory.CreateDirectory(fileNameBase + "_gene_images").FullName;
-            foreach (string gene in props.GenesToPaint)
+            foreach (string gene in Props.props.GenesToPaint)
             {
                 if (!geneFeatures.ContainsKey(gene))
                     continue;
@@ -1713,14 +1709,14 @@ namespace Linnarsson.Strt
         /// <param name="fileNameBase"></param>
         private void PaintSelectedGeneTranscriptImages(string fileNameBase)
         {
-            if (props.GenesToPaint.Length == 0) return;
+            if (Props.props.GenesToPaint.Length == 0) return;
             string imgDir = Directory.CreateDirectory(fileNameBase + "_transcript_images").FullName;
-            foreach (string gene in props.GenesToPaint)
+            foreach (string gene in Props.props.GenesToPaint)
             {
                 if (!geneFeatures.ContainsKey(gene))
                     continue;
-                int[] bcodeCounts = new int[barcodes.Count];
-                for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                int[] bcodeCounts = new int[Props.props.Barcodes.Count];
+                for (int bcIdx = 0; bcIdx < Props.props.Barcodes.Count; bcIdx++)
                     bcodeCounts[bcIdx] = geneFeatures[gene].TrHits(bcIdx);
                 int[] bcodesOrderedByCount = new int[bcodeCounts.Length];
                 for (int i = 0; i < bcodeCounts.Length; i++)
@@ -1744,11 +1740,11 @@ namespace Linnarsson.Strt
             using (StreamWriter file = new StreamWriter(txtFile))
             {
                 for (int bcRow = nBarcodes - 1; bcRow >= 0; bcRow--)
-                    file.Write("\t{0}", barcodes.GetWellId(orderedBcIndexes[bcRow]));
+                    file.Write("\t{0}", Props.props.Barcodes.GetWellId(orderedBcIndexes[bcRow]));
                 file.WriteLine();
                 file.Write("PosFrom5'End");
                 for (int bcRow = nBarcodes - 1; bcRow >= 0; bcRow--)
-                    file.Write("\t{0}", barcodes.Seqs[orderedBcIndexes[bcRow]]);
+                    file.Write("\t{0}", Props.props.Barcodes.Seqs[orderedBcIndexes[bcRow]]);
                 file.WriteLine();
                 for (int pos = 0; pos < nPositions; pos++)
                 {
@@ -1785,10 +1781,10 @@ namespace Linnarsson.Strt
 
         private void WriteSpikeProfilesByBc(string fileNameBase)
         {
-            int minTotCount = barcodes.Count * 20;
+            int minTotCount = Props.props.Barcodes.Count * 20;
             using (StreamWriter file = new StreamWriter(fileNameBase + "_spike_profiles.tab"))
             {
-                string countType = (barcodes.HasUMIs) ? "molecule" : "read";
+                string countType = (Props.props.Barcodes.HasUMIs) ? "molecule" : "read";
                 file.WriteLine("Read {0} hits per barcode to abundant (>= {1} total counts) spike transcripts from 5' to 3' end.",
                                countType, minTotCount);
                 file.Write("Spike\tTr5'Pos\tTrLen\tWell\tBarcode\t");
@@ -1799,10 +1795,10 @@ namespace Linnarsson.Strt
                 {
                     if (!gf.IsSpike() || gf.GetTranscriptHits() < minTotCount) continue;
                     string safeName = ExcelRescueGeneName(gf.Name);
-                    for (int bcIdx = 0; bcIdx < barcodes.Count; bcIdx++)
+                    for (int bcIdx = 0; bcIdx < Props.props.Barcodes.Count; bcIdx++)
                     {
                         file.Write("{0}\t{1}\t{2}\t{3}\t{4}", 
-                                safeName, gf.Start, gf.GetTranscriptLength(), barcodes.GetWellId(bcIdx), barcodes.Seqs[bcIdx]);
+                                safeName, gf.Start, gf.GetTranscriptLength(), Props.props.Barcodes.GetWellId(bcIdx), Props.props.Barcodes.Seqs[bcIdx]);
                         ushort[] trProfile = CompactGenePainter.GetTranscriptProfile(gf, bcIdx);
                         int i = trProfile.Length - 1;
                         while (i > 0 && trProfile[i] == 0) i--;
@@ -1818,7 +1814,7 @@ namespace Linnarsson.Strt
         {
             using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_profiles.tab"))
             {
-                string countType = (barcodes.HasUMIs) ? "molecule" : "read";
+                string countType = (Props.props.Barcodes.HasUMIs) ? "molecule" : "read";
                 file.WriteLine("All hit {0} counts to expressed transcripts from 5' to 3' end. Counting stops at {1} in this table. Each data row truncated at last position > 0.",
                                countType, ushort.MaxValue);
                 file.Write("Gene\tChr\tTrDir\tTr5'Pos\tTr3'Pos\tTrLen");
@@ -1857,11 +1853,11 @@ namespace Linnarsson.Strt
                 // The old style hit statistics profile below:
                 int minHitsPerGene = 50;
                 capHitsFile.WriteLine("\n\nFraction hits that are to the 5' {0} bases of genes with >= {1} hits, grouped by transcript length (BinSize={2})",
-                                     props.CapRegionSize, minHitsPerGene, trLenBinSize);
+                                     Props.props.CapRegionSize, minHitsPerGene, trLenBinSize);
                 capHitsFile.WriteLine("\n\nSpike RNAs:");
-                AnalyzeWriteElongationSection(capHitsFile, minHitsPerGene, props.CapRegionSize, trLenBinSize, true);
+                AnalyzeWriteElongationSection(capHitsFile, minHitsPerGene, Props.props.CapRegionSize, trLenBinSize, true);
                 capHitsFile.WriteLine("\nOther RNAs:");
-                AnalyzeWriteElongationSection(capHitsFile, minHitsPerGene, props.CapRegionSize, trLenBinSize, false);
+                AnalyzeWriteElongationSection(capHitsFile, minHitsPerGene, Props.props.CapRegionSize, trLenBinSize, false);
             }
         }
 
@@ -1918,11 +1914,11 @@ namespace Linnarsson.Strt
             }
             capHitsFile.WriteLine("Overall average fraction is {0}", allFracs.Mean());
             capHitsFile.Write("\nMidLength\tFraction\t#GenesInBin\t");
-            int[] speciesBcIndexes = barcodes.GenomeAndEmptyBarcodeIndexes(genome);
-            foreach (int idx in speciesBcIndexes) capHitsFile.Write("\t{0}", barcodes.Seqs[idx]);
+            int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            foreach (int idx in speciesBcIndexes) capHitsFile.Write("\t{0}", Props.props.Barcodes.Seqs[idx]);
             capHitsFile.WriteLine();
             capHitsFile.Write("\t\t\t");
-            foreach (int idx in speciesBcIndexes) capHitsFile.Write("\t{0}", barcodes.GetWellId(idx));
+            foreach (int idx in speciesBcIndexes) capHitsFile.Write("\t{0}", Props.props.Barcodes.GetWellId(idx));
             capHitsFile.WriteLine();
             for (int di = 0; di < binnedEfficiencies.Length; di++)
             {
@@ -1954,7 +1950,7 @@ namespace Linnarsson.Strt
                 int trLen = gf.GetTranscriptLength();
                 int trLenBin = Math.Min(nTrSizeBins - 1, trLen / trLenBinSize);
                 double posBinSize = (trLen - averageReadLen) / (double)nSectionsOverTranscipt;
-                int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, posBinSize, props.DirectionalReads, averageReadLen);
+                int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, posBinSize, Props.props.DirectionalReads, averageReadLen);
                 for (int section = 0; section < Math.Min(nSectionsOverTranscipt, trBinCounts.Length); section++)
                     binnedEfficiencies[trLenBin, section].Add(trBinCounts[section] / (double)trBinCounts.Sum());
                 nGenesPerSizeClass[trLenBin]++;
@@ -1981,7 +1977,7 @@ namespace Linnarsson.Strt
                     continue;
                 int trLen = gf.GetTranscriptLength();
                 double binSize = (trLen - averageReadLen) / (double)nSections;
-                int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, binSize, props.DirectionalReads, averageReadLen);
+                int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, binSize, Props.props.DirectionalReads, averageReadLen);
                 if (trBinCounts.Length == 0) continue;
                 double allCounts = 0.0;
                 foreach (int c in trBinCounts) allCounts += c;

@@ -77,6 +77,50 @@ namespace Linnarsson.Dna
             return Path.Combine(Path.Combine(Props.props.GenomesFolder, Build), "genome");
         }
 
+        /// <summary>
+        /// Reading chrom lengths from 'genome/chromInfo.txt' if it exists, else calculates lengths
+        /// by reading through each 'chr*.fa' file in 'genome' folder.
+        /// </summary>
+        /// <returns></returns>
+        public SortedDictionary<string, int> GetChromosomeLengths()
+        {
+            SortedDictionary<string, int> chrLengths = new SortedDictionary<string, int>();
+            string line;
+            string chromInfoPath = Path.Combine(GetOriginalGenomeFolder(), "chromInfo.txt");
+            if (File.Exists(chromInfoPath))
+            {
+                using (StreamReader reader = chromInfoPath.OpenRead())
+                {
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        string[] fields = line.Trim().Split('\t');
+                        string chrId = fields[0].StartsWith("chr") ? fields[0].Substring(3) : fields[0];
+                        int length = int.Parse(fields[1]);
+                        chrLengths.Add(chrId, length);
+                    }
+                }
+            }
+            else
+            {
+                foreach (KeyValuePair<string, string> p in GetOriginalGenomeFilesMap())
+                {
+                    string chrId = p.Key;
+                    int length = 0;
+                    using (StreamReader reader = p.Value.OpenRead())
+                    {
+                        while ((line = reader.ReadLine()) != null)
+                            if (!line.StartsWith(">")) length += line.Trim().Length;
+                    }
+                    chrLengths.Add(chrId, length);
+                }
+            }
+            return chrLengths;
+        }
+
+        /// <summary>
+        /// Make a map from chromsome Ids (without leading 'chr') to .fa paths in original 'genome' folder
+        /// </summary>
+        /// <returns></returns>
         public Dictionary<string, string> GetOriginalGenomeFilesMap()
         {
             string[] chrFiles = Directory.GetFiles(GetOriginalGenomeFolder(), "chr*");

@@ -55,6 +55,7 @@
     <Compile Include="C1DB.cs" />
     <Compile Include="C1Data.cs" />
     <Compile Include="C1Props.cs" />
+    <Compile Include="IExpressionDB.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

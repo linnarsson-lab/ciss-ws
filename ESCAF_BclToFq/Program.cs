@@ -180,11 +180,11 @@ namespace ESCAF_BclToFq
             {
                 DBInsertIlluminaRun(runId, runNo, runDate);
                 ReadCopier readCopier = new ReadCopier(logWriter);
-                bool someReadFailed = false;
+                ReadCopierStatus status;
                 if (ESCAFProps.props.multiThreaded)
-                    readFileResults = readCopier.ParallelCopy(runFolder, ESCAFProps.props.ReadsFolder, out someReadFailed);
+                    readFileResults = readCopier.ParallelCopy(runFolder, ESCAFProps.props.ReadsFolder, out status);
                 else
-                    readFileResults = readCopier.SerialCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, false, out someReadFailed);
+                    readFileResults = readCopier.SerialCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, false, out status);
                 if (readFileResults.Count > 0)
                 {
                     foreach (ReadFileResult r in readFileResults)
@@ -208,11 +208,10 @@ namespace ESCAF_BclToFq
                     logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Mirrored " + readFileResults.Count.ToString()
                                         + " fq files to  " + string.Join(" & ", ESCAFProps.props.scpDestinations) + "\n");
                 }
-                if (someReadFailed)
-                {
-                    logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Some read failed - will keep 'copying' status and try again\n");
+                if (status == ReadCopierStatus.SOMEREADMISSING)
                     return false;
-                }
+                if (status == ReadCopierStatus.SOMEREADFAILED) 
+                    throw new Exception("ERROR copying " + runFolderOrTgz + ". Check logfile for more info.");
                 DBUpdateRunStatus(runId, "copied");
             }
             catch (Exception)

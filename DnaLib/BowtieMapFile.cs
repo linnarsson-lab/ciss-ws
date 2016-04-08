@@ -527,10 +527,10 @@ namespace Linnarsson.Dna
             UMIIdx = 0;
             if (BackOffsetToAfterReadId == -1)
             {
-                Match m = Regex.Match(combinedReadId, "_[ACGT]+[\\.$]");
+                Match m = Regex.Match(combinedReadId, "_[ACGT\\.]+$");
                 BackOffsetToAfterReadId = (m.Success) ? (combinedReadId.Length - m.Index) : 0;
                 int dp = combinedReadId.LastIndexOf('.');
-                BackOffsetToUMIEndPos = (dp > -1) ? (combinedReadId.Length - dp) : 0;
+                BackOffsetToUMIEndPos = (dp > combinedReadId.Length - BackOffsetToAfterReadId) ? (combinedReadId.Length - dp) : 0;
                 //Console.WriteLine("BackOffsetToReadId=" + BackOffsetToAfterReadId + " BackOffsetToUMIEndPos=" + BackOffsetToUMIEndPos);
             }
             for (int p = combinedReadId.Length - BackOffsetToAfterReadId + 1; p < combinedReadId.Length - BackOffsetToUMIEndPos; p++)
@@ -539,7 +539,7 @@ namespace Linnarsson.Dna
                 UMIIdx = (UMIIdx << 2) | ("ACGT".IndexOf(combinedReadId[p]));
             }
             string readId = combinedReadId.Substring(0, combinedReadId.Length - BackOffsetToAfterReadId);
-            //Console.WriteLine(" ReadId=" + readId);
+            //Console.WriteLine("combinedReadId=" + combinedReadId + " ReadId=" + readId + " UMIIdx=" + UMIIdx);
             return readId;
         }
 

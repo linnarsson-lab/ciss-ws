@@ -55,33 +55,33 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Reads a plate layout from specified file, or from database if project has the C1-prefix.
+        /// Reads plate layout from DB if props.InsertCellDBData == true, else or on failure read from layoutpath.
         /// Return null if no layout could be found.
         /// </summary>
-        /// <param name="projectName"></param>
-        /// <param name="sampleLayoutPath"></param>
+        /// <param name="plateid"></param>
+        /// <param name="layoutpath"></param>
         /// <returns></returns>
-        public static PlateLayout GetPlateLayout(string projectName, string sampleLayoutPath)
+        public static PlateLayout GetPlateLayout(string plateid, string layoutpath)
         {
-            PlateLayout sampleLayout = null;
-            if (Props.props.InsertCellDBData && projectName.StartsWith(C1Props.C1ProjectPrefix))
+            PlateLayout plateLayout = null;
+            if (Props.props.InsertCellDBData)
             {
                 try
                 {
-                    sampleLayout = new C1PlateLayout(projectName);
+                    plateLayout = new C1PlateLayout(plateid);
                     Console.WriteLine("Plate layout was read from C1 Database.");
                 }
                 catch (SampleLayoutFileException)
                 { }
             }
-            else if (File.Exists(sampleLayoutPath))
+            else if (File.Exists(layoutpath))
             {
-                sampleLayout = new FilePlateLayout(sampleLayoutPath);
-                Console.WriteLine("Plate layout was read from " + sampleLayoutPath);
+                plateLayout = new FilePlateLayout(layoutpath);
+                Console.WriteLine("Plate layout was read from " + layoutpath);
             }
-            else if (sampleLayoutPath != "")
-                Console.WriteLine("WARNING: Can not find layout file " + sampleLayoutPath);
-            return sampleLayout;
+            else if (layoutpath != "")
+                Console.WriteLine("WARNING: Can not find layout file " + layoutpath);
+            return plateLayout;
         }
     }
 
@@ -93,17 +93,10 @@ namespace Linnarsson.Dna
         /// <param name="plateId"></param>
         public C1PlateLayout(string plateId)
         {
-            ProjectDB pdb = new ProjectDB();
-            pdb.GetCellAnnotationsByPlate(plateId, out AnnotationsBySampleId, out AnnotationIndexes);
-            if (AnnotationsBySampleId.Count == 0)
-            {
-                string chipId = plateId.Replace(C1Props.C1ProjectPrefix, "");
-                pdb.GetCellAnnotationsByChip(chipId, out AnnotationsBySampleId, out AnnotationIndexes);
-                Console.WriteLine("WARNING: Plate " + plateId + " has not been properly loaded. Assuming matching chip->plate wellIds.");
-                throw new SampleLayoutFileException("Can not extract any well/cell annotations for " + plateId + "  from C1 database.");
-            }
-            int spIdx = AnnotationIndexes["Species"];
-            int validIdx = AnnotationIndexes["Valid"];
+            IDB db = DBFactory.GetProjectDB();
+            db.GetCellAnnotations(plateId, out AnnotationsBySampleId, out AnnotationIndexes);
+            int spIdx = AnnotationIndexes["species"];
+            int validIdx = AnnotationIndexes["valid"];
             foreach (KeyValuePair<string, string[]> p in AnnotationsBySampleId)
             {
                 string speciesId = ParseSpeciesOrBuildId(p.Value[spIdx]);

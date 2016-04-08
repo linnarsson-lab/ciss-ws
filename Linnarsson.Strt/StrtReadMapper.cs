@@ -117,15 +117,11 @@ namespace Linnarsson.Strt
         {
             foreach (LaneInfo laneInfo in laneInfos)
 			{
-                bool someExtractionMissing = !laneInfo.AllExtractedFilesExist() || !File.Exists(laneInfo.summaryFilePath);
-                bool readFileIsNewer = (File.Exists(laneInfo.summaryFilePath) && File.Exists(laneInfo.PFReadFilePath)) &&
-                                       DateTime.Compare(new FileInfo(laneInfo.PFReadFilePath).LastWriteTime, new FileInfo(laneInfo.summaryFilePath).LastWriteTime) > 0;
-                if (someExtractionMissing || readFileIsNewer)
+                if (laneInfo.ExtractionNeeded())
                 {
                     SampleReadWriter srw = new SampleReadWriter(Props.props.Barcodes, laneInfo);
-                    srw.ProcessLaneAsRecSets(); // srw.ProcessLane();
+                    srw.ProcessLaneAsRecSets();
                 }
-                if (Background.CancellationPending) break;
             }
 		}
 
@@ -212,10 +208,10 @@ namespace Linnarsson.Strt
         public void MapAndAnnotate(string speciesArg, bool defaultGeneVariants, string defaultAnnotation, string resultFolder,
                                    string resultFileprefix, int[] selectedBcIdxs, List<LaneInfo> laneInfos, string projectFolder)
         {
-            string sampleLayoutPath = PathHandler.GetSampleLayoutPath(projectFolder);
-            string projectName = Path.GetFileName(projectFolder);
-            string[] speciesArgs = new string[] { speciesArg };
-            if (speciesArg == "") speciesArgs = Props.props.Barcodes.ParsePlateLayout(projectName, sampleLayoutPath);
+            Props.props.InsertCellDBData = false;
+            string sampleLayoutPath = PathHandler.GetLayoutPath(projectFolder);
+            string plateId = Path.GetFileName(projectFolder);
+            string[] speciesArgs = (speciesArg != "") ? new string[] { speciesArg } : Props.props.Barcodes.ParsePlateLayout(plateId, sampleLayoutPath);
             foreach (string sp in speciesArgs)
             {
                 StrtGenome genome = StrtGenome.GetGenome(sp, defaultGeneVariants, defaultAnnotation, true);
@@ -225,8 +221,8 @@ namespace Linnarsson.Strt
                     throw new Exception("Both alignment (map/sam) files and extracted fq files to align are missing! You have to (re-)run the extraction first.");
                 string readDir = !Props.props.DirectionalReads ? "No" : Props.props.SenseStrandIsSequenced ? "Sense" : "Antisense";
                 Console.WriteLine("Annotating {0} map files from {1}\nDirectionalReads={2} RPKM={3} SelectedMappingType={4}...",
-                                  mapFiles.Count, projectName, readDir, Props.props.UseRPKM, Props.props.MultireadMappingMode);
-                ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, projectName, resultFolder, resultFileprefix, mapFiles);
+                                  mapFiles.Count, plateId, readDir, Props.props.UseRPKM, Props.props.MultireadMappingMode);
+                ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, plateId, resultFolder, resultFileprefix, mapFiles);
                 Console.WriteLine("...output in {0}", resultDescr.resultFolder);
             }
         }
@@ -280,16 +276,13 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="genome"></param>
         /// <param name="projectFolder"></param>
-        /// <param name="projectName"></param>
+        /// <param name="analysisId"></param>
         /// <returns>full path to result folder</returns>
-        public string GetResultFolder(StrtGenome genome, string projectFolder, string projectName)
+        public string GetResultFolder(StrtGenome genome, string projectFolder, string analysisId)
         {
-            string resultFolderName = string.Format("{0}_{1}_{2}_{3}_{4}", projectName, Props.props.Barcodes.Name, genome.GetMainIndexName(),
+            string resultFolderName = string.Format("{0}_{1}_{2}_{3}_{4}", analysisId, Props.props.Barcodes.Name, genome.GetMainIndexName(),
                                                         Props.props.Aligner.ToUpper()[0], DateTime.Now.ToPathSafeString());
-            string resultFolder = Path.Combine(projectFolder, resultFolderName);
-            if (Directory.Exists(resultFolder))
-                resultFolder += "_" + DateTime.Now.ToPathSafeString();
-            return resultFolder;
+            return Path.Combine(projectFolder, resultFolderName);
         }
 
         /// <summary>
@@ -297,17 +290,17 @@ namespace Linnarsson.Strt
         /// </summary>
         /// <param name="genome"></param>
         /// <param name="projectFolder"></param>
-        /// <param name="projectId"></param>
+        /// <param name="plateId"></param>
         /// <param name="resultFolder">if null, the default result folder will be constructed</param>
         /// <param name="mapFilePaths"></param>
         /// <returns></returns>
-        public ResultDescription ProcessAnnotation(StrtGenome genome, string projectFolder, string projectId, 
+        public ResultDescription ProcessAnnotation(StrtGenome genome, string projectFolder, string plateId, 
                                                     string resultFolder, string resultFileprefix, List<string> mapFilePaths)
         {
             if (mapFilePaths.Count == 0)
                 return null;
             if (resultFolder == "" || resultFolder == null)
-                resultFolder = GetResultFolder(genome, projectFolder, projectId);
+                resultFolder = GetResultFolder(genome, projectFolder, plateId);
             ReadCounter readCounter = ReadExtractionSummaryFiles(mapFilePaths);
             int averageReadLen = readCounter.AverageReadLen;
             MappedTagItem.AverageReadLen = averageReadLen;
@@ -315,7 +308,8 @@ namespace Linnarsson.Strt
             UpdateGenesToPaintProp(projectFolder);
             GenomeAnnotations annotations = new GenomeAnnotations(genome);
             annotations.Load();
-            TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, Props.props, resultFolder, resultFileprefix, projectId);
+            if (resultFileprefix == null) resultFileprefix = plateId;
+            TranscriptomeStatistics ts = new TranscriptomeStatistics(annotations, resultFolder, resultFileprefix, plateId);
             string syntLevelFile = PathHandler.GetSyntLevelFilePath(projectFolder, Props.props.Barcodes.HasUMIs);
             if (syntLevelFile != "")
                 ts.SetSyntReadReporter(syntLevelFile);
@@ -331,35 +325,29 @@ namespace Linnarsson.Strt
             System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(Props.props.GetType());
             using (StreamWriter writer = new StreamWriter(Path.Combine(resultFolder, Props.configFilename)))
                 x.Serialize(writer, Props.props);
-            if (Props.props.InsertCellDBData && projectId.StartsWith(C1Props.C1ProjectPrefix) && annotations.GenesSetupFromC1DB)
-                InsertCells10kData(projectId, annotations, resultDescr);
+            if (Props.props.InsertCellDBData)
+                InsertCells10kData(plateId, annotations, resultDescr);
             return resultDescr;
         }
 
         /// <summary>
-        /// Insert expression value and analysis setup info into cells10k DB.
+        /// Insert expression value and analysis setup info into database.
         /// </summary>
-        /// <param name="projectId"></param>
+        /// <param name="plateid"></param>
         /// <param name="annotations"></param>
         /// <param name="resultDescr"></param>
-        private static void InsertCells10kData(string projectId, GenomeAnnotations annotations, ResultDescription resultDescr)
+        private static void InsertCells10kData(string plateid, GenomeAnnotations annotations, ResultDescription resultDescr)
         {
-            ProjectDB pdb = new ProjectDB();
-            Dictionary<string, int> cellIdByPlateWell = pdb.GetCellIdByPlateWell(projectId);
-            if (cellIdByPlateWell.Count == 0)
-            {
-                Console.WriteLine("WARNING: chip->SeqPlate well mappings missing in DB. Setting platewells = chipwells.");
-                pdb.SetPlateWellToChipWell(projectId);
-                cellIdByPlateWell = pdb.GetCellIdByPlateWell(projectId);
-            }
+            IDB pdb = DBFactory.GetProjectDB();
             Console.WriteLine("Saving expression BLOB:s to cells10k database...");
             try
             {
-                C1DB c1db = new C1DB();
+                Dictionary<string, int> cellIdByWell = DBFactory.GetProjectDB().GetWell2CellIdMapping(plateid);
+                IExpressionDB edb = DBFactory.GetExpressionDB();
                 string parString = MakeParameterString();
-                c1db.InsertAnalysisSetup(projectId, resultDescr.splcIndexVersion, resultDescr.resultFolder, parString);
-                c1db.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByPlateWell, true), true, Props.props.Aligner);
-                c1db.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByPlateWell, false), false, Props.props.Aligner);
+                edb.InsertAnalysisSetup(plateid, resultDescr.splcIndexVersion, resultDescr.resultFolder, parString);
+                edb.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByWell, true), true, Props.props.Aligner);
+                edb.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByWell, false), false, Props.props.Aligner);
             }
             catch (Exception e)
             {

@@ -406,6 +406,7 @@ namespace Linnarsson.Strt
         /// <returns>True if the chr-strand-pos-bc-rndTag combination is new</returns>
         public bool Add(MultiReadMapping m, bool isTranscript)
         {
+            //Console.WriteLine("UMIIDx=" + m.UMIIdx + " nREADSByUMILen=" + nReadsByUMI.Length);
             nReadsByUMI[m.UMIIdx]++;
             bool isNew = chrTagDatas[m.Chr].Add(m, isTranscript);
             return isNew | !hasUMIs;

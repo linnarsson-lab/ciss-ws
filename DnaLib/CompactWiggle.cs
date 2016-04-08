@@ -25,7 +25,6 @@ namespace Linnarsson.Dna
         /// Read count is shifted up readShift bits, and molecule count is kept in lower half.
         /// </summary>
         private Dictionary<int, uint> wiggle = new Dictionary<int, uint>();
-        public int NumWiggleEntries { get { return wiggle.Count; } }
 
         public void AddCount(int hitStartPos, int nReads, int nMols)
         {
@@ -79,11 +78,43 @@ namespace Linnarsson.Dna
                 countAtEachSortedPosition = Array.ConvertAll(sortedHitStartPositions, (p => (int)(wiggle[p] & molMask)));
         }
 
-        public void WriteWiggle(StreamWriter writer, string chr, char strand, int averageReadLength, int chrLength, bool byRead)
+        public static IEnumerable<KeyValuePair<int, int>> IterWiggle(int readLength, int chrLength,
+                                          int[] sortedHitStartPositions, int[] countAtEachSortedPosition)
         {
-            int[] positions, counts;
-            GetPositionsAndCounts(out positions, out counts, byRead);
-            WriteToWigFile(writer, chr, averageReadLength, strand, chrLength, positions, counts);
+            int inQIdx = 0, outQIdx = 0;
+            int hitIdx = 0;
+            int i = 0;
+            int countAtPos = 0, coverage = 0;
+            while (i < chrLength && hitIdx < sortedHitStartPositions.Length)
+            {
+                countAtPos = countAtEachSortedPosition[hitIdx];
+                coverage += countAtPos;
+                i = sortedHitStartPositions[hitIdx++];
+                if (i < chrLength && countAtPos > 0)
+                    yield return new KeyValuePair<int, int>(i + 1, 0);
+                while (i < chrLength && coverage > 0)
+                {
+                    while (hitIdx < sortedHitStartPositions.Length && sortedHitStartPositions[hitIdx] == i)
+                    {
+                        countAtPos += countAtEachSortedPosition[hitIdx++];
+                        coverage += countAtPos;
+                    }
+                    if (countAtPos > 0)
+                    {
+                        posQ[inQIdx] = i + readLength;
+                        countQ[inQIdx] = countAtPos;
+                        inQIdx = (inQIdx + 1) % QSize;
+                        countAtPos = 0;
+                    }
+                    yield return new KeyValuePair<int, int>(i, coverage);
+                    i++;
+                    if (i == posQ[outQIdx])
+                    {
+                        coverage -= countQ[outQIdx];
+                        outQIdx = (outQIdx + 1) % QSize;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -100,47 +131,13 @@ namespace Linnarsson.Dna
                                            int[] sortedHitStartPositions, int[] countAtEachSortedPosition)
         {
             int strandSign = (strand == '+') ? 1 : -1;
-            int inQIdx = 0, outQIdx = 0;
-            int hitIdx = 0;
-            int i = 0;
-            int countAtPos = 0, coverage = 0;
-            while (i < chrLength && hitIdx < sortedHitStartPositions.Length)
+            foreach (KeyValuePair<int, int> kv in IterWiggle(readLength, chrLength, sortedHitStartPositions, countAtEachSortedPosition))
             {
-                countAtPos = countAtEachSortedPosition[hitIdx];
-                coverage += countAtPos;
-                i = sortedHitStartPositions[hitIdx++];
-                if (i < chrLength && countAtPos > 0)
-                        writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, i + 1);
-                while (i < chrLength && coverage > 0)
-                {
-                    while (hitIdx < sortedHitStartPositions.Length && sortedHitStartPositions[hitIdx] == i)
-                    {
-                        countAtPos += countAtEachSortedPosition[hitIdx++];
-                        coverage += countAtPos;
-                    }
-                    if (countAtPos > 0)
-                    {
-                        posQ[inQIdx] = i + readLength;
-                        countQ[inQIdx] = countAtPos;
-                        inQIdx = (inQIdx + 1) % QSize;
-                        countAtPos = 0;
-                    }
-                    writer.WriteLine(coverage * strandSign);
-                    i++;
-                    if (i == posQ[outQIdx])
-                    {
-                        coverage -= countQ[outQIdx];
-                        outQIdx = (outQIdx + 1) % QSize;
-                    }
-                }
+                if (kv.Value == 0)
+                    writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, kv.Key);
+                else
+                    writer.WriteLine(kv.Value * strandSign);
             }
-        }
-
-        public void WriteBed(StreamWriter writer, string chr, char strand, int averageReadLength, bool byRead)
-        {
-            int[] positions, counts;
-            GetPositionsAndCounts(out positions, out counts, byRead);
-            WriteToBedFile(writer, chr, averageReadLength, strand, positions, counts);
         }
 
         /// <summary>

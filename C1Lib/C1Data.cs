@@ -142,12 +142,6 @@ namespace Linnarsson.C1
         {
             Blob = new byte[4 * nValues];
         }
-        public ExprBlob(string cellId, int transcriptomeId, byte[] blob)
-        {
-            CellID = cellId;
-            TranscriptomeID = transcriptomeId;
-            Blob = blob;
-        }
 
         public void SetBlobValue(int blobIdx, int value)
         {

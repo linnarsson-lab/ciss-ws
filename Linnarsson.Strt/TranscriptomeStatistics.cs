@@ -1863,11 +1863,15 @@ namespace Linnarsson.Strt
             using (StreamWriter writerByRead = fileByRead.OpenWrite())
             using (StreamWriter writerByMol = (barcodes.HasUMIs && !File.Exists(fileByMol) ? fileByMol.OpenWrite() : null))
             {
-                writerByRead.WriteLine("track type=wiggle_0 name=\"{0}{2}\" description=\"{1} {3} ({2})\" visibility=full alwaysZero=on",
-                                       projwell + "R", fileNameHead + "_Read", strand, DateTime.Now.ToString("yyMMdd"));
+                string readTrackName = projwell + "R" + strand;
+                string readTrackDescr = fileNameHead + "_Read " + DateTime.Now.ToString("yyMMdd");
+                writerByRead.WriteLine("track type=wiggle_0 name=\"{0}\" description=\"{1}\" visibility=full alwaysZero=on",
+                                        readTrackName, readTrackDescr);
+                string molTrackName = projwell + "M" + strand;
+                string molTrackDescr = fileNameHead + "_Mol " + DateTime.Now.ToString("yyMMdd");
                 if (writerByMol != null)
-                    writerByMol.WriteLine("track type=wiggle_0 name=\"{0}{2}\" description=\"{1} {3} ({2})\" visibility=full alwaysZero=on",
-                                          projwell + "M", fileNameHead + "_Mol", strand, DateTime.Now.ToString("yyMMdd"));
+                    writerByMol.WriteLine("track type=wiggle_0 name=\"{0}\" description=\"{1}\" visibility=full alwaysZero=on",
+                                         molTrackName, molTrackDescr);
                 StreamWriter bedWriterByRead = makeBed ? (filePathHead + "_byread.bed.gz").OpenWrite() : null;
                 StreamWriter bedWriterByMol = (makeBed && barcodes.HasUMIs) ? (filePathHead + "_bymol.bed.gz").OpenWrite() : null;
                 foreach (KeyValuePair<string, ChrTagData> tagDataPair in randomTagFilter.chrTagDatas)
@@ -1885,8 +1889,7 @@ namespace Linnarsson.Strt
                             Array.Sort(posCopy, molsAtEachPos);
                             Wiggle.WriteToWigFile(writerByMol, chr, readLength, strand, chrLen, posCopy, molsAtEachPos);
                             if (bedWriterByMol != null)
-                                Wiggle.WriteToBedFile(bedWriterByMol, chr, readLength, strand, positions, molsAtEachPos);
-
+                                Wiggle.WriteToBedFile(bedWriterByMol, chr, readLength, strand, posCopy, molsAtEachPos);
                         }
                         Array.Sort(positions, readsAtEachPos);
                         Wiggle.WriteToWigFile(writerByRead, chr, readLength, strand, chrLen, positions, readsAtEachPos);

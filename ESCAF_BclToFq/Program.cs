@@ -179,7 +179,7 @@ namespace ESCAF_BclToFq
             try 
             {
                 DBInsertIlluminaRun(runId, runNo, runDate);
-                ReadCopier readCopier = new ReadCopier(logWriter);
+                ReadCopier readCopier = new ReadCopier(logWriter, null);
                 ReadCopierStatus status;
                 if (ESCAFProps.props.multiThreaded)
                     readFileResults = readCopier.ParallelCopy(runFolder, ESCAFProps.props.ReadsFolder, out status);

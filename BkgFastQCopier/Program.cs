@@ -121,7 +121,7 @@ namespace BkgFastQCopier
             }
             Console.WriteLine("Copying data from " + laneTxt + specificRunFolder + " to " + readsFolder);
             ReadCopierStatus copyStatus;
-            ReadCopier readCopier = new ReadCopier(logWriter);
+            ReadCopier readCopier = new ReadCopier(logWriter, null);
             int nFilesCopied = readCopier.SerialCopy(specificRunFolder, readsFolder, laneFrom, laneTo, forceOverwrite, out copyStatus).Count;
             Console.WriteLine("Created totally " + nFilesCopied.ToString() + " output fq files.");
             return specificRunFolder;
@@ -180,7 +180,7 @@ namespace BkgFastQCopier
                     {
                         if (projectDB.SecureStartRunCopy(runId, runNo, runDate))
                         {
-                            ReadCopier readCopier = new ReadCopier(logWriter);
+                            ReadCopier readCopier = new ReadCopier(logWriter, projectDB);
                             ReadCopierStatus status;
                             if (Props.props.ParallellFastqCopy)
                                 readCopier.ParallelCopy(runFolder, readsFolder, out status);

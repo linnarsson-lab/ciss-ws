@@ -23,11 +23,12 @@ namespace Linnarsson.Strt
     public class ReadCopier
     {
         StreamWriter logWriter;
-        ProjectDB projectDB;
+        IDB projectDB;
 
-        public ReadCopier(StreamWriter logWriter)
+        public ReadCopier(StreamWriter logWriter, IDB projectDB)
         {
             this.logWriter = logWriter;
+            this.projectDB = projectDB;
         }
 
         /// <summary>

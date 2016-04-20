@@ -4,6 +4,9 @@ using Linnarsson.C1;
 
 namespace Linnarsson.Dna
 {
+    /// <summary>
+    /// Calls related to sample metadata, but not expression or wiggle plots
+    /// </summary>
     public interface IDB
     {
         void AddToBackupQueue(string readFile, int priority);

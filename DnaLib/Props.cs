@@ -147,7 +147,7 @@ namespace Linnarsson.Dna
         public string ChrCTRLId = "CTRL";
         public string[] CommonChrIds = new string[] { "CTRL", "EXTRA" };
         public bool AddRefFlatToNonRefSeqBuilds = false;
-        public double CriticalOccupiedUMIFraction = 0.80;
+        public double CriticalOccupiedUMIFraction = 0.80; // Limit for warning from overoccupied UMI counter
         public string Aligner = "bowtie"; // Default aligner
         public string CellDBAligner = "bowtie"; // The aligner used when data is inserted into CellDB
         public string DBPrefix = "jos_"; // Table prefix use in CellDB
@@ -155,8 +155,8 @@ namespace Linnarsson.Dna
         public bool AnalyzeLoci = false; // For nuclear RNA, will consider each gene as the whole locus, and not exons.
         public bool WritePlateReadFile = false; // If true, extractor writes fq.gz file(s) with non-filtered reads having current bc
         public string[] AllMixinBcSets = new string[] { "C1-1", "C1-2", "C1-3", "C1-4" };
-        public bool ParallellFastqCopy = false;
-        public bool UseNewDbSetup = false;
+        public bool ParallellFastqCopy = false; // If true, will speed up bcl->fq conversion by parallell threads
+        public bool UseNewDbSetup = false; // If true, will use one single combined DB for sample/cell and expression data
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

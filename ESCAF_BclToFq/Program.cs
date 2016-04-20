@@ -187,10 +187,10 @@ namespace ESCAF_BclToFq
                     readFileResults = readCopier.SerialCopy(runFolder, ESCAFProps.props.ReadsFolder, 1, 8, false, out status);
                 if (readFileResults.Count > 0)
                 {
+                    List<string> scpErrors = new List<string>();
                     foreach (ReadFileResult r in readFileResults)
                     {
                         DBUpdateLaneYield(runId, r);
-                        List<string> scpErrors = new List<string>();
                         foreach (string scpDest in ESCAFProps.props.scpDestinations)
                         {
                             string scpArg = string.Format("-p {0} {1}/{2}", r.PFPath, scpDest, Path.GetFileName(r.PFPath));
@@ -203,8 +203,8 @@ namespace ESCAF_BclToFq
                             c = new CmdCaller("scp", scpArg);
                             if (c.ExitCode != 0) scpErrors.Add(scpArg + "\n    " + c.StdError);
                         }
-                        if (scpErrors.Count > 0) throw new Exception(string.Join("\n", scpErrors.ToArray()));
                     }
+                    if (scpErrors.Count > 0) throw new Exception(string.Join("\n", scpErrors.ToArray()));
                     logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Mirrored " + readFileResults.Count.ToString()
                                         + " fq files to  " + string.Join(" & ", ESCAFProps.props.scpDestinations) + "\n");
                 }

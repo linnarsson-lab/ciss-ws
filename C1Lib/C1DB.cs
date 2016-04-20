@@ -10,6 +10,9 @@ using MySql.Data;
 
 namespace Linnarsson.C1
 {
+    /// <summary>
+    /// Calls related to expression data
+    /// </summary>
     public class C1DB : Linnarsson.C1.IExpressionDB
     {
         /// <summary>

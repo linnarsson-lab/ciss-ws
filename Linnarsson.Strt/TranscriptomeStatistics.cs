@@ -1901,10 +1901,10 @@ namespace Linnarsson.Strt
             int tromeId = Annotations.dbTranscriptome.TranscriptomeID.Value;
             IExpressionDB edb = DBFactory.GetExpressionDB();
             int strandSign = (strand == '+') ? 1 : -1;
-            foreach (KeyValuePair<int, int> kv in Wiggle.IterWiggle(readLength, chrLength, sortedPositions, countAtEachPosition))
+            foreach (Pair<int, int> kv in Wiggle.IterWiggle(readLength, chrLength, sortedPositions, countAtEachPosition))
             {
-                if (kv.Value > 0)
-                    edb.InsertWig(tromeId, chr, kv.Key, cellId, kv.Value * strandSign);
+                if (kv.Second > 0)
+                    edb.InsertWig(tromeId, chr, kv.First, cellId, kv.Second * strandSign);
             }
         }
 

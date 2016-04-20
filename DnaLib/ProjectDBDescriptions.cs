@@ -48,47 +48,61 @@ namespace Linnarsson.Dna
     [Serializable()]
     public class ProjectDescription
     {
-        public string analysisid { get; set; }
-        public string analysisname { get; set; }
-        public string ProjectFolder { get { return Path.Combine(Props.props.ProjectsFolder, analysisname); } }
-        public string plateid { get; set; }
-        public string sample { get; set; }
+        public string analysisname { get; set; }               // E.g. 'C1-1772177-293' or '1772-177-293_CellsGCB_01'
+        public string plateid { get; set; }                    // Plate or chip id, e.g. 'C1-1772177-293' or '1772-177-293'
+        public string sample { get; set; }                     // Sample id, e.g. 'CellsGCB_01' (newer database)
         public string emails { get; set; }
-        public string[] runIdsLanes { get; set; }
+        public string[] laneArgs { get; set; }
         public string barcodeset { get; set; }
-        public int spikemolecules { get; set; }
-        public bool analyzeVariants { get; set; }
+        public int spikemolecules = Props.props.TotalNumberOfAddedSpikeMolecules;
         public string extractionVersion { get; set; }
         public string annotationVersion { get; set; }
-        public string rpkm { get; set; }
-        public bool isRpkm { get { return rpkm == "1"; } }
-        public int readdir { get; set; }
         public string layoutfile { get; set; }
-        public string build { get; set; }
-        public string annotation { get; set; }
-        public string variant { get; set; }
-        public string aligner { get; set; }
+        public string build { get { return genome.Build; } }
+        public string annotation { get { return genome.Annotation; } }
+        public string variant { get { return genome.GeneVariants ? "all" : "single"; } }
+        public string rpkm = Props.props.UseRPKM ? "1" : "0";
+        public int readdir = Props.props.DirectionalReads ? (Props.props.SenseStrandIsSequenced ? 1 : -1) : 0;
+        public string aligner = Props.props.Aligner;
         public string comment { get; set; }
         public string user { get; set; }
 
         public List<LaneInfo> laneInfos { get; set; }
-        public int laneCount { get { return laneInfos.Count; } }
-        public List<ResultDescription> resultDescriptions { get; set; }
 
+        private List<ResultDescription> resultDescriptions;
+        public List<ResultDescription> ResultDescriptions { get { return resultDescriptions; } }
+
+        [XmlIgnoreAttribute]
+        public int laneCount { get { return laneInfos.Count; } }
+        [XmlIgnoreAttribute]
+        public bool UseRPKM { get { return rpkm == "1"; } }
         [XmlIgnoreAttribute]
         public bool DirectionalReads { get { return readdir != 0; } }
         [XmlIgnoreAttribute]
         public bool SenseStrandIsSequenced { get { return readdir == 1; } }
-
+        [XmlIgnoreAttribute]
+        public string ProjectFolder { get { return Path.Combine(Props.props.ProjectsFolder, analysisname); } }
         [XmlIgnoreAttribute]
         public string layoutpath { get { return Path.Combine(ProjectFolder, layoutfile); } }
-
+        [XmlIgnoreAttribute]
+        public string defaultSpecies { get; set; }
         [XmlIgnoreAttribute]
         public string defaultBuild { get; set; }
         [XmlIgnoreAttribute]
-        public string defaultSpecies;
+        public bool defaultVariants { get; set; }
         [XmlIgnoreAttribute]
         public string status;
+
+        [XmlIgnoreAttribute]
+        public string dbanalysisid { get; set; }               // Database id of the analysis
+        [XmlIgnoreAttribute]
+        public string dbchipid { get; set; }                   // Database id of the chip or plate
+        [XmlIgnoreAttribute]
+        public string dbsampleid { get; set; }                 // Database id of the sample (newer database)
+
+        [XmlIgnoreAttribute]
+        public StrtGenome genome { get; set; }
+
         public static readonly string STATUS_INQUEUE = "inqueue";
         public static readonly string STATUS_PROCESSING = "processing";
         public static readonly string STATUS_EXTRACTING = "extracting";
@@ -104,26 +118,29 @@ namespace Linnarsson.Dna
         { }
 
         /// <summary>
-        /// Constructor when starting analysis of projects in database
+        /// Constructor when starting an analysis from database
         /// </summary>
         public ProjectDescription(string analysisname, string plateid, string sample,
-                          string barcodeset, string defaultSpecies, List<string> laneInfos,
+                          string barcodeset, string defaultSpecies, List<string> laneArgs,
                           string layoutfile, string status, string emails,
-                          string defaultBuild, string variants, string aligner, string analysisid,
+                          string defaultBuild, string defaultVariants, string aligner,
+                          string dbanalysisid, string dbchipid, string dbsampleid,
                           string rpkm, int spikemolecules, int readdir, string comment, string user)
         {
-            this.analysisid = analysisid;
+            this.dbanalysisid = dbanalysisid;
+            this.dbchipid = dbchipid;
+            this.dbsampleid = dbsampleid;
             this.analysisname = analysisname;
             this.plateid = plateid;
             this.sample = sample;
             this.barcodeset = barcodeset;
             this.defaultSpecies = defaultSpecies;
-            this.runIdsLanes = laneInfos.ToArray();
+            this.laneArgs = laneArgs.ToArray();
             this.layoutfile = layoutfile;
             this.status = status;
             this.emails = emails;
             this.defaultBuild = defaultBuild;
-            this.analyzeVariants = (variants == "all");
+            this.defaultVariants = (defaultVariants == "all");
             this.aligner = aligner;
             this.rpkm = rpkm;
             this.spikemolecules = spikemolecules;
@@ -133,11 +150,9 @@ namespace Linnarsson.Dna
             this.resultDescriptions = new List<ResultDescription>();
         }
 
-        public void SetGenomeData(StrtGenome genome)
+        public void AddResultDescription(ResultDescription rd)
         {
-            build = genome.Build;
-            variant = genome.GeneVariants ? "all" : "single";
-            annotation = genome.Annotation;
+            resultDescriptions.Add(rd);
         }
 
         public int LaneCount
@@ -145,7 +160,7 @@ namespace Linnarsson.Dna
             get
             {
                 int n = 0;
-                foreach (string laneArg in runIdsLanes)
+                foreach (string laneArg in laneArgs)
                     n += laneArg.Split(':')[1].Length;
                 return n;
             }

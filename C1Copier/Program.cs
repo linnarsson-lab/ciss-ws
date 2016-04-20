@@ -332,7 +332,7 @@ namespace Linnarsson.C1
                 for (int wc = 1; wc <= 12; wc++)
                 {
                     string chipwell = string.Format("{0}{1:00}", wr, wc);
-                    Cell newCell = new Cell(null, 0, 0, chipwell, "", 0.0, 0.0, 0, 0, 0, true);
+                    Cell newCell = new Cell(null, 0, 0, chipwell, "", 0.0, 0.0, 0, 0, 0, true, null, 0);
                     newCell.valid = !emptyWells.Contains(chipwell);
                     cells.Add(newCell);
                 }
@@ -377,7 +377,7 @@ namespace Linnarsson.C1
                     int green = GetColorStatus(chipwell, fields, 6, greenWells);
                     int blue = GetColorStatus(chipwell, fields, 7, blueWells);
                     bool valid = (emptyWells == null) || !emptyWells.Contains(chipwell);
-                    Cell newCell = new Cell(null, 0, 0, chipwell, "", diameter, area, red, green, blue, valid);
+                    Cell newCell = new Cell(null, 0, 0, chipwell, "", diameter, area, red, green, blue, valid, null, 0);
                     List<CellImage> cellImages = new List<CellImage>();
                     HashSet<string> reporters = new HashSet<string>();
                     foreach (string imgSubfolderPat in C1Props.props.C1AllImageSubfoldernamePatterns)
@@ -464,7 +464,7 @@ namespace Linnarsson.C1
                     int red = ParseColor(GetValueFromLayoutFile("red", field2idx, fields));
                     int green = ParseColor(GetValueFromLayoutFile("green", field2idx, fields));
                     int blue = ParseColor(GetValueFromLayoutFile("blue", field2idx, fields));
-                    Cell newCell = new Cell(null, 0, 0, well, "", diameter, area, red, green, blue, valid);
+                    Cell newCell = new Cell(null, 0, 0, well, "", diameter, area, red, green, blue, valid, null, 0);
                     foreach (KeyValuePair<string, int> p in field2idx)
                     {
                         if (Array.IndexOf(cellfields, p.Key) == -1)

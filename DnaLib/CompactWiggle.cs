@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using Linnarsson.Utilities;
+using Linnarsson.Mathematics;
 
 namespace Linnarsson.Dna
 {
@@ -64,7 +65,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Get sorted hit start positions and respective read count for all reads added to the Wiggle instance
+        /// Get sorted hit start positions and respective read count for all reads added to the Wiggle instance.
         /// </summary>
         /// <param name="sortedHitStartPositions">Ordered hit start positions</param>
         /// <param name="countAtEachSortedPosition"></param>
@@ -78,9 +79,18 @@ namespace Linnarsson.Dna
                 countAtEachSortedPosition = Array.ConvertAll(sortedHitStartPositions, (p => (int)(wiggle[p] & molMask)));
         }
 
-        public static IEnumerable<KeyValuePair<int, int>> IterWiggle(int readLength, int chrLength,
+        /// <summary>
+        /// Note that the returned Pair is a re-used container. This is to reduce heap allocation and avoid Stack errors
+        /// </summary>
+        /// <param name="readLength"></param>
+        /// <param name="chrLength"></param>
+        /// <param name="sortedHitStartPositions"></param>
+        /// <param name="countAtEachSortedPosition"></param>
+        /// <returns></returns>
+        public static IEnumerable<Pair<int, int>> IterWiggle(int readLength, int chrLength,
                                           int[] sortedHitStartPositions, int[] countAtEachSortedPosition)
         {
+            Pair<int, int> iterPair = new Pair<int, int>(0, 0);
             int inQIdx = 0, outQIdx = 0;
             int hitIdx = 0;
             int i = 0;
@@ -91,7 +101,11 @@ namespace Linnarsson.Dna
                 coverage += countAtPos;
                 i = sortedHitStartPositions[hitIdx++];
                 if (i < chrLength && countAtPos > 0)
-                    yield return new KeyValuePair<int, int>(i + 1, 0);
+                {
+                    iterPair.First = i + 1;
+                    iterPair.Second = 0;
+                    yield return iterPair;
+                }
                 while (i < chrLength && coverage > 0)
                 {
                     while (hitIdx < sortedHitStartPositions.Length && sortedHitStartPositions[hitIdx] == i)
@@ -106,7 +120,9 @@ namespace Linnarsson.Dna
                         inQIdx = (inQIdx + 1) % QSize;
                         countAtPos = 0;
                     }
-                    yield return new KeyValuePair<int, int>(i, coverage);
+                    iterPair.First = i;
+                    iterPair.Second = coverage;
+                    yield return iterPair;
                     i++;
                     if (i == posQ[outQIdx])
                     {
@@ -131,12 +147,12 @@ namespace Linnarsson.Dna
                                            int[] sortedHitStartPositions, int[] countAtEachSortedPosition)
         {
             int strandSign = (strand == '+') ? 1 : -1;
-            foreach (KeyValuePair<int, int> kv in IterWiggle(readLength, chrLength, sortedHitStartPositions, countAtEachSortedPosition))
+            foreach (Pair<int, int> kv in IterWiggle(readLength, chrLength, sortedHitStartPositions, countAtEachSortedPosition))
             {
-                if (kv.Value == 0)
-                    writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, kv.Key);
+                if (kv.Second == 0)
+                    writer.WriteLine("fixedStep chrom=chr{0} start={1} step=1 span=1", chr, kv.First);
                 else
-                    writer.WriteLine(kv.Value * strandSign);
+                    writer.WriteLine(kv.Second * strandSign);
             }
         }
 

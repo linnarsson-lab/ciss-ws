@@ -114,14 +114,14 @@ namespace ProjectDBProcessor
         /// Check that all needed read files and corresponding summary files have been created,
         /// and set run numbers in projDescr
         /// </summary>
-        /// <param name="projDescr"></param>
+        /// <param name="pd"></param>
         /// <returns>false if some fq file is missing, or there was an error</returns>
-        private static bool CheckAllReadsCollected(ref ProjectDescription projDescr)
+        private static bool CheckAllReadsCollected(ref ProjectDescription pd)
         {
             try
             {
-                char reqReadNo = Barcodes.GetBarcodes(projDescr.barcodeset).HighestNeededReadNo;
-                foreach (string laneArg in projDescr.runIdsLanes)
+                char reqReadNo = Barcodes.GetBarcodes(pd.barcodeset).HighestNeededReadNo;
+                foreach (string laneArg in pd.laneArgs)
                 {
                     string[] parts = laneArg.Split(':');
                     int runNo = PathHandler.CheckReadsCollected(parts[0], parts[1], reqReadNo);
@@ -131,8 +131,8 @@ namespace ProjectDBProcessor
             catch (Exception e)
             {
                 List<string> messages = new List<string>();
-                if (HandleError(projDescr, messages , e, true))
-                    NotifyManager(projDescr, messages);
+                if (HandleError(pd, messages , e, true))
+                    NotifyManager(pd, messages);
                 return false;
             }
             return true;
@@ -164,7 +164,7 @@ namespace ProjectDBProcessor
             bool success = false;
             bool notifyManager = true;
             if (! db.SecureStartAnalysis(pd)) return false;
-            logWriter.WriteLine(DateTime.Now.ToString() + " Processing " + pd.analysisname + " - " + pd.LaneCount + " lanes [DBId=" + pd.analysisid + "]...");
+            logWriter.WriteLine(DateTime.Now.ToString() + " Processing " + pd.analysisname + " - " + pd.LaneCount + " lanes [DBId=" + pd.dbanalysisid + "]...");
             logWriter.Flush();
             List<string> messages = new List<string>();
             try
@@ -195,34 +195,34 @@ namespace ProjectDBProcessor
             }
             if (notifyManager)
                 NotifyManager(pd, messages);
-            db.UpdateAnalysisStatus(pd.analysisid, pd.status);
-            logWriter.WriteLine(DateTime.Now.ToString() + " " + pd.analysisname + "[DBId=" + pd.analysisid + "] finished with status " + pd.status);
+            db.UpdateAnalysisStatus(pd.dbanalysisid, pd.status);
+            logWriter.WriteLine(DateTime.Now.ToString() + " " + pd.analysisname + "[DBId=" + pd.dbanalysisid + "] finished with status " + pd.status);
             logWriter.Flush();
             return success;
         }
 
-        private static bool HandleError(ProjectDescription projDescr, List<string> messages, Exception e, bool recoverable)
+        private static bool HandleError(ProjectDescription pd, List<string> messages, Exception e, bool recoverable)
         {
-            projDescr.emails += ";" + Props.props.FailureReportAndAnonDownloadEmail;
-            logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + projDescr.analysisname + " ***\n" + e);
+            pd.emails += ";" + Props.props.FailureReportAndAnonDownloadEmail;
+            logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + pd.analysisname + " ***\n" + e);
             logWriter.Flush();
-            Console.WriteLine("\n===============" + projDescr.analysisname + " finished with errors: ==============\n" + e + 
+            Console.WriteLine("\n===============" + pd.analysisname + " finished with errors: ==============\n" + e + 
                             "\n=============== check details in " + logFile  + " ================\n");
             string errorMsg = e.Message;
-            projDescr.status = recoverable ? ProjectDescription.STATUS_INQUEUE : ProjectDescription.STATUS_FAILED;
-            if (lastMsgByProject.ContainsKey(projDescr.analysisname) && lastMsgByProject[projDescr.analysisname].Equals(errorMsg))
+            pd.status = recoverable ? ProjectDescription.STATUS_INQUEUE : ProjectDescription.STATUS_FAILED;
+            if (lastMsgByProject.ContainsKey(pd.analysisname) && lastMsgByProject[pd.analysisname].Equals(errorMsg))
                 return false;
             messages.Add(errorMsg);
-            lastMsgByProject[projDescr.analysisname] = errorMsg;
+            lastMsgByProject[pd.analysisname] = errorMsg;
             return true;
         }
 
-        private static void CopyLayoutFile(ProjectDescription projDescr)
+        private static void CopyLayoutFile(ProjectDescription pd)
         {
-            string layoutSrcPath = Path.Combine(Props.props.UploadsFolder, projDescr.layoutfile);
+            string layoutSrcPath = Path.Combine(Props.props.UploadsFolder, pd.layoutfile);
             if (File.Exists(layoutSrcPath))
             {
-                string layoutDestPath = projDescr.layoutpath;
+                string layoutDestPath = pd.layoutpath;
                 try
                 {
                     if (!Directory.Exists(Path.GetDirectoryName(layoutDestPath)))
@@ -239,7 +239,7 @@ namespace ProjectDBProcessor
             }
             else
             {
-                logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: " + projDescr.analysisname + " - layout does not exist: " + layoutSrcPath);
+                logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: " + pd.analysisname + " - layout does not exist: " + layoutSrcPath);
                 logWriter.Flush();
             }
         }
@@ -252,11 +252,11 @@ namespace ProjectDBProcessor
             Props.props.TotalNumberOfAddedSpikeMolecules = pd.spikemolecules;
             if (!pd.analysisname.StartsWith("C1-"))
                 Props.props.InsertCellDBData = false;
-            logWriter.WriteLine("{0} Extracting {1} lanes with barcodes {2}...", DateTime.Now, pd.runIdsLanes.Length, pd.barcodeset);
+            logWriter.WriteLine("{0} Extracting {1} lanes with barcodes {2}...", DateTime.Now, pd.laneArgs.Length, pd.barcodeset);
             logWriter.Flush();
             pd.extractionVersion = StrtReadMapper.EXTRACTION_VERSION;
-            pd.laneInfos = mapper.Extract(pd.ProjectFolder, pd.runIdsLanes.ToList(), null);
-            Props.props.UseRPKM = pd.isRpkm;
+            pd.laneInfos = mapper.Extract(pd.ProjectFolder, pd.laneArgs.ToList(), null);
+            Props.props.UseRPKM = pd.UseRPKM;
             Props.props.DirectionalReads = pd.DirectionalReads;
             Props.props.SenseStrandIsSequenced = pd.SenseStrandIsSequenced;
             pd.annotationVersion = StrtReadMapper.ANNOTATION_VERSION;
@@ -264,41 +264,41 @@ namespace ProjectDBProcessor
             if (speciesArgs.Length == 0) speciesArgs = new string[] { pd.defaultSpecies };
             foreach (string speciesArg in speciesArgs)
             {
-                StrtGenome genome = StrtGenome.GetGenome(speciesArg, pd.analyzeVariants, pd.defaultBuild, true);
+                StrtGenome genome = StrtGenome.GetGenome(speciesArg, pd.defaultVariants, pd.defaultBuild, true);
+                pd.genome = genome;
                 logWriter.WriteLine("{0} Aligning to {1}...", DateTime.Now, genome.BuildVarAnnot);
                 logWriter.Flush();
                 pd.status = ProjectDescription.STATUS_ALIGNING;
-                db.UpdateAnalysisStatus(pd.analysisid, pd.status);
-                mapper.CreateAlignments(genome, pd.laneInfos, null);
+                db.UpdateAnalysisStatus(pd.dbanalysisid, pd.status);
+                mapper.CreateAlignments(pd.genome, pd.laneInfos, null);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(pd.laneInfos);
-                pd.SetGenomeData(genome);
                 logWriter.WriteLine("{0} Annotating {1} alignment files...", DateTime.Now, mapFiles.Count);
-                logWriter.WriteLine("{0} setting: AllTrVariants={1} Gene5'Extensions={4} #SpikeMols={5} DirectionalReads={2} RPKM={3}",
-                                    DateTime.Now, pd.analyzeVariants, Props.props.DirectionalReads, Props.props.UseRPKM,
-                                    Props.props.GeneFeature5PrimeExtension, Props.props.TotalNumberOfAddedSpikeMolecules);
+                logWriter.WriteLine("{0} setting: TrVariants={1} Gene5'Extensions={4} #SpikeMols={5} DirectionalReads={2} RPKM={3}",
+                                    DateTime.Now, pd.variant, pd.DirectionalReads, pd.UseRPKM,
+                                    Props.props.GeneFeature5PrimeExtension, pd.spikemolecules);
                 logWriter.Flush();
                 pd.status = ProjectDescription.STATUS_ANNOTATING;
-                db.UpdateAnalysisStatus(pd.analysisid, pd.status);
-                ResultDescription resultDescr = mapper.ProcessAnnotation(genome, pd.ProjectFolder, pd.analysisname, null, null, mapFiles);
-                pd.resultDescriptions.Add(resultDescr);
+                db.UpdateAnalysisStatus(pd.dbanalysisid, pd.status);
+                ResultDescription rd = mapper.ProcessAnnotation(pd.genome, pd.ProjectFolder, pd.analysisname, null, null, mapFiles);
+                pd.AddResultDescription(rd);
                 System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(pd.GetType());
-                using (StreamWriter writer = new StreamWriter(Path.Combine(resultDescr.resultFolder, "ProjectConfig.xml")))
+                using (StreamWriter writer = new StreamWriter(Path.Combine(rd.resultFolder, "ProjectConfig.xml")))
                     x.Serialize(writer, pd);
-                logWriter.WriteLine("{0} Results stored in {1}.", DateTime.Now, resultDescr.resultFolder);
+                logWriter.WriteLine("{0} Results stored in {1}.", DateTime.Now, rd.resultFolder);
                 logWriter.Flush();
             }
         }
 
 
-        private static void NotifyManager(ProjectDescription projDescr, List<string> results)
+        private static void NotifyManager(ProjectDescription pd, List<string> results)
         {
-            if (projDescr.emails == "") return;
-            bool success = (projDescr.status == ProjectDescription.STATUS_READY);
-            string subject = (success)? "Results ready from STRT project " + projDescr.analysisname :
-                                        "Failure processing STRT project " + projDescr.analysisname;
+            if (pd.emails == "") return;
+            bool success = (pd.status == ProjectDescription.STATUS_READY);
+            string subject = (success)? "Results ready from STRT project " + pd.analysisname :
+                                        "Failure processing STRT project " + pd.analysisname;
             StringBuilder sb = new StringBuilder();
             sb.Append("<html>");
-            string toEmails = projDescr.emails;
+            string toEmails = pd.emails;
             if (success)
             {
                 if (results.Count == 0)
@@ -320,10 +320,10 @@ namespace ProjectDBProcessor
                 sb.Append("<p>After fixing the error, you may need to re-activate the analysis in the Sanger DB (View the sample: Analysis results/Retry).</p>");
             }
             sb.Append("<p>Run parameters follow:</p>\n<code>");
-            sb.Append("<br />\nBarcodeSet: " + projDescr.barcodeset);
-            sb.Append("<br />\nExtraction version: " + projDescr.extractionVersion);
-            sb.Append("<br />\nAnnotation version: " + projDescr.annotationVersion + "<br />");
-            foreach (ResultDescription rd in projDescr.resultDescriptions)
+            sb.Append("<br />\nBarcodeSet: " + pd.barcodeset);
+            sb.Append("<br />\nExtraction version: " + pd.extractionVersion);
+            sb.Append("<br />\nAnnotation version: " + pd.annotationVersion + "<br />");
+            foreach (ResultDescription rd in pd.ResultDescriptions)
                 sb.Append("<br />\nAligner index: " + rd.splcIndexVersion + " - Results: " + rd.resultFolder);
             sb.Append("\n</code>\n</html>");
             toEmails = toEmails.Replace(';', ','); // C# requires email addresses separated by ','
@@ -331,21 +331,21 @@ namespace ProjectDBProcessor
             EmailSender.SendMsg(toEmails, subject, body, true);
         }
 
-        private static List<string> PublishResultsForDownload(ProjectDescription projDescr)
+        private static List<string> PublishResultsForDownload(ProjectDescription pd)
         {
             List<string> resultLinks = new List<string>();
-            foreach (ResultDescription resultDescr in projDescr.resultDescriptions)
+            foreach (ResultDescription rd in pd.ResultDescriptions)
             {
-                string docFileDest = Path.Combine(resultDescr.resultFolder, Path.GetFileName(Props.props.OutputDocFile));
+                string docFileDest = Path.Combine(rd.resultFolder, Path.GetFileName(Props.props.OutputDocFile));
                 if (File.Exists(Props.props.OutputDocFile))
                 {
                     if (File.Exists(docFileDest))
                         File.Delete(docFileDest);
                     File.Copy(Props.props.OutputDocFile, docFileDest);
                 }
-                string resultTarName = Path.GetFileName(resultDescr.resultFolder) + ".tar.gz";
+                string resultTarName = Path.GetFileName(rd.resultFolder) + ".tar.gz";
                 string tempTarGzPath = Path.Combine(Path.GetTempPath(), resultTarName);
-                CompressResult(resultDescr.resultFolder, tempTarGzPath);
+                CompressResult(rd.resultFolder, tempTarGzPath);
             string cpCmd, cmdArg;
             if (Props.props.ResultUrlIsMounted)
             {
@@ -368,9 +368,9 @@ namespace ProjectDBProcessor
                 }
                 else
                 {
-                    resultLinks.Add(Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server - contact administrator!");
+                    resultLinks.Add(Path.GetFileName(rd.resultFolder) + " could not be published on HTTP server - contact administrator!");
                     logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: " + 
-                                         Path.GetFileName(resultDescr.resultFolder) + " could not be published on HTTP server:\n" + 
+                                         Path.GetFileName(rd.resultFolder) + " could not be published on HTTP server:\n" + 
                                          cpCmd + " " + cmdArg);
                     logWriter.Flush();
                 }

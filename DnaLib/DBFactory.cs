@@ -6,6 +6,9 @@ using Linnarsson.C1;
 
 namespace Linnarsson.Dna
 {
+    /// <summary>
+    /// Use to get access to the database. For historical reasons, make distinction between sample/cell metadata and expression database.
+    /// </summary>
     public class DBFactory
     {
         public static IDB GetProjectDB()

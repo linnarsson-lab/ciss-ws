@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace Linnarsson.C1
 {
+    /// <summary>
+    /// Calls related to expression and wiggle data
+    /// </summary>
     public interface IExpressionDB
     {
         Transcriptome GetTranscriptome(string buildVarAnnot);

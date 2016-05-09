@@ -82,6 +82,7 @@
     <Compile Include="Automata\RegularExpression.cs" />
     <Compile Include="Core\Correlation.cs" />
     <Compile Include="Core\DistanceCorrelation.cs" />
+    <Compile Include="Interpolation\LinearLeastSquares.cs" />
     <Compile Include="Optimization\DownhillSimplexMethod.cs" />
     <Compile Include="Core\Polynomial.cs" />
     <Compile Include="DataFrame\DataFrame.cs" />

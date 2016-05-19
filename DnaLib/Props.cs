@@ -36,7 +36,6 @@ namespace Linnarsson.Dna
         public static readonly string configFilename = "SilverBulletConfig.xml"; // Filename of machine specific Props
 
         // Following props are imported from the "SB.exe.config" file, where they are encrypted, see below.
-        [NonSerialized]
         public string MySqlServerConnectionString = "server=127.0.0.1;uid=user;pwd=password;database=joomla;Connect Timeout=300;Charset=utf8;";
         [NonSerialized]
         public string OutgoingMailServer = "send.my.server";
@@ -133,7 +132,7 @@ namespace Linnarsson.Dna
         public int MappingsBySpikeReadsSampleDist = 0; // Set > 0 to sample per-barcode curves of # unique mappings as fn. of # processed spike reads
         public string RemoveTrailingReadPrimerSeqs = ""; // Comma-separated list of seqs to remove if during extraction reads end with (part of) them.
         public string ForbiddenReadInternalSeqs = ""; // Comma-separated list of seqs that if found inside reads disqualify them during extraction.
-        public int SampleDistPerBcForAccuStats = 100000; // Statistics as fn. of #reads processed will be collected every this # of reads
+        public int SampleDistPerBcForAccuStats = 20000; // Statistics as fn. of #reads processed will be collected every this # of reads
         public bool SampleAccuFilteredExonMols = false; // Sample #EXON Mols after mutation filter as fn. of processed reads (slow)
         public string[] CAPCloseSiteSearchCutters = new string[] { "PvuI" };
         public bool InsertCellDBData = true; // Insert results into DB if 1) project is "C1-" 2) genes read from DB 3) using ProjDBProcessor 4) using props.CellDBAligner
@@ -157,6 +156,8 @@ namespace Linnarsson.Dna
         public string[] AllMixinBcSets = new string[] { "C1-1", "C1-2", "C1-3", "C1-4" };
         public bool ParallellFastqCopy = false; // If true, will speed up bcl->fq conversion by parallell threads
         public bool UseNewDbSetup = false; // If true, will use one single combined DB for sample/cell and expression data
+        public string Tn5Seq = "CTGTCTCTTATACAC"; //..."ATCTGACGC";
+        public bool RemoveIntermediateFiles = false; // Remove extracted fq and aligned map files after annotation finished
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {
@@ -232,9 +233,9 @@ namespace Linnarsson.Dna
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                Console.WriteLine("Warning: Props could not load encrypted DB connection setup");
+                Console.WriteLine("Warning: Props could not load encrypted DB connection setup: {0}", e.Message);
             }
         }
 

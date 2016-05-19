@@ -73,14 +73,13 @@ namespace Linnarsson.Dna
                 }
                 catch (SampleLayoutFileException)
                 { }
-            }
-            else if (File.Exists(layoutpath))
-            {
+            } else if (File.Exists(layoutpath)) {
                 plateLayout = new FilePlateLayout(layoutpath);
                 Console.WriteLine("Plate layout was read from " + layoutpath);
-            }
-            else if (layoutpath != "")
+            } else if (layoutpath != "")
                 Console.WriteLine("WARNING: Can not find layout file " + layoutpath);
+            if (plateLayout != null)
+                Console.WriteLine("Annotations in layout: " + string.Join(",", plateLayout.GetAnnotations()));
             return plateLayout;
         }
     }
@@ -139,22 +138,20 @@ namespace Linnarsson.Dna
             line = reader.ReadLine();
             while (line != null && line != "")
             {
-                if (!line.StartsWith("#"))
-                {
-                    string[] fields = line.Split('\t');
-                    string sampleId = fields[sampleIdIdx].Trim();
-                    if (SpeciesIdBySampleId.ContainsKey(sampleId))
-                        throw new SampleLayoutFileException("Duplicated sampleId in " + plateLayoutPath);
-                    string speciesId = ParseSpeciesOrBuildId(fields[speciesIdIdx]);
-                    SpeciesIdBySampleId[sampleId] = speciesId;
-                    List<string> otherFields = new List<string>();
-                    for (int colIdx = 0; colIdx < fields.Length; colIdx++)
-                        if (colIdx != sampleIdIdx && colIdx != speciesIdIdx)
-                            otherFields.Add(fields[colIdx]);
-                    while (otherFields.Count < annotationIdx)
-                        otherFields.Add("");
-                    AnnotationsBySampleId[sampleId] = otherFields.ToArray();
-                }
+                if (line.StartsWith("#")) continue;
+                string[] fields = line.Split('\t');
+                string sampleId = fields[sampleIdIdx].Trim();
+                if (SpeciesIdBySampleId.ContainsKey(sampleId))
+                    throw new SampleLayoutFileException("Duplicated sampleId in " + plateLayoutPath);
+                string speciesId = ParseSpeciesOrBuildId(fields[speciesIdIdx]);
+                SpeciesIdBySampleId[sampleId] = speciesId;
+                List<string> otherFields = new List<string>();
+                for (int colIdx = 0; colIdx < fields.Length; colIdx++)
+                    if (colIdx != sampleIdIdx && colIdx != speciesIdIdx)
+                        otherFields.Add(fields[colIdx]);
+                while (otherFields.Count < annotationIdx)
+                    otherFields.Add("");
+                AnnotationsBySampleId[sampleId] = otherFields.ToArray();
                 line = reader.ReadLine();
             }
             reader.Close();

@@ -107,11 +107,10 @@ namespace Linnarsson.Strt
         /// <param name="genomeBcIndexes">only these barcodes will be processed</param>
         public void CreateAlignments(LaneInfo laneInfo, int[] genomeBcIndexes)
         {
-            string mapFolder = laneInfo.GetMappedFileFolder(MakeMapFolderName());
-            if (!Directory.Exists(mapFolder))
-                Directory.CreateDirectory(mapFolder);
+            string mapFolder = laneInfo.CreateMappedFileFolder(MakeMapFolderName());
             string alignerLogFilePath = Path.Combine(mapFolder, alignerLogFilename);
-            List<string> outPaths = new List<string>();
+            List<string> outMappedPaths = new List<string>();
+            List<string> outUnmappedPaths = new List<string>();
             string mainIndexName = genome.GetMainIndexName();
             string splcIndexName = genome.GetSplcIndexName();
             foreach (string extractedFilePath in laneInfo.extractedFilePaths)
@@ -126,7 +125,7 @@ namespace Linnarsson.Strt
                     if (!LaneInfo.ExtractedFileExists(extractedFilePath)) continue;
                     CreateAlignmentOutputFile(mainIndexName, extractedFilePath, outMainPath, outUnmappedPath, alignerLogFilePath);
                 }
-                outPaths.Add(outMainPath);
+                outMappedPaths.Add(outMainPath);
                 string outSplcFilename = string.Format("{0}_{1}{2}", bcIdx, splcIndexName, outFileExtension);
                 string splcFilePat = string.Format("{0}_{1}{2}", bcIdx, genome.GetSplcIndexNamePattern(), outFileExtension);
                 string[] existingSplcFiles = Directory.GetFiles(mapFolder, splcFilePat);
@@ -147,10 +146,12 @@ namespace Linnarsson.Strt
                         CreateAlignmentOutputFile(splcIndexName, outUnmappedPath, outSplcPath, remainUnmappedPath, alignerLogFilePath);
                     }
                 }
-                outPaths.Add(outSplcPath);
+                outMappedPaths.Add(outSplcPath);
+                outUnmappedPaths.Add(outUnmappedPath);
                 if (Background.CancellationPending) break;
             }
-            laneInfo.mappedFilePaths = outPaths.ToArray();
+            laneInfo.mappedFilePaths = outMappedPaths.ToArray();
+            laneInfo.unmappedFilePaths = outUnmappedPaths.ToArray();
             Cleanup();
         }
 

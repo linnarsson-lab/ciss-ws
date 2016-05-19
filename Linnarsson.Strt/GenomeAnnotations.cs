@@ -609,65 +609,66 @@ namespace Linnarsson.Strt
         #endregion
 
         #region SaveResults
-        public string ProjectName { get; private set; }
+        public string PlateId { get; private set; }
 
         /// <summary>
         /// Saves all gene centers tables as tab-delimited files
         /// </summary>
-        /// <param name="fileNameBase">full path and projectName prefix where file should be saved ( /X/Y/PROJNAME )</param>
+        /// <param name="outputPathbase">full path and filename prefix to make filenames for saving ( "/X/Y/PREFIX" [add: "_...tab"] )</param>
+        /// <param name="plateId">The plateId to use in wiggle tracks and (combined with wellId) in table headers</param>
         /// <param name="averageReadLen"></param>
-        public void SaveResult(string fileNameBase, int averageReadLen)
+        public void SaveResult(string outputPathbase, string plateId, int averageReadLen)
         {
-            ProjectName = Path.GetDirectoryName(fileNameBase);
-            WriteExpressionToCEF(fileNameBase);
-            WriteReadsToCEF(fileNameBase);
+            PlateId = plateId;
+            WriteExpressionToCEF(outputPathbase);
+            WriteReadsToCEF(outputPathbase);
             //WriteExpressionTable(fileNameBase);
             //WriteReadsTable(fileNameBase);
-            if (Props.props.UseRPKM) WriteNormalizedExpression(fileNameBase);
+            if (Props.props.UseRPKM) WriteNormalizedExpression(outputPathbase);
             if (Props.props.OutputLevel <= 1) return;
-            WriteTrueMolsToCEF(fileNameBase);
-            WriteMinExpressionToCEF(fileNameBase);
-            WriteMatlabTables(fileNameBase, GeneFeature.IterTrMaxHits);
-            WriteRTable(fileNameBase, GeneFeature.IterTrMaxHits);
+            WriteTrueMolsToCEF(outputPathbase);
+            WriteMinExpressionToCEF(outputPathbase);
+            WriteMatlabTables(outputPathbase, GeneFeature.IterTrMaxHits);
+            WriteRTable(outputPathbase, GeneFeature.IterTrMaxHits);
             if (Props.props.ShowTranscriptSharingGenes)
-                WriteSharedGenes(fileNameBase);
+                WriteSharedGenes(outputPathbase);
             if (Props.props.OutputLevel <= 2) return;
-            WriteMaxOccupiedUMIsByEXONTable(fileNameBase);
-            WriteIntronCounts(fileNameBase);
+            WriteMaxOccupiedUMIsByEXONTable(outputPathbase);
+            WriteIntronCounts(outputPathbase);
             if (Props.props.GenerateGeneProfilesByBarcode)
             {
-                WriteExonCountsPerBarcode(fileNameBase);
-                WriteIntronCountsPerBarcode(fileNameBase);
+                WriteExonCountsPerBarcode(outputPathbase);
+                WriteIntronCountsPerBarcode(outputPathbase);
             }
             if (Props.props.AnalyzeGCContent)
-                WriteGCContentByTranscript(fileNameBase);
+                WriteGCContentByTranscript(outputPathbase);
             if (Props.props.GenerateTranscriptProfiles)
             {
-                WriteTranscriptProfiles(fileNameBase);
-                WriteTranscriptHistograms(fileNameBase, averageReadLen);
+                WriteTranscriptProfiles(outputPathbase);
+                WriteTranscriptHistograms(outputPathbase, averageReadLen);
             }
-            WriteSplicesByGeneLocus(fileNameBase);
+            WriteSplicesByGeneLocus(outputPathbase);
             if (Props.props.AnalyzeSpliceHitsByBarcode)
-                WriteSplicesByGeneLocusAndBc(fileNameBase);
+                WriteSplicesByGeneLocusAndBc(outputPathbase);
             if (Props.props.DirectionalReads)
             {
                 if (Props.props.WriteCAPRegionHits)
-                    WriteCAPRegionHitsTable(fileNameBase);
-                WriteExpressedAntisenseGenes(fileNameBase);
-                WriteUniquehits(fileNameBase);
+                    WriteCAPRegionHitsTable(outputPathbase);
+                WriteExpressedAntisenseGenes(outputPathbase);
+                WriteUniquehits(outputPathbase);
             }
             if (Props.props.GenerateGeneLocusProfiles)
-                WriteLocusHitsByGeneLocus(fileNameBase);
+                WriteLocusHitsByGeneLocus(outputPathbase);
             if (Props.props.GenesToPaint != null && Props.props.GenesToPaint.Length > 0)
             {
-                PaintSelectedGeneLocusImages(fileNameBase);
-                PaintSelectedGeneTranscriptImages(fileNameBase);
+                PaintSelectedGeneLocusImages(outputPathbase);
+                PaintSelectedGeneTranscriptImages(outputPathbase);
             }
-            WriteAnnotTypeAndExonCounts(fileNameBase);
-            WritePotentialErronousAnnotations(fileNameBase);
-            WriteElongationEfficiency(fileNameBase, averageReadLen);
-            WriteSpikeProfilesByBc(fileNameBase);
-            WriteQlucoreTable(fileNameBase);
+            WriteAnnotTypeAndExonCounts(outputPathbase);
+            WritePotentialErronousAnnotations(outputPathbase);
+            WriteElongationEfficiency(outputPathbase, averageReadLen);
+            WriteSpikeProfilesByBc(outputPathbase);
+            WriteQlucoreTable(outputPathbase);
         }
 
         private void WriteExpressedAntisenseGenes(string fileNameBase)
@@ -1070,7 +1071,7 @@ namespace Linnarsson.Strt
             {
                 int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
                 foreach (int idx in speciesBcIndexes)
-                    writer.Write("\t{0}-{1}", ProjectName, Props.props.Barcodes.GetWellId(idx));
+                    writer.Write("\t{0}_{1}", PlateId, Props.props.Barcodes.GetWellId(idx));
                 writer.WriteLine();
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
@@ -1092,7 +1093,7 @@ namespace Linnarsson.Strt
             {
                 writer.Write("Feature\tChr\tPos\tStrand");
                 foreach (int idx in speciesBcIndexes)
-                    writer.Write("\t{0}-{1}", ProjectName, Props.props.Barcodes.GetWellId(idx));
+                    writer.Write("\t{0}_{1}", PlateId, Props.props.Barcodes.GetWellId(idx));
                 writer.WriteLine();
                 foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
                 {
@@ -1271,7 +1272,7 @@ namespace Linnarsson.Strt
             String tabs = new String('\t', nTabs);
             matrixFile.Write("{0}Sample{1}", tabs, colon);
             foreach (int idx in selectedBcIndexes)
-                matrixFile.Write("\t{0}_{1}", ProjectName, Props.props.Barcodes.GetWellId(idx));
+                matrixFile.Write("\t{0}_{1}", PlateId, Props.props.Barcodes.GetWellId(idx));
             matrixFile.WriteLine();
             matrixFile.Write("{0}Well{1}", tabs, colon);
             foreach (int idx in selectedBcIndexes)

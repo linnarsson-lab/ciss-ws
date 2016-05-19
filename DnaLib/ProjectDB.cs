@@ -56,8 +56,8 @@ namespace Linnarsson.Dna
         private List<ProjectDescription> GetProjectDescriptions()
         {
             List<ProjectDescription> pds = new List<ProjectDescription>();
-            string sql = "SELECT a.id, p.id AS pid, a.genome, a.transcript_db_version, a.transcript_variant, a.rpkm, a.readdir, a.emails, " +
-                         " p.plateid, p.barcodeset, p.spikemolecules, p.species, p.layoutfile, a.status, a.aligner, a.comment" +
+            string sql = "SELECT a.id, p.id AS pid, a.genome, a.transcript_db_version, a.transcript_variant, a.rpkm, a.readdir, a.emails, a.user, " +
+                         " p.plateid, p.barcodeset, p.spikemolecules, p.species, p.layoutfile, a.status, a.aligner, a.comment," +
                          " r.illuminarunid AS runid, GROUP_CONCAT(l.laneno ORDER BY l.laneno) AS lanenos " +
                          "FROM {0}aaaanalysis a " + 
                          "LEFT JOIN {0}aaaproject p ON a.{0}aaaprojectid = p.id " +
@@ -395,8 +395,10 @@ namespace Linnarsson.Dna
             while (rdr.Read())
             {
                 bool valid = (rdr.GetInt32(9) == 1);
+                string subwell = rdr.IsDBNull(10) ? "" : rdr.GetString(10);
+                int subbarcodeidx = rdr.IsDBNull(11) ? 0 : rdr.GetInt32(11);
                 Cell cell = new Cell(rdr.GetInt32(0), rdr.GetInt32(1), 0, rdr.GetString(2), rdr.GetString(3),
-                                     rdr.GetDouble(4), rdr.GetDouble(5), rdr.GetInt32(6), rdr.GetInt32(7), rdr.GetInt32(8), valid, rdr.GetString(10), rdr.GetInt32(11));
+                                     rdr.GetDouble(4), rdr.GetDouble(5), rdr.GetInt32(6), rdr.GetInt32(7), rdr.GetInt32(8), valid, subwell, subbarcodeidx);
                 cells.Add(cell);
             }
             conn.Close();
@@ -438,8 +440,7 @@ namespace Linnarsson.Dna
             IssueNonQuery(sql);
         }
 
-        public void GetCellAnnotations(string plateId,
-            out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
+        public void GetCellAnnotations(string plateId, out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes)
         {
             CellAnnotationsCall(string.Format("LEFT JOIN {0}aaachip h ON c.{0}aaachipid=h.id " +
                         "LEFT JOIN {0}aaaproject p ON h.{0}aaaprojectid=p.id WHERE p.plateid='{1}' ORDER BY c.platewell", Props.props.DBPrefix, plateId),
@@ -625,11 +626,12 @@ namespace Linnarsson.Dna
         public void InsertOrUpdateCell(Cell c)
         {
             int validValue = c.valid ? 1 : 0;
+            string subwell = (c.subwell == "") ? "NULL" : "'" + c.subwell + "'";
             string sql = "INSERT INTO {0}aaacell ({0}aaachipid, chipwell, diameter, area, red, green, blue, valid, subwell, subbarcodeidx) " +
                          "VALUES ('{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}') " +
-                         "ON DUPLICATE KEY UPDATE diameter='{3}',area='{4}',red='{5}',green='{6}',blue='{7}',valid='{8}',subwell={9},subbarcodeidx={10}";
+                         "ON DUPLICATE KEY UPDATE diameter='{3}',area='{4}',red='{5}',green='{6}',blue='{7}',valid='{8}',subwell={9},subbarcodeidx='{10}'";
             sql = string.Format(sql, Props.props.DBPrefix, c.jos_aaachipid, c.chipwell, c.diameter, c.area,
-                                c.red, c.green, c.blue, validValue, c.subwell, c.subbarcodeidx);
+                                c.red, c.green, c.blue, validValue, subwell, c.subbarcodeidx);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);

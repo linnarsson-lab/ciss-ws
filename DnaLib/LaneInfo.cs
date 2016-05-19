@@ -47,12 +47,16 @@ namespace Linnarsson.Dna
         public string[] extractedFilePaths { get; private set; }
         public string laneExtractionFolder { get; private set; }
 
-        public string[] mappedFilePaths { get; set; }
+        public string mapFolderName { get; private set; } // E.g. "hg19_UCSC_141215" or "STAR_mm10_VEGA_150804"
+        public string mappedFileFolder { get { return Path.Combine(Path.Combine(extractionFolder, mapFolderName), Path.GetFileName(laneExtractionFolder)); } }
+        public string[] mappedFilePaths { get; set; }     // Reads aligning to main or splice index (i.e. 2 files per barcode)
+        public string[] unmappedFilePaths { get; set; }   // Reads not aligning to main nor splice index
 
-        private string mappedFileFolder { get; set; }
-        public string GetMappedFileFolder(string mapFolderName)
+        public string CreateMappedFileFolder(string mapFolderName)
         {
-            mappedFileFolder = Path.Combine(Path.Combine(extractionFolder, mapFolderName), Path.GetFileName(laneExtractionFolder));
+            this.mapFolderName = mapFolderName;
+            if (!File.Exists(mappedFileFolder))
+                Directory.CreateDirectory(mappedFileFolder);
             return mappedFileFolder;
         }
 

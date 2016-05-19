@@ -100,8 +100,8 @@ namespace Linnarsson.Strt
             string extractionFolder = PathHandler.MakeExtractionFolderSubPath(resultProjectFolder, Props.props.Barcodes.Name, EXTRACTION_VERSION);
             List<LaneInfo> laneInfos = LaneInfo.LaneInfosFromLaneArgs(laneArgs, extractionFolder);
             if (laneInfos.Count == 0)
-                Console.WriteLine("Warning: No read files found corresponding to {0}", string.Join("/", laneArgs.ToArray()));
-            ExtractIfNeeded(laneInfos, extractionFolder);
+                Console.WriteLine("WARNING: No read files found corresponding to {0}", string.Join("/", laneArgs.ToArray()));
+            ExtractIfNeeded(laneInfos);
             return laneInfos;
         }
 
@@ -112,16 +112,11 @@ namespace Linnarsson.Strt
         /// or the file is of an older version, or the read file is newer than the extracted file.
         /// </summary>
         /// <param name="laneInfos"></param>
-        /// <param name="extractionFolder"></param>
-        private void ExtractIfNeeded(List<LaneInfo> laneInfos, string extractionFolder)
+        private void ExtractIfNeeded(List<LaneInfo> laneInfos)
         {
-            foreach (LaneInfo laneInfo in laneInfos)
+            foreach (LaneInfo laneInfo in laneInfos.Where(l => l.ExtractionNeeded()))
 			{
-                if (laneInfo.ExtractionNeeded())
-                {
-                    SampleReadWriter srw = new SampleReadWriter(Props.props.Barcodes, laneInfo);
-                    srw.ProcessLaneAsRecSets();
-                }
+                new SampleReadWriter(Props.props.Barcodes, laneInfo).ProcessLaneAsRecSets();
             }
 		}
 
@@ -138,7 +133,7 @@ namespace Linnarsson.Strt
                 genomeBcIndexes = genomeBcIndexes.Where(i => selectedBcIdxs.Contains(i)).ToArray();
             genome.SplcIndexReadLen = new ReadCounter(Props.props.Barcodes).GetAverageReadLen(laneInfos);
             Aligner aligner = AssertASplcIndex(genome);
-            Console.WriteLine("{0} aligning {1} lanes against {2}...", Props.props.Aligner, laneInfos.Count, genome.GetSplcIndexName());
+            Console.WriteLine("{0}: {1} aligning {2} lanes against {3}...", DateTime.Now, Props.props.Aligner, laneInfos.Count, genome.GetSplcIndexName());
             foreach (LaneInfo laneInfo in laneInfos)
                 aligner.CreateAlignments(laneInfo, genomeBcIndexes);
         }
@@ -155,7 +150,7 @@ namespace Linnarsson.Strt
             {
                 int actualReadLen = genome.SplcIndexReadLen;
                 genome.SplcIndexReadLen = genome.SplcIndexReadLen - (genome.SplcIndexReadLen % 4);
-                Console.WriteLine("No {0} index to use with averageReadLen={1}. Building one with ReadLen={2}.",
+                Console.WriteLine("WARNING: No {0} index to use with averageReadLen={1}. Building one with ReadLen={2}.",
                     Props.props.Aligner, actualReadLen, genome.SplcIndexReadLen);
                 BuildJunctionsAndIndex(genome);
                 if (!aligner.FindASplcIndex())
@@ -211,7 +206,8 @@ namespace Linnarsson.Strt
             Props.props.InsertCellDBData = false;
             string sampleLayoutPath = PathHandler.GetLayoutPath(projectFolder);
             string plateId = Path.GetFileName(projectFolder);
-            string[] speciesArgs = (speciesArg != "") ? new string[] { speciesArg } : Props.props.Barcodes.ParsePlateLayout(plateId, sampleLayoutPath);
+            string[] speciesArgs = Props.props.Barcodes.ParsePlateLayout(plateId, sampleLayoutPath); // Read in various annotations from DB or layout
+            if (speciesArg != "") speciesArgs = new string[] { speciesArg }; // Only use specific species if specified on command line
             foreach (string sp in speciesArgs)
             {
                 StrtGenome genome = StrtGenome.GetGenome(sp, defaultGeneVariants, defaultAnnotation, true);
@@ -220,10 +216,10 @@ namespace Linnarsson.Strt
                 if (mapFiles.Count == 0)
                     throw new Exception("Both alignment (map/sam) files and extracted fq files to align are missing! You have to (re-)run the extraction first.");
                 string readDir = !Props.props.DirectionalReads ? "No" : Props.props.SenseStrandIsSequenced ? "Sense" : "Antisense";
-                Console.WriteLine("Annotating {0} map files from {1}\nDirectionalReads={2} RPKM={3} SelectedMappingType={4}...",
-                                  mapFiles.Count, plateId, readDir, Props.props.UseRPKM, Props.props.MultireadMappingMode);
+                Console.WriteLine("{0}: Annotating {1} map files from {2}\nDirectionalReads={3} RPKM={4} SelectedMappingType={5}...",
+                                 DateTime.Now, mapFiles.Count, plateId, readDir, Props.props.UseRPKM, Props.props.MultireadMappingMode);
                 ResultDescription resultDescr = ProcessAnnotation(genome, projectFolder, plateId, resultFolder, resultFileprefix, mapFiles);
-                Console.WriteLine("...output in {0}", resultDescr.resultFolder);
+                Console.WriteLine("{0}: ...output in {1}", DateTime.Now, resultDescr.resultFolder);
             }
         }
 
@@ -316,10 +312,10 @@ namespace Linnarsson.Strt
             ts.ProcessMapFiles(mapFilePaths, averageReadLen);
             if (ts.GetNumMappedReads() == 0)
                 Console.WriteLine("WARNING: contigIds of reads do not seem to match with genome Ids.\nWas the Bowtie index made on a different genome or contig set?");
-            Console.WriteLine("Totally {0} annotations: {1} expressed genes and {2} expressed repeat types.",
-                              ts.GetNumMappedReads(), annotations.GetNumExpressedTranscripts(), annotations.GetNumExpressedRepeats());
+            Console.WriteLine("{0}: Totally {1} annotations: {2} expressed genes and {3} expressed repeat types.",
+                             DateTime.Now, ts.GetNumMappedReads(), annotations.GetNumExpressedTranscripts(), annotations.GetNumExpressedRepeats());
             Directory.CreateDirectory(resultFolder);
-            Console.WriteLine("Saving to {0}...", resultFolder);
+            Console.WriteLine("{0}: Saving to {1}...", DateTime.Now, resultFolder);
             ResultDescription resultDescr = new ResultDescription(mapFilePaths, genome, resultFolder);
             ts.SaveResult(readCounter, resultDescr);
             System.Xml.Serialization.XmlSerializer x = new System.Xml.Serialization.XmlSerializer(Props.props.GetType());
@@ -339,7 +335,7 @@ namespace Linnarsson.Strt
         private static void InsertCells10kData(string plateid, GenomeAnnotations annotations, ResultDescription resultDescr)
         {
             IDB pdb = DBFactory.GetProjectDB();
-            Console.WriteLine("Saving expression BLOB:s to cells10k database...");
+            Console.WriteLine("{0}: Saving expression BLOB:s to expression database...", DateTime.Now);
             try
             {
                 Dictionary<string, int> cellIdByWell = DBFactory.GetProjectDB().GetWell2CellIdMapping(plateid);
@@ -351,7 +347,7 @@ namespace Linnarsson.Strt
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error inserting expression BLOB:s to database: {0}", e);
+                Console.WriteLine("ERROR when inserting expression BLOB:s to database: {0}", e);
             }
         }
 

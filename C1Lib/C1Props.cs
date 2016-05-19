@@ -72,9 +72,9 @@ namespace Linnarsson.C1
                 if (settings != null)
                     props.MySQlConnectionString = settings.ConnectionString;
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                Console.WriteLine("Warning: C1Props could not load encrypted DB connection setup");
+                Console.WriteLine("Warning: C1Props could not load encrypted DB connection setup: {0}", e.Message);
             }
         }
 

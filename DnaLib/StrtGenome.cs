@@ -123,7 +123,7 @@ namespace Linnarsson.Dna
         /// <returns></returns>
         public Dictionary<string, string> GetOriginalGenomeFilesMap()
         {
-            string[] chrFiles = Directory.GetFiles(GetOriginalGenomeFolder(), "chr*");
+            string[] chrFiles = Directory.GetFiles(GetOriginalGenomeFolder(), "chr*fa*");
             Dictionary<string, string> chrIdToFileMap = new Dictionary<string, string>();
             foreach (string filePath in chrFiles)
             {

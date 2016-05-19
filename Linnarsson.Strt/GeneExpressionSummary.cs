@@ -78,7 +78,7 @@ namespace Linnarsson.Strt
             using (StreamWriter writer = new StreamWriter(file))
             {
                 foreach (int idx in speciesBcIndexes)
-                    writer.Write("\t{0}_{1}", annotations.ProjectName, Props.props.Barcodes.GetWellId(idx));
+                    writer.Write("\t{0}_{1}", annotations.PlateId, Props.props.Barcodes.GetWellId(idx));
                 writer.WriteLine();
                 foreach (KeyValuePair<string, GeneExpression> p in data)
                 {

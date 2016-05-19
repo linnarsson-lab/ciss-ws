@@ -11,8 +11,7 @@ namespace Linnarsson.Strt
 {
     public class ReadExtractor
     {
-        private readonly static string tn5Seq = "CTGTCTCTTATACACATCTGACGC";
-        private readonly static string tn5SeqStart = tn5Seq.Substring(0, 12);
+        private static string tn5SeqStart = Props.props.Tn5Seq.Substring(0, Math.Min(12, Props.props.Tn5Seq.Length));
         private readonly static string p1Seq = "AATGATACGGCGACC";
         private readonly static int minPolyNStretchLen = 15;
 
@@ -38,7 +37,7 @@ namespace Linnarsson.Strt
             minInsertNonAs = Props.props.MinExtractionInsertNonAs;
             minQualityInUMI = Props.props.MinPhredScoreInRandomTag;
             trailingPrimerSeqs = Props.props.RemoveTrailingReadPrimerSeqs.Split(',').Where(s => s.Length >= minPrimerSeqLen).ToArray();
-            forbiddenReadInternalSeqs = Props.props.ForbiddenReadInternalSeqs.Split(',').ToArray();
+            forbiddenReadInternalSeqs = Props.props.ForbiddenReadInternalSeqs.Split(',').Where(seq => seq.Length > 2).ToArray();
             UMIChars = new char[barcodes.UMILen];
             ReadOtherBcSeqs(barcodes);
         }
@@ -354,8 +353,8 @@ namespace Linnarsson.Strt
             int p = seq.IndexOf(tn5SeqStart);
             if (p >= 0)
             {
-                int l = Math.Min(tn5Seq.Length, seq.Length - p);
-                if (seq.Substring(p, l).Equals(tn5Seq.Substring(0, l))) return true;
+                int l = Math.Min(Props.props.Tn5Seq.Length, seq.Length - p);
+                if (seq.Substring(p, l).Equals(Props.props.Tn5Seq.Substring(0, l))) return true;
             }
             return false;
         }

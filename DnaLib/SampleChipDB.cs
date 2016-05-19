@@ -396,8 +396,10 @@ namespace Linnarsson.Dna
             while (rdr.Read())
             {
                 bool valid = (rdr.GetInt32(9) == 1);
+                string subwell = rdr.IsDBNull(10) ? "" : rdr.GetString(10);
+                int subbarcodeidx = rdr.IsDBNull(11) ? 0 : rdr.GetInt32(11);
                 Cell cell = new Cell(rdr.GetInt32(0), rdr.GetInt32(1), rdr.GetInt32(2), rdr.GetString(3), rdr.GetString(3),
-                                     rdr.GetDouble(4), rdr.GetDouble(5), rdr.GetInt32(6), rdr.GetInt32(7), rdr.GetInt32(8), valid, rdr.GetString(10), rdr.GetInt32(11));
+                                     rdr.GetDouble(4), rdr.GetDouble(5), rdr.GetInt32(6), rdr.GetInt32(7), rdr.GetInt32(8), valid, subwell, subbarcodeidx);
                 cells.Add(cell);
             }
             conn.Close();
@@ -486,11 +488,12 @@ namespace Linnarsson.Dna
         public void InsertOrUpdateCell(Cell c)
         {
             int validValue = c.valid ? 1 : 0;
-            string sql = "INSERT INTO {0}aaacell ({0}aaachipid, chipwell, diameter, area, red, green, blue, valid,subwell,subbarcodeidx) " +
+            string subwell = (c.subwell == "") ? "NULL" : "'" + c.subwell + "'";
+            string sql = "INSERT INTO {0}aaacell ({0}aaachipid, chipwell, diameter, area, red, green, blue, valid, subwell, subbarcodeidx) " +
                          "VALUES ('{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}') " +
-                         "ON DUPLICATE KEY UPDATE diameter='{3}',area='{4}',red='{5}',green='{6}',blue='{7}',valid='{8}',subwell={9},subbarcodeidx={10}";
+                         "ON DUPLICATE KEY UPDATE diameter='{3}',area='{4}',red='{5}',green='{6}',blue='{7}',valid='{8}',subwell={9},subbarcodeidx='{10}'";
             sql = string.Format(sql, Props.props.DBPrefix, c.jos_aaachipid, c.chipwell, c.diameter, c.area,
-                                c.red, c.green, c.blue, validValue, c.subwell, c.subbarcodeidx);
+                                c.red, c.green, c.blue, validValue, subwell, c.subbarcodeidx);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
             MySqlCommand cmd = new MySqlCommand(sql, conn);

@@ -57,6 +57,7 @@ namespace Linnarsson.Strt
 		DnaMotif[] motifs;
         int currentBcIdx = 0;
         string currentMapFilePath;
+        private string plateId;
         private string resultFolder;
         private string resultFileprefix = null;
         private string OutputPathbase { get { return Path.Combine(resultFolder, resultFileprefix); } }
@@ -110,7 +111,6 @@ namespace Linnarsson.Strt
         List<double> sampledLibraryDepths = new List<double>();
         List<double> sampledUniqueMolecules = new List<double>();
         List<double> sampledExpressedTranscripts = new List<double>();
-        Dictionary<int, List<int>> sampledDetectedTranscriptsByBcIdx = new Dictionary<int, List<int>>();
         // For non-UMI samples the following two will be identical:
         Dictionary<int, List<int>> sampledUniqueMoleculesByBcIdx = new Dictionary<int, List<int>>();
         Dictionary<int, List<int>> sampledUniqueHitPositionsByBcIdx = new Dictionary<int, List<int>>();
@@ -135,16 +135,17 @@ namespace Linnarsson.Strt
         private static int nMaxMappings;
         private List<GeneFeature> gfsForUMIProfile = new List<GeneFeature>();
 
-        public TranscriptomeStatistics(GenomeAnnotations annotations, string resultFolder, string resultFileprefix, string plateId)
+        public TranscriptomeStatistics(GenomeAnnotations annotations, string resultFolder, string resultFilePrefix, string plateId)
 		{
+            this.plateId = plateId;
             this.resultFolder = resultFolder;
-            this.resultFileprefix = resultFileprefix;
+            this.resultFileprefix = resultFilePrefix;
             SelectedBcWiggleAnnotations = Props.props.SelectedBcWiggleAnnotations;
             if (Props.props.SelectedBcWiggleAnnotations != null && Props.props.SelectedBcWiggleAnnotations.Length == 0)
                 SelectedBcWiggleAnnotations = null;
             if (Props.props.GenerateBarcodedWiggle && SelectedBcWiggleAnnotations != null)
-                Console.WriteLine("Selected annotation types for barcoded wiggle plots: "
-                                  + string.Join(",", Array.ConvertAll(SelectedBcWiggleAnnotations, t => AnnotType.GetName(t))));
+                Console.WriteLine("{0}: Selected annotation types for barcoded wiggle plots: {1}",
+                            DateTime.Now, string.Join(",", Array.ConvertAll(SelectedBcWiggleAnnotations, t => AnnotType.GetName(t))));
             Annotations = annotations;
             AnalyzeAllGeneVariants = !Annotations.noGeneVariants;
             SetupMotifs(Props.props);
@@ -254,8 +255,7 @@ namespace Linnarsson.Strt
                 RegisterPotentialSNPs(mapFilePaths, averageReadLen);
             if (Props.props.SnpRndTagVerification && Props.props.Barcodes.HasUMIs)
                 snpRndTagVerifier = new SnpRndTagVerifier(Props.props, Annotations.Genome);
-            Console.WriteLine("Annotatating {0} map files ignoring reads with > {1} alternative mappings.", mapFilePaths.Count, nMaxMappings);
-
+            Console.WriteLine("{0}: Annotatating {1} map files ignoring reads with > {2} alternative mappings.", DateTime.Now, mapFilePaths.Count, nMaxMappings);
             if (Props.props.DebugAnnotation)
             {
                 nonAnnotWriter = new StreamWriter(AssertOutputPathbase() + "_NONANNOTATED.tab");
@@ -266,8 +266,7 @@ namespace Linnarsson.Strt
             {
                 ProcessBarcodeMapFiles(bcIdxAndMapFilePaths);
             }
-            Console.WriteLine("\nIgnored {0} reads with >= {1} alternative mappings.", nTooMultiMappingReads, Props.props.MaxAlternativeMappings);
-
+            Console.WriteLine("\n{0}: Ignored {1} reads with >= {2} alternative mappings.", DateTime.Now, nTooMultiMappingReads, Props.props.MaxAlternativeMappings);
             if (Props.props.DebugAnnotation)
             {
                 nonAnnotWriter.Close(); nonAnnotWriter.Dispose();
@@ -304,7 +303,8 @@ namespace Linnarsson.Strt
             MapFileSnpFinder mfsf = new MapFileSnpFinder(Props.props.Barcodes);
             mfsf.ProcessMapFiles(mapFilePaths);
             int nSNPs = randomTagFilter.SetupSNPCounters(averageReadLen, mfsf.IterSNPLocations(minMismatchReadCountForSNPDetection));
-            Console.WriteLine("Registered {0} potential expressed SNPs (positions with >= {1} mismatch reads).", nSNPs, minMismatchReadCountForSNPDetection);
+            Console.WriteLine("{0}: Registered {1} potential expressed SNPs (positions with >= {2} mismatch reads).", 
+                                DateTime.Now, nSNPs, minMismatchReadCountForSNPDetection);
         }
 
         /// <summary>
@@ -667,7 +667,7 @@ namespace Linnarsson.Strt
         /// <param name="resultDescr"></param>
 		public void SaveResult(ReadCounter readCounter, ResultDescription resultDescr)
 		{
-            Annotations.SaveResult(OutputPathbase, MappedTagItem.AverageReadLen);
+            Annotations.SaveResult(OutputPathbase, plateId, MappedTagItem.AverageReadLen);
             WriteSummary(readCounter, resultDescr);
             AddQC(readCounter, resultDescr);
             WriteWiggleAndBed();
@@ -861,17 +861,26 @@ namespace Linnarsson.Strt
 
         private void WriteMappingDepth(StreamWriter xmlFile)
         {
-            int nBc = sampledUniqueHitPositionsByBcIdx.Keys.Count;
-            if (nBc > 24)
+            int nKeys = sampledUniqueHitPositionsByBcIdx.Keys.Count;
+            int[] orderedBcIndexes = new int[nKeys];
+            int[] orderedMaxCounts = new int[nKeys];
+            int i = 0;
+            foreach (KeyValuePair<int, List<int>> p in sampledUniqueHitPositionsByBcIdx)
             {
-                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings per barcode vs. mapped reads processed",
-                                       sampledUniqueHitPositionsByBcIdx, 0, nBc / 2);
-                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings per barcode vs. mapped reads processed",
-                                       sampledUniqueHitPositionsByBcIdx, nBc / 2, nBc);
+                orderedBcIndexes[i] = p.Key;
+                orderedMaxCounts[i++] = p.Value[p.Value.Count - 1];
+            }
+            Sort.QuickSort(orderedMaxCounts, orderedBcIndexes);
+            if (nKeys > 24)
+            {
+                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mapping positions (low end) vs. mapped reads processed",
+                                       sampledUniqueHitPositionsByBcIdx, orderedBcIndexes.Take(nKeys / 2));
+                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mapping positions (high end) vs. mapped reads processed",
+                                       sampledUniqueHitPositionsByBcIdx, orderedBcIndexes.Reverse().Take(nKeys / 2));
             }
             else
-                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mappings per barcode vs. mapped reads processed",
-                                       sampledUniqueHitPositionsByBcIdx, 0, nBc);
+                WriteAccuMoleculesByBc(xmlFile, "librarydepthbybc", "Distinct mapping positions vs. mapped reads processed",
+                                       sampledUniqueHitPositionsByBcIdx, orderedBcIndexes.Reverse());
         }
 
         private void WriteRandomFilterStats(StreamWriter xmlFile)
@@ -890,10 +899,10 @@ namespace Linnarsson.Strt
                 xmlFile.WriteLine("    <point x=\"{0}\" y=\"{1}\" />", i, randomTagFilter.nCasesPerUMICount[i]);
             xmlFile.WriteLine("  </nuniqueateachrandomtagcoverage>");
             WriteAccuMoleculesByBc(xmlFile, "moleculedepthbybc", "Distinct detected molecules (all feature types) vs. mapped reads processed",
-                                   sampledUniqueMoleculesByBcIdx, 0, sampledUniqueMoleculesByBcIdx.Keys.Count);
+                                   sampledUniqueMoleculesByBcIdx);
             if (Props.props.SampleAccuFilteredExonMols)
                 WriteAccuMoleculesByBc(xmlFile, "filteredmoleculesbybc", "EXON molecules (mutation filtered, not UMI collision compensated) vs. mapped reads processed",
-                                   sampledFilteredExonMolsByBcIdx, 0, sampledFilteredExonMolsByBcIdx.Keys.Count);
+                                   sampledFilteredExonMolsByBcIdx);
             if (TagItem.CountsReadsPerUMI)
                 WriteReadsPerMolDistros(xmlFile);
         }
@@ -918,18 +927,19 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("  </readspertrmolhistogram>");
         }
 
+        private void WriteAccuMoleculesByBc(StreamWriter xmlFile, string tag, string title, Dictionary<int, List<int>> data)
+        {
+            WriteAccuMoleculesByBc(xmlFile, tag, title, data, data.Keys);
+        }
         private void WriteAccuMoleculesByBc(StreamWriter xmlFile, string tag, string title,
-                                            Dictionary<int, List<int>> data, int start, int stop)
+                                            Dictionary<int, List<int>> data, IEnumerable<int> orderedSelectedBcIndexes)
         {
             bool anyData = false;
-            int[] bcIndices = data.Keys.ToArray();
-            Array.Sort(bcIndices);
-            for (int bII = start; bII < stop; bII++)
+            foreach (int bcIdx in orderedSelectedBcIndexes)
             {
-                int bcIdx = bcIndices[bII];
-                List<int> curve = data[bcIdx];
-                if (curve.Count < 2)
+                if (!data.ContainsKey(bcIdx) || data[bcIdx].Count < 2)
                     continue;
+                List<int> curve = data[bcIdx];
                 if (!anyData)
                 {
                     xmlFile.WriteLine("  <{0}>", tag);
@@ -937,7 +947,7 @@ namespace Linnarsson.Strt
                     xmlFile.WriteLine("    <xtitle>Millions of mapped reads</xtitle>");
                     anyData = true;
                 }
-                string legend = string.Format("{0}[{1}]", Props.props.Barcodes.Seqs[bcIdx], Props.props.Barcodes.GetWellId(bcIdx));
+                string legend = string.Format("{0}[Max={1}]", Props.props.Barcodes.GetWellId(bcIdx), curve[curve.Count - 1]);
                 xmlFile.WriteLine("      <curve legend=\"{0}\" color=\"#{1:x2}{2:x2}{3:x2}\">",
                                   legend, (bcIdx * 47) % 255, (bcIdx * 21) % 255, (255 - (60 * bcIdx % 255)));
                 int nReads = 0;
@@ -1436,6 +1446,17 @@ namespace Linnarsson.Strt
                 WriteBarcodes(xmlFile, barcodeStats, bCodeLines);
                 if (Props.props.Barcodes.SpeciesByWell != null)
                     WriteSpeciesByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes);
+                string posinpatchTitle = Props.props.Barcodes.TestAnnotation("PosInPatch");
+                if (posinpatchTitle != null)
+                {
+                    xmlFile.Write("    <barcodestat section=\"posinpatch\">");
+                    for (int bcIdx = 0; bcIdx < Props.props.Barcodes.Count; bcIdx++)
+                    {
+                        if ((bcIdx % 8) == 0) xmlFile.Write("\n      ");
+                        xmlFile.Write("    <d>{0}</d>", Props.props.Barcodes.GetAnnotation(posinpatchTitle, bcIdx));
+                    }
+                    xmlFile.WriteLine("\n    </barcodestat>");
+                }
                 if (readCounter.ValidReadsByBarcode.Length == Props.props.Barcodes.Count)
                 {
                     WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, readCounter.TotalReadsByBarcode.ToArray(),
@@ -1468,8 +1489,8 @@ namespace Linnarsson.Strt
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, TotalSpikeMappingsByBarcode,
                                     "SPIKE_DETECTING_" + molT.ToUpper(), "Spike detecting " + molT + " by barcode", "spike detecting " + molT);
                 WriteTotalByBarcode(xmlFile, barcodeStats, bCodeLines, onlyGenomeBcIndexes, Annotations.GetByBcNumExpressedTranscripts(),
-                                    "TRANSCRIPTS", "Detected " + sp + " transcripts by barcode",
-                                    "detected " + sp + " transcripts");
+                                    "TRANSCRIPTS", "Detected " + sp + " genes by barcode",
+                                    "detected " + sp + " genes");
             }
             if (Props.props.Barcodes.HasUMIs && Props.props.TotalNumberOfAddedSpikeMolecules > 0)
             {

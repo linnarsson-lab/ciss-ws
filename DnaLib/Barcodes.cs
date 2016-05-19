@@ -443,6 +443,16 @@ namespace Linnarsson.Dna
             return (wellIdx != bcIdx) ? "(" + wellId + ")" : wellId;
         }
 
+        public string TestAnnotation(string annotationTitle)
+        {
+            if (AnnotationsByWell.ContainsKey(annotationTitle))
+                return annotationTitle;
+            if (AnnotationsByWell.ContainsKey(annotationTitle.ToLower()))
+                return annotationTitle.ToLower();
+            if (AnnotationsByWell.ContainsKey(annotationTitle.ToUpper()))
+                return annotationTitle.ToUpper();
+            return null;
+        }
         public List<string> GetAnnotationTitles()
         {
             return AnnotationsByWell.Keys.ToList();

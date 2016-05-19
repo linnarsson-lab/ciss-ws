@@ -287,6 +287,23 @@ namespace ProjectDBProcessor
                 logWriter.WriteLine("{0} Results stored in {1}.", DateTime.Now, rd.resultFolder);
                 logWriter.Flush();
             }
+            RemoveIntermediateFiles(pd);
+        }
+
+        private static void RemoveIntermediateFiles(ProjectDescription pd)
+        {
+            if (Props.props.RemoveIntermediateFiles)
+            {
+                foreach (LaneInfo laneInfo in pd.laneInfos)
+                {
+                    foreach (string file in laneInfo.extractedFilePaths)
+                        File.Delete(file);
+                    foreach (string file in laneInfo.mappedFilePaths)
+                        File.Delete(file);
+                    foreach (string file in laneInfo.unmappedFilePaths)
+                        File.Delete(file);
+                }
+            }
         }
 
 

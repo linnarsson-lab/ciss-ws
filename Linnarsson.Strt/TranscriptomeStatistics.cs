@@ -1877,13 +1877,13 @@ namespace Linnarsson.Strt
             {
                 string readTrackName = projwell + "R" + strand;
                 string readTrackDescr = fileNameHead + "_Read " + DateTime.Now.ToString("yyMMdd");
-                writerByRead.WriteLine("track type=wiggle_0 name=\"{0}\" description=\"{1}\" visibility=full alwaysZero=on",
-                                        readTrackName, readTrackDescr);
-                string molTrackName = projwell + "M" + strand;
-                string molTrackDescr = fileNameHead + "_Mol " + DateTime.Now.ToString("yyMMdd");
+                writerByRead.WriteLine("track type=wiggle_0 name=\"{0}\" description=\"{1}\" visibility=full alwaysZero=on", readTrackName, readTrackDescr);
                 if (writerByMol != null)
-                    writerByMol.WriteLine("track type=wiggle_0 name=\"{0}\" description=\"{1}\" visibility=full alwaysZero=on",
-                                         molTrackName, molTrackDescr);
+                {
+                    string molTrackName = projwell + "M" + strand;
+                    string molTrackDescr = fileNameHead + "_Mol " + DateTime.Now.ToString("yyMMdd");
+                    writerByMol.WriteLine("track type=wiggle_0 name=\"{0}\" description=\"{1}\" visibility=full alwaysZero=on", molTrackName, molTrackDescr);
+                }
                 StreamWriter bedWriterByRead = makeBed ? (filePathHead + "_byread.bed.gz").OpenWrite() : null;
                 StreamWriter bedWriterByMol = (makeBed && Props.props.Barcodes.HasUMIs) ? (filePathHead + "_bymol.bed.gz").OpenWrite() : null;
                 foreach (KeyValuePair<string, ChrTagData> tagDataPair in randomTagFilter.chrTagDatas)
@@ -1916,17 +1916,13 @@ namespace Linnarsson.Strt
 
         private void InsertWiggleIntoDb(string chr, int readLength, char strand, int chrLength, int[] sortedPositions, int[] countAtEachPosition)
         {
-            if (!Props.props.InsertCellDBData) return;
+            if (!Props.props.InsertCellDBData || !Props.props.InsertBcWigToDB) return;
             string well = Props.props.Barcodes.GetWellId(currentBcIdx);
-            int cellId = cellIdByWell[well];
-            int tromeId = Annotations.dbTranscriptome.TranscriptomeID.Value;
+            int cellID = cellIdByWell[well];
+            int transcriptomeID = Annotations.dbTranscriptome.TranscriptomeID.Value;
             IExpressionDB edb = DBFactory.GetExpressionDB();
-            int strandSign = (strand == '+') ? 1 : -1;
-            foreach (Pair<int, int> kv in Wiggle.IterWiggle(readLength, chrLength, sortedPositions, countAtEachPosition))
-            {
-                if (kv.Second > 0)
-                    edb.InsertWig(tromeId, chr, kv.First, cellId, kv.Second * strandSign);
-            }
+            IEnumerator<Pair<int, int>> wiggle = Wiggle.IterWiggle(readLength, chrLength, sortedPositions, countAtEachPosition).GetEnumerator();
+            edb.InsertChrWiggle(wiggle, cellID, transcriptomeID, chr, strand);
         }
 
         private void WriteHotspots()

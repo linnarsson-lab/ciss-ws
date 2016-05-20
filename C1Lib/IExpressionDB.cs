@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Linnarsson.Mathematics;
 
 namespace Linnarsson.C1
 {
@@ -13,7 +14,7 @@ namespace Linnarsson.C1
         Dictionary<string, int> GetRepeatNamesToTranscriptIdsMap(string buildVarAnnot);
         void InsertTranscriptome(Transcriptome t);
         void InsertChromosomePos(int transcriptomeID, string chrId, int startPos, int endPos);
-        void InsertWig(int transcriptomeID, string chrID, int chrPos, int cellID, int count);
+        void InsertChrWiggle(IEnumerator<Pair<int, int>> wiggle, int cellID, int transcriptomeID, string chr, char strand);
         void InsertTranscript(Transcript t);
         bool UpdateTranscriptAnnotations(Transcript t);
         void InsertTranscriptAnnotation(TranscriptAnnotation ta);

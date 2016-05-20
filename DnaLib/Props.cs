@@ -158,6 +158,7 @@ namespace Linnarsson.Dna
         public bool UseNewDbSetup = false; // If true, will use one single combined DB for sample/cell and expression data
         public string Tn5Seq = "CTGTCTCTTATACAC"; //..."ATCTGACGC";
         public bool RemoveIntermediateFiles = false; // Remove extracted fq and aligned map files after annotation finished
+        public bool InsertBcWigToDB = false; // Insert wiggle plots per barcode into DB, but only if InsertCellDBData==true
 
         private Barcodes m_Barcodes;
         public Barcodes Barcodes {

@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
 using MySql.Data;
+using Linnarsson.Mathematics;
 
 namespace Linnarsson.C1
 {
@@ -30,40 +31,40 @@ namespace Linnarsson.C1
         private bool IssueNonQuery(string sql)
         {
             bool success = true;
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            try
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
-                conn.Open();
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                if (test)
-                    Console.WriteLine(sql);
-                else
-                    cmd.ExecuteNonQuery();
+                try
+                {
+                    conn.Open();
+                    MySqlCommand cmd = new MySqlCommand(sql, conn);
+                    if (test)
+                        Console.WriteLine(sql);
+                    else
+                        cmd.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("{0}: {1}", DateTime.Now, ex);
+                    success = false;
+                }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("{0}: {1}", DateTime.Now, ex);
-                success = false;
-            }
-            conn.Close();
             return success;
         }
 
         private int InsertAndGetLastId(string sql, string tableName)
         {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            if (test)
-                Console.WriteLine(sql);
-            else
+            int lastId = -1;
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(sql, conn);
                 cmd.ExecuteNonQuery();
-            string lastIdSql = string.Format("SELECT MAX({0}ID) AS LastId FROM {0}", tableName);
-            cmd = new MySqlCommand(lastIdSql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            rdr.Read();
-            int lastId = int.Parse(rdr["LastId"].ToString());
-            conn.Close();
+                string lastIdSql = string.Format("SELECT MAX({0}ID) FROM {0}", tableName);
+                cmd = new MySqlCommand(lastIdSql, conn);
+                MySqlDataReader rdr = cmd.ExecuteReader();
+                if (rdr.Read())
+                    lastId = rdr.GetInt32(0);
+            }
             return lastId;
         }
 
@@ -97,22 +98,23 @@ namespace Linnarsson.C1
 
         public IEnumerable<Transcript> IterTranscriptsFromDB(int transcriptomeId)
         {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            string sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' AND Chromosome='CTRL' ORDER BY Start", transcriptomeId);
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-                yield return MakeTranscriptFromDBReader(rdr);
-            sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' AND Chromosome!='CTRL' " + 
-                                "AND LEFT(GeneName,2)!='r_' ORDER BY Chromosome, Start", transcriptomeId);
-            rdr.Close();
-            cmd = new MySqlCommand(sql, conn);
-            rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-                yield return MakeTranscriptFromDBReader(rdr);
-            rdr.Close();
-            conn.Close();
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                string sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' AND Chromosome='CTRL' ORDER BY Start", transcriptomeId);
+                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                MySqlDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    yield return MakeTranscriptFromDBReader(rdr);
+                sql = string.Format("SELECT * FROM Transcript WHERE TranscriptomeID='{0}' AND Chromosome!='CTRL' " +
+                                    "AND LEFT(GeneName,2)!='r_' ORDER BY Chromosome, Start", transcriptomeId);
+                rdr.Close();
+                cmd = new MySqlCommand(sql, conn);
+                rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    yield return MakeTranscriptFromDBReader(rdr);
+                rdr.Close();
+            }
         }
 
         public Dictionary<string, int> GetRepeatNamesToTranscriptIdsMap(string buildVarAnnot)
@@ -123,14 +125,15 @@ namespace Linnarsson.C1
                 return mapping;
             string sql = string.Format("SELECT GeneName, TranscriptID FROM Transcript WHERE TranscriptomeID='{0}' AND Type='repeat';", 
                                        c1Trome.TranscriptomeID.Value);
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            while (rdr.Read())
-                mapping[rdr.GetString(0)] = rdr.GetInt32(1);
-            rdr.Close();
-            conn.Close();
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                MySqlDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                    mapping[rdr.GetString(0)] = rdr.GetInt32(1);
+                rdr.Close();
+            }
             return mapping;
         }
 
@@ -168,12 +171,42 @@ namespace Linnarsson.C1
             IssueNonQuery(sql);
         }
 
-        public void InsertWig(int transcriptomeID, string chrID, int chrPos, int cellID, int count)
+        public void InsertChrWiggle(IEnumerator<Pair<int, int>> wiggle, int cellID, int transcriptomeID, string chr, char strand)
         {
-            string sql = "INSERT INTO Wig (CellID, GenomePos, MolCount) " +
-                         "SELECT {0}, {1} + GenomeStartPos, {2} FROM WigChrom WHERE TranscriptomeID={3} and Chromosome={4}";
-            sql = string.Format(sql, cellID, chrPos, count, transcriptomeID, chrID);
-            IssueNonQuery(sql);
+            int strandSign = (strand == '+') ? 1 : -1;
+            string sql = string.Format("SELECT GenomeStartPos,GenomeEndPos FROM WigChrom WHERE TranscriptomeID={0} and Chromosome='{1}'", transcriptomeID, chr);
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                MySqlDataReader rdr = cmd.ExecuteReader();
+                if (!rdr.Read()) return;
+                int genomeStartPos = rdr.GetInt32(0);
+                int genomeEndPos = rdr.GetInt32(1);
+                rdr.Close();
+                sql = string.Format("DELETE FROM Wig WHERE CellID={0} AND GenomePos>={1} and GenomePos<{2}", cellID, genomeStartPos, genomeEndPos);
+                using (MySqlCommand dc = new MySqlCommand(sql, conn))
+                    dc.ExecuteNonQuery();
+                List<string> valueItems = new List<string>(1000);
+                while (wiggle.MoveNext())
+                    if (wiggle.Current.Second > 0)
+                    {
+                        valueItems.Add(string.Format("({0},{1},{2})", cellID, wiggle.Current.First + genomeStartPos, wiggle.Current.Second * strandSign));
+                        if (valueItems.Count == 1000)
+                        {
+                            sql = "INSERT INTO Wig (CellID,GenomePos,MolCount) VALUES " + string.Join(",", valueItems.ToArray());
+                            using (MySqlCommand c = new MySqlCommand(sql, conn))
+                                c.ExecuteNonQuery();
+                            valueItems.Clear();
+                        }
+                    }
+                if (valueItems.Count > 0)
+                {
+                    sql = "INSERT INTO Wig (CellID,GenomePos,MolCount) VALUES " + string.Join(",", valueItems.ToArray());
+                    using (MySqlCommand c = new MySqlCommand(sql, conn))
+                        c.ExecuteNonQuery();
+                }
+            }
         }
 
         public void InsertTranscript(Transcript t)
@@ -199,21 +232,22 @@ namespace Linnarsson.C1
 
         public bool UpdateTranscriptAnnotations(Transcript t)
         {
+            int transcriptId = -1;
             string sql = "SELECT TranscriptID FROM Transcript WHERE TranscriptomeID='{0}' AND Type='{1}' " +
                               "AND GeneName='{2}' AND EntrezID='{3}' AND Chromosome='{4}'";
             sql = string.Format(sql, t.TranscriptomeID, t.Type, t.UniqueGeneName, t.EntrezID, t.Chromosome);
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            int transcriptId = -1;            
-            if (rdr.Read())
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
-                transcriptId = int.Parse(rdr["TranscriptId"].ToString());
+                conn.Open();
+                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                MySqlDataReader rdr = cmd.ExecuteReader();
                 if (rdr.Read())
-                    transcriptId = -1;
+                {
+                    transcriptId = int.Parse(rdr["TranscriptId"].ToString());
+                    if (rdr.Read())
+                        transcriptId = -1;
+                }
             }
-            conn.Close();
             if (transcriptId > -1)
             {
                 IssueNonQuery("DELETE FROM TranscriptAnnotation WHERE TranscriptID=" + transcriptId);
@@ -245,41 +279,43 @@ namespace Linnarsson.C1
 
         public void InsertAnalysisSetup(string projectId, string bowtieIndex, string resultFolder, string parameters)
         {
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            string sql = string.Format("REPLACE INTO AnalysisSetup (Plate, Path, Genome, Parameters) VALUES ('{0}','{1}','{2}','{3}')",
-                                       projectId, resultFolder, bowtieIndex, parameters);
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
-            if (test)
-                Console.WriteLine(sql);
-            else
-                cmd.ExecuteNonQuery();
-            conn.Close();
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                string sql = string.Format("REPLACE INTO AnalysisSetup (Plate, Path, Genome, Parameters) VALUES ('{0}','{1}','{2}','{3}')",
+                                           projectId, resultFolder, bowtieIndex, parameters);
+                MySqlCommand cmd = new MySqlCommand(sql, conn);
+                if (test)
+                    Console.WriteLine(sql);
+                else
+                    cmd.ExecuteNonQuery();
+            }
         }
 
         public void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator, bool mols, string aligner)
         {
             string table = mols ? "Expr" : "Read";
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            int n = 0, maxId = 0, minId = int.MaxValue;
-            string sqlPat = "REPLACE INTO " + table + "Blob (CellID, TranscriptomeID, Aligner, Data) VALUES ('{0}',{1},'{2}', ?BLOBDATA)";
-            foreach (ExprBlob exprBlob in exprBlobIterator)
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
-                string sql = string.Format(sqlPat, exprBlob.jos_aaacellid, exprBlob.TranscriptomeID, aligner);
-                MySqlCommand cmd = new MySqlCommand(sql, conn);
-                cmd.CommandText = sql;
-                cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
-                if (test)
-                    Console.WriteLine(sql);
-                else
-                    cmd.ExecuteNonQuery();
-                n += 1;
-                maxId = Math.Max(int.Parse(exprBlob.jos_aaacellid), maxId);
-                minId = Math.Min(int.Parse(exprBlob.jos_aaacellid), minId);
+                conn.Open();
+                int n = 0, maxId = 0, minId = int.MaxValue;
+                string sqlPat = "REPLACE INTO " + table + "Blob (CellID, TranscriptomeID, Aligner, Data) VALUES ('{0}',{1},'{2}', ?BLOBDATA)";
+                foreach (ExprBlob exprBlob in exprBlobIterator)
+                {
+                    string sql = string.Format(sqlPat, exprBlob.jos_aaacellid, exprBlob.TranscriptomeID, aligner);
+                    MySqlCommand cmd = new MySqlCommand(sql, conn);
+                    cmd.CommandText = sql;
+                    cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
+                    if (test)
+                        Console.WriteLine(sql);
+                    else
+                        cmd.ExecuteNonQuery();
+                    n += 1;
+                    maxId = Math.Max(int.Parse(exprBlob.jos_aaacellid), maxId);
+                    minId = Math.Min(int.Parse(exprBlob.jos_aaacellid), minId);
+                }
+                Console.WriteLine("{0}nserted {1} ExprBlobs with CellIDs {2} - {3}", (test ? "Test-i" : "I"), n, minId, maxId);
             }
-            Console.WriteLine("{0}nserted {1} ExprBlobs with CellIDs {2} - {3}", (test? "Test-i" : "I"), n, minId, maxId);
-            conn.Close();
         }
     }
 }

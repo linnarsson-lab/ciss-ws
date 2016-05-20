@@ -628,7 +628,7 @@ namespace Linnarsson.Dna
             int validValue = c.valid ? 1 : 0;
             string subwell = (c.subwell == "") ? "NULL" : "'" + c.subwell + "'";
             string sql = "INSERT INTO {0}aaacell ({0}aaachipid, chipwell, diameter, area, red, green, blue, valid, subwell, subbarcodeidx) " +
-                         "VALUES ('{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}') " +
+                         "VALUES ('{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}',{9},'{10}') " +
                          "ON DUPLICATE KEY UPDATE diameter='{3}',area='{4}',red='{5}',green='{6}',blue='{7}',valid='{8}',subwell={9},subbarcodeidx='{10}'";
             sql = string.Format(sql, Props.props.DBPrefix, c.jos_aaachipid, c.chipwell, c.diameter, c.area,
                                 c.red, c.green, c.blue, validValue, subwell, c.subbarcodeidx);

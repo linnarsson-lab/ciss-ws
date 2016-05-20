@@ -84,6 +84,8 @@ namespace BkgFastQMailer
 
         private string PublishReadsForDownload(string readsPath)
         {
+            if (Props.props.ResultDownloadUrl == "")
+                return "Can not publish reads since Props.ResultDownloadUrl is not defined.";
             string readsFileLink = "";
             string destFilename = Path.GetFileName(readsPath);
             bool useTempGzReadsFile = !readsPath.EndsWith(".gz");

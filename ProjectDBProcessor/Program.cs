@@ -350,6 +350,9 @@ namespace ProjectDBProcessor
 
         private static List<string> PublishResultsForDownload(ProjectDescription pd)
         {
+            if (Props.props.ResultDownloadUrl == "")
+                return new List<string>() {"The results are found on the server: "
+                                           + string.Join(" , ", pd.ResultDescriptions.ConvertAll(p => p.resultFolder).ToArray()) };
             List<string> resultLinks = new List<string>();
             foreach (ResultDescription rd in pd.ResultDescriptions)
             {
@@ -363,18 +366,18 @@ namespace ProjectDBProcessor
                 string resultTarName = Path.GetFileName(rd.resultFolder) + ".tar.gz";
                 string tempTarGzPath = Path.Combine(Path.GetTempPath(), resultTarName);
                 CompressResult(rd.resultFolder, tempTarGzPath);
-            string cpCmd, cmdArg;
-            if (Props.props.ResultUrlIsMounted)
-            {
-                cpCmd = "cp";
-                string destPath = Path.Combine(Props.props.ResultDownloadUrl, resultTarName);
-                cmdArg = tempTarGzPath + " " + destPath;
-            }
-            else
-            {
-                cpCmd = "scp";
-                cmdArg = string.Format("-P {0} {1} {2}", Props.props.ResultDownloadScpPort, tempTarGzPath, Props.props.ResultDownloadUrl);
-            }
+                string cpCmd, cmdArg;
+                if (Props.props.ResultUrlIsMounted)
+                {
+                    cpCmd = "cp";
+                    string destPath = Path.Combine(Props.props.ResultDownloadUrl, resultTarName);
+                    cmdArg = tempTarGzPath + " " + destPath;
+                }
+                else
+                {
+                    cpCmd = "scp";
+                    cmdArg = string.Format("-P {0} {1} {2}", Props.props.ResultDownloadScpPort, tempTarGzPath, Props.props.ResultDownloadUrl);
+                }
                 Console.WriteLine(cpCmd + " " + cmdArg);
                 int cmdResult = CmdCaller.Run(cpCmd, cmdArg);
                 if (cmdResult == 0)
@@ -386,8 +389,8 @@ namespace ProjectDBProcessor
                 else
                 {
                     resultLinks.Add(Path.GetFileName(rd.resultFolder) + " could not be published on HTTP server - contact administrator!");
-                    logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: " + 
-                                         Path.GetFileName(rd.resultFolder) + " could not be published on HTTP server:\n" + 
+                    logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: " +
+                                         Path.GetFileName(rd.resultFolder) + " could not be published on HTTP server:\n" +
                                          cpCmd + " " + cmdArg);
                     logWriter.Flush();
                 }

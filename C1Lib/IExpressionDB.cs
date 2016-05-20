@@ -19,6 +19,6 @@ namespace Linnarsson.C1
         bool UpdateTranscriptAnnotations(Transcript t);
         void InsertTranscriptAnnotation(TranscriptAnnotation ta);
         void InsertAnalysisSetup(string projectId, string bowtieIndex, string resultFolder, string parameters);
-        void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator, bool mols, string aligner);
+        int InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator, bool mols, string aligner);
     }
 }

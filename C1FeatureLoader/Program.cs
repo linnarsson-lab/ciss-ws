@@ -26,13 +26,14 @@ namespace Linnarsson.C1
                 Console.WriteLine("but for C1 samples the final transcript models including extensions are read from the database and used directly.");
                 Console.WriteLine("This should be the same models, but asserts that the database gene models exactly reflect the database expression values.");
                 Console.WriteLine("The input gene definition and annotation files can be downloaded with the 'SB.exe download' command.");
-                Console.WriteLine("Usage:\nmono C1FeatureLoader.exe GENOME [-f ANNOTATIONFILE] [-i]\nwhere genome is e.g. 'mm10_aUCSC' or 'hg19_sENSE'");
+                Console.WriteLine("Usage:\nmono C1FeatureLoader.exe GENOME [-f ANNOTATIONFILE] [-l BUILD] [-i]\nwhere genome is e.g. 'mm10_aUCSC' or 'hg19_sENSE'");
                 Console.WriteLine("Without -i, an updated refFlat flat of the 5'-extended genes is written, but no DB inserts are made.");
                 Console.WriteLine("Use -u ID to only update/replace the transcript annotations of the transcriptome with database id ID.");
+                Console.WriteLine("Use -l to insert only the chromosome length for the specified database build, e.g. 'hs'");
                 return;
             }
             StrtGenome genome = StrtGenome.GetGenome(args[0]);
-            string doInsert = "";
+            string doInsert = "", buildName = "";
             int updateTomeID = -1;
             string annotFilePath = "";
             int i = 1;
@@ -46,6 +47,11 @@ namespace Linnarsson.C1
                 {
                     doInsert = "u";
                     updateTomeID = int.Parse(args[++i]);
+                }
+                else if (args[i] == "-l")
+                {
+                    doInsert = "l";
+                    buildName = args[++i];
                 }
                 i++;
             }
@@ -66,11 +72,19 @@ namespace Linnarsson.C1
             if (doInsert == "i")
             {
                 int transcriptomeID = InsertTranscriptomeIntoDb(genome, annotationReader);
+                InsertWigChromsIntoDb(transcriptomeID, genome);
                 InsertGenesIntoDb(transcriptomeID, genome, annotationReader);
                 InsertRepeatsIntoDb(transcriptomeID, genome);
             }
             else if (doInsert == "u")
                 UpdateTranscriptAnnotations(updateTomeID, genome, annotationReader);
+            else if (doInsert == "l")
+            {
+                IExpressionDB db = DBFactory.GetExpressionDB();
+                Transcriptome t = db.GetTranscriptome(buildName);
+                if (t != null)
+                    InsertWigChromsIntoDb(t.TranscriptomeID.Value, genome);
+            }
         }
 
         private static int InsertTranscriptomeIntoDb(StrtGenome genome, AnnotationReader annotationReader)

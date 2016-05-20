@@ -91,7 +91,7 @@ namespace Linnarsson.C1
             }
             catch (MySqlException)
             {
-                Console.WriteLine("Warning: No MySQL Database available - reading transcripts from file.");
+                Console.WriteLine("Warning: No MySQL Database for " + buildVarAnnot + " available.");
             }
             return t;
         }
@@ -292,13 +292,13 @@ namespace Linnarsson.C1
             }
         }
 
-        public void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator, bool mols, string aligner)
+        public int InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator, bool mols, string aligner)
         {
             string table = mols ? "Expr" : "Read";
+            int n = 0, maxId = 0, minId = int.MaxValue;
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
                 conn.Open();
-                int n = 0, maxId = 0, minId = int.MaxValue;
                 string sqlPat = "REPLACE INTO " + table + "Blob (CellID, TranscriptomeID, Aligner, Data) VALUES ('{0}',{1},'{2}', ?BLOBDATA)";
                 foreach (ExprBlob exprBlob in exprBlobIterator)
                 {
@@ -306,16 +306,13 @@ namespace Linnarsson.C1
                     MySqlCommand cmd = new MySqlCommand(sql, conn);
                     cmd.CommandText = sql;
                     cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
-                    if (test)
-                        Console.WriteLine(sql);
-                    else
-                        cmd.ExecuteNonQuery();
+                    cmd.ExecuteNonQuery();
                     n += 1;
                     maxId = Math.Max(int.Parse(exprBlob.jos_aaacellid), maxId);
                     minId = Math.Min(int.Parse(exprBlob.jos_aaacellid), minId);
                 }
-                Console.WriteLine("{0}nserted {1} ExprBlobs with CellIDs {2} - {3}", (test ? "Test-i" : "I"), n, minId, maxId);
             }
+            return n;
         }
     }
 }

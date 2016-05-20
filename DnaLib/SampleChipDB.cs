@@ -502,7 +502,7 @@ namespace Linnarsson.Dna
             int validValue = c.valid ? 1 : 0;
             string subwell = (c.subwell == "") ? "NULL" : "'" + c.subwell + "'";
             string sql = "INSERT INTO {0}aaacell ({0}aaachipid, chipwell, diameter, area, red, green, blue, valid, subwell, subbarcodeidx) " +
-                         "VALUES ('{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}','{9}','{10}') " +
+                         "VALUES ('{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}',{9},'{10}') " +
                          "ON DUPLICATE KEY UPDATE diameter='{3}',area='{4}',red='{5}',green='{6}',blue='{7}',valid='{8}',subwell={9},subbarcodeidx='{10}'";
             sql = string.Format(sql, Props.props.DBPrefix, c.jos_aaachipid, c.chipwell, c.diameter, c.area,
                                 c.red, c.green, c.blue, validValue, subwell, c.subbarcodeidx);
@@ -769,13 +769,13 @@ namespace Linnarsson.Dna
             IssueNonQuery(sql);
         }
 
-        public void InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator, bool mols, string aligner)
+        public int InsertExprBlobs(IEnumerable<ExprBlob> exprBlobIterator, bool mols, string aligner)
         {
             string table = mols ? "expr" : "read";
+            int n = 0, maxId = 0, minId = int.MaxValue;
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
                 conn.Open();
-                int n = 0, maxId = 0, minId = int.MaxValue;
                 string sqlPat = "REPLACE INTO {0}aaa" + table + "blob ({0}aaacellid, {0}aaatranscriptomeid, aligner, data) VALUES ('{1}',{2},'{3}', ?BLOBDATA)";
                 foreach (ExprBlob exprBlob in exprBlobIterator)
                 {
@@ -788,8 +788,8 @@ namespace Linnarsson.Dna
                     maxId = Math.Max(int.Parse(exprBlob.jos_aaacellid), maxId);
                     minId = Math.Min(int.Parse(exprBlob.jos_aaacellid), minId);
                 }
-                Console.WriteLine("Inserted {0} ExprBlobs with cellid {1} - {2}", n, minId, maxId);
             }
+            return n;
         }
 
         #endregion

@@ -322,7 +322,7 @@ namespace Linnarsson.Strt
             using (StreamWriter writer = new StreamWriter(Path.Combine(resultFolder, Props.configFilename)))
                 x.Serialize(writer, Props.props);
             if (Props.props.InsertCellDBData)
-                InsertCells10kData(plateId, annotations, resultDescr);
+                InsertExprInDB(plateId, annotations, resultDescr);
             return resultDescr;
         }
 
@@ -332,22 +332,23 @@ namespace Linnarsson.Strt
         /// <param name="plateid"></param>
         /// <param name="annotations"></param>
         /// <param name="resultDescr"></param>
-        private static void InsertCells10kData(string plateid, GenomeAnnotations annotations, ResultDescription resultDescr)
+        private static void InsertExprInDB(string plateid, GenomeAnnotations annotations, ResultDescription resultDescr)
         {
             IDB pdb = DBFactory.GetProjectDB();
             Console.WriteLine("{0}: Saving expression BLOB:s to expression database...", DateTime.Now);
             try
             {
-                Dictionary<string, int> cellIdByWell = DBFactory.GetProjectDB().GetWell2CellIdMapping(plateid);
+                Dictionary<string, int> cellIdByWell = pdb.GetWell2CellIdMapping(plateid);
                 IExpressionDB edb = DBFactory.GetExpressionDB();
                 string parString = MakeParameterString();
                 edb.InsertAnalysisSetup(plateid, resultDescr.splcIndexVersion, resultDescr.resultFolder, parString);
                 edb.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByWell, true), true, Props.props.Aligner);
-                edb.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByWell, false), false, Props.props.Aligner);
+                int n = edb.InsertExprBlobs(annotations.IterC1DBExprBlobs(cellIdByWell, false), false, Props.props.Aligner);
+                Console.WriteLine("Inserted ExprBlobs for {0} cells into database", n);
             }
             catch (Exception e)
             {
-                Console.WriteLine("ERROR when inserting expression BLOB:s to database: {0}", e);
+                Console.WriteLine("ERROR when inserting ExprBlobs to database: {0}", e);
             }
         }
 

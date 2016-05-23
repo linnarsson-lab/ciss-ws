@@ -1575,7 +1575,9 @@ namespace Linnarsson.Strt
 
         private void WriteSpeciesByBarcode(StreamWriter xmlFile, StreamWriter barcodeStats, StreamWriter bCodeLines, int[] genomeBcIndexes)
         {
-            foreach (string species in Props.props.Barcodes.SpeciesByWell) bCodeLines.Write("\t{0}", species);
+            foreach (string species in Props.props.Barcodes.SpeciesByWell)
+                bCodeLines.Write("\t{0}", species);
+            bCodeLines.WriteLine();
             barcodeStats.WriteLine("Species by well:\n");
             barcodeStats.WriteLine(MakeDataMatrix(Props.props.Barcodes.SpeciesByWell, "empty"));
             xmlFile.Write("    <barcodestat section=\"species\">");

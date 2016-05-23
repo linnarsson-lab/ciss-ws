@@ -45,6 +45,8 @@ namespace Linnarsson.Dna
         public string OutgoingMailPassword = "";
         [NonSerialized]
         public int OutgoingMailPort = 0;
+        [NonSerialized]
+        public bool OutgoingMailUseSsl = true;
 
         // Default values for configuration follows.
         public string IlluminaRunReadyFilename = "Basecalling_Netcopy_complete.txt"; // File in Illumina runs folders that indicate run completed
@@ -58,8 +60,8 @@ namespace Linnarsson.Dna
         public bool ResultUrlIsMounted = true;
         public string ResultDownloadFolderHttp = "http://127.0.0.1/html/strt/";
         public string ResultDownloadScpPort = "0";
-        public string FailureReportAndAnonDownloadEmail = "silver.bullet@my.server";
-        public string OutgoingMailSender = "silver.bullet@my.server";
+        public string FailureReportAndAnonDownloadEmail = "strt.pipeline@ki.se";
+        public string OutgoingMailSender = "strt.pipeline@ki.se";
         public string OutputDocFile = "\\\\127.0.0.1\\data\\strt\\STRTOutputManual.pdf";
         public int BkgBackuperStartHour = 17;
         public int BkgBackuperStopHour = 8;
@@ -230,6 +232,8 @@ namespace Linnarsson.Dna
                                 props.OutgoingMailPassword = fields[1];
                             else if (fields[0] == "port")
                                 props.OutgoingMailPort = int.Parse(fields[1]);
+                            else if (fields[0] == "usessl")
+                                props.OutgoingMailUseSsl = bool.Parse(fields[1]);
                         }
                     }
                 }

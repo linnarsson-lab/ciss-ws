@@ -165,7 +165,7 @@ namespace Linnarsson.C1
 
         public void InsertChromosomePos(int transcriptomeID, string chrId, int startPos, int endPos)
         {
-            string sql = "INSERT INTO WigChrom (TranscriptomeID, Chromosome, GenomeStartPos, GenomeEndPos) " +
+            string sql = "REPLACE INTO WigChrom (TranscriptomeID, Chromosome, GenomeStartPos, GenomeEndPos) " +
                                  "VALUES ('{0}','{1}','{2}','{3}')";
             sql = string.Format(sql, transcriptomeID, chrId, startPos, endPos);
             IssueNonQuery(sql);

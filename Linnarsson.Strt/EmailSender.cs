@@ -24,7 +24,7 @@ namespace Linnarsson.Strt
             System.Net.ServicePointManager.ServerCertificateValidationCallback =
                 (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) => true;
             SmtpClient mailClient = new SmtpClient(Props.props.OutgoingMailServer, Props.props.OutgoingMailPort);
-            mailClient.EnableSsl = true;
+            mailClient.EnableSsl = Props.props.OutgoingMailUseSsl;
             mailClient.Credentials = new System.Net.NetworkCredential(Props.props.OutgoingMailUser,
                                                                       Props.props.OutgoingMailPassword);
             mailClient.Send(message);

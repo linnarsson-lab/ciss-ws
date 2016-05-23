@@ -26,36 +26,45 @@ namespace Linnarsson.C1
                 Console.WriteLine("but for C1 samples the final transcript models including extensions are read from the database and used directly.");
                 Console.WriteLine("This should be the same models, but asserts that the database gene models exactly reflect the database expression values.");
                 Console.WriteLine("The input gene definition and annotation files can be downloaded with the 'SB.exe download' command.");
-                Console.WriteLine("Usage:\nmono C1FeatureLoader.exe GENOME [-f ANNOTATIONFILE] [-l BUILD] [-i]\nwhere genome is e.g. 'mm10_aUCSC' or 'hg19_sENSE'");
+                Console.WriteLine("Usage:\nmono C1FeatureLoader.exe GENOME [-f ANNOTATIONFILE] [-l | -i | -u ID]\nwhere genome is e.g. 'mm10_aUCSC' or 'hg19_sENSE'");
                 Console.WriteLine("Without -i, an updated refFlat flat of the 5'-extended genes is written, but no DB inserts are made.");
-                Console.WriteLine("Use -u ID to only update/replace the transcript annotations of the transcriptome with database id ID.");
-                Console.WriteLine("Use -l to insert only the chromosome length for the specified database build, e.g. 'hs'");
+                Console.WriteLine("Use -u to only update/replace the transcript annotations of the transcriptome with database id ID.");
+                Console.WriteLine("Use -l to only insert the chromosome length for the specified genome");
                 return;
             }
-            StrtGenome genome = StrtGenome.GetGenome(args[0]);
-            string doInsert = "", buildName = "";
-            int updateTomeID = -1;
-            string annotFilePath = "";
-            int i = 1;
+            string doInsert = "", genomeName = "", annotFilePath = "";
+            int updateTomeID = -1, i = 1;
             while (i < args.Length)
             {
-                if (args[i] == "-i")
-                    doInsert = "i";
+                if (args[i] == "-i" || args[i] == "-l")
+                    doInsert = args[i];
                 else if (args[i] == "-f")
                     annotFilePath = args[++i];
                 else if (args[i] == "-u")
                 {
-                    doInsert = "u";
+                    doInsert = args[i];
                     updateTomeID = int.Parse(args[++i]);
                 }
-                else if (args[i] == "-l")
-                {
-                    doInsert = "l";
-                    buildName = args[++i];
-                }
+                else
+                    genomeName = args[i];
                 i++;
             }
+            StrtGenome genome = StrtGenome.GetGenome(genomeName);
+            if (doInsert == "-l")
+            {
+                InsertWigChroms(genome, genomeName);
+                return;
+            }
             Props.props.DirectionalReads = true;
+            AnnotationReader annotationReader = BuildAndExtendTrModels(genome, ref annotFilePath);
+            if (doInsert == "i")
+                InsertAll(genome, annotationReader);
+            else if (doInsert == "u")
+                UpdateTranscriptAnnotations(updateTomeID, genome, annotationReader);
+        }
+
+        private static AnnotationReader BuildAndExtendTrModels(StrtGenome genome, ref string annotFilePath)
+        {
             if (annotFilePath == "") // Use annot file (e.g. refFlat.txt) copied into the strt (e.g. UCSCxxxxxx) subfolder during build
                 annotFilePath = Path.Combine(genome.GetStrtAnnotFolder(), AnnotationReader.GetDefaultAnnotFilename(genome));
             Console.WriteLine("Building transcript models from " + annotFilePath + "...");
@@ -69,22 +78,25 @@ namespace Linnarsson.C1
             }
             foreach (string commonChrId in Props.props.CommonChrIds)
                 annotationReader.AddCommonGeneModels(commonChrId);
-            if (doInsert == "i")
-            {
-                int transcriptomeID = InsertTranscriptomeIntoDb(genome, annotationReader);
-                InsertWigChromsIntoDb(transcriptomeID, genome);
-                InsertGenesIntoDb(transcriptomeID, genome, annotationReader);
-                InsertRepeatsIntoDb(transcriptomeID, genome);
-            }
-            else if (doInsert == "u")
-                UpdateTranscriptAnnotations(updateTomeID, genome, annotationReader);
-            else if (doInsert == "l")
-            {
-                IExpressionDB db = DBFactory.GetExpressionDB();
-                Transcriptome t = db.GetTranscriptome(buildName);
-                if (t != null)
-                    InsertWigChromsIntoDb(t.TranscriptomeID.Value, genome);
-            }
+            return annotationReader;
+        }
+
+        private static void InsertWigChroms(StrtGenome genome, string buildName)
+        {
+            IExpressionDB db = DBFactory.GetExpressionDB();
+            Transcriptome t = db.GetTranscriptome(buildName);
+            if (t != null)
+                InsertWigChromsIntoDb(t.TranscriptomeID.Value, genome);
+            else
+                Console.WriteLine("Error: Can not find a transcriptome with Build=" + buildName);
+        }
+
+        private static void InsertAll(StrtGenome genome, AnnotationReader annotationReader)
+        {
+            int transcriptomeID = InsertTranscriptomeIntoDb(genome, annotationReader);
+            InsertWigChromsIntoDb(transcriptomeID, genome);
+            InsertGenesIntoDb(transcriptomeID, genome, annotationReader);
+            InsertRepeatsIntoDb(transcriptomeID, genome);
         }
 
         private static int InsertTranscriptomeIntoDb(StrtGenome genome, AnnotationReader annotationReader)

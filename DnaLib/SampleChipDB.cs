@@ -655,7 +655,7 @@ namespace Linnarsson.Dna
 
         public void InsertChromosomePos(int transcriptomeId, string chrId, int startPos, int endPos)
         {
-            string sql = "INSERT INTO {0}aaawigchrom ({0}aaatranscriptomeid, chromosome, genome_startpos, genome_endpos) " +
+            string sql = "REPLACE INTO {0}aaawigchrom ({0}aaatranscriptomeid, chromosome, genome_startpos, genome_endpos) " +
                                  "VALUES ('{1}','{2}','{3}','{4}')";
             sql = string.Format(sql, Props.props.DBPrefix, transcriptomeId, chrId, startPos, endPos);
             IssueNonQuery(sql);

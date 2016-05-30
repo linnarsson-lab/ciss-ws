@@ -91,7 +91,7 @@ namespace Linnarsson.Dna
                     }
                     if (!Directory.Exists(cycleFolder))
                     {
-                        Console.Error.WriteLine("Could not find cycle folder: " + cycleFolder);
+                        Console.Error.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find cycle folder: " + cycleFolder);
                         continue;
                     }
                     // Get the tile bcl data
@@ -123,13 +123,13 @@ namespace Linnarsson.Dna
                     }
                     else
                     {
-                        Console.Error.WriteLine("BCL file not found: " + bclFile);
+                        Console.Error.WriteLine(DateTime.Now.ToString() + " WARNING: BCL file not found: " + bclFile);
                         continue;
                     }
                     if (nClustersInTile != bclBytes.Length)
                     {
                         if (nClustersInTile > -1)
-                            Console.WriteLine("WARNING: Missing bytes (clusters) in {0} of tile {1}: {2} ({3} in previous .bcl) - will replace missing bases with 'A'/qual='B'",
+                            Console.WriteLine(DateTime.Now.ToString() + " WARNING: Missing bytes (clusters) in {0} of tile {1}: {2} ({3} in previous .bcl) - will replace missing bases with 'A'/qual='B'",
                                 bclFile, tile, nClustersInTile, bclBytes.Length);
                         nClustersInTile = Math.Max(bclBytes.Length, nClustersInTile);
                     }
@@ -187,9 +187,9 @@ namespace Linnarsson.Dna
                     {
                         maxWarnings--;
                         if (maxWarnings > 0)
-                            Console.WriteLine("WARNING: Filter data missing for tile {0} at cluster {1}. Defaulting to nonPF.", tile, ix);
+                            Console.WriteLine(DateTime.Now.ToString() + "WARNING: Filter data missing for tile {0} at cluster {1}. Defaulting to nonPF.", tile, ix);
                         else if (maxWarnings == 0)
-                            Console.WriteLine("(omitted additional warnings for this tile. #clusters in tile={0} ...)", nClustersInTile);
+                            Console.WriteLine(DateTime.Now.ToString() + "(omitted additional warnings for this tile. #clusters in tile={0} ...)", nClustersInTile);
                     }
                     yield return new FastQRecord(hdr, new string(readSeq), quals, pf);
                 }
@@ -244,13 +244,13 @@ namespace Linnarsson.Dna
                     }
                     if (!Directory.Exists(cycleFolder))
                     {
-                        Console.Error.WriteLine("Could not find cycle folder: " + cycleFolder);
+                        Console.Error.WriteLine(DateTime.Now.ToString() + " WARNING: Could not find cycle folder: " + cycleFolder);
                         continue;
                     }
                     string bclFile = Path.Combine(cycleFolder, tile + ".bcl");
                     if (!File.Exists(bclFile))
                     {
-                        Console.Error.WriteLine("BCL file not found: " + bclFile);
+                        Console.Error.WriteLine(DateTime.Now.ToString() + " WARNING: BCL file not found: " + bclFile);
                         continue;
                     }
                     bclData.Add(File.ReadAllBytes(bclFile));

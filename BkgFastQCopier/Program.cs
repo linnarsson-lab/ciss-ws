@@ -187,7 +187,7 @@ namespace BkgFastQCopier
                             else
                                 readCopier.SerialCopy(runFolder, readsFolder, 1, 8, false, out status);
                             string runStatus = (status == ReadCopierStatus.ALLREADSREADY) ? "copied"
-                                : ((status == ReadCopierStatus.SOMEREADFAILED) ? "copyfail": "copying");
+                                : ((status == ReadCopierStatus.SOMEREADFAILED) ? "copyfail": "inqueue");
                             projectDB.UpdateRunStatus(runId, runStatus, runNo);
                         }
                     }

@@ -443,6 +443,11 @@ namespace Linnarsson.Dna
             return (wellIdx != bcIdx) ? "(" + wellId + ")" : wellId;
         }
 
+        /// <summary>
+        /// Check if a particular well annotation exists. Case insensitive
+        /// </summary>
+        /// <param name="annotationTitle"></param>
+        /// <returns></returns>
         public string TestAnnotation(string annotationTitle)
         {
             if (AnnotationsByWell.ContainsKey(annotationTitle))
@@ -453,6 +458,10 @@ namespace Linnarsson.Dna
                 return annotationTitle.ToUpper();
             return null;
         }
+        /// <summary>
+        /// Return the names of all well annotations as a list.
+        /// </summary>
+        /// <returns></returns>
         public List<string> GetAnnotationTitles()
         {
             return AnnotationsByWell.Keys.ToList();

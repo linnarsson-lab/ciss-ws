@@ -31,15 +31,16 @@ namespace Linnarsson.Dna
         public static void Init()
         {
             TagItem.CountsReadsPerUMI = false;
-            int param = Props.props.RndTagMutationFilterParam;
-            if (Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter && param == 1)
+            if (Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter && Props.props.RndTagMutationFilterParam == 1)
             {
                 Props.props.RndTagMutationFilter = UMIMutationFilter.Singleton;
                 Props.props.RndTagMutationFilterParam = 0;
             }
-            else if (Props.props.RndTagMutationFilter != UMIMutationFilter.Hamming1Singleton
-                     && !(Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter && param == 0)
-                     && !(Props.props.RndTagMutationFilter == UMIMutationFilter.Singleton && param == 0))
+            int param = Props.props.RndTagMutationFilterParam;
+            if (Props.props.RndTagMutationFilter != UMIMutationFilter.Hamming1Singleton
+                && Props.props.RndTagMutationFilter != UMIMutationFilter.None
+                && !(Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter && param == 0)
+                && !(Props.props.RndTagMutationFilter == UMIMutationFilter.Singleton && param == 0))
                 throw new Exception("You can not use RndTagMutationFilter=" + Props.props.RndTagMutationFilter.ToString()
                                     + " and Param=" + param + " with DenseUMICounter!");
             Console.WriteLine("Using compact TagItems with UMIMutationFilter=" + Props.props.RndTagMutationFilter.ToString());
@@ -100,14 +101,14 @@ namespace Linnarsson.Dna
                 for (int UMIIdx = 0; UMIIdx < multitonUMIs.Length; UMIIdx++)
                     if (multitonUMIs[UMIIdx]) c++;
             }
-            else if (Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter)
-            { // No filter at all
-                for (int UMIIdx = 0; UMIIdx < multitonUMIs.Length; UMIIdx++)
-                    if (detectedUMIs[UMIIdx]) c++;
-            }
             else if (Props.props.RndTagMutationFilter == UMIMutationFilter.Hamming1Singleton)
             { // Singleton with Hamming distance == 1 filter
                 c = CalcHamming1NumMols();
+            }
+            else
+            { // No filter at all
+                for (int UMIIdx = 0; UMIIdx < multitonUMIs.Length; UMIIdx++)
+                    if (detectedUMIs[UMIIdx]) c++;
             }
             return c;
         }

@@ -828,13 +828,18 @@ namespace Linnarsson.Strt
         private void WriteSettings(StreamWriter xmlFile, ResultDescription resultDescr)
         {
             xmlFile.WriteLine("  <settings>");
+            xmlFile.WriteLine("    <BarcodeSet>{0}</BarcodeSet>", Props.props.BarcodesName);
+            xmlFile.WriteLine("    <GenomeBuild>{0}</GenomeBuild>", Annotations.Genome.BuildVarAnnot);
             xmlFile.WriteLine("    <AlignerIndexVersion>{0}</AlignerIndexVersion>", resultDescr.splcIndexVersion);
+            xmlFile.WriteLine("    <Aligner>{0}</Aligner>", Props.props.Aligner);
             xmlFile.WriteLine("    <DirectionalReads>{0}</DirectionalReads>", Props.props.DirectionalReads);
+            xmlFile.WriteLine("    <UMIMutationFilter>{0}/{1}</UMIMutationFilter>", Props.props.RndTagMutationFilter, Props.props.RndTagMutationFilterParam);
+            xmlFile.WriteLine("    <MaxAlternativeAlignments>{0}</MaxAlternativeAlignments>", Props.props.MaxAlternativeMappings);
+            xmlFile.WriteLine("    <MultireadMappingMode>{0}</MultireadMappingMode>", Props.props.MultireadMappingMode);
             xmlFile.WriteLine("    <UseRPKM>{0}</UseRPKM>", Props.props.UseRPKM);
             xmlFile.WriteLine("    <MaxFeatureLength>{0}</MaxFeatureLength>", Props.props.MaxFeatureLength);
             xmlFile.WriteLine("    <GeneFeature5PrimeExtension>{0}</GeneFeature5PrimeExtension>", Props.props.GeneFeature5PrimeExtension);
             xmlFile.WriteLine("    <LocusFlankLength>{0}</LocusFlankLength>", Props.props.LocusFlankLength);
-            xmlFile.WriteLine("    <MultireadMappingMode>{0}</MultireadMappingMode>", Props.props.MultireadMappingMode);
             if (Props.props.AnalyzeSNPs && Props.props.Barcodes.HasUMIs)
                 xmlFile.WriteLine("    <MinMoleculesToTestSnp>{0}</MinMoleculesToTestSnp>", Props.props.MinMoleculesToTestSnp);
             if (Props.props.AnalyzeSNPs && !Props.props.Barcodes.HasUMIs)

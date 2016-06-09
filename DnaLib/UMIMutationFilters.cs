@@ -27,28 +27,41 @@ namespace Linnarsson.Dna
 
         public static void SetUMIMutationFilter()
         {
-            UMIMutationFilterParameter = Props.props.RndTagMutationFilterParam;
-            if (Props.props.RndTagMutationFilter == UMIMutationFilter.FractionOfMax)
-                filter = FractionOfMaxThresholder;
-            else if (Props.props.RndTagMutationFilter == UMIMutationFilter.FractionOfMean)
-                filter = FractionOfMeanThresholder;
-            else if (Props.props.RndTagMutationFilter == UMIMutationFilter.Singleton)
+            if (Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter && Props.props.RndTagMutationFilterParam == 1)
             {
-                filter = SingletonThresholder;
-                if (UMIMutationFilterParameter == 0)
-                    Console.WriteLine("Singletons are filtered away.");
-                else
-                    Console.WriteLine("Singletons at each genomic position are filtered away if some UMI at that position has > " + UMIMutationFilterParameter + " reads.");
+                Props.props.RndTagMutationFilter = UMIMutationFilter.Singleton;
+                Props.props.RndTagMutationFilterParam = 0;
             }
-            else
+            if (Props.props.RndTagMutationFilter == UMIMutationFilter.None)
+                Props.props.RndTagMutationFilterParam = 0;
+            UMIMutationFilterParameter = Props.props.RndTagMutationFilterParam;
+            switch (Props.props.RndTagMutationFilter)
             {
-                filter = LowPassThresholder;
-                if (UMIMutationFilterParameter <= 0)
-                    Console.WriteLine("Singletons are counted as molecules.");
-                else if (UMIMutationFilterParameter == 1)
-                    Console.WriteLine("Singletons are filtered away.");
-                else
-                    Console.WriteLine("Molecules are only counted when detected by > " + UMIMutationFilterParameter + " reads.");
+                case UMIMutationFilter.FractionOfMax:
+                    filter = FractionOfMaxThresholder;
+                    break;
+                case UMIMutationFilter.FractionOfMean:
+                    filter = FractionOfMeanThresholder;
+                    break;
+                case UMIMutationFilter.Singleton:
+                    filter = SingletonThresholder;
+                    if (UMIMutationFilterParameter == 0)
+                        Console.WriteLine("Singletons are filtered away.");
+                    else
+                        Console.WriteLine("Singletons at each genomic position are filtered away if some UMI at that position has > " + UMIMutationFilterParameter + " reads.");
+                    break;
+                case UMIMutationFilter.Hamming1Singleton:
+                    throw new Exception("You can only use RndTagMutationFilter=" + Props.props.RndTagMutationFilter.ToString()
+                                    + " with DenseUMICounter!");
+                default: // LowPassFilter or None
+                    filter = LowPassThresholder;
+                    if (UMIMutationFilterParameter <= 0)
+                        Console.WriteLine("No UMI mutation filter is applied.");
+                    else if (UMIMutationFilterParameter == 1)
+                        Console.WriteLine("Singletons are filtered away.");
+                    else
+                        Console.WriteLine("Molecules are only counted when detected by > " + UMIMutationFilterParameter + " reads.");
+                    break;
             }
         }
 

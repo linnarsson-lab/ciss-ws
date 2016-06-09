@@ -64,6 +64,8 @@ namespace Linnarsson.Dna
         public string rpkm = Props.props.UseRPKM ? "1" : "0";
         public int readdir = Props.props.DirectionalReads ? (Props.props.SenseStrandIsSequenced ? 1 : -1) : 0;
         public string aligner = Props.props.Aligner;
+        public UMIMutationFilter umiMutationFilter = Props.props.RndTagMutationFilter;
+        public int umiMutationFilterParam = Props.props.RndTagMutationFilterParam;
         public string comment { get; set; }
         public string user { get; set; }
 

@@ -21,7 +21,7 @@ namespace Linnarsson.Dna
     /// <summary>
     /// Used in the Props.RndTagMutationFilter to define how molecules due to mutated random labels should be eliminated
     /// </summary>
-    public enum UMIMutationFilter { FractionOfMax, FractionOfMean, Singleton, LowPassFilter, Hamming1Singleton };
+    public enum UMIMutationFilter { FractionOfMax, FractionOfMean, Singleton, LowPassFilter, Hamming1Singleton, None };
 
     /// <summary>
     /// Defines various configurations used by many classes.
@@ -124,8 +124,8 @@ namespace Linnarsson.Dna
         public bool AnalyzeSpliceHitsByBarcode = false; // If true, will show transcript cross-junction hits per barcode
         public int GeneFeature5PrimeExtension = 0; // Extend all transcript 5' annotations to allow for unknown more upstream start sites.
         public int CapRegionSize = 100; // Defines the size in bp to consider as hits to 5' end for the CAPRegion hit counting
-        public UMIMutationFilter RndTagMutationFilter = UMIMutationFilter.FractionOfMax;
-        public int RndTagMutationFilterParam = 50;
+        public UMIMutationFilter RndTagMutationFilter = UMIMutationFilter.Singleton;
+        public int RndTagMutationFilterParam = 0;
         public int MinAltNtsReadCountForSNPDetection = 10; // Positions with less reads with the non-ref bases will not be considered for SNP analysis
         public RepeatMaskingType GenomeBuildRepeatMaskingType = RepeatMaskingType.Exon;
         public ReadLimitType ExtractionReadLimitType;
@@ -167,7 +167,7 @@ namespace Linnarsson.Dna
             get { if (m_Barcodes == null) m_Barcodes = Barcodes.GetBarcodes(BarcodesName); return m_Barcodes; }
         }
         [NonSerialized]
-        private string m_BarcodesName;
+        private string m_BarcodesName = "C1Plate1234New"; // Some default value not to mess up functions that don't specify/need barcodes
         public string BarcodesName
         {
             get { return m_BarcodesName; }

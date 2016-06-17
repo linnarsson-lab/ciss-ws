@@ -70,12 +70,6 @@ namespace Linnarsson.Strt
         int[] nSpikeMappedReadsByBarcode;
 
         /// <summary>
-        /// Total number of reads mapped to the species genome (excluding spikes)
-        /// </summary>
-        int TotalNRealChrMappedReads { get { return nRealChrMappedReadsByBarcode.Sum(); } }
-        int TotalNSpikeMappedReads { get { return nSpikeMappedReadsByBarcode.Sum(); } }
-
-        /// <summary>
         /// Number of reads that map to some exon/splice
         /// </summary>
         int nExonAnnotatedReads = 0;
@@ -1036,6 +1030,8 @@ namespace Linnarsson.Strt
             xmlFile.WriteLine("    <title>Read distribution (10^6) [#wells in brackets]</title>");
             double totalReads = readCounter.TotalReads();
             double speciesReads = readCounter.TotalReads(speciesBarcodes);
+            double speciesRealChrMappedReads = SumAtIndices(speciesBarcodes, nRealChrMappedReadsByBarcode);
+            double speciesSpikeMappedReads = SumAtIndices(speciesBarcodes, nSpikeMappedReadsByBarcode);
             if (speciesReads > 0 && allBcReads > 0)
             {
                 if (readCounter.LimiterExcludedReads > 0)
@@ -1058,16 +1054,24 @@ namespace Linnarsson.Strt
                                             spBcCount, validReads / speciesReads, validReads / 1.0E6d);
             }
             else
-                speciesReads = TotalNRealChrMappedReads; // Default to nMappedReads if extraction summary files are missing
-            int mapped = TotalNRealChrMappedReads + TotalNSpikeMappedReads;
+                speciesReads = speciesRealChrMappedReads; // Default to nMappedReads if extraction summary files are missing
+            double mapped = speciesRealChrMappedReads + speciesSpikeMappedReads;
             xmlFile.WriteLine("    <point x=\"Mapped total [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, mapped / speciesReads, mapped / 1.0E6d);
             xmlFile.WriteLine("    <point x=\"> transcript [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nExonAnnotatedReads / speciesReads, nExonAnnotatedReads / 1.0E6d);
-            xmlFile.WriteLine("    <point x=\"> spike [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, TotalNSpikeMappedReads / speciesReads, TotalNSpikeMappedReads / 1.0E6d);
+            xmlFile.WriteLine("    <point x=\"> spike [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, speciesSpikeMappedReads / speciesReads, speciesSpikeMappedReads / 1.0E6d);
             //xmlFile.WriteLine("    <point x=\"Multireads [{0}] ({1:0.0%})\" y=\"{2}\" />", spBcCount, nMultiReads / speciesReads, nMultiReads / 1.0E6d);
             //if (Props.props.Barcodes.HasUMIs)
             //    xmlFile.WriteLine("    <point x=\"PCR amplified [{0}] ({1:0.0%})\" y=\"{2}\" />", 
             //                      spBcCount, mappingAdder.TotalNDuplicateReads / speciesReads, mappingAdder.TotalNDuplicateReads / 1.0E6d);
             xmlFile.WriteLine("  </reads>");
+        }
+
+        private static int SumAtIndices(int[] indices, int[] data)
+        {
+            int sum = 0;
+            foreach (int idx in indices)
+                sum += data[idx];
+            return sum;
         }
 
         private void WriteHitStats(StreamWriter xmlFile)

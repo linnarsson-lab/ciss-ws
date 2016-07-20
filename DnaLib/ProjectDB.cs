@@ -448,10 +448,10 @@ namespace Linnarsson.Dna
             if (annotations.Count == 0)
             {
                 string chipid = plateId.Replace(C1Props.C1ProjectPrefix, "");
-                CellAnnotationsCall(string.Format("WHERE c.chipid='{0}' ORDER BY c.chipwell", chipid),
+                CellAnnotationsCall(string.Format("WHERE c.{0}aaachipid='{1}' ORDER BY c.chipwell", Props.props.DBPrefix, chipid),
                     out annotations, out annotationIndexes);
-                Console.WriteLine("WARNING: Plate " + plateId + " has not been properly loaded. Assuming matching chip->plate wellIds.");
-                throw new SampleLayoutFileException("Can not extract any well/cell annotations for " + plateId + "  from C1 database.");
+                Console.WriteLine("WARNING: Plate " + plateId + " has not been properly loaded in DB. Assuming matching chip->plate wellIds.");
+                //throw new SampleLayoutFileException("Can not extract any well/cell annotations for " + plateId + "  from C1 database.");
             }
         }
 

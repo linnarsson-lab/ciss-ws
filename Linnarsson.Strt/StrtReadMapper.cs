@@ -355,7 +355,13 @@ namespace Linnarsson.Strt
         private static string MakeParameterString()
         {
             List<string> parameters = new List<string>();
-            parameters.Add(string.Format("UMIFilter={0}/{1}", Props.props.RndTagMutationFilter, Props.props.RndTagMutationFilterParam));
+            string umiFilter = string.Format("{0}/{1}", Props.props.RndTagMutationFilter, Props.props.RndTagMutationFilterParam);
+            if ((Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter && Props.props.RndTagMutationFilterParam == 0) ||
+                (Props.props.RndTagMutationFilter == UMIMutationFilter.None)) umiFilter = "None";
+            else if ((Props.props.RndTagMutationFilter == UMIMutationFilter.LowPassFilter && Props.props.RndTagMutationFilterParam == 1) ||
+                (Props.props.RndTagMutationFilter == UMIMutationFilter.Singleton && Props.props.RndTagMutationFilterParam == 0)) umiFilter = "Singleton";
+            else if (Props.props.RndTagMutationFilter == UMIMutationFilter.Hamming1Singleton) umiFilter = Props.props.RndTagMutationFilter.ToString();
+            parameters.Add("UMIFilter=" + umiFilter);
             parameters.Add("MultireadMappingMode=" + Props.props.MultireadMappingMode);
             parameters.Add("Aligner=" + Props.props.Aligner);
             parameters.Add("MaxAlignmentMismatches=" + Props.props.MaxAlignmentMismatches);

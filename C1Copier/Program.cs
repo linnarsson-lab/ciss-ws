@@ -164,7 +164,7 @@ namespace Linnarsson.C1
                 {
                     if (specificChipDir == "")
                         return "WARNING: Skipped " + chipDir + " - no celldata.";
-                    Console.WriteLine(DateTime.Now.ToString() + " " + chipDir + ": No celldata - faking 96 cells");
+                    Console.WriteLine(DateTime.Now.ToString() + " " + chipDir + ": No celldata - faking {0}/96 valid/total cells", (96-emptyWells.Count));
                     celldata = FakeCellData(emptyWells);
                 }
                 string chipId = GetChipIdFromChipDir(chipDir);

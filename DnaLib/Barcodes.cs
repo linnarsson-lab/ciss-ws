@@ -418,7 +418,10 @@ namespace Linnarsson.Dna
 
         /// <summary>
         /// Get the bcIdx on which a map file should be analyzed. This is not same as
-        /// the input BcIdx if remappings are defined in the 'Merge' column of the PlateLayout
+        /// the input BcIdx if remappings are defined in the 'Merge' column of the PlateLayout.
+        /// Merge keys may be either
+        ///    a) the wellId (the merging well may be empty in 'Merge' column),
+        /// or b) a subsample name. The merging well will be the one with the first occurence of the subsample name. 
         /// </summary>
         /// <param name="bcIdx">bcIdx taken from (.map) filename</param>
         /// <returns>bcIdx that the data should be merged into</returns>
@@ -429,13 +432,24 @@ namespace Linnarsson.Dna
             {
                 string mergeSampleId = AnnotationsByWell["Merge"][bcIdx];
                 if (mergeSampleId != "")
+                {
+                    // First try direct reference to another well, e.g. 'A01'
                     mergeBcIdx = Array.FindIndex(m_WellIds, (id) => id == mergeSampleId);
-                if (mergeBcIdx == -1)
-                    throw new SampleLayoutFileException(string.Format("PlateLayout error: 'Merge' sample '{0}' does not exist, pointed to from Sample {1}",
-                                                               mergeSampleId, m_WellIds[bcIdx]));
+                    if (mergeBcIdx == -1) // Then try reference to a merge subsample name, e.g. 'Sample1'. The first well of that name will be used
+                        mergeBcIdx = Array.FindIndex(AnnotationsByWell["Merge"], (id) => id == mergeSampleId);
+                    if (mergeBcIdx == -1)
+                        throw new SampleLayoutFileException(string.Format("PlateLayout error: 'Merge' sample '{0}' does not exist, specified from well {1}",
+                                                                   mergeSampleId, m_WellIds[bcIdx]));
+                }
             }
             return mergeBcIdx;
         }
+
+        /// <summary>
+        /// Return a well id, like 'A02', or if this well is merged (by layout 'Merge' column) into another well, return parenthesized well id
+        /// </summary>
+        /// <param name="bcIdx"></param>
+        /// <returns></returns>
         public string GetWellSymbolFromBcIdx(int bcIdx)
         {
             int wellIdx = GetWellIdxFromBcIdx(bcIdx);

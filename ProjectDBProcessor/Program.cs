@@ -206,8 +206,8 @@ namespace ProjectDBProcessor
             pd.emails += ";" + Props.props.FailureReportAndAnonDownloadEmail;
             logWriter.WriteLine(DateTime.Now.ToString() + " *** ERROR: ProjectDBProcessor processing " + pd.analysisname + " ***\n" + e);
             logWriter.Flush();
-            Console.WriteLine("\n===============" + pd.analysisname + " finished with errors: ==============\n" + e + 
-                            "\n=============== check details in " + logFile  + " ================\n");
+            Console.WriteLine("\n=============== " + pd.analysisname + " finished with errors: ==============\n" + e + 
+                              "\n=============== check details in " + logFile  + " ================\n");
             string errorMsg = e.Message;
             pd.status = recoverable ? ProjectDescription.STATUS_INQUEUE : ProjectDescription.STATUS_FAILED;
             if (lastMsgByProject.ContainsKey(pd.analysisname) && lastMsgByProject[pd.analysisname].Equals(errorMsg))
@@ -237,9 +237,9 @@ namespace ProjectDBProcessor
                     logWriter.Flush();
                 }
             }
-            else
+            else if (!Props.props.InsertCellDBData)
             {
-                logWriter.WriteLine(DateTime.Now.ToString() + " *** WARNING: " + pd.analysisname + " - layout does not exist: " + layoutSrcPath);
+                logWriter.WriteLine(DateTime.Now.ToString() + " *** NOTICE: No layout '" + layoutSrcPath + "' exists for  " + pd.analysisname + ".");
                 logWriter.Flush();
             }
         }
@@ -247,10 +247,10 @@ namespace ProjectDBProcessor
         public static void ProcessSteps(ProjectDescription pd)
         {
             StrtReadMapper mapper = new StrtReadMapper();
-            Console.WriteLine("StrtReadMapper.Process(" + pd.analysisname + ")");
+            Console.WriteLine("======================== StrtReadMapper.Process(" + pd.analysisname + ") ========================");
             Props.props.BarcodesName = pd.barcodeset;
             Props.props.TotalNumberOfAddedSpikeMolecules = pd.spikemolecules;
-            if (!pd.analysisname.StartsWith("C1-"))
+            if (!pd.analysisname.StartsWith("C1-") && !pd.analysisname.StartsWith("WG96"))
                 Props.props.InsertCellDBData = false;
             logWriter.WriteLine("{0} Extracting {1} lanes with barcodes {2}...", DateTime.Now, pd.laneArgs.Length, pd.barcodeset);
             logWriter.Flush();
@@ -330,10 +330,10 @@ namespace ProjectDBProcessor
             else
             {
                 toEmails = Props.props.FailureReportAndAnonDownloadEmail;
-                sb.Append("<p>The data analysis failed!</p>");
+                sb.Append("<p>The data analysis failed!</p>\n<p>");
                 foreach (string msg in results)
-                    sb.Append(msg);
-                sb.Append("Please consult logfile " + logFile + " for technical info on the error.");
+                    sb.Append(msg + "<br />\n");
+                sb.Append("Please consult logfile " + logFile + " for technical info on the error.</p>\n");
                 sb.Append("<p>After fixing the error, you may need to re-activate the analysis in the Sanger DB (View the sample: Analysis results/Retry).</p>");
             }
             sb.Append("<p>Run parameters follow:</p>\n<code>");

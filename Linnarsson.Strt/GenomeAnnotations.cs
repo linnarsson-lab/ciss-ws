@@ -798,27 +798,32 @@ namespace Linnarsson.Strt
         public IEnumerable<Expression> IterC1DBExpressions(Dictionary<string, int> cellIdByPlateWell)
         {
             Expression exprHolder = new Expression();
+            int cellId;
             foreach (int bcIdx in Props.props.Barcodes.GenomeBarcodeIndexes(genome, true))
             {
-                exprHolder.jos_aaacellid = cellIdByPlateWell[Props.props.Barcodes.GetWellId(bcIdx)].ToString();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                string wellId = Props.props.Barcodes.GetWellId(bcIdx);
+                if (cellIdByPlateWell.TryGetValue(wellId, out cellId))
                 {
-                    exprHolder.TranscriptID = gf.TranscriptID;
-                    exprHolder.UniqueMolecules = gf.TrNCHits(bcIdx);
-                    exprHolder.Molecules = gf.TrHits(bcIdx);
-                    exprHolder.UniqueReads = gf.NonConflictingTrReadsByBc[bcIdx];
-                    exprHolder.Reads = gf.TrReads(bcIdx);
-                    yield return exprHolder;
-                }
-                foreach (RepeatFeature rf in repeatFeatures.Values)
-                {
-                    if (rf.C1DBTranscriptID == -1) continue;
-                    exprHolder.TranscriptID = rf.C1DBTranscriptID;
-                    exprHolder.UniqueMolecules = 0;
-                    exprHolder.UniqueReads = 0;
-                    exprHolder.Molecules = rf.Hits(bcIdx);
-                    exprHolder.Reads = rf.TotalReadsByBc[bcIdx];
-                    yield return exprHolder;
+                    exprHolder.jos_aaacellid = cellId.ToString();
+                    foreach (GeneFeature gf in geneFeatures.Values)
+                    {
+                        exprHolder.TranscriptID = gf.TranscriptID;
+                        exprHolder.UniqueMolecules = gf.TrNCHits(bcIdx);
+                        exprHolder.Molecules = gf.TrHits(bcIdx);
+                        exprHolder.UniqueReads = gf.NonConflictingTrReadsByBc[bcIdx];
+                        exprHolder.Reads = gf.TrReads(bcIdx);
+                        yield return exprHolder;
+                    }
+                    foreach (RepeatFeature rf in repeatFeatures.Values)
+                    {
+                        if (rf.C1DBTranscriptID == -1) continue;
+                        exprHolder.TranscriptID = rf.C1DBTranscriptID;
+                        exprHolder.UniqueMolecules = 0;
+                        exprHolder.UniqueReads = 0;
+                        exprHolder.Molecules = rf.Hits(bcIdx);
+                        exprHolder.Reads = rf.TotalReadsByBc[bcIdx];
+                        yield return exprHolder;
+                    }
                 }
             }
         }
@@ -837,15 +842,20 @@ namespace Linnarsson.Strt
                 nValues = Math.Max(nValues, gf.ExprBlobIdx + 1);
             ExprBlob exprBlob = new ExprBlob(nValues);
             exprBlob.TranscriptomeID = dbTranscriptome.TranscriptomeID.Value;
+            int cellId;
             foreach (int bcIdx in Props.props.Barcodes.GenomeBarcodeIndexes(genome, true))
             {
-                exprBlob.ClearBlob();
-                exprBlob.jos_aaacellid = cellIdByPlateWell[Props.props.Barcodes.GetWellId(bcIdx)].ToString();
-                foreach (GeneFeature gf in geneFeatures.Values)
+                string wellId = Props.props.Barcodes.GetWellId(bcIdx);
+                if (cellIdByPlateWell.TryGetValue(wellId, out cellId))
                 {
-                    exprBlob.SetBlobValue(gf.ExprBlobIdx, gf.TrHits(bcIdx, useMols));
+                    exprBlob.ClearBlob();
+                    exprBlob.jos_aaacellid = cellId.ToString();
+                    foreach (GeneFeature gf in geneFeatures.Values)
+                    {
+                        exprBlob.SetBlobValue(gf.ExprBlobIdx, gf.TrHits(bcIdx, useMols));
+                    }
+                    yield return exprBlob;
                 }
-                yield return exprBlob;
             }
         }
 

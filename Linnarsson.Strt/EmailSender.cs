@@ -27,6 +27,9 @@ namespace Linnarsson.Strt
             mailClient.EnableSsl = Props.props.OutgoingMailUseSsl;
             mailClient.Credentials = new System.Net.NetworkCredential(Props.props.OutgoingMailUser,
                                                                       Props.props.OutgoingMailPassword);
+            //Console.WriteLine("SendMsg: User=" + Props.props.OutgoingMailUser + " Pw=" + Props.props.OutgoingMailPassword
+            //    + " Server=" + Props.props.OutgoingMailServer +
+            //    " Port=" + Props.props.OutgoingMailPort + " UseSsl=" + Props.props.OutgoingMailUseSsl);
             mailClient.Send(message);
         }
     }

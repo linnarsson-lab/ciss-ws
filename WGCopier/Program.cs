@@ -204,7 +204,7 @@ namespace Linnarsson.C1
                     int red = 0, green = 0, blue = 0;
                     bool valid = true;
                     int subBarcodeIdx = subBarcodeNo - 1;
-                    Cell newCell = new Cell(null, 0, 0, chipWell, "", diameter, area, red, green, blue, valid, subwell, subBarcodeIdx);
+                    Cell newCell = new Cell(null, 0, 0, chipWell, chipWell, diameter, area, red, green, blue, valid, subwell, subBarcodeIdx);
                     // Here should read image filenames (and possibly more data) from the "...WellList.TXT" file
                     List<CellImage> cellImages = new List<CellImage>();
                     foreach (string imgSubfolderPat in new string[] {})

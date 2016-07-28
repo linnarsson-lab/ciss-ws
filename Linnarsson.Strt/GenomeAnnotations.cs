@@ -1292,11 +1292,16 @@ namespace Linnarsson.Strt
             foreach (int idx in selectedBcIndexes)
                 matrixFile.Write("\t{0}", Props.props.Barcodes.Seqs[idx]);
             matrixFile.WriteLine();
-            foreach (string annotation in Props.props.Barcodes.GetAnnotationTitles())
+            foreach (string annotationTitle in Props.props.Barcodes.GetAnnotationTitles())
             {
-                matrixFile.Write("{0}{1}{2}", tabs, annotation, colon);
-                foreach (int idx in selectedBcIndexes)
-                    matrixFile.Write("\t{0}", Props.props.Barcodes.GetAnnotation(annotation, idx));
+                matrixFile.Write("{0}{1}{2}", tabs, annotationTitle, colon);
+                foreach (int bcIdx in selectedBcIndexes)
+                {
+                    string annotation = Props.props.Barcodes.GetAnnotation(annotationTitle, bcIdx);
+                    if (bcIdx != Props.props.Barcodes.GetWellIdxFromBcIdx(bcIdx))
+                        annotation = "(" + annotation + ")";
+                    matrixFile.Write("\t{0}", annotation);
+                }
                 matrixFile.WriteLine();
             }
         }

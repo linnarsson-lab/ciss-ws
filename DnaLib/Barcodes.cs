@@ -437,9 +437,8 @@ namespace Linnarsson.Dna
                     mergeBcIdx = Array.FindIndex(m_WellIds, (id) => id == mergeSampleId);
                     if (mergeBcIdx == -1) // Then try reference to a merge subsample name, e.g. 'Sample1'. The first well of that name will be used
                         mergeBcIdx = Array.FindIndex(AnnotationsByWell["Merge"], (id) => id == mergeSampleId);
-                    if (mergeBcIdx == -1)
-                        throw new SampleLayoutFileException(string.Format("PlateLayout error: 'Merge' sample '{0}' does not exist, specified from well {1}",
-                                                                   mergeSampleId, m_WellIds[bcIdx]));
+                    if (mergeBcIdx == -1) // First occurence of this reference - point to itself
+                        mergeBcIdx = bcIdx;
                 }
             }
             return mergeBcIdx;

@@ -613,28 +613,52 @@ namespace Linnarsson.Dna
             return chip;
         }
 
-        public void InsertOrUpdateCellImage(CellImage ci)
+        public void InsertCellImage(CellImage ci)
         {
             int detectionValue = (ci.Detection == Detection.Yes) ? 1 : (ci.Detection == Detection.No) ? -1 : 0;
             string sql = "INSERT INTO {0}aaacellimage ({0}aaacellid, reporter, marker, detection, relativepath) " +
                                "VALUES ({1},'{2}','{3}','{4}','{5}') " +
-                         "ON DUPLICATE KEY UPDATE marker='{3}',detection='{4}',relativepath='{5}';";
+                         "ON DUPLICATE KEY UPDATE marker='{3}',detection='{4}',relativepath='{5}'";
             sql = string.Format(sql, Props.props.DBPrefix, ci.jos_aaacellid, ci.Reporter, ci.Marker, detectionValue, ci.RelativePath);
             IssueNonQuery(sql);
+        }
+
+        public void DeleteCell(Cell c)
+        {
+            string oldIdSql = string.Format("SELECT id FROM {0}aaacell WHERE {0}aaachipid='{1}' AND chipwell='{2}'",
+                                             Props.props.DBPrefix, c.jos_aaachipid, c.chipwell);
+            MySqlConnection conn = new MySqlConnection(connectionString);
+            conn.Open();
+            MySqlCommand cmd = new MySqlCommand(oldIdSql, conn);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            if (rdr.Read())
+            {
+                int cellId = int.Parse(rdr["id"].ToString());
+                string delSql = string.Format("DELETE FROM {0}aaacellimage WHERE {0}aaacellid='{1}'", Props.props.DBPrefix, cellId);
+                cmd = new MySqlCommand(delSql, conn);
+                cmd.ExecuteNonQuery();
+                delSql = string.Format("DELETE FROM {0}aaacellannotation WHERE {0}aaacellid='{1}'", Props.props.DBPrefix, cellId);
+                cmd = new MySqlCommand(delSql, conn);
+                cmd.ExecuteNonQuery();
+                delSql = string.Format("DELETE FROM {0}aaacell WHERE id='{1}'", Props.props.DBPrefix, cellId);
+                cmd = new MySqlCommand(delSql, conn);
+                cmd.ExecuteNonQuery();
+            }
+            conn.Close();
         }
 
         public void InsertOrUpdateCell(Cell c)
         {
             int validValue = c.valid ? 1 : 0;
             string subwell = (c.subwell == "") ? "NULL" : "'" + c.subwell + "'";
-            string sql = "INSERT INTO {0}aaacell ({0}aaachipid, chipwell, diameter, area, red, green, blue, valid, subwell, subbarcodeidx) " +
-                         "VALUES ('{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}',{9},'{10}') " +
-                         "ON DUPLICATE KEY UPDATE diameter='{3}',area='{4}',red='{5}',green='{6}',blue='{7}',valid='{8}',subwell={9},subbarcodeidx='{10}'";
-            sql = string.Format(sql, Props.props.DBPrefix, c.jos_aaachipid, c.chipwell, c.diameter, c.area,
-                                c.red, c.green, c.blue, validValue, subwell, c.subbarcodeidx);
+            DeleteCell(c);
             MySqlConnection conn = new MySqlConnection(connectionString);
             conn.Open();
-            MySqlCommand cmd = new MySqlCommand(sql, conn);
+            string insSql = "INSERT INTO {0}aaacell ({0}aaachipid, chipwell, diameter, area, red, green, blue, valid, subwell, subbarcodeidx) " +
+                            "VALUES ('{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}',{9},'{10}') ";
+            insSql = string.Format(insSql, Props.props.DBPrefix, c.jos_aaachipid, c.chipwell, c.diameter, c.area,
+                                c.red, c.green, c.blue, validValue, subwell, c.subbarcodeidx);
+            MySqlCommand cmd = new MySqlCommand(insSql, conn);
             cmd.ExecuteNonQuery();
             string lastIdSql = string.Format("SELECT id FROM {0}aaacell WHERE {0}aaachipid='{1}' AND chipwell='{2}'",
                                              Props.props.DBPrefix, c.jos_aaachipid, c.chipwell);
@@ -646,7 +670,7 @@ namespace Linnarsson.Dna
             foreach (CellImage ci in c.cellImages)
             {
                 ci.jos_aaacellid = cellId;
-                InsertOrUpdateCellImage(ci);
+                InsertCellImage(ci);
             }
             foreach (CellAnnotation ca in c.cellAnnotations)
             {
@@ -657,8 +681,8 @@ namespace Linnarsson.Dna
 
         public void InsertOrUpdateCellAnnotation(CellAnnotation ca)
         {
-            string sql = "INSERT INTO {0}aaacellannotation (id, name, value) VALUES ({1},'{2}','{3}') " +
-                         "ON DUPLICATE KEY UPDATE value='{2}';";
+            string sql = "INSERT INTO {0}aaacellannotation ({0}aaacellid, name, value) VALUES ('{1}','{2}','{3}') " +
+                         "ON DUPLICATE KEY UPDATE value='{3}';";
             sql = string.Format(sql, Props.props.DBPrefix, ca.jos_aaacellid, ca.Name, ca.Value);
             IssueNonQuery(sql);
         }

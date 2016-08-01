@@ -476,6 +476,7 @@ namespace Linnarsson.Dna
             annotationIndexes["red"] = i++;
             annotationIndexes["blue"] = i++;
             annotationIndexes["green"] = i++;
+            annotationIndexes["posinpatch"] = i++;
             annotationIndexes["Spikemolecules"] = i++;
             annotationIndexes["valid"] = i++;
             annotationIndexes["comments"] = i++;
@@ -509,6 +510,7 @@ namespace Linnarsson.Dna
                 wellAnn[i++] = cell.red.ToString();
                 wellAnn[i++] = cell.blue.ToString();
                 wellAnn[i++] = cell.green.ToString();
+                wellAnn[i++] = cell.subwell;
                 wellAnn[i++] = chip.spikemolecules.ToString();
                 wellAnn[i++] = cell.valid? "Y" : "-";
                 wellAnn[i++] = chip.comments;

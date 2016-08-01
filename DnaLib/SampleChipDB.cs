@@ -445,7 +445,7 @@ namespace Linnarsson.Dna
                 while (rdr.Read())
                     extraAnnotNames.Add(rdr.GetString(0));
                 rdr.Close();
-                sql = "SELECT c.chipwell, h.chipid, diameter, area, green, red, blue, c.valid, " +
+                sql = "SELECT c.chipwell, h.chipid, diameter, area, green, red, blue, c.valid, c.subwell, c.subwell AS posinpatch, " +
                     " h.protocol, h.spikemolecules, h.datecollected, h.comment, " +
                     " s.name AS sample, s.datedissected, s.species, s.strain, s.animalid, s.age, s.sex, s.weight, s.tissue, s.treatment " +
                     "FROM {0}aaacell c JOIN {0}aaachip h ON c.{0}aaachipid = h.id " +

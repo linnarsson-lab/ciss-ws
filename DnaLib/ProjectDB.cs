@@ -636,6 +636,7 @@ namespace Linnarsson.Dna
             if (rdr.Read())
             {
                 int cellId = int.Parse(rdr["id"].ToString());
+                rdr.Close();
                 string delSql = string.Format("DELETE FROM {0}aaacellimage WHERE {0}aaacellid='{1}'", Props.props.DBPrefix, cellId);
                 cmd = new MySqlCommand(delSql, conn);
                 cmd.ExecuteNonQuery();

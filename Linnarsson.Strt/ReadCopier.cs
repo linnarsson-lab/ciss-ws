@@ -88,7 +88,7 @@ namespace Linnarsson.Strt
             int runNo;
             string runId, runDate;
             if (!ParseRunFolderName(runFolder, out runNo, out runId, out runDate))
-                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Can not parse runNo from " + runFolder + " - setting to 0.");
+                logWriter.WriteLine(DateTime.Now.ToString() + " WARNING: Can not parse runNo from " + runFolder + " - setting to " + runNo);
             string runName = Path.GetFileName(runFolder);
             status = ReadCopierStatus.ALLREADSREADY;
             List<ReadFileResult> readFileResults = new List<ReadFileResult>();

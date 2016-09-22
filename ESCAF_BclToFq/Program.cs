@@ -38,6 +38,7 @@ namespace ESCAF_BclToFq
         // scp destinations of resulting .fq files. The directory structure will be PF in top folder, and nonPF/ and statistics/ subfolders
         public bool clearData = true; // Remove all run data and local .fq files after successful processing and scp:ing
         public bool multiThreaded = false; // Use parallell threads for quick processing
+        public int MaxBclToFqErrors = 50; // Max No of errors before quitting
 
         private static ESCAFProps Read()
         {
@@ -131,7 +132,7 @@ namespace ESCAF_BclToFq
         {
             List<string> copiedRunDirs = new List<string>();
             int nExceptions = 0;
-            while (nExceptions < 5)
+            while (nExceptions < ESCAFProps.props.MaxBclToFqErrors)
             {
                 try
                 {
@@ -188,6 +189,7 @@ namespace ESCAF_BclToFq
                 if (readFileResults.Count > 0)
                 {
                     List<string> scpErrors = new List<string>();
+                    int nCopied = 0;
                     foreach (ReadFileResult r in readFileResults)
                     {
                         DBUpdateLaneYield(runId, r);
@@ -203,10 +205,16 @@ namespace ESCAF_BclToFq
                             c = new CmdCaller("scp", scpArg);
                             if (c.ExitCode != 0) scpErrors.Add(scpArg + "\n    " + c.StdError);
                         }
+                        nCopied++;
                     }
-                    if (scpErrors.Count > 0) throw new Exception(string.Join("\n", scpErrors.ToArray()));
-                    logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Mirrored " + readFileResults.Count.ToString()
-                                        + " fq files to  " + string.Join(" & ", ESCAFProps.props.scpDestinations) + "\n");
+                    logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Mirrored " + nCopied + "/" + readFileResults.Count.ToString()
+                                       + " fq files to  " + string.Join(" & ", ESCAFProps.props.scpDestinations) + "\n");
+                    if (scpErrors.Count > 0)
+                    {
+                        string scpErrString = string.Join("\n", scpErrors.ToArray());
+                        logWriter.WriteLine("*** Errors during mirroring: ***\n" + scpErrString + "\n");
+                        throw new Exception(scpErrString);
+                    }
                 }
                 if (status == ReadCopierStatus.SOMEREADMISSING)
                     return false;

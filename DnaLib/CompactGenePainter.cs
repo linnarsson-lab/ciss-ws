@@ -366,7 +366,7 @@ namespace Linnarsson.Dna
         {
             return GetBinnedTrHitsRelStart(gf, binSize, senseOnly, readLen, -1);
         }
-        private static int[] GetBinnedTrHitsRelStart(GeneFeature gf, double binSize, bool senseOnly, int readLen, int bcIdx)
+        public static int[] GetBinnedTrHitsRelStart(GeneFeature gf, double binSize, bool senseOnly, int readLen, int bcIdx)
         {
             char strand = (senseOnly) ? gf.Strand : '.';
             return GetIvlSpecificCountsInBinsRelStart(gf.LocusHits, strand, binSize, readLen,

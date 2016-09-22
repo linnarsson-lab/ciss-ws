@@ -394,11 +394,6 @@ namespace Linnarsson.Dna
                 }
             }
         }
-        public bool Contains(int posOnChr, int margin)
-        {
-            return (posOnChr >= (Position + margin) && posOnChr < (Position + SeqLen - margin));
-        }
-
         public char GetQuality(int posOnChr)
         {
             return parent.GetQualityByAlignmentPos(posOnChr - Position);

@@ -644,8 +644,16 @@ namespace Linnarsson.Strt
                 WriteGCContentByTranscript(outputPathbase);
             if (Props.props.GenerateTranscriptProfiles)
             {
-                WriteTranscriptProfiles(outputPathbase);
-                WriteTranscriptHistograms(outputPathbase, averageReadLen);
+                WriteTranscriptProfiles(outputPathbase, -1);
+                WriteTranscriptHistograms(outputPathbase, averageReadLen, -1);
+                if (Props.props.GenerateGeneProfilesByBarcode)
+                {
+                    for (int bcIdx = 0; bcIdx < Props.props.Barcodes.Count; bcIdx++)
+                    {
+                        WriteTranscriptProfiles(outputPathbase, bcIdx);
+                        WriteTranscriptHistograms(outputPathbase, averageReadLen, bcIdx);
+                    }
+                }
             }
             WriteSplicesByGeneLocus(outputPathbase);
             if (Props.props.AnalyzeSpliceHitsByBarcode)
@@ -1580,9 +1588,10 @@ namespace Linnarsson.Strt
         /// For every expressed gene, write the binned hit count profile across the transcript.
         /// </summary>
         /// <param name="fileNameBase"></param>
-        private void WriteTranscriptHistograms(string fileNameBase, int averageReadLen)
+        private void WriteTranscriptHistograms(string fileNameBase, int averageReadLen, int bcIdx)
         {
-            using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_histograms.tab"))
+            string bcSuffix = (bcIdx == -1) ? "" : string.Format("_{0}_{1}", bcIdx, Props.props.Barcodes.GetWellId(bcIdx));
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_histograms" + bcSuffix + ".tab"))
             {
                 file.WriteLine("Binned number of hits to transcripts counting from 5' end of transcript");
                 file.Write("Gene\tTrLen\tTotHits\tExonHits\tFrom5'-");
@@ -1595,7 +1604,7 @@ namespace Linnarsson.Strt
                     string safeName = ExcelRescueGeneName(gf.Name);
                     file.Write("{0}\t{1}\t{2}\t{3}\t", safeName, gf.GetTranscriptLength(), gf.GetTotalHits(), gf.GetTranscriptHits());
                     int[] trBinCounts = CompactGenePainter.GetBinnedTrHitsRelStart(gf, Props.props.LocusProfileBinSize,
-                                                                                         Props.props.DirectionalReads, averageReadLen);
+                                                                                         Props.props.DirectionalReads, averageReadLen, bcIdx);
                     foreach (int c in trBinCounts)
                         file.Write("{0}\t", c);
                     file.WriteLine();
@@ -1826,9 +1835,10 @@ namespace Linnarsson.Strt
             }
         }
 
-        private void WriteTranscriptProfiles(string fileNameBase)
+        private void WriteTranscriptProfiles(string fileNameBase, int bcIdx)
         {
-            using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_profiles.tab"))
+            string bcSuffix = (bcIdx == -1) ? "" : string.Format("_{0}_{1}", bcIdx, Props.props.Barcodes.GetWellId(bcIdx));
+            using (StreamWriter file = new StreamWriter(fileNameBase + "_transcript_profiles" + bcSuffix + ".tab"))
             {
                 string countType = (Props.props.Barcodes.HasUMIs) ? "molecule" : "read";
                 file.WriteLine("All hit {0} counts to expressed transcripts from 5' to 3' end. Counting stops at {1} in this table. Each data row truncated at last position > 0.",
@@ -1843,7 +1853,7 @@ namespace Linnarsson.Strt
                     string safeName = ExcelRescueGeneName(gf.Name);
                     file.Write("{0}\t{1}\t{2}\t{3}\t{4}\t{5}",
                                safeName, gf.Chr, gf.Strand, gf.Start, gf.End, gf.GetTranscriptLength());
-                    ushort[] trProfile = CompactGenePainter.GetTranscriptProfile(gf);
+                    ushort[] trProfile = CompactGenePainter.GetTranscriptProfile(gf, bcIdx);
                     int i = trProfile.Length - 1;
                     while (i > 0 && trProfile[i] == 0) i--;
                     for (int p = 0; p <= i; p++)

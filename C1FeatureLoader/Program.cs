@@ -118,7 +118,6 @@ namespace Linnarsson.C1
             int n = 0;
             foreach (GeneFeature gf in annotationReader.IterChrSortedGeneModels())
             {
-                string type = gf.GeneType == "" ? "gene" : gf.GeneType;
                 Transcript t = AnnotationReader.CreateNewTranscriptFromGeneFeature(gf);
                 ta.Annotate(ref t);
                 t.TranscriptomeID = transcriptomeID;
@@ -137,7 +136,6 @@ namespace Linnarsson.C1
             int n = 0;
             foreach (GeneFeature gf in annotationReader.IterChrSortedGeneModels())
             {
-                string type = gf.GeneType == "" ? "gene" : gf.GeneType;
                 Transcript t = AnnotationReader.CreateNewTranscriptFromGeneFeature(gf);
                 ta.Annotate(ref t);
                 t.TranscriptomeID = transcriptomeID;

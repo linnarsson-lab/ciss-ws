@@ -226,7 +226,6 @@ namespace FilterMapFilesXBarcodes
 
         private void FilterFiles()
         {
-            NoBarcodes bcs =  new NoBarcodes();
             foreach (string inputFile in settings.inputFiles)
             {
                 string inputFilename = Path.GetFileName(inputFile); 

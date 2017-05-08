@@ -63,7 +63,6 @@ namespace Linnarsson.C1
         public int jos_aaasampleid { get; set; }
         public string chipwell { get; set; }                // Well on C1 chip, e.g. "A02"
         public string subwell { get; set; }                 // Picked row and col on Wafergen 10x10 subsquare, e.g. "0400"
-        public int subbarcodeidx { get; set; }              // 2nd barcode index used in the wafergen subwell
         public string platewell { get; set; }               // Well on sequencing plate, e.g. "B04"
         public double diameter { get; set; }
         public double area { get; set; }
@@ -75,13 +74,12 @@ namespace Linnarsson.C1
         public List<CellAnnotation> cellAnnotations { get; set; }
 
         public Cell(int? id, int jos_aaachipid, int jos_aaasampleid, string chipwell, string platewell,
-                    double diameter, double area, int red, int green, int blue, bool valid, string subwell, int subbarcodeidx)
+                    double diameter, double area, int red, int green, int blue, bool valid, string subwell)
         {
             this.id = id;
             this.jos_aaachipid = jos_aaachipid;
             this.jos_aaasampleid = jos_aaasampleid;
             this.chipwell = chipwell;
-            this.subbarcodeidx = subbarcodeidx;
             this.subwell = subwell;
             this.platewell = platewell;
             this.diameter = diameter;

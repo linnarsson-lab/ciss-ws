@@ -56,7 +56,6 @@ namespace Linnarsson.Strt
         GenomeAnnotations Annotations;
 		DnaMotif[] motifs;
         int currentBcIdx = 0;
-        string currentMapFilePath;
         private string plateId;
         private string resultFolder;
         private string resultFileprefix = null;
@@ -324,7 +323,6 @@ namespace Linnarsson.Strt
 
         private void AddReadMappingsToTagItems(string mapFilePath)
         {
-            currentMapFilePath = mapFilePath;
             int nTotalMappedBcReads = nRealChrMappedReadsByBarcode[currentBcIdx] + nSpikeMappedReadsByBarcode[currentBcIdx];
             MapFile mapFileReader = MapFile.GetMapFile(mapFilePath);
             if (mapFileReader == null)
@@ -385,10 +383,14 @@ namespace Linnarsson.Strt
             List<string> ctrlChrId = new List<string>();
             if (randomTagFilter.chrTagDatas.ContainsKey(Props.props.ChrCTRLId))
             { // First process CTRL chromosome to get the labeling efficiency
+				labelingEfficiencyEstimator.ResetEfficiency();
                 ctrlChrId.Add(Props.props.ChrCTRLId);
                 foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, true))
                     Annotate(mtitem);
-                labelingEfficiencyEstimator.CalcEfficiencyFromSpikes(Annotations.geneFeatures.Values, currentBcIdx);
+                double efficiency = labelingEfficiencyEstimator.CalcEfficiencyFromSpikes(Annotations.geneFeatures.Values, currentBcIdx);
+				foreach (KeyValuePair<string, GeneFeature> p in Annotations.geneFeatures.Where(kvp => ctrlChrId.Contains(kvp.Value.Chr))) {
+					p.Value.ScaleTrueCounts(currentBcIdx, efficiency);
+				}
             }
             foreach (MappedTagItem mtitem in randomTagFilter.IterItems(currentBcIdx, ctrlChrId, false))
                 Annotate(mtitem);
@@ -995,6 +997,8 @@ namespace Linnarsson.Strt
             resultDescr.setStat(ResultDescription.ResultStats.Tn5, tn5Frac);
             List<int> bcTrCounts = new List<int>();
             int[] onlyGenomeBcIndexes = Props.props.Barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
+			if (onlyGenomeBcIndexes.Length == 0)
+				onlyGenomeBcIndexes = Enumerable.Range(0, Props.props.Barcodes.Count).ToArray();
             foreach (int bcIdx in onlyGenomeBcIndexes)
                 bcTrCounts.Add(TotalRealTrMappingsByBarcode[bcIdx]);
             double trMolsPerBc = bcTrCounts.Average();
@@ -1138,7 +1142,6 @@ namespace Linnarsson.Strt
                 nUniqueMolecules += nMappingsByBarcode[bcIdx];
                 nFeaturesHits += totalHitCounter.GetBcHits(bcIdx);
             }
-            string molTitle = (Props.props.Barcodes.HasUMIs)? "molecule": "read";
             string hitSubHeader = "A mapping to exonic sequence shared by two different genes is counted as two hits.";
             double reducer = (Props.props.Barcodes.HasUMIs)? 1.0E3d : 1.0E6d;
             xmlFile.WriteLine("  <reads species=\"{0}\">", speciesName);
@@ -1197,7 +1200,6 @@ namespace Linnarsson.Strt
             alphakeys.Sort();
             List<string> sortedkeys = numkeys.ConvertAll((n) => n.ToString());
             sortedkeys.AddRange(alphakeys);
-            string[] chrs = totalHitCounter.ChrIds().ToArray();
             double nTotalHits = totalHitCounter.TotalHits;
             foreach (string chr in sortedkeys)
             {
@@ -1219,11 +1221,16 @@ namespace Linnarsson.Strt
             if (!Annotations.noGeneVariants)
                 xmlFile.WriteLine("    <point x=\"Detected tr. variants\" y=\"{0}\" />", Annotations.GetNumExpressedTranscripts());
             xmlFile.WriteLine("    <point x=\"Detected main tr. variants\" y=\"{0}\" />", Annotations.GetNumExpressedMainTranscriptVariants());
+			string sp = " " + Annotations.Genome.Name;
             int[] bcIndexes = Props.props.Barcodes.GenomeBarcodeIndexes(Annotations.Genome, true);
+			if (bcIndexes.Length == 0) {
+				bcIndexes = Enumerable.Range (0, Props.props.Barcodes.Count).ToArray();
+				sp = "";
+			}
             int sumExprTr = 0;
             foreach (int bcIdx in bcIndexes)
                 sumExprTr += Annotations.geneFeatures.Values.Count(gf => (!gf.IsSpike() && gf.IsExpressed(bcIdx)));
-            xmlFile.WriteLine("    <point x=\"Mean per species well ({0})\" y=\"{1}\" />", bcIndexes.Length, (int)(sumExprTr / bcIndexes.Count()));
+			xmlFile.WriteLine("    <point x=\"Mean per{2} well ({0})\" y=\"{1}\" />", bcIndexes.Length, (int)(sumExprTr / bcIndexes.Count()), sp);
             xmlFile.WriteLine("    <point x=\"Detected spikes\" y=\"{0}\" />", Annotations.GetNumExpressedSpikes());
             xmlFile.WriteLine("    <point x=\"Detected repeat classes\" y=\"{0}\" />", Annotations.GetNumExpressedRepeats());
             xmlFile.WriteLine("  </features>");
@@ -1271,7 +1278,6 @@ namespace Linnarsson.Strt
         /// <param name="xmlFile"></param>
         private void Add5To3PrimeHitProfile(StreamWriter xmlFile)
         {
-            int averageReadLen = MappedTagItem.AverageReadLen;
             xmlFile.WriteLine("  <hitprofile>");
             xmlFile.WriteLine("  <title>5'->3' read distr. Red=Transcripts/Blue=Spikes</title>");
             xmlFile.WriteLine("	 <xtitle>Relative pos within transcript</xtitle>");

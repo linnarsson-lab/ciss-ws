@@ -547,7 +547,6 @@ namespace Linnarsson.Dna
             }
             string chr = record[2].Trim();
             char strand = record[3].Trim()[0];
-            int nExons = int.Parse(record[8]);
             int[] exonStarts = SplitField(record[9], 0);
             int[] exonEnds = SplitExonEndsField(record[10]); // Convert to inclusive ends
             return new GeneFeature(name, chr, strand, exonStarts, exonEnds, geneType, metadata);
@@ -569,7 +568,6 @@ namespace Linnarsson.Dna
             }
             string chr = record[2].Trim();
             char strand = record[3].Trim()[0];
-            int nExons = int.Parse(record[8]);
             int[] exonStarts = GetExonStarts(record[9]);
             int[] exonEnds = GetExonEnds(record[10]);
             if (record.Length == 11)

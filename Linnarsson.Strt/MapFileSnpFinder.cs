@@ -94,12 +94,10 @@ namespace Linnarsson.Strt
         public static int marginForWiggle = 2;
         public static int averageReadLength;
 
-        Barcodes barcodes;
         Dictionary<string, ChrSNPCounter> dataByChr = new Dictionary<string, ChrSNPCounter>();
 
         public MapFileSnpFinder(Barcodes barcodes)
         {
-            this.barcodes = barcodes;
         }
 
         /// <summary>
@@ -142,7 +140,6 @@ namespace Linnarsson.Strt
                         foreach (Mismatch mm in mrm[0].IterMismatches(0))
                         {
                             if (mm.relPosInChrDir < marginForWiggle || mm.relPosInChrDir >= mrm.SeqLen - marginForWiggle) continue;
-                            int chrSnpPos = hitStartPos + mm.relPosInChrDir;
                             if (chrSNPData.AddSNP(mm)) nDistinctPositions++;
                         }
                     }

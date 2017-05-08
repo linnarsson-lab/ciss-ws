@@ -124,7 +124,6 @@ namespace Linnarsson.Strt
                     while (line != null && line.Length > 0)
                     {
                         string[] f = line.Split('\t');
-                        int readCount = int.Parse(f[0]);
                         int[] counts = new int[f.Length - 1];
                         for (int i = 1; i < f.Length; i++)
                             counts[i - 1] = int.Parse(f[i]);
@@ -272,7 +271,6 @@ namespace Linnarsson.Strt
                 {
                     double[] counts = new double[bcCount];
                     int total = 0;
-                    int bcCol0 = fields.Length - bcCount;
                     for (int bcIdx = 0; bcIdx < bcCount; bcIdx++)
                     {
                         int c = int.Parse(fields[bcIdx + expressionFileFirstBcCol]);
@@ -294,7 +292,7 @@ namespace Linnarsson.Strt
             {
                 double[] v1 = geneCounts[indices[i]];
                 double[] v2 = geneCounts[indices[i + 1]];
-                double cor = Correlation.pearsoncorrelation(ref v1, ref v2, 96);
+                double cor = Correlation.pearsoncorrelation(ref v1, ref v2, bcCount);
                 int bin = (int)Math.Min(39, Math.Max(0.0, cor * 40.0));
                 geneCorrelationHisto[bin] += 1.0;
             }

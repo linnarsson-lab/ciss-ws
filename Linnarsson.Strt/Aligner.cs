@@ -105,7 +105,7 @@ namespace Linnarsson.Strt
         /// <param name="laneInfo">Paths to all needed map files will be stored in laneInfo.mappedFilePaths</param>
         /// <param name="splcIndexVersion"></param>
         /// <param name="genomeBcIndexes">only these barcodes will be processed</param>
-        public void CreateAlignments(LaneInfo laneInfo, int[] genomeBcIndexes)
+        public void CreateAlignments(LaneInfo laneInfo, int[] genomeBcIndexes, bool forceOverwrite)
         {
             string mapFolder = laneInfo.CreateMappedFileFolder(MakeMapFolderName());
             string alignerLogFilePath = Path.Combine(mapFolder, alignerLogFilename);
@@ -120,7 +120,7 @@ namespace Linnarsson.Strt
                     continue;
                 string outUnmappedPath = Path.Combine(mapFolder, string.Format("{0}.fq-{1}", bcIdx, mainIndexName));
                 string outMainPath = Path.Combine(mapFolder, string.Format("{0}_{1}{2}", bcIdx, mainIndexName, outFileExtension));
-                if (!File.Exists(outMainPath))
+                if (forceOverwrite || !File.Exists(outMainPath))
                 {
                     if (!LaneInfo.ExtractedFileExists(extractedFilePath)) continue;
                     CreateAlignmentOutputFile(mainIndexName, extractedFilePath, outMainPath, outUnmappedPath, alignerLogFilePath);
@@ -130,7 +130,7 @@ namespace Linnarsson.Strt
                 string splcFilePat = string.Format("{0}_{1}{2}", bcIdx, genome.GetSplcIndexNamePattern(), outFileExtension);
                 string[] existingSplcFiles = Directory.GetFiles(mapFolder, splcFilePat);
                 string outSplcPath = Path.Combine(mapFolder, outSplcFilename);
-                if (existingSplcFiles.Length >= 1) // If a proper splice index .map file exists we are done
+                if (!forceOverwrite && existingSplcFiles.Length >= 1) // If a proper splice index .map file exists we are done
                     outSplcPath = Path.Combine(mapFolder, existingSplcFiles[0]);
                 else
                 {
@@ -228,6 +228,85 @@ namespace Linnarsson.Strt
             }
             Align(args, indexName, fqPath, outPath, alignerLogFile);
         }
+
+		class BcProcessor {
+			int processCounter; // Reference to caller
+
+			public BcProcessor(ref int processCounter, string mainIndex, string spliceIndex, int bcIdx, string extractedPath, LaneInfo laneInfo)
+			{
+				this.processCounter = processCounter;
+				this.processCounter++;
+				// Start the main bowtie -mm pass using process.Start() and use process.Exited += new EventHandler(this.mainPassExited)
+			}
+
+			public void mainPassExited(object sender, EventArgs e)
+			{
+				// Append to log, check output and if needed,
+				// LaneInfo.AddMappedPath (outMappedPath);
+				// start the splice bowtie -mm pass using process.Start() and use process.Exited += new EventHandler(this.splicePassExited)
+				// else decrement processCounter and exit.
+			}
+
+			public void splicePassExited(object sender, EventArgs e)
+			{
+				// Append to log
+				// LaneInfo.AddMappedPath (outSplicePath);
+				// LaneInfo.AddUnmappedPath (outUnmappedPath);
+				processCounter--;
+			}
+		}
+
+		public void SharedMemCreateAlignments(LaneInfo laneInfo, int[] genomeBcIndexes, bool forceOverwrite)
+		{
+			// Divide code into BcProcessor event handlers. Start threads until processCounter == maxThreads and Sleep(second) until some thread released and continue.
+			string mapFolder = laneInfo.CreateMappedFileFolder(MakeMapFolderName());
+			string alignerLogFilePath = Path.Combine(mapFolder, alignerLogFilename);
+			List<string> outMappedPaths = new List<string>();
+			List<string> outUnmappedPaths = new List<string>();
+			string mainIndexName = genome.GetMainIndexName();
+			string splcIndexName = genome.GetSplcIndexName();
+			foreach (string extractedFilePath in laneInfo.extractedFilePaths)
+			{
+				int bcIdx = LaneInfo.ParseBcIdx(extractedFilePath);
+				if (Array.IndexOf(genomeBcIndexes, bcIdx) == -1)
+					continue;
+				string outUnmappedPath = Path.Combine(mapFolder, string.Format("{0}.fq-{1}", bcIdx, mainIndexName));
+				string outMainPath = Path.Combine(mapFolder, string.Format("{0}_{1}{2}", bcIdx, mainIndexName, outFileExtension));
+				if (forceOverwrite || !File.Exists(outMainPath))
+				{
+					if (!LaneInfo.ExtractedFileExists(extractedFilePath)) continue;
+					CreateAlignmentOutputFile(mainIndexName, extractedFilePath, outMainPath, outUnmappedPath, alignerLogFilePath);
+				}
+				outMappedPaths.Add(outMainPath);
+				string outSplcFilename = string.Format("{0}_{1}{2}", bcIdx, splcIndexName, outFileExtension);
+				string splcFilePat = string.Format("{0}_{1}{2}", bcIdx, genome.GetSplcIndexNamePattern(), outFileExtension);
+				string[] existingSplcFiles = Directory.GetFiles(mapFolder, splcFilePat);
+				string outSplcPath = Path.Combine(mapFolder, outSplcFilename);
+				if (!forceOverwrite && existingSplcFiles.Length >= 1) // If a proper splice index .map file exists we are done
+					outSplcPath = Path.Combine(mapFolder, existingSplcFiles[0]);
+				else
+				{
+					if (!File.Exists(outUnmappedPath))
+					{ // We need to recreate the unmapped fq file of reads not mapping to main index
+						CreateAlignmentOutputFile(mainIndexName, extractedFilePath, outMainPath, outUnmappedPath, alignerLogFilePath);
+						if (!File.Exists(outUnmappedPath))
+							File.Create(outUnmappedPath).Close(); // Even if all reads mapped to main index, create empty unmapped fq file to indicate we did this step
+					}
+					if (new FileInfo(outUnmappedPath).Length > 10) // Avoid processing empty unmapped fq files - bowtie will fail on an empty file as input
+					{
+						string remainUnmappedPath = Props.props.SaveNonMappedReads ? Path.Combine(mapFolder, bcIdx + ".fq-nonmapped") : "";
+						CreateAlignmentOutputFile(splcIndexName, outUnmappedPath, outSplcPath, remainUnmappedPath, alignerLogFilePath);
+					}
+				}
+				outMappedPaths.Add(outSplcPath);
+				outUnmappedPaths.Add(outUnmappedPath);
+				if (Background.CancellationPending) break;
+			}
+			laneInfo.mappedFilePaths = outMappedPaths.ToArray();
+			laneInfo.unmappedFilePaths = outUnmappedPaths.ToArray();
+			Cleanup();
+		}
+
 
     }
 

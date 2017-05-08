@@ -674,7 +674,7 @@ namespace Linnarsson.Strt
             }
             WriteAnnotTypeAndExonCounts(outputPathbase);
             WritePotentialErronousAnnotations(outputPathbase);
-            WriteElongationEfficiency(outputPathbase, averageReadLen);
+            /*WriteElongationEfficiency(outputPathbase, averageReadLen);*/
             WriteSpikeProfilesByBc(outputPathbase);
             WriteQlucoreTable(outputPathbase);
         }
@@ -903,7 +903,11 @@ namespace Linnarsson.Strt
             WriteBasicDataTable(fileNameBase + "_true_counts.tab", header, GeneFeature.IterTrEstTrueMolCounts);
         }
 
-        private void WriteBasicDataTable(string fileName, string header, HitIterator hitIterator)
+		private void WriteBasicDataTable(string fileName, string header, HitIterator hitIterator)
+		{
+			WriteBasicDataTable (fileName, header, hitIterator, true);
+		}
+        private void WriteBasicDataTable(string fileName, string header, HitIterator hitIterator, bool inclSpikes)
         {
             int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             using (StreamWriter outFile = new StreamWriter(fileName))
@@ -911,7 +915,7 @@ namespace Linnarsson.Strt
                 outFile.WriteLine(header);
                 WriteSampleAnnotationLines(outFile, 5, true, speciesBcIndexes);
                 outFile.WriteLine("Feature\tChr\tPos\tStrand\tTrLen\tAllBcSum");
-                foreach (GeneFeature gf in IterOrderedGeneFeatures(true, true))
+                foreach (GeneFeature gf in IterOrderedGeneFeatures(inclSpikes, true))
                 {
                     StringBuilder sbDatarow = new StringBuilder();
                     int total = 0;
@@ -1161,8 +1165,6 @@ namespace Linnarsson.Strt
         private Dictionary<GeneFeature, double[]> GetNormalizedData(int[] selectedBcIndexes)
         {
             int[] totalByBarcode = GetTotalTranscriptCountsByBarcode(false);
-            int grandTotal = totalByBarcode.Sum();
-            double normalizer = Props.props.Barcodes.HasUMIs ? (grandTotal / (double)totalByBarcode.Count(v => v > 0)) : 1.0E+6;
             double[] normFactors = CalcNormalizationFactors(totalByBarcode);
             double trLenFactor = 1.0;
             Dictionary<GeneFeature, double[]> normalizedData = new Dictionary<GeneFeature, double[]>();
@@ -1888,7 +1890,7 @@ namespace Linnarsson.Strt
         }
 
         /// <summary>
-        /// Old style analysis comparing a 5' region to the rest.
+        /// Old style analysis comparing a 5' region to the rest. Expects 96 barcodes!
         /// </summary>
         /// <param name="capHitsFile"></param>
         /// <param name="minHitsPerGene"></param>
@@ -1940,7 +1942,7 @@ namespace Linnarsson.Strt
             }
             capHitsFile.WriteLine("Overall average fraction is {0}", allFracs.Mean());
             capHitsFile.Write("\nMidLength\tFraction\t#GenesInBin\t");
-            int[] speciesBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
+            int[] speciesBcIndexes = Enumerable.Range(0, Math.Min(96, Props.props.Barcodes.Count)).ToArray();
             foreach (int idx in speciesBcIndexes) capHitsFile.Write("\t{0}", Props.props.Barcodes.Seqs[idx]);
             capHitsFile.WriteLine();
             capHitsFile.Write("\t\t\t");
@@ -1995,7 +1997,6 @@ namespace Linnarsson.Strt
 
         private void WriteSpikeElongationHitCurve(StreamWriter hitProfileFile, int trLenBinSize, int nSections, int averageReadLen)
         {
-            int minHitsPerGene = nSections * 10;
             bool wroteHeader = false;
             foreach (GeneFeature gf in geneFeatures.Values)
             {

@@ -58,7 +58,7 @@ namespace CmdSilverBullet
                             List<LaneInfo> extrInfos = mapper.Extract(projectFolder, options.laneArgs, options.resultFolder);
                             string extractedFolder = extrInfos[0].extractionFolder;
                             mapper.MapAndAnnotate(extractedFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
-                                                  options.annotation, "", options.specificBcIdxs);
+                                                  options.annotation, "", options.specificBcIdxs, false);
                             break;
 
                         case "downloadmart":
@@ -130,7 +130,7 @@ namespace CmdSilverBullet
                             props.LayoutFile = options.layoutFile;
                             mapper = new StrtReadMapper();
                             mapper.MapAndAnnotate(options.projectFolder, options.speciesAbbrev, options.analyzeAllGeneVariants,
-                                                            options.annotation, options.resultFolder, options.specificBcIdxs);
+                                       options.annotation, options.resultFolder, options.specificBcIdxs, false);
                             break;
 
                         case "rf":

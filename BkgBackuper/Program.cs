@@ -139,9 +139,7 @@ namespace BkgBackuper
                     }
                     int hoursLeft = GetHoursLeft();
                     long maxLenLeft =  (long)Math.Floor(currentBytesPerHour * hoursLeft);
-                    int maxMbLeft = (int)Math.Floor(maxLenLeft / Math.Pow(2.0, 20));
                     long fileLen = new FileInfo(readFile).Length;
-                    int fileMb = (int)Math.Floor(fileLen / Math.Pow(2.0, 20));
                     if (fileLen < maxLenLeft)
                     {
                         triedSomeCopy = true;

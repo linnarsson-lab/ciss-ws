@@ -16,7 +16,6 @@ namespace Linnarsson.Strt
     {
         Barcodes barcodes;
 
-        string read2FilterPrefix = null;
         LaneInfo laneInfo;
 
         ReadExtractor readExtractor;
@@ -30,8 +29,6 @@ namespace Linnarsson.Strt
         {
             this.barcodes = barcodes;
             this.laneInfo = laneInfo;
-            if (laneInfo.idxSeqFilter.Length > 0)
-                read2FilterPrefix = "^" + laneInfo.idxSeqFilter;
             readExtractor = new ReadExtractor(barcodes);
             readCounter = new ReadCounter(barcodes);
             sws_barcoded = OpenStreamWriters(laneInfo.extractedFilePaths);

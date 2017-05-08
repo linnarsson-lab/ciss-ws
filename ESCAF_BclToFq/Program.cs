@@ -43,7 +43,6 @@ namespace ESCAF_BclToFq
         private static ESCAFProps Read()
         {
             string appDir = AppDomain.CurrentDomain.BaseDirectory;
-            string configFilePath = Path.Combine(appDir, configFilename);
             ESCAFProps props = null;
             try
             {
@@ -146,7 +145,10 @@ namespace ESCAF_BclToFq
                         if (ts < new TimeSpan(0, ESCAFProps.props.minLastAccessMinutes, 0))
                             continue;
                         string readyFilePath = Path.Combine(runDir, "Basecalling_Netcopy_complete.txt");
-                        if (runDir.EndsWith("gz") || runDir.EndsWith("zip") || File.Exists(readyFilePath))
+						string rtaPath = Path.Combine(runDir, "RTAComplete.txt");
+						string tenXFilePath = Path.Combine(runDir, "Basecalling_Netcopy_complete_Read4.txt");
+                        if (runDir.EndsWith("gz") || runDir.EndsWith("zip") 
+						    || (File.Exists(readyFilePath) && File.Exists(rtaPath) && !File.Exists(tenXFilePath)))
                         {
                             logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Processing " + runDir);
                             bool allReadsCopied = ProcessRun(runDir);

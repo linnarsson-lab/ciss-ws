@@ -18,13 +18,12 @@ namespace Linnarsson.C1
         static StreamWriter logWriter;
         static int minutesWait = 10;
         static int nExceptions = 0;
-        static int maxNExceptions = 10;
+        static int maxNExceptions = 100;
         static DateTime lastCopyTime = new DateTime(2012, 1, 1);
         static List<string> copiedChipDirs = new List<string>();
         static bool runOnce = false;
         static string specificChipDir = "";
         static List<string> testedChipDirs = new List<string>();
-        static string layoutFilePattern = Props.props.SampleLayoutFileFormat.Replace("{0}", "*");
         static Dictionary<string, int> sourceWell2SubBarcodeIdx = new Dictionary<string, int>();
 
         static void Main(string[] args)
@@ -192,7 +191,7 @@ namespace Linnarsson.C1
                     if ((line = line.Trim()).Length == 0)
                         continue;
                     string[] fields = line.Split('\t');
-                    string chipId = fields[0];
+                    //string chipId = fields[0];
                     string patch = fields[1];
                     string posInPatch = fields[2];
                     string subwell = "0" + posInPatch[1] + "0" + posInPatch[3];
@@ -203,8 +202,7 @@ namespace Linnarsson.C1
                     double area = 0.0, diameter = 0.0;
                     int red = 0, green = 0, blue = 0;
                     bool valid = true;
-                    int subBarcodeIdx = subBarcodeNo - 1;
-                    Cell newCell = new Cell(null, 0, 0, chipWell, chipWell, diameter, area, red, green, blue, valid, subwell, subBarcodeIdx);
+                    Cell newCell = new Cell(null, 0, 0, chipWell, chipWell, diameter, area, red, green, blue, valid, subwell);
                     // Here should read image filenames (and possibly more data) from the "...WellList.TXT" file
                     List<CellImage> cellImages = new List<CellImage>();
                     foreach (string imgSubfolderPat in new string[] {})
@@ -225,12 +223,14 @@ namespace Linnarsson.C1
         private static string InsertCells(List<Cell> cells, string chipId)
         {
             IDB pdb = DBFactory.GetProjectDB();
-            int jos_aaachipid = pdb.GetIdOfChip(chipId);
-            if (jos_aaachipid == -1)
+            int aaachipid = pdb.GetIdOfChip(chipId);
+            if (aaachipid == -1)
                 return "NOTICE: Chip " + chipId + " has not yet been registered in database.";
+			if (cells.Count > 0)
+				pdb.RemoveCell000(aaachipid);
             foreach (Cell cell in cells)
             {
-                cell.jos_aaachipid = jos_aaachipid;
+                cell.jos_aaachipid = aaachipid;
                 pdb.InsertOrUpdateCell(cell);
             }
             return "OK: Loaded.";

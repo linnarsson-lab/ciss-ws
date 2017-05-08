@@ -36,7 +36,7 @@ namespace Linnarsson.Dna
             {
                 string header = martReader.ReadLine();
                 int exStartCol = -1, exEndCol = -1, chrCol = -1,
-                    strandCol = -1, nameCol = -1, typeCol = 0, trNameCol = -1, descrCol = -1;
+                    strandCol = -1, nameCol = -1, typeCol = 0, trNameCol = -1;
                 string[] fields = header.Split('\t');
                 for (int i = 0; i < fields.Length; i++)
                 {
@@ -46,7 +46,6 @@ namespace Linnarsson.Dna
                     else if (f.StartsWith("Exon Chr End")) exEndCol = i;
                     else if (f == "Chromosome Name") chrCol = i;
                     else if (f == "Strand") strandCol = i;
-                    else if (f == "Description") descrCol = i;
                     else if (f == "External Gene ID" || f == "Associated Gene Name") nameCol = i;
                     else if (f == "Transcript Biotype") typeCol = i;
                     else if (f == "Gene Biotype") typeCol = i;

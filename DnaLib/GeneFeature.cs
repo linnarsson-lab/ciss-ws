@@ -14,6 +14,39 @@ namespace Linnarsson.Dna
         int GetTranscriptPos(int hitMidPos, int partIdxForSplices);
     }
 
+	public struct LocusHit : IComparable {
+		public static readonly int StrandMask = 1;
+		public static readonly int Fw = 0;
+		public static readonly int Rev = 1;
+
+		private int hit;
+		public int Strand { get { return hit & 1; } }
+		public int BcIdx { get { return (hit >> 1) & 127; } }
+		public int Pos { get { return hit >> 8; } }
+
+		public LocusHit(int pos, int strand, int bcIdx)
+		{
+			hit = (pos << 8) | (bcIdx << 1) | strand;
+		}
+		public LocusHit(int pos, char strand, int bcIdx)
+		{
+			int s = (strand == '+') ? 0 : 1;
+			hit = (pos << 8) | (bcIdx << 1) | s;
+		}
+		public bool StrandMatches(char strand)
+		{
+			if (strand == '.')
+				return true;
+			int s = (strand == '+')? Fw : Rev;
+			return (Strand == s);
+		}
+
+		public int CompareTo(object other)
+		{
+			return hit.CompareTo(((LocusHit)other).hit);
+		}
+	}
+
     public class GeneFeature : LocusFeature, TranscriptFeature
     {
         public readonly static string pseudoGeneIndicator = "_p";
@@ -31,14 +64,16 @@ namespace Linnarsson.Dna
         public int SpliceLen; // Set by the corresponding SplicedGeneLocus
         private int locusHitIdx;
         private bool locusHitsSorted;
-        private int[] m_LocusHits;
+        //private int[] m_LocusHits;
+		private LocusHit[] m_LocusHits;
         /// <summary>
         /// Hits (molecules when using UMIs) are stored as ints of pp..pppbbbbbbbs where
         /// p is hitMidPosition relative to LocusStart
         /// in chromosome orientation, b is barcode, and s is chromosome strand (0 = '+', 1 = '-')
         /// Always returned sorted when accessed.
         /// </summary>
-        public int[] LocusHits
+		public LocusHit[] LocusHits
+		//public int[] LocusHits
         {
             get
             {
@@ -166,7 +201,7 @@ namespace Linnarsson.Dna
         /// </summary>
         private ushort[] TrMolsByBc;
         private ushort[] NonConflictingTrMolsByBc;
-        private ushort[] EstimatedTrueMolsByBc;
+        private float[] EstimatedTrueMolsByBc;
         private ushort[] MaxOccupiedUMIsOnEXONByBc;
 
         /// <summary>
@@ -225,7 +260,7 @@ namespace Linnarsson.Dna
         public static IEnumerable<int> IterTrEstTrueMolCounts(GeneFeature gf, int[] bcIndexes)
         {
             foreach (int bcIdx in bcIndexes)
-                yield return gf.EstimatedTrueMolsByBc[bcIdx];
+                yield return (int)Math.Round(gf.EstimatedTrueMolsByBc[bcIdx]);
         }
         public static IEnumerable<int> IterMaxOccupiedUMIsByEXON(GeneFeature gf, int[] bcIndexes)
         {
@@ -337,7 +372,7 @@ namespace Linnarsson.Dna
             if (Props.props.Barcodes.HasUMIs)
             {
                 TrMolsByBc = new ushort[Props.props.Barcodes.Count];
-                EstimatedTrueMolsByBc = new ushort[Props.props.Barcodes.Count];
+                EstimatedTrueMolsByBc = new float[Props.props.Barcodes.Count];
                 NonConflictingTrMolsByBc = new ushort[Props.props.Barcodes.Count];
                 MaxOccupiedUMIsOnEXONByBc = new ushort[Props.props.Barcodes.Count];
             }
@@ -350,7 +385,7 @@ namespace Linnarsson.Dna
             TranscriptHitsByJunctionAndBc = new Dictionary<string, ushort[]>();
             HitsByAnnotType = new int[AnnotType.Count];
             NonMaskedHitsByAnnotType = new int[AnnotType.Count];
-            m_LocusHits = new int[400];
+			m_LocusHits = new LocusHit[400]; // m_LocusHits = new int[400];
             locusHitIdx = 0;
             SavedCAPPos = (strand == '+') ? exonStarts[0] : exonEnds[exonEnds.Length - 1];
         }
@@ -421,6 +456,12 @@ namespace Linnarsson.Dna
                 hits += HitsByAnnotType[AnnotType.AINTR] + HitsByAnnotType[AnnotType.AUSTR] + HitsByAnnotType[AnnotType.ADSTR];
             return hits;
         }
+
+		public void ScaleTrueCounts(int bcIdx, double efficiency)
+		{
+			if (efficiency > 0.0)
+				EstimatedTrueMolsByBc[bcIdx] = EstimatedTrueMolsByBc[bcIdx] / (float)efficiency;
+		}
 
         public bool IsSpike()
         {
@@ -672,7 +713,7 @@ namespace Linnarsson.Dna
             if (Props.props.Barcodes.HasUMIs)
             {
                 TrMolsByBc[item.bcIdx] += (ushort)item.MolCount;
-                EstimatedTrueMolsByBc[item.bcIdx] += (ushort)item.EstTrueMolCount;
+                EstimatedTrueMolsByBc[item.bcIdx] += (float)item.EstTrueMolCount;
                 MaxOccupiedUMIsOnEXONByBc[item.bcIdx] = Math.Max((ushort)item.ObservedMolCount, MaxOccupiedUMIsOnEXONByBc[item.bcIdx]);
             }
             TrReadsByBc[item.bcIdx] += item.ReadCount;
@@ -722,7 +763,7 @@ namespace Linnarsson.Dna
                 NonMaskedHitsByAnnotType[annotType] += item.MolCount;
             }
             HitsByAnnotType[annotType] += item.MolCount;
-            int res = MarkExonHit(item, exonIdx, markType);
+            MarkExonHit(item, exonIdx, markType);
             return annotType;
         }
 
@@ -1046,11 +1087,12 @@ namespace Linnarsson.Dna
                 //Console.WriteLine(Name + ":Resize m_LocusHits to " + (m_LocusHits.Length * 2));
                 Array.Resize(ref m_LocusHits, m_LocusHits.Length * 2);
             }
-            int s = GetStrandAsInt(item.DetectedStrand);
+            //int s = GetStrandAsInt(item.DetectedStrand);
             int locusPos = item.HitMidPos - LocusStart;
-            int hit = (locusPos << 8) | (item.bcIdx << 1) | s;
-            for (int n = 0; n < item.MolCount; n++)
-                m_LocusHits[locusHitIdx++] = hit;
+            //int hit = (locusPos << 8) | (item.bcIdx << 1) | s;
+			for (int n = 0; n < item.MolCount; n++)
+				m_LocusHits [locusHitIdx++] = new LocusHit(locusPos, item.DetectedStrand, item.bcIdx);
+				//m_LocusHits[locusHitIdx++] = hit;
         }
         /// <summary>
         /// Strand is coded as 0 for forward ('+') and 1 for reverse ('-')

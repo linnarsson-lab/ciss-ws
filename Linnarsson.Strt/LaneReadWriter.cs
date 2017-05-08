@@ -10,7 +10,6 @@ namespace Linnarsson.Strt
 {
     public class LaneReadWriter
     {
-        string readsFolder;
         int lane;
         int read;
         public string PFFilePath { get; private set; }
@@ -24,7 +23,6 @@ namespace Linnarsson.Strt
 
         public LaneReadWriter(string readsFolder, string runFolderName, int runNo, int lane, int read)
         {
-            this.readsFolder = readsFolder;
             this.lane = lane;
             this.read = read;
             PFFilePath = PathHandler.GetPFFilePath(readsFolder, runFolderName, runNo, lane, read);

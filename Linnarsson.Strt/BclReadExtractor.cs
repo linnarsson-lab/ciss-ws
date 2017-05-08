@@ -15,8 +15,6 @@ namespace Linnarsson.Strt
     /// </summary>
     public class BclReadExtractor
     {
-        private List<LaneReadWriter> laneReadWriters;
-        private List<SampleReadWriter> sampleReadWriters;
         private int[] nCyclesByReadIdx = new int[3];
 
         public int[] GetNCyclesByReadIdx()
@@ -32,8 +30,6 @@ namespace Linnarsson.Strt
         public BclReadExtractor(List<LaneReadWriter> laneReadWriters, List<SampleReadWriter> sampleReadWriters)
         {
             throw new NotImplementedException();
-            this.laneReadWriters = laneReadWriters;
-            this.sampleReadWriters = sampleReadWriters;
         }
 
 /*

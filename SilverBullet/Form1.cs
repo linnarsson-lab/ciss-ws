@@ -134,7 +134,7 @@ namespace SilverBullet
                     {
                         gd.Genome.GeneVariants = gvd.AnalyzeAllGeneVariants;
                         mapper.MapAndAnnotate(projectFolder, gd.Genome.GetMainIndexName(), gvd.AnalyzeAllGeneVariants, 
-                                              StrtGenome.DefaultAnnotationSource, "", null);
+                                              StrtGenome.DefaultAnnotationSource, "", null, false);
                     }
                     catch (Exception exp)
                     {

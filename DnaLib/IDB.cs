@@ -11,6 +11,7 @@ namespace Linnarsson.Dna
     {
         void AddToBackupQueue(string readFile, int priority);
         void GetCellAnnotations(string chipid, out Dictionary<string, string[]> annotations, out Dictionary<string, int> annotationIndexes);
+		void RemoveCell000(int aaachipid);
         void InsertOrUpdateCell(Cell c);
         void InsertOrUpdateCellAnnotation(CellAnnotation ca);
         Cell GetCellFromChipWell(string chip, string chipWell);

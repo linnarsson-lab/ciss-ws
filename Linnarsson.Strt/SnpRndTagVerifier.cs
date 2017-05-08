@@ -83,7 +83,6 @@ namespace Linnarsson.Strt
         public HashSet<char> GetValidNtsInBarcode(char refNt)
         {
             HashSet<char> validNts = new HashSet<char>();
-            int[] sumsPerNt = new int[5];
             for (int rndTagIdx = 0; rndTagIdx < countsByNtAndRndTagIdx.GetLength(1); rndTagIdx++)
             {
                 int maxCount = 0; char maxNt = '-';

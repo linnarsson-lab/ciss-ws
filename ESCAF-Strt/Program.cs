@@ -127,21 +127,21 @@ namespace ESCAF_Strt
             {
                 foreach (LaneInfo laneInfo in laneInfos)
                 {
-                    if (!UpdateDBStatus(options, "extracting")) return;
+                    if (!WriteXMLStatusFile(options, "extracting")) return;
                     Console.WriteLine("Extracting {0} using {1}...", laneInfo.PFReadFilePath, options.barcodesName);
                     SampleReadWriter srw = new SampleReadWriter(Props.props.Barcodes, laneInfo);
                     srw.ProcessLaneAsRecSets();
                 }
             }
-            if (!UpdateDBStatus(options, "annotating")) return;
+            if (!WriteXMLStatusFile(options, "annotating")) return;
             Console.WriteLine("Mapping using {0} and annotating...", options.aligner);
             StrtReadMapper mapper = new StrtReadMapper();
             string defaultSpeciesArg = (Props.props.LayoutFile == "") ? options.build : "";
             mapper.MapAndAnnotate(defaultSpeciesArg, options.variants, options.annotation, options.resultFolder,
-                                  options.resultFileprefix, null, laneInfos, options.plateFolder);
+                                  options.resultFileprefix, null, laneInfos, options.plateFolder, true);
         }
 
-        static bool UpdateDBStatus(ESCAFStrtSettings options, string newStatus)
+        static bool WriteXMLStatusFile(ESCAFStrtSettings options, string newStatus)
         {
             string filePat = Path.Combine(options.statusXmlFileFolder, options.analysisId + "_#.xml");
             if (File.Exists(filePat.Replace("#", "cancelled"))) return false;

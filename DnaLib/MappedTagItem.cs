@@ -15,7 +15,7 @@ namespace Linnarsson.Dna
 
         private int cachedMolCount;
         private int cachedReadCount;
-        private int cachedEstTrueMolCount;
+        private double cachedEstTrueMolCount;
         private int observedMolCount;
         private List<SNPCounter> cachedSNPCounts;
 
@@ -28,7 +28,7 @@ namespace Linnarsson.Dna
         /// </summary>
         public int MolCount { get { return cachedMolCount; } }
         public int ReadCount { get { return cachedReadCount; } }
-        public int EstTrueMolCount { get { return cachedEstTrueMolCount; } }
+        public double EstTrueMolCount { get { return cachedEstTrueMolCount; } }
         public List<SNPCounter> SNPCounts { get { return cachedSNPCounts; } }
 
         private TagItem m_TagItem;

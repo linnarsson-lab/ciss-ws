@@ -18,7 +18,6 @@ namespace Linnarsson.Strt
         private readonly static int ReadSegmentQualityControlIndicator = 2; // Phred score '2' corresponding to 'B' in fastQ read qualities
         private readonly static int maxExtraTSNts = 6; // Limit # of extra (G) Nts (in addition to min#==3) to remove from template switching
         private Barcodes barcodes;
-        private int insertStartPos;
         private int minTotalReadLength;
         private int minInsertNonAs;
         private int minQualityInUMI;
@@ -32,7 +31,6 @@ namespace Linnarsson.Strt
         public ReadExtractor(Barcodes barcodes)
         {
             this.barcodes = barcodes;
-            insertStartPos = barcodes.InsertOrGGGPos;
             minTotalReadLength = barcodes.InsertOrGGGPos + Props.props.MinExtractionInsertLength;
             minInsertNonAs = Props.props.MinExtractionInsertNonAs;
             minQualityInUMI = Props.props.MinPhredScoreInRandomTag;

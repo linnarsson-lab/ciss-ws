@@ -126,7 +126,8 @@ namespace Linnarsson.Strt
         /// <param name="genome"></param>
         /// <param name="laneInfos"></param>
         /// <param name="genomeBcIndexes">optionally only process specific barcodes</param>
-        public void CreateAlignments(StrtGenome genome, List<LaneInfo> laneInfos, int[] selectedBcIdxs)
+        public void CreateAlignments(StrtGenome genome, List<LaneInfo> laneInfos,
+		                             int[] selectedBcIdxs, bool forceOverwrite)
         {
             int[] genomeBcIndexes = Props.props.Barcodes.GenomeAndEmptyBarcodeIndexes(genome);
             if (selectedBcIdxs != null)
@@ -135,7 +136,7 @@ namespace Linnarsson.Strt
             Aligner aligner = AssertASplcIndex(genome);
             Console.WriteLine("{0}: {1} aligning {2} lanes against {3}...", DateTime.Now, Props.props.Aligner, laneInfos.Count, genome.GetSplcIndexName());
             foreach (LaneInfo laneInfo in laneInfos)
-                aligner.CreateAlignments(laneInfo, genomeBcIndexes);
+                aligner.CreateAlignments(laneInfo, genomeBcIndexes, forceOverwrite);
         }
 
         /// <summary>
@@ -173,7 +174,7 @@ namespace Linnarsson.Strt
             string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolderOrName);
             List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder);
             StrtGenome genome = StrtGenome.GetGenome(speciesArg, defaultGeneVariants, defaultAnnotation, false);
-            CreateAlignments(genome, laneInfos, null);
+            CreateAlignments(genome, laneInfos, null, false);
         }
 
         public static readonly string ANNOTATION_VERSION = "45";
@@ -191,17 +192,19 @@ namespace Linnarsson.Strt
         /// <param name="resultFolderName">Will make a standard subfolder if "".</param>
         /// <summary>
         public void MapAndAnnotate(string projectOrExtractedFolderOrName, string speciesArg, 
-                                     bool defaultGeneVariants, string defaultAnnotation, string resultFolder, int[] selectedBcIdxs)
+                                   bool defaultGeneVariants, string defaultAnnotation,
+		                           string resultFolder, int[] selectedBcIdxs, bool forceMapOverwrite)
         {
             string extractedFolder = SetupForLatestExtractionFolder(projectOrExtractedFolderOrName);
             List<LaneInfo> laneInfos = LaneInfo.SetupLaneInfosFromExistingExtraction(extractedFolder);
             string projectFolder = PathHandler.GetRootedProjectFolder(projectOrExtractedFolderOrName);
             MapAndAnnotate(speciesArg, defaultGeneVariants, defaultAnnotation, resultFolder,
-                            null, selectedBcIdxs, laneInfos, projectFolder);
+                            null, selectedBcIdxs, laneInfos, projectFolder, forceMapOverwrite);
         }
 
         public void MapAndAnnotate(string speciesArg, bool defaultGeneVariants, string defaultAnnotation, string resultFolder,
-                                   string resultFileprefix, int[] selectedBcIdxs, List<LaneInfo> laneInfos, string projectFolder)
+                                   string resultFileprefix, int[] selectedBcIdxs, List<LaneInfo> laneInfos, string projectFolder,
+		                           bool forceMapOverwrite)
         {
             Props.props.InsertCellDBData = false;
             string sampleLayoutPath = PathHandler.GetLayoutPath(projectFolder);
@@ -211,7 +214,7 @@ namespace Linnarsson.Strt
             foreach (string sp in speciesArgs)
             {
                 StrtGenome genome = StrtGenome.GetGenome(sp, defaultGeneVariants, defaultAnnotation, true);
-                CreateAlignments(genome, laneInfos, selectedBcIdxs);
+                CreateAlignments(genome, laneInfos, selectedBcIdxs, forceMapOverwrite);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(laneInfos);
                 if (mapFiles.Count == 0)
                     throw new Exception("Both alignment (map/sam) files and extracted fq files to align are missing! You have to (re-)run the extraction first.");

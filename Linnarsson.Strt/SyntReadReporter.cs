@@ -338,7 +338,6 @@ namespace Linnarsson.Strt
     public class SyntReadReporter
     {
         private StreamWriter readReporter;
-        private bool geneVariants;
         private string filenameBase;
         private string syntLevelFile;
         private Dictionary<string, GeneFeature> geneFeatures;
@@ -353,7 +352,6 @@ namespace Linnarsson.Strt
 
         public SyntReadReporter(string syntLevelFile, bool analyzeGeneVariants, string filenameBase, Dictionary<string, GeneFeature> geneFeatures)
         {
-            geneVariants = analyzeGeneVariants;
             if (!Directory.Exists(Path.GetDirectoryName(filenameBase)))
                 Directory.CreateDirectory(Path.GetDirectoryName(filenameBase));
             readReporter = new StreamWriter(filenameBase + "_" + Props.props.TestAnalysisFileMarker + "_analysis.txt");

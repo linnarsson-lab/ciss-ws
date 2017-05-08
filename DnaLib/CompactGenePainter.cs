@@ -60,8 +60,8 @@ namespace Linnarsson.Dna
                                           gf.GetLocusLength(), gf.LocusStart, bcodeSortOrder);
         }
 
-        private static ushort[,] GetTranscriptImageData(int[] hits, char strand, int[] exonStarts, int[] exonEnds, 
-                                                int locusLen, int offset, int[] bcodeSortOrder)
+        private static ushort[,] GetTranscriptImageData(LocusHit[] hits, char strand, int[] exonStarts, int[] exonEnds, int locusLen, int offset, int[] bcodeSortOrder)
+		// private static ushort[,] GetTranscriptImageData(int[] hits, char strand, int[] exonStarts, int[] exonEnds, int locusLen, int offset, int[] bcodeSortOrder)
         {
             ushort[,] locImgData = GetLocusProfilesByBarcode(hits, locusLen, locusLen, strand, 1);
             int trLen = 0;
@@ -117,21 +117,22 @@ namespace Linnarsson.Dna
         /// <param name="strand"></param>
         /// <param name="weight"></param>
         /// <returns></returns>
-        private static ushort[,] GetLocusProfilesByBarcode(int[] hits, int nSlots, int length, char strand, int weight)
+        private static ushort[,] GetLocusProfilesByBarcode(LocusHit[] hits, int nSlots, int length, char strand, int weight)
+		//private static ushort[,] GetLocusProfilesByBarcode(int[] hits, int nSlots, int length, char strand, int weight)
         {
             ushort[,] imgData = new ushort[nSlots, Props.props.Barcodes.Count];
             double scaler = (double)nSlots / (double)length;
-            int s = GeneFeature.GetStrandAsInt(strand);
-            foreach (int hit in hits)
+            // int s = GeneFeature.GetStrandAsInt(strand);
+			foreach (LocusHit hit in hits) // foreach (int hit in hits)
             {
-                if ((hit & 1) == s)
+                if (hit.StrandMatches(strand)) // if ((hit & 1) == s)
                 {
-                    int pos = hit >> 8;
+					int pos = hit.Pos; // int pos = hit >> 8;
                     int bin = (int)(pos * scaler);
-                    int bcodeIdx = (hit >> 1) & 127;
-                    int val = imgData[bin, bcodeIdx] + weight;
+					int bcIdx = hit.BcIdx; //int bcIdx = (hit >> 1) & 127;
+                    int val = imgData[bin, bcIdx] + weight;
                     if (val < ushort.MaxValue)
-                        imgData[bin, bcodeIdx] = (ushort)val;
+                        imgData[bin, bcIdx] = (ushort)val;
                 }
             }
             return imgData;
@@ -181,7 +182,6 @@ namespace Linnarsson.Dna
         public static double[] GetTranscriptFractionGC(GeneFeature gf, DnaSequence chrSeq, int readLength)
         {
             MakeLocusProfile(gf.Strand, gf.LocusHits, -1);
-            int trLen = gf.GetTranscriptLength();
             long nDNAGC = 0, nDNATot = 0;
             long nReadGC = 0, nReadTot = 0;
             int trPos = 0;
@@ -221,22 +221,22 @@ namespace Linnarsson.Dna
         /// <param name="gf">Gene to paint from</param>
         /// <param name="ivlStart"></param>
         /// <param name="ivlEnd"></param>
-        /// <param name="bcIdx">Either specific barcode or -1</param>
+        /// <param name="specBcIdx">Either specific barcode or -1</param>
         /// <param name="averageReadLen">To get paint stroke lengths correct</param>
         /// <returns>Hit counts at each position from ivlStart to ivlEnd, inclusive.</returns>
-        public static int[] PaintHitsInInterval(GeneFeature gf, int ivlStart, int ivlEnd, int bcIdx, int averageReadLen)
+        public static int[] PaintHitsInInterval(GeneFeature gf, int ivlStart, int ivlEnd, int specBcIdx, int averageReadLen)
         {
             int[] profile = new int[1 + ivlEnd - ivlStart];
-            int bcMask = (bcIdx >= 0) ? 127 : 0;
-            if (bcIdx == -1) bcIdx = 0;
-            int s = GeneFeature.GetStrandAsInt(gf.Strand);
+            // int bcMask = (specBcIdx >= 0) ? 127 : 0;
+            // if (specBcIdx == -1) specBcIdx = 0;
+            // int s = GeneFeature.GetStrandAsInt(gf.Strand);
             int startOffset = - averageReadLen / 2;
             int endOffset = (averageReadLen - 1) / 2;
-            foreach (int hit in gf.LocusHits)
+			foreach (LocusHit hit in gf.LocusHits) // foreach (int hit in gf.LocusHits)
             {
-                int hitBcIdx = (hit >> 1) & 127;
-                int hitMidPos = (hit >> 8) + gf.LocusStart;
-                if ((hit & 1) == s && (hitBcIdx & bcMask) == bcIdx)
+				int bcIdx = hit.BcIdx; //int bcIdx = (hit >> 1) & 127;
+				int hitMidPos = hit.Pos + gf.LocusStart; // int hitMidPos = (hit >> 8) + gf.LocusStart;
+				if (hit.StrandMatches(gf.Strand) && (specBcIdx == -1 || bcIdx == specBcIdx)) // if ((hit & 1) == s && (bcIdx & bcMask) == specBcIdx)
                 {
                     int paintStart = Math.Max(ivlStart, hitMidPos + startOffset) - ivlStart;
                     int paintEnd = Math.Min(ivlEnd, hitMidPos + endOffset) - ivlStart;
@@ -247,15 +247,16 @@ namespace Linnarsson.Dna
             return profile;
         }
 
-        private static void MakeLocusProfile(char chrStrand, int[] hits, int bcIdx)
+        private static void MakeLocusProfile(char chrStrand, LocusHit[] hits, int bcIdx)
+		// private static void MakeLocusProfile(char chrStrand, int[] hits, int bcIdx)
         {
             locusProfile.Clear();
-            int s = GeneFeature.GetStrandAsInt(chrStrand);
-            foreach (int hit in hits)
+            //int s = GeneFeature.GetStrandAsInt(chrStrand);
+			foreach (LocusHit hit in hits) // foreach (int hit in hits)
             {
-                if ((hit & 1) == s && (bcIdx == -1 || ((hit >> 1) & 127) == bcIdx))
+				if (hit.StrandMatches(chrStrand) && (bcIdx == -1 || hit.BcIdx == bcIdx)) // if ((hit & 1) == s && (bcIdx == -1 || ((hit >> 1) & 127) == bcIdx))
                 {
-                    int pos = hit >> 8;
+					int pos = hit.Pos; // int pos = hit >> 8;
                     if (locusProfile[pos] < ushort.MaxValue)
                         locusProfile[pos]++;
                 }
@@ -276,11 +277,11 @@ namespace Linnarsson.Dna
             int locusLen = gf.GetLocusLength();
             bool inChrDir = (gf.Strand == '+');
             int s = GeneFeature.GetStrandAsInt(chrStrand);
-            foreach (int hit in gf.LocusHits)
+			foreach (LocusHit hit in gf.LocusHits) // foreach (int hit in gf.LocusHits)
             {
-                if ((hit & 1) == s)
+				if (hit.StrandMatches(chrStrand)) // if ((hit & 1) == s)
                 {
-                    int pos = hit >> 8;
+					int pos = hit.Pos; // int pos = hit >> 8;
                     int bin = inChrDir ? (pos / binSize) : (locusLen - pos) / binSize;
                     histo[bin]++;
                 }
@@ -301,11 +302,11 @@ namespace Linnarsson.Dna
             List<int> hitPositions = new List<int>();
             int s = GeneFeature.GetStrandAsInt(strand);
             int lastPos = -1;
-            foreach (int hit in gf.LocusHits)
+			foreach (LocusHit hit in gf.LocusHits) //foreach (int hit in gf.LocusHits)
             {
-                if ((hit & 1) == s)
+				if (hit.Strand == s) //if (hit & 1) == s)
                 {
-                    int pos = hit >> 8;
+					int pos = hit.Pos; // int pos = hit >> 8;
                     if (pos != lastPos)
                     {
                         hitPositions.Add(pos);
@@ -317,7 +318,7 @@ namespace Linnarsson.Dna
         }
 
         /// <summary>
-        /// Make an per-barcode array of counts of hits to the transcript
+        /// Make an per-barcode (always 96!) array of counts of hits to the transcript
         /// in the region defined by trFrom - trTo.
         /// </summary>
         /// <param name="gf"></param>
@@ -331,20 +332,20 @@ namespace Linnarsson.Dna
             if (chrFrom > chrTo)
             { int temp = chrFrom; chrFrom = chrTo; chrTo = temp; }
             int[] counts = new int[96];
-            int s = gf.GetStrandAsInt();
-            foreach (int hit in gf.LocusHits)
+            //int s = gf.GetStrandAsInt();
+			foreach (LocusHit hit in gf.LocusHits) // foreach (int hit in gf.LocusHits)
             {
-                if ((hit & 1) == s)
+                if (hit.StrandMatches(gf.Strand)) // if ((hit & 1) == s)
                 {
-                    int chrHitPos = (hit >> 8) + gf.LocusStart;
+					int chrHitPos = hit.Pos + gf.LocusStart; // int chrHitPos = (hit >> 8) + gf.LocusStart;
                     if (chrHitPos >= chrFrom && chrHitPos <= chrTo)
                     {
                         for (int i = 0; i < gf.ExonCount; i++)
                         {
                             if (chrHitPos >= gf.ExonStarts[i] && chrHitPos <= gf.ExonEnds[i])
                             {
-                                int bcodeIdx = (hit >> 1) & 127;
-                                counts[bcodeIdx]++;
+								int bcIdx = hit.BcIdx; // int bcIdx = (hit >> 1) & 127;
+                                counts[bcIdx]++;
                                 break;
                             }
                         }
@@ -388,8 +389,10 @@ namespace Linnarsson.Dna
         /// <param name="offset">reference point for intervals. Has to be consistent with pos in MarkHit() calls</param>
         /// <param name="bcIdx">Specific barcodeIdx or -1 for summation over all</param>
         /// <returns>histogram of counts</returns>
-        private static int[] GetIvlSpecificCountsInBinsRelStart(int[] hits, char strand, double binSize, int readLen,
-                                                     int[] starts, int[] ends, int offset, int bcIdx)
+		private static int[] GetIvlSpecificCountsInBinsRelStart(LocusHit[] hits, char strand, double binSize, int readLen,
+		                                                        int[] starts, int[] ends, int offset, int bcIdx)
+        //private static int[] GetIvlSpecificCountsInBinsRelStart(int[] hits, char strand, double binSize, int readLen,
+        //                                             int[] starts, int[] ends, int offset, int bcIdx)
         {
             if (hits.Length == 0) return new int[0];
             int[] rightIvlsLen = new int[ends.Length];
@@ -402,8 +405,8 @@ namespace Linnarsson.Dna
             if (accuLen <= readLen) return new int[0];
             int nBins = (int)Math.Ceiling((accuLen - readLen) / binSize);
             int[] result = new int[nBins];
-            int s = (strand == '-') ? 1 : 0;
-            int strandMask = (strand != '.') ? 1 : 0;
+            // int s = (strand == '-') ? 1 : 0;
+            // int strandMask = (strand != '.') ? 1 : 0;
             int dist;
             int leftIvlsLen = 0;
             int idx = 0;
@@ -411,20 +414,22 @@ namespace Linnarsson.Dna
             {
                 int ivlStart = starts[i] - offset;
                 int ivlEnd = ends[i] - offset;
-                int from = ivlStart << 8;
-                int to = (ivlEnd << 8) | 255;
-                idx = Array.FindIndex(hits, idx, (v) => (v >= from));
+                //int from = ivlStart << 8;
+                //int to = (ivlEnd << 8) | 255;
+                idx = Array.FindIndex(hits, idx, (v) => (v.Pos >= ivlStart));
+				//idx = Array.FindIndex(hits, idx, (v) => (v >= from));
                 if (idx == -1) break;
                 for (; idx < hits.Length; idx++)
                 {
-                    int hit = hits[idx];
-                    if (hit > to) break;
-                    if ((hit & strandMask) == s)
+					LocusHit hit = hits[idx]; // int hit = hits[idx];
+                    if (hit.Pos > ivlEnd) // if (hit > to)
+						break;
+                    if (hit.StrandMatches(strand)) // if ((hit & strandMask) == s)
                     {
-                        if (bcIdx == -1 || ((hit >> 1) & 127) == bcIdx)
+						if (bcIdx == -1 || hit.BcIdx == bcIdx) // if (bcIdx == -1 || ((hit >> 1) & 127) == bcIdx)
                         {
-                            int pos = hit >> 8;
-                            if ((hit & 1) == 0) // (strand == '+')
+							int pos = hit.Pos; // int pos = hit >> 8;
+                            if (hit.Strand == LocusHit.Fw) // if ((hit & 1) == 0) // (strand == '+')
                             {
                                 dist = leftIvlsLen + (pos - ivlStart);
                             }
@@ -478,23 +483,25 @@ namespace Linnarsson.Dna
         /// <param name="ends">End+offset positions of intervals</param>
         /// <param name="offset">Offset between locus first pos and starts/ends (usually gene MatchStart)</param>
         /// <returns></returns>
-        private static int[] GetCountsPerInterval(int[] hits, char strand, int[] starts, int[] ends, int offset)
+        private static int[] GetCountsPerInterval(LocusHit[] hits, char strand, int[] starts, int[] ends, int offset)
+		// private static int[] GetCountsPerInterval(int[] hits, char strand, int[] starts, int[] ends, int offset)
         {
             int[] result = new int[starts.Length];
-            int s = (strand != '.') ? GeneFeature.GetStrandAsInt(strand) : 0;
-            int strandMask = (strand != '.') ? 1 : 0;
+            // int s = (strand != '.') ? GeneFeature.GetStrandAsInt(strand) : 0;
+            // int strandMask = (strand != '.') ? 1 : 0;
             for (int i = 0; i < starts.Length; i++)
             {
                 int count = 0;
-                int from = (starts[i] - offset) << 8;
-                int to = ((ends[i] - offset) << 8) | 255;
-                int idx = Array.FindIndex(hits, (v) => (v >= from));
+				int from = starts[i] - offset; // int from = (starts[i] - offset) << 8;
+				int to = ends[i] - offset; // int to = ((ends[i] - offset) << 8) | 255;
+				int idx = Array.FindIndex(hits, (v) => (v.Pos >= from)); // int idx = Array.FindIndex(hits, (v) => (v >= from));
                 if (idx == -1) continue;
                 for (; idx < hits.Length; idx++)
                 {
-                    int hit = hits[idx];
-                    if (hit > to) break;
-                    if ((hit & strandMask) == s)
+					LocusHit hit = hits[idx]; // int hit = hits[idx];
+					if (hit.Pos > to) // if (hit > to)
+						break;
+					if (hit.StrandMatches(strand)) // if ((hit & strandMask) == s)
                         count++;
                 }
                 result[i] = count;
@@ -549,25 +556,26 @@ namespace Linnarsson.Dna
             }
         }
 
-        private static void MakeCountsPerIntervalAndBarcode(int[] hits, char strand, int[] starts, int[] ends, int offset,
-                                                             int nBarcodes, ref int[,] result)
+        private static void MakeCountsPerIntervalAndBarcode(LocusHit[] hits, char strand, int[] starts, int[] ends, int offset, int nBarcodes, ref int[,] result)
+		// private static void MakeCountsPerIntervalAndBarcode(int[] hits, char strand, int[] starts, int[] ends, int offset, int nBarcodes, ref int[,] result)
         {
             Array.Clear(result, 0, result.Length);
-            int s = (strand != '.') ? GeneFeature.GetStrandAsInt(strand) : 0;
-            int strandMask = (strand != '.') ? 1 : 0;
+            // int s = (strand != '.') ? GeneFeature.GetStrandAsInt(strand) : 0;
+            // int strandMask = (strand != '.') ? 1 : 0;
             for (int ivlIdx = 0; ivlIdx < starts.Length; ivlIdx++)
             {
-                int from = (starts[ivlIdx] - offset) << 8;
-                int to = ((ends[ivlIdx] - offset) << 8) | 255;
-                int idx = Array.FindIndex(hits, (v) => (v >= from));
+				int from = starts[ivlIdx] - offset; // int from = (starts[ivlIdx] - offset) << 8;
+				int to = ends[ivlIdx] - offset; // int to = ((ends[ivlIdx] - offset) << 8) | 255;
+                int idx = Array.FindIndex(hits, (v) => (v.Pos >= from));
                 if (idx == -1) continue;
                 for (; idx < hits.Length; idx++)
                 {
-                    int hit = hits[idx];
-                    if (hit > to) break;
-                    if ((hit & strandMask) == s)
+					LocusHit hit = hits[idx]; // int hit = hits[idx];
+					if (hit.Pos > to) // if (hit > to)
+						break;
+					if (hit.StrandMatches(strand)) // if ((hit & strandMask) == s)
                     {
-                        int bcIdx = (hit >> 1) & 127;
+						int bcIdx = hit.BcIdx; // int bcIdx = (hit >> 1) & 127;
                         result[bcIdx, ivlIdx]++;
                     }
                 }
@@ -582,8 +590,8 @@ namespace Linnarsson.Dna
         /// <param name="dir">Direction to search in, either +1 or -1</param>
         /// <param name="searchEndLocusPos">Stop position of search</param>
         /// <returns>The position on direction side of peak, or -1 if none found.</returns>
-        private static int FindHotspotStart(int[] hits, char strand, int searchStartLocusPos, int dir, 
-                                           int searchEndLocusPos, int optimalMinCount)
+        private static int FindHotspotStart(LocusHit[] hits, char strand, int searchStartLocusPos, int dir, int searchEndLocusPos, int optimalMinCount)
+		// private static int FindHotspotStart(int[] hits, char strand, int searchStartLocusPos, int dir, int searchEndLocusPos, int optimalMinCount)
         {
             int minPeakCount = 20;
             int maxClearCount = 1;

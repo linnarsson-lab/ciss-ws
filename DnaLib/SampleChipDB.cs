@@ -399,7 +399,7 @@ namespace Linnarsson.Dna
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
                 conn.Open();
-                string sql = "SELECT c.id, c.{0}aaachipid, c.{0}aaasampleid, c.chipwell, diameter, area, red, green, blue, c.valid, c.subwell, c.subbarcodeidx FROM {0}aaacell c {1}";
+                string sql = "SELECT c.id, c.{0}aaachipid, c.{0}aaasampleid, c.chipwell, diameter, area, red, green, blue, c.valid, c.subwell FROM {0}aaacell c {1}";
                 sql = string.Format(sql, Props.props.DBPrefix, whereClause);
                 MySqlCommand cmd = new MySqlCommand(sql, conn);
                 MySqlDataReader rdr = cmd.ExecuteReader();
@@ -407,9 +407,8 @@ namespace Linnarsson.Dna
                 {
                     bool valid = (rdr.GetInt32(9) == 1);
                     string subwell = rdr.IsDBNull(10) ? "" : rdr.GetString(10);
-                    int subbarcodeidx = rdr.IsDBNull(11) ? 0 : rdr.GetInt32(11);
                     Cell cell = new Cell(rdr.GetInt32(0), rdr.GetInt32(1), rdr.GetInt32(2), rdr.GetString(3), rdr.GetString(3),
-                                         rdr.GetDouble(4), rdr.GetDouble(5), rdr.GetInt32(6), rdr.GetInt32(7), rdr.GetInt32(8), valid, subwell, subbarcodeidx);
+                                         rdr.GetDouble(4), rdr.GetDouble(5), rdr.GetInt32(6), rdr.GetInt32(7), rdr.GetInt32(8), valid, subwell);
                     cells.Add(cell);
                 }
             }
@@ -487,7 +486,7 @@ namespace Linnarsson.Dna
             }
         }
 
-        public void InsertCellImage(CellImage ci)
+        public void InsertOrUpdateCellImage(CellImage ci)
         {
             int detectionValue = (ci.Detection == Detection.Yes) ? 1 : (ci.Detection == Detection.No) ? -1 : 0;
             string sql = "INSERT INTO {0}aaacellimage ({0}aaacellid, reporter, marker, detection, relativepath) " +
@@ -496,62 +495,58 @@ namespace Linnarsson.Dna
             IssueNonQuery(sql);
         }
 
-        public void DeleteCell(Cell c)
-        {
-            string oldIdSql = string.Format("SELECT id FROM {0}aaacell WHERE {0}aaachipid='{1}' AND chipwell='{2}'",
-                                             Props.props.DBPrefix, c.jos_aaachipid, c.chipwell);
-            MySqlConnection conn = new MySqlConnection(connectionString);
-            conn.Open();
-            MySqlCommand cmd = new MySqlCommand(oldIdSql, conn);
-            MySqlDataReader rdr = cmd.ExecuteReader();
-            if (rdr.Read())
-            {
-                int cellId = int.Parse(rdr["id"].ToString());
-                rdr.Close();
-                string delSql = string.Format("DELETE FROM {0}aaacellimage WHERE {0}aaacellid='{1}'", Props.props.DBPrefix, cellId);
-                cmd = new MySqlCommand(delSql, conn);
-                cmd.ExecuteNonQuery();
-                delSql = string.Format("DELETE FROM {0}aaacellannotation WHERE {0}aaacellid='{1}'", Props.props.DBPrefix, cellId);
-                cmd = new MySqlCommand(delSql, conn);
-                cmd.ExecuteNonQuery();
-                delSql = string.Format("DELETE FROM {0}aaacell WHERE id='{1}'", Props.props.DBPrefix, cellId);
-                cmd = new MySqlCommand(delSql, conn);
-                cmd.ExecuteNonQuery();
-            }
-            conn.Close();
-        }
+		public void RemoveCell000(int aaachipid)
+		{
+			using (MySqlConnection conn = new MySqlConnection(connectionString)) {
+				conn.Open ();
+				string delSql = string.Format ("DELETE FROM {0}aaacell WHERE {0}aaachipid='{1}' AND chipwell='000'", Props.props.DBPrefix, aaachipid);
+				MySqlCommand cmd = new MySqlCommand (delSql, conn);
+				cmd.ExecuteNonQuery ();
+			}
+		}
 
         public void InsertOrUpdateCell(Cell c)
-        {
-            int validValue = c.valid ? 1 : 0;
-            string subwell = (c.subwell == "") ? "NULL" : "'" + c.subwell + "'";
-            int cellId = -1;
-            DeleteCell(c);
-            using (MySqlConnection conn = new MySqlConnection(connectionString))
-            {
-                conn.Open();
-                string insSql = "INSERT INTO {0}aaacell ({0}aaachipid, chipwell, diameter, area, red, green, blue, valid, subwell, subbarcodeidx) " +
-                                "VALUES ('{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}',{9},'{10}') ";
-                insSql = string.Format(insSql, Props.props.DBPrefix, c.jos_aaachipid, c.chipwell, c.diameter, c.area,
-                                    c.red, c.green, c.blue, validValue, subwell, c.subbarcodeidx);
-                MySqlCommand cmd = new MySqlCommand(insSql, conn);
-                cmd.ExecuteNonQuery();
-                string lastIdSql = string.Format("SELECT id FROM {0}aaacell WHERE {0}aaachipid='{1}' AND chipwell='{2}'",
-                                                 Props.props.DBPrefix, c.jos_aaachipid, c.chipwell);
-                cmd = new MySqlCommand(lastIdSql, conn);
-                MySqlDataReader rdr = cmd.ExecuteReader();
-                if (rdr.Read())
-                    cellId = rdr.GetInt32(0);
-            }
-            if (cellId == -1) return;
+		{
+			int validValue = c.valid ? 1 : 0;
+			string subwell = (c.subwell == "") ? "NULL" : "'" + c.subwell + "'";
+			using (MySqlConnection conn = new MySqlConnection(connectionString)) {
+				conn.Open ();
+				string getIdQ = string.Format("SELECT id FROM {0}aaacell WHERE {0}aaachipid='{1}' AND chipwell='{2}'",
+				                              Props.props.DBPrefix, c.jos_aaachipid, c.chipwell);
+				MySqlCommand cmd = new MySqlCommand (getIdQ, conn);
+				MySqlDataReader r = cmd.ExecuteReader ();
+				bool doUpdate = r.Read ();
+				string q;
+				if (doUpdate) {
+					c.id = r.GetInt32("id");
+					q = "UPDATE {0}aaacell SET {0}aaachipid='{1}', chipwell='{2}', diameter='{3}', area='{4}'," +
+						"red='{5}', green='{6}', blue='{7}', valid='{8}', subwell={9} WHERE id='{10}' ";
+				} else {
+					q = "INSERT INTO {0}aaacell ({0}aaachipid, chipwell, diameter, area, red, green, blue, valid, subwell) " +
+						"VALUES ('{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}',{9}) ";
+				}
+				q = string.Format (q, Props.props.DBPrefix, c.jos_aaachipid, c.chipwell, c.diameter, c.area,
+				                   c.red, c.green, c.blue, validValue, subwell, c.id);
+				r.Close ();
+				cmd = new MySqlCommand (q, conn);
+				cmd.ExecuteNonQuery ();
+				if (!doUpdate) {
+					MySqlCommand cmd2 = new MySqlCommand (getIdQ, conn);
+					MySqlDataReader r2 = cmd2.ExecuteReader ();
+					if (! r2.Read ())
+						Console.WriteLine ("No result from query: " + getIdQ);
+					c.id = r2.GetInt32("id");
+				}
+			}
+			if (! c.id.HasValue || c.id == -1) return;
             foreach (CellImage ci in c.cellImages)
             {
-                ci.jos_aaacellid = cellId;
-                InsertCellImage(ci);
+                ci.jos_aaacellid = c.id;
+                InsertOrUpdateCellImage(ci);
             }
             foreach (CellAnnotation ca in c.cellAnnotations)
             {
-                ca.jos_aaacellid = cellId;
+                ca.jos_aaacellid = c.id.Value;
                 InsertOrUpdateCellAnnotation(ca);
             }
         }

@@ -59,7 +59,11 @@ namespace Linnarsson.Dna
             return fractionOfSpikeMols[spikeName] * totalAddedSpikeMols;
         }
 
-        public void CalcEfficiencyFromSpikes(IEnumerable<GeneFeature> geneFeatures, int bcIdx)
+		public void ResetEfficiency()
+		{
+			currentBcLabelingEfficiency = 1.0;
+		}
+        public double CalcEfficiencyFromSpikes(IEnumerable<GeneFeature> geneFeatures, int bcIdx)
         {
             double nMols = 0.0;
             foreach (GeneFeature gf in geneFeatures)
@@ -73,6 +77,7 @@ namespace Linnarsson.Dna
             }
             currentBcLabelingEfficiency = nMols / totalAddedSpikeMols;
             LabelingEfficiencyByBc[bcIdx] = currentBcLabelingEfficiency;
+			return currentBcLabelingEfficiency;
         }
 
         public void FinishBarcode(int bcIdx)
@@ -87,11 +92,11 @@ namespace Linnarsson.Dna
         /// </summary>
         /// <param name="observedMolCount">Number of observed UMIs (after singleton/mutation filter)</param>
         /// <returns></returns>
-        public int EstimateTrueCount(int observedMolCount)
+        public double EstimateTrueCount(int observedMolCount)
         {
             if (observedMolCount > currentMaxOccupiedUMIs)
                 currentMaxOccupiedUMIs = observedMolCount;
-            return (int)Math.Round(Math.Log(1.0 - observedMolCount / UMICount) / Math.Log(1.0 - currentBcLabelingEfficiency / UMICount));
+            return Math.Round(Math.Log(1.0 - observedMolCount / UMICount) / Math.Log(1.0 - currentBcLabelingEfficiency / UMICount));
         }
 
         /// <summary>

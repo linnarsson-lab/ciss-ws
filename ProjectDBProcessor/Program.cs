@@ -270,7 +270,7 @@ namespace ProjectDBProcessor
                 logWriter.Flush();
                 pd.status = ProjectDescription.STATUS_ALIGNING;
                 db.UpdateAnalysisStatus(pd.dbanalysisid, pd.status);
-                mapper.CreateAlignments(pd.genome, pd.laneInfos, null);
+                mapper.CreateAlignments(pd.genome, pd.laneInfos, null, false);
                 List<string> mapFiles = LaneInfo.RetrieveAllMapFilePaths(pd.laneInfos);
                 logWriter.WriteLine("{0} Annotating {1} alignment files...", DateTime.Now, mapFiles.Count);
                 logWriter.WriteLine("{0} setting: TrVariants={1} Gene5'Extensions={4} #SpikeMols={5} DirectionalReads={2} RPKM={3}",

@@ -115,16 +115,16 @@ namespace Linnarsson.Strt
                             r = CopyBclLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
                             if (r == null)
                                 r = CopyQseqLaneRead(runNo, readsFolder, runFolder, runName, lane, read);
-                            if (r == null)
+                            if (r != null)
+							{
+								readFileResults.Add(r);
+								if (projectDB != null)
+									projectDB.ReportReadFileResult(runId, read, r);
+							}
+							else if (lane <= 2) // Error if less than two lanes (RapidRun)
                             {
                                 logWriter.WriteLine(DateTime.Now.ToString() + " ERROR: Copying Run{0}_L{1}_{2}: No bcl/qseq files found", runNo, lane, read);
                                 status = ReadCopierStatus.SOMEREADFAILED;
-                            }
-                            else
-                            {
-                                readFileResults.Add(r);
-                                if (projectDB != null)
-                                    projectDB.ReportReadFileResult(runId, read, r);
                             }
                         }
                     }

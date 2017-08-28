@@ -39,6 +39,8 @@ namespace Linnarsson.Dna
             bcFolder = Path.Combine(bcFolder, "BaseCalls");
 
             string laneFolder = Path.Combine(bcFolder, "L00" + lane.ToString());
+			if (!Directory.Exists (laneFolder))
+				yield break;
 
             var config = XDocument.Load(Path.Combine(bcFolder, "config.xml"));
 

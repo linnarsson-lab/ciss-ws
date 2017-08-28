@@ -29,7 +29,7 @@ namespace ESCAF_BclToFq
         public string FinishedRunFoldersFile = "processed_run_folder_names.txt"; // List of ready processed and transferred run folders
         public int scanInterval = 5; // Minutes between scans for new data
         public string RunsFolder = "/home/data/runs"; // Where Illumina run folders (or tarballs) are deposited
-        public string RunFolderMatchPattern = "^([0-9][0-9][0-9][0-9][0-9][0-9])_.+_([0-9]+)_[AB](.+XX)$";
+        public string RunFolderMatchPattern = "^([0-9][0-9][0-9][0-9][0-9][0-9])_.+_([0-9]+)_[AB](.+)$";
         // Pattern that HiSeq run folders in RunsFolder should match. Groups: (date) (runno) (runid)
         public int minLastAccessMinutes = 10; // Min time in minutes since last access of a run folder before starting to process
         public string ReadsFolder = "/home/data/reads"; // Where .fq files for each lane are put
@@ -139,11 +139,16 @@ namespace ESCAF_BclToFq
                     foreach (string runDir in runDirs)
                     {
                         string runDirName = Path.GetFileName(runDir);
-                        if (copiedRunDirs.Contains(runDir) || !Regex.IsMatch(runDirName, ESCAFProps.props.RunFolderMatchPattern))
+						bool m = Regex.IsMatch(runDirName, ESCAFProps.props.RunFolderMatchPattern);
+						if (! m )
+							Console.WriteLine("No match for {0}", runDirName);
+                        if (copiedRunDirs.Contains(runDir) || ! m)
                             continue;
                         TimeSpan ts = DateTime.Now - Directory.GetLastAccessTime(runDir);
-                        if (ts < new TimeSpan(0, ESCAFProps.props.minLastAccessMinutes, 0))
+                        if (ts < new TimeSpan(0, ESCAFProps.props.minLastAccessMinutes, 0)) {
+							Console.WriteLine("Too recent access of {0}", runDirName);
                             continue;
+						}
                         string readyFilePath = Path.Combine(runDir, "Basecalling_Netcopy_complete.txt");
 						string rtaPath = Path.Combine(runDir, "RTAComplete.txt");
 						string tenXFilePath = Path.Combine(runDir, "Basecalling_Netcopy_complete_Read4.txt");

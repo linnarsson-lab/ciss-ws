@@ -514,8 +514,12 @@ namespace Linnarsson.Dna
                 if (wellIdx == -1)
                     throw new SampleLayoutFileException("SampleId " + sampleId + " is not in barcode set " + this.Name + " in file " + plateLayout.Filename);
                 m_SpeciesByWell[wellIdx] = pair.Value;
-                foreach (string annotation in plateLayout.GetAnnotations())
-                    AnnotationsByWell[annotation][wellIdx] = plateLayout.GetSampleAnnotation(annotation, sampleId);
+				foreach (string annotation in plateLayout.GetAnnotations()) {
+					string annot = plateLayout.GetSampleAnnotation(annotation, sampleId);
+					if (annot == "")
+						annot = "-";
+					AnnotationsByWell[annotation][wellIdx] = annot;
+				}
             }
             return plateLayout.BuildIds;
         }

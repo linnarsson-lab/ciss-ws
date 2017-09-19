@@ -67,9 +67,9 @@ namespace Linnarsson.Strt
         public static IEnumerable<FastQRecSet> RecSetStream(Barcodes barcodes, string read1Path, string read2FilterPrefix, bool qualBaseFixed)
         {
             FastQRecSet recSet = new FastQRecSet(barcodes);
-            bool useRead1 = barcodes.NeedReed(1);
-            bool useRead2 = (read2FilterPrefix.Length > 0 || barcodes.NeedReed(2));
-            bool useRead3 = barcodes.NeedReed(3);
+            bool useRead1 = barcodes.NeedRead(1);
+            bool useRead2 = (read2FilterPrefix.Length > 0 || barcodes.NeedRead(2));
+            bool useRead3 = barcodes.NeedRead(3);
             IEnumerator<FastQRecord> read1Stream = useRead1? MkStream(read1Path, ref qualBaseFixed, 1) : null;
             IEnumerator<FastQRecord> read2Stream = useRead2 ? MkStream(read1Path, ref qualBaseFixed, 2) : null;
             IEnumerator<FastQRecord> read3Stream = useRead3 ? MkStream(read1Path, ref qualBaseFixed, 3) : null;

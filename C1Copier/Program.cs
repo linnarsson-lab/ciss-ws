@@ -184,7 +184,7 @@ namespace Linnarsson.C1
                 return "NOTICE: Chip " + chipId + " has not yet been registered in database.";
             foreach (Cell cell in cells)
             {
-                cell.jos_aaachipid = jos_aaachipid;
+                cell.aaachipid = jos_aaachipid;
                 pdb.InsertOrUpdateCell(cell);
             }
             return "OK: Loaded.";

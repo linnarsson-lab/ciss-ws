@@ -165,10 +165,10 @@ namespace Linnarsson.C1
         {
             try
             {
+				string chipId = Path.GetFileName(chipDir);
                 List<Cell> celldata = ReadCellDataFromWGDir(chipDir);
                 if (celldata == null)
                     return "WARNING: Skipped " + chipDir + " - no celldata.";
-                string chipId = Path.GetFileName(chipDir);
                 return InsertCells(celldata, chipId);
             }
             catch (Exception e)
@@ -180,7 +180,7 @@ namespace Linnarsson.C1
         private static List<Cell> ReadCellDataFromWGDir(string chipDir)
         {
             string primerFile = GetPrimerFilePath(chipDir);
-            if (!File.Exists(primerFile))
+            if (primerFile == null)
                 return null;
             List<Cell> cells = new List<Cell>();
             using (StreamReader r = new StreamReader(primerFile))
@@ -226,26 +226,37 @@ namespace Linnarsson.C1
             int aaachipid = pdb.GetIdOfChip(chipId);
             if (aaachipid == -1)
                 return "NOTICE: Chip " + chipId + " has not yet been registered in database.";
+			Dictionary<string, int> sampleIdByWell = pdb.GetSampleIdByWafergenWell(chipId);
 			if (cells.Count > 0)
 				pdb.RemoveCell000(aaachipid);
             foreach (Cell cell in cells)
             {
-                cell.jos_aaachipid = aaachipid;
+                cell.aaachipid = aaachipid;
+				string mainWell = cell.chipwell.Substring (0, 3);
+				int sampleId = (sampleIdByWell.ContainsKey (mainWell))? sampleIdByWell [mainWell] : 0;
+				cell.aaasampleid = sampleId;
                 pdb.InsertOrUpdateCell(cell);
             }
             return "OK: Loaded.";
         }
 
         /// <summary>
-        /// true if the "capture*txt" in last "BF*" folder, "wells_to_exclude.txt", or
-        /// any of the "wells_positive_COLOR.txt" files have been updated
+        /// glob down to the '*DispensedPrimers.txt' file
         /// </summary>
         /// <param name="chipDir"></param>
-        /// <returns></returns>
+        /// <returns>file path or null</returns>
         private static string GetPrimerFilePath(string chipDir)
         {
-            string chipId = Path.GetFileName(chipDir).Replace("WG", "");
-            return Path.Combine(chipDir, C1Props.props.WGPrimerFilePathPattern.Replace("*", chipId));
+            //string chipId = Path.GetFileName(chipDir).Replace("WG", "");
+            //return Path.Combine(chipDir, C1Props.props.WGPrimerFilePathPattern.Replace("*", chipId));
+			string fullPath = chipDir;
+			foreach (string pathPart in C1Props.props.WGPrimerFilePathPattern.Split('/')) {
+				string[] mPaths = Directory.GetFileSystemEntries(fullPath, pathPart);
+				if (mPaths.Length == 0)
+					return null;
+				fullPath = mPaths[0];
+			}
+			return fullPath;
         }
 
         public static bool HasChanged(string chipDir)

@@ -491,7 +491,7 @@ namespace Linnarsson.Dna
             int detectionValue = (ci.Detection == Detection.Yes) ? 1 : (ci.Detection == Detection.No) ? -1 : 0;
             string sql = "INSERT INTO {0}aaacellimage ({0}aaacellid, reporter, marker, detection, relativepath) " +
                                "VALUES ({1},'{2}','{3}','{4}','{5}')";
-            sql = string.Format(sql, Props.props.DBPrefix, ci.jos_aaacellid, ci.Reporter, ci.Marker, detectionValue, ci.RelativePath);
+            sql = string.Format(sql, Props.props.DBPrefix, ci.aaacellid, ci.Reporter, ci.Marker, detectionValue, ci.RelativePath);
             IssueNonQuery(sql);
         }
 
@@ -505,6 +505,29 @@ namespace Linnarsson.Dna
 			}
 		}
 
+		public Dictionary<string, int> GetSampleIdByWafergenWell(string chipId)
+		{
+			Dictionary<string, int> sampleIdByWell = new Dictionary<string, int>();
+			int aaachipid = GetIdOfChip(chipId);
+			if (aaachipid > -1) {
+				using (MySqlConnection conn = new MySqlConnection(connectionString)) {
+					conn.Open ();
+					string sql = string.Format ("SELECT chipwell, {0}aaasampleid FROM {0}aaacell WHERE {0}aaachipid='{1}' AND chipwell LIKE '%-W01'",
+					                            Props.props.DBPrefix, aaachipid);
+					MySqlCommand cmd = new MySqlCommand(sql, conn);
+					MySqlDataReader rdr = cmd.ExecuteReader();
+					while (rdr.Read()) {
+						string well = rdr.GetString (0).Substring (0, 3);
+						if (!rdr.IsDBNull(1))
+							sampleIdByWell [well] = rdr.GetInt32 (1);
+					}
+					rdr.Close();
+					conn.Close();
+				}
+			}
+			return sampleIdByWell;
+		}
+
         public void InsertOrUpdateCell(Cell c)
 		{
 			int validValue = c.valid ? 1 : 0;
@@ -512,7 +535,7 @@ namespace Linnarsson.Dna
 			using (MySqlConnection conn = new MySqlConnection(connectionString)) {
 				conn.Open ();
 				string getIdQ = string.Format("SELECT id FROM {0}aaacell WHERE {0}aaachipid='{1}' AND chipwell='{2}'",
-				                              Props.props.DBPrefix, c.jos_aaachipid, c.chipwell);
+				                              Props.props.DBPrefix, c.aaachipid, c.chipwell);
 				MySqlCommand cmd = new MySqlCommand (getIdQ, conn);
 				MySqlDataReader r = cmd.ExecuteReader ();
 				bool doUpdate = r.Read ();
@@ -520,13 +543,13 @@ namespace Linnarsson.Dna
 				if (doUpdate) {
 					c.id = r.GetInt32("id");
 					q = "UPDATE {0}aaacell SET {0}aaachipid='{1}', chipwell='{2}', diameter='{3}', area='{4}'," +
-						"red='{5}', green='{6}', blue='{7}', valid='{8}', subwell={9} WHERE id='{10}' ";
+						"red='{5}', green='{6}', blue='{7}', valid='{8}', subwell={9}, {0}aaasampleid={11} WHERE id='{10}' ";
 				} else {
-					q = "INSERT INTO {0}aaacell ({0}aaachipid, chipwell, diameter, area, red, green, blue, valid, subwell) " +
-						"VALUES ('{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}',{9}) ";
+					q = "INSERT INTO {0}aaacell ({0}aaachipid, chipwell, diameter, area, red, green, blue, valid, subwell, {0}aaasampleid) " +
+						"VALUES ('{1}','{2}','{3}','{4}','{5}','{6}','{7}','{8}',{9},{11}) ";
 				}
-				q = string.Format (q, Props.props.DBPrefix, c.jos_aaachipid, c.chipwell, c.diameter, c.area,
-				                   c.red, c.green, c.blue, validValue, subwell, c.id);
+				q = string.Format (q, Props.props.DBPrefix, c.aaachipid, c.chipwell, c.diameter, c.area,
+				                   c.red, c.green, c.blue, validValue, subwell, c.id, c.aaasampleid);
 				r.Close ();
 				cmd = new MySqlCommand (q, conn);
 				cmd.ExecuteNonQuery ();
@@ -541,12 +564,12 @@ namespace Linnarsson.Dna
 			if (! c.id.HasValue || c.id == -1) return;
             foreach (CellImage ci in c.cellImages)
             {
-                ci.jos_aaacellid = c.id;
+                ci.aaacellid = c.id;
                 InsertOrUpdateCellImage(ci);
             }
             foreach (CellAnnotation ca in c.cellAnnotations)
             {
-                ca.jos_aaacellid = c.id.Value;
+                ca.aaacellid = c.id.Value;
                 InsertOrUpdateCellAnnotation(ca);
             }
         }
@@ -555,7 +578,7 @@ namespace Linnarsson.Dna
         {
             string sql = "INSERT INTO {0}aaacellannotation ({0}aaacellid, name, value) VALUES ('{1}','{2}','{3}') " +
                          "ON DUPLICATE KEY UPDATE value='{3}';";
-            sql = string.Format(sql, Props.props.DBPrefix, ca.jos_aaacellid, ca.Name, ca.Value);
+            sql = string.Format(sql, Props.props.DBPrefix, ca.aaacellid, ca.Name, ca.Value);
             IssueNonQuery(sql);
         }
 
@@ -797,14 +820,14 @@ namespace Linnarsson.Dna
                 string sqlPat = "REPLACE INTO {0}aaa" + table + "blob ({0}aaacellid, {0}aaatranscriptomeid, aligner, data) VALUES ('{1}',{2},'{3}', ?BLOBDATA)";
                 foreach (ExprBlob exprBlob in exprBlobIterator)
                 {
-                    string sql = string.Format(sqlPat, Props.props.DBPrefix, exprBlob.jos_aaacellid, exprBlob.TranscriptomeID, aligner);
+                    string sql = string.Format(sqlPat, Props.props.DBPrefix, exprBlob.aaacellid, exprBlob.TranscriptomeID, aligner);
                     MySqlCommand cmd = new MySqlCommand(sql, conn);
                     cmd.CommandText = sql;
                     cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
                     cmd.ExecuteNonQuery();
                     n += 1;
-                    maxId = Math.Max(int.Parse(exprBlob.jos_aaacellid), maxId);
-                    minId = Math.Min(int.Parse(exprBlob.jos_aaacellid), minId);
+                    maxId = Math.Max(int.Parse(exprBlob.aaacellid), maxId);
+                    minId = Math.Min(int.Parse(exprBlob.aaacellid), minId);
                 }
             }
             return n;

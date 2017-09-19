@@ -302,14 +302,14 @@ namespace Linnarsson.C1
                 string sqlPat = "REPLACE INTO " + table + "Blob (CellID, TranscriptomeID, Aligner, Data) VALUES ('{0}',{1},'{2}', ?BLOBDATA)";
                 foreach (ExprBlob exprBlob in exprBlobIterator)
                 {
-                    string sql = string.Format(sqlPat, exprBlob.jos_aaacellid, exprBlob.TranscriptomeID, aligner);
+                    string sql = string.Format(sqlPat, exprBlob.aaacellid, exprBlob.TranscriptomeID, aligner);
                     MySqlCommand cmd = new MySqlCommand(sql, conn);
                     cmd.CommandText = sql;
                     cmd.Parameters.AddWithValue("?BLOBDATA", exprBlob.Blob);
                     cmd.ExecuteNonQuery();
                     n += 1;
-                    maxId = Math.Max(int.Parse(exprBlob.jos_aaacellid), maxId);
-                    minId = Math.Min(int.Parse(exprBlob.jos_aaacellid), minId);
+                    maxId = Math.Max(int.Parse(exprBlob.aaacellid), maxId);
+                    minId = Math.Min(int.Parse(exprBlob.aaacellid), minId);
                 }
             }
             return n;

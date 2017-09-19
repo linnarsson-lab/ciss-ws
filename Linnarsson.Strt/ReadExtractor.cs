@@ -112,11 +112,9 @@ namespace Linnarsson.Strt
         public int ExtractBcIdx(FastQRecSet recSet, out int bcIdx)
         {
             bcIdx = recSet.BarcodeIdx;
-            if (bcIdx >= 0)
-                return ReadStatus.VALID;
-            if (otherBcSeqs.Contains(recSet.BarcodeSeq))
-                return ReadStatus.MIXIN_SAMPLE_BC;
-            return ReadStatus.UNKNOWN_BC;
+			if (bcIdx == -1)
+				return (otherBcSeqs.Contains(recSet.BarcodeSeq) ? ReadStatus.MIXIN_SAMPLE_BC : ReadStatus.UNKNOWN_BC);
+			return (barcodes.IsUnused(bcIdx) ? ReadStatus.MIXIN_SAMPLE_BC : ReadStatus.VALID);
         }
 
         private int ExtractUMIChars(FastQRecord umiRead)

@@ -44,13 +44,21 @@ namespace Linnarsson.Dna
         public string plateRead2FilePath { get; private set; }
         public string plateRead3FilePath { get; private set; }
         public string summaryFilePath { get; private set; }
-        public string[] extractedFilePaths { get; private set; }
         public string laneExtractionFolder { get; private set; }
 
         public string mapFolderName { get; private set; } // E.g. "hg19_UCSC_141215" or "STAR_mm10_VEGA_150804"
         public string mappedFileFolder { get { return Path.Combine(Path.Combine(extractionFolder, mapFolderName), Path.GetFileName(laneExtractionFolder)); } }
+
+		public int[] bcIndexes { get; private set; }
+		public string[] extractedFilePaths { get; private set; }
         public string[] mappedFilePaths { get; set; }     // Reads aligning to main or splice index (i.e. 2 files per barcode)
         public string[] unmappedFilePaths { get; set; }   // Reads not aligning to main nor splice index
+
+		public IEnumerable<KeyValuePair<int, string>> IterExtractionFilePathsByBcIdx()
+		{
+			for (int i = 0; i < bcIndexes.Length; i++)
+				yield return new KeyValuePair<int, string>(bcIndexes[i], extractedFilePaths[i]);
+		}
 
         public string CreateMappedFileFolder(string mapFolderName)
         {
@@ -134,20 +142,25 @@ namespace Linnarsson.Dna
             summaryFilePath = GetSummaryPath(laneExtractionFolder);
         }
 
-        private void SetupExtractedFilePaths(Barcodes barcodes)
-        {
-            extractedFilePaths = new string[Math.Max(1, barcodes.Count)];
-            for (int bcIdx = 0; bcIdx < extractedFilePaths.Length; bcIdx++)
-            {
-                string extractedFileName = MakeExtractedFileName(barcodes, bcIdx);
-                extractedFilePaths[bcIdx] = Path.Combine(laneExtractionFolder, extractedFileName);
-            }
-        }
+		private void SetupExtractedFilePaths(Barcodes barcodes)
+		{
+			List<int> bcIndexes = new List<int>();
+			List<string> paths = new List<string>();
+			for (int bcIdx = 0; bcIdx < Math.Max(1, barcodes.Count); bcIdx++)
+			{
+				if (barcodes.IsUnused(bcIdx))
+					continue;
+				string extractedFileName = MakeExtractedFileName(barcodes, bcIdx);
+				bcIndexes.Add(bcIdx);
+				paths.Add(Path.Combine(laneExtractionFolder, extractedFileName));
+			}
+			this.bcIndexes = bcIndexes.ToArray();
+			this.extractedFilePaths = paths.ToArray();
+		}
 
-        public static string MakeExtractedFileName(Barcodes barcodes, int bcIdx)
+		public static string MakeExtractedFileName(Barcodes barcodes, int bcIdx)
         {
-            string extractedFileName = string.Format("{0}_{1}_{2}.fq", bcIdx, barcodes.WellIds[bcIdx], barcodes.Seqs[bcIdx]);
-            return extractedFileName;
+            return string.Format("{0}_{1}_{2}.fq", bcIdx, barcodes.WellIds[bcIdx], barcodes.Seqs[bcIdx]);
         }
 
         public bool ExtractionNeeded()

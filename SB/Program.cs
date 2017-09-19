@@ -97,6 +97,7 @@ namespace CmdSilverBullet
                             break;
 
                         case "x":
+							Props.props.InsertCellDBData = false;
                             options = new QXMAOptions(args);
                             props.BarcodesName = options.barcodesName;
                             props.ExtractionReadLimitType = options.extractionReadLimitType;

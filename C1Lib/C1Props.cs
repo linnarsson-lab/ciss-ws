@@ -34,7 +34,7 @@ namespace Linnarsson.C1
         public bool ConvertChipIds = true;
         public string WGRunsFolder = "/data2/WG9600-runs";
         public string WGIdxFilePath = "/data2/WG9600-runs/idx2_by_source_well.txt";
-        public string WGPrimerFilePathPattern = "FITC/*_DispensedPrimers.txt";
+        public string WGPrimerFilePathPattern = "*FITC/*DispensedPrimers.txt";
 
         private static C1Props Read()
         {

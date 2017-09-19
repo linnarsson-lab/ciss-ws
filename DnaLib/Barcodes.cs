@@ -26,7 +26,7 @@ namespace Linnarsson.Dna
                 m_Seqs = value;
                 if (m_BarcodeLen == 0)
                     m_BarcodeLen = m_Seqs[0].Length;
-                MakeBcSeqToBcIdxMap();
+                MakeUsedBcSeqToBcIdxMap();
             }
         }
         public int Count { get { return m_Seqs.Length; } }
@@ -45,7 +45,7 @@ namespace Linnarsson.Dna
         public bool KeepRead2 { get { return m_KeepRead2; } protected set { m_KeepRead2 = value; } }
         protected bool m_KeepRead3 = false;
         public bool KeepRead3 { get { return m_KeepRead3; } protected set { m_KeepRead3 = value; } }
-        public bool NeedReed(int readno)
+        public bool NeedRead(int readno)
         {
             if (readno == 1) return (InsertRead == 1 || BarcodeRead == 1 || Barcode2Read == 1 || UMIRead == 1 || KeepRead1);
             if (readno == 2) return (InsertRead == 2 || BarcodeRead == 2 || Barcode2Read == 2 || UMIRead == 2 || KeepRead2);
@@ -139,7 +139,7 @@ namespace Linnarsson.Dna
         /// <summary>
         /// Maps all barcodes to the numerical index. If single mutations allowed, these keys are also included.
         /// </summary>
-        protected Dictionary<string, int> bcSeqToBcIdxMap;
+        protected Dictionary<string, int> usedBcSeqToBcIdxMap;
 
         protected string m_TSSeq = "GGG";
         public string TSSeq { get { return m_TSSeq; } }
@@ -158,14 +158,15 @@ namespace Linnarsson.Dna
             Seqs = seqs;
         }
 
-        protected virtual void MakeBcSeqToBcIdxMap()
+        protected virtual void MakeUsedBcSeqToBcIdxMap()
         {
-            bcSeqToBcIdxMap = new Dictionary<string, int>();
+            usedBcSeqToBcIdxMap = new Dictionary<string, int>();
             for (int bcIdx = 0; bcIdx < Count; bcIdx++)
             {
-                if (bcSeqToBcIdxMap.ContainsKey(m_Seqs[bcIdx]))
+                if (usedBcSeqToBcIdxMap.ContainsKey(m_Seqs[bcIdx]))
                     Console.WriteLine("ERROR: Identical barcodes (" + m_Seqs[bcIdx] + ") found in barcode set " + m_Name + "!");
-                bcSeqToBcIdxMap[m_Seqs[bcIdx]] = bcIdx;
+				if (! IsUnused(bcIdx))
+	                usedBcSeqToBcIdxMap[m_Seqs[bcIdx]] = bcIdx;
             }
             if (AllowSingleMutations)
                 AddSingleMutations();
@@ -175,7 +176,7 @@ namespace Linnarsson.Dna
         {
             for (int bcIdx = 0; bcIdx < Count; bcIdx++)
             {
-                if (m_Seqs[bcIdx] == NOBARCODE) continue;
+                if (m_Seqs[bcIdx] == NOBARCODE || IsUnused(bcIdx)) continue;
                 foreach (string singleMutSeq in GenerateAllSingleMutations(m_Seqs[bcIdx]))
                 {
                     if (m_Seqs.Contains(singleMutSeq))
@@ -183,20 +184,20 @@ namespace Linnarsson.Dna
                         Console.WriteLine("INFO: Avoiding singleMutation barcode " + singleMutSeq + " that matches a non-mutated barcode.");
                         continue;
                     }
-                    int bcValue = bcSeqToBcIdxMap.ContainsKey(singleMutSeq) ? -1 : bcIdx;
-                    bcSeqToBcIdxMap[singleMutSeq] = bcValue;
+                    int bcValue = usedBcSeqToBcIdxMap.ContainsKey(singleMutSeq) ? -1 : bcIdx;
+                    usedBcSeqToBcIdxMap[singleMutSeq] = bcValue;
                 }
             } // Remove cases where two singleMutations have the same sequence
             int nDupMut = 0;
-            foreach (string bcs in bcSeqToBcIdxMap.Keys.ToArray())
-                if (bcSeqToBcIdxMap[bcs] == -1)
+            foreach (string bcs in usedBcSeqToBcIdxMap.Keys.ToArray())
+                if (usedBcSeqToBcIdxMap[bcs] == -1)
                 {
                     nDupMut++;
-                    bcSeqToBcIdxMap.Remove(bcs);
+                    usedBcSeqToBcIdxMap.Remove(bcs);
                 }
             if (nDupMut > 0)
                 Console.WriteLine("INFO: Avoiding " + nDupMut + " singleMutation barcodes that match another singleMutation barcode.");
-            Console.WriteLine("INFO: AllowSingleMutations generated " + bcSeqToBcIdxMap.Count + " index sequences to match.");
+            Console.WriteLine("INFO: AllowSingleMutations generated " + usedBcSeqToBcIdxMap.Count + " index sequences to match.");
         }
 
         private IEnumerable<string> GenerateAllSingleMutations(string bcSeq)
@@ -217,17 +218,18 @@ namespace Linnarsson.Dna
 
         /// <summary>
         /// Convert a barcode sequence (maybe concat of Idx1 + Idx2) to a numeric barcode index.
-        /// Return -1 on no match, and 0 if barcodes are in use.
+        /// Return -1 on no match, and 0 if no barcodes are in use.
         /// </summary>
         /// <param name="barcodeSeq"></param>
         /// <returns></returns>
         public int ExtractBcIdx(string barcodeSeq)
         {
-            int bcIdx = 0;
-            if (!UseNoBarcodes)
-                if (!bcSeqToBcIdxMap.TryGetValue(barcodeSeq, out bcIdx))
-                    bcIdx = -1;
-            return bcIdx;
+			if (UseNoBarcodes)
+				return 0;
+            int bcIdx;
+            if (usedBcSeqToBcIdxMap.TryGetValue(barcodeSeq, out bcIdx))
+                return bcIdx;
+            return -1;
         }
 
         public bool VerifyTS(string read, int maxTrimExtraGs, out int actualInsertPos)
@@ -259,7 +261,7 @@ namespace Linnarsson.Dna
                 bcIdx = 0;
             else
             {
-                if (!bcSeqToBcIdxMap.TryGetValue(read.Substring(BarcodePos, BarcodeLen), out bcIdx))
+                if (!usedBcSeqToBcIdxMap.TryGetValue(read.Substring(BarcodePos, BarcodeLen), out bcIdx))
                 {
                     bcIdx = -1;
                     return ReadStatus.NO_BC_OTHER;
@@ -358,11 +360,18 @@ namespace Linnarsson.Dna
         {
             if (m_SpeciesByWell == null) return true;
             string speciesId = m_SpeciesByWell[bcIdx].ToLower();
-            return (speciesId == "empty" && !strict)
-                   || speciesId.StartsWith(genome.Abbrev.ToLower()) || speciesId.StartsWith(genome.Name.ToLower())
+			if (speciesId == "unused")
+				return false;
+			if (speciesId == "empty" && !strict)
+				return true;
+            return speciesId.StartsWith(genome.Abbrev.ToLower()) || speciesId.StartsWith(genome.Name.ToLower())
                    || speciesId.StartsWith(genome.LatinName.ToLower());
         }
 
+		public bool IsUnused(int bcIdx)
+		{
+			return m_SpeciesByWell != null && m_SpeciesByWell[bcIdx] == "unused";
+		}
         public bool HasSampleLayout()
         {
             return m_SpeciesByWell != null;
@@ -497,8 +506,8 @@ namespace Linnarsson.Dna
             if (plateLayout == null) return new string[] {};
             AnnotationsByWell.Clear();
             m_SpeciesByWell = new string[m_WellIds.Length];
-            for (int i = 0; i < m_SpeciesByWell.Length; i++)
-                m_SpeciesByWell[i] = "empty";
+			for (int i = 0; i < m_SpeciesByWell.Length; i++)
+				m_SpeciesByWell[i] = "unused"; // "empty";
             if (m_WellIds.Length < plateLayout.Length)
             {
                 string xtra = (plateLayout.Filename == "C1 database") ? "It may help to reload plate with C1SeqPlateLoader.exe" : "";
@@ -804,10 +813,10 @@ namespace Linnarsson.Dna
             this.m_WellIds = new string[] { "Sample" };
             UseNoBarcodes = true;
         }
-        protected override void MakeBcSeqToBcIdxMap()
+        protected override void MakeUsedBcSeqToBcIdxMap()
         {
-            bcSeqToBcIdxMap = new Dictionary<string, int>();
-            bcSeqToBcIdxMap[""] = 0;
+            usedBcSeqToBcIdxMap = new Dictionary<string, int>();
+            usedBcSeqToBcIdxMap[""] = 0;
         }
 
 /*        public override string GetUMIAndStripBcFromReadId(string readId, out int UMIIdx)

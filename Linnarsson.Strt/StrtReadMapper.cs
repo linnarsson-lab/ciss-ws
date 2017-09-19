@@ -97,6 +97,9 @@ namespace Linnarsson.Strt
 		{
             projectOrReadFileFolder = PathHandler.GetRootedProjectFolder(projectOrReadFileFolder);
             string resultProjectFolder = (resultProject != null) ? PathHandler.GetRooted(resultProject) : projectOrReadFileFolder;
+			string sampleLayoutPath = PathHandler.GetLayoutPath(resultProjectFolder);
+			string plateId = Path.GetFileName(resultProjectFolder);
+			Props.props.Barcodes.ParsePlateLayout(plateId, sampleLayoutPath); // Read the unused cells from DB or layout file
             string extractionFolder = PathHandler.MakeExtractionFolderSubPath(resultProjectFolder, Props.props.Barcodes.Name, EXTRACTION_VERSION);
             List<LaneInfo> laneInfos = LaneInfo.LaneInfosFromLaneArgs(laneArgs, extractionFolder);
             if (laneInfos.Count == 0)

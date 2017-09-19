@@ -812,7 +812,7 @@ namespace Linnarsson.Strt
                 string wellId = Props.props.Barcodes.GetWellId(bcIdx);
                 if (cellIdByPlateWell.TryGetValue(wellId, out cellId))
                 {
-                    exprHolder.jos_aaacellid = cellId.ToString();
+                    exprHolder.aaacellid = cellId.ToString();
                     foreach (GeneFeature gf in geneFeatures.Values)
                     {
                         exprHolder.TranscriptID = gf.TranscriptID;
@@ -857,7 +857,7 @@ namespace Linnarsson.Strt
                 if (cellIdByPlateWell.TryGetValue(wellId, out cellId))
                 {
                     exprBlob.ClearBlob();
-                    exprBlob.jos_aaacellid = cellId.ToString();
+                    exprBlob.aaacellid = cellId.ToString();
                     foreach (GeneFeature gf in geneFeatures.Values)
                     {
                         exprBlob.SetBlobValue(gf.ExprBlobIdx, gf.TrHits(bcIdx, useMols));

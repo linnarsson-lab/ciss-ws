@@ -21,17 +21,17 @@ namespace Linnarsson.C1
         public string tissue { get; set; }                  // "cortex" or "HeLa"
         public string treatment { get; set; }
         public int spikemolecules { get; set; }
-        public int? jos_aaaprojectid { get; set; }
-        public int jos_aaaclientid { get; set; }
-        public int jos_aaacontactid { get; set; }
-        public int jos_aaamanagerid { get; set; }
+        public int? aaaprojectid { get; set; }
+        public int aaaclientid { get; set; }
+        public int aaacontactid { get; set; }
+        public int aaamanagerid { get; set; }
         public string comments { get; set; }
         public List<Cell> cells { get; set; }
 
         public Chip(int? id, string chipid, string strtprotocol, DateTime datedissected, DateTime datecollected,
                     string species, string strain, string donorid, string age, string sex, string weight, 
                     string tissue, string treatment, int spikes,
-                    int? jos_aaaprojectid, int jos_aaaclientid, int jos_aaacontactid, int jos_aaamanagerid, string comments)
+                    int? aaaprojectid, int aaaclientid, int aaacontactid, int aaamanagerid, string comments)
         {
             this.id = id;
             this.chipid = chipid;
@@ -47,10 +47,10 @@ namespace Linnarsson.C1
             this.tissue = tissue;
             this.treatment = treatment;
             this.spikemolecules = spikes;
-            this.jos_aaaprojectid = jos_aaaprojectid;
-            this.jos_aaaclientid = jos_aaaclientid;
-            this.jos_aaacontactid = jos_aaacontactid;
-            this.jos_aaamanagerid = jos_aaamanagerid;
+            this.aaaprojectid = aaaprojectid;
+            this.aaaclientid = aaaclientid;
+            this.aaacontactid = aaacontactid;
+            this.aaamanagerid = aaamanagerid;
             this.comments = comments;
             this.cells = new List<Cell>();
         }
@@ -59,8 +59,8 @@ namespace Linnarsson.C1
     public class Cell
     {
         public int? id { get; set; }
-        public int jos_aaachipid { get; set; }
-        public int jos_aaasampleid { get; set; }
+        public int aaachipid { get; set; }
+        public int aaasampleid { get; set; }
         public string chipwell { get; set; }                // Well on C1 chip, e.g. "A02"
         public string subwell { get; set; }                 // Picked row and col on Wafergen 10x10 subsquare, e.g. "0400"
         public string platewell { get; set; }               // Well on sequencing plate, e.g. "B04"
@@ -73,12 +73,12 @@ namespace Linnarsson.C1
         public List<CellImage> cellImages { get; set; }
         public List<CellAnnotation> cellAnnotations { get; set; }
 
-        public Cell(int? id, int jos_aaachipid, int jos_aaasampleid, string chipwell, string platewell,
+        public Cell(int? id, int aaachipid, int aaasampleid, string chipwell, string platewell,
                     double diameter, double area, int red, int green, int blue, bool valid, string subwell)
         {
             this.id = id;
-            this.jos_aaachipid = jos_aaachipid;
-            this.jos_aaasampleid = jos_aaasampleid;
+            this.aaachipid = aaachipid;
+            this.aaasampleid = aaasampleid;
             this.chipwell = chipwell;
             this.subwell = subwell;
             this.platewell = platewell;
@@ -103,16 +103,16 @@ namespace Linnarsson.C1
     public class CellImage
     {
         public int? id { get; set; }
-        public int? jos_aaacellid { get; set; }
+        public int? aaacellid { get; set; }
         public string Reporter { get; set; }                 // channel used for imaging
         public string Marker { get; set; }                   // "TH-GFP"
         public int Detection { get; set; }             // was this marker detected?
         public string RelativePath { get; set; }             // Location of image file
 
-        public CellImage(int? id, int? jos_aaacellid, string reporter, string marker, int detection, string relPath)
+        public CellImage(int? id, int? aaacellid, string reporter, string marker, int detection, string relPath)
         {
             this.id = id;
-            this.jos_aaacellid = jos_aaacellid;
+            this.aaacellid = aaacellid;
             this.Reporter = reporter;
             this.Marker = marker;
             this.Detection = detection;
@@ -123,14 +123,14 @@ namespace Linnarsson.C1
     public class CellAnnotation
     {
         public int? id { get; set; }
-        public int jos_aaacellid { get; set; }
+        public int aaacellid { get; set; }
         public string Name { get; set; }
         public string Value { get; set; }
 
-        public CellAnnotation(int? id, int jos_aaacellid, string name, string value)
+        public CellAnnotation(int? id, int aaacellid, string name, string value)
         {
             this.id = id;
-            this.jos_aaacellid = jos_aaacellid;
+            this.aaacellid = aaacellid;
             this.Name = name;
             this.Value = value;
         }
@@ -138,7 +138,7 @@ namespace Linnarsson.C1
 
     public class ExprBlob
     {
-        public string jos_aaacellid { get; set; }
+        public string aaacellid { get; set; }
         public int TranscriptomeID { get; set; }
         public byte[] Blob { get; set; }
 
@@ -162,7 +162,7 @@ namespace Linnarsson.C1
 
     public class Expression
     {
-        public string jos_aaacellid { get; set; }
+        public string aaacellid { get; set; }
         public int TranscriptID { get; set; }
         /// <summary>
         /// Uniquely mapped reads
@@ -183,9 +183,9 @@ namespace Linnarsson.C1
 
         public Expression()
         { }
-        public Expression(string jos_aaacellid, int transcriptId, int minReads, int minMols, int maxReads, int maxMols)
+        public Expression(string aaacellid, int transcriptId, int minReads, int minMols, int maxReads, int maxMols)
         {
-            this.jos_aaacellid = jos_aaacellid;
+            this.aaacellid = aaacellid;
             this.TranscriptID = transcriptId;
             this.UniqueReads = minReads;
             this.UniqueMolecules = minMols;

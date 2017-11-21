@@ -129,7 +129,17 @@ namespace ESCAF_BclToFq
 
         private static void Scan()
         {
-            List<string> copiedRunDirs = new List<string>();
+			List<string> copiedRunDirs = new List<string>();
+			using (StreamReader r = new StreamReader (ESCAFProps.props.FinishedRunFoldersFile)) {
+				string line = r.ReadLine();
+				while (line != null) {
+					if (line.Trim ().Length > 5)
+						copiedRunDirs.Add (line.Trim ());
+					line = r.ReadLine();
+				}
+			}
+			logWriter.WriteLine(string.Format("{0} INFO: {1} already processed rundirs found in {2}", 
+			                                  DateTime.Now.ToString(), copiedRunDirs.Count, ESCAFProps.props.FinishedRunFoldersFile));
             int nExceptions = 0;
             while (nExceptions < ESCAFProps.props.MaxBclToFqErrors)
             {
@@ -142,25 +152,20 @@ namespace ESCAF_BclToFq
 						bool m = Regex.IsMatch(runDirName, ESCAFProps.props.RunFolderMatchPattern);
 						if (! m )
 							Console.WriteLine("No match for {0}", runDirName);
-                        if (copiedRunDirs.Contains(runDir) || ! m)
+                        if (copiedRunDirs.Contains(runDirName) || ! m)
                             continue;
                         TimeSpan ts = DateTime.Now - Directory.GetLastAccessTime(runDir);
                         if (ts < new TimeSpan(0, ESCAFProps.props.minLastAccessMinutes, 0)) {
 							Console.WriteLine("Too recent access of {0}", runDirName);
                             continue;
 						}
-                        string readyFilePath = Path.Combine(runDir, "Basecalling_Netcopy_complete.txt");
-						string rtaPath = Path.Combine(runDir, "RTAComplete.txt");
-						string tenXFilePath = Path.Combine(runDir, "Basecalling_Netcopy_complete_Read4.txt");
-                        if (runDir.EndsWith("gz") || runDir.EndsWith("zip") 
-						    || (File.Exists(readyFilePath) && File.Exists(rtaPath) && !File.Exists(tenXFilePath)))
+						if (ReadyToProcess(runDir))
                         {
-                            logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Processing " + runDir);
-                            bool allReadsCopied = ProcessRun(runDir);
-                            if (!allReadsCopied)
+                            bool allCopied = IsChromiumSample(runDir)? OnlyDoScp(runDir) : ProcessRunWithReads(runDir);
+                            if (!allCopied)
                                 continue;
                             logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Ready");
-                            copiedRunDirs.Add(runDir);
+                            copiedRunDirs.Add(runDirName);
                             string readRunLine = Path.GetFileName(runDir) + "\n";
                             File.AppendAllText(ESCAFProps.props.FinishedRunFoldersFile, readRunLine);
                         }
@@ -175,8 +180,26 @@ namespace ESCAF_BclToFq
             }
         }
 
-        private static bool ProcessRun(string runFolderOrTgz)
+		private static bool IsChromiumSample(string runDir) {
+			string tenXFilePath = Path.Combine(runDir, "Basecalling_Netcopy_complete_Read4.txt");
+			if (File.Exists (tenXFilePath)) {
+				return true;
+			}
+			string runInfoPath = Path.Combine (runDir, "RunInfo.xml");
+			string runinfoxml = runInfoPath.OpenRead ().ReadToEnd ();
+			return Regex.IsMatch (runinfoxml, " <Read Number=\"3\" NumCycles=\"98\" IsIndexedRead=\"N\" />");
+		}
+
+		private static bool ReadyToProcess(string runDir) {
+			string runInfoPath = Path.Combine (runDir, "RunInfo.xml");
+			string readyFilePath = Path.Combine(runDir, "Basecalling_Netcopy_complete.txt");
+			string rtaPath = Path.Combine(runDir, "RTAComplete.txt");
+			return (File.Exists (runInfoPath) && File.Exists (readyFilePath) && File.Exists (rtaPath));
+		}
+
+		private static bool ProcessRunWithReads(string runFolderOrTgz)
         {
+			logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Processing " + runFolderOrTgz + " into reads");
             string runFolder = UnpackIfNeeded(runFolderOrTgz);
             Match mr = Regex.Match(runFolder, ESCAFProps.props.RunFolderMatchPattern);
             string runDate = mr.Groups[1].Value;
@@ -250,7 +273,51 @@ namespace ESCAF_BclToFq
             return true;
         }
 
-        private static void clearDir(string dirname)
+		/// <summary>
+		/// This only scp's the run folder a .tgz to destinations. For use with 10Xgenomics samples.
+		/// </summary>
+		/// <param name="runDir">Run dir.</param>
+		private static bool OnlyDoScp(string runDir)
+		{
+			logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Copying " + runDir + " to backup/storage");
+			Match mr = Regex.Match(runDir, ESCAFProps.props.RunFolderMatchPattern);
+			string runDate = mr.Groups[1].Value;
+			string runNo = mr.Groups[2].Value;
+			string runId = mr.Groups[3].Value;
+			CmdCaller c;
+			try 
+			{
+				DBInsertIlluminaRun(runId, runNo, runDate);
+				string tgzFile = runDir + ".tgz";
+				CmdCaller cmdCaller = new CmdCaller("tar", "zcf " + tgzFile + " " + runDir, true);
+				if (cmdCaller.ExitCode != 0) throw new Exception(cmdCaller.StdError);
+				List<string> scpErrors = new List<string>();
+				foreach (string scpDest in ESCAFProps.props.scpDestinations)
+				{
+					string scpArg = string.Format("{0} {1}/{0}", tgzFile, scpDest);
+					c = new CmdCaller("scp", scpArg);
+					if (c.ExitCode != 0) scpErrors.Add(scpArg + "\n    " + c.StdError);
+				}
+				logWriter.WriteLine(DateTime.Now.ToString() + " INFO: Copied " + runDir
+				                    + " to  " + string.Join(" & ", ESCAFProps.props.scpDestinations) + "\n");
+				if (scpErrors.Count > 0)
+				{
+					string scpErrString = string.Join("\n", scpErrors.ToArray());
+					logWriter.WriteLine("*** Errors during copying: ***\n" + scpErrString + "\n");
+					throw new Exception(scpErrString);
+				}
+				DBUpdateRunStatus(runId, "copied");
+				File.Delete(tgzFile);
+			}
+			catch (Exception)
+			{
+				DBUpdateRunStatus(runId, "copyfail");
+				throw;
+			}
+			return true;
+		}
+
+		private static void clearDir(string dirname)
         {
             DirectoryInfo dir = new DirectoryInfo(dirname);
             foreach (FileInfo fi in dir.GetFiles())

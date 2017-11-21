@@ -30,10 +30,10 @@ namespace ESCAF_Strt
         public bool senseReads = true;
         public bool useRPKM = false;
         public bool skipExtraction = false;
-        public string specialLayoutFile = null;
+        public string specialLayoutFile = "";
 
         public string extractionFolder { get { return Path.Combine(plateFolder, "tmp"); } }
-        public string layoutPath { get { return (specialLayoutFile != "")? specialLayoutFile : Path.Combine(plateFolder, "layout.txt"); } }
+        public string layoutPath { get { return (specialLayoutFile != "")? specialLayoutFile : Path.Combine(plateFolder, "seqplate_layout.txt"); } }
 
         public ESCAFStrtSettings()
         { }
@@ -44,6 +44,7 @@ namespace ESCAF_Strt
             {
                 if (args[argIdx] == "-1") read1Files = args[++argIdx].Split(',');
                 else if (args[argIdx] == "-i") analysisId = args[++argIdx];
+				else if (args[argIdx] == "-x") statusXmlFileFolder = args[++argIdx];
                 else if (args[argIdx] == "-2") read2Files = args[++argIdx].Split(',');
                 else if (args[argIdx] == "-b") barcodesName = args[++argIdx];
                 else if (args[argIdx] == "-g") build = args[++argIdx];
@@ -61,7 +62,8 @@ namespace ESCAF_Strt
                 else if (args[argIdx].ToLower() == "--star") aligner = "star";
                 else if (args[argIdx] == "--help") Console.WriteLine(
                     "Arguments for ESCAF-Strt.exe:\n" +
-                    "-i ANALYSISID         optional for use in reporting back to database using xml files.\n" +
+                    "-i ANALYSISID         optional for use in reporting back to database using xml files\n" +
+					"-x ANALYSISXMLFOLDER  folder for xml files reporting back to database\n" +
                     "-p PLATEFOLDER        output folder for extraction, layout etc.\n" +
                     "-1 PATH1,PATH2...     paths to first read fq.gz files\n" +
                     "-2 PATH1,PATH2...     paths to index read fq.gz files\n" +
@@ -134,9 +136,9 @@ namespace ESCAF_Strt
                 }
             }
             if (!WriteXMLStatusFile(options, "annotating")) return;
-            Console.WriteLine("Mapping using {0} and annotating...", options.aligner);
             StrtReadMapper mapper = new StrtReadMapper();
-            string defaultSpeciesArg = (Props.props.LayoutFile == "") ? options.build : "";
+            string defaultSpeciesArg = (options.specialLayoutFile == "") ? options.build : "";
+			Console.WriteLine("Mapping using {0} ({1}) and annotating...", options.aligner, defaultSpeciesArg);
             mapper.MapAndAnnotate(defaultSpeciesArg, options.variants, options.annotation, options.resultFolder,
                                   options.resultFileprefix, null, laneInfos, options.plateFolder, true);
         }
